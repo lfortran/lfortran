@@ -4160,6 +4160,11 @@ extrafiles = "json_loc_module.f90"
 asr_json = true
 
 [[test]]
+filename = "json_loc_use_module_loop.f90"
+extrafiles = "json_loc_module_loop.f90"
+asr_json = true
+
+[[test]]
 filename = "json_loc_template_use_module.f90"
 extrafiles = "json_loc_template_module.f90"
 asr_json = true

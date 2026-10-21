@@ -1,20 +1,10 @@
 module json_loc_module_m
-! Used by json_loc_use_module.f90: the `loc` of the product nodes read back
-! from this module's modfile (`dimension`, `do_loop_head`, `array_index`,
-! `call_arg`) must point into this file.
-implicit none
-integer, parameter :: ik(2) = [1, 2]
+! Used by json_loc_use_module.f90: the `dimension` of `x` and the
+! `array_index` of `x(1)` are read back from this module's modfile, and their
+! `loc` must point into this file.
+integer, allocatable :: x(:)
 contains
-subroutine s(x)
-integer, intent(inout) :: x(2)
-integer :: i
-do i = 1, 2
-    x(i) = ik(i)
-end do
-call t(x(1))
-end subroutine
-
-subroutine t(y)
-integer, intent(in) :: y
+subroutine s()
+x(1) = 0
 end subroutine
 end module

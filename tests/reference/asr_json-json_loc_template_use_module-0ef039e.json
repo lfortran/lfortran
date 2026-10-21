@@ -2,11 +2,11 @@
     "basename": "asr_json-json_loc_template_use_module-0ef039e",
     "cmd": "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
     "infile": "tests/json_loc_template_use_module.f90",
-    "infile_hash": "670c5c6987f768e4741263742a1a81978ecf3c30f244ba90d537db63",
+    "infile_hash": "e3843a4a5edc168bedd71a9cd43da37bc1c8fc08e2a60236630d1a4d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_json-json_loc_template_use_module-0ef039e.stdout",
-    "stdout_hash": "5807369986546a4fdc661d242d661a437fa15fd4e022bb88de52cf94",
+    "stdout_hash": "f7b790be4dcf75935a4ac2e8f3e67d30c73fb2c230c2d44b09ed0179",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

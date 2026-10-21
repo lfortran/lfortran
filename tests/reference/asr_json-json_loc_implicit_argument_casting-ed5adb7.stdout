@@ -4,180 +4,815 @@
         "symtab": {
             "node": "SymbolTable1",
             "fields": {
-                "json_loc_implicit_argument_casting_m": {
-                    "node": "Module",
+                "a": {
+                    "node": "Function",
                     "fields": {
                         "symtab": {
                             "node": "SymbolTable2",
                             "fields": {
-                                "caller": {
-                                    "node": "Function",
+                                "x": {
+                                    "node": "Variable",
                                     "fields": {
-                                        "symtab": {
-                                            "node": "SymbolTable4",
+                                        "parent_symtab": 2,
+                                        "name": "x",
+                                        "dependencies": [],
+                                        "intent": "Unspecified",
+                                        "symbolic_value": [],
+                                        "value": [],
+                                        "storage": "Default",
+                                        "type": {
+                                            "node": "Array",
                                             "fields": {
-                                                "w": {
-                                                    "node": "Variable",
+                                                "type": {
+                                                    "node": "Real",
                                                     "fields": {
-                                                        "parent_symtab": 4,
-                                                        "name": "w",
-                                                        "dependencies": [],
-                                                        "intent": "InOut",
-                                                        "symbolic_value": [],
-                                                        "value": [],
-                                                        "storage": "Default",
-                                                        "type": {
-                                                            "node": "Array",
-                                                            "fields": {
-                                                                "type": {
-                                                                    "node": "Complex",
-                                                                    "fields": {
-                                                                        "kind": 8
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 395,
-                                                                        "last": 427,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 13,
-                                                                        "first_column": 1,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 13,
-                                                                        "last_column": 33
-                                                                    }
-                                                                },
-                                                                "dims": [
-                                                                    {
-                                                                        "node": "dimension",
-                                                                        "fields": {
-                                                                            "start": {
-                                                                                "node": "IntegerConstant",
-                                                                                "fields": {
-                                                                                    "n": 1,
-                                                                                    "type": {
-                                                                                        "node": "Integer",
-                                                                                        "fields": {
-                                                                                            "kind": 4
-                                                                                        },
-                                                                                        "loc": {
-                                                                                            "first": 426,
-                                                                                            "last": 426,
-                                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "first_line": 13,
-                                                                                            "first_column": 32,
-                                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "last_line": 13,
-                                                                                            "last_column": 32
-                                                                                        }
-                                                                                    },
-                                                                                    "intboz_type": "Decimal"
-                                                                                },
-                                                                                "loc": {
-                                                                                    "first": 426,
-                                                                                    "last": 426,
-                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 13,
-                                                                                    "first_column": 32,
-                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 13,
-                                                                                    "last_column": 32
-                                                                                }
-                                                                            },
-                                                                            "length": {
-                                                                                "node": "IntegerConstant",
-                                                                                "fields": {
-                                                                                    "n": 5,
-                                                                                    "type": {
-                                                                                        "node": "Integer",
-                                                                                        "fields": {
-                                                                                            "kind": 4
-                                                                                        },
-                                                                                        "loc": {
-                                                                                            "first": 426,
-                                                                                            "last": 426,
-                                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "first_line": 13,
-                                                                                            "first_column": 32,
-                                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "last_line": 13,
-                                                                                            "last_column": 32
-                                                                                        }
-                                                                                    },
-                                                                                    "intboz_type": "Decimal"
-                                                                                },
-                                                                                "loc": {
-                                                                                    "first": 426,
-                                                                                    "last": 426,
-                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 13,
-                                                                                    "first_column": 32,
-                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 13,
-                                                                                    "last_column": 32
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 426,
-                                                                            "last": 426,
-                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "first_line": 13,
-                                                                            "first_column": 32,
-                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "last_line": 13,
-                                                                            "last_column": 32
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "physical_type": "PointerArray",
-                                                                "memory_space": "Global"
-                                                            },
-                                                            "loc": {
-                                                                "first": 395,
-                                                                "last": 427,
-                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 13,
-                                                                "first_column": 1,
-                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 13,
-                                                                "last_column": 33
-                                                            }
-                                                        },
-                                                        "type_declaration": [],
-                                                        "abi": "Source",
-                                                        "access": "Public",
-                                                        "presence": "Required",
-                                                        "value_attr": false,
-                                                        "target_attr": false,
-                                                        "contiguous_attr": false,
-                                                        "bindc_name": [],
-                                                        "is_volatile": false,
-                                                        "is_protected": false,
-                                                        "pass_attr": "NotMethod",
-                                                        "self_argument": [],
-                                                        "codims": [],
-                                                        "common_block": []
+                                                        "kind": 4
                                                     },
                                                     "loc": {
-                                                        "first": 424,
-                                                        "last": 427,
+                                                        "first": 225,
+                                                        "last": 236,
                                                         "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "first_line": 13,
-                                                        "first_column": 30,
+                                                        "first_line": 5,
+                                                        "first_column": 1,
                                                         "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "last_line": 13,
-                                                        "last_column": 33
+                                                        "last_line": 5,
+                                                        "last_column": 12
                                                     }
                                                 },
-                                                "w_cast": {
-                                                    "node": "Variable",
+                                                "dims": [
+                                                    {
+                                                        "node": "dimension",
+                                                        "fields": {
+                                                            "start": [],
+                                                            "length": []
+                                                        },
+                                                        "loc": {
+                                                            "first": 235,
+                                                            "last": 235,
+                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "first_line": 5,
+                                                            "first_column": 11,
+                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "last_line": 5,
+                                                            "last_column": 11
+                                                        }
+                                                    }
+                                                ],
+                                                "physical_type": "UnboundedPointerArray",
+                                                "memory_space": "Global"
+                                            },
+                                            "loc": {
+                                                "first": 225,
+                                                "last": 236,
+                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "first_line": 5,
+                                                "first_column": 1,
+                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "last_line": 5,
+                                                "last_column": 12
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": [],
+                                        "common_block": []
+                                    },
+                                    "loc": {
+                                        "first": 233,
+                                        "last": 236,
+                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "first_line": 5,
+                                        "first_column": 9,
+                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "last_line": 5,
+                                        "last_column": 12
+                                    }
+                                }
+                            }
+                        },
+                        "name": "a",
+                        "function_signature": {
+                            "node": "FunctionType",
+                            "fields": {
+                                "arg_types": [
+                                    {
+                                        "node": "Array",
+                                        "fields": {
+                                            "type": {
+                                                "node": "Real",
+                                                "fields": {
+                                                    "kind": 4
+                                                },
+                                                "loc": {
+                                                    "first": 225,
+                                                    "last": 236,
+                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "first_line": 5,
+                                                    "first_column": 1,
+                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "last_line": 5,
+                                                    "last_column": 12
+                                                }
+                                            },
+                                            "dims": [
+                                                {
+                                                    "node": "dimension",
                                                     "fields": {
-                                                        "parent_symtab": 4,
-                                                        "name": "w_cast",
-                                                        "dependencies": [],
-                                                        "intent": "Local",
-                                                        "symbolic_value": [],
-                                                        "value": [],
-                                                        "storage": "Default",
+                                                        "start": [],
+                                                        "length": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 235,
+                                                        "last": 235,
+                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "first_line": 5,
+                                                        "first_column": 11,
+                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "last_line": 5,
+                                                        "last_column": 11
+                                                    }
+                                                }
+                                            ],
+                                            "physical_type": "UnboundedPointerArray",
+                                            "memory_space": "Global"
+                                        },
+                                        "loc": {
+                                            "first": 225,
+                                            "last": 236,
+                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "first_line": 5,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "last_line": 5,
+                                            "last_column": 12
+                                        }
+                                    }
+                                ],
+                                "return_var_type": [],
+                                "abi": "Source",
+                                "deftype": "Implementation",
+                                "bindc_name": [],
+                                "elemental": false,
+                                "pure": false,
+                                "module": false,
+                                "inline": false,
+                                "static": false,
+                                "restrictions": [],
+                                "is_restriction": false,
+                                "exec_space": "Host"
+                            },
+                            "loc": {
+                                "first": 209,
+                                "last": 251,
+                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                "first_line": 4,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                "last_line": 6,
+                                "last_column": 14
+                            }
+                        },
+                        "dependencies": [],
+                        "args": [
+                            {
+                                "node": "Var",
+                                "fields": {
+                                    "v": "x (SymbolTable2)"
+                                },
+                                "loc": {
+                                    "first": 209,
+                                    "last": 251,
+                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "first_line": 4,
+                                    "first_column": 1,
+                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "last_line": 6,
+                                    "last_column": 14
+                                }
+                            }
+                        ],
+                        "body": [],
+                        "return_var": [],
+                        "access": "Public",
+                        "deterministic": true,
+                        "side_effect_free": true,
+                        "module_file": []
+                    },
+                    "loc": {
+                        "first": 209,
+                        "last": 251,
+                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                        "first_line": 4,
+                        "first_column": 1,
+                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                        "last_line": 6,
+                        "last_column": 14
+                    }
+                },
+                "b": {
+                    "node": "Function",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable3",
+                            "fields": {
+                                "y": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 3,
+                                        "name": "y",
+                                        "dependencies": [],
+                                        "intent": "Unspecified",
+                                        "symbolic_value": [],
+                                        "value": [],
+                                        "storage": "Default",
+                                        "type": {
+                                            "node": "Array",
+                                            "fields": {
+                                                "type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 270,
+                                                        "last": 284,
+                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "first_line": 9,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "last_line": 9,
+                                                        "last_column": 15
+                                                    }
+                                                },
+                                                "dims": [
+                                                    {
+                                                        "node": "dimension",
+                                                        "fields": {
+                                                            "start": [],
+                                                            "length": []
+                                                        },
+                                                        "loc": {
+                                                            "first": 283,
+                                                            "last": 283,
+                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "first_line": 9,
+                                                            "first_column": 14,
+                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "last_line": 9,
+                                                            "last_column": 14
+                                                        }
+                                                    }
+                                                ],
+                                                "physical_type": "UnboundedPointerArray",
+                                                "memory_space": "Global"
+                                            },
+                                            "loc": {
+                                                "first": 270,
+                                                "last": 284,
+                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "first_line": 9,
+                                                "first_column": 1,
+                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "last_line": 9,
+                                                "last_column": 15
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": [],
+                                        "common_block": []
+                                    },
+                                    "loc": {
+                                        "first": 281,
+                                        "last": 284,
+                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "first_line": 9,
+                                        "first_column": 12,
+                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "last_line": 9,
+                                        "last_column": 15
+                                    }
+                                },
+                                "y_cast": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 3,
+                                        "name": "y_cast",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": [],
+                                        "value": [],
+                                        "storage": "Default",
+                                        "type": {
+                                            "node": "Pointer",
+                                            "fields": {
+                                                "type": {
+                                                    "node": "Array",
+                                                    "fields": {
+                                                        "type": {
+                                                            "node": "Real",
+                                                            "fields": {
+                                                                "kind": 4
+                                                            },
+                                                            "loc": {
+                                                                "first": 225,
+                                                                "last": 236,
+                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "first_line": 5,
+                                                                "first_column": 1,
+                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "last_line": 5,
+                                                                "last_column": 12
+                                                            }
+                                                        },
+                                                        "dims": [
+                                                            {
+                                                                "node": "dimension",
+                                                                "fields": {
+                                                                    "start": [],
+                                                                    "length": []
+                                                                },
+                                                                "loc": {
+                                                                    "first": 293,
+                                                                    "last": 293,
+                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                    "first_line": 10,
+                                                                    "first_column": 8,
+                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                    "last_line": 10,
+                                                                    "last_column": 8
+                                                                }
+                                                            }
+                                                        ],
+                                                        "physical_type": "DescriptorArray",
+                                                        "memory_space": "Global"
+                                                    },
+                                                    "loc": {
+                                                        "first": 293,
+                                                        "last": 293,
+                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "first_line": 10,
+                                                        "first_column": 8,
+                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "last_line": 10,
+                                                        "last_column": 8
+                                                    }
+                                                }
+                                            },
+                                            "loc": {
+                                                "first": 225,
+                                                "last": 236,
+                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "first_line": 5,
+                                                "first_column": 1,
+                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                "last_line": 5,
+                                                "last_column": 12
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": [],
+                                        "common_block": []
+                                    },
+                                    "loc": {
+                                        "first": 293,
+                                        "last": 293,
+                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "first_line": 10,
+                                        "first_column": 8,
+                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                        "last_line": 10,
+                                        "last_column": 8
+                                    }
+                                }
+                            }
+                        },
+                        "name": "b",
+                        "function_signature": {
+                            "node": "FunctionType",
+                            "fields": {
+                                "arg_types": [
+                                    {
+                                        "node": "Array",
+                                        "fields": {
+                                            "type": {
+                                                "node": "Integer",
+                                                "fields": {
+                                                    "kind": 4
+                                                },
+                                                "loc": {
+                                                    "first": 270,
+                                                    "last": 284,
+                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "first_line": 9,
+                                                    "first_column": 1,
+                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "last_line": 9,
+                                                    "last_column": 15
+                                                }
+                                            },
+                                            "dims": [
+                                                {
+                                                    "node": "dimension",
+                                                    "fields": {
+                                                        "start": [],
+                                                        "length": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 283,
+                                                        "last": 283,
+                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "first_line": 9,
+                                                        "first_column": 14,
+                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                        "last_line": 9,
+                                                        "last_column": 14
+                                                    }
+                                                }
+                                            ],
+                                            "physical_type": "UnboundedPointerArray",
+                                            "memory_space": "Global"
+                                        },
+                                        "loc": {
+                                            "first": 270,
+                                            "last": 284,
+                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "first_line": 9,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "last_line": 9,
+                                            "last_column": 15
+                                        }
+                                    }
+                                ],
+                                "return_var_type": [],
+                                "abi": "Source",
+                                "deftype": "Implementation",
+                                "bindc_name": [],
+                                "elemental": false,
+                                "pure": false,
+                                "module": false,
+                                "inline": false,
+                                "static": false,
+                                "restrictions": [],
+                                "is_restriction": false,
+                                "exec_space": "Host"
+                            },
+                            "loc": {
+                                "first": 254,
+                                "last": 309,
+                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                "first_line": 8,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                "last_line": 11,
+                                "last_column": 14
+                            }
+                        },
+                        "dependencies": [
+                            "a"
+                        ],
+                        "args": [
+                            {
+                                "node": "Var",
+                                "fields": {
+                                    "v": "y (SymbolTable3)"
+                                },
+                                "loc": {
+                                    "first": 254,
+                                    "last": 309,
+                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "first_line": 8,
+                                    "first_column": 1,
+                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "last_line": 11,
+                                    "last_column": 14
+                                }
+                            }
+                        ],
+                        "body": [
+                            {
+                                "node": "CPtrToPointer",
+                                "fields": {
+                                    "cptr": {
+                                        "node": "PointerToCPtr",
+                                        "fields": {
+                                            "arg": {
+                                                "node": "GetPointer",
+                                                "fields": {
+                                                    "arg": {
+                                                        "node": "Var",
+                                                        "fields": {
+                                                            "v": "y (SymbolTable3)"
+                                                        },
+                                                        "loc": {
+                                                            "first": 293,
+                                                            "last": 293,
+                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "first_line": 10,
+                                                            "first_column": 8,
+                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "last_line": 10,
+                                                            "last_column": 8
+                                                        }
+                                                    },
+                                                    "type": {
+                                                        "node": "Pointer",
+                                                        "fields": {
+                                                            "type": {
+                                                                "node": "Integer",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 270,
+                                                                    "last": 284,
+                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                    "first_line": 9,
+                                                                    "first_column": 1,
+                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                    "last_line": 9,
+                                                                    "last_column": 15
+                                                                }
+                                                            }
+                                                        },
+                                                        "loc": {
+                                                            "first": 293,
+                                                            "last": 293,
+                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "first_line": 10,
+                                                            "first_column": 8,
+                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "last_line": 10,
+                                                            "last_column": 8
+                                                        }
+                                                    },
+                                                    "value": []
+                                                },
+                                                "loc": {
+                                                    "first": 293,
+                                                    "last": 293,
+                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "first_line": 10,
+                                                    "first_column": 8,
+                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "last_line": 10,
+                                                    "last_column": 8
+                                                }
+                                            },
+                                            "type": {
+                                                "node": "CPtr",
+                                                "fields": {
+                                                    "kind": "CPtrUnspecified"
+                                                },
+                                                "loc": {
+                                                    "first": 293,
+                                                    "last": 293,
+                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "first_line": 10,
+                                                    "first_column": 8,
+                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "last_line": 10,
+                                                    "last_column": 8
+                                                }
+                                            },
+                                            "value": []
+                                        },
+                                        "loc": {
+                                            "first": 293,
+                                            "last": 293,
+                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "first_line": 10,
+                                            "first_column": 8,
+                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "last_line": 10,
+                                            "last_column": 8
+                                        }
+                                    },
+                                    "ptr": {
+                                        "node": "Var",
+                                        "fields": {
+                                            "v": "y_cast (SymbolTable3)"
+                                        },
+                                        "loc": {
+                                            "first": 293,
+                                            "last": 293,
+                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "first_line": 10,
+                                            "first_column": 8,
+                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "last_line": 10,
+                                            "last_column": 8
+                                        }
+                                    },
+                                    "shape": {
+                                        "node": "ArrayConstant",
+                                        "fields": {
+                                            "n_data": 4,
+                                            "data": "Unimplementedvoid",
+                                            "type": {
+                                                "node": "Array",
+                                                "fields": {
+                                                    "type": {
+                                                        "node": "Integer",
+                                                        "fields": {
+                                                            "kind": 4
+                                                        },
+                                                        "loc": {
+                                                            "first": 293,
+                                                            "last": 293,
+                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "first_line": 10,
+                                                            "first_column": 8,
+                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                            "last_line": 10,
+                                                            "last_column": 8
+                                                        }
+                                                    },
+                                                    "dims": [
+                                                        {
+                                                            "node": "dimension",
+                                                            "fields": {
+                                                                "start": {
+                                                                    "node": "IntegerConstant",
+                                                                    "fields": {
+                                                                        "n": 1,
+                                                                        "type": {
+                                                                            "node": "Integer",
+                                                                            "fields": {
+                                                                                "kind": 4
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 293,
+                                                                                "last": 293,
+                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                                "first_line": 10,
+                                                                                "first_column": 8,
+                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                                "last_line": 10,
+                                                                                "last_column": 8
+                                                                            }
+                                                                        },
+                                                                        "intboz_type": "Decimal"
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 293,
+                                                                        "last": 293,
+                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                        "first_line": 10,
+                                                                        "first_column": 8,
+                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                        "last_line": 10,
+                                                                        "last_column": 8
+                                                                    }
+                                                                },
+                                                                "length": {
+                                                                    "node": "IntegerConstant",
+                                                                    "fields": {
+                                                                        "n": 1,
+                                                                        "type": {
+                                                                            "node": "Integer",
+                                                                            "fields": {
+                                                                                "kind": 4
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 293,
+                                                                                "last": 293,
+                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                                "first_line": 10,
+                                                                                "first_column": 8,
+                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                                "last_line": 10,
+                                                                                "last_column": 8
+                                                                            }
+                                                                        },
+                                                                        "intboz_type": "Decimal"
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 293,
+                                                                        "last": 293,
+                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                        "first_line": 10,
+                                                                        "first_column": 8,
+                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                        "last_line": 10,
+                                                                        "last_column": 8
+                                                                    }
+                                                                }
+                                                            },
+                                                            "loc": {
+                                                                "first": 293,
+                                                                "last": 293,
+                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "first_line": 10,
+                                                                "first_column": 8,
+                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "last_line": 10,
+                                                                "last_column": 8
+                                                            }
+                                                        }
+                                                    ],
+                                                    "physical_type": "FixedSizeArray",
+                                                    "memory_space": "Global"
+                                                },
+                                                "loc": {
+                                                    "first": 293,
+                                                    "last": 293,
+                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "first_line": 10,
+                                                    "first_column": 8,
+                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                    "last_line": 10,
+                                                    "last_column": 8
+                                                }
+                                            },
+                                            "storage_format": "ColMajor"
+                                        },
+                                        "loc": {
+                                            "first": 293,
+                                            "last": 293,
+                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "first_line": 10,
+                                            "first_column": 8,
+                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                            "last_line": 10,
+                                            "last_column": 8
+                                        }
+                                    },
+                                    "lower_bounds": []
+                                },
+                                "loc": {
+                                    "first": 293,
+                                    "last": 293,
+                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "first_line": 10,
+                                    "first_column": 8,
+                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "last_line": 10,
+                                    "last_column": 8
+                                }
+                            },
+                            {
+                                "node": "SubroutineCall",
+                                "fields": {
+                                    "name": "a (SymbolTable1)",
+                                    "original_name": [],
+                                    "args": [
+                                        {
+                                            "node": "call_arg",
+                                            "fields": {
+                                                "value": {
+                                                    "node": "ArrayPhysicalCast",
+                                                    "fields": {
+                                                        "arg": {
+                                                            "node": "Var",
+                                                            "fields": {
+                                                                "v": "y_cast (SymbolTable3)"
+                                                            },
+                                                            "loc": {
+                                                                "first": 293,
+                                                                "last": 293,
+                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "first_line": 10,
+                                                                "first_column": 8,
+                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                                                "last_line": 10,
+                                                                "last_column": 8
+                                                            }
+                                                        },
+                                                        "old": "DescriptorArray",
+                                                        "new": "PointerArray",
                                                         "type": {
                                                             "node": "Pointer",
                                                             "fields": {
@@ -187,17 +822,17 @@
                                                                         "type": {
                                                                             "node": "Real",
                                                                             "fields": {
-                                                                                "kind": 8
+                                                                                "kind": 4
                                                                             },
                                                                             "loc": {
-                                                                                "first": 327,
-                                                                                "last": 356,
+                                                                                "first": 225,
+                                                                                "last": 236,
                                                                                 "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 9,
+                                                                                "first_line": 5,
                                                                                 "first_column": 1,
                                                                                 "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 9,
-                                                                                "last_column": 30
+                                                                                "last_line": 5,
+                                                                                "last_column": 12
                                                                             }
                                                                         },
                                                                         "dims": [
@@ -208,1134 +843,99 @@
                                                                                     "length": []
                                                                                 },
                                                                                 "loc": {
-                                                                                    "first": 447,
-                                                                                    "last": 447,
+                                                                                    "first": 293,
+                                                                                    "last": 293,
                                                                                     "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 14,
-                                                                                    "first_column": 19,
+                                                                                    "first_line": 10,
+                                                                                    "first_column": 8,
                                                                                     "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 14,
-                                                                                    "last_column": 19
+                                                                                    "last_line": 10,
+                                                                                    "last_column": 8
                                                                                 }
                                                                             }
                                                                         ],
-                                                                        "physical_type": "DescriptorArray",
+                                                                        "physical_type": "PointerArray",
                                                                         "memory_space": "Global"
                                                                     },
                                                                     "loc": {
-                                                                        "first": 447,
-                                                                        "last": 447,
+                                                                        "first": 293,
+                                                                        "last": 293,
                                                                         "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 14,
-                                                                        "first_column": 19,
+                                                                        "first_line": 10,
+                                                                        "first_column": 8,
                                                                         "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 14,
-                                                                        "last_column": 19
+                                                                        "last_line": 10,
+                                                                        "last_column": 8
                                                                     }
                                                                 }
                                                             },
                                                             "loc": {
-                                                                "first": 327,
-                                                                "last": 356,
+                                                                "first": 293,
+                                                                "last": 293,
                                                                 "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 9,
-                                                                "first_column": 1,
+                                                                "first_line": 10,
+                                                                "first_column": 8,
                                                                 "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 9,
-                                                                "last_column": 30
+                                                                "last_line": 10,
+                                                                "last_column": 8
                                                             }
                                                         },
-                                                        "type_declaration": [],
-                                                        "abi": "Source",
-                                                        "access": "Public",
-                                                        "presence": "Required",
-                                                        "value_attr": false,
-                                                        "target_attr": false,
-                                                        "contiguous_attr": false,
-                                                        "bindc_name": [],
-                                                        "is_volatile": false,
-                                                        "is_protected": false,
-                                                        "pass_attr": "NotMethod",
-                                                        "self_argument": [],
-                                                        "codims": [],
-                                                        "common_block": []
+                                                        "value": []
                                                     },
                                                     "loc": {
-                                                        "first": 447,
-                                                        "last": 447,
+                                                        "first": 293,
+                                                        "last": 293,
                                                         "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "first_line": 14,
-                                                        "first_column": 19,
+                                                        "first_line": 10,
+                                                        "first_column": 8,
                                                         "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "last_line": 14,
-                                                        "last_column": 19
+                                                        "last_line": 10,
+                                                        "last_column": 8
                                                     }
                                                 }
-                                            }
-                                        },
-                                        "name": "caller",
-                                        "function_signature": {
-                                            "node": "FunctionType",
-                                            "fields": {
-                                                "arg_types": [
-                                                    {
-                                                        "node": "Array",
-                                                        "fields": {
-                                                            "type": {
-                                                                "node": "Complex",
-                                                                "fields": {
-                                                                    "kind": 8
-                                                                },
-                                                                "loc": {
-                                                                    "first": 395,
-                                                                    "last": 427,
-                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "first_line": 13,
-                                                                    "first_column": 1,
-                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "last_line": 13,
-                                                                    "last_column": 33
-                                                                }
-                                                            },
-                                                            "dims": [
-                                                                {
-                                                                    "node": "dimension",
-                                                                    "fields": {
-                                                                        "start": {
-                                                                            "node": "IntegerConstant",
-                                                                            "fields": {
-                                                                                "n": 1,
-                                                                                "type": {
-                                                                                    "node": "Integer",
-                                                                                    "fields": {
-                                                                                        "kind": 4
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 426,
-                                                                                        "last": 426,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 13,
-                                                                                        "first_column": 32,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 13,
-                                                                                        "last_column": 32
-                                                                                    }
-                                                                                },
-                                                                                "intboz_type": "Decimal"
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 426,
-                                                                                "last": 426,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 13,
-                                                                                "first_column": 32,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 13,
-                                                                                "last_column": 32
-                                                                            }
-                                                                        },
-                                                                        "length": {
-                                                                            "node": "IntegerConstant",
-                                                                            "fields": {
-                                                                                "n": 5,
-                                                                                "type": {
-                                                                                    "node": "Integer",
-                                                                                    "fields": {
-                                                                                        "kind": 4
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 426,
-                                                                                        "last": 426,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 13,
-                                                                                        "first_column": 32,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 13,
-                                                                                        "last_column": 32
-                                                                                    }
-                                                                                },
-                                                                                "intboz_type": "Decimal"
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 426,
-                                                                                "last": 426,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 13,
-                                                                                "first_column": 32,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 13,
-                                                                                "last_column": 32
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 426,
-                                                                        "last": 426,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 13,
-                                                                        "first_column": 32,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 13,
-                                                                        "last_column": 32
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "physical_type": "PointerArray",
-                                                            "memory_space": "Global"
-                                                        },
-                                                        "loc": {
-                                                            "first": 395,
-                                                            "last": 427,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 13,
-                                                            "first_column": 1,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 13,
-                                                            "last_column": 33
-                                                        }
-                                                    }
-                                                ],
-                                                "return_var_type": [],
-                                                "abi": "Source",
-                                                "deftype": "Implementation",
-                                                "bindc_name": [],
-                                                "elemental": false,
-                                                "pure": false,
-                                                "module": false,
-                                                "inline": false,
-                                                "static": false,
-                                                "restrictions": [],
-                                                "is_restriction": false,
-                                                "exec_space": "Host"
                                             },
                                             "loc": {
-                                                "first": 374,
-                                                "last": 463,
+                                                "first": 293,
+                                                "last": 293,
                                                 "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                "first_line": 12,
-                                                "first_column": 1,
-                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                "last_line": 15,
-                                                "last_column": 14
-                                            }
-                                        },
-                                        "dependencies": [
-                                            "realcomp"
-                                        ],
-                                        "args": [
-                                            {
-                                                "node": "Var",
-                                                "fields": {
-                                                    "v": "w (SymbolTable4)"
-                                                },
-                                                "loc": {
-                                                    "first": 374,
-                                                    "last": 463,
-                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "first_line": 12,
-                                                    "first_column": 1,
-                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "last_line": 15,
-                                                    "last_column": 14
-                                                }
-                                            }
-                                        ],
-                                        "body": [
-                                            {
-                                                "node": "CPtrToPointer",
-                                                "fields": {
-                                                    "cptr": {
-                                                        "node": "PointerToCPtr",
-                                                        "fields": {
-                                                            "arg": {
-                                                                "node": "GetPointer",
-                                                                "fields": {
-                                                                    "arg": {
-                                                                        "node": "Var",
-                                                                        "fields": {
-                                                                            "v": "w (SymbolTable4)"
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 447,
-                                                                            "last": 447,
-                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "first_line": 14,
-                                                                            "first_column": 19,
-                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "last_line": 14,
-                                                                            "last_column": 19
-                                                                        }
-                                                                    },
-                                                                    "type": {
-                                                                        "node": "Pointer",
-                                                                        "fields": {
-                                                                            "type": {
-                                                                                "node": "Complex",
-                                                                                "fields": {
-                                                                                    "kind": 8
-                                                                                },
-                                                                                "loc": {
-                                                                                    "first": 395,
-                                                                                    "last": 427,
-                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 13,
-                                                                                    "first_column": 1,
-                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 13,
-                                                                                    "last_column": 33
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 447,
-                                                                            "last": 447,
-                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "first_line": 14,
-                                                                            "first_column": 19,
-                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "last_line": 14,
-                                                                            "last_column": 19
-                                                                        }
-                                                                    },
-                                                                    "value": []
-                                                                },
-                                                                "loc": {
-                                                                    "first": 447,
-                                                                    "last": 447,
-                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "first_line": 14,
-                                                                    "first_column": 19,
-                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "last_line": 14,
-                                                                    "last_column": 19
-                                                                }
-                                                            },
-                                                            "type": {
-                                                                "node": "CPtr",
-                                                                "fields": {
-                                                                    "kind": "CPtrUnspecified"
-                                                                },
-                                                                "loc": {
-                                                                    "first": 447,
-                                                                    "last": 447,
-                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "first_line": 14,
-                                                                    "first_column": 19,
-                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "last_line": 14,
-                                                                    "last_column": 19
-                                                                }
-                                                            },
-                                                            "value": []
-                                                        },
-                                                        "loc": {
-                                                            "first": 447,
-                                                            "last": 447,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 14,
-                                                            "first_column": 19,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 14,
-                                                            "last_column": 19
-                                                        }
-                                                    },
-                                                    "ptr": {
-                                                        "node": "Var",
-                                                        "fields": {
-                                                            "v": "w_cast (SymbolTable4)"
-                                                        },
-                                                        "loc": {
-                                                            "first": 447,
-                                                            "last": 447,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 14,
-                                                            "first_column": 19,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 14,
-                                                            "last_column": 19
-                                                        }
-                                                    },
-                                                    "shape": {
-                                                        "node": "ArrayConstant",
-                                                        "fields": {
-                                                            "n_data": 4,
-                                                            "data": "Unimplementedvoid",
-                                                            "type": {
-                                                                "node": "Array",
-                                                                "fields": {
-                                                                    "type": {
-                                                                        "node": "Integer",
-                                                                        "fields": {
-                                                                            "kind": 4
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 447,
-                                                                            "last": 447,
-                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "first_line": 14,
-                                                                            "first_column": 19,
-                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "last_line": 14,
-                                                                            "last_column": 19
-                                                                        }
-                                                                    },
-                                                                    "dims": [
-                                                                        {
-                                                                            "node": "dimension",
-                                                                            "fields": {
-                                                                                "start": {
-                                                                                    "node": "IntegerConstant",
-                                                                                    "fields": {
-                                                                                        "n": 1,
-                                                                                        "type": {
-                                                                                            "node": "Integer",
-                                                                                            "fields": {
-                                                                                                "kind": 4
-                                                                                            },
-                                                                                            "loc": {
-                                                                                                "first": 447,
-                                                                                                "last": 447,
-                                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "first_line": 14,
-                                                                                                "first_column": 19,
-                                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "last_line": 14,
-                                                                                                "last_column": 19
-                                                                                            }
-                                                                                        },
-                                                                                        "intboz_type": "Decimal"
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 447,
-                                                                                        "last": 447,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 14,
-                                                                                        "first_column": 19,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 14,
-                                                                                        "last_column": 19
-                                                                                    }
-                                                                                },
-                                                                                "length": {
-                                                                                    "node": "IntegerConstant",
-                                                                                    "fields": {
-                                                                                        "n": 1,
-                                                                                        "type": {
-                                                                                            "node": "Integer",
-                                                                                            "fields": {
-                                                                                                "kind": 4
-                                                                                            },
-                                                                                            "loc": {
-                                                                                                "first": 447,
-                                                                                                "last": 447,
-                                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "first_line": 14,
-                                                                                                "first_column": 19,
-                                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "last_line": 14,
-                                                                                                "last_column": 19
-                                                                                            }
-                                                                                        },
-                                                                                        "intboz_type": "Decimal"
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 447,
-                                                                                        "last": 447,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 14,
-                                                                                        "first_column": 19,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 14,
-                                                                                        "last_column": 19
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 447,
-                                                                                "last": 447,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 14,
-                                                                                "first_column": 19,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 14,
-                                                                                "last_column": 19
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "physical_type": "FixedSizeArray",
-                                                                    "memory_space": "Global"
-                                                                },
-                                                                "loc": {
-                                                                    "first": 447,
-                                                                    "last": 447,
-                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "first_line": 14,
-                                                                    "first_column": 19,
-                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "last_line": 14,
-                                                                    "last_column": 19
-                                                                }
-                                                            },
-                                                            "storage_format": "ColMajor"
-                                                        },
-                                                        "loc": {
-                                                            "first": 447,
-                                                            "last": 447,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 14,
-                                                            "first_column": 19,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 14,
-                                                            "last_column": 19
-                                                        }
-                                                    },
-                                                    "lower_bounds": []
-                                                },
-                                                "loc": {
-                                                    "first": 447,
-                                                    "last": 447,
-                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "first_line": 14,
-                                                    "first_column": 19,
-                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "last_line": 14,
-                                                    "last_column": 19
-                                                }
-                                            },
-                                            {
-                                                "node": "SubroutineCall",
-                                                "fields": {
-                                                    "name": "realcomp (SymbolTable2)",
-                                                    "original_name": [],
-                                                    "args": [
-                                                        {
-                                                            "node": "call_arg",
-                                                            "fields": {
-                                                                "value": {
-                                                                    "node": "IntegerConstant",
-                                                                    "fields": {
-                                                                        "n": 10,
-                                                                        "type": {
-                                                                            "node": "Integer",
-                                                                            "fields": {
-                                                                                "kind": 4
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 443,
-                                                                                "last": 444,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 14,
-                                                                                "first_column": 15,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 14,
-                                                                                "last_column": 16
-                                                                            }
-                                                                        },
-                                                                        "intboz_type": "Decimal"
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 443,
-                                                                        "last": 444,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 14,
-                                                                        "first_column": 15,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 14,
-                                                                        "last_column": 16
-                                                                    }
-                                                                }
-                                                            },
-                                                            "loc": {
-                                                                "first": 443,
-                                                                "last": 444,
-                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 14,
-                                                                "first_column": 15,
-                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 14,
-                                                                "last_column": 16
-                                                            }
-                                                        },
-                                                        {
-                                                            "node": "call_arg",
-                                                            "fields": {
-                                                                "value": {
-                                                                    "node": "ArrayPhysicalCast",
-                                                                    "fields": {
-                                                                        "arg": {
-                                                                            "node": "Var",
-                                                                            "fields": {
-                                                                                "v": "w_cast (SymbolTable4)"
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 447,
-                                                                                "last": 447,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 14,
-                                                                                "first_column": 19,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 14,
-                                                                                "last_column": 19
-                                                                            }
-                                                                        },
-                                                                        "old": "DescriptorArray",
-                                                                        "new": "PointerArray",
-                                                                        "type": {
-                                                                            "node": "Pointer",
-                                                                            "fields": {
-                                                                                "type": {
-                                                                                    "node": "Array",
-                                                                                    "fields": {
-                                                                                        "type": {
-                                                                                            "node": "Real",
-                                                                                            "fields": {
-                                                                                                "kind": 8
-                                                                                            },
-                                                                                            "loc": {
-                                                                                                "first": 327,
-                                                                                                "last": 356,
-                                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "first_line": 9,
-                                                                                                "first_column": 1,
-                                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                "last_line": 9,
-                                                                                                "last_column": 30
-                                                                                            }
-                                                                                        },
-                                                                                        "dims": [
-                                                                                            {
-                                                                                                "node": "dimension",
-                                                                                                "fields": {
-                                                                                                    "start": [],
-                                                                                                    "length": []
-                                                                                                },
-                                                                                                "loc": {
-                                                                                                    "first": 447,
-                                                                                                    "last": 447,
-                                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                    "first_line": 14,
-                                                                                                    "first_column": 19,
-                                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                                    "last_line": 14,
-                                                                                                    "last_column": 19
-                                                                                                }
-                                                                                            }
-                                                                                        ],
-                                                                                        "physical_type": "PointerArray",
-                                                                                        "memory_space": "Global"
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 447,
-                                                                                        "last": 447,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 14,
-                                                                                        "first_column": 19,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 14,
-                                                                                        "last_column": 19
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 447,
-                                                                                "last": 447,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 14,
-                                                                                "first_column": 19,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 14,
-                                                                                "last_column": 19
-                                                                            }
-                                                                        },
-                                                                        "value": []
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 447,
-                                                                        "last": 447,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 14,
-                                                                        "first_column": 19,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 14,
-                                                                        "last_column": 19
-                                                                    }
-                                                                }
-                                                            },
-                                                            "loc": {
-                                                                "first": 447,
-                                                                "last": 447,
-                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 14,
-                                                                "first_column": 19,
-                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 14,
-                                                                "last_column": 19
-                                                            }
-                                                        }
-                                                    ],
-                                                    "dt": [],
-                                                    "strict_bounds_checking": false
-                                                },
-                                                "loc": {
-                                                    "first": 429,
-                                                    "last": 448,
-                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "first_line": 14,
-                                                    "first_column": 1,
-                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "last_line": 14,
-                                                    "last_column": 20
-                                                }
-                                            }
-                                        ],
-                                        "return_var": [],
-                                        "access": "Public",
-                                        "deterministic": true,
-                                        "side_effect_free": true,
-                                        "module_file": []
-                                    },
-                                    "loc": {
-                                        "first": 374,
-                                        "last": 463,
-                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                        "first_line": 12,
-                                        "first_column": 1,
-                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                        "last_line": 15,
-                                        "last_column": 14
-                                    }
-                                },
-                                "realcomp": {
-                                    "node": "Function",
-                                    "fields": {
-                                        "symtab": {
-                                            "node": "SymbolTable3",
-                                            "fields": {
-                                                "a": {
-                                                    "node": "Variable",
-                                                    "fields": {
-                                                        "parent_symtab": 3,
-                                                        "name": "a",
-                                                        "dependencies": [
-                                                            "n"
-                                                        ],
-                                                        "intent": "InOut",
-                                                        "symbolic_value": [],
-                                                        "value": [],
-                                                        "storage": "Default",
-                                                        "type": {
-                                                            "node": "Array",
-                                                            "fields": {
-                                                                "type": {
-                                                                    "node": "Real",
-                                                                    "fields": {
-                                                                        "kind": 8
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 327,
-                                                                        "last": 356,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 9,
-                                                                        "first_column": 1,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 9,
-                                                                        "last_column": 30
-                                                                    }
-                                                                },
-                                                                "dims": [
-                                                                    {
-                                                                        "node": "dimension",
-                                                                        "fields": {
-                                                                            "start": {
-                                                                                "node": "IntegerConstant",
-                                                                                "fields": {
-                                                                                    "n": 1,
-                                                                                    "type": {
-                                                                                        "node": "Integer",
-                                                                                        "fields": {
-                                                                                            "kind": 4
-                                                                                        },
-                                                                                        "loc": {
-                                                                                            "first": 355,
-                                                                                            "last": 355,
-                                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "first_line": 9,
-                                                                                            "first_column": 29,
-                                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                            "last_line": 9,
-                                                                                            "last_column": 29
-                                                                                        }
-                                                                                    },
-                                                                                    "intboz_type": "Decimal"
-                                                                                },
-                                                                                "loc": {
-                                                                                    "first": 355,
-                                                                                    "last": 355,
-                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 9,
-                                                                                    "first_column": 29,
-                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 9,
-                                                                                    "last_column": 29
-                                                                                }
-                                                                            },
-                                                                            "length": {
-                                                                                "node": "Var",
-                                                                                "fields": {
-                                                                                    "v": "n (SymbolTable3)"
-                                                                                },
-                                                                                "loc": {
-                                                                                    "first": 355,
-                                                                                    "last": 355,
-                                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "first_line": 9,
-                                                                                    "first_column": 29,
-                                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                    "last_line": 9,
-                                                                                    "last_column": 29
-                                                                                }
-                                                                            }
-                                                                        },
-                                                                        "loc": {
-                                                                            "first": 355,
-                                                                            "last": 355,
-                                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "first_line": 9,
-                                                                            "first_column": 29,
-                                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                            "last_line": 9,
-                                                                            "last_column": 29
-                                                                        }
-                                                                    }
-                                                                ],
-                                                                "physical_type": "PointerArray",
-                                                                "memory_space": "Global"
-                                                            },
-                                                            "loc": {
-                                                                "first": 327,
-                                                                "last": 356,
-                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 9,
-                                                                "first_column": 1,
-                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 9,
-                                                                "last_column": 30
-                                                            }
-                                                        },
-                                                        "type_declaration": [],
-                                                        "abi": "Source",
-                                                        "access": "Public",
-                                                        "presence": "Required",
-                                                        "value_attr": false,
-                                                        "target_attr": false,
-                                                        "contiguous_attr": false,
-                                                        "bindc_name": [],
-                                                        "is_volatile": false,
-                                                        "is_protected": false,
-                                                        "pass_attr": "NotMethod",
-                                                        "self_argument": [],
-                                                        "codims": [],
-                                                        "common_block": []
-                                                    },
-                                                    "loc": {
-                                                        "first": 353,
-                                                        "last": 356,
-                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "first_line": 9,
-                                                        "first_column": 27,
-                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "last_line": 9,
-                                                        "last_column": 30
-                                                    }
-                                                },
-                                                "n": {
-                                                    "node": "Variable",
-                                                    "fields": {
-                                                        "parent_symtab": 3,
-                                                        "name": "n",
-                                                        "dependencies": [],
-                                                        "intent": "In",
-                                                        "symbolic_value": [],
-                                                        "value": [],
-                                                        "storage": "Default",
-                                                        "type": {
-                                                            "node": "Integer",
-                                                            "fields": {
-                                                                "kind": 4
-                                                            },
-                                                            "loc": {
-                                                                "first": 302,
-                                                                "last": 325,
-                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "first_line": 8,
-                                                                "first_column": 1,
-                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                "last_line": 8,
-                                                                "last_column": 24
-                                                            }
-                                                        },
-                                                        "type_declaration": [],
-                                                        "abi": "Source",
-                                                        "access": "Public",
-                                                        "presence": "Required",
-                                                        "value_attr": false,
-                                                        "target_attr": false,
-                                                        "contiguous_attr": false,
-                                                        "bindc_name": [],
-                                                        "is_volatile": false,
-                                                        "is_protected": false,
-                                                        "pass_attr": "NotMethod",
-                                                        "self_argument": [],
-                                                        "codims": [],
-                                                        "common_block": []
-                                                    },
-                                                    "loc": {
-                                                        "first": 325,
-                                                        "last": 325,
-                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "first_line": 8,
-                                                        "first_column": 24,
-                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                        "last_line": 8,
-                                                        "last_column": 24
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        "name": "realcomp",
-                                        "function_signature": {
-                                            "node": "FunctionType",
-                                            "fields": {
-                                                "arg_types": [
-                                                    {
-                                                        "node": "Integer",
-                                                        "fields": {
-                                                            "kind": 4
-                                                        },
-                                                        "loc": {
-                                                            "first": 302,
-                                                            "last": 325,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 8,
-                                                            "first_column": 1,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 8,
-                                                            "last_column": 24
-                                                        }
-                                                    },
-                                                    {
-                                                        "node": "Array",
-                                                        "fields": {
-                                                            "type": {
-                                                                "node": "Real",
-                                                                "fields": {
-                                                                    "kind": 8
-                                                                },
-                                                                "loc": {
-                                                                    "first": 327,
-                                                                    "last": 356,
-                                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "first_line": 9,
-                                                                    "first_column": 1,
-                                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                    "last_line": 9,
-                                                                    "last_column": 30
-                                                                }
-                                                            },
-                                                            "dims": [
-                                                                {
-                                                                    "node": "dimension",
-                                                                    "fields": {
-                                                                        "start": {
-                                                                            "node": "IntegerConstant",
-                                                                            "fields": {
-                                                                                "n": 1,
-                                                                                "type": {
-                                                                                    "node": "Integer",
-                                                                                    "fields": {
-                                                                                        "kind": 4
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 355,
-                                                                                        "last": 355,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 9,
-                                                                                        "first_column": 29,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 9,
-                                                                                        "last_column": 29
-                                                                                    }
-                                                                                },
-                                                                                "intboz_type": "Decimal"
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 355,
-                                                                                "last": 355,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 9,
-                                                                                "first_column": 29,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 9,
-                                                                                "last_column": 29
-                                                                            }
-                                                                        },
-                                                                        "length": {
-                                                                            "node": "FunctionParam",
-                                                                            "fields": {
-                                                                                "param_number": 0,
-                                                                                "type": {
-                                                                                    "node": "Integer",
-                                                                                    "fields": {
-                                                                                        "kind": 4
-                                                                                    },
-                                                                                    "loc": {
-                                                                                        "first": 302,
-                                                                                        "last": 325,
-                                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "first_line": 8,
-                                                                                        "first_column": 1,
-                                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                        "last_line": 8,
-                                                                                        "last_column": 24
-                                                                                    }
-                                                                                },
-                                                                                "value": []
-                                                                            },
-                                                                            "loc": {
-                                                                                "first": 276,
-                                                                                "last": 371,
-                                                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "first_line": 7,
-                                                                                "first_column": 1,
-                                                                                "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                                "last_line": 10,
-                                                                                "last_column": 14
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    "loc": {
-                                                                        "first": 355,
-                                                                        "last": 355,
-                                                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "first_line": 9,
-                                                                        "first_column": 29,
-                                                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                                        "last_line": 9,
-                                                                        "last_column": 29
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "physical_type": "PointerArray",
-                                                            "memory_space": "Global"
-                                                        },
-                                                        "loc": {
-                                                            "first": 327,
-                                                            "last": 356,
-                                                            "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "first_line": 9,
-                                                            "first_column": 1,
-                                                            "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                            "last_line": 9,
-                                                            "last_column": 30
-                                                        }
-                                                    }
-                                                ],
-                                                "return_var_type": [],
-                                                "abi": "Source",
-                                                "deftype": "Implementation",
-                                                "bindc_name": [],
-                                                "elemental": false,
-                                                "pure": false,
-                                                "module": false,
-                                                "inline": false,
-                                                "static": false,
-                                                "restrictions": [],
-                                                "is_restriction": false,
-                                                "exec_space": "Host"
-                                            },
-                                            "loc": {
-                                                "first": 276,
-                                                "last": 371,
-                                                "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                "first_line": 7,
-                                                "first_column": 1,
+                                                "first_line": 10,
+                                                "first_column": 8,
                                                 "last_filename": "tests/json_loc_implicit_argument_casting.f90",
                                                 "last_line": 10,
-                                                "last_column": 14
+                                                "last_column": 8
                                             }
-                                        },
-                                        "dependencies": [],
-                                        "args": [
-                                            {
-                                                "node": "Var",
-                                                "fields": {
-                                                    "v": "n (SymbolTable3)"
-                                                },
-                                                "loc": {
-                                                    "first": 276,
-                                                    "last": 371,
-                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "first_line": 7,
-                                                    "first_column": 1,
-                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "last_line": 10,
-                                                    "last_column": 14
-                                                }
-                                            },
-                                            {
-                                                "node": "Var",
-                                                "fields": {
-                                                    "v": "a (SymbolTable3)"
-                                                },
-                                                "loc": {
-                                                    "first": 276,
-                                                    "last": 371,
-                                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "first_line": 7,
-                                                    "first_column": 1,
-                                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                                    "last_line": 10,
-                                                    "last_column": 14
-                                                }
-                                            }
-                                        ],
-                                        "body": [],
-                                        "return_var": [],
-                                        "access": "Public",
-                                        "deterministic": true,
-                                        "side_effect_free": true,
-                                        "module_file": []
-                                    },
-                                    "loc": {
-                                        "first": 276,
-                                        "last": 371,
-                                        "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                        "first_line": 7,
-                                        "first_column": 1,
-                                        "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                                        "last_line": 10,
-                                        "last_column": 14
-                                    }
+                                        }
+                                    ],
+                                    "dt": [],
+                                    "strict_bounds_checking": false
+                                },
+                                "loc": {
+                                    "first": 286,
+                                    "last": 294,
+                                    "first_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "first_line": 10,
+                                    "first_column": 1,
+                                    "last_filename": "tests/json_loc_implicit_argument_casting.f90",
+                                    "last_line": 10,
+                                    "last_column": 9
                                 }
                             }
-                        },
-                        "name": "json_loc_implicit_argument_casting_m",
-                        "parent_module": [],
-                        "dependencies": [],
-                        "loaded_from_mod": false,
-                        "intrinsic": false,
-                        "has_submodules": false,
-                        "global_init": []
+                        ],
+                        "return_var": [],
+                        "access": "Public",
+                        "deterministic": true,
+                        "side_effect_free": true,
+                        "module_file": []
                     },
                     "loc": {
-                        "first": 0,
-                        "last": 474,
+                        "first": 254,
+                        "last": 309,
                         "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-                        "first_line": 1,
+                        "first_line": 8,
                         "first_column": 1,
                         "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-                        "last_line": 16,
-                        "last_column": 10
+                        "last_line": 11,
+                        "last_column": 14
                     }
                 }
             }
@@ -1344,13 +944,13 @@
         "global_init": []
     },
     "loc": {
-        "first": 0,
-        "last": 474,
+        "first": 209,
+        "last": 309,
         "first_filename": "tests/json_loc_implicit_argument_casting.f90",
-        "first_line": 1,
+        "first_line": 4,
         "first_column": 1,
         "last_filename": "tests/json_loc_implicit_argument_casting.f90",
-        "last_line": 16,
-        "last_column": 10
+        "last_line": 11,
+        "last_column": 14
     }
 }
