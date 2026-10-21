@@ -3539,3 +3539,11 @@ contains
         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
     end subroutine cc1_pointer_bounds_use
 end module cc1_pointer_bounds
+module cc1_pointer_bounds_null
+contains
+    subroutine cc1_pointer_bounds_null_use()
+        real, pointer :: arr(:)
+        arr(1:2) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+        arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+    end subroutine cc1_pointer_bounds_null_use
+end module cc1_pointer_bounds_null

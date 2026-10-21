@@ -4387,3 +4387,15 @@ semantic error: the rank of the pointer and of the data target must agree in a p
      |
 3511 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
      |         ^^^^^^^^^^^^^^ 
+
+semantic error: the data target of a pointer with a bounds specification or remapping list cannot be null()
+    --> tests/errors/continue_compilation_1.f90:3518:21
+     |
+3518 |         arr(1:2) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+     |                     ^^^^^^ 
+
+semantic error: the data target of a pointer with a bounds specification or remapping list cannot be null()
+    --> tests/errors/continue_compilation_1.f90:3519:20
+     |
+3519 |         arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+     |                    ^^^^^^ 

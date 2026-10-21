@@ -3414,7 +3414,7 @@ public:
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
-        bounds. With a bounds-spec, the extents of the pointer are those of
+        bounds; the data target cannot be `null()`. With a bounds-spec, the extents of the pointer are those of
         the data target, so the upper bound of dimension `i` is set to
         `lb + size(a, i) - 1`; `target` would otherwise refer to the upper
         bound of the pointer that is being assigned. A data target that is a
@@ -3440,6 +3440,14 @@ public:
             if (ast_target->m_args[i].m_end != nullptr) {
                 n_upper_bounds++;
             }
+        }
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            diag.add(Diagnostic(
+                "the data target of a pointer with a bounds specification or "
+                "remapping list cannot be null()",
+                Level::Error, Stage::Semantic, {
+                    Label("", {value->base.loc})}));
+            throw SemanticAbort();
         }
         if (n_upper_bounds == target->n_args) {
             return value;
