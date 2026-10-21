@@ -1195,6 +1195,7 @@ RUN(NAME pointer_section_03 LABELS gfortran llvm)
 RUN(NAME pointer_section_04 LABELS gfortran llvm)
 RUN(NAME pointer_section_05 LABELS gfortran llvm)
 RUN(NAME pointer_section_06 LABELS gfortran llvm)
+RUN(NAME pointer_section_07 LABELS gfortran llvm)
 RUN(NAME pointer_function_result_01 LABELS gfortran llvm)
 
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

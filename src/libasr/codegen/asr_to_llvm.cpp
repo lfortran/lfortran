@@ -12300,8 +12300,12 @@ public:
             visit_expr_wrapper(idx.m_right, true);
             llvm::Value* ub = builder->CreateSExtOrTrunc(tmp, idx_type);
             lbs.push_back(al, lb);
-            sizes.push_back(al, builder->CreateAdd(builder->CreateSub(ub, lb),
-                llvm::ConstantInt::get(idx_type, 1)));
+            // An upper bound below the lower bound gives the extent zero
+            llvm::Value* size = builder->CreateAdd(builder->CreateSub(ub, lb),
+                llvm::ConstantInt::get(idx_type, 1));
+            llvm::Value* zero = llvm::ConstantInt::get(idx_type, 0);
+            sizes.push_back(al, builder->CreateSelect(
+                builder->CreateICmpSLT(size, zero), zero, size));
         }
 
         // The data of a polymorphic pointer array descriptor is a
