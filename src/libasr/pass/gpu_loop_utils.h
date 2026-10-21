@@ -165,8 +165,9 @@ bool gpu_expr_duplicable(ASR::expr_t *e);
 // What a statement list may define, as computed by gpu_collect_effects.
 struct GpuEffects {
     // The variables defined as a whole (a scalar, a whole array, a
-    // derived-type object), and the variable a whole array component that
-    // is defined belongs to (its allocation may change).
+    // derived-type object), and the variable a whole array or derived-type
+    // component that is defined belongs to (an allocation in it may
+    // change).
     std::set<ASR::symbol_t*> scalars;
     // The gpu_array_key of every array or derived-type object defined in
     // part or as a whole.

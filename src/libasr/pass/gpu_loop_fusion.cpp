@@ -41,8 +41,9 @@ namespace LCompilers {
  *   these arrays nor anything the consumer assigns, except arrays that are
  *   renamed (below), nor its private variables.
  * * Neither an intermediate array nor a renamed one is a pointer, nor a
- *   variable (or a component of one) with the TARGET or POINTER attribute:
- *   reads through a pointer would not be seen.
+ *   component reached through a pointer, nor a variable that may be read
+ *   or written through another name (may_be_aliased: TARGET, POINTER,
+ *   EQUIVALENCE, a common block, ...): such reads would not be seen.
  * * Every function the producer's expressions and tests call is pure and
  *   self-contained: it names no variable but its own dummies and locals
  *   (gpu_function_self_contained), so its reads are those of its actual
@@ -67,7 +68,12 @@ namespace LCompilers {
  *   only at its own iteration, the same element on every path through its
  *   body, and read it only at that element before writing it. The array is
  *   allocatable; its copy is allocated before the outermost DO loop below,
- *   which must hold nothing that may change the array's allocation.
+ *   which must hold nothing that may change the array's allocation: the
+ *   statements of those loops define neither the array as a whole nor the
+ *   variable it is a component of (an assignment, also of a derived-type
+ *   object, or an actual argument for a dummy that is not INTENT(IN), of a
+ *   function too), and have no effects gpu_collect_effects does not
+ *   model (ALLOCATE, ...).
  * * The producer's arrays keep the values the producer gave them, which the
  *   program may read after the loops. The two loops must be the body of DO
  *   loops (a time step and its stages), taken from the innermost outwards
@@ -148,50 +154,6 @@ bool has_early_exit(ASR::stmt_t **body, size_t n) {
     return f.found;
 }
 
-// Whether a statement list holds a statement that may change the
-// allocation of an array: an allocation, a deallocation, an intrinsic
-// subroutine (move_alloc) or a call of a subroutine.
-bool may_reallocate(ASR::stmt_t **body, size_t n) {
-    struct Find : public ASRUtils::BlockBodyWalkVisitor<Find> {
-        bool found = false;
-        void visit_Allocate(const ASR::Allocate_t &) { found = true; }
-        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &) {
-            found = true;
-        }
-        void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &) {
-            found = true;
-        }
-        void visit_IntrinsicImpureSubroutine(
-            const ASR::IntrinsicImpureSubroutine_t &) { found = true; }
-        void visit_SubroutineCall(const ASR::SubroutineCall_t &) {
-            found = true;
-        }
-        void visit_Assignment(const ASR::Assignment_t &x) {
-            if (x.m_realloc_lhs || x.m_move_allocation) found = true;
-            ASRUtils::BlockBodyWalkVisitor<Find>::visit_Assignment(x);
-        }
-    } f;
-    for (size_t i = 0; i < n; i++) f.visit_stmt(*body[i]);
-    return f.found;
-}
-
-// Whether a pointer may be associated with (part of) the array a
-// designator names: reads and writes through it are not seen. That is the
-// case for a variable, or a component of one, with the TARGET or POINTER
-// attribute.
-bool may_be_pointer_target(ASR::expr_t *des) {
-    while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
-        if (ASRUtils::is_pointer(ASRUtils::expr_type(des))) return true;
-        des = ASR::down_cast<ASR::StructInstanceMember_t>(des)->m_v;
-    }
-    if (!ASR::is_a<ASR::Var_t>(*des)) return true;
-    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(des)->m_v);
-    if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
-    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-    return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
-}
-
 // Whether a variable may change through another name of its storage,
 // which the analyses of a statement list do not see: a pointer, a variable
 // with the TARGET attribute, a variable named where an address is taken or
@@ -206,6 +168,24 @@ bool may_be_aliased(ASR::symbol_t *s,
     if (v->m_storage == ASR::storage_typeType::Parameter) return false;
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
         || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+}
+
+// Whether the array a designator names (a variable, or a component of one)
+// may be read or written through another name, which the analyses do not
+// see: a pointer component on the way, or a variable that may_be_aliased
+// (a pointer, a TARGET, EQUIVALENCE, a common block, ...). A designator of
+// another form (an element on the way, ...) is not analyzed and may be.
+bool designator_may_be_aliased(ASR::expr_t *des,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
+        if (ASRUtils::is_pointer(ASRUtils::expr_type(des))) return true;
+        des = ASR::down_cast<ASR::StructInstanceMember_t>(des)->m_v;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*des)) return true;
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(des)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
+    return may_be_aliased(s, address_taken);
 }
 
 class LoopFusion {
@@ -357,7 +337,8 @@ public:
                 w.key = gpu_array_key(t->m_v);
                 if (w.key.empty() || t->n_args != p.rank()) return false;
                 ASR::ttype_t *at = ASRUtils::expr_type(t->m_v);
-                if (ASRUtils::is_pointer(at) || may_be_pointer_target(t->m_v)) {
+                if (ASRUtils::is_pointer(at)
+                        || designator_may_be_aliased(t->m_v, address_taken)) {
                     return false;
                 }
                 std::set<int> used;
@@ -1312,12 +1293,6 @@ public:
             }
         }
         if (loops.empty()) return fail();
-        // A renamed array's copy is allocated once, before the outermost of
-        // these loops, which must not change its allocation.
-        if (!renamed.empty() && may_reallocate(loops.back()->m_body,
-                loops.back()->n_body)) {
-            return fail();
-        }
 
         Location loc = body[i + 1]->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -1338,7 +1313,18 @@ public:
             if (des == nullptr) return fail();
             ASR::ttype_t *t = ASRUtils::expr_type(des);
             if (!ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)
-                    || may_be_pointer_target(des)) {
+                    || designator_may_be_aliased(des, address_taken)) {
+                return fail();
+            }
+            // Its copy is allocated once, before the outermost of these
+            // loops, which must not change its allocation. What may change
+            // it is a definition of the array, or of a derived-type object
+            // or component it is part of, as a whole (an assignment or an
+            // actual argument), which gpu_collect_effects counts as a
+            // definition of the variable it belongs to; or an effect it
+            // does not model (ALLOCATE, ...), which ended the chain above.
+            ASR::symbol_t *root = gpu_designator_base(des).root;
+            if (root == nullptr || assigned_in_loops.count(root)) {
                 return fail();
             }
             designators[k] = des;

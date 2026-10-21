@@ -61,9 +61,12 @@ Legality:
   iteration, possibly under `if` tests (without `else`); its expressions
   read neither its own arrays nor what the consumer assigns (except arrays
   that are renamed, below), nor its private variables.
-* The intermediate and renamed arrays are not pointers, nor variables (or
-  components of variables) with the `target` or `pointer` attribute, since
-  reads through a pointer would not be seen.
+* The intermediate and renamed arrays are not pointers, nor components
+  reached through a pointer, nor variables that may be read or written
+  under another name (a `target`, a variable in a common block, a
+  `volatile` one, or one named where the program takes an address or
+  associates a pointer, which covers `equivalence`), since such reads
+  would not be seen.
 * Every function the producer calls is pure and *self-contained*: it names
   no variable but its own dummy arguments and locals (named constants
   aside), and calls only functions that are self-contained too, so it reads
@@ -87,7 +90,11 @@ Legality:
   write the same element, at its own iteration, on every path, and may read
   that element only before writing it. The array is allocatable, and the
   `do` loops below hold nothing that may change its allocation (the copy is
-  allocated once, before them).
+  allocated once, before them): their statements define neither the array
+  as a whole nor the variable it is a component of, whether by an
+  assignment (of a derived-type object too) or as an actual argument of a
+  subroutine or a function, and their effects are ones the pass models
+  (below; `allocate`, for example, is not).
 * The intermediate arrays keep the values the producer gave them, which the
   program may read later. The two loops must be the body of `do` loops (time
   steps, stages), taken from the innermost outwards while each has a unit
