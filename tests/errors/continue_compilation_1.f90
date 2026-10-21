@@ -5327,3 +5327,39 @@ subroutine associated_target_not_variable_in_continue_compilation_1()
     a => null()
     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
 end subroutine
+module cc1_private_generic_iface_m
+    implicit none
+    private
+    public :: cc1_pgi_t
+    type :: cc1_pgi_t
+        integer :: x
+    end type
+    interface operator(+)
+        module procedure cc1_pgi_add
+    end interface
+    interface cc1_pgi_g
+        module procedure cc1_pgi_g_i
+    end interface
+contains
+    function cc1_pgi_add(a, b) result(c)
+        type(cc1_pgi_t), intent(in) :: a, b
+        type(cc1_pgi_t) :: c
+        c%x = a%x + b%x
+    end function
+    integer function cc1_pgi_g_i(i)
+        integer, intent(in) :: i
+        cc1_pgi_g_i = 2*i
+    end function
+end module cc1_private_generic_iface_m
+
+module cc1_private_generic_iface_use
+    use cc1_private_generic_iface_m
+    implicit none
+contains
+    subroutine cc1_pgi_use()
+        type(cc1_pgi_t) :: b
+        integer :: n
+        b = cc1_pgi_t(1) + cc1_pgi_t(2)  ! {Error}
+        n = cc1_pgi_g(3)  ! {Error}
+    end subroutine cc1_pgi_use
+end module cc1_private_generic_iface_use
