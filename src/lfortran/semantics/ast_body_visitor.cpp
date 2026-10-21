@@ -530,6 +530,7 @@ public:
                 to_lower(std::string(var_name)));
             if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
+                set_postponed_explicit_shape_physical_type(variable);
                 SetChar var_dep;
                 var_dep.reserve(al, 0);
                 ASRUtils::collect_variable_dependencies(

@@ -4836,6 +4836,7 @@ public:
             ASR::symbol_t* sym_to_variable = current_scope->get_symbol(to_lower(std::string(var_name)));
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym_to_variable))
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym_to_variable);
+            set_postponed_explicit_shape_physical_type(variable);
             if(variable->m_intent == ASRUtils::intent_return_var) {
                 ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
                 func_type->m_return_var_type = replacer.replace_args_with_FunctionParam(
