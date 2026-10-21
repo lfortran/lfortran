@@ -243,6 +243,11 @@ namespace LCompilers::CommandLineInterface {
             "DEPRECATED: legacy alias for --separate-compilation");
         app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
         app.add_flag("-v", opts.arg_v, "Be more verbose");
+        app.add_flag("--serve", opts.session_serve, "Serve a shared native interactive session");
+        app.add_option("--connection-file", opts.session_file, "Private native session descriptor");
+        app.add_option("--connect", opts.session_connect, "Attach to an existing kernel session");
+        app.add_flag("--session-managed", opts.session_managed)->group("");
+        app.add_option("--session-ready", opts.session_ready)->group("");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", opts.arg_l, "Link library option")->allow_extra_args(false);
         app.add_option("-L", opts.arg_L, "Library path option")->allow_extra_args(false);

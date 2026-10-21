@@ -62,6 +62,9 @@
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/Error.h>
+#if !defined(__EMSCRIPTEN__) && !defined(HAVE_BUILD_TO_WASM)
+#include <bin/session_terminal.h>
+#endif
 #endif
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -270,231 +273,6 @@ void print_time_report(const std::vector<std::string>& vector_of_time_report) {
     if (!total_time.empty()) print_one_component(total_time);
     std::cout << std::string(60, '-') << '\n';
 }
-
-#ifdef HAVE_LFORTRAN_LLVM
-
-void section(const std::string &s)
-{
-    std::cout << color(LCompilers::style::bold) << color(LCompilers::fg::blue) << s << color(LCompilers::style::reset) << color(LCompilers::fg::reset) << std::endl;
-}
-
-int emit_tokens2(const std::string &input, std::vector<std::string>
-    &tok_strings, std::vector<int> &toks, std::vector<LCompilers::LFortran::YYSTYPE>
-    &stypes)
-{
-    // Overload for the case where we want all the token information to use
-    // elsewhere
-    // Src -> Tokens
-    Allocator al(64*1024*1024);
-    LCompilers::diag::Diagnostics diagnostics;
-    auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, nullptr, false);
-    LCompilers::LocationManager lm;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = "input";
-        // The text is only quoted by the error rendering, which takes it from
-        // here; writing it to a file would clobber any `input` in the user's
-        // directory.
-        fl.source = input;
-        lm.files.push_back(fl);
-        lm.init_simple(input);
-        lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
-    }
-    LCompilers::CompilerOptions cu;
-    std::cerr << diagnostics.render(lm, cu);
-    if (res.ok) {
-        toks = res.result;
-    } else {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
-        return 1;
-    }
-    for (size_t i=0; i < toks.size(); i++) {
-        tok_strings.push_back(LCompilers::LFortran::pickle(toks[i], stypes[i]));
-        //std::cout << LFortran::pickle(toks[i], stypes[i]) << std::endl;
-    }
-    return 0;
-}
-
-bool determine_completeness(std::string command)
-{
-    // Determine if the statement is complete
-    // Get the tokens
-    bool complete;
-    std::vector<int> toks;
-    std::vector<LCompilers::LFortran::YYSTYPE> stypes;
-    std::vector<std::string> token_strings;
-    int tok_ret = emit_tokens2(command, token_strings, toks, stypes);
-    // The token enumerators are in parser.tab.hh
-    int do_blnc = 0;
-    if (std::find(toks.begin(), toks.end(), KW_DO)!=toks.end()
-        || std::find(toks.begin(), toks.end(), KW_DOWHILE)!=toks.end()) {
-        // Statement contains do loop
-        for (size_t i = 0; i < toks.size(); i++) {
-            if (toks[i] == KW_DO || toks[i] == KW_DOWHILE) {
-                do_blnc++;
-            } else if (toks[i] == KW_END_DO || toks[i] == KW_ENDDO) {
-                do_blnc--;
-            }
-        }
-    }
-    int sr_blnc = 0;
-    if (std::find(toks.begin(), toks.end(), KW_SUBROUTINE)!=toks.end()) {
-        // Statement contains subroutine
-        for (size_t i = 0; i < toks.size(); i++) {
-            if (toks[i] == KW_SUBROUTINE) {
-                sr_blnc++;
-            } else if (toks[i] == KW_END_SUBROUTINE
-                    || toks[i] == KW_ENDSUBROUTINE) {
-                sr_blnc--;
-            }
-        }
-    }
-    int fn_blnc = 0;
-    if (std::find(toks.begin(), toks.end(), KW_FUNCTION)!=toks.end()) {
-        // Statement contains function
-        for (size_t i = 0; i < toks.size(); i++) {
-            if (toks[i] == KW_FUNCTION) {
-                fn_blnc++;
-            } else if (toks[i] == KW_END_FUNCTION
-                    || toks[i] == KW_ENDFUNCTION) {
-                fn_blnc--;
-            }
-        }
-    }
-    int if_blnc = 0;
-    size_t endif_loc = toks.size() - 1;
-    // If statements need more involved checks due to the potential for deep
-    // nesting of block and logical if's.
-    if (std::find(toks.begin(), toks.end(), KW_IF)!=toks.end()) {
-        // Statement contains if
-        for (size_t i = 0; i < toks.size(); i++) {
-            if (toks[i] == KW_IF) {
-                if_blnc++;
-                // Determine if this is a logical or block if by checking for
-                // then token.
-                // Block if balance is decremented on an end if token.
-                // An apparent logical if is decremented arbitrarily since we
-                // aren't checking syntax here.
-                if (std::find(toks.begin() + i, toks.begin() + endif_loc,
-                            KW_THEN)!=toks.begin() + endif_loc) {
-                    // The statement contains block ifs, check for end if
-                    for (size_t j = i+1; j < endif_loc; j++) {
-                        if (toks[j] == KW_THEN) {
-                            bool then_found = true;
-                            for (size_t k = endif_loc; k > j; k--) {
-                                if (toks[k] == KW_ENDIF || toks[k] ==
-                                        KW_END_IF) {
-                                    if_blnc--;
-                                    // Make sure to not double count this end
-                                    // if by not looping to this far again
-                                    endif_loc = k - 1;
-                                 }
-                            }
-                            if (then_found) {
-                                // We hit a then and no end if so this must be
-                                // incomplete
-                                break;
-                            }
-                        } else if (toks[j] == KW_IF) {
-                            // We've encountered another if before a then, so
-                            // this appears to be a logical if in a statement
-                            // with other block ifs.
-                            if_blnc--;
-                            break;
-                        }
-                    }
-                } else {
-                    // No associated then, assume logical if
-                    if_blnc--;
-                }
-            }
-        }
-    }
-    if (do_blnc > 0 || sr_blnc > 0 || fn_blnc > 0 || if_blnc > 0) {
-        complete = false;
-    } else {
-        // If there are excess end statements just return error eventually
-        complete = true;
-    }
-    if (tok_ret == 1) {
-        // Tokenizer error, assume complete and return error eventually
-        complete = true;
-    }
-    return complete;
-}
-
-int prompt(bool verbose, CompilerOptions &cu)
-{
-    std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
-    std::string version = LFORTRAN_VERSION;
-    std::cout << "LFortran version: " << version << std::endl;
-    std::cout << "  * Use Ctrl-D to exit" << std::endl;
-    std::cout << "  * Use Enter to submit" << std::endl;
-    std::cout << "  * Use Alt-Enter or Ctrl-N to make a new line" << std::endl;
-    std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
-    std::cout << "    - History (Keys: Up, Down)" << std::endl;
-
-    cu.interactive = true;
-    LCompilers::FortranEvaluator e(cu);
-
-    std::vector<std::string> history;
-    std::function<bool(std::string)> iscomplete = determine_completeness;
-    while (true) {
-        std::string input;
-        {
-            // The terminal is in raw mode only while a line is edited, so
-            // that the cell can read the terminal as usual (#15284).
-            Terminal term(true, false);
-            input = prompt0(term, ">>> ", history, iscomplete);
-        }
-        // A READ ended by Ctrl-D in an earlier cell must not end later READs
-        clearerr(stdin);
-        if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
-            std::cout << std::endl;
-            std::cout << "Exiting." << std::endl;
-            return 0;
-        }
-
-        if (verbose) {
-            section("Input:");
-            std::cout << input << std::endl;
-        }
-
-        auto cell = e.execute(input, verbose);
-        if (!cell.ok) {
-            std::cerr << cell.error_text();
-            continue;
-        }
-        std::cerr << cell.diagnostics;
-        if (cell.inspection) {
-            std::cout << cell.output;
-            if (!cell.output.empty() && cell.output.back() != '\n') {
-                std::cout << std::endl;
-            }
-            continue;
-        }
-
-        auto &r = cell.value;
-        if (verbose) {
-            section("AST:");
-            std::cout << r.ast  << std::endl;
-            section("ASR:");
-            std::cout << r.asr << std::endl;
-            section("LLVM IR:");
-            std::cout << r.llvm_ir << std::endl;
-        }
-
-        if (verbose) {
-            std::cout << "Return type: " << r.type_name() << std::endl;
-            section("Result:");
-        }
-        if (r.has_value() || verbose) {
-            std::cout << r.text() << std::endl;
-        }
-    }
-    return 0;
-}
-#endif
 
 int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
@@ -2752,6 +2530,77 @@ int main_app(int argc, char *argv[]) {
         return 1;
     }
 
+    const bool session_mode = opts.session_serve || !opts.session_connect.empty()
+        || !opts.session_file.empty() || opts.session_managed || opts.session_ready != -1;
+    compiler_options.po.time_report = compiler_options.time_report;
+#ifdef HAVE_INTERNAL_ALLOC_CHECK
+    compiler_options.internal_alloc_check = true;
+#endif
+    const bool ordinary_prompt = opts.arg_files.empty() && !fmt && !kernel && !mod
+        && !pywrap && !opts.arg_version && !opts.print_targets && !opts.print_c_include_dir
+#ifdef WITH_LSP
+        && !server
+#endif
+        ;
+    if ((session_mode || ordinary_prompt) && (!opts.arg_files.empty() || fmt || kernel || mod || pywrap ||
+            opts.arg_version || opts.print_targets || opts.print_c_include_dir ||
+            opts.arg_c || opts.arg_S || opts.arg_E || opts.show_ast || opts.show_asr ||
+            compiler_options.po.json || opts.show_llvm || opts.from_asr ||
+            opts.show_prescan || opts.show_tokens || opts.show_ast_f90 ||
+            opts.show_asm || opts.show_wat || opts.show_cpp || opts.show_c ||
+            opts.show_julia || opts.show_fortran || opts.show_mlir ||
+            opts.show_llvm_from_mlir || opts.show_gpu_kernel_source ||
+            opts.show_errors || opts.show_document_symbols ||
+            compiler_options.semantics_only || compiler_options.po.dump_all_passes ||
+            compiler_options.po.dump_fortran ||
+            opts.arg_backend != "llvm" ||
+            (opts.session_serve && !opts.session_connect.empty()) ||
+            (!opts.session_connect.empty() && !opts.session_file.empty()) ||
+            (opts.session_managed && !opts.session_serve) ||
+            (opts.session_ready != -1 && !opts.session_serve)
+#ifdef WITH_LSP
+            || server
+#endif
+            )) {
+        std::cerr << "error: incompatible native session, compiler or connection options\n";
+        return 1;
+    }
+    if (session_mode || ordinary_prompt) {
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__) && !defined(HAVE_BUILD_TO_WASM)
+        using namespace LCompilers::LFortran;
+        if (opts.session_serve) {
+            if (!opts.session_managed && opts.session_file.empty()) {
+                std::cerr << "error: --serve requires --connection-file PATH\n";
+                return 1;
+            }
+            LCompilers::initialize();
+            if (!compiler_options.target.empty() || !compiler_options.march.empty() ||
+                    !compiler_options.mcpu.empty() || !compiler_options.mtune.empty() ||
+                    compiler_options.po.fast)
+                LCompilers::resolve_llvm_target_config(compiler_options);
+            return serve_local_session(compiler_options, opts.session_file,
+                opts.session_managed, opts.session_ready);
+        }
+        std::string file = opts.session_connect;
+        if (file.empty()) {
+            std::vector<std::string> arguments;
+            arguments.push_back(LCompilers::binary_executable_path);
+            for (int i = 1; i < argc; ++i) arguments.push_back(argv[i]);
+            // No LLVM target, evaluator or worker thread has been initialized
+            // in this process before spawning the isolated managed kernel.
+            file = launch_local_session(arguments, opts.session_file);
+        }
+        LCompilers::initialize();
+        auto client = connect_local_session(file);
+        return session_terminal(*client, opts.arg_v);
+#else
+        std::cerr << "Interactive sessions require a native LLVM build "
+            "(WITH_LLVM=yes); they are not available in WASM builds.\n";
+        return 1;
+#endif
+    }
+    LCompilers::initialize();
+
 #ifdef HAVE_LFORTRAN_LLVM
     bool uses_llvm_target = opts.arg_backend == "llvm"
         || opts.arg_backend == "mlir";
@@ -2806,11 +2655,6 @@ int main_app(int argc, char *argv[]) {
 #endif
         return 0;
     }
-    compiler_options.po.time_report = compiler_options.time_report;
-#ifdef HAVE_INTERNAL_ALLOC_CHECK
-    compiler_options.internal_alloc_check = true;
-#endif
-
     if (opts.print_targets) {
 #ifdef HAVE_LFORTRAN_LLVM
         LCompilers::LLVMEvaluator::print_targets();
@@ -2903,12 +2747,8 @@ int main_app(int argc, char *argv[]) {
 #endif
 
     if (opts.arg_files.size() == 0) {
-#ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, compiler_options);
-#else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
-#endif
     }
 
 
@@ -3226,7 +3066,6 @@ int main_app(int argc, char *argv[]) {
 
 int main(int argc, char *argv[])
 {
-    LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LCompilers::print_stack_on_segfault();
 #endif

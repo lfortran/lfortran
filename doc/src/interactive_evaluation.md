@@ -1,11 +1,13 @@
 # Running a cell: the prompt and the Jupyter kernel
 
-The terminal prompt and the optional Xeus kernel run cells with
-`FortranEvaluator::execute(code, verbose, io)` (`src/lfortran/fortran_evaluator.h`).
-It evaluates one cell like `evaluate()`, with fresh diagnostics and the default
-passes, and also runs the `%%showast`, `%%showasr`, `%%showllvm`, `%%showasm`,
-`%%showcpp` and `%%showfmt` inspection cells (the magic is the first line of
-the cell; trailing blanks and a CRLF line ending are ignored). An inspection
+The kernel process behind the terminal prompt (see
+[Native sessions](native-session.md)) and the optional Xeus kernel run cells
+with `FortranEvaluator::execute(code, verbose, io)`
+(`src/lfortran/fortran_evaluator.h`). It evaluates one cell like `evaluate()`,
+with fresh diagnostics and the default passes, and also runs the `%%showast`,
+`%%showasr`, `%%showllvm`, `%%showasm`, `%%showcpp` and `%%showfmt`
+inspection cells (the magic is the first line of the cell; trailing blanks
+and a CRLF line ending are ignored). An inspection
 cell sees the session's declarations, but it does not run, so its own
 declarations do not join the session. `CompilerOptions::interactive` must be
 set before the first cell; the evaluator keeps the session's symbols across
