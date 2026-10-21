@@ -12582,13 +12582,22 @@ public:
         builder->CreateStore(new_desc, target_desc);
     }
 
-    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
-        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+    /*
+        Fills `target`, a descriptor of LLVM type `target_type` for the array
+        type `target_desc_type`, with the array section `section_expr`: the
+        address of its first element and, for each sliced dimension, its
+        stride, a lower bound of 1 and its extent.
+    */
+    void fill_array_section_descriptor(ASR::expr_t* section_expr,
+            llvm::Value* target, llvm::Type* target_type,
+            ASR::ttype_t* target_desc_type) {
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(section_expr);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
+        ptr_loads = ptr_loads_copy;
         llvm::Value* value_desc = tmp;
         llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
             ASRUtils::type_get_past_allocatable(
@@ -12611,28 +12620,8 @@ public:
             value_desc, "inline_array_section_desc");
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
-        ptr_loads = 0;
-        visit_expr(*x.m_target);
-        llvm::Value* target_desc = tmp;
-        ptr_loads = ptr_loads_copy;
-
-        ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
-             ASR::array_physical_typeType::DescriptorArray, true);
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
         int value_rank = checked_integer_cast<int>(array_section->n_args), target_rank = 0;
-        llvm::Value *target = arr_descr->create_descriptor_alloca(
-            target_type, "array_section_descriptor");
-        // A polymorphic pointer array owns a heap wrapper, which is freed
-        // when the pointer is finalized. A section of a class array gets its
-        // own {vptr, data} wrapper on the stack, so it is copied below into
-        // the wrapper the pointer already owns, or into a new one.
-        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
-        bool own_section_wrapper =
-            ASRUtils::is_class_type(target_elem_type) &&
-            ASRUtils::is_class_type(ASRUtils::extract_type(value_array_type));
-        if( ASRUtils::is_character(*expr_type(x.m_target))){
+        if( ASRUtils::is_character(*target_desc_type)){
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
         }
@@ -12708,9 +12697,7 @@ public:
         // can hold. Cap target_rank at the descriptor's rank so we only fill
         // dims that fit. The first sliced dim gets stride=1 (before any
         // accumulation), which is correct for contiguous sequence association.
-        int desc_rank = ASRUtils::extract_n_dims_from_ttype(
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))));
+        int desc_rank = ASRUtils::extract_n_dims_from_ttype(target_desc_type);
         if (target_rank > desc_rank) {
             LCOMPILERS_ASSERT(desc_rank == 1 && "Rank mismatch only expected "
                 "for 1D assumed-size sequence association");
@@ -12761,19 +12748,46 @@ public:
                 }
                 llvm_diminfo.push_back(al, dim_length);
             }
-            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
-                target, expr_type(x.m_target), x.m_target,
+            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(section_expr),
+                target, target_desc_type, nullptr,
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank, location_manager);
         } else {
-            arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
+            arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(section_expr),
                 value_desc_type,
-                target, expr_type(x.m_target), x.m_target,
+                target, target_desc_type, nullptr,
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 value_rank, target_rank, location_manager);
         }
+    }
+
+    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
+        ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
+             ASR::array_physical_typeType::DescriptorArray, true);
+        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
+        llvm::Value *target = arr_descr->create_descriptor_alloca(
+            target_type, "array_section_descriptor");
+        fill_array_section_descriptor(x.m_value, target, target_type, target_desc_type);
+
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*x.m_target);
+        llvm::Value* target_desc = tmp;
+        ptr_loads = ptr_loads_copy;
+        // A polymorphic pointer array owns a heap wrapper, which is freed
+        // when the pointer is finalized. A section of a class array gets its
+        // own {vptr, data} wrapper on the stack, so it is copied below into
+        // the wrapper the pointer already owns, or into a new one.
+        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+        bool own_section_wrapper =
+            ASRUtils::is_class_type(target_elem_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(
+                ASRUtils::expr_type(array_section->m_v)));
         if (own_section_wrapper) {
             llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 x.m_target, target_elem_type, module.get());
