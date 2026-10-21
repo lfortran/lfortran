@@ -25,6 +25,20 @@ ASR::expr_t* gpu_overwrite_condition(Allocator &al, const Location &loc,
     const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
     const std::vector<ASR::expr_t*> &ends, ASR::expr_t *array);
 
+// What `loop` overwrites, as one OMPOverwrite clause per array that
+// `gpu_overwrite_condition` shows it for, with `starts` and `ends` the
+// limits of its loops. A pass that rewrites the loop into a form the
+// offload cannot read this from, but that runs the same iterations and
+// assignments, gives the clauses to the loops it makes.
+std::vector<ASR::omp_clause_t*> gpu_overwrite_clauses(Allocator &al,
+    const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
+    const std::vector<ASR::expr_t*> &ends);
+
+// The condition of the OMPOverwrite clause of `region` for `array`, or
+// nullptr when it has none.
+ASR::expr_t* gpu_recorded_overwrite(const ASR::OMPRegion_t &region,
+    ASR::expr_t *array);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_GPU_OFFLOAD_OVERWRITE_H

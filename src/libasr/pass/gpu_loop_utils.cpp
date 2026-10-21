@@ -179,7 +179,7 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
                 nest.privates.push_back(ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(p->m_vars[k])->m_v));
             }
-        } else {
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
             return false;
         }
     }
@@ -258,7 +258,9 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
             clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
                 ASR::make_OMPPrivate_t(al, c->base.loc, vars.p, vars.n)));
             have_private = true;
-        } else {
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
+            // What the iterations of the nest overwrite is not known for
+            // the new heads.
             clauses.push_back(al, dup.duplicate_omp_clause(c));
         }
     }

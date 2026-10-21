@@ -4,6 +4,7 @@
 #include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/gpu_offload_overwrite.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <map>
@@ -817,8 +818,35 @@ public:
             }
             return cond;
         };
+        // The split nests run the iterations and assignments of the
+        // original one, but the frame's computed indices hide from the
+        // offload which arrays the iterations overwrite: that is recorded
+        // from the original nest.
+        std::vector<ASR::omp_clause_t*> overwrites;
+        {
+            ParallelLoopNest source;
+            if (parallel_loop_nest(*nest.region, source)) {
+                overwrites = gpu_overwrite_clauses(al, source, nest.starts,
+                    nest.ends);
+            }
+        }
+        auto record_overwrites = [&](ASR::stmt_t *s) {
+            if (overwrites.empty()) return;
+            ASR::OMPRegion_t *r = ASR::down_cast<ASR::OMPRegion_t>(s);
+            Vec<ASR::omp_clause_t*> clauses;
+            clauses.reserve(al, r->n_clauses + overwrites.size());
+            for (size_t i = 0; i < r->n_clauses; i++) {
+                clauses.push_back(al, r->m_clauses[i]);
+            }
+            for (ASR::omp_clause_t *c : overwrites) {
+                clauses.push_back(al, ed.duplicate_omp_clause(c));
+            }
+            r->m_clauses = clauses.p;
+            r->n_clauses = clauses.n;
+        };
         ASR::stmt_t *plain = build(1);
         if (plain == nullptr) return rollback();
+        record_overwrites(plain);
         ASR::stmt_t *split_nest = bld.If(has_interior(1), {plain}, {stmt});
         if (jam > 1) {
             // The jam pays when what the launch touches stays in the
@@ -827,6 +855,7 @@ public:
             // and so occupancy, which the memory throughput needs.
             ASR::stmt_t *jammed = build(jam);
             if (jammed == nullptr) return rollback();
+            record_overwrites(jammed);
             ASR::expr_t *bytes = c(0);
             for (size_t d = 0; d < rank; d++) {
                 ASR::expr_t *x = extent(d);

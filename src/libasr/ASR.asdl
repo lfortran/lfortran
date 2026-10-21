@@ -357,6 +357,13 @@ omp_clause
   | OMPIndependent()
   | OMPTargetRequested()
   | OMPCriticalName(identifier name)
+  -- When `condition` holds on entry to a parallel region assigned to the
+  -- device, its iterations together assign every element of `array` before
+  -- any of them reads it: what the host holds there need not reach the
+  -- device. A pass that rewrites the loop into a form the offload cannot
+  -- read this from records it from the loop as it was; a pass that changes
+  -- which iterations the region runs drops it.
+  | OMPOverwrite(expr array, expr condition)
 
 map_type 
     = To | From | ToFrom | Alloc | Release | Delete

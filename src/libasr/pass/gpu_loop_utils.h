@@ -71,11 +71,13 @@ struct GpuLoopNest {
 };
 
 // Whether `s` is such a nest; only the clauses OMPIndependent,
-// OMPCollapse and OMPPrivate are accepted.
+// OMPCollapse, OMPPrivate and OMPOverwrite are accepted.
 bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest);
 
 // A new nest with the loop heads and clauses of `nest` and `body` as its
 // innermost body, with `extra_privates` added to its private variables.
+// The OMPOverwrite clauses are dropped: they hold for the iterations of
+// `nest`, not for those of the new heads.
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     const std::vector<ASR::expr_t*> &starts,
     const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,

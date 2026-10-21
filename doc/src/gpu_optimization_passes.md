@@ -196,6 +196,16 @@ indices for the interior; the offload pipeline still picks the contiguous
 index of the launch from the interior's stores (a store whose subscript
 names no loop index, such as the frame's, does not decide it).
 
+The frame's computed indices also hide from the offload that the iterations
+assign every element of an array before reading it, which lets a launch skip
+copying the array to the device (write-discard, see
+[GPU offloading](gpu_offloading.md)). The split nests run the iterations and
+assignments of the original one, so the pass works this out on the original
+nest and records it on the split nests as an `OMPOverwrite` clause, with the
+condition (the loop runs over exactly the array's bounds) the launch then
+evaluates. A pass that later changes which iterations a nest runs drops the
+clause.
+
 A domain too small to have an interior runs the original nest. Nests of one
 and two dimensions are split, and only bodies that compute values of
 intrinsic scalar types (assignments of scalars and array elements, `if`,

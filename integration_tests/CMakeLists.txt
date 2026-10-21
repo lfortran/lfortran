@@ -6483,6 +6483,10 @@ RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda) # metal declines integer(8) loop indices
+# Index-set splitting runs only for --gpu=cuda and cuda_cpu: the split nests
+# keep the write-discard of the arrays the loops overwrite, and only those.
+RUN(NAME gpu_metal_527 LABELS gfortran llvm cuda_cpu cuda)
+RUN(NAME gpu_metal_528 LABELS gfortran llvm cuda_cpu cuda)
 # gpu_metal_526 reads a LOCAL_INIT scalar, which the GPU kernels leave
 # uninitialized (#14792), so on cuda_cpu and cuda its results depend on what
 # the device compiler makes of that; the CUDA kernel-source reference in
