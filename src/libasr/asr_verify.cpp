@@ -762,14 +762,12 @@ public:
                     "bounds-spec must have the rank of the pointer",
                     x.base.base.loc);
             } else {
-                // The frontend associates any other simply contiguous data
-                // target with a CONTIGUOUS pointer first.
-                require_with_loc_id(value_rank == 1 ||
-                        ASRUtils::is_contiguous_array_designator(x.m_value),
+                // Whether a data target of rank greater than one is simply
+                // contiguous (F2018 10.2.2.3) is checked by the frontend.
+                require_with_loc_id(value_rank >= 1,
                     "asr.verify.associate.pointer_bounds_remapping_target",
                     "Associate::m_value: the data target of a pointer "
-                    "bounds-remapping-list must have rank one or be a "
-                    "contiguous array variable", x.base.base.loc);
+                    "bounds-remapping-list must be an array", x.base.base.loc);
             }
         }
         verify_procedure_interface(value, target,

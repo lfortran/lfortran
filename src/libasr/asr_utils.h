@@ -10803,9 +10803,7 @@ static inline ASR::Variable_t* rightmost_part_variable(ASR::expr_t* x) {
 
 // Whether `x` is a whole array variable or array component that is
 // contiguous by its declaration: one with the CONTIGUOUS attribute, or one
-// that is not a pointer, assumed-shape or assumed-rank. Unlike
-// `is_simply_contiguous`, this does not depend on how subscripts are
-// spelled, so it holds after any pass as well.
+// that is not a pointer, assumed-shape or assumed-rank.
 static inline bool is_contiguous_array_designator(ASR::expr_t* x) {
     ASR::Variable_t* v = rightmost_part_variable(x);
     return v != nullptr && is_array(v->m_type) && !is_possibly_discontiguous_part(v);
@@ -10816,9 +10814,8 @@ static inline bool is_contiguous_array_designator(ASR::expr_t* x) {
 // function that returns a pointer with the CONTIGUOUS attribute.
 //
 // This inspects the subscripts of a section as the frontend builds them, and
-// is meant for that ASR only: passes rewrite how a subscript `:` is spelled.
-// A decision based on it must be recorded in the ASR, for example by
-// associating the data target with a CONTIGUOUS pointer.
+// is meant for that ASR only: passes rewrite how a subscript `:` is spelled,
+// and replace variables by pointers that stand for them.
 //
 // A subscript `:` is represented by the LBOUND and UBOUND of the array, an
 // absent stride by 1. As an extension to 9.5.4, a triplet whose bounds are

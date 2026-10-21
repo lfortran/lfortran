@@ -3484,9 +3484,7 @@ public:
 
     /*
         Associates a new temporary pointer with the data target `value`, in
-        a statement before the current one, and returns the pointer. It is
-        CONTIGUOUS if `value` is simply contiguous, so that it still shows
-        that the data target of a bounds-remapping-list is.
+        a statement before the current one, and returns the pointer.
     */
     ASR::expr_t* bind_pointer_target_temporary(const Location& loc,
             ASR::expr_t* value) {
@@ -3507,8 +3505,6 @@ public:
         if (type_decl != nullptr) {
             type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
         }
-        bool contiguous = ASRUtils::is_array(value_type) &&
-            ASRUtils::is_simply_contiguous(value);
         ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, value->base.loc,
                 current_scope, s2c(al, tmp_name),
@@ -3516,7 +3512,7 @@ public:
                 ASR::intentType::Local, nullptr, nullptr,
                 ASR::storage_typeType::Default, value_type, type_decl,
                 current_procedure_abi_type, ASR::Public,
-                ASR::presenceType::Required, false, false, contiguous));
+                ASR::presenceType::Required, false));
         current_scope->add_symbol(tmp_name, tmp_sym);
         ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
             value->base.loc, tmp_sym));
@@ -3625,14 +3621,6 @@ public:
                     Level::Error, Stage::Semantic, {
                         Label("", {value->base.loc})}));
                 throw SemanticAbort();
-            }
-            // Whether the data target is simply contiguous is decided here,
-            // on its form, and recorded: unless it is a whole contiguous
-            // array, it is associated with a CONTIGUOUS temporary pointer.
-            if (ASR::is_a<ASR::FunctionCall_t>(*value) ||
-                    (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) != 1 &&
-                        !ASRUtils::is_contiguous_array_designator(value))) {
-                value = bind_pointer_target_temporary(x.base.base.loc, value);
             }
             return ASR::pointer_bounds_formType::PointerBoundsRemapping;
         }

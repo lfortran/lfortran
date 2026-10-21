@@ -44,8 +44,9 @@ of the value, so the backend only lowers the bounds it is given. Every other
 association has `form` `NoPointerBounds`. The verifier checks that the form is
 set exactly when the target is a section of a pointer, that the bounds have no
 stride, that the value is not `null()`, that the value of a bounds-spec has the
-rank of the pointer and that the value of a bounds-remapping-list has rank one
-or is simply contiguous (F2018 9.5.4, 10.2.2.3).
+rank of the pointer and that the value of a bounds-remapping-list is an array.
+That the value of a bounds-remapping-list has rank one or is simply contiguous
+(F2018 9.5.4, 10.2.2.3) is checked by the frontend.
 
 ## Examples
 
