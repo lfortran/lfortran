@@ -173,7 +173,11 @@ There is no sandbox or state rollback.
 The native descriptor is **not** a standard Jupyter connection file. The
 existing `lfortran kernel -f FILE` interface still uses the optional Xeus
 kernel. Standard Jupyter transport and bridging are not provided by the native
-local binding. See [Native session protocol](native-session.md)
+local binding itself. Builds with `WITH_JUPYTER_ZMQ` additionally support
+`--jupyter-connection-file` for a standard Jupyter listener, `--bridge` for an
+external-kernel proxy, and `--connect` with classic Jupyter connection files.
+These optional operations report an actionable unavailable-adapter error when
+the option is disabled. See [Native session protocol](native-session.md)
 for message schemas, input routing, lifecycle, client integration and limitations.
 Compilation of source files and compiler `--json` output are unchanged.
 

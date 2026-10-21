@@ -97,6 +97,8 @@ std::string new_session_id();
 std::string json_string(const std::string &text);
 bool session_input_available();
 std::unique_ptr<SessionClient> connect_local_session(const std::string &file);
+// Shared private-file/ACL checks for native and optional classic descriptors.
+std::string read_private_connection_file(const std::string &file);
 // The server owns endpoint/descriptor cleanup. ready_handle is an inherited
 // startup pipe, or -1 for an explicitly launched persistent server.
 int serve_local_session(CompilerOptions options, const std::string &file,

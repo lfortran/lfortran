@@ -65,6 +65,8 @@ namespace LCompilers::CommandLineInterface {
         intptr_t session_ready = -1;
         std::string session_file;
         std::string session_connect;
+        std::string session_jupyter;
+        std::string session_bridge;
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;

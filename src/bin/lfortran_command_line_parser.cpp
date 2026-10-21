@@ -246,6 +246,10 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--serve", opts.session_serve, "Serve a shared native interactive session");
         app.add_option("--connection-file", opts.session_file, "Private native session descriptor");
         app.add_option("--connect", opts.session_connect, "Attach to an existing kernel session");
+        app.add_option("--jupyter-connection-file", opts.session_jupyter,
+            "Optional standard Jupyter listener (requires ZeroMQ adapter)");
+        app.add_option("--bridge", opts.session_bridge,
+            "Optional external Jupyter bridge (requires ZeroMQ adapter)");
         app.add_flag("--session-managed", opts.session_managed)->group("");
         app.add_option("--session-ready", opts.session_ready)->group("");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");

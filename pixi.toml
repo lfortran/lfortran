@@ -178,6 +178,13 @@ rebuild = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR"', default-environment = "l
 start = {cmd = '"$LFORTRAN_BUILD_DIR/src/bin/lfortran"', default-environment = "llvm11"}
 clean = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR" --target clean', default-environment = "llvm11"}
 
+[feature.jupyter.dependencies]
+zeromq = ">=4.3.5,<5"
+openssl = ">=3,<4"
+jupyter_client = ">=8.6,<9"
+ipykernel = ">=6.29,<8"
+pyzmq = ">=26,<28"
+
 [feature.build.target.win.tasks]
 build = {cmd = 'shell --norc build1.sh "$LFORTRAN_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DWITH_STACKTRACE=no -DWITH_RUNTIME_STACKTRACE=no', default-environment = "llvm11"}
 
@@ -302,6 +309,7 @@ llvm8 = {features = ["llvm8", "build", "test"]}
 llvm9 = {features = ["llvm9", "build", "test"]}
 llvm10 = {features = ["llvm10", "build", "test"]}
 llvm11 = {features = ["llvm11", "build", "test"]}
+llvm11-jupyter = {features = ["llvm11", "build", "test", "jupyter"]}
 llvm12 = {features = ["llvm12", "build", "test"]}
 llvm13 = {features = ["llvm13", "build", "test"]}
 llvm14 = {features = ["llvm14", "build", "test"]}

@@ -855,7 +855,8 @@ def security_and_cli(executable, root):
             ["--connect", str(sentinel), "--connection-file", str(sentinel)],
             ["--serve", "--connection-file", str(sentinel), "not-a-source.f90"],
             ["--serve", "--connection-file", str(sentinel), "--json"],
-            ["--connect", str(sentinel), "--show-cpp"]]:
+            ["--connect", str(sentinel), "--show-cpp"],
+            ["--bridge", str(sentinel)], ["--jupyter-connection-file", str(sentinel)]]:
         process = subprocess.run([executable] + args, capture_output=True, timeout=20)
         assert process.returncode != 0, (args, process.stdout, process.stderr)
     assert sentinel.read_text() == "do not replace"

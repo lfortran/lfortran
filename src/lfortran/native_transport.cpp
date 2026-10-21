@@ -437,7 +437,8 @@ public:
         const auto &descriptor = object(value);
         auto version = descriptor.getInteger("lfortran_local_protocol");
         if (!version || *version != 1)
-            throw std::runtime_error("not a native LFortran session descriptor");
+            throw std::runtime_error("standard Jupyter connections require the optional "
+                "ZeroMQ adapter (WITH_JUPYTER_ZMQ); this build supports native descriptors");
         kernel = string(descriptor, "kernel_session");
         Handle fd = invalid;
 #ifdef _WIN32
@@ -576,6 +577,9 @@ bool session_input_available() {
 }
 std::unique_ptr<SessionClient> connect_local_session(const std::string &file) {
     return std::unique_ptr<SessionClient>(new LocalClient(file));
+}
+std::string read_private_connection_file(const std::string &file) {
+    return read_descriptor(file);
 }
 int serve_local_endpoint(SessionEndpoint &session, const std::string &file,
         bool managed, intptr_t ready, SessionAdapter *adapter) {
