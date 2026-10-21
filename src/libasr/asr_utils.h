@@ -11638,6 +11638,61 @@ static inline bool has_only_static_component_targets(ASR::symbol_t* struct_sym) 
 // or a derived type is described through its elements or components.
 std::string get_format_type_code(ASR::ttype_t* type);
 
+inline bool is_operation_on_variable(ASR::expr_t* e);
+
+// Whether `e` reads a variable, directly or through designators and operations.
+inline bool reads_variable(ASR::expr_t* e) {
+    switch (e->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return false;
+            }
+            return ASR::down_cast<ASR::Variable_t>(sym)->m_storage != ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            return reads_variable(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return reads_variable(ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return reads_variable(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        }
+        case ASR::exprType::Cast: {
+            return reads_variable(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
+        }
+        default: {
+            return is_operation_on_variable(e);
+        }
+    }
+}
+
+// An operator or an elemental intrinsic call that reads a variable, which gfortran cannot fold.
+inline bool is_operation_on_variable(ASR::expr_t* e) {
+    if (expr_value(e) != nullptr) {
+        return false;
+    }
+    if (is_binop_expr(e)) {
+        return reads_variable(extract_member_from_binop(e, 0))
+            || reads_variable(extract_member_from_binop(e, 1));
+    }
+    if (is_unaryop_expr(e)) {
+        return reads_variable(extract_member_from_unaryop(e));
+    }
+    if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+        return false;
+    }
+    ASR::IntrinsicElementalFunction_t* f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+    for (size_t i = 0; i < f->n_args; i++) {
+        if (f->m_args[i] != nullptr && reads_variable(f->m_args[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 } // namespace ASRUtils
 
 } // namespace LCompilers
