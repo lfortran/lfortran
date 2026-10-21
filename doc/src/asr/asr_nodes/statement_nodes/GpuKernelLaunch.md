@@ -9,7 +9,8 @@ Launches a GPU kernel.
 ```text
 GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
     call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
-    expr? stop_status, stmt* stop_replay)
+    expr? stop_status, stmt* stop_replay, expr* overwritten,
+    expr* overwritten_if)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
@@ -18,13 +19,15 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | Argument | Description |
 |----------|-------------|
 | `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
-| `thread_count` | the number of threads that run the kernel's body, one per iteration of the loop; a count below one runs none. |
+| `thread_count` | the number of threads the launch numbers: one per iteration of the loop, or, when the nest is launched in tiles, one per place in whole tiles; a count below one runs none. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
 | `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
 | `scratch` | the arguments that are buffers only the device holds (below). |
 | `stop_status` | the host array passed as the status buffer of a kernel that can `stop`, or `nil`. |
 | `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
+| `overwritten` | array arguments the kernel may assign whole before it reads them (below). |
+| `overwritten_if` | for each of `overwritten`, the host condition under which it does. |
 
 ### Return values
 
@@ -37,7 +40,22 @@ blocks of `block_size`, and returns without waiting for them. The threads are
 numbered from zero, block after block; the kernel sends every thread numbered
 `thread_count` or higher back before its body, so the host sizes what the
 launch holds per thread -- a workspace slice -- by `thread_count`, not by the
-threads it starts. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+threads it starts.
+
+On a device that asks for tiles (CUDA), a nest of two or more dimensions
+without a reduction can be launched in tiles: a block covers a tile of 32
+iterations of the dimension its stores are contiguous in by the rest of the
+block along a second dimension, the one the stores step through next in
+memory (or, if they do not agree on one, the next one in loop order). The
+block index numbers the tiles, and `thread_count` counts whole tiles. Where
+whole tiles would pad the nest by more than a quarter, as a short dimension
+does, the host tells the kernel to number the iterations flat instead, and
+`thread_count` counts iterations. Padding to whole tiles can take
+`thread_count` past the kind of the loop indices, so it is an `integer(8)`.
+The kernel checks the zero-based tile coordinates against the extents before
+adding the loop lower bounds. A padded thread returns before constructing a
+source index that could overflow even when every valid index is representable.
+[GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
 pass places it where the host next needs what a kernel wrote (see
 [GPU offloading](../../../gpu_offloading.md)).
 
@@ -86,6 +104,25 @@ the launch, which the `gpu_launch_sync` pass places, copies of them after
 each GpuSync the launch may still be pending at; that pass also clears the
 first element of `stop_status` once, on entry to the procedure.
 
+When `overwritten_if[i]`, a scalar logical the host evaluates at the launch,
+is true, the kernel assigns every element of the array `overwritten[i]`, an
+actual argument of the launch, before it reads any of them. What the host
+holds there then does not reach the kernel, so `device_launch_expand` hands
+the buffer to the runtime as `LFORTRAN_GPU_WRITE_DISCARD`, and a runtime
+with memory of its own only makes room for it instead of copying it in.
+`gpu_offload` finds such arrays in the loop as the source wrote it: an
+assignment `a(i, j, ...) = value` subscripted by the loop variables, one per
+loop, that each iteration reaches before anything else of it names `a`, at
+the top of the iteration or inside IFs that compare loop variables with
+values the loop cannot change. The condition is that those loops, narrowed
+by the IFs, run over exactly the bounds of `a`.
+
+This proof does not imply that the buffer is unaliased. If any other buffer
+argument of the launch overlaps it, the runtime treats the discard as an
+ordinary write so that the other argument can still read its previous
+contents. The kernel layout's `gpu_kernel_argument.noalias` is a separate
+shared-ASR proof; it is not inferred from `overwritten`.
+
 Private array storage is placed after shared lowering by `gpu_kernel_storage`,
 before address-space specialization. Fixed-size arrays that fit the device's
 stack budget have `Thread` memory space. Larger arrays have `Global` memory
@@ -122,6 +159,8 @@ placement never turns an iteration-private value into a shared value.
   :scratch []
   :stop_status nil
   :stop_replay []
+  :overwritten []
+  :overwritten_if []
 )
 ```
 
