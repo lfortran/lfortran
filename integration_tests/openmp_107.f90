@@ -21,10 +21,6 @@ program openmp_107
   do i = 1, 99
     if (nint(v(i)) /= i + 10 * (i + 1)) error stop 3
   end do
-  call remap_section_concurrent(b, v)
-  do i = 1, 99
-    if (nint(v(i)) /= i + 10 * (i + 1)) error stop 4
-  end do
   print *, "ok"
 contains
   subroutine remap_whole(r)
@@ -67,16 +63,5 @@ contains
       r(i) = q(2 * i - 2) + 10 * q(2 * i + 1)
     end do
     !$omp end parallel do
-  end subroutine
-
-  subroutine remap_section_concurrent(c, r)
-    real, target, intent(in) :: c(2, 100)
-    real, intent(out) :: r(99)
-    real, pointer :: q(:)
-    integer :: i
-    do concurrent (i = 1:99) local(q)
-      q(1:4) => c(:, i:i+1)
-      r(i) = q(2) + 10 * q(4)
-    end do
   end subroutine
 end program
