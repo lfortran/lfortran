@@ -21891,6 +21891,34 @@ public:
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
         ASR::expr_t *arg = args[0];
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+        if (ASRUtils::is_array(arg_type)) {
+            bool not_interoperable = ASRUtils::is_allocatable(arg_type)
+                || ASRUtils::is_pointer(arg_type);
+            if (!not_interoperable) {
+                ASR::ttype_t* t = ASRUtils::type_get_past_pointer(
+                    ASRUtils::type_get_past_allocatable(arg_type));
+                if (ASR::is_a<ASR::Array_t>(*t)) {
+                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(t);
+                    bool all_deferred = arr->n_dims > 0;
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        if (arr->m_dims[d].m_length != nullptr) {
+                            all_deferred = false;
+                            break;
+                        }
+                    }
+                    not_interoperable = all_deferred
+                        && arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray;
+                }
+            }
+            if (not_interoperable) {
+                diag.add(Diagnostic(
+                    "the argument of `c_sizeof` must be an interoperable data entity",
+                    Level::Error, Stage::Semantic, {
+                        Label("only explicit-size and assumed-size arrays are interoperable",
+                            {arg->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
         ASR::expr_t *value = nullptr;
