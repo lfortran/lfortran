@@ -5303,3 +5303,31 @@ subroutine cc1_procedure_interface_declared_later()
     procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
     procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
 end subroutine
+
+module cc1_c_sizeof_interop
+use iso_c_binding, only: c_sizeof
+implicit none
+contains
+    subroutine cc1_csz_alloc()
+        integer, allocatable :: a(:, :)
+        integer(8) :: n
+        allocate(a(3, 2))
+        n = c_sizeof(a)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+    end subroutine cc1_csz_alloc
+    subroutine cc1_csz_ptr()
+        integer, pointer :: p(:)
+        integer(8) :: n
+        n = c_sizeof(p)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+    end subroutine cc1_csz_ptr
+    subroutine cc1_csz_assumed(b)
+        integer, intent(in) :: b(:, :)
+        integer(8) :: n
+        n = c_sizeof(b)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+    end subroutine cc1_csz_assumed
+    subroutine cc1_csz_ok(b)
+        integer, intent(in) :: b(*)
+        integer :: loc(5)
+        integer(8) :: n
+        n = c_sizeof(loc) + c_sizeof(b(1))
+    end subroutine cc1_csz_ok
+end module cc1_c_sizeof_interop

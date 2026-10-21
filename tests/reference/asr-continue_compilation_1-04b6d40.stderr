@@ -6548,6 +6548,24 @@ semantic error: The label 300 does not point to any format statement
 5287 |     read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid label in this statement
 
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:5315:22
+     |
+5315 |         n = c_sizeof(a)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
+
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:5320:22
+     |
+5320 |         n = c_sizeof(p)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
+
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:5325:22
+     |
+5325 |         n = c_sizeof(b)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
