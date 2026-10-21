@@ -4399,3 +4399,21 @@ semantic error: the data target of a pointer with a bounds specification or rema
      |
 3519 |         arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
      |                    ^^^^^^ 
+
+semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    --> tests/errors/continue_compilation_1.f90:3528:24
+     |
+3528 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+     |                        ^^^^^^^^^^^^^ 
+
+semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    --> tests/errors/continue_compilation_1.f90:3529:19
+     |
+3529 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+     |                   ^ 
+
+semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    --> tests/errors/continue_compilation_1.f90:3530:19
+     |
+3530 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+     |                   ^ 

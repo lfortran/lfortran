@@ -3547,3 +3547,14 @@ contains
         arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
     end subroutine cc1_pointer_bounds_null_use
 end module cc1_pointer_bounds_null
+module cc1_pointer_remapping_target
+contains
+    subroutine cc1_pointer_remapping_target_use(x)
+        integer, target :: x(:, :)
+        integer, target :: a(4, 5), s
+        integer, pointer :: p(:), q(:, :)
+        q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    end subroutine cc1_pointer_remapping_target_use
+end module cc1_pointer_remapping_target

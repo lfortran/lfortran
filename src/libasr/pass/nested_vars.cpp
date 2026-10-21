@@ -962,6 +962,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
                     ASR::intentType::Local, type_decl, nullptr);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
+                // A pointer that stands for a simply contiguous array, or for
+                // a CONTIGUOUS one, is associated with all of it, so it is
+                // contiguous too (F2018 9.5.4).
+                if (ASRUtils::is_array(var->m_type) && ASRUtils::is_pointer(var_type) &&
+                        !ASRUtils::is_possibly_discontiguous_part(var)) {
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_contiguous_attr = true;
+                }
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
                 if (pending_length_ctx_sym) {
                     assumed_length_ctx_var_len[sym] = pending_length_ctx_sym;

@@ -751,13 +751,20 @@ public:
                 "asr.verify.associate.pointer_bounds_null_target",
                 "Associate::m_value: the data target of a pointer with "
                 "bounds cannot be null()", x.base.base.loc);
+            size_t value_rank = ASRUtils::extract_n_dims_from_ttype(value);
             if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
-                require_with_loc_id(static_cast<size_t>(
-                        ASRUtils::extract_n_dims_from_ttype(value)) == section->n_args,
+                require_with_loc_id(value_rank == section->n_args,
                     "asr.verify.associate.pointer_bounds_spec_rank",
                     "Associate::m_value: the data target of a pointer "
                     "bounds-spec must have the rank of the pointer",
                     x.base.base.loc);
+            } else {
+                require_with_loc_id(value_rank == 1 ||
+                        ASRUtils::is_simply_contiguous(x.m_value),
+                    "asr.verify.associate.pointer_bounds_remapping_target",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-remapping-list must have rank one or be simply "
+                    "contiguous", x.base.base.loc);
             }
         }
         verify_procedure_interface(value, target,

@@ -3483,10 +3483,54 @@ public:
     }
 
     /*
+        Associates a new temporary pointer with the data target `value`, in
+        a statement before the current one, and returns the pointer. It is
+        CONTIGUOUS if `value` is simply contiguous, so that it still shows
+        that the data target of a bounds-remapping-list is.
+    */
+    ASR::expr_t* bind_pointer_target_temporary(const Location& loc,
+            ASR::expr_t* value) {
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        if (!ASRUtils::is_pointer(value_type)) {
+            value_type = ASRUtils::make_Pointer_t_util(al, value->base.loc,
+                ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::type_get_past_allocatable_pointer(value_type),
+                    ASR::array_physical_typeType::DescriptorArray, true));
+        }
+        std::string tmp_name = current_scope->get_unique_name(
+            "__lfortran_pointer_target_tmp");
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(
+            al, variable_dependencies_vec, value_type);
+        ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
+        if (type_decl != nullptr) {
+            type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+        }
+        bool contiguous = ASRUtils::is_array(value_type) &&
+            ASRUtils::is_simply_contiguous(value);
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, value->base.loc,
+                current_scope, s2c(al, tmp_name),
+                variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, value_type, type_decl,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false, false, contiguous));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
+            value->base.loc, tmp_sym));
+        current_body->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Associate_t_util(al, loc, tmp_var, value)));
+        return tmp_var;
+    }
+
+    /*
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
-        bounds; the data target cannot be `null()`. With a bounds-spec, the extents of the pointer are those of
+        bounds; the data target cannot be `null()`. The data target of a
+        bounds-remapping-list has rank one or is simply contiguous. With a bounds-spec, the extents of the pointer are those of
         the data target, so the upper bound of dimension `i` is set to
         `lb + size(a, i) - 1`; `target` would otherwise refer to the upper
         bound of the pointer that is being assigned. The data target is
@@ -3525,6 +3569,19 @@ public:
             throw SemanticAbort();
         }
         if (n_upper_bounds == target->n_args) {
+            // F2018 10.2.2.3, paragraph 9
+            if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) != 1 &&
+                    !ASRUtils::is_simply_contiguous(value)) {
+                diag.add(Diagnostic(
+                    "the data target of a pointer bounds remapping list must "
+                    "have rank one or be simply contiguous",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {value->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                value = bind_pointer_target_temporary(x.base.base.loc, value);
+            }
             return ASR::pointer_bounds_formType::PointerBoundsRemapping;
         }
         if (n_upper_bounds != 0) {
@@ -3545,37 +3602,7 @@ public:
             throw SemanticAbort();
         }
         if (!is_reevaluable_designator(value)) {
-            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-            if (!ASRUtils::is_pointer(value_type)) {
-                value_type = ASRUtils::make_Pointer_t_util(al, value->base.loc,
-                    ASRUtils::duplicate_type_with_empty_dims(al,
-                        ASRUtils::type_get_past_allocatable_pointer(value_type),
-                        ASR::array_physical_typeType::DescriptorArray, true));
-            }
-            std::string tmp_name = current_scope->get_unique_name(
-                "__lfortran_pointer_target_tmp");
-            SetChar variable_dependencies_vec;
-            variable_dependencies_vec.reserve(al, 1);
-            ASRUtils::collect_variable_dependencies(
-                al, variable_dependencies_vec, value_type);
-            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
-            if (type_decl != nullptr) {
-                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
-            }
-            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(al, value->base.loc,
-                    current_scope, s2c(al, tmp_name),
-                    variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, value_type, type_decl,
-                    current_procedure_abi_type, ASR::Public,
-                    ASR::presenceType::Required, false));
-            current_scope->add_symbol(tmp_name, tmp_sym);
-            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
-                value->base.loc, tmp_sym));
-            current_body->push_back(al, ASRUtils::STMT(
-                ASRUtils::make_Associate_t_util(al, x.base.base.loc, tmp_var, value)));
-            value = tmp_var;
+            value = bind_pointer_target_temporary(x.base.base.loc, value);
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
         for (size_t i = 0; i < target->n_args; i++) {

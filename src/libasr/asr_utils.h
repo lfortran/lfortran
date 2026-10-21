@@ -10764,6 +10764,130 @@ static inline ASR::asr_t* make_IntrinsicArrayFunction_t_util(
         a_args, n_args, a_overload_id, a_type, a_value);
 }
 
+// Whether `x`, an array variable whose rightmost part-name is `v`, can be
+// discontiguous by itself: a pointer, an assumed-shape or an assumed-rank
+// array without the CONTIGUOUS attribute.
+static inline bool is_possibly_discontiguous_part(ASR::Variable_t* v) {
+    if (v->m_contiguous_attr) {
+        return false;
+    }
+    ASR::ttype_t* type = v->m_type;
+    if (is_pointer(type) || is_assumed_rank_array(type)) {
+        return true;
+    }
+    return is_arg_dummy(v->m_intent) && !is_allocatable(type) && is_array(type) &&
+        extract_physical_type(type) == ASR::array_physical_typeType::DescriptorArray;
+}
+
+// The variable of the rightmost part-name of the designator `x`, or nullptr.
+static inline ASR::Variable_t* rightmost_part_variable(ASR::expr_t* x) {
+    ASR::symbol_t* sym = nullptr;
+    if (ASR::is_a<ASR::Var_t>(*x)) {
+        sym = ASR::down_cast<ASR::Var_t>(x)->m_v;
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+        sym = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_m;
+    } else {
+        return nullptr;
+    }
+    sym = symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::Variable_t>(sym);
+}
+
+// Whether the array variable `x` is simply contiguous (F2018 9.5.4): an
+// array designator that is contiguous by its form, or a reference to a
+// function that returns a pointer with the CONTIGUOUS attribute. A section
+// subscript `:` is represented by the LBOUND and UBOUND of the array, which
+// can be replaced by their constant values, and an absent stride by 1, so
+// these spellings are accepted as well.
+static inline bool is_simply_contiguous(ASR::expr_t* x) {
+    switch (x->type) {
+        case ASR::exprType::ArrayPhysicalCast:
+            return is_simply_contiguous(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
+        case ASR::exprType::FunctionCall: {
+            ASR::symbol_t* fn = symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionCall_t>(x)->m_name);
+            if (!ASR::is_a<ASR::Function_t>(*fn)) {
+                return false;
+            }
+            ASR::expr_t* result = ASR::down_cast<ASR::Function_t>(fn)->m_return_var;
+            return result != nullptr && ASR::is_a<ASR::Var_t>(*result) &&
+                ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(result)->m_v)) &&
+                ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(result)->m_v))->m_contiguous_attr;
+        }
+        case ASR::exprType::Var:
+        case ASR::exprType::StructInstanceMember: {
+            ASR::Variable_t* v = rightmost_part_variable(x);
+            return v != nullptr && is_array(v->m_type) &&
+                !is_possibly_discontiguous_part(v);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
+            ASR::Variable_t* v = rightmost_part_variable(section->m_v);
+            if (v == nullptr || !is_array(v->m_type) ||
+                    is_possibly_discontiguous_part(v)) {
+                return false;
+            }
+            // Only the last subscript triplet may be other than `:`, it has
+            // no stride and no subscript precedes a triplet.
+            bool after_subscript = false;
+            bool after_partial_triplet = false;
+            for (size_t i = 0; i < section->n_args; i++) {
+                ASR::array_index_t& idx = section->m_args[i];
+                if (idx.m_left == nullptr && idx.m_step == nullptr) {
+                    if (idx.m_right != nullptr && is_array(expr_type(idx.m_right))) {
+                        return false;
+                    }
+                    after_subscript = true;
+                    continue;
+                }
+                if (after_subscript || after_partial_triplet) {
+                    return false;
+                }
+                if (idx.m_step != nullptr && !(ASR::is_a<ASR::IntegerConstant_t>(*idx.m_step) &&
+                        ASR::down_cast<ASR::IntegerConstant_t>(idx.m_step)->m_n == 1)) {
+                    return false;
+                }
+                auto is_bound = [&](ASR::expr_t* e, ASR::arrayboundType kind) {
+                    if (e == nullptr) {
+                        return true;
+                    }
+                    if (!ASR::is_a<ASR::ArrayBound_t>(*e)) {
+                        // A bound of an explicit-shape array, as a constant
+                        ASR::dimension_t* dims = nullptr;
+                        size_t n_dims = extract_dimensions_from_ttype(v->m_type, dims);
+                        int64_t value, start = 1, length;
+                        return i < n_dims && dims[i].m_length != nullptr &&
+                            extract_value(expr_value(e), value) &&
+                            (dims[i].m_start == nullptr ||
+                                extract_value(expr_value(dims[i].m_start), start)) &&
+                            extract_value(expr_value(dims[i].m_length), length) &&
+                            value == (kind == ASR::arrayboundType::LBound ?
+                                start : start + length - 1);
+                    }
+                    ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(e);
+                    return bound->m_bound == kind && rightmost_part_variable(bound->m_v) == v &&
+                        bound->m_dim != nullptr &&
+                        ASR::is_a<ASR::IntegerConstant_t>(*bound->m_dim) &&
+                        ASR::down_cast<ASR::IntegerConstant_t>(bound->m_dim)->m_n ==
+                            static_cast<int64_t>(i + 1);
+                };
+                if (!is_bound(idx.m_left, ASR::arrayboundType::LBound) ||
+                        !is_bound(idx.m_right, ASR::arrayboundType::UBound)) {
+                    after_partial_triplet = true;
+                }
+            }
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
 static inline ASR::asr_t* make_Associate_t_util(
     Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
