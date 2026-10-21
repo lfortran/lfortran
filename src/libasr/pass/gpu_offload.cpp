@@ -76,7 +76,10 @@ public:
         // A subscript that names no loop index (one the body computes from
         // them, such as the indices of the frame index-set splitting packs
         // into the nest, gpu_index_set_split.cpp) says nothing about which
-        // index is contiguous.
+        // index is contiguous. The same holds for a scalar the source
+        // computes, as in `k = i + 1; b(k) = ...`. This only picks the
+        // layout of the threads, which every choice runs correctly, so
+        // such a store is passed over instead of disabling the choice.
         if (index && !names_loop_variable(index)) return;
         has_unrecognized_store = true;
     }
