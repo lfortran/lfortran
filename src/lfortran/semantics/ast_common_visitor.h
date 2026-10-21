@@ -16503,19 +16503,30 @@ public:
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                // Only scalar integer indices take part in unifying the kinds
+                // of a triplet. Any other index keeps its type, so that it is
+                // diagnosed as written.
+                auto is_scalar_integer = [](ASR::expr_t* index) {
+                    if (index == nullptr) {
+                        return false;
+                    }
+                    ASR::ttype_t* index_type = ASRUtils::expr_type(index);
+                    return ASRUtils::is_integer(*index_type) &&
+                        !ASRUtils::is_array(index_type);
+                };
                 int max_kind = -1;
                 int left_kind = -1;
                 int right_kind = -1;
                 int step_kind = -1;
-                if (args.p[i].m_left) {
+                if (is_scalar_integer(args.p[i].m_left)) {
                     left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_left));
                     max_kind = std::max(max_kind, left_kind);
                 } 
-                if (args.p[i].m_right) {
+                if (is_scalar_integer(args.p[i].m_right)) {
                     right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_right));
                     max_kind = std::max(max_kind, right_kind);
                 }
-                if (args.p[i].m_step) {
+                if (is_scalar_integer(args.p[i].m_step)) {
                     step_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_step));
                     max_kind = std::max(max_kind, step_kind);
                 }

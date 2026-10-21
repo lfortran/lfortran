@@ -3573,9 +3573,17 @@ contains
         real, pointer :: p(:)
         real :: r
         integer :: v(1)
+        integer(2) :: v2(1)
+        character(len=1) :: ch
+        logical(1) :: l1
         p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
         p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
         p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
         p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+        p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
     end subroutine cc1_pointer_bounds_type_use
 end module cc1_pointer_bounds_type
