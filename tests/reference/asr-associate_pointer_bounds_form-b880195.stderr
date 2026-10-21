@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.associate.pointer_bounds_form]: Associate::m_form: an association has pointer bounds if and only if its target is a section of a pointer
+   --> tests/asr/verify/associate_pointer_bounds_form.asr:100:12
+    |
+100 |           (Associate
+    |            ^^^^^^^^^ failed here
