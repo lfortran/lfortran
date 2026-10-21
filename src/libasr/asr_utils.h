@@ -10780,7 +10780,12 @@ static inline bool is_possibly_discontiguous_part(ASR::Variable_t* v) {
 }
 
 // The variable of the rightmost part-name of the designator `x`, or nullptr.
+// An ArrayPhysicalCast of the designator, such as the selector of SELECT
+// RANK, refers to the same variable.
 static inline ASR::Variable_t* rightmost_part_variable(ASR::expr_t* x) {
+    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x)) {
+        x = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+    }
     ASR::symbol_t* sym = nullptr;
     if (ASR::is_a<ASR::Var_t>(*x)) {
         sym = ASR::down_cast<ASR::Var_t>(x)->m_v;
@@ -10802,10 +10807,6 @@ static inline ASR::Variable_t* rightmost_part_variable(ASR::expr_t* x) {
 // `is_simply_contiguous`, this does not depend on how subscripts are
 // spelled, so it holds after any pass as well.
 static inline bool is_contiguous_array_designator(ASR::expr_t* x) {
-    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x)) {
-        return is_contiguous_array_designator(
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
-    }
     ASR::Variable_t* v = rightmost_part_variable(x);
     return v != nullptr && is_array(v->m_type) && !is_possibly_discontiguous_part(v);
 }

@@ -27,13 +27,29 @@ contains
         if (p(1) /= 10 .or. p(6) /= 60) error stop 1
     end subroutine remap_dummy_procedure
 
+    subroutine remap_assumed_rank(y)
+        integer, target, contiguous :: y(..)
+        integer, pointer :: p(:)
+        select rank (y)
+        rank (2)
+            p(1:6) => y
+            if (p(1) /= 10 .or. p(6) /= 60) error stop 7
+            p(1:4) => y(:, 2:3)
+            if (size(p) /= 4) error stop 8
+            if (p(1) /= 30 .or. p(4) /= 60) error stop 9
+        rank default
+            error stop 10
+        end select
+    end subroutine remap_assumed_rank
+
 end module pointer_section_10_mod
 
 program pointer_section_10
     ! Pointer bounds-remapping onto simply contiguous data targets: a
     ! reference to a function with a CONTIGUOUS pointer result through a
-    ! binding, a dummy procedure and a procedure pointer, and associate
-    ! names for simply contiguous selectors
+    ! binding, a dummy procedure and a procedure pointer, associate names
+    ! for simply contiguous selectors, and a section of a CONTIGUOUS
+    ! assumed-rank selector in SELECT RANK
     use pointer_section_10_mod
     implicit none
     type(t) :: s
@@ -49,6 +65,7 @@ program pointer_section_10
     p(1:6) => fp()
     if (p(3) /= 30 .or. p(5) /= 50) error stop 3
     call remap_dummy_procedure(get)
+    call remap_assumed_rank(buf)
 
     associate (y => buf)
         p(1:6) => y
