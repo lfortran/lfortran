@@ -5024,6 +5024,85 @@ public:
             }
         }
         generic_class_procedures.clear();
+        std::set<ASR::Struct_t*> done;
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                inherit_generic_class_procedures(
+                    ASR::down_cast<ASR::Struct_t>(item.second), done);
+            }
+        }
+    }
+
+    // Merges the parent's generic bindings into `clss`, with each specific binding taken from `clss`.
+    void inherit_generic_class_procedures(ASR::Struct_t *clss,
+            std::set<ASR::Struct_t*> &done) {
+        if (clss->m_parent == nullptr || !done.insert(clss).second) {
+            return;
+        }
+        ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(clss->m_parent));
+        if (parent->m_symtab->parent == current_scope) {
+            inherit_generic_class_procedures(parent, done);
+        }
+        auto generic_procs = [](ASR::symbol_t *generic) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(generic);
+                return std::make_pair(op->m_procs, op->n_procs);
+            }
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+            return std::make_pair(gp->m_procs, gp->n_procs);
+        };
+        for (auto &item : parent->m_symtab->get_scope()) {
+            ASR::symbol_t *parent_generic = item.second;
+            if (!ASR::is_a<ASR::CustomOperator_t>(*parent_generic) &&
+                    !ASR::is_a<ASR::GenericProcedure_t>(*parent_generic)) {
+                continue;
+            }
+            ASR::symbol_t *own_generic = clss->m_symtab->get_symbol(item.first);
+            if (own_generic != nullptr && own_generic->type != parent_generic->type) {
+                continue;
+            }
+            Vec<ASR::symbol_t*> procs;
+            procs.reserve(al, generic_procs(parent_generic).second);
+            std::set<std::string> proc_names;
+            for (ASR::symbol_t *generic : {parent_generic, own_generic}) {
+                if (generic == nullptr) {
+                    continue;
+                }
+                auto [m_procs, n_procs] = generic_procs(generic);
+                for (size_t i = 0; i < n_procs; i++) {
+                    std::string proc_name = ASRUtils::symbol_name(m_procs[i]);
+                    if (!proc_names.insert(proc_name).second) {
+                        continue;
+                    }
+                    ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
+                        ? proc : m_procs[i]);
+                }
+            }
+            if (own_generic == nullptr) {
+                ASR::asr_t *v;
+                if (ASR::is_a<ASR::CustomOperator_t>(*parent_generic)) {
+                    v = ASR::make_CustomOperator_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::CustomOperator_t>(parent_generic)->m_access);
+                } else {
+                    v = ASR::make_GenericProcedure_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::GenericProcedure_t>(parent_generic)->m_access);
+                }
+                clss->m_symtab->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*own_generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(own_generic);
+                op->m_procs = procs.p;
+                op->n_procs = procs.size();
+            } else {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(own_generic);
+                gp->m_procs = procs.p;
+                gp->n_procs = procs.size();
+            }
+        }
+        sync_pdt_specialization_symbols(clss, current_scope);
     }
 
     bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
