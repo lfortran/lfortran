@@ -17253,7 +17253,8 @@ public:
         visit_expr_list(m_args, n_args, args);
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v_class_proc->m_proc));
 
         // Associate written actuals without the receiver before inserting it
         // and instantiating a result type that can depend on any dummy.
@@ -17425,7 +17426,8 @@ public:
                     final_sym_past_ext)->m_is_nopass;
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym_past_ext, current_scope);
-                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
+                final_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc);
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -23763,7 +23765,7 @@ public:
                         }
                         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
                             ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
-                            f4 = f5->m_proc;
+                            f4 = ASRUtils::symbol_get_past_external(f5->m_proc);
                             is_nopass = f5->m_is_nopass;
                             is_class_procedure = true;
                         }
@@ -25524,7 +25526,8 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*op_proc)) {
                 ASR::StructMethodDeclaration_t* temp_struct_method =
                     ASR::down_cast<ASR::StructMethodDeclaration_t>(op_proc);
-                func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(temp_struct_method->m_proc));
 
             } else {
                 func = ASR::down_cast<ASR::Function_t>(
@@ -25537,7 +25540,7 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
                 // Type-bound operator: resolve the underlying function
                 ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = sm->m_proc;
+                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(sm->m_proc);
                 std::string func_name = ASRUtils::symbol_name(func_sym);
                 v = current_scope->resolve_symbol(func_name);
                 if (v == nullptr) {

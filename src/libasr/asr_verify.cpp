@@ -2563,8 +2563,9 @@ public:
             require(is_method,
                 "StructMethodDeclaration '" + std::string(method->m_name) +
                 "' called without dt (not as a method).");
-            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
-                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+            ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(method->m_proc);
+            if (proc && ASR::is_a<ASR::Function_t>(*proc)) {
+                func = ASR::down_cast<ASR::Function_t>(proc);
                 nopass = method->m_is_nopass;
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {

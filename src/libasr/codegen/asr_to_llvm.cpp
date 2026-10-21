@@ -25131,10 +25131,11 @@ public:
                 set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
             } else if( func_subrout->type == ASR::symbolType::StructMethodDeclaration ) {
                 ASR::StructMethodDeclaration_t* clss_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_subrout);
-                if( clss_proc->m_proc->type == ASR::symbolType::Function ) {
-                    ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
+                ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+                if( proc->type == ASR::symbolType::Function ) {
+                    ASR::Function_t* func = down_cast<ASR::Function_t>(proc);
                     set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
-                    func_subrout = clss_proc->m_proc;
+                    func_subrout = proc;
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
@@ -27629,7 +27630,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*m_name)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(m_name);
-            function = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+            function = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(clss_proc->m_proc));
         } else if (ASR::is_a<ASR::Variable_t>(*m_name)) {
             // Called through a procedure pointer or a dummy procedure. The
             // declared interface of the variable is the callee's signature,
@@ -28003,8 +28005,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(proc_sym);
-            s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-            proc_sym = clss_proc->m_proc;
+            proc_sym = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+            s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_decl)));
@@ -28635,8 +28637,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(proc_sym);
-            s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-            proc_sym = clss_proc->m_proc;
+            proc_sym = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+            s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(proc_sym);
             ASR::symbol_t *type_decl = proc_var->m_type_declaration;
