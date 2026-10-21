@@ -2683,6 +2683,7 @@ RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
 RUN(NAME operator_overloading_46 LABELS gfortran llvm)
 RUN(NAME operator_overloading_49 LABELS gfortran llvm)
+RUN(NAME operator_overloading_override_01 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3067,6 +3068,8 @@ RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
 RUN(NAME defined_assignment_elemental_01 LABELS gfortran llvm)
+RUN(NAME defined_assignment_override_01 LABELS gfortran llvm)
+RUN(NAME defined_assignment_same_name_01 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3092,6 +3095,7 @@ RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTR
 RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME type_bound_generic_extend_01 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4617,6 +4621,8 @@ RUN(NAME write_49 LABELS gfortran c)
 RUN(NAME write_51 LABELS gfortran llvm)
 RUN(NAME write_52 LABELS gfortran llvm)
 RUN(NAME write_53 LABELS gfortran llvm)
+RUN(NAME write_54 LABELS gfortran llvm)
+RUN(NAME write_55 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
