@@ -2,6 +2,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -1245,12 +1246,18 @@ void gpu_time_skew(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     Skew s(al, unit.m_symtab, pass_options, rarely_run, windows);
     gpu_collect_address_taken(unit, s.address_taken);
+    // A procedure a parallel loop calls runs inside that loop, where its
+    // own parallel loops run serially and there is no launch to skew.
+    std::set<ASR::Function_t*> device_routines =
+        gpu_parallel_loop_routines(al, unit, pass_options);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-                s.visit_body(fn->m_symtab, fn->m_body, fn->n_body);
+                if (!device_routines.count(fn)) {
+                    s.visit_body(fn->m_symtab, fn->m_body, fn->n_body);
+                }
                 visit_scope(fn->m_symtab);
             } else if (ASR::is_a<ASR::Program_t>(*sym)) {
                 ASR::Program_t *pr = ASR::down_cast<ASR::Program_t>(sym);

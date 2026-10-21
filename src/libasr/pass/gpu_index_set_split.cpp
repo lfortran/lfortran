@@ -1063,18 +1063,8 @@ void gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
     // in device code (GpuSerialRegionMarker), whatever the target of the
     // calling loop. Splitting it gains nothing, so the procedures any
     // parallel loop reaches are left as they are.
-    std::set<ASR::Function_t*> device_routines;
-    {
-        GpuParallelRegionCollector regions;
-        regions.visit_TranslationUnit(unit);
-        GpuProcedureImplementations implementations(al, unit, pass_options);
-        for (ASR::OMPRegion_t *r : regions.loops) {
-            for (ASR::Function_t *fn : reachable_routines(r->m_body,
-                    r->n_body, implementations)) {
-                device_routines.insert(fn);
-            }
-        }
-    }
+    std::set<ASR::Function_t*> device_routines =
+        gpu_parallel_loop_routines(al, unit, pass_options);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;

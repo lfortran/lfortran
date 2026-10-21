@@ -393,6 +393,12 @@ public:
     }
 };
 
+// The routines the parallel loops of `unit` reach, whatever their target.
+// The offload runs the parallel loops of these serially in the caller
+// (GpuSerialRegionMarker), so the loop transformations leave them alone.
+std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,
+    ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
 // A parallel loop that device code has to run cannot become a launch of
 // its own, so it is marked to run serially -- which is what one thread of
 // the enclosing kernel does with it.
