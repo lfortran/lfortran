@@ -2113,6 +2113,17 @@ RUN(NAME parameter_23 LABELS gfortran llvm c)
 RUN(NAME parameter_24 LABELS gfortran llvm)
 RUN(NAME parameter_25 LABELS gfortran llvm)
 RUN(NAME parameter_26 LABELS gfortran llvm)
+RUN(NAME parameter_27 LABELS gfortran llvm)
+# Sequence association of an element of a named constant array with an array
+# dummy of a separately compiled external procedure: an array element
+# designator actual argument represents the element sequence that starts at
+# that element (F2018 15.5.2.11 p2). Not gfortran: it passes the element in a
+# one-element temporary, so the callee reads past it (a gfortran bug).
+RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --implicit-interface)
+# The same for an explicit-shape array dummy of a type-bound procedure after
+# the passed object. Not gfortran: it treats the element of the named constant
+# as a scalar constant and rejects the call (rank mismatch).
+RUN(NAME parameter_29 LABELS llvm)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
