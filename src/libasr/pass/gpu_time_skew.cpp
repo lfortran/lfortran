@@ -3,6 +3,7 @@
 #include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -1052,8 +1053,6 @@ public:
             pinned = pinned ? bld.And(pinned, t) : t;
         }
         std::vector<ASR::stmt_t*> decide = sizes;
-        decide.push_back(set(cache, gpu_cache_bytes(al, unit_scope,
-            pass_options, loc)));
         decide.push_back(bld.If(bld.And(bld.Gt(v(cache), bld.i64(0)), bld.And(
                     bld.Gt(v(total), v(cache)), bld.Gt(v(per_row),
                         bld.i64(0)))), {
@@ -1062,8 +1061,56 @@ public:
                 bld.If(bld.GtE(v(rows64), bld.i64(min_band_rows)), {
                     pinned ? bld.If(pinned, {set(on, bld.bool_t(true, lt))},
                         {}) : set(on, bld.bool_t(true, lt))}, {})}, {}));
+        // The host asks for those sizes and bounds before the loop, when an
+        // array a loop under a host test touches need not be allocated (nor
+        // the variable it is a component of): it then runs the loop as
+        // written. The links are checked from the outermost variable in.
+        ASR::symbol_t *ready = new_var("__gpu_skew_allocated", lt);
+        std::vector<ASR::stmt_t*> check = {set(ready, bld.bool_t(true, lt))};
+        {
+            std::vector<ASR::expr_t*> designators;
+            for (auto &kv : arrays) {
+                if (kv.second.hot) designators.push_back(kv.second.designator);
+            }
+            for (auto &p : pins) {
+                designators.push_back(
+                    ASR::down_cast<ASR::ArrayBound_t>(p.second)->m_v);
+            }
+            std::set<std::string> seen;
+            for (ASR::expr_t *d : designators) {
+                std::vector<ASR::expr_t*> links;
+                for (ASR::expr_t *x = d; ; ) {
+                    links.push_back(x);
+                    if (!ASR::is_a<ASR::StructInstanceMember_t>(*x)) break;
+                    x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
+                }
+                for (auto it = links.rbegin(); it != links.rend(); ++it) {
+                    ASR::expr_t *x = *it;
+                    std::string k = gpu_array_key(x);
+                    if (!ASRUtils::is_allocatable(ASRUtils::expr_type(x))
+                            || (!k.empty() && !seen.insert(k).second)) {
+                        continue;
+                    }
+                    Vec<ASR::expr_t*> args;
+                    args.reserve(al, 1);
+                    args.push_back(al, ed.duplicate_expr(x));
+                    ASR::expr_t *allocated = ASRUtils::EXPR(
+                        ASR::make_IntrinsicImpureFunction_t(al, loc,
+                            static_cast<int64_t>(ASRUtils::
+                                IntrinsicImpureFunctions::Allocated),
+                            args.p, args.size(), 0,
+                            ASRUtils::duplicate_type(al, lt), nullptr));
+                    check.push_back(bld.If(v(ready), {bld.If(
+                        bld.Not(allocated), {set(ready,
+                            bld.bool_t(false, lt))}, {})}, {}));
+                }
+            }
+        }
+        decide.insert(decide.begin(), set(cache, gpu_cache_bytes(al,
+            unit_scope, pass_options, loc)));
+        check.push_back(bld.If(v(ready), decide, {}));
         pre.push_back(set(on, bld.bool_t(false, lt)));
-        pre.push_back(bld.If(bld.Gt(v(n), c(1)), decide, {}));
+        pre.push_back(bld.If(bld.Gt(v(n), c(1)), check, {}));
 
         // The skewed loop.
         Names nm;
