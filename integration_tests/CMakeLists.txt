@@ -6488,6 +6488,7 @@ RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda) # metal declines inte
 RUN(NAME gpu_metal_527 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_528 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_529 LABELS gfortran llvm cuda_cpu cuda)
+RUN(NAME gpu_metal_524 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-allow-cpu-fallback)
 # gpu_metal_526 reads a LOCAL_INIT scalar, which the GPU kernels leave
 # uninitialized (#14792), so on cuda_cpu and cuda its results depend on what
 # the device compiler makes of that; the CUDA kernel-source reference in

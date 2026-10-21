@@ -37,7 +37,8 @@ into a form the offload cannot read it from, but that runs the same
 iterations and assignments, records it from the loop as it was: index-set
 splitting does, since the frame it adds runs the original body on indices
 it computes. A pass that changes which iterations the region runs drops the
-clause.
+clause, and so does the offload when it runs the region on one thread inside
+device code, where there is no launch.
 
 The source never writes it.
 
