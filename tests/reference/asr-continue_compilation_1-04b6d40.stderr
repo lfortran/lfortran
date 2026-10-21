@@ -4345,3 +4345,21 @@ semantic error: Non-variable expression in variable definition context (actual a
      |
 3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:3513:22
+     |
+3513 |         n = c_sizeof(a)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
+
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:3518:22
+     |
+3518 |         n = c_sizeof(p)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
+
+semantic error: the argument of `c_sizeof` must be an interoperable data entity
+    --> tests/errors/continue_compilation_1.f90:3523:22
+     |
+3523 |         n = c_sizeof(b)  ! {Error} the argument of `c_sizeof` must be an interoperable data entity
+     |                      ^ only explicit-size and assumed-size arrays are interoperable
