@@ -11,7 +11,7 @@ struct model_t {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* a,
+    float* __restrict__ a,
     model_t& m)
 {
     int __flat_idx;
