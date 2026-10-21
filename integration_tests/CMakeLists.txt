@@ -5905,6 +5905,7 @@ RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME merge_derived_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
 RUN(NAME achar_kind_01 LABELS gfortran llvm)
+RUN(NAME character_compare_kind4_01 LABELS gfortran llvm) # character(kind=4) comparison blank-pads
 RUN(NAME char4_string_intrinsics_01 LABELS gfortran llvm)
 RUN(NAME char4_io_01 LABELS gfortran llvm)
 RUN(NAME char4_io_02 LABELS gfortran llvm)
