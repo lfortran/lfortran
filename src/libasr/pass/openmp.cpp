@@ -648,6 +648,9 @@ class InvolvedSymbolsCollector:
         // Named constants used in the region. They are not data passed to
         // the region; its procedure declares them with their values.
         std::map<std::string, ASR::symbol_t*> named_constants;
+        // Scalar data pointers whose association may change in the region
+        std::set<std::string> reassociated_pointers;
+        int region_depth = 0;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
 
@@ -688,12 +691,89 @@ class InvolvedSymbolsCollector:
             }
             symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = type;
             symbols[to_lower(ASRUtils::symbol_name(x.m_v))].second = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v));
-            // A procedure variable is passed to the region by value.
+            // A procedure variable is passed to the region by value, a scalar
+            // pointer by its association (see `visit_OMPRegion`).
             variable_accessibility[ASRUtils::symbol_name(x.m_v)] =
                 ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
-                    ASRUtils::symbol_type(x.m_v)))
+                    ASRUtils::symbol_type(x.m_v))) || is_scalar_pointer(x.m_v)
                 ? ASR::omp_clauseType::OMPPrivate : ASR::omp_clauseType::OMPShared;
             return;
+        }
+
+        // A scalar pointer, except of a derived type: a region does not
+        // receive variables of a derived type by value yet.
+        bool is_scalar_pointer(ASR::symbol_t* sym) {
+            ASR::ttype_t* type = ASRUtils::symbol_type(sym);
+            return ASRUtils::is_pointer(type) && !ASRUtils::is_array(type)
+                && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type));
+        }
+
+        // Records `x` if it is a scalar data pointer whose association may change.
+        void reassociated(ASR::expr_t* x) {
+            if (x != nullptr && ASR::is_a<ASR::Var_t>(*x)
+                    && is_scalar_pointer(ASR::down_cast<ASR::Var_t>(x)->m_v)
+                    && !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                        ASRUtils::expr_type(x)))) {
+                reassociated_pointers.insert(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(x)->m_v));
+            }
+        }
+
+        // A pointer whose association may change in the region stays shared:
+        // changing the association of a copy would not change the original's.
+        void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+            region_depth++;
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_OMPRegion(x);
+            region_depth--;
+            if (region_depth == 0) {
+                for (auto &name : reassociated_pointers) {
+                    variable_accessibility[name] = ASR::omp_clauseType::OMPShared;
+                }
+            }
+        }
+
+        void visit_Associate(const ASR::Associate_t &x) {
+            reassociated(x.m_target);
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_Associate(x);
+        }
+
+        void visit_Nullify(const ASR::Nullify_t &x) {
+            for (size_t i = 0; i < x.n_vars; i++) {
+                reassociated(x.m_vars[i]);
+            }
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_Nullify(x);
+        }
+
+        void visit_Allocate(const ASR::Allocate_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                reassociated(x.m_args[i].m_a);
+            }
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_Allocate(x);
+        }
+
+        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+            for (size_t i = 0; i < x.n_vars; i++) {
+                reassociated(x.m_vars[i]);
+            }
+            ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_ExplicitDeallocate(x);
+        }
+
+        // A pointer dummy argument can change the association of its actual
+        // argument. A type-bound call is not matched with its dummy arguments.
+        template <typename T>
+        void visit_call_args(const T &x) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x.m_name);
+            ASR::FunctionType_t* ft = nullptr;
+            if (x.m_dt == nullptr && (ASR::is_a<ASR::Function_t>(*proc)
+                    || ASR::is_a<ASR::Variable_t>(*proc))) {
+                ft = ASRUtils::get_FunctionType(proc);
+            }
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (ft == nullptr || i >= ft->n_arg_types
+                        || ASRUtils::is_pointer(ft->m_arg_types[i])) {
+                    reassociated(x.m_args[i].m_value);
+                }
+            }
         }
 
         // A call through a procedure variable involves the variable.
@@ -707,11 +787,13 @@ class InvolvedSymbolsCollector:
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             visit_procedure_variable_call(x);
+            visit_call_args(x);
             ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_SubroutineCall(x);
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t &x) {
             visit_procedure_variable_call(x);
+            visit_call_args(x);
             ASR::BaseWalkVisitor<InvolvedSymbolsCollector>::visit_FunctionCall(x);
         }
 
@@ -925,12 +1007,11 @@ class ParallelRegionVisitor :
             return ASRUtils::get_struct_sym_from_struct_expr(var);
         }
 
-        // `target = value` for a variable passed to a region by value. A
-        // procedure pointer is copied by pointer association.
+        // `target = value` for a variable passed to a region by value. A scalar
+        // pointer, such as a procedure pointer, is copied by pointer association.
         ASR::stmt_t* copy_value(ASR::expr_t* target, ASR::expr_t* value) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-            if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
-                    *ASRUtils::type_get_past_pointer(target_type))) {
+            if (ASRUtils::is_pointer(target_type) && !ASRUtils::is_array(target_type)) {
                 return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
                     target, value));
             }
