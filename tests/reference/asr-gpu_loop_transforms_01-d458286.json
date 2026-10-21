@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_loop_transforms_01-d458286",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/gpu_loop_transforms_01.f90",
+    "infile_hash": "932ea0bb8fcdd520d38a54126c2cdc81b27afa8ac5a4010fc6e74da2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_loop_transforms_01-d458286.stderr",
+    "stderr_hash": "bbfe0d9ac75e1737be28a1d9f574cc8593aa56292509026fa44b748c",
+    "returncode": 1
+}

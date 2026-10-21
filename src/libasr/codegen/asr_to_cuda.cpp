@@ -64,6 +64,13 @@ struct CudaDialect {
         return "";
     }
 
+    // A buffer no other buffer of the launch aliases. nvcc then reads one
+    // the kernel does not store to through the read-only data path, and
+    // keeps a value it loaded across a store to another buffer.
+    std::string noalias_qualifier() const {
+        return "__restrict__ ";
+    }
+
     // The grid position is a built-in rather than a parameter, so the kernel
     // takes none and derives it in its first statement instead.
     void emit_thread_id_param(std::stringstream & /*src*/,

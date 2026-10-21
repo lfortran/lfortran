@@ -1,84 +1,134 @@
-! The implicit mapping of a host applies in the host after its CONTAINS
-! section and in its internal procedures, where an IMPLICIT statement of the
-! procedure overrides it only for the letters it names.
+! A PARAMETER or POINTER statement naming an entity that is not declared yet
+! applies only to its own scoping unit or BLOCK construct, not to a same-named
+! entity of a later program unit, separate module procedure, contained
+! procedure or BLOCK construct.
 module implicit_typing_17_mod
-implicit double precision (a-h, o-z)
+parameter (mm = 4)
 contains
-    function third(y)
-        third = half(y) * 2d0 / 3d0
-        r = third
-        if (kind(r) /= 8) error stop
-    contains
-        function half(z)
-            half = z / 2d0
-            d = half
-            if (kind(d) /= 8) error stop
-        end function
-    end function
-
-    subroutine own_mapping(n, e)
-        implicit integer (d)
-        d = 2
-        e = 1d0 / 3d0
-        n = d
-        if (kind(d) /= 4) error stop
-        if (kind(e) /= 8) error stop
-    end subroutine
+integer function twice_mm()
+twice_mm = 2*mm
+end function
 end module
 
-subroutine external_host(res)
-implicit double precision (a-h, o-z)
-r = 1d0 / 3d0
-call inner(d)
-res = r + d
-if (kind(r) /= 8) error stop
-contains
-    subroutine inner(x)
-        double precision, intent(out) :: x
-        e = 1d0 / 3d0
-        x = e
-        if (kind(e) /= 8) error stop
+module implicit_typing_17_mp
+interface
+    module subroutine mp1(r)
+        integer, intent(out) :: r
     end subroutine
+    module subroutine mp2(r)
+        integer, intent(out) :: r
+    end subroutine
+end interface
+end module
+
+submodule (implicit_typing_17_mp) implicit_typing_17_sm
+contains
+module procedure mp1
+    parameter (k = 3)
+    integer k
+    r = k
+end procedure
+module procedure mp2
+    integer k
+    k = 5
+    r = k
+end procedure
+end submodule
+
+subroutine a1(s)
+parameter (m = 10)
+integer, intent(out) :: s
+integer :: x(m)
+x = 1
+s = sum(x)
+end subroutine
+
+subroutine a2(s)
+parameter (m = 20)
+integer, intent(out) :: s
+s = m
+end subroutine
+
+subroutine c1(s)
+parameter (n = 5)
+integer n
+integer, intent(out) :: s
+integer :: y(n)
+y = 2
+s = sum(y)
+end subroutine
+
+subroutine p1(s)
+pointer p
+integer p
+integer, target :: t
+integer, intent(out) :: s
+t = 7
+p => t
+s = p
+end subroutine
+
+integer function f(k)
+integer k
+integer m, n, p, mm
+m = 3
+n = 4
+p = 5
+mm = 6
+m = m + k
+f = m + n + p + mm
+end function
+
+subroutine b(s)
+integer, intent(out) :: s
+integer m
+m = 3
+s = m
 end subroutine
 
 program implicit_typing_17
-use implicit_typing_17_mod
-implicit double precision (a-h, o-z)
-r = 1d0 / 3d0
-if (kind(r) /= 8) error stop
-if (abs(r - 1d0 / 3d0) > 1d-15) error stop
-call set_third(x)
-if (abs(x - 1d0 / 3d0) > 1d-15) error stop
-call internal_local(y)
-if (abs(y - 1d0 / 3d0) > 1d-15) error stop
-call own_mapping(n, e)
-if (n /= 2) error stop
-if (abs(e - 1d0 / 3d0) > 1d-15) error stop
-call partial_override(n, e)
-if (n /= 3) error stop
-if (abs(e - 1d0 / 3d0) > 1d-15) error stop
-w = third(1d0)
-if (abs(w - 1d0 / 3d0) > 1d-15) error stop
-call external_host(v)
-if (abs(v - 2d0 / 3d0) > 1d-15) error stop
-print *, r, x, y, e, w, v
+use implicit_typing_17_mod, only: twice_mm
+use implicit_typing_17_mp, only: mp1, mp2
+parameter (mc = 10)
+integer f, s
+integer :: yc(mc)
+call a1(s)
+if (s /= 10) error stop
+call a2(s)
+if (s /= 20) error stop
+call c1(s)
+if (s /= 10) error stop
+call p1(s)
+if (s /= 7) error stop
+call b(s)
+if (s /= 3) error stop
+if (f(1) /= 19) error stop
+if (twice_mm() /= 8) error stop
+block
+    parameter (j = 2)
+    integer j
+    s = j
+end block
+if (s /= 2) error stop
+block
+    integer j
+    j = 9
+    s = j
+end block
+if (s /= 9) error stop
+call mp1(s)
+if (s /= 3) error stop
+call mp2(s)
+if (s /= 5) error stop
+yc = 1
+call inner(s)
+if (s /= 3 .or. sum(yc) /= 10) error stop
+print *, "ok"
 contains
-    subroutine set_third(z)
-        double precision, intent(out) :: z
-        z = 1d0 / 3d0
-    end subroutine
-
-    subroutine internal_local(z)
-        double precision, intent(out) :: z
-        d = 1d0 / 3d0
-        z = d
-        if (kind(d) /= 8) error stop
-    end subroutine
-
-    subroutine partial_override(m, f)
-        implicit integer (m)
-        m = 3
-        f = 1d0 / 3d0
-        if (kind(f) /= 8) error stop
-    end subroutine
+subroutine inner(r)
+    integer, intent(out) :: r
+    integer mc
+    mc = 3
+    r = mc
+end subroutine
 end program

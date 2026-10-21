@@ -17,6 +17,8 @@
  *   lf_f128_from_double      ←→  (__float128) cast
  *   lf_f128_sqrt             ←→  sqrtq
  *   lf_f128_exp              ←→  expq
+ *   lf_f128_expm1            ←→  expm1q
+ *   lf_f128_exp2             ←→  exp2q
  *   lf_f128_log              ←→  logq
  *   lf_f128_log10            ←→  log10q
  *   lf_f128_sin              ←→  sinq
@@ -29,6 +31,9 @@
  *   lf_f128_sinh             ←→  sinhq
  *   lf_f128_cosh             ←→  coshq
  *   lf_f128_tanh             ←→  tanhq
+ *   lf_f128_asinh            ←→  asinhq
+ *   lf_f128_acosh            ←→  acoshq
+ *   lf_f128_atanh            ←→  atanhq
  *   lf_f128_abs              ←→  fabsq
  *   lf_f128_floor            ←→  floorq
  *   lf_f128_ceiling          ←→  ceilq
@@ -102,6 +107,8 @@ lf_float128 lf_f128_ceiling(lf_float128 a);           /* ceilq   */
 lf_float128 lf_f128_mod    (lf_float128 a, lf_float128 b); /* fmodq  */
 lf_float128 lf_f128_pow    (lf_float128 a, lf_float128 b); /* powq   */
 lf_float128 lf_f128_exp    (lf_float128 a);           /* expq    */
+lf_float128 lf_f128_expm1  (lf_float128 a);           /* expm1q  */
+lf_float128 lf_f128_exp2   (lf_float128 a);           /* exp2q   */
 lf_float128 lf_f128_log    (lf_float128 a);           /* logq    */
 lf_float128 lf_f128_log10  (lf_float128 a);           /* log10q  */
 lf_float128 lf_f128_log2   (lf_float128 a);           /* log2q   */
@@ -115,6 +122,16 @@ lf_float128 lf_f128_atan2  (lf_float128 y, lf_float128 x); /* atan2q */
 lf_float128 lf_f128_sinh   (lf_float128 a);           /* sinhq   */
 lf_float128 lf_f128_cosh   (lf_float128 a);           /* coshq   */
 lf_float128 lf_f128_tanh   (lf_float128 a);           /* tanhq   */
+lf_float128 lf_f128_asinh  (lf_float128 a);           /* asinhq  */
+lf_float128 lf_f128_acosh  (lf_float128 a);           /* acoshq  */
+lf_float128 lf_f128_atanh  (lf_float128 a);           /* atanhq  */
+/* Trigonometric functions in degrees (Fortran 2023 sind, ...) */
+lf_float128 lf_f128_sind   (lf_float128 a);
+lf_float128 lf_f128_cosd   (lf_float128 a);
+lf_float128 lf_f128_tand   (lf_float128 a);
+lf_float128 lf_f128_asind  (lf_float128 a);
+lf_float128 lf_f128_acosd  (lf_float128 a);
+lf_float128 lf_f128_atand  (lf_float128 a);
 
 #ifdef __cplusplus
 }

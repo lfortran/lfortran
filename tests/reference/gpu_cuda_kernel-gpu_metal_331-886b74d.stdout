@@ -5,9 +5,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    int* values,
+    int* __restrict__ values,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    int* __workspace_2)
+    int* __restrict__ __workspace_2)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;

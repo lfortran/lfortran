@@ -2172,6 +2172,44 @@ static inline bool is_pointer_association_initializer(ASR::expr_t* init) {
     }
 }
 
+// Whether `expr` designates a named constant or a subobject of one, such as
+// `c(1)%k` or `c(2:3)` for a PARAMETER `c`. Such a designator is a constant,
+// not a variable, so it cannot be defined.
+static inline bool is_named_constant_designator(ASR::expr_t* expr) {
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                    ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        }
+        case ASR::exprType::StringItem: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+        }
+        case ASR::exprType::StringSection: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 // Returns true if expression can be safely used as an actual argument for
 // INTENT(OUT/INOUT) dummy arguments.
 static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
@@ -2195,7 +2233,9 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
-        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::StructInstanceMember: {
+            return !is_named_constant_designator(a_value);
+        }
         case ASR::exprType::IntrinsicArrayFunction:
         case ASR::exprType::ListItem: {
             return true;
