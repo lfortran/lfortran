@@ -182,7 +182,8 @@ std::vector<std::string> determine_class_procedure_declaration_order(
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*itr.second) ) {
             std::vector<std::string> deps;
-            ASR::symbol_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(itr.second)->m_proc;
+            ASR::symbol_t* cp = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(itr.second)->m_proc);
             if (ASR::is_a<ASR::Function_t>(*cp)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(cp);
                 for( size_t i = 0; i < func->n_dependencies; i++ ) {
@@ -1731,7 +1732,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move) {
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target) {
     bool is_allocatable = ASRUtils::is_allocatable(a_target);
     if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
         is_allocatable = ASRUtils::is_allocatable(
@@ -1743,7 +1745,7 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     }
     a_realloc_lhs = a_realloc_lhs && is_allocatable;
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-        a_overloaded, a_realloc_lhs, a_move);
+        a_overloaded, a_realloc_lhs, a_move, a_new_target);
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {
@@ -2795,7 +2797,8 @@ bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                    process_overloaded_unary_function(
+                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
                         operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
@@ -2821,7 +2824,8 @@ bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t =
                         ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                    process_overloaded_unary_function(
+                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
                         operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
@@ -2959,6 +2963,13 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            // When another procedure took the name, use a numbered name that is free or refers to `proc`.
+            std::string taken_name = matched_subrout_name;
+            for( int i = 1; a_name != nullptr &&
+                    ASRUtils::symbol_get_past_external(a_name) != proc; i++ ) {
+                matched_subrout_name = taken_name + std::to_string(i);
+                a_name = curr_scope->get_symbol(matched_subrout_name);
+            }
             ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
             if( a_name == nullptr && matched_subrout_name == subrout_name &&
                     !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
@@ -3268,7 +3279,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = class_proc->m_proc;
+                    ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
@@ -3321,7 +3332,8 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
     ASR::ttype_t* arg_type, bool& found, Allocator& al, const Location& arg_loc,
     SymbolTable* curr_scope, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
-    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr,
+    ASR::symbol_t* binding=nullptr) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
@@ -3357,10 +3369,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         }
         ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
         if (expr_dt != nullptr) {
-            ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
-            a_name = ASRUtils::import_class_procedure(al, loc,
-                temp_struct->m_symtab->get_symbol(subrout_name), curr_scope);
+            a_name = ASRUtils::import_class_procedure(al, loc, binding, curr_scope);
         }
         if( a_name == nullptr ) {
             a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
@@ -3415,11 +3424,11 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                     }
                     case ASR::symbolType::StructMethodDeclaration: {
                         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                        ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
+                        ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                         process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
                             found, al, args[0]->base.loc, curr_scope,
                             current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                            expr_dt, err, class_proc->m_self_argument);
+                            expr_dt, err, class_proc->m_self_argument, proc);
                         break;
                     }
                     default: {
@@ -4196,7 +4205,8 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
             if (src_kind != 16) {
                 int64_t v = src_kind == 10
-                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
+                    ? static_cast<int64_t>(ASRUtils::real_constant_get_r10(rc))
+                    : static_cast<int64_t>(rc->m_r);
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
             }
@@ -4315,7 +4325,7 @@ static T perform_binop(T left_value, T right_value, ASR::binopType op) {
             result = left_value / right_value;
             break;
         case ASR::Pow:
-            result = std::pow(left_value, right_value);
+            result = static_cast<T>(std::pow(left_value, right_value));
             break;
         default:
             LCOMPILERS_ASSERT(false);
@@ -4339,7 +4349,7 @@ static std::complex<double> complex_integer_pow(T re, T im, int64_t n) {
         p = re_;
         q = im_;
     };
-    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    uint64_t u = n < 0 ? 0 - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
     T base_re = re, base_im = im;
     while ((u & 1) == 0) {
         mul(base_re, base_im, base_re, base_im);
@@ -4412,8 +4422,8 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         }
         if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
             // Evaluate in single precision, as the program would.
-            float left_value = lc->m_r;
-            float right_value = rc->m_r;
+            float left_value = static_cast<float>(lc->m_r);
+            float right_value = static_cast<float>(rc->m_r);
             float result = perform_binop(left_value, right_value, op);
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                 result, dest_type));
@@ -4474,7 +4484,8 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         std::complex<double> result;
         if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
             // Evaluate in single precision, as the program would.
-            result = complex_integer_pow<float>(lc->m_re, lc->m_im, n);
+            result = complex_integer_pow<float>(static_cast<float>(lc->m_re),
+                static_cast<float>(lc->m_im), n);
         } else {
             result = complex_integer_pow<double>(lc->m_re, lc->m_im, n);
         }
@@ -4790,9 +4801,10 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
         1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     dims.push_back(al, dim);
-    ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+    // The shape is a constant-size array of integers, whatever the type of
+    // the broadcast value is.
+    ASR::ttype_t* dest_shape_type = ASRUtils::make_Array_t_util(al, loc,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size());
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -5143,6 +5155,11 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 // its result type, so a `size(...)` query on one has to be answered from
 // the operands: matmul is (n,k)x(k,m) -> (n,m), (n,k)x(k) -> (n) and
 // (k)x(k,m) -> (m), and transpose swaps the two extents of its argument.
+// `spread(source, dim, ncopies)` inserts the extent `ncopies` into the
+// shape of `source` at position `dim`; its extents are built by the same
+// `Spread::result_extent` as its result type, but with the extents of
+// `source` answered by `make_ArraySize_t_util` and a negative `ncopies`
+// taken as 0.
 // The general rule in `make_ArraySize_t_util` -- the size of the first
 // array argument, which holds for the intrinsics whose result has the
 // shape of their argument -- would answer `size(matmul(a, b))` with the
@@ -5152,7 +5169,8 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
     const Location &a_loc, ASR::IntrinsicArrayFunction_t* af,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, bool for_type) {
     // Each dimension of the result, as the operand and the 1-based
-    // dimension of that operand whose extent it is.
+    // dimension of that operand whose extent it is; for `spread` the
+    // operand is null and the extent is built by `Spread::result_extent`.
     std::vector<std::pair<ASR::expr_t*, int64_t>> shape;
     ASRUtils::IntrinsicArrayFunctions id =
         static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id);
@@ -5180,16 +5198,55 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
         }
         shape.push_back({a, 2});
         shape.push_back({a, 1});
+    } else if( id == ASRUtils::IntrinsicArrayFunctions::Spread ) {
+        if( af->n_args != 3 ) return nullptr;
+        ASR::expr_t* source = ASRUtils::get_past_array_physical_cast(af->m_args[0]);
+        size_t rs = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(source));
+        size_t rr = ASRUtils::extract_n_dims_from_ttype(af->m_type);
+        // A scalar `source` is stored as a one-element array, so the
+        // result has the rank of the stored `source`.
+        if( rr != rs && rr != rs + 1 ) return nullptr;
+        for( size_t i = 1; i <= rr; i++ ) {
+            shape.push_back({nullptr, i});
+        }
     } else {
         return nullptr;
     }
     ASRBuilder builder(al, a_loc);
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+    // `make_ArraySize_t_util` can answer with the declared length of an
+    // explicit-shape dimension, which keeps its own kind, so the extents
+    // are cast to the kind `a_type` that is asked for.
+    auto size_of_type = [&](ASR::expr_t* size) {
+        return CastingUtil::perform_casting(size, a_type, al, a_loc);
+    };
     auto extent = [&](size_t i) {
+        if( shape[i].first == nullptr ) {
+            // The extent `ncopies` of `spread`, which is zero when negative.
+            ASR::expr_t* ncopies = builder.Max(ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, a_loc, 0, a_type)),
+                CastingUtil::perform_casting(af->m_args[2], a_type, al, a_loc));
+            ASR::expr_t* source = ASRUtils::get_past_array_physical_cast(
+                af->m_args[0]);
+            if( static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(source))) == shape.size() ) {
+                return ncopies;
+            }
+            ASR::expr_t* dim = af->m_args[1];
+            diag::Diagnostics diag;
+            ASR::expr_t* e = ASRUtils::Spread::result_extent(al, a_loc, source,
+                ncopies, i, dim, ASRUtils::is_value_constant(dim),
+                [&](ASR::expr_t* j) {
+                    return size_of_type(ASRUtils::EXPR(make_ArraySize_t_util(
+                        al, a_loc, source, j, a_type, nullptr, for_type)));
+                }, diag);
+            LCOMPILERS_ASSERT(!diag.has_error());
+            return e;
+        }
         ASR::expr_t* d = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, a_loc, shape[i].second, int32_type));
-        return ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc, shape[i].first,
-            d, a_type, nullptr, for_type));
+        return size_of_type(ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
+            shape[i].first, d, a_type, nullptr, for_type)));
     };
     if( a_dim == nullptr ) {
         ASR::expr_t* size = extent(0);
@@ -5207,20 +5264,23 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
         if( dim < 1 || (size_t) dim > shape.size() ) return nullptr;
         return &(extent((size_t) dim - 1)->base);
     }
-    Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
-    merge_args.push_back(al, extent(0));
-    merge_args.push_back(al, extent(1));
-    merge_args.push_back(al, builder.Eq(a_dim,
-        builder.i_t(1, ASRUtils::expr_type(a_dim))));
-    diag::Diagnostics diag;
-    ASR::asr_t *merged = ASRUtils::Merge::create_Merge(
-        al, a_loc, merge_args, diag);
-    // The three arguments are two integer extents and a logical test
-    // constructed here, so Merge cannot reject them. A failure is an
-    // invariant break, not a user diagnostic to drop.
-    LCOMPILERS_ASSERT(merged != nullptr);
-    LCOMPILERS_ASSERT(!diag.has_error());
-    if (merged == nullptr || diag.has_error()) return nullptr;
+    // merge(extent 1, merge(extent 2, ..., dim == 2), dim == 1)
+    ASR::asr_t *merged = &(extent(shape.size() - 1)->base);
+    for( size_t i = shape.size() - 1; i-- > 0; ) {
+        Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+        merge_args.push_back(al, extent(i));
+        merge_args.push_back(al, ASRUtils::EXPR(merged));
+        merge_args.push_back(al, builder.Eq(a_dim,
+            builder.i_t(i + 1, ASRUtils::expr_type(a_dim))));
+        diag::Diagnostics diag;
+        merged = ASRUtils::Merge::create_Merge(al, a_loc, merge_args, diag);
+        // The three arguments are two integer extents and a logical test
+        // constructed here, so Merge cannot reject them. A failure is an
+        // invariant break, not a user diagnostic to drop.
+        LCOMPILERS_ASSERT(merged != nullptr);
+        LCOMPILERS_ASSERT(!diag.has_error());
+        if (merged == nullptr || diag.has_error()) return nullptr;
+    }
     return merged;
 }
 
@@ -5542,11 +5602,13 @@ ASR::asr_t* make_ArraySize_t_util(
     if( is_binop_expr(a_v) && for_type ) {
         ASR::expr_t* lhs = extract_member_from_binop(a_v, 0);
         ASR::expr_t* rhs = extract_member_from_binop(a_v, 1);
-        // ArrayBroadcast wraps a scalar broadcast to the shape of the other
-        // operand; take the size from the non-broadcast side.
-        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ) {
+        // A scalar operand, either bare (e.g. `x > t`) or wrapped in an
+        // ArrayBroadcast, has no shape; take the size from the other side.
+        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(rhs)) ) {
             return make_ArraySize_t_util(al, a_loc, lhs, a_dim, a_type, a_value, for_type);
-        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ) {
+        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(lhs)) ) {
             return make_ArraySize_t_util(al, a_loc, rhs, a_dim, a_type, a_value, for_type);
         } else if( ASR::is_a<ASR::Var_t>(*rhs) ||
                    ASR::is_a<ASR::ArraySection_t>(*rhs) ) {

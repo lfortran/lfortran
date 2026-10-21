@@ -1,0 +1,36 @@
+#include <stdint.h>
+
+__device__ inline float first_device_t_gpu_17(float* a, int __1a) {
+    float first;
+    first = a[((int)(1) - (1))];
+    return first;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int __gpu_bc_i;
+    int j;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        float t[16];
+        __gpu_bc_i = (1 - 1);
+        while (((__gpu_bc_i + 1) <= 16)) {
+            __gpu_bc_i = (__gpu_bc_i + 1);
+            t[((int)(__gpu_bc_i) - (1))] = ((float)j);
+        }
+        y[((int)(j) - (1))] = first_device_t_gpu_17(t, 16);
+    }
+}
+

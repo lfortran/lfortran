@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
@@ -559,7 +560,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -601,7 +602,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -2361,7 +2362,7 @@ end module
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "mcellmod.f90";
         lm.files.push_back(fl);
-        lm.file_ends.push_back(std::strlen(modsrc));
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(std::strlen(modsrc)));
         LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
             LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
         LCompilers::ASR::TranslationUnit_t* asr = TRY(

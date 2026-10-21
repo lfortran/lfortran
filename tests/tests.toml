@@ -766,6 +766,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "pause1.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/stop_03.f90"
 run = true
 
@@ -1875,6 +1879,12 @@ julia = true
 c = true
 cpp = true
 
+# A whole-array assignment assigned again before anything reads it is
+# removed; one that is read is kept.
+[[test]]
+filename = "../integration_tests/dead_array_store_01.f90"
+pass = "dead_array_store"
+
 [[test]]
 filename = "../integration_tests/case_07.f90"
 pass = "select_case"
@@ -1950,6 +1960,10 @@ ast_f90 = true
 filename = "../integration_tests/types_13.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/logical_star_01.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "../integration_tests/types_14.f90"
@@ -3458,6 +3472,10 @@ filename = "errors/write_kind4_item_c.f90"
 c = true
 
 [[test]]
+filename = "errors/write_array_pointer_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -3760,6 +3778,14 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_13.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_14.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_15.f"
 ast = true
 
 [[test]]
@@ -4087,6 +4113,48 @@ ast_json = true
 asr_json = true
 
 [[test]]
+filename = "json_loc_continuation.f90"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form.f"
+options = "--fixed-form"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do_label.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_else_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if_where_asr.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_if_where_fixed.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
 
@@ -4359,6 +4427,10 @@ filename = "../integration_tests/gpu_kernel_source_07.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_08.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
 gpu_cuda_kernel = true
 
@@ -4571,6 +4643,18 @@ filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_17.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_18.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_19.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -4744,6 +4828,143 @@ gpu_offload_metal = true
 # shape is not known on entry, so it is allocated on the device heap.
 [[test]]
 filename = "../integration_tests/gpu_metal_408.f90"
+gpu_cuda_kernel = true
+
+# Every matmul an offloaded loop lowers inline accumulates each element in a
+# scalar local and stores it into the target once.
+[[test]]
+filename = "../integration_tests/gpu_metal_455.f90"
+gpu_cuda_kernel = true
+
+# An associate name bound to the result of a function is that result, made
+# once on entry: one call, not one for every element read through the name.
+[[test]]
+filename = "../integration_tests/gpu_metal_452.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A call of a function returning an array, in an array expression, is made
+# once before the statement, not once for every element it computes.
+[[test]]
+filename = "../integration_tests/gpu_metal_453.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A fixed-size array each iteration defines whole before it references it
+# is a local of the kernel, not a kernel argument every thread shares; one
+# read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_478.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_480.f90"
+gpu_metal_kernel = true
+
+# Loop nests of two and three dimensions run in tiles of 32 x 8 iterations
+# on CUDA, or flat where whole tiles would pad the nest by more than a
+# quarter.
+[[test]]
+filename = "../integration_tests/gpu_metal_485.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_09.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_10.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_11.f90"
+asr = true
+options = "--gpu=metal --pass=gpu_offload --cumulative"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_35.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_12.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_16.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_15.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+# The loop transformations of `--gpu=cuda` (gpu_loop_fusion.cpp) and their
+# selection by `--gpu-loop-transforms`.
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_20.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_21.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=fuse"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_22.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_522.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=none"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_523.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=swap"
+
+# An unknown name in `--gpu-loop-transforms` is an error.
+[[test]]
+filename = "errors/gpu_loop_transforms_01.f90"
+asr = true
+options = "--gpu=cuda --gpu-loop-transforms=fuse,fusion"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_30.f90"
+gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
@@ -4967,6 +5188,19 @@ asr_implicit_interface_and_typing = true
 [[test]]
 filename = "errors/implicit_typing4.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing5.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing6.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing7.f90"
+semantics_only_cc = true
+options = "--implicit-typing --implicit-interface"
 
 [[test]]
 filename = "external2.f90"
@@ -5244,6 +5478,10 @@ filename = "errors/incorrect_allocate_for_array.f90"
 asr = true
 
 [[test]]
+filename = "errors/allocatable_generic_bounds_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/incompatible_ranks_allocatable_arr1.f90"
 asr = true
 
@@ -5301,6 +5539,11 @@ options = "--implicit-interface"
 
 [[test]]
 filename = "errors/implicit_interface_procedure_kind.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
+filename = "errors/implicit_interface_intrinsic_non_fortran.f90"
 semantics_only_cc = true
 options = "--implicit-interface"
 
@@ -5573,6 +5816,19 @@ rename_symbol = true
 line = 9
 column = 13
 
+[[test]]
+filename = "collect_occurence5.f90"
+rename_symbol = true
+line = 2
+column = 12
+
+[[test]]
+filename = "collect_occurence6.f"
+rename_symbol = true
+line = 3
+column = 15
+options = "--fixed-form"
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
@@ -5650,6 +5906,11 @@ filename = "errors/proc_ptr_undefined_interface.f90"
 asr = true
 
 [[test]]
+filename = "errors/cyclic_dummy_procedure_interface.f90"
+asr = true
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/template_deferred_interface_procedure.f90"
 asr = true
 
@@ -5715,6 +5976,15 @@ filename = "errors/show_errors1.f90"
 show_errors = true
 
 [[test]]
+filename = "errors/show_errors2.f90"
+show_errors = true
+
+[[test]]
+filename = "errors/show_errors3.f"
+show_errors = true
+options = "--fixed-form"
+
+[[test]]
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
@@ -5723,6 +5993,10 @@ extrafiles = "document_symbols1_module.f90"
 filename = "document_symbols_implicit_interface.f90"
 document_symbols = true
 options = "--implicit-interface"
+
+[[test]]
+filename = "document_symbols_continuation.f90"
+document_symbols = true
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"
@@ -6059,6 +6333,14 @@ options = "--coarray=true"
 
 [[test]]
 filename = "errors/missing_include_01.f90"
+ast = true
+
+[[test]]
+filename = "errors/include_location_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/include_location_02.f"
 ast = true
 
 [[test]]
@@ -6568,5 +6850,22 @@ options = "--std=f23"
 # The rank-mismatch warning for an array passed to a scalar dummy.
 [[test]]
 filename = "../integration_tests/legacy_array_sections_26.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+[[test]]
+filename = "../integration_tests/real128_literal_02.f90"
+semantics_only_cc = true
+
+# An array element passed to an assumed-shape, allocatable or pointer dummy.
+[[test]]
+filename = "errors/legacy_array_sections_assumed_shape_01.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+# An element of a pointer, assumed-shape or polymorphic array passed to an
+# explicit-shape or assumed-size dummy.
+[[test]]
+filename = "errors/legacy_array_sections_pointer_element_01.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"

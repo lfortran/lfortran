@@ -1,0 +1,49 @@
+#include <stdint.h>
+
+__device__ inline float twice_gpu_11(float v) {
+    float twice;
+    twice = (((float)2) * v);
+    return twice;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    float a;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __dim_z_0;
+    int __lb_z_0;
+    int __dim_z_1;
+    int __lb_z_1;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ x,
+    float* __restrict__ y,
+    float* __restrict__ z,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    float a = __scalar_args.a;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __dim_z_0 = __scalar_args.__dim_z_0;
+    int __lb_z_0 = __scalar_args.__lb_z_0;
+    int __lb_z_1 = __scalar_args.__lb_z_1;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    {
+        float t;
+        t = (a * x[((int)(i) - (__lb_x_0))]);
+        y[((int)(i) - (__lb_y_0))] = (t + y[((int)(i) - (__lb_y_0))]);
+    }
+    z[((int)(i) - (__lb_z_0)) + (__dim_z_0 * ((int)(2) - (__lb_z_1)))] = twice_gpu_11(y[((int)(i) - (__lb_y_0))]);
+}
+

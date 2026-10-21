@@ -90,6 +90,10 @@ struct PassOptions {
     // construct on the unsupported list then runs on the CPU with a warning,
     // so that the kernels of the other loops are still produced.
     bool gpu_kernel_source_only = false;
+    // The loop transformations applied to parallel loops assigned to the
+    // device before they are offloaded (gpu_loop_fusion.cpp): "all",
+    // "none", or a comma separated list of `fuse` and `swap`.
+    std::string gpu_loop_transforms = "all";
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;
@@ -135,6 +139,9 @@ struct CompilerOptions {
     bool gpu_cpu_emulation = false;
     // Toolchain driver used to compile and link GPU device code.
     std::string device_compiler = "nvcc";
+    // GPU architecture the device code is compiled for, such as sm_120.
+    // Empty means the GPUs of the machine that compiles.
+    std::string gpu_arch = "";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;

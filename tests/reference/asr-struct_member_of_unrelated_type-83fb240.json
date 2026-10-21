@@ -2,7 +2,7 @@
     "basename": "asr-struct_member_of_unrelated_type-83fb240",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_member_of_unrelated_type.asr",
-    "infile_hash": "257cb31d1f76647b1848c045c2118b894c8c3efd0b22ffa9dff98c9e",
+    "infile_hash": "bb5d4321a8fe13dfd628e80dd8a8a10a7c53fca705d5f1b064f29545",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

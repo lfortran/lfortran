@@ -45,6 +45,14 @@ namespace LCompilers {
         bool is_explicit_shape(ASR::Variable_t* v);
 
         /*
+        * The type code of an item of type `val_type` in the variadic
+        * protocol of _lfortran_formatted_read. It determines how the
+        * runtime converts the field and the storage size of the item.
+        */
+        int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
+            ASR::expr_t* val_expr);
+
+        /*
         * Available descriptors are listed
         * under this enum.
         */
@@ -104,9 +112,9 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Type* get_argument_type(llvm::Type* type,
-                    std::uint32_t, std::string,
+                    std::uint64_t, std::string,
                     std::unordered_map
-                    <std::uint32_t, std::unordered_map
+                    <std::uint64_t, std::unordered_map
                                     <std::string, llvm::Type*>>&
                                     arr_arg_type_cache) = 0;
 
@@ -345,44 +353,7 @@ namespace LCompilers {
                                             int output_kind, int dim_kind=4) = 0;
 
                 /*
-                * Creates a contiguous copy of data from a DescriptorArray.
-                * Helpful when having strided access to an array.
-                * Returns a pointer to the newly allocated contiguous buffer.
-                * Allocation is done on heap using lfortran_malloc,
-                * So, please make sure to free the memory after use.
-                *
-                * Note: Similar logic exists in ASR passes (pass/print_arr.cpp & pass/array_op.cpp).
-                * But, the ASR pass for print statements was disabled in #6351.
-                * Enabling it opened other issues, hence this separate LLVM implementation
-                * to handle strided arrays for writing array into strings (used in print statements), 
-                * by storing in a contiguous buffer first.
-                */
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module) = 0;
-
-                /*
-                * Creates a contiguous copy of a DescriptorArray of strings,
-                * whose elements all live in the buffer of the one string
-                * descriptor that its data pointer addresses.
-                * Returns a new string descriptor for the copy. Its data is
-                * allocated on heap using lfortran_malloc, so free it after use.
-                */
-                virtual
-                llvm::Value* create_contiguous_string_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    ASR::String_t* string_type, int rank, llvm::Module* module) = 0;
-
-                /*
                 * Copies contiguous data into a potentially-strided descriptor array.
-                * The inverse of create_contiguous_copy_from_descriptor.
                 * Uses element-wise copy respecting the target descriptor's strides.
                 */
                 virtual
@@ -396,16 +367,12 @@ namespace LCompilers {
                 * descriptor array, in array element order, with the
                 * element's 0-based position in that order and a pointer
                 * to the element (respecting the descriptor's strides).
-                * For an array of strings, pass its `string_type`, with the
-                * string descriptor type as `elem_type`; the pointer then
-                * addresses the characters of the element.
                 */
                 virtual
                 void for_each_element_of_descriptor(
                     llvm::Type* desc_llvm_type, llvm::Value* desc,
                     llvm::Type* elem_type, int rank, const std::string& loop_name,
-                    const std::function<void(llvm::Value*, llvm::Value*)>& body,
-                    ASR::String_t* string_type = nullptr) = 0;
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body) = 0;
 
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
@@ -511,9 +478,9 @@ namespace LCompilers {
 
                 virtual
                 llvm::Type* get_argument_type(llvm::Type* type,
-                    std::uint32_t m_h, std::string arg_name,
+                    std::uint64_t m_h, std::string arg_name,
                     std::unordered_map
-                    <std::uint32_t, std::unordered_map
+                    <std::uint64_t, std::unordered_map
                                     <std::string, llvm::Type*>>&
                         arr_arg_type_cache);
 
@@ -677,22 +644,6 @@ namespace LCompilers {
                                             int output_kind, int dim_kind=4);
 
                 virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module);
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module);
-
-                virtual
-                llvm::Value* create_contiguous_string_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    ASR::String_t* string_type, int rank, llvm::Module* module);
-
-                virtual
                 void copy_contiguous_data_to_descriptor(
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
@@ -702,8 +653,7 @@ namespace LCompilers {
                 void for_each_element_of_descriptor(
                     llvm::Type* desc_llvm_type, llvm::Value* desc,
                     llvm::Type* elem_type, int rank, const std::string& loop_name,
-                    const std::function<void(llvm::Value*, llvm::Value*)>& body,
-                    ASR::String_t* string_type = nullptr);
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body);
 
                 // CFI field indices (C-interop layout, no offset field)
                 static constexpr int CFI_FIELD_BASE_ADDR   = 0;

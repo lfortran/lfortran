@@ -2,6 +2,7 @@
 #define LFORTRAN_BIGINT_H
 
 #include <cstdint>
+#include <limits>
 
 #include <libasr/containers.h>
 
@@ -69,7 +70,7 @@ const int64_t MAX_SMALL_INT = (int64_t)((1ULL << 62)-1);
 
 /* The minimum small int is -2^63
  */
-const int64_t MIN_SMALL_INT = (int64_t)(-(1ULL << 63));
+const int64_t MIN_SMALL_INT = std::numeric_limits<int64_t>::min();
 
 // Returns true if "i" is a small int
 inline static bool is_small_int(int64_t i) {

@@ -9,13 +9,16 @@
 #include <vector>
 #include <utility>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <new>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 #include <libasr/casting_utils.h>
+#include <libasr/checked_cast.h>
 #include <libasr/asr_expr_stmt_duplicator_visitor.h>
 #include <libasr/asr_expr_base_replacer_visitor.h>
 #include <libasr/asr_stmt_base_replacer_visitor.h>
@@ -478,7 +481,7 @@ static inline ASR::symbol_t* symbol_get_past_StructMethodDeclaration(ASR::symbol
     if(ASR::is_a<ASR::StructMethodDeclaration_t>(*f)){
         ASR::symbol_t* func = ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_proc;
         LCOMPILERS_ASSERT(func != nullptr);
-        return func;
+        return symbol_get_past_external(func);
     }
     return f;
 }
@@ -643,22 +646,22 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Array_t>(type)->m_type);
         }
         case ASR::ttypeType::Integer : {
-            return ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(type)->m_kind);
         }
         case ASR::ttypeType::UnsignedInteger : {
-            return ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::UnsignedInteger_t>(type)->m_kind);
         }
         case ASR::ttypeType::Real : {
-            return ASR::down_cast<ASR::Real_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::Real_t>(type)->m_kind);
         }
         case ASR::ttypeType::Complex: {
-            return ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(type)->m_kind);
         }
         case ASR::ttypeType::String: {
-            return ASR::down_cast<ASR::String_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::String_t>(type)->m_kind);
         }
         case ASR::ttypeType::Logical: {
-            return ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+            return checked_integer_cast<int>(ASR::down_cast<ASR::Logical_t>(type)->m_kind);
         }
         case ASR::ttypeType::Pointer: {
             return extract_kind_from_ttype_t(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
@@ -1274,7 +1277,8 @@ static inline size_t get_pass_arg_index(ASR::symbol_t* a_name) {
         if (clss_proc->m_self_argument == nullptr) {
             return 0;
         }
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            symbol_get_past_external(clss_proc->m_proc));
         for (size_t i = 0; i < func->n_args; i++) {
             ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
             if (strcmp(v->m_name, clss_proc->m_self_argument) == 0) {
@@ -1683,7 +1687,11 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
             char** merged_deps = new char*[total_deps];
             size_t idx = 0;
             for (const auto& dep : unique_deps) {
-                merged_deps[idx] = strdup(dep.c_str());
+                merged_deps[idx] = static_cast<char*>(std::malloc(dep.size() + 1));
+                if (merged_deps[idx] == nullptr) {
+                    throw std::bad_alloc();
+                }
+                std::memcpy(merged_deps[idx], dep.c_str(), dep.size() + 1);
                 ++idx;
             }
             return std::make_pair(merged_deps, total_deps);
@@ -2165,6 +2173,44 @@ static inline bool is_pointer_association_initializer(ASR::expr_t* init) {
     }
 }
 
+// Whether `expr` designates a named constant or a subobject of one, such as
+// `c(1)%k` or `c(2:3)` for a PARAMETER `c`. Such a designator is a constant,
+// not a variable, so it cannot be defined.
+static inline bool is_named_constant_designator(ASR::expr_t* expr) {
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                    ASR::storage_typeType::Parameter;
+        }
+        case ASR::exprType::ArrayItem: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        }
+        case ASR::exprType::StringItem: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+        }
+        case ASR::exprType::StringSection: {
+            return is_named_constant_designator(
+                ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 // Returns true if expression can be safely used as an actual argument for
 // INTENT(OUT/INOUT) dummy arguments.
 static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
@@ -2188,7 +2234,9 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
-        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::StructInstanceMember: {
+            return !is_named_constant_designator(a_value);
+        }
         case ASR::exprType::IntrinsicArrayFunction:
         case ASR::exprType::ListItem: {
             return true;
@@ -2454,7 +2502,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value, double& const_value) 
     }
     if (ASR::is_a<ASR::IntegerConstant_t>(*a_value)) {
         ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(a_value);
-        const_value = const_int->m_n;
+        const_value = static_cast<double>(const_int->m_n);
     } else if (ASR::is_a<ASR::RealConstant_t>(*a_value)) {
         ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(a_value);
         const_value = const_real->m_r;
@@ -3907,12 +3955,12 @@ static inline int get_body_size(ASR::symbol_t* s) {
     switch (s->type) {
         case ASR::symbolType::Function: {
             ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(s);
-            n_body = f->n_body;
+            n_body = checked_integer_cast<int>(f->n_body);
             break;
         }
         case ASR::symbolType::Program: {
             ASR::Program_t* p = ASR::down_cast<ASR::Program_t>(s);
-            n_body = p->n_body;
+            n_body = checked_integer_cast<int>(p->n_body);
             break;
         }
         default: {
@@ -4232,7 +4280,7 @@ static inline int64_t get_type_byte_size(ASR::ttype_t* type) {
 
 inline int extract_n_dims_from_ttype(ASR::ttype_t *x) {
     ASR::dimension_t* m_dims_temp = nullptr;
-    return extract_dimensions_from_ttype(x, m_dims_temp);
+    return checked_integer_cast<int>(extract_dimensions_from_ttype(x, m_dims_temp));
 }
 
 static inline bool is_dimension_empty(ASR::dimension_t& dim) {
@@ -4587,7 +4635,8 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move);
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target = false);
 
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
@@ -4813,6 +4862,16 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     for( size_t i = 0; i < n_dims; i++ ) {
         if( m_dims[i].m_length && ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length) ) {
             ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(m_dims[i].m_length);
+            int64_t compile_time_size = -1;
+            if( ASRUtils::extract_value(as->m_value, compile_time_size) ) {
+                // Rebuilding the size from the operand's dimensions would
+                // drop its compile-time value and turn a fixed-size array,
+                // e.g. the result of `spread(x, 1, size(a))` for a parameter
+                // `a`, into one of unknown size. Keep the extent constant.
+                m_dims[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, as->base.base.loc, compile_time_size, as->m_type));
+                continue;
+            }
             m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                 al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr, for_type));
         }
@@ -5467,11 +5526,11 @@ static inline ASR::asr_t* make_Allocatable_t_util(Allocator& al, const Location&
 }
 
 inline std::string remove_trailing_white_spaces(std::string str) {
-    int end = str.size() - 1;
-    while (end >= 0 && str[end] == ' ') {
+    size_t end = str.size();
+    while (end > 0 && str[end - 1] == ' ') {
         end--;
     }
-    return str.substr(0, end + 1);
+    return str.substr(0, end);
 }
 
 inline bool is_same_type_pointer(ASR::ttype_t* source, ASR::ttype_t* dest) {
@@ -5564,6 +5623,20 @@ template <typename SemanticAbort>
     throw SemanticAbort();
 }
 
+// Kind and length values are stored as int64_t in ASR, but are used as int.
+template <typename SemanticAbort>
+inline int constant_value_to_int(int64_t value, const std::string &what,
+        const Location& loc, diag::Diagnostics &diag) {
+    if (!integer_fits<int>(value)) {
+        diag.add(diag::Diagnostic(
+            what + " " + std::to_string(value) + " is out of range for integer(4)",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("", {loc})}));
+        throw SemanticAbort();
+    }
+    return static_cast<int>(value);
+}
+
 // this function only extract's the 'kind' and raises an error when it's of
 // inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
 // for whose kind it is
@@ -5589,7 +5662,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
                         report_valueless_kind_parameter<SemanticAbort>(
                             kind_variable, loc, diag);
                     }
-                    return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
+                    return constant_value_to_int<SemanticAbort>(
+                        ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n,
+                        "kind value", loc, diag);
                 } else {
                     diag.add(diag::Diagnostic(
                         "Integer variable required. " + std::string(kind_variable->m_name) +
@@ -5612,7 +5687,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(kind_expr);
             if ( kind_isf->m_value &&
                     ASR::is_a<ASR::IntegerConstant_t>(*kind_isf->m_value) ) {
-                return ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value)->m_n;
+                return constant_value_to_int<SemanticAbort>(
+                    ASR::down_cast<ASR::IntegerConstant_t>(kind_isf->m_value)->m_n,
+                    "kind value", loc, diag);
             } else {
                 diag.add(diag::Diagnostic(
                     "Only Integer literals or expressions which "
@@ -5627,7 +5704,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
             ASR::TypeInquiry_t* kind_ti =
                 ASR::down_cast<ASR::TypeInquiry_t>(kind_expr);
             if (kind_ti->m_value) {
-                return ASR::down_cast<ASR::IntegerConstant_t>(kind_ti->m_value)->m_n;
+                return constant_value_to_int<SemanticAbort>(
+                    ASR::down_cast<ASR::IntegerConstant_t>(kind_ti->m_value)->m_n,
+                    "kind value", loc, diag);
             } else {
                 diag.add(diag::Diagnostic(
                     "Only Integer literals or expressions which "
@@ -5641,7 +5720,9 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
         case ASR::exprType::BitCast: {
             ASR::BitCast_t* kind_bc = ASR::down_cast<ASR::BitCast_t>(kind_expr);
             if (kind_bc->m_value) {
-                return ASR::down_cast<ASR::IntegerConstant_t>(kind_bc->m_value)->m_n;
+                return constant_value_to_int<SemanticAbort>(
+                    ASR::down_cast<ASR::IntegerConstant_t>(kind_bc->m_value)->m_n,
+                    "kind value", loc, diag);
             } else {
                 diag.add(diag::Diagnostic(
                     "Only Integer literals or expressions which "
@@ -5690,8 +5771,9 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
     int a_len = -1;
     switch( len_expr->type ) {
         case ASR::exprType::IntegerConstant: {
-            a_len = ASR::down_cast<ASR::IntegerConstant_t>
-                    (len_expr)->m_n;
+            a_len = constant_value_to_int<SemanticAbort>(
+                ASR::down_cast<ASR::IntegerConstant_t>(len_expr)->m_n,
+                "character length", loc, diag);
             break;
         }
         case ASR::exprType::Var: {
@@ -5703,7 +5785,9 @@ inline int extract_len(ASR::expr_t* len_expr, const Location& loc, diag::Diagnos
             if( len_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( len_variable->m_type->type == ASR::ttypeType::Integer ) {
                     LCOMPILERS_ASSERT( len_variable->m_value != nullptr );
-                    a_len = ASR::down_cast<ASR::IntegerConstant_t>(len_variable->m_value)->m_n;
+                    a_len = constant_value_to_int<SemanticAbort>(
+                        ASR::down_cast<ASR::IntegerConstant_t>(len_variable->m_value)->m_n,
+                        "character length", loc, diag);
                 } else {
                     diag.add(diag::Diagnostic(
                         "Integer variable required. " + std::string(len_variable->m_name) +
@@ -5950,8 +6034,8 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     if (check_n_dims && (n_dims_a != n_dims_b)) {
         return false;
     }
-    int total_a = get_fixed_size_of_array(dims_a,n_dims_a);
-    int total_b = get_fixed_size_of_array(dims_b,n_dims_b);
+    int64_t total_a = get_fixed_size_of_array(dims_a,n_dims_a);
+    int64_t total_b = get_fixed_size_of_array(dims_b,n_dims_b);
     // -1 means found dimension with no value at compile time, then return true anyway.
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
@@ -6580,7 +6664,7 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             continue;
         }
         if( matches(p.m_procs[i]) ) {
-            return i;
+            return checked_integer_cast<int>(i);
         }
     }
     for (size_t i=0; i < p.n_procs; i++) {
@@ -6588,7 +6672,7 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             continue;
         }
         if( matches(p.m_procs[i]) ) {
-            return i;
+            return checked_integer_cast<int>(i);
         }
     }
     if( raise_error ) {
@@ -7045,6 +7129,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                     ASRUtils::insert_module_dependency(x->m_original_name,
                         al, current_module_dependencies);
                 }
+            } else {
+                // A function of a program or procedure: nothing to import
+                ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_FunctionCall(x);
+                ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
             }
             return;
         }
@@ -8111,7 +8199,7 @@ class LabelGenerator {
 
         int get_unique_label() {
             unique_label += 1;
-            return unique_label;
+            return checked_integer_cast<int>(unique_label);
         }
 
         void add_node_with_unique_label(ASR::asr_t* node, uint64_t label) {
@@ -8377,7 +8465,8 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
             ASR::is_a<ASR::FunctionType_t>(*typei_noarray) ) {
             continue ;
         }
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(typei, dims);
+        int n_dims = checked_integer_cast<int>(
+            ASRUtils::extract_dimensions_from_ttype(typei, dims));
         ASR::Variable_t* argi = ASRUtils::EXPR2VAR(x->m_args[i]);
         if( ASR::is_a<ASR::Pointer_t>(*argi->m_type) ) {
             return false;
@@ -8423,8 +8512,8 @@ static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
     }
     ASR::expr_t* bound_value = nullptr;
     ASR::dimension_t* arr_dims = nullptr;
-    int arr_n_dims = ASRUtils::extract_dimensions_from_ttype(
-        ASRUtils::expr_type(arr_expr), arr_dims);
+    int arr_n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(arr_expr), arr_dims));
     if( dim > arr_n_dims || dim < 1) {
         if ( ASR::is_a<ASR::Var_t>(*arr_expr )) {
             ASR::Var_t* non_array_var = ASR::down_cast<ASR::Var_t>(arr_expr);
@@ -8652,8 +8741,8 @@ static inline void collect_variable_dependencies(Allocator& al, SetChar& deps_ve
 }
 
 static inline int KMP_string_match(std::string &s_var, std::string &sub) {
-    int str_len = s_var.size();
-    int sub_len = sub.size();
+    int str_len = checked_integer_cast<int>(s_var.size());
+    int sub_len = checked_integer_cast<int>(sub.size());
     bool flag = 0;
     int res = -1;
     std::vector<int> lps(sub_len, 0);
@@ -8692,8 +8781,8 @@ static inline int KMP_string_match(std::string &s_var, std::string &sub) {
 }
 
 static inline int KMP_string_match_count(std::string &s_var, std::string &sub) {
-    int str_len = s_var.size();
-    int sub_len = sub.size();
+    int str_len = checked_integer_cast<int>(s_var.size());
+    int sub_len = checked_integer_cast<int>(sub.size());
     int count = 0;
     std::vector<int> lps(sub_len, 0);
     if (sub_len == 0) {
@@ -9134,7 +9223,7 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
 // }
 
 // Assigns "x->m_data[i] = value", casting the internal data pointer correctly using the type of "value"
-inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int i) {
+inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int64_t i) {
     value = ASRUtils::expr_value(value);
 
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value)));
@@ -9144,9 +9233,9 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         case ASR::ttypeType::Integer: {
             ASR::IntegerConstant_t* value_int = ASR::down_cast<ASR::IntegerConstant_t>(value);
             switch (kind) {
-                case 1: ((int8_t*)x->m_data)[i] = value_int->m_n; break;
-                case 2: ((int16_t*)x->m_data)[i] = value_int->m_n; break;
-                case 4: ((int32_t*)x->m_data)[i] = value_int->m_n; break;
+                case 1: ((int8_t*)x->m_data)[i] = checked_bit_pattern_cast<int8_t>(value_int->m_n); break;
+                case 2: ((int16_t*)x->m_data)[i] = checked_bit_pattern_cast<int16_t>(value_int->m_n); break;
+                case 4: ((int32_t*)x->m_data)[i] = checked_bit_pattern_cast<int32_t>(value_int->m_n); break;
                 case 8: ((int64_t*)x->m_data)[i] = value_int->m_n; break;
                 default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
@@ -9155,7 +9244,7 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         case ASR::ttypeType::Real: {
             ASR::RealConstant_t* value_real = ASR::down_cast<ASR::RealConstant_t>(value);
             switch (kind) {
-                case 4: ((float*)x->m_data)[i] = value_real->m_r; break;
+                case 4: ((float*)x->m_data)[i] = static_cast<float>(value_real->m_r); break;
                 case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -9164,9 +9253,9 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
         case ASR::ttypeType::UnsignedInteger: {
             ASR::UnsignedIntegerConstant_t* value_int = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value);
             switch (kind) {
-                case 1: ((uint8_t*)x->m_data)[i] = value_int->m_n; break;
-                case 2: ((uint16_t*)x->m_data)[i] = value_int->m_n; break;
-                case 4: ((uint32_t*)x->m_data)[i] = value_int->m_n; break;
+                case 1: ((uint8_t*)x->m_data)[i] = checked_bit_pattern_cast<uint8_t>(value_int->m_n); break;
+                case 2: ((uint16_t*)x->m_data)[i] = checked_bit_pattern_cast<uint16_t>(value_int->m_n); break;
+                case 4: ((uint32_t*)x->m_data)[i] = checked_bit_pattern_cast<uint32_t>(value_int->m_n); break;
                 case 8: ((uint64_t*)x->m_data)[i] = value_int->m_n; break;
                 default:
                     throw LCompilersException("Unsupported kind for unsigned integer array constant.");
@@ -9176,8 +9265,8 @@ inline void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value,
             ASR::ComplexConstant_t* value_complex = ASR::down_cast<ASR::ComplexConstant_t>(value);
             switch (kind) {
                 case 4:
-                    ((float*)x->m_data)[i] = value_complex->m_re;
-                    ((float*)x->m_data)[i+1] = value_complex->m_im; break;
+                    ((float*)x->m_data)[i] = static_cast<float>(value_complex->m_re);
+                    ((float*)x->m_data)[i+1] = static_cast<float>(value_complex->m_im); break;
                 case 8:
                     ((double*)x->m_data)[i] = value_complex->m_re;
                     ((double*)x->m_data)[i+1] = value_complex->m_im; break;
@@ -9219,7 +9308,7 @@ inline std::string to_string_with_precision(const T a_value, const int n) {
     return std::move(out).str();
 }
 
-inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int i) {
+inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int64_t i) {
    int kind = ASRUtils::extract_kind_from_ttype_t(type);
 
     switch (type->type) {
@@ -9299,22 +9388,22 @@ inline std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int
     }
 }
 
-inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t* x, int i) {
+inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t* x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x->m_type));
     return fetch_ArrayConstant_value(x->m_data, type, i);
 }
 
-inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t &x, int i) {
+inline std::string fetch_ArrayConstant_value(ASR::ArrayConstant_t &x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
     return fetch_ArrayConstant_value(x.m_data, type, i);
 }
 
-inline std::string fetch_ArrayConstant_value(const ASR::ArrayConstant_t &x, int i) {
+inline std::string fetch_ArrayConstant_value(const ASR::ArrayConstant_t &x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
     return fetch_ArrayConstant_value(x.m_data, type, i);
 }
 
-inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc, void *data, ASR::ttype_t* type, int i) {
+inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc, void *data, ASR::ttype_t* type, int64_t i) {
     int kind = ASRUtils::extract_kind_from_ttype_t(type);
     ASR::expr_t* value = nullptr;
     switch (type->type) {
@@ -9396,17 +9485,17 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
     }
 }
 
-inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t* x, int i) {
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t* x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x->m_type));
     return fetch_ArrayConstant_value_helper(al, x->base.base.loc, x->m_data, type, i);
 }
 
-inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t &x, int i) {
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t &x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
 }
 
-inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayConstant_t &x, int i) {
+inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayConstant_t &x, int64_t i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
 }
@@ -9464,19 +9553,19 @@ inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         flat_index += index * stride;
         stride *= length;
     }
-    size_t index_unsigned = flat_index;
-    if (flat_index < 0 || index_unsigned >= (size_t)
+    if (flat_index < 0 || flat_index >=
             ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
         return nullptr;
     }
     return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
-        index_unsigned);
+        flat_index);
 }
 
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+        data[i] = checked_bit_pattern_cast<T>(
+            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n);
     }
     return data;
 }
@@ -9484,7 +9573,8 @@ T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n;
+        data[i] = checked_bit_pattern_cast<T>(
+            ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(a_args[i]))->m_n);
     }
     return data;
 }
@@ -9492,7 +9582,8 @@ T* set_data_uint(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[i] = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r;
+        data[i] = static_cast<T>(
+            ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))->m_r);
     }
     return data;
 }
@@ -9500,8 +9591,10 @@ T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
 template<typename T>
 T* set_data_complex(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
-        data[2*i] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re;
-        data[2*i + 1] = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im;
+        data[2*i] = static_cast<T>(
+            ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re);
+        data[2*i + 1] = static_cast<T>(
+            ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im);
     }
     return data;
 }
@@ -9604,6 +9697,10 @@ inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) 
     }
     if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
         return n_args * sizeof(void*);
+    }
+    // Logical data is stored as one `bool` per element, whatever the kind.
+    if (ASR::is_a<ASR::Logical_t>(*a_type)) {
+        return n_args * sizeof(bool);
     }
     return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
 }
@@ -9764,7 +9861,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
             false, ASR::array_physical_typeType::PointerArray, true);
     } else if( ASR::is_a<ASR::Allocatable_t>(*a_type) ) {
         ASR::dimension_t* m_dims = nullptr;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(a_type, m_dims);
         if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
             a_type = ASRUtils::duplicate_type_with_empty_dims(al, a_type);
         }
@@ -10292,6 +10389,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 Vec<ASR::dimension_t> dimension_;
                 dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                 ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
+                // An assumed-rank dummy receives a descriptor of the actual
+                // argument's rank. The dummy's own type is shared by every
+                // call, so the target physical type is kept separately.
+                ASR::array_physical_typeType cast_physical_type = orig_arg_array_t->m_physical_type;
 
                 if (ASRUtils::is_pointer(physical_cast_type) &&
                     orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
@@ -10300,7 +10401,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
                     dimensions = nullptr;
@@ -10312,7 +10413,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                     // Assumed-rank actual argument (0 compile-time dims) passed
                     // to a known-rank formal parameter (e.g. inside select rank).
@@ -10376,7 +10477,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type(al,
                                                                             physical_cast_type,
                                                                             dimensions,
-                                                                            orig_arg_array_t->m_physical_type,
+                                                                            cast_physical_type,
                                                                             true);
                 // For assumed-rank allocatable/pointer parameters, preserve the
                 // Allocatable/Pointer wrapper so the LLVM backend knows to use
@@ -10406,13 +10507,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                                     arg->base.loc,
                                                     arg,
                                                     arg_array_t->m_physical_type,
-                                                    orig_arg_array_t->m_physical_type,
+                                                    cast_physical_type,
                                                     cast_target_type,
                                                     nullptr));
                 a_args[i] = physical_cast_arg;
-                if (is_orig_assumed_rank) {
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::AssumedRankArray;
-                }
             }
         }
         if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
@@ -10894,9 +10992,17 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
     if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
-        if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-            type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+        // A pointer to an array must have deferred shape, so drop the
+        // dimensions if any of them still carries a length. Checking only
+        // whether some dimension is empty is not enough: an assumed-size
+        // array such as `a(1, *)` has an empty last dimension but an
+        // explicit first one.
+        for( size_t i = 0; i < n_dims; i++ ) {
+            if( m_dims[i].m_length != nullptr ) {
+                type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+                break;
+            }
         }
     }
 

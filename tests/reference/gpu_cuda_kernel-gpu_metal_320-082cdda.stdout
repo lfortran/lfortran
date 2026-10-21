@@ -16,15 +16,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* r,
+    float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
-    float* __data_self_op__a,
+    float* __restrict__ __data_self_op__a,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __size_self_op__a = __scalar_args.__size_self_op__a;
     int __lb_self_op__a_dim1 = __scalar_args.__lb_self_op__a_dim1;
-    int __1__data_self_op__a = __scalar_args.__1__data_self_op__a;
     int __flat_idx;
     int i;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 3)) {
@@ -42,15 +40,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* r,
+    float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
-    float* __data_self_op__a,
+    float* __restrict__ __data_self_op__a,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
-    int __size_self_op__a = __scalar_args.__size_self_op__a;
     int __lb_self_op__a_dim1 = __scalar_args.__lb_self_op__a_dim1;
-    int __1__data_self_op__a = __scalar_args.__1__data_self_op__a;
     int __flat_idx;
     int i;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 3)) {

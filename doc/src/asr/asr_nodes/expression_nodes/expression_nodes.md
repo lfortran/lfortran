@@ -53,6 +53,8 @@ GetPointer
 GpuAtomicFetchAdd
 GpuBlockIndex
 GpuBlockSize
+GpuLaneBroadcast
+GpuLaneIndex
 GpuThreadIndex
 Iachar
 Ichar

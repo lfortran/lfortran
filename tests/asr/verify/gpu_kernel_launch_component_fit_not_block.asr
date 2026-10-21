@@ -111,7 +111,7 @@
               :body [
                 (GpuKernelLaunch
                   :kernel (SymbolRef 1 "zero")
-                  :grid_size (IntegerConstant
+                  :thread_count (IntegerConstant
                     :n 1
                     :type (Integer
                       :kind 4
@@ -134,6 +134,10 @@
                   ]
                   :component_fit (SymbolRef 1 "zero")
                   :scratch []
+                  :stop_status nil
+                  :stop_replay []
+                  :overwritten []
+                  :overwritten_if []
                 )
                 (GpuSync)
               ]

@@ -343,7 +343,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             defop = "."[a-zA-Z]+".";
             kind = digit+ | name;
             significand = (digit+"."digit*) | ("."digit+);
-            exp = [edED][-+]? digit+;
+            exp = [edqEDQ][-+]? digit+;
             integer = digit+ ("_" kind)?;
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
@@ -574,6 +574,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'out' { KW(OUT) }
             'parameter' { KW(PARAMETER) }
             'pass' { KW(PASS) }
+            'pause' { KW(PAUSE) }
             'pointer' { KW(POINTER) }
             'post' { KW(POST) }
             'precision' { KW(PRECISION) }
@@ -899,8 +900,8 @@ std::string token(unsigned char *tok, unsigned char* cur)
 void token_loc(Location &loc, unsigned char *cur, unsigned char *tok,
         unsigned char *string_start, uint32_t loc_offset)
 {
-    loc.first = tok-string_start+loc_offset;
-    loc.last = cur-string_start-1+loc_offset;
+    loc.first = source_offset(tok-string_start+loc_offset);
+    loc.last = source_offset(cur-string_start-1+loc_offset);
 }
 
 void lex_format(unsigned char *&cur, Location &loc,

@@ -10,6 +10,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_offload_collect.h>
 
 namespace LCompilers {
 
@@ -60,6 +61,14 @@ bool match_gpu_struct_array_member_extent(ASR::expr_t *expr,
 // elementwise, so its shape in turn is that of one of its array operands.
 // Follow the chain down to the designator that actually has extents.
 ASR::expr_t* gpu_scope_array_shape_source(const ASR::Variable_t *var,
+        ASR::stmt_t **body, size_t n_body);
+
+// Whether the local array `var` of a BLOCK or ASSOCIATE scope is an
+// allocatable assigned the array a function returns -- an associate name
+// bound to such a call. The routine the function becomes gives its result
+// an explicit shape, and the assignment gives that shape, over the actual
+// arguments, to `var` (gpu_device_allocatable).
+bool gpu_scope_array_function_result(const ASR::Variable_t *var,
         ASR::stmt_t **body, size_t n_body);
 
 // The same question for the whole loop body: the scopes it opens hold the
@@ -153,7 +162,7 @@ public:
             ASR::ttype_t *t =
                 ASRUtils::type_get_past_allocatable_pointer(var->m_type);
             ASR::dimension_t *dims = nullptr;
-            int rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
+            int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(t, dims));
             if (rank <= 0) continue;
             if (ASRUtils::is_fixed_size_array(dims, rank)) continue;
             if (dims_have_lengths(dims, (size_t)rank)) continue;
@@ -173,6 +182,9 @@ public:
                 // is built, and the workspace pre-flight then decides
                 // whether the host can evaluate it.
                 if (gpu_scope_array_shape_source(var, body, n_body)) {
+                    continue;
+                }
+                if (gpu_scope_array_function_result(var, body, n_body)) {
                     continue;
                 }
             }
@@ -334,8 +346,8 @@ private:
     static bool has_runtime_extent(ASR::ttype_t *t) {
         if (!t) return false;
         ASR::dimension_t *dims = nullptr;
-        int rank = ASRUtils::extract_dimensions_from_ttype(
-            ASRUtils::type_get_past_allocatable_pointer(t), dims);
+        int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(t), dims));
         return rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank);
     }
 

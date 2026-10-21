@@ -2,7 +2,7 @@
     "basename": "asr-gpu_kernel_launch_polymorphic_array_argument-93eb20f",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr",
-    "infile_hash": "8450b7c8b21bf4a2347900f22e97810559a7f6d3dfb09a1064365834",
+    "infile_hash": "2154e12e1697b1004de8621a0cf7bb0acf2606235db9f710effff172",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

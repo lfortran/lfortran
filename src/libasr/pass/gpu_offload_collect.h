@@ -94,6 +94,10 @@ public:
 
 bool expr_has_function_call(ASR::expr_t *expr);
 
+// Whether `e` is a call of a function that is not elemental and returns an
+// array of an intrinsic numeric, logical or derived type, past a physical cast.
+bool gpu_is_array_function_result(ASR::expr_t *e);
+
 // Collects the names every Var in an expression tree refers to.
 class GpuVarNameCollector : public ASR::BaseWalkVisitor<GpuVarNameCollector> {
 public:

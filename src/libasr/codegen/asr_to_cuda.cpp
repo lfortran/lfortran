@@ -64,10 +64,42 @@ struct CudaDialect {
         return "";
     }
 
+    // A buffer no other buffer of the launch aliases. nvcc then reads one
+    // the kernel does not store to through the read-only data path, and
+    // keeps a value it loaded across a store to another buffer.
+    std::string noalias_qualifier() const {
+        return "__restrict__ ";
+    }
+
     // The grid position is a built-in rather than a parameter, so the kernel
     // takes none and derives it in its first statement instead.
     void emit_thread_id_param(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
+
+    // An iteration runs on one thread: the CUDA capabilities give each
+    // iteration one lane (gpu_decline.cpp), so no kernel has lanes here.
+    void emit_lane_thread_params(std::stringstream & /*src*/,
+            bool /*has_prev*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
+    void emit_lane_prologue(std::stringstream & /*src*/,
+            const std::string & /*indent*/,
+            const std::string & /*lanes*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
+    std::string lane_index() const {
+        LCOMPILERS_ASSERT(false);
+        return "0";
+    }
+    std::string lane_broadcast(const std::string &value) const {
+        LCOMPILERS_ASSERT(false);
+        return value;
+    }
+    void emit_lane_barrier(std::stringstream & /*src*/,
+            const std::string & /*indent*/,
+            const std::string & /*lanes*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
 
     // A bare literal is double precision, which would pick the wrong
     // overload of an intrinsic taking single precision arguments.
@@ -157,9 +189,11 @@ struct CudaDialect {
             src << "}\n";
             return;
         }
+        if (kernel_names.empty()) return;
         src << "typedef void (*kernel_func_t)(void);\n";
         src << "extern \"C\" void lfortran_gpu_register_kernel("
                "const char *name, kernel_func_t func);\n\n";
+        src << "namespace {\n";
         src << "struct _lfortran_cuda_registrar {\n";
         src << "    _lfortran_cuda_registrar() {\n";
         for (auto &kname : kernel_names) {
@@ -168,6 +202,7 @@ struct CudaDialect {
         }
         src << "    }\n";
         src << "} _lfortran_cuda_reg;\n";
+        src << "}\n";
     }
 };
 

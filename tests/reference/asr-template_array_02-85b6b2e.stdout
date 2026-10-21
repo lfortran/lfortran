@@ -278,6 +278,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )
                                                     (DoLoop
                                                         ()
@@ -319,6 +320,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -519,6 +521,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )
                                                     (DoLoop
                                                         ()
@@ -560,6 +563,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -1336,6 +1340,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )
                                                     (DoLoop
                                                         ()
@@ -1369,6 +1374,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -1544,6 +1550,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )
                                                     (DoLoop
                                                         ()
@@ -1577,6 +1584,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -1683,6 +1691,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (ArrayItem
@@ -1697,6 +1706,7 @@
                                             )
                                             (Var 16 i)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                         )]
@@ -1727,6 +1737,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 16 sb)
@@ -1746,13 +1757,7 @@
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerBinOp
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        Mul
-                                                        (IntegerConstant 10 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        ()
-                                                    ))]
+                                                    (IntegerConstant 10 (Integer 4) Decimal))]
                                                     PointerArray
                                                     Global
                                                 )
@@ -1763,6 +1768,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1942,6 +1948,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 3 r)
                                     Public
@@ -2062,6 +2069,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 5 r)
                                     Public
@@ -2147,6 +2155,7 @@
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -2243,6 +2252,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

@@ -376,7 +376,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
 
         if (is_param) {
             ASR::stmt_t* param_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false));
+                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false, false));
             pass_result.push_back(al, param_assign);
         }
     }
@@ -463,6 +463,7 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }

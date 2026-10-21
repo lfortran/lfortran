@@ -1639,10 +1639,10 @@ uint64_t linecol_to_pos(const std::string &s, uint16_t line, uint16_t col) {
 }
 
 // Converts a linear position `position` to a (line, col) tuple
-void pos_to_linecol(const std::string &s, uint64_t position,
-            uint16_t &line, uint16_t &col) {
-    uint64_t pos = 0;
-    uint64_t nlpos = 0;
+void pos_to_linecol(const std::string &s, uint32_t position,
+            uint32_t &line, uint32_t &col) {
+    uint32_t pos = 0;
+    uint32_t nlpos = 0;
     line = 1;
     while (true) {
         nlpos = pos;
@@ -2168,7 +2168,7 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
 
 void add_ws_warning(const Location &loc,
         LCompilers::diag::Diagnostics &diagnostics, bool fixed_form,
-        int end_token, int a_kind = 4) {
+        int end_token, int64_t a_kind = 4) {
     if (!fixed_form) {
         if (end_token == yytokentype::KW_ENDDO) {
             diagnostics.parser_style_label(
@@ -2181,32 +2181,24 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'end if'");
         } else if (end_token == yytokentype::KW_REAL) {
-                if (a_kind == 4){
+                if (a_kind == 4 || a_kind == 8 || a_kind == 10 || a_kind == 16) {
+                        std::string k = std::to_string(a_kind);
                         diagnostics.parser_style_label(
-                        "Use real(4) instead of real*4",
+                        "Use real(" + k + ") instead of real*" + k,
                         {loc},
-                        "help: write this as 'real(4)'");
-                } else if(a_kind == 8){
-                        diagnostics.parser_style_label(
-                        "Use real(8) instead of real*8",
-                        {loc},
-                        "help: write this as 'real(8)'");
+                        "help: write this as 'real(" + k + ")'");
                 } else {
                         diagnostics.add(LCompilers::diag::Diagnostic(
                             "kind " + std::to_string(a_kind) + " is not supported yet.",
                             LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
-                if (a_kind == 4){
+                if (a_kind == 1 || a_kind == 2 || a_kind == 4 || a_kind == 8) {
+                        std::string k = std::to_string(a_kind);
                         diagnostics.parser_style_label(
-                        "Use integer(4) instead of integer*4",
+                        "Use integer(" + k + ") instead of integer*" + k,
                         {loc},
-                        "help: write this as 'integer(4)'");
-                } else if (a_kind == 8){
-                        diagnostics.parser_style_label(
-                        "Use integer(8) instead of integer*8",
-                        {loc},
-                        "help: write this as 'integer(8)'");
+                        "help: write this as 'integer(" + k + ")'");
                 } else {
                         diagnostics.add(LCompilers::diag::Diagnostic(
                             "kind " + std::to_string(a_kind) + " is not supported yet.",
@@ -2228,28 +2220,25 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 msg2);
         } else if (end_token == yytokentype::KW_COMPLEX) {
-            if (a_kind == 16) {
+            // complex*N has kind N/2 (the size of each component); suggest
+            // only for the supported kinds, unsupported ones are reported
+            // by the semantic phase
+            if (a_kind == 8 || a_kind == 16) {
+                std::string k = std::to_string(a_kind / 2);
                 diagnostics.parser_style_label(
-                "Use complex(8) instead of complex*16",
+                "Use complex(" + k + ") instead of complex*" + std::to_string(a_kind),
                 {loc},
-                "help: write this as 'complex(8)'");
-            } else {
-                diagnostics.parser_style_label(
-                "Use complex(4) instead of complex*8",
-                {loc},
-                "help: write this as 'complex(4)'");
+                "help: write this as 'complex(" + k + ")'");
             }
         } else if (end_token == yytokentype::KW_LOGICAL) {
-            if (a_kind == 4) {
+            // suggest only for the supported kinds, unsupported ones are
+            // reported by the semantic phase
+            if (a_kind == 1 || a_kind == 2 || a_kind == 4 || a_kind == 8) {
+                std::string k = std::to_string(a_kind);
                 diagnostics.parser_style_label(
-                "Use logical(4) instead of logical*4",
+                "Use logical(" + k + ") instead of logical*" + k,
                 {loc},
-                "help: write this as 'logical(4)'");
-            } else {
-                diagnostics.parser_style_label(
-                "Use logical(8) instead of logical*8",
-                {loc},
-                "help: write this as 'logical(8)'");
+                "help: write this as 'logical(" + k + ")'");
             }
         } else if (end_token == yytokentype::KW_BYTE) {
             diagnostics.parser_style_label(
@@ -3168,6 +3157,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Pragma)
         TRIVIA_SET(DeclarationPragma)
         TRIVIA_SET(Open)
+        TRIVIA_SET(Pause)
         TRIVIA_SET(Return)
         TRIVIA_SET(Print)
         TRIVIA_SET(Read)

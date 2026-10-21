@@ -210,7 +210,10 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         for( size_t i = 0; i < func_call->n_args; i++ ) {
+            // A raw pointer to an array element is sequence associated with
+            // the dummy, which a pointer association cannot express.
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[i].m_value) ||
+                ASR::is_a<ASR::GetPointer_t>(*func_call->m_args[i].m_value) ||
                 ASRUtils::is_pointer(ASRUtils::expr_type(func_call->m_args[i].m_value)) ||
                 ASRUtils::is_allocatable(ASRUtils::expr_type(func_call->m_args[i].m_value)) ) {
                 return false;

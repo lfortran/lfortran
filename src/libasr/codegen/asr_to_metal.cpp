@@ -42,10 +42,54 @@ struct MetalDialect {
         return " [[buffer(" + std::to_string(index) + ")]]";
     }
 
+    // The Metal Shading Language has no way to say that a buffer is not
+    // aliased.
+    std::string noalias_qualifier() const {
+        return "";
+    }
+
     // The grid position is a parameter of the kernel rather than a built-in.
     void emit_thread_id_param(std::stringstream &src, bool has_prev) const {
         if (has_prev) src << ",\n";
         src << "    uint __thread_id [[thread_position_in_grid]]";
+    }
+
+    // A kernel whose iterations each run on several lanes (see
+    // gpu_vector_lanes.cpp) takes its grid position under another name,
+    // and its position within its SIMD-group too.
+    void emit_lane_thread_params(std::stringstream &src, bool has_prev) const {
+        if (has_prev) src << ",\n";
+        src << "    uint __gpu_grid_thread [[thread_position_in_grid]],\n";
+        src << "    uint __gpu_simd_lane [[thread_index_in_simdgroup]]";
+    }
+
+    // The lanes of an iteration are consecutive threads of one SIMD-group,
+    // as `lanes` divides the SIMD-group width (the lanes a device's
+    // capabilities give), and the threads of a threadgroup fill its
+    // SIMD-groups in order.
+    void emit_lane_prologue(std::stringstream &src, const std::string &indent,
+            const std::string &lanes) const {
+        src << indent << "uint __thread_id = __gpu_grid_thread / (uint)"
+            << lanes << ";\n";
+        src << indent << "int __gpu_lane = (int)(__gpu_grid_thread % (uint)"
+            << lanes << ");\n";
+    }
+
+    std::string lane_index() const { return "__gpu_lane"; }
+
+    // The value in the first lane of the iteration. With one lane per
+    // iteration, that is the thread's own.
+    std::string lane_broadcast(const std::string &value) const {
+        return "simd_shuffle(" + value
+            + ", (ushort)(__gpu_simd_lane - (uint)__gpu_lane))";
+    }
+
+    // With one lane per iteration, the threads of a SIMD-group run
+    // different iterations, which need not reach the same barriers.
+    void emit_lane_barrier(std::stringstream &src, const std::string &indent,
+            const std::string &lanes) const {
+        src << indent << "if (" << lanes << " > 1) simdgroup_barrier("
+            "mem_flags::mem_device | mem_flags::mem_threadgroup);\n";
     }
 
     // Every real is single precision, so a literal needs no suffix to say

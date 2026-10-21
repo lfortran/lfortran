@@ -131,6 +131,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -148,6 +149,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -161,6 +163,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

@@ -5,11 +5,11 @@ struct t {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* a,
-    t* arr,
-    float* __data_arr_v,
-    int* __offsets_arr_v,
-    int* __sizes_arr_v)
+    float* __restrict__ a,
+    t* __restrict__ arr,
+    float* __restrict__ __data_arr_v,
+    int* __restrict__ __offsets_arr_v,
+    int* __restrict__ __sizes_arr_v)
 {
     int __do_loop_end;
     int __flat_idx;
@@ -24,7 +24,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __gpu_sec_i = (1 - 1);
     while (((__gpu_sec_i + 1) <= __do_loop_end)) {
         __gpu_sec_i = (__gpu_sec_i + 1);
-        a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_sec_i) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
+        a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)((__sizes_arr_v[(((int)(i) - (1))) * 2 + 1] + (__gpu_sec_i - 1))) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
     }
 }
 
@@ -33,13 +33,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    t* arr,
-    float* __data_arr_v,
-    int* __offsets_arr_v,
-    int* __sizes_arr_v,
-    float* b,
+    t* __restrict__ arr,
+    float* __restrict__ __data_arr_v,
+    int* __restrict__ __offsets_arr_v,
+    int* __restrict__ __sizes_arr_v,
+    float* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
-    float* __workspace_6)
+    float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
@@ -59,13 +59,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __gpu_elem_i = (1 - 1);
         while (((__gpu_elem_i + 1) <= __do_loop_end)) {
             __gpu_elem_i = (__gpu_elem_i + 1);
-            r[((int)(__gpu_elem_i) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_elem_i) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
+            r[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)((__sizes_arr_v[(((int)(i) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
         }
         __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __gpu_sec_i1 = (1 - 1);
         while (((__gpu_sec_i1 + 1) <= __do_loop_end1)) {
             __gpu_sec_i1 = (__gpu_sec_i1 + 1);
-            b[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(i) - (1)))] = r[((int)(__gpu_sec_i1) - (1))];
+            b[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(i) - (1)))] = r[((int)((1 + (__gpu_sec_i1 - 1))) - (1))];
         }
     }
 }
