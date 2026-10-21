@@ -81,6 +81,19 @@ program pointer_section_04
     if (lbound(p, 1) /= -1 .or. ubound(p, 1) /= 0) error stop 30
     if (p(-1) /= 32 .or. p(0) /= 34) error stop 31
 
+    ! The lower bounds of a bounds-spec are evaluated once
+    ncalls = 0
+    p(max(g(2), 0):) => a
+    if (ncalls /= 1) error stop 32
+    if (lbound(p, 1) /= 2 .or. ubound(p, 1) /= 11 .or. size(p) /= 10) error stop 33
+    if (p(2) /= 1 .or. p(11) /= 10) error stop 34
+    ncalls = 0
+    q(max(g(0), 0):, max(g(3), 0):) => b
+    if (ncalls /= 2) error stop 35
+    if (lbound(q, 1) /= 0 .or. ubound(q, 1) /= 3) error stop 36
+    if (lbound(q, 2) /= 3 .or. ubound(q, 2) /= 7 .or. size(q) /= 20) error stop 37
+    if (q(0, 3) /= 11 .or. q(3, 7) /= 45) error stop 38
+
     print *, "passed"
 
 contains

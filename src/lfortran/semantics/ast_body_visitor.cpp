@@ -3526,6 +3526,30 @@ public:
     }
 
     /*
+        Assigns the integer expression `value` to a new temporary variable,
+        in a statement before the current one, and returns the variable, so
+        that `value` is evaluated once even where it is referenced twice.
+    */
+    ASR::expr_t* bind_integer_temporary(ASR::expr_t* value) {
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        std::string tmp_name = current_scope->get_unique_name(
+            "__lfortran_pointer_bound_tmp");
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, value->base.loc,
+                current_scope, s2c(al, tmp_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, value_type, nullptr,
+                current_procedure_abi_type, ASR::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
+            value->base.loc, tmp_sym));
+        ASRUtils::ASRBuilder b(al, value->base.loc);
+        current_body->push_back(al, b.Assignment(tmp_var, value));
+        return tmp_var;
+    }
+
+    /*
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
@@ -3536,10 +3560,10 @@ public:
         the pointer are those of the data target, so the upper bound of
         dimension `i` is set to `lb + size(a, i) - 1`; `target` would
         otherwise refer to the upper bound of the pointer that is being
-        assigned. The data target is then referenced by the bounds as well,
-        so unless re-evaluating it has no effect (see
-        `is_reevaluable_designator`), it is evaluated once, into a temporary
-        pointer. `value` is replaced by the data target to associate the
+        assigned. The data target and the lower bound are then referenced
+        twice, so unless re-evaluating them has no effect (see
+        `is_reevaluable_designator` and `is_reevaluable_subscript`), each is
+        evaluated once, into a temporary. `value` is replaced by the data target to associate the
         pointer with; returns the form of the bounds.
     */
     ASR::pointer_bounds_formType set_pointer_assignment_bounds(
@@ -3636,6 +3660,11 @@ public:
         for (size_t i = 0; i < target->n_args; i++) {
             ASR::expr_t* lb = target->m_args[i].m_left;
             const Location& loc = lb->base.loc;
+            // The lower bound is referenced by the upper bound as well
+            if (!is_reevaluable_subscript(lb)) {
+                lb = bind_integer_temporary(lb);
+                target->m_args[i].m_left = lb;
+            }
             ASR::ttype_t* int_type = ASRUtils::expr_type(lb);
             ASRUtils::ASRBuilder b(al, loc);
             ASR::expr_t* extent = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
