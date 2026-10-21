@@ -87,7 +87,11 @@ Legality:
   write the same element, at its own iteration, on every path, and may read
   that element only before writing it. The array is allocatable, and the
   `do` loops below hold nothing that may change its allocation (the copy is
-  allocated once, before them).
+  allocated once, before them): their statements define neither the array
+  as a whole nor the variable it is a component of, whether by an
+  assignment (of a derived-type object too) or as an actual argument of a
+  subroutine or a function, and their effects are ones the pass models
+  (below; `allocate`, for example, is not).
 * The intermediate arrays keep the values the producer gave them, which the
   program may read later. The two loops must be the body of `do` loops (time
   steps, stages), taken from the innermost outwards while each has a unit

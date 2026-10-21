@@ -656,9 +656,12 @@ public:
             return;
         }
         // A whole array component may be reallocated, which changes its
-        // bounds: count it as a change of the variable it belongs to.
+        // bounds, and so may the allocatable components of a whole
+        // derived-type component: count either as a change of the
+        // variable it belongs to.
         if (ASR::is_a<ASR::StructInstanceMember_t>(*t)
-                && ASRUtils::is_array(ASRUtils::expr_type(t))) {
+                && (ASRUtils::is_array(ASRUtils::expr_type(t))
+                    || is_scalar_struct(ASRUtils::expr_type(t)))) {
             if (root) e.scalars.insert(root);
         }
         ASR::expr_t *base = t;

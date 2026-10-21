@@ -67,7 +67,12 @@ namespace LCompilers {
  *   only at its own iteration, the same element on every path through its
  *   body, and read it only at that element before writing it. The array is
  *   allocatable; its copy is allocated before the outermost DO loop below,
- *   which must hold nothing that may change the array's allocation.
+ *   which must hold nothing that may change the array's allocation: the
+ *   statements of those loops define neither the array as a whole nor the
+ *   variable it is a component of (an assignment, also of a derived-type
+ *   object, or an actual argument for a dummy that is not INTENT(IN), of a
+ *   function too), and have no effects gpu_collect_effects does not
+ *   model (ALLOCATE, ...).
  * * The producer's arrays keep the values the producer gave them, which the
  *   program may read after the loops. The two loops must be the body of DO
  *   loops (a time step and its stages), taken from the innermost outwards
@@ -143,33 +148,6 @@ bool has_early_exit(ASR::stmt_t **body, size_t n) {
         void visit_Return(const ASR::Return_t &) { found = true; }
         void visit_GoTo(const ASR::GoTo_t &) { found = true; }
         void visit_GoToTarget(const ASR::GoToTarget_t &) { found = true; }
-    } f;
-    for (size_t i = 0; i < n; i++) f.visit_stmt(*body[i]);
-    return f.found;
-}
-
-// Whether a statement list holds a statement that may change the
-// allocation of an array: an allocation, a deallocation, an intrinsic
-// subroutine (move_alloc) or a call of a subroutine.
-bool may_reallocate(ASR::stmt_t **body, size_t n) {
-    struct Find : public ASRUtils::BlockBodyWalkVisitor<Find> {
-        bool found = false;
-        void visit_Allocate(const ASR::Allocate_t &) { found = true; }
-        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &) {
-            found = true;
-        }
-        void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &) {
-            found = true;
-        }
-        void visit_IntrinsicImpureSubroutine(
-            const ASR::IntrinsicImpureSubroutine_t &) { found = true; }
-        void visit_SubroutineCall(const ASR::SubroutineCall_t &) {
-            found = true;
-        }
-        void visit_Assignment(const ASR::Assignment_t &x) {
-            if (x.m_realloc_lhs || x.m_move_allocation) found = true;
-            ASRUtils::BlockBodyWalkVisitor<Find>::visit_Assignment(x);
-        }
     } f;
     for (size_t i = 0; i < n; i++) f.visit_stmt(*body[i]);
     return f.found;
@@ -1312,12 +1290,6 @@ public:
             }
         }
         if (loops.empty()) return fail();
-        // A renamed array's copy is allocated once, before the outermost of
-        // these loops, which must not change its allocation.
-        if (!renamed.empty() && may_reallocate(loops.back()->m_body,
-                loops.back()->n_body)) {
-            return fail();
-        }
 
         Location loc = body[i + 1]->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -1339,6 +1311,17 @@ public:
             ASR::ttype_t *t = ASRUtils::expr_type(des);
             if (!ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)
                     || may_be_pointer_target(des)) {
+                return fail();
+            }
+            // Its copy is allocated once, before the outermost of these
+            // loops, which must not change its allocation. What may change
+            // it is a definition of the array, or of a derived-type object
+            // or component it is part of, as a whole (an assignment or an
+            // actual argument), which gpu_collect_effects counts as a
+            // definition of the variable it belongs to; or an effect it
+            // does not model (ALLOCATE, ...), which ended the chain above.
+            ASR::symbol_t *root = gpu_designator_base(des).root;
+            if (root == nullptr || assigned_in_loops.count(root)) {
                 return fail();
             }
             designators[k] = des;
