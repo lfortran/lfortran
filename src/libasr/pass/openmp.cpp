@@ -1301,6 +1301,13 @@ class ParallelRegionVisitor :
         ASR::symbol_t* create_interface_lcompilers_function(ASR::Function_t* func) {
             ASRUtils::ASRBuilder b(al, func->base.base.loc);
             SymbolTable* current_scope_copy = current_scope;
+            // The backend declares the procedures of a BLOCK, but not of an
+            // ASSOCIATE, so the interface goes to the enclosing scope.
+            while (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)
+                    && ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(
+                        current_scope->asr_owner))) {
+                current_scope = current_scope->parent;
+            }
             current_scope = al.make_new<SymbolTable>(current_scope);
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, func->base.base.loc, ASR::cptr_kindType::CPtrUnspecified)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
@@ -1536,6 +1543,30 @@ class ParallelRegionVisitor :
 
             transform_stmts(xx.m_body, xx.n_body);
             current_scope = current_scope_copy;
+        }
+
+        // The statements of an ASSOCIATE or BLOCK construct live in its symbol
+        // and refer to the names it declares.
+        template <typename T>
+        void visit_block_construct(const T &x) {
+            T& xx = const_cast<T&>(x);
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = xx.m_symtab;
+
+            for (auto &a : xx.m_symtab->get_scope()) {
+                this->visit_symbol(*a.second);
+            }
+
+            transform_stmts(xx.m_body, xx.n_body);
+            current_scope = current_scope_copy;
+        }
+
+        void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
+            visit_block_construct(x);
+        }
+
+        void visit_Block(const ASR::Block_t &x) {
+            visit_block_construct(x);
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -2329,7 +2360,7 @@ class ParallelRegionVisitor :
                         sym, ASRUtils::symbol_type(sym), nullptr)),
                         b.PointerToCPtr(
                             ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, 
-                                b.Var(current_scope->get_symbol(it.first)), 
+                                b.Var(current_scope->resolve_symbol(it.first)), 
                                 ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, sym_type)), nullptr)),
                             ASRUtils::symbol_type(sym))
                     ));
@@ -2338,7 +2369,7 @@ class ParallelRegionVisitor :
                     nested_lowered_body.push_back(copy_value(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first))
+                        b.Var(current_scope->resolve_symbol(it.first))
                     ));
                 }
             }
