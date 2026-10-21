@@ -12223,8 +12223,10 @@ public:
 
     /*
         Lowers a pointer assignment with a bounds-spec, `p(lb:) => a`, or a
-        bounds-remapping-list, `p(lb:ub) => a`. Semantics gives the lower and
-        the upper bound of every dimension of the pointer. The value is a
+        bounds-remapping-list, `p(lb:ub) => a`. The ASR gives the lower bound
+        of every dimension of the pointer, and with a bounds-remapping-list
+        also the upper bound; with a bounds-spec the extents are those of the
+        value. The value and every bound are evaluated once. The value is a
         descriptor, or the data of a contiguous array without one; an array
         section gets a descriptor here, like in `p => a(...)`.
     */
@@ -12292,14 +12294,34 @@ public:
         int target_rank = checked_integer_cast<int>(target_section->n_args);
         Vec<llvm::Value*> lbs; lbs.reserve(al, target_rank);
         Vec<llvm::Value*> sizes; sizes.reserve(al, target_rank);
+        bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
+        ASR::dimension_t* value_dims = nullptr;
+        ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
         for (int i = 0; i < target_rank; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
-            LCOMPILERS_ASSERT(idx.m_left != nullptr && idx.m_right != nullptr);
+            LCOMPILERS_ASSERT(idx.m_left != nullptr && (idx.m_right == nullptr) == bounds_spec);
             visit_expr_wrapper(idx.m_left, true);
             llvm::Value* lb = builder->CreateSExtOrTrunc(tmp, idx_type);
+            lbs.push_back(al, lb);
+            if (bounds_spec) {
+                // The pointer has the extents of the value, so its upper
+                // bound is lb + extent - 1.
+                llvm::Value* extent = nullptr;
+                if (value_desc != nullptr) {
+                    llvm::Value* value_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
+                        arr_descr->get_pointer_to_dimension_descriptor_array(
+                            value_desc_type, value_desc),
+                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
+                    extent = arr_descr->get_dimension_size(value_dim_des, true);
+                } else {
+                    load_array_size_deep_copy(value_dims[i].m_length);
+                    extent = tmp;
+                }
+                sizes.push_back(al, builder->CreateSExtOrTrunc(extent, idx_type));
+                continue;
+            }
             visit_expr_wrapper(idx.m_right, true);
             llvm::Value* ub = builder->CreateSExtOrTrunc(tmp, idx_type);
-            lbs.push_back(al, lb);
             // An upper bound below the lower bound gives the extent zero
             llvm::Value* size = builder->CreateAdd(builder->CreateSub(ub, lb),
                 llvm::ConstantInt::get(idx_type, 1));
@@ -12402,7 +12424,6 @@ public:
         // simply contiguous, so the stride of each dimension is the first
         // stride of the value times the extents of the dimensions before it.
         // A value without a descriptor is contiguous.
-        bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
         llvm::Value* current_stride = llvm::ConstantInt::get(idx_type, 1);
         if (value_desc != nullptr) {
             current_stride = arr_descr->get_stride(

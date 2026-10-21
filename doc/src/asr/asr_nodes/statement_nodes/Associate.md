@@ -37,16 +37,19 @@ statement form.
 
 A pointer assignment with a bounds-spec-list, `p(lb:) => a`, or a
 bounds-remapping-list, `p(lb:ub) => a`, has as target an
-[ArraySection](../expression_nodes/ArraySection.md) of the pointer with the
-lower and the upper bound of every dimension, and `form` says which of the two
-it is. For a bounds-spec semantics computes the upper bounds from the extents
-of the value, so the backend only lowers the bounds it is given. Every other
-association has `form` `NoPointerBounds`. The verifier checks that the form is
-set exactly when the target is a section of a pointer, that the bounds have no
-stride, that the value is not `null()`, that the value of a bounds-spec has the
-rank of the pointer and that the value of a bounds-remapping-list is an array.
-That the value of a bounds-remapping-list has rank one or is simply contiguous
-(F2018 9.5.4, 10.2.2.3) is checked by the frontend.
+[ArraySection](../expression_nodes/ArraySection.md) of the pointer, and `form`
+says which of the two it is. For a bounds-spec the section has only the lower
+bound of every dimension and no upper bound: the extents of the pointer are
+those of the value, so a backend computes the upper bound of dimension `i` as
+`lb + size(value, i) - 1`. For a bounds-remapping-list it has the lower and
+the upper bound of every dimension, as written. Neither has a stride, and the
+value and every bound are evaluated once. Every other association has `form`
+`NoPointerBounds`. The verifier checks that the form is set exactly when the
+target is a section of a pointer, that the bounds present are those of the
+form, that the value is not `null()`, that the value of a bounds-spec has the
+rank of the pointer and that the value of a bounds-remapping-list is an
+array. That the value of a bounds-remapping-list has rank one or is simply
+contiguous (F2018 9.5.4, 10.2.2.3) is checked by the frontend.
 
 ## Examples
 

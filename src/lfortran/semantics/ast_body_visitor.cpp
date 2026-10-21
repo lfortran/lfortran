@@ -3411,160 +3411,21 @@ public:
     }
 
     /*
-        Whether evaluating the designator `x` again gives the same object
-        without any effect: a variable, or a component, element or section
-        of one whose subscripts are constants, variables and bounds of such
-        designators combined by integer arithmetic. Anything else, such as a
-        function reference, may have an effect or give another object.
-    */
-    static bool is_reevaluable_subscript(ASR::expr_t* x) {
-        if (x == nullptr) {
-            return true;
-        }
-        switch (x->type) {
-            case ASR::exprType::IntegerConstant:
-                return true;
-            case ASR::exprType::Var:
-                return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x)->m_v)) &&
-                    !ASRUtils::is_array(ASRUtils::expr_type(x));
-            case ASR::exprType::IntegerBinOp: {
-                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(x);
-                return is_reevaluable_subscript(binop->m_left) &&
-                    is_reevaluable_subscript(binop->m_right);
-            }
-            case ASR::exprType::IntegerUnaryMinus:
-                return is_reevaluable_subscript(
-                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
-            case ASR::exprType::Cast:
-                return is_reevaluable_subscript(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
-            case ASR::exprType::ArrayBound: {
-                // The bounds of the array that stand for a `:` subscript
-                ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(x);
-                return is_reevaluable_designator(bound->m_v) &&
-                    is_reevaluable_subscript(bound->m_dim);
-            }
-            default:
-                return false;
-        }
-    }
-
-    static bool is_reevaluable_designator(ASR::expr_t* x) {
-        switch (x->type) {
-            case ASR::exprType::Var:
-                return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x)->m_v));
-            case ASR::exprType::StructInstanceMember:
-                return is_reevaluable_designator(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v);
-            case ASR::exprType::ArrayItem: {
-                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
-                for (size_t i = 0; i < item->n_args; i++) {
-                    if (!is_reevaluable_subscript(item->m_args[i].m_right)) {
-                        return false;
-                    }
-                }
-                return is_reevaluable_designator(item->m_v);
-            }
-            case ASR::exprType::ArraySection: {
-                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
-                for (size_t i = 0; i < section->n_args; i++) {
-                    if (!is_reevaluable_subscript(section->m_args[i].m_left) ||
-                            !is_reevaluable_subscript(section->m_args[i].m_right) ||
-                            !is_reevaluable_subscript(section->m_args[i].m_step)) {
-                        return false;
-                    }
-                }
-                return is_reevaluable_designator(section->m_v);
-            }
-            default:
-                return false;
-        }
-    }
-
-    /*
-        Associates a new temporary pointer with the data target `value`, in
-        a statement before the current one, and returns the pointer.
-    */
-    ASR::expr_t* bind_pointer_target_temporary(const Location& loc,
-            ASR::expr_t* value) {
-        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-        if (!ASRUtils::is_pointer(value_type)) {
-            value_type = ASRUtils::make_Pointer_t_util(al, value->base.loc,
-                ASRUtils::duplicate_type_with_empty_dims(al,
-                    ASRUtils::type_get_past_allocatable_pointer(value_type),
-                    ASR::array_physical_typeType::DescriptorArray, true));
-        }
-        std::string tmp_name = current_scope->get_unique_name(
-            "__lfortran_pointer_target_tmp");
-        SetChar variable_dependencies_vec;
-        variable_dependencies_vec.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(
-            al, variable_dependencies_vec, value_type);
-        ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
-        if (type_decl != nullptr) {
-            type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
-        }
-        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, value->base.loc,
-                current_scope, s2c(al, tmp_name),
-                variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, value_type, type_decl,
-                current_procedure_abi_type, ASR::Public,
-                ASR::presenceType::Required, false));
-        current_scope->add_symbol(tmp_name, tmp_sym);
-        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
-            value->base.loc, tmp_sym));
-        current_body->push_back(al, ASRUtils::STMT(
-            ASRUtils::make_Associate_t_util(al, loc, tmp_var, value)));
-        return tmp_var;
-    }
-
-    /*
-        Assigns the integer expression `value` to a new temporary variable,
-        in a statement before the current one, and returns the variable, so
-        that `value` is evaluated once even where it is referenced twice.
-    */
-    ASR::expr_t* bind_integer_temporary(ASR::expr_t* value) {
-        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-        std::string tmp_name = current_scope->get_unique_name(
-            "__lfortran_pointer_bound_tmp");
-        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, value->base.loc,
-                current_scope, s2c(al, tmp_name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, value_type, nullptr,
-                current_procedure_abi_type, ASR::Public,
-                ASR::presenceType::Required, false));
-        current_scope->add_symbol(tmp_name, tmp_sym);
-        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
-            value->base.loc, tmp_sym));
-        ASRUtils::ASRBuilder b(al, value->base.loc);
-        current_body->push_back(al, b.Assignment(tmp_var, value));
-        return tmp_var;
-    }
-
-    /*
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
-        bounds. The data target of a bounds-remapping-list is not `null()`
-        and has rank one or is simply contiguous. A bounds-spec with the
-        data target `null()` disassociates the pointer, so `target` is
-        replaced by the pointer itself. With a bounds-spec, the extents of
-        the pointer are those of the data target, so the upper bound of
-        dimension `i` is set to `lb + size(a, i) - 1`; `target` would
-        otherwise refer to the upper bound of the pointer that is being
-        assigned. The data target and the lower bound are then referenced
-        twice, so unless re-evaluating them has no effect (see
-        `is_reevaluable_designator` and `is_reevaluable_subscript`), each is
-        evaluated once, into a temporary. `value` is replaced by the data target to associate the
-        pointer with; returns the form of the bounds.
+        bounds; no stride is allowed, and none is recorded. With a
+        bounds-spec, the upper bounds are left absent: the extents of the
+        pointer are those of the data target, so they follow from it, and
+        the backend evaluates the data target and each lower bound once.
+        The data target of a bounds-remapping-list is not `null()` and has
+        rank one or is simply contiguous. A bounds-spec with the data target
+        `null()` disassociates the pointer, so `target` is replaced by the
+        pointer itself. Returns the form of the bounds.
     */
     ASR::pointer_bounds_formType set_pointer_assignment_bounds(
             const AST::Associate_t& x, ASR::expr_t*& target_expr,
-            ASR::expr_t*& value) {
+            ASR::expr_t* value) {
         ASR::ArraySection_t* target = ASR::down_cast<ASR::ArraySection_t>(target_expr);
         LCOMPILERS_ASSERT(AST::is_a<AST::FuncCallOrArray_t>(*x.m_target));
         AST::FuncCallOrArray_t* ast_target =
@@ -3595,6 +3456,7 @@ public:
             if (ast_target->m_args[i].m_end != nullptr) {
                 n_upper_bounds++;
             }
+            target->m_args[i].m_step = nullptr;
         }
         if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
             // F2018 10.2.2.3, paragraphs 2 and 9
@@ -3641,24 +3503,8 @@ public:
                     Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        if (!is_reevaluable_designator(value)) {
-            value = bind_pointer_target_temporary(x.base.base.loc, value);
-        }
-        ASRUtils::ExprStmtDuplicator duplicator(al);
         for (size_t i = 0; i < target->n_args; i++) {
-            ASR::expr_t* lb = target->m_args[i].m_left;
-            const Location& loc = lb->base.loc;
-            // The lower bound is referenced by the upper bound as well
-            if (!is_reevaluable_subscript(lb)) {
-                lb = bind_integer_temporary(lb);
-                target->m_args[i].m_left = lb;
-            }
-            ASR::ttype_t* int_type = ASRUtils::expr_type(lb);
-            ASRUtils::ASRBuilder b(al, loc);
-            ASR::expr_t* extent = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
-                duplicator.duplicate_expr(value), b.i32(i + 1), int_type, nullptr));
-            target->m_args[i].m_right = b.Sub(
-                b.Add(duplicator.duplicate_expr(lb), extent), b.i_t(1, int_type));
+            target->m_args[i].m_right = nullptr;
         }
         return ASR::pointer_bounds_formType::PointerBoundsSpec;
     }

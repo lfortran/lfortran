@@ -738,24 +738,27 @@ public:
             "Associate::m_form: an association has pointer bounds if and only "
             "if its target is a section of a pointer", x.base.base.loc);
         if (pointer_section) {
+            // A bounds-spec gives only the lower bounds, the upper ones
+            // follow from the data target; a bounds-remapping-list gives
+            // both. Neither has a stride.
+            bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
             ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
             for (size_t i = 0; i < section->n_args; i++) {
-                ASR::expr_t *step = section->m_args[i].m_step;
                 require_with_loc_id(section->m_args[i].m_left != nullptr &&
-                        section->m_args[i].m_right != nullptr &&
-                        (step == nullptr || (ASR::is_a<ASR::IntegerConstant_t>(*step) &&
-                            ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n == 1)),
+                        (section->m_args[i].m_right == nullptr) == bounds_spec &&
+                        section->m_args[i].m_step == nullptr,
                     "asr.verify.associate.pointer_bounds_present",
-                    "Associate::m_target: a pointer bounds specification "
-                    "must give the lower and the upper bound of every "
-                    "dimension, and no stride", x.base.base.loc);
+                    "Associate::m_target: a pointer bounds-spec must give the "
+                    "lower bound of every dimension and a bounds-remapping-list "
+                    "the lower and the upper bound, and neither a stride",
+                    x.base.base.loc);
             }
             require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
                 "asr.verify.associate.pointer_bounds_null_target",
                 "Associate::m_value: the data target of a pointer with "
                 "bounds cannot be null()", x.base.base.loc);
             size_t value_rank = ASRUtils::extract_n_dims_from_ttype(value);
-            if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
+            if (bounds_spec) {
                 require_with_loc_id(value_rank == section->n_args,
                     "asr.verify.associate.pointer_bounds_spec_rank",
                     "Associate::m_value: the data target of a pointer "

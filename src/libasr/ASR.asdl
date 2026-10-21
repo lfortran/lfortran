@@ -65,8 +65,8 @@ stmt
     | DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
     -- Pointer assignment `target => value`. A target that is an array
     -- section of a pointer gives the bounds of the pointer: `form` is
-    -- PointerBoundsSpec for a bounds-spec-list (`p(lb:) => a`, whose upper
-    -- bounds semantics computes from the extents of the value) and
+    -- PointerBoundsSpec for a bounds-spec-list (`p(lb:) => a`: only the
+    -- lower bounds are present, the extents are those of the value) and
     -- PointerBoundsRemapping for a bounds-remapping-list (`p(lb:ub) => a`,
     -- F2018 10.2.2.3). Every other association has NoPointerBounds.
     | Associate(expr target, expr value, pointer_bounds_form form)
