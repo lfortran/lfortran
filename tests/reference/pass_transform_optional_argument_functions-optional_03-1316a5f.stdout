@@ -287,10 +287,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_)
                             (Var 5 i)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_)
                             (Var 5 __libasr_created_dummy_variable_)
+                            NoPointerBounds
                         )]
                     )
                     (Assignment
@@ -338,10 +340,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
                             (Var 5 lfortran_tmp)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
                             (Var 5 __libasr_created_dummy_variable_1)
+                            NoPointerBounds
                         )]
                     )
                     (Assignment
@@ -389,10 +393,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_2)
                             (Var 5 lfortran_tmp1)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_2)
                             (Var 5 __libasr_created_dummy_variable_2)
+                            NoPointerBounds
                         )]
                     )
                     (SubroutineCall

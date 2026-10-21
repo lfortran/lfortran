@@ -22177,7 +22177,7 @@ public:
         // same way as `sp => add_ten`, and Assignment's store lowering does
         // not match the Pointer(FunctionType) physical representation.
         association_body->push_back(al, ASRUtils::STMT(
-            ASR::make_Associate_t(al, loc, lhs, cast)));
+            ASR::make_Associate_t(al, loc, lhs, cast, ASR::pointer_bounds_formType::NoPointerBounds)));
         return tmp_var;
     }
 

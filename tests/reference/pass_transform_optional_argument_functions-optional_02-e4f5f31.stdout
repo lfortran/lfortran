@@ -119,10 +119,12 @@
                         [(Associate
                             (Var 4 __libasr_created_variable_pointer_)
                             (Var 4 i)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 4 __libasr_created_variable_pointer_)
                             (Var 4 __libasr_created_dummy_variable_)
+                            NoPointerBounds
                         )]
                     )
                     (Print

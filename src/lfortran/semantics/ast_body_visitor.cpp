@@ -549,7 +549,7 @@ public:
             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
                 variable->base.loc,
                 ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, pointer)),
-                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)))));
+                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)), ASR::pointer_bounds_formType::NoPointerBounds)));
         }
         construct_variable_pointers.clear();
         transform_stmts(body, x.n_items, x.m_items);
@@ -3492,11 +3492,12 @@ public:
         bound of the pointer that is being assigned. The data target is
         then referenced by the bounds as well, so unless re-evaluating it has
         no effect (see `is_reevaluable_designator`), it is evaluated once,
-        into a temporary pointer. Returns the data target to associate the
-        pointer with.
+        into a temporary pointer. `value` is replaced by the data target to
+        associate the pointer with; returns the form of the bounds.
     */
-    ASR::expr_t* set_pointer_assignment_bounds(const AST::Associate_t& x,
-            ASR::ArraySection_t* target, ASR::expr_t* value) {
+    ASR::pointer_bounds_formType set_pointer_assignment_bounds(
+            const AST::Associate_t& x, ASR::ArraySection_t* target,
+            ASR::expr_t*& value) {
         LCOMPILERS_ASSERT(AST::is_a<AST::FuncCallOrArray_t>(*x.m_target));
         AST::FuncCallOrArray_t* ast_target =
             AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
@@ -3524,7 +3525,7 @@ public:
             throw SemanticAbort();
         }
         if (n_upper_bounds == target->n_args) {
-            return value;
+            return ASR::pointer_bounds_formType::PointerBoundsRemapping;
         }
         if (n_upper_bounds != 0) {
             diag.add(Diagnostic(
@@ -3587,7 +3588,7 @@ public:
             target->m_args[i].m_right = b.Sub(
                 b.Add(duplicator.duplicate_expr(lb), extent), b.i_t(1, int_type));
         }
-        return value;
+        return ASR::pointer_bounds_formType::PointerBoundsSpec;
     }
 
     void visit_Associate(const AST::Associate_t& x) {
@@ -3637,9 +3638,11 @@ public:
         if (is_invalid) {
             throw SemanticAbort();
         }
+        ASR::pointer_bounds_formType bounds_form =
+            ASR::pointer_bounds_formType::NoPointerBounds;
         if (ASR::is_a<ASR::ArraySection_t>(*target) && ASRUtils::is_pointer(
                 ASRUtils::expr_type(ASR::down_cast<ASR::ArraySection_t>(target)->m_v))) {
-            value = set_pointer_assignment_bounds(x,
+            bounds_form = set_pointer_assignment_bounds(x,
                 ASR::down_cast<ASR::ArraySection_t>(target), value);
         }
         tmp = nullptr;
@@ -3686,7 +3689,8 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct) ||
                     ASRUtils::is_unlimited_polymorphic_type(target_struct) ||
                     seq_or_bindc_from_upoly) {
-                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value,
+                    bounds_form);
             }
         } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) && ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
             ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type_underlying);
@@ -3834,7 +3838,8 @@ public:
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
-            tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+            tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value,
+                bounds_form);
         }
         // Procedure characteristics only have to agree when the pointer has
         // an explicit interface (F2018 10.2.2.4), so a procedure pointer

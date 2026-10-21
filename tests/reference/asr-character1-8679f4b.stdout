@@ -255,6 +255,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Print
                         (FunctionCall

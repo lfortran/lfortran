@@ -724,20 +724,40 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
-        // A pointer assignment with a bounds-spec or a bounds-remapping-list
-        // gives every dimension of the pointer both of its bounds.
+        // A target that is a section of a pointer gives the bounds of the
+        // pointer, with the form recorded in `m_form` (F2018 10.2.2).
+        bool pointer_section = false;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+            ASR::ttype_t *pointer_type = typed_expr_type(
+                ASR::down_cast<ASR::ArraySection_t>(x.m_target)->m_v);
+            pointer_section = pointer_type != nullptr && ASRUtils::is_pointer(pointer_type);
+        }
+        require_with_loc_id(pointer_section ==
+                (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds),
+            "asr.verify.associate.pointer_bounds_form",
+            "Associate::m_form: an association has pointer bounds if and only "
+            "if its target is a section of a pointer", x.base.base.loc);
+        if (pointer_section) {
             ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-            ASR::ttype_t *pointer_type = typed_expr_type(section->m_v);
-            if (pointer_type != nullptr && ASRUtils::is_pointer(pointer_type)) {
-                for (size_t i = 0; i < section->n_args; i++) {
-                    require_with_loc_id(section->m_args[i].m_left != nullptr &&
-                            section->m_args[i].m_right != nullptr,
-                        "asr.verify.associate.pointer_bounds_present",
-                        "Associate::m_target: a pointer bounds specification "
-                        "must give the lower and the upper bound of every "
-                        "dimension", x.base.base.loc);
-                }
+            for (size_t i = 0; i < section->n_args; i++) {
+                require_with_loc_id(section->m_args[i].m_left != nullptr &&
+                        section->m_args[i].m_right != nullptr,
+                    "asr.verify.associate.pointer_bounds_present",
+                    "Associate::m_target: a pointer bounds specification "
+                    "must give the lower and the upper bound of every "
+                    "dimension", x.base.base.loc);
+            }
+            require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
+                "asr.verify.associate.pointer_bounds_null_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds cannot be null()", x.base.base.loc);
+            if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
+                require_with_loc_id(static_cast<size_t>(
+                        ASRUtils::extract_n_dims_from_ttype(value)) == section->n_args,
+                    "asr.verify.associate.pointer_bounds_spec_rank",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-spec must have the rank of the pointer",
+                    x.base.base.loc);
             }
         }
         verify_procedure_interface(value, target,

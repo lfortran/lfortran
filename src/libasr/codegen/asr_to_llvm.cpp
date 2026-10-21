@@ -12392,38 +12392,27 @@ public:
         builder->CreateStore(value_offset,
             arr_descr->get_offset(target_type_llvm, new_desc, false));
 
-        // The elements of the pointer are those of the value in array
-        // element order, so the stride of each dimension is the first
-        // stride of the value times the extents of the dimensions before
-        // it. A non-contiguous value of rank greater than one has a
-        // bounds-spec, which keeps the shape and the strides of the value.
-        int value_rank = ASRUtils::extract_n_dims_from_ttype(value_type);
+        // With a bounds-spec the pointer has the shape and the strides of
+        // the value. With a bounds-remapping-list its elements are those of
+        // the value in array element order: the value has rank one or is
+        // simply contiguous, so the stride of each dimension is the first
+        // stride of the value times the extents of the dimensions before it.
+        // A value without a descriptor is contiguous.
+        bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
         llvm::Value* current_stride = llvm::ConstantInt::get(idx_type, 1);
-        llvm::Value* same_shape = nullptr;
         if (value_desc != nullptr) {
             current_stride = arr_descr->get_stride(
                 arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
                     llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0))), true);
-            if (value_rank == target_rank && value_rank > 1) {
-                same_shape = llvm::ConstantInt::getTrue(context);
-                for (int i = 0; i < target_rank; i++) {
-                    llvm::Value* value_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                        value_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-                    same_shape = builder->CreateAnd(same_shape, builder->CreateICmpEQ(
-                        arr_descr->get_dimension_size(value_dim_des, true), sizes.p[i]));
-                }
-            }
         }
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
             llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_idx);
             llvm::Value* stride = current_stride;
-            if (same_shape != nullptr) {
-                llvm::Value* value_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                    value_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-                stride = builder->CreateSelect(same_shape,
-                    arr_descr->get_stride(value_dim_des, true), current_stride);
+            if (bounds_spec && value_desc != nullptr) {
+                stride = arr_descr->get_stride(arr_descr->get_pointer_to_dimension_descriptor(
+                    value_dim_des_arr, dim_idx), true);
             }
             builder->CreateStore(stride, arr_descr->get_stride(dim_des, false));
             builder->CreateStore(lbs.p[i], arr_descr->get_lower_bound(dim_des, false));
@@ -12670,15 +12659,7 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
-        bool is_target_pointer_section = false;
-        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
-            ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-            ASR::ttype_t* target_section_type = ASRUtils::expr_type(target_section->m_v);
-            if (ASRUtils::is_pointer(target_section_type)) {
-                is_target_pointer_section = true;
-            }
-        }
-        if (is_target_pointer_section) {
+        if (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
             handle_pointer_section_target(x);
         } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
             handle_array_section_association_to_pointer(x);

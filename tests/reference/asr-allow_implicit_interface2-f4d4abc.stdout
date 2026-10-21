@@ -301,6 +301,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 fcn~fpcast_ptr

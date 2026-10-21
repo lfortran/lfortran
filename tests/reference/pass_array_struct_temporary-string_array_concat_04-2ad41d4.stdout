@@ -508,6 +508,7 @@
                                             )
                                             ()
                                         )
+                                        NoPointerBounds
                                     )
                                     (Assignment
                                         (Var 5 __libasr_created__array_section_)
@@ -619,6 +620,7 @@
                                             )
                                             ()
                                         )
+                                        NoPointerBounds
                                     )
                                     (ExplicitDeallocate
                                         [(Var 5 __libasr_created__intrinsic_elemental_function_StringConcat)]

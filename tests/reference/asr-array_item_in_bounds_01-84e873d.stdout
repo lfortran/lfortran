@@ -1840,6 +1840,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (ArrayItem

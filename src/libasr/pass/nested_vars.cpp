@@ -1772,7 +1772,7 @@ public:
                                 }
                             }
                         } else if (is_procedure_variable) {
-                            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
+                            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val, ASR::pointer_bounds_formType::NoPointerBounds)));
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                         target, val, nullptr, false, false));

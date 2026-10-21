@@ -262,6 +262,7 @@
                                     (Associate
                                         (Var 3 v)
                                         (Var 2 myreal)
+                                        NoPointerBounds
                                     )
                                     (Assignment
                                         (Var 3 v)

@@ -10766,7 +10766,8 @@ static inline ASR::asr_t* make_IntrinsicArrayFunction_t_util(
 
 static inline ASR::asr_t* make_Associate_t_util(
     Allocator &al, const Location &a_loc,
-    ASR::expr_t* a_target, ASR::expr_t* a_value) {
+    ASR::expr_t* a_target, ASR::expr_t* a_value,
+    ASR::pointer_bounds_formType a_form=ASR::pointer_bounds_formType::NoPointerBounds) {
     ASR::ttype_t* target_type = ASRUtils::expr_type(a_target);
     ASR::ttype_t* value_type = ASRUtils::expr_type(a_value);
     if( ASRUtils::is_array(target_type) && ASRUtils::is_array(value_type) ) {
@@ -10793,7 +10794,7 @@ static inline ASR::asr_t* make_Associate_t_util(
                         value_type, dim_vec_ptr, target_ptype, true), nullptr));
         }
     }
-    return ASR::make_Associate_t(al, a_loc, a_target, a_value);
+    return ASR::make_Associate_t(al, a_loc, a_target, a_value, a_form);
 }
 
 static inline ASR::expr_t* extract_array_variable(ASR::expr_t* x) {
