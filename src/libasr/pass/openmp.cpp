@@ -1956,6 +1956,9 @@ class ParallelRegionVisitor :
                 if (shares_descriptor) {
                     sym_type = descriptor_pointer_type(var->m_type);
                     c->descriptor_arrays.insert(it.first);
+                    // The member is associated with the array, so the array
+                    // keeps its descriptor (see is_pass_array_by_data_possible).
+                    var->m_target_attr = true;
                 } else if (is_array || is_shared) {
                     sym_type = b.CPtr();
                 } else {
