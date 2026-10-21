@@ -759,6 +759,12 @@ public:
                     GpuAffine p = GpuAffine::atom(t.first);
                     base.push_back(p.plus(GpuAffine(-1)));
                     base.push_back(GpuAffine(1).plus(p, -1));
+                    // The host checks the bound before the loop, so of an
+                    // array it can tell has bounds.
+                    if (!checkable_array(ASR::down_cast<ASR::ArrayBound_t>(
+                            lb)->m_v)) {
+                        return false;
+                    }
                     pins[t.first] = lb;
                 }
                 GpuDnf facts;

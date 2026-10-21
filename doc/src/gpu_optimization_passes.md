@@ -379,7 +379,9 @@ loops around it run, and the bounds where the bands start (those of the
 first parallel loop) only when that loop runs in every iteration or its
 bounds are arithmetic that cannot fail: without division, on constants,
 scalars that are not allocatable, pointers or optional arguments, and sizes
-and bounds of arrays reached through no pointer, whose allocation it checks.
+and bounds of arrays that are not optional arguments and are reached through
+no pointer, whose allocation it checks. The pinned lower bounds must be of
+such arrays too.
 
 The cost model runs on the host before the loop: the bytes of the arrays
 that the loops of most iterations touch (the original loops a fusion keeps
