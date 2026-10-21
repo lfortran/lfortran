@@ -81,6 +81,7 @@ install(TARGETS lfortran_runtime
 # Install the header
 install(
     FILES ../../../src/libasr/runtime/lfortran_intrinsics.h
+        ../../../src/libasr/runtime/lfortran_stdin.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/lfortran/impure
 )
 
