@@ -1,0 +1,8 @@
+semantic error: the argument of the `storage_size` intrinsic must be a data object
+ --> tests/errors/storage_size_expr_01.f90:3:27
+  |
+3 |     print *, storage_size(a + 1)
+  |                           ^^^^^ this expression is not a variable or a constant
+  |
+3 |     print *, storage_size(a + 1)
+  |                           ~~~~~ help: assign the value to a variable and pass the variable instead

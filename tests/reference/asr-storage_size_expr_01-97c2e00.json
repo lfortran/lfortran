@@ -1,0 +1,13 @@
+{
+    "basename": "asr-storage_size_expr_01-97c2e00",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/storage_size_expr_01.f90",
+    "infile_hash": "1cc96c12208122d789b47c07d6ce372064e086d6b757c3e8869313ad",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-storage_size_expr_01-97c2e00.stderr",
+    "stderr_hash": "040ba644a9d4b6ae2e555134cbf326f60e65480f54e726627eb37e4b",
+    "returncode": 2
+}
