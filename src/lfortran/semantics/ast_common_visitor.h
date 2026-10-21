@@ -2508,7 +2508,7 @@ public:
     struct postponed_genericProcedure_call{
         ASR::expr_t** holder; // Pointer to the expre that should hold the `ASR::FunctionCall`
         SymbolTable* current_scope; // The scope where the `AST::FuncCallOrArray` should've been evaluated. 
-        AST::expr_t* func_call; // `AST::FuncCallOrArray`
+        AST::expr_t* func_call; // The expression to visit later, such as `g(n) + 1`
         const char* var_name; // Name of the `ASR::Variable` that the functionCall is part of [integer :: arr(genericCall())]
         std::function<void(ASR::expr_t*)> check; // Lambda function called with the returning `ASR::expr`, to check it or to build what needs it.
         // Constructor
@@ -3709,10 +3709,27 @@ public:
     }
 
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
-        return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
-            is_pending_generic_procedure(
-                AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func,
-                current_scope, true);
+        // Also a call inside the expression, such as `g(n) + 1`
+        class PendingGenericCallFinder :
+                public AST::BaseWalkVisitor<PendingGenericCallFinder> {
+        public:
+            CommonVisitor &v;
+            bool found = false;
+            PendingGenericCallFinder(CommonVisitor &v) : v{v} {}
+
+            void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+                if (v.is_pending_generic_procedure(x.m_func,
+                        v.current_scope, true)) {
+                    found = true;
+                    return;
+                }
+                AST::BaseWalkVisitor<PendingGenericCallFinder>
+                    ::visit_FuncCallOrArray(x);
+            }
+        };
+        PendingGenericCallFinder finder(*this);
+        finder.visit_expr(*expr);
+        return finder.found;
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
