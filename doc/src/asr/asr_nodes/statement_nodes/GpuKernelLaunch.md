@@ -18,7 +18,7 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | Argument | Description |
 |----------|-------------|
 | `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
-| `thread_count` | the number of threads that run the kernel's body, one per iteration of the loop; a count below one runs none. |
+| `thread_count` | the number of threads the launch numbers: one per iteration of the loop, or, when the nest is launched in tiles, one per place in whole tiles; a count below one runs none. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
 | `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
@@ -37,7 +37,22 @@ blocks of `block_size`, and returns without waiting for them. The threads are
 numbered from zero, block after block; the kernel sends every thread numbered
 `thread_count` or higher back before its body, so the host sizes what the
 launch holds per thread -- a workspace slice -- by `thread_count`, not by the
-threads it starts. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+threads it starts.
+
+On a device that asks for tiles (CUDA), a nest of two or more dimensions
+without a reduction can be launched in tiles: a block covers a tile of 32
+iterations of the dimension its stores are contiguous in by the rest of the
+block along a second dimension, the one the stores step through next in
+memory (or, if they do not agree on one, the next one in loop order). The
+block index numbers the tiles, and `thread_count` counts whole tiles. Where
+whole tiles would pad the nest by more than a quarter, as a short dimension
+does, the host tells the kernel to number the iterations flat instead, and
+`thread_count` counts iterations. Padding to whole tiles can take
+`thread_count` past the kind of the loop indices, so it is an `integer(8)`.
+The kernel checks the zero-based tile coordinates against the extents before
+adding the loop lower bounds. A padded thread returns before constructing a
+source index that could overflow even when every valid index is representable.
+[GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
 pass places it where the host next needs what a kernel wrote (see
 [GPU offloading](../../../gpu_offloading.md)).
 

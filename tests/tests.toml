@@ -4879,6 +4879,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_480.f90"
 gpu_metal_kernel = true
 
+# Loop nests of two and three dimensions run in tiles of 32 x 8 iterations
+# on CUDA, or flat where whole tiles would pad the nest by more than a
+# quarter.
+[[test]]
+filename = "../integration_tests/gpu_metal_485.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_09.f90"
 gpu_cuda_kernel = true
