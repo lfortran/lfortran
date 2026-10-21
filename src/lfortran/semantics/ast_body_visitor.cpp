@@ -726,7 +726,8 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr,
-            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr, *a_asynchronous = nullptr;
+            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr, *a_asynchronous = nullptr,
+            *a_convert = nullptr;
         int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -1259,6 +1260,42 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("convert")) {
+                // An extension (GFortran, Intel, NAG): the byte order of
+                // unformatted data.
+                if (a_convert != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `convert` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_convert = ASRUtils::EXPR(tmp);
+                if (!ASRUtils::is_character(*ASRUtils::expr_type(a_convert))) {
+                    diag.add(Diagnostic(
+                        "`convert` must be of type String",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                ASR::expr_t* convert_value = ASRUtils::expr_value(a_convert);
+                if (convert_value && ASR::is_a<ASR::StringConstant_t>(*convert_value)) {
+                    std::string convert = to_lower(
+                        ASR::down_cast<ASR::StringConstant_t>(convert_value)->m_s);
+                    rtrim(convert);
+                    if (convert != "native" && convert != "swap" &&
+                            convert != "big_endian" && convert != "little_endian") {
+                        diag.add(Diagnostic(
+                            "`convert` must be 'native', 'swap', 'big_endian' or 'little_endian'",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {kwarg.m_value->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
             }
             else {
                 const std::unordered_set<std::string> unsupported_args {"fileopt"};
@@ -1325,7 +1362,7 @@ public:
             }
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous, a_convert);
         tmp_vec.push_back(tmp);
         if (err_label != -1) {
             emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);

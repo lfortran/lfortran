@@ -6473,6 +6473,9 @@ struct UNIT_FILE {
     int32_t lf_child_io_mode;
     // See file_is_rereadable.
     bool rereadable;
+    // Set by a CONVERT= that differs from the host byte order: unformatted
+    // transfers reverse the bytes of every element and record marker.
+    bool swap_bytes;
 };
 
 int32_t last_index_used = -1;
@@ -6486,6 +6489,33 @@ static inline struct UNIT_FILE* find_unit(int32_t unit_num) {
         if (unit_to_file[i].unit == unit_num) return &unit_to_file[i];
     }
     return NULL;
+}
+
+static void swap_element_bytes(void *p, size_t elem_size, size_t n) {
+    unsigned char *b = (unsigned char *)p;
+    for (size_t i = 0; i < n; i++, b += elem_size) {
+        for (size_t lo = 0, hi = elem_size - 1; lo < hi; lo++, hi--) {
+            unsigned char t = b[lo];
+            b[lo] = b[hi];
+            b[hi] = t;
+        }
+    }
+}
+
+static inline bool unit_swaps_bytes(int32_t unit_num) {
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    return uf && uf->swap_bytes;
+}
+
+// fread() for unformatted data: n elements of elem_size bytes, converted from
+// the byte order the unit was opened with. Character data must not use it.
+static size_t unf_fread(void *p, size_t elem_size, size_t n, FILE *filep,
+        int32_t unit_num) {
+    size_t got = fread(p, elem_size, n, filep);
+    if (elem_size > 1 && unit_swaps_bytes(unit_num)) {
+        swap_element_bytes(p, elem_size, got);
+    }
+    return got;
 }
 
 static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
@@ -6502,7 +6532,7 @@ static inline int seq_unf_begin_record(int32_t unit_num, FILE* filep) {
     if (!uf) return 1;
     if (uf->seq_unf_pending == 0) {
         int32_t marker = 0;
-        if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
+        if (unf_fread(&marker, sizeof(int32_t), 1, filep, unit_num) != 1) {
             if (!feof(filep)) return 1;
             uf->after_endfile = true;
             return -1;
@@ -6521,7 +6551,7 @@ static inline int seq_unf_finish_record(int32_t unit_num, FILE* filep) {
     if (!uf) return 1;
     if (uf->seq_unf_pending == 0 && uf->seq_unf_record_len > 0) {
         int32_t end_marker = 0;
-        if (fread(&end_marker, sizeof(int32_t), 1, filep) != 1) {
+        if (unf_fread(&end_marker, sizeof(int32_t), 1, filep, unit_num) != 1) {
             return 1;
         }
         if (end_marker != uf->seq_unf_record_len) {
@@ -6679,6 +6709,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].round_mode = round_mode;
             unit_to_file[i].pad_mode = pad_mode;
             unit_to_file[i].rereadable = file_is_rereadable(filep);
+            unit_to_file[i].swap_bytes = false;
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
             return;  // Don't add duplicate entry
@@ -6706,6 +6737,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].round_mode = round_mode;
     unit_to_file[last_index_used].pad_mode = pad_mode;
     unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
+    unit_to_file[last_index_used].swap_bytes = false;
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
 }
@@ -6978,7 +7010,9 @@ _lfortran_open(int32_t unit_num,
                char* round,
                int64_t round_len,
                char* pad,
-               int64_t pad_len)
+               int64_t pad_len,
+               char* convert,
+               int64_t convert_len)
 {
     if (iostat != NULL) {
         *iostat = 0;
@@ -7266,6 +7300,35 @@ _lfortran_open(int32_t unit_num,
         }
     }
 
+    // CONVERT= is an extension: the byte order of unformatted data.
+    // -1 when it is not given, otherwise whether bytes must be swapped.
+    int swap_mode = -1;
+    if (convert != NULL) {
+        const uint16_t one = 1;
+        bool host_big_endian = *(const unsigned char *)&one == 0;
+        if (fortran_str_eq(convert, convert_len, "native")) {
+            swap_mode = 0;
+        } else if (fortran_str_eq(convert, convert_len, "swap")) {
+            swap_mode = 1;
+        } else if (fortran_str_eq(convert, convert_len, "big_endian")) {
+            swap_mode = !host_big_endian;
+        } else if (fortran_str_eq(convert, convert_len, "little_endian")) {
+            swap_mode = host_big_endian;
+        } else if (iostat != NULL) {
+            *iostat = 5002;
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
+                char* temp = "CONVERT specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
+            }
+        } else {
+            printf("Runtime error: CONVERT specifier in OPEN statement has "
+                   "invalid value '%.*s'\n",
+                   (int)convert_len, convert);
+            exit(1);
+        }
+    }
+
     if (streql(access_c, "stream")) {
         access_id = 1;
     } else if (streql(access_c, "sequential")) {
@@ -7376,7 +7439,9 @@ _lfortran_open(int32_t unit_num,
         if (already_open) {
             // Unit is already open, but we still need to update its properties like sign_mode
             // Pass NULL for filename to preserve the existing filename
+            bool was_swapping = unit_swaps_bytes(unit_num);
             store_unit_file(unit_num, NULL, already_open, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, streql(decimal_c, ",") ? 1 : decimal_mode, encoding_mode, round_mode_val, pad_mode);
+            find_unit(unit_num)->swap_bytes = swap_mode == -1 ? was_swapping : swap_mode == 1;
             internal_free(f_name_c);
             internal_free(status_c);
             internal_free(form_c);
@@ -7429,6 +7494,7 @@ _lfortran_open(int32_t unit_num,
         }
         // f_name_c is stored in the unit table, do not free it
         store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access, delim_value, blank_zero, record_length, sign_mode, decimal_mode, encoding_mode, round_mode_val, pad_mode);
+        find_unit(unit_num)->swap_bytes = swap_mode == 1;
         internal_free(status_c);
         internal_free(form_c);
         internal_free(access_c);
@@ -8432,7 +8498,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         long marker_size = (long)sizeof(int32_t);
         if (pos < 2 * marker_size
                 || fseek(fd, pos - marker_size, SEEK_SET) != 0
-                || fread(&marker, sizeof(int32_t), 1, fd) != 1
+                || unf_fread(&marker, sizeof(int32_t), 1, fd, unit_num) != 1
                 || marker < 0 || (long)marker > pos - 2 * marker_size
                 || fseek(fd, pos - 2 * marker_size - (long)marker, SEEK_SET) != 0) {
             if (iostat != NULL) { *iostat = 1; return; }
@@ -8969,7 +9035,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
                 fprintf(stderr, "Error: Record too short for int16_t.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(int16_t), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(int16_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read int16_t from sequential binary file.\n");
                 exit(1);
@@ -8981,7 +9047,7 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(*p), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
                 exit(1);
@@ -9120,7 +9186,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
                 fprintf(stderr, "Internal Compiler Error: Record too short for int32_t.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(int32_t), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(int32_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Internal Compiler Error: Failed to read int32_t from sequential binary file.\n");
                 exit(1);
@@ -9132,7 +9198,7 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(int32_t), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(int32_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Internal Compiler Error: Failed to read int32_t from stream file.\n");
                 exit(1);
@@ -9269,7 +9335,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
                 fprintf(stderr, "Error: Record too short for int64_t.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(int64_t), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(int64_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read int64_t from sequential binary file.\n");
                 exit(1);
@@ -9281,7 +9347,7 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(*p), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read int64_t from stream file.\n");
                 exit(1);
@@ -9383,7 +9449,7 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
                 fprintf(stderr, "Error: Record too short for logical.\n");
                 exit(1);
             }
-            if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
+            if (unf_fread(&temp, sizeof(int32_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read logical from sequential binary file.\n");
                 exit(1);
@@ -9397,7 +9463,7 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
             *p = (temp != 0);
         } else {
             int32_t temp = 0;
-            if (fread(&temp, sizeof(int32_t), 1, filep) != 1) {
+            if (unf_fread(&temp, sizeof(int32_t), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read logical from binary file.\n");
                 exit(1);
@@ -9598,7 +9664,7 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, kind, array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, kind, array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
                     exit(1);
@@ -9611,7 +9677,7 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
                     exit(1);
                 }
                 for (int i = 0; i < array_size; i++) {
-                    if (fread(tmp, kind, 1, filep) != 1) {
+                    if (unf_fread(tmp, kind, 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read logical from binary file.\n");
                         exit(1);
@@ -9627,7 +9693,7 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
             }
         } else {
             if (stride == 1) {
-                if (fread(p, kind, array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, kind, array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read logical array from binary file.\n");
                     exit(1);
@@ -9640,7 +9706,7 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
                     exit(1);
                 }
                 for (int i = 0; i < array_size; i++) {
-                    if (fread(tmp, kind, 1, filep) != 1) {
+                    if (unf_fread(tmp, kind, 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read logical from binary file.\n");
                         exit(1);
@@ -9718,7 +9784,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(int16_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int16_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int16_t array from binary file.\n");
                     exit(1);
@@ -9726,7 +9792,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int16_t val;
-                    if (fread(&val, sizeof(int16_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int16_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
                         exit(1);
@@ -9742,7 +9808,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(int16_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int16_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int16_t array from binary file.\n");
                     exit(1);
@@ -9750,7 +9816,7 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int16_t val;
-                    if (fread(&val, sizeof(int16_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int16_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
                         exit(1);
@@ -9828,7 +9894,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(int32_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int32_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int32_t array from binary file.\n");
                     exit(1);
@@ -9836,7 +9902,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int32_t val;
-                    if (fread(&val, sizeof(int32_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int32_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
                         exit(1);
@@ -9852,7 +9918,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(int32_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int32_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int32_t array from binary file.\n");
                     exit(1);
@@ -9860,7 +9926,7 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int32_t val;
-                    if (fread(&val, sizeof(int32_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int32_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
                         exit(1);
@@ -9937,7 +10003,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(int64_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int64_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int64_t array from binary file.\n");
                     exit(1);
@@ -9945,7 +10011,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int64_t val;
-                    if (fread(&val, sizeof(int64_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int64_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
                         exit(1);
@@ -9961,7 +10027,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(int64_t), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(int64_t), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read int64_t array from binary file.\n");
                     exit(1);
@@ -9969,7 +10035,7 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     int64_t val;
-                    if (fread(&val, sizeof(int64_t), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(int64_t), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read int64_t from binary file.\n");
                         exit(1);
@@ -10035,7 +10101,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 
             if (find_unit(unit_num)->seq_unf_pending == 0) {
                 int32_t marker = 0;
-                if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
+                if (unf_fread(&marker, sizeof(int32_t), 1, filep, unit_num) != 1) {
                     if (feof(filep)) find_unit(unit_num)->after_endfile = true;
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     printf("Error reading record marker from file.\n");
@@ -10063,7 +10129,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 
             if (find_unit(unit_num)->seq_unf_pending == 0) {
                 int32_t end_marker = 0;
-                if (fread(&end_marker, sizeof(int32_t), 1, filep) != 1) {
+                if (unf_fread(&end_marker, sizeof(int32_t), 1, filep, unit_num) != 1) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     printf("Error reading trailing record marker from file.\n");
                     exit(1);
@@ -10381,7 +10447,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
                 fprintf(stderr, "Error: Record too short for float.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(float), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(float), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read float from sequential binary file.\n");
                 exit(1);
@@ -10393,7 +10459,7 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(*p), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read float from binary file.\n");
                 exit(1);
@@ -10500,7 +10566,7 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
                 fprintf(stderr, "Error: Record too short for complex float.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(float), 2, filep, unit_num) != 2) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex float from sequential binary file.\n");
                 exit(1);
@@ -10512,7 +10578,7 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(float), 2, filep, unit_num) != 2) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
                 exit(1);
@@ -10627,7 +10693,7 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
                 fprintf(stderr, "Error: Record too short for complex double.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(double), 2, filep, unit_num) != 2) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex double from sequential binary file.\n");
                 exit(1);
@@ -10639,7 +10705,7 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(double), 2, filep, unit_num) != 2) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
                 exit(1);
@@ -10762,7 +10828,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(struct _lfortran_complex_32), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(float), 2 * (size_t)array_size, filep, unit_num) != 2 * (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex float array from binary file.\n");
                     exit(1);
@@ -10770,7 +10836,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
             } else {
                 for (int i = 0; i < array_size; i++) {
                     struct _lfortran_complex_32 val;
-                    if (fread(&val, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(float), 2, filep, unit_num) != 2) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
                         exit(1);
@@ -10786,7 +10852,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(struct _lfortran_complex_32), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(float), 2 * (size_t)array_size, filep, unit_num) != 2 * (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex float array from binary file.\n");
                     exit(1);
@@ -10794,7 +10860,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
             } else {
                 for (int i = 0; i < array_size; i++) {
                     struct _lfortran_complex_32 val;
-                    if (fread(&val, sizeof(struct _lfortran_complex_32), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(float), 2, filep, unit_num) != 2) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read complex float from binary file.\n");
                         exit(1);
@@ -10928,7 +10994,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(struct _lfortran_complex_64), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(double), 2 * (size_t)array_size, filep, unit_num) != 2 * (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex double array from binary file.\n");
                     exit(1);
@@ -10936,7 +11002,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
             } else {
                 for (int i = 0; i < array_size; i++) {
                     struct _lfortran_complex_64 val;
-                    if (fread(&val, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(double), 2, filep, unit_num) != 2) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
                         exit(1);
@@ -10952,7 +11018,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(struct _lfortran_complex_64), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(double), 2 * (size_t)array_size, filep, unit_num) != 2 * (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex double array from binary file.\n");
                     exit(1);
@@ -10960,7 +11026,7 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
             } else {
                 for (int i = 0; i < array_size; i++) {
                     struct _lfortran_complex_64 val;
-                    if (fread(&val, sizeof(struct _lfortran_complex_64), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(double), 2, filep, unit_num) != 2) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read complex double from binary file.\n");
                         exit(1);
@@ -11096,7 +11162,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(float), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(float), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read float array from binary file.\n");
                     exit(1);
@@ -11104,7 +11170,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
             } else {
                 for (int i = 0; i < array_size; i++) {
                     float val;
-                    if (fread(&val, sizeof(float), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(float), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read float from binary file.\n");
                         exit(1);
@@ -11120,7 +11186,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(float), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(float), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read float array from binary file.\n");
                     exit(1);
@@ -11128,7 +11194,7 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
             } else {
                 for (int i = 0; i < array_size; i++) {
                     float val;
-                    if (fread(&val, sizeof(float), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(float), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read float from binary file.\n");
                         exit(1);
@@ -11218,7 +11284,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
                 exit(1);
             }
             if (stride == 1) {
-                if (fread(p, sizeof(double), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(double), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read double array from binary file.\n");
                     exit(1);
@@ -11226,7 +11292,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     double val;
-                    if (fread(&val, sizeof(double), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(double), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read double from binary file.\n");
                         exit(1);
@@ -11242,7 +11308,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
             }
         } else {
             if (stride == 1) {
-                if (fread(p, sizeof(double), array_size, filep) != (size_t)array_size) {
+                if (unf_fread(p, sizeof(double), array_size, filep, unit_num) != (size_t)array_size) {
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read double array from binary file.\n");
                     exit(1);
@@ -11250,7 +11316,7 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
             } else {
                 for (int i = 0; i < array_size; i++) {
                     double val;
-                    if (fread(&val, sizeof(double), 1, filep) != 1) {
+                    if (unf_fread(&val, sizeof(double), 1, filep, unit_num) != 1) {
                         if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                         fprintf(stderr, "Error: Failed to read double from binary file.\n");
                         exit(1);
@@ -11407,7 +11473,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
                 fprintf(stderr, "Error: Record too short for double.\n");
                 exit(1);
             }
-            if (fread(p, sizeof(double), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(double), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from sequential binary file.\n");
                 exit(1);
@@ -11419,7 +11485,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
                 exit(1);
             }
         } else {
-            if (fread(p, sizeof(*p), 1, filep) != 1) {
+            if (unf_fread(p, sizeof(*p), 1, filep, unit_num) != 1) {
                 if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from binary file.\n");
                 exit(1);
@@ -13399,7 +13465,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
                 exit(1);
             }
             int32_t end_marker = 0;
-            if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
+            if (unf_fread(&end_marker, sizeof(int32_t), 1, fp, unit_num) != 1) {
                 if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
                 fprintf(stderr, "Error reading trailing record marker from file.\n");
                 exit(1);
@@ -13413,7 +13479,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
         } else if (no_values && find_unit(unit_num)->seq_unf_record_len == 0) {
             // Empty record (marker was 0): read trailing marker
             int32_t end_marker = 0;
-            if (fread(&end_marker, sizeof(int32_t), 1, fp) != 1) {
+            if (unf_fread(&end_marker, sizeof(int32_t), 1, fp, unit_num) != 1) {
                 if (iostat) { *iostat = feof(fp) ? -1 : 1; return; }
                 fprintf(stderr, "Error reading trailing record marker from file.\n");
                 exit(1);
@@ -13624,14 +13690,17 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         struct {
             void *ptr;
             int32_t len;
+            int32_t elem_size;
         } data[100];  // support max 100 args
 
         int count = 0;
 
-        // Read (size, ptr) until len == -1
+        // Read (size, element size, ptr) until len == -1. The element size
+        // is the unit of byte swapping (1 for character data).
         while (1) {
             int32_t len = va_arg(args, int32_t);
             if (len == -1) break; // sentinel
+            int32_t elem_size = va_arg(args, int32_t);
             void* ptr = va_arg(args, void*);
 
             data[count].ptr = ptr;
@@ -13640,20 +13709,35 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 exit(1);
             }
             data[count].len = len;
+            data[count].elem_size = elem_size;
             total_size += len;
             count++;
         }
         va_end(args);
 
+        bool swap = unit_swaps_bytes(unit_num);
         // Write record marker
         int32_t record_marker = (int32_t)total_size;
+        if (swap) {
+            swap_element_bytes(&record_marker, sizeof(record_marker), 1);
+        }
         if (access_id == 0) {
             fwrite(&record_marker, sizeof(record_marker), 1, filep);
         }        
         size_t written = 0;
         // Write all data chunks
         for (int i = 0; i < count; i++) {
-            written += fwrite(data[i].ptr, 1, data[i].len, filep);
+            if (swap && data[i].elem_size > 1) {
+                // The data belongs to the program: swap a copy of it.
+                char *swapped = (char*)internal_malloc(data[i].len);
+                memcpy(swapped, data[i].ptr, data[i].len);
+                swap_element_bytes(swapped, data[i].elem_size,
+                    data[i].len / data[i].elem_size);
+                written += fwrite(swapped, 1, data[i].len, filep);
+                internal_free(swapped);
+            } else {
+                written += fwrite(data[i].ptr, 1, data[i].len, filep);
+            }
         }
         // Write record marker again
         if (access_id == 0) {

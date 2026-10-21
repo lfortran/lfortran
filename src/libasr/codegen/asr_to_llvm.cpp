@@ -22796,6 +22796,7 @@ public:
         llvm::Value *decimal_data{}, *decimal_len{};
         llvm::Value *round_data{}, *round_len{};
         llvm::Value *pad_data{}, *pad_len{};
+        llvm::Value *convert_data{}, *convert_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -22904,6 +22905,12 @@ public:
             pad_data = llvm::Constant::getNullValue(character_type);
             pad_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
+        if (x.m_convert) {
+            std::tie(convert_data, convert_len) = get_string_data_and_length(x.m_convert);
+        } else {
+            convert_data = llvm::Constant::getNullValue(character_type);
+            convert_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -22926,7 +22933,8 @@ public:
                     character_type, i64,  // sign_data, sign_len
                     character_type, i64,  // decimal_data, decimal_len
                     character_type, i64,   // round_data, round_len
-                    character_type, i64    // pad_data, pad_len
+                    character_type, i64,   // pad_data, pad_len
+                    character_type, i64    // convert_data, convert_len
                 });
         tmp = builder->CreateCall(fn, {unit_val,
             f_name_data, f_name_len,
@@ -22944,7 +22952,8 @@ public:
             sign_data, sign_len,
             decimal_data, decimal_len,
             round_data, round_len,
-            pad_data, pad_len
+            pad_data, pad_len,
+            convert_data, convert_len
         });
     }
 
@@ -24217,6 +24226,11 @@ public:
                 ASR::ttype_t* value_type = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
                 ASR::ttype_t* value_type_base = ASRUtils::type_get_past_array(value_type);
                 int kind = ASRUtils::extract_kind_from_ttype_t(value_type_base);
+                // Each item is passed as (byte length, element size, data).
+                // The runtime reverses the bytes of every element on a unit
+                // opened with a non-native CONVERT=: a complex value is two
+                // reals and a character is one code unit of its kind.
+                llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 if (ASR::is_a<ASR::Complex_t>(*value_type_base)) {
                     kind *= 2;
                 }
@@ -24237,9 +24251,11 @@ public:
                             ASRUtils::get_string_type(value_type_base), tmp);
                         args.push_back(builder->CreateMul(n_elems,
                             builder->CreateTrunc(str_len, llvm_utils->i32)));
+                        args.push_back(elem_size_val);
                         args.push_back(str_data);
                     } else {
                         args.push_back(builder->CreateMul(kind_val, n_elems));
+                        args.push_back(elem_size_val);
                         args.push_back(tmp);
                     }
                     continue;
@@ -24248,10 +24264,12 @@ public:
                     std::tie(str_data, str_len) = get_string_data_and_length(m_values[i]);
                     args.push_back(builder->CreateMul(kind_val,
                         builder->CreateTrunc(str_len, llvm_utils->i32)));
+                    args.push_back(elem_size_val);
                     args.push_back(str_data);
                     continue;
                 } else if (ASR::is_a<ASR::Logical_t>(*value_type_base)) {
                     args.push_back(kind_val);
+                    args.push_back(elem_size_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Value* logical_val = tmp;
                     if (logical_val->getType()->isPointerTy()) {
@@ -24267,6 +24285,7 @@ public:
                     continue;
                 } else {
                     args.push_back(kind_val);
+                    args.push_back(elem_size_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(m_values[i], ASRUtils::expr_type(m_values[i]), module.get());
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
