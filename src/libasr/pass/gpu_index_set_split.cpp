@@ -809,7 +809,6 @@ public:
             return gpu_loop_nest_with_body(al, nest, ms, me, mbody,
                 privates);
         };
-        // Split only when the domain has an interior.
         // The iterations of the nest, in integer(8).
         auto iterations = [&]() {
             ASR::expr_t *n = nullptr;
