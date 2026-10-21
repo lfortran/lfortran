@@ -33,9 +33,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* r,
+    float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_2)
+    float* __restrict__ __workspace_2)
 {
     int nn = __scalar_args.nn;
     int __lb_r_0 = __scalar_args.__lb_r_0;

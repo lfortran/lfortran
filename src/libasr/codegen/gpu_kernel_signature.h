@@ -51,8 +51,10 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
             bool reference = is_reference(arg);
             separator();
             src << "    " << global_prefix() << type
-                << (reference ? "& " : "* ") << parameter
-                << dialect.buffer_attr(slot++);
+                << (reference ? "& " : "* ")
+                << (arg.m_noalias && !reference
+                    ? dialect.noalias_qualifier() : "")
+                << parameter << dialect.buffer_attr(slot++);
             kernel_params.push_back({type, parameter, reference
                 ? GpuKernelParamKind::StructReference
                 : GpuKernelParamKind::Buffer});
@@ -70,8 +72,11 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         std::string type = gpu_type(ASRUtils::extract_type(
             ASRUtils::symbol_type(workspace.m_variable)));
         std::string parameter = gpu_workspace_buffer_name(checked_integer_cast<int>(workspace.m_buffer_index));
+        // A workspace is device storage of its own, which nothing else the
+        // launch passes aliases (device_launch_expand.cpp).
         separator();
-        src << "    " << global_prefix() << type << "* " << parameter
+        src << "    " << global_prefix() << type << "* "
+            << dialect.noalias_qualifier() << parameter
             << dialect.buffer_attr(slot++);
         kernel_params.push_back({type, parameter, GpuKernelParamKind::Buffer});
     }

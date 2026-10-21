@@ -3526,3 +3526,39 @@ contains
         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
     end subroutine cc1_rcp_use
 end module cc1_read_complex_part
+
+! A subobject of a named constant is a constant, not a variable, so it cannot
+! be an actual argument for an INTENT(OUT) or INTENT(INOUT) dummy.
+module cc1_named_constant_subobject
+implicit none
+type :: cc1_ncs_t
+    integer :: k
+    integer :: a(2)
+end type cc1_ncs_t
+type(cc1_ncs_t), parameter :: cc1_ncs_s = cc1_ncs_t(7, [8, 9])
+type(cc1_ncs_t), parameter :: cc1_ncs_p(2) = &
+    [cc1_ncs_t(5, [1, 2]), cc1_ncs_t(6, [3, 4])]
+character(len=4), parameter :: cc1_ncs_c(2) = ["abcd", "efgh"]
+contains
+    subroutine cc1_ncs_int(n)
+        integer, intent(inout) :: n
+        n = 1
+    end subroutine cc1_ncs_int
+    subroutine cc1_ncs_arr(n)
+        integer, intent(out) :: n(:)
+        n = 1
+    end subroutine cc1_ncs_arr
+    subroutine cc1_ncs_chr(n)
+        character(len=*), intent(inout) :: n
+        n = "z"
+    end subroutine cc1_ncs_chr
+    subroutine cc1_ncs_use(i)
+        integer, intent(in) :: i
+        call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+    end subroutine cc1_ncs_use
+end module cc1_named_constant_subobject

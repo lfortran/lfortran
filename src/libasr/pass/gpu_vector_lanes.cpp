@@ -1811,6 +1811,7 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
     arg.m_argument_index = kernel.n_args - 1;
     arg.m_dimension = 0;
     arg.m_written = false;
+    arg.m_noalias = false;
     scalars.push_back(al, arg);
     layout.m_scalars = scalars.p;
     layout.n_scalars = scalars.n;
