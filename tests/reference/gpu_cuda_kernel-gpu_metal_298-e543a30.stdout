@@ -5,10 +5,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    int* a,
-    int* __gpu_stop_status,
+    int* __restrict__ a,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    int* __workspace_3)
+    int* __restrict__ __workspace_3)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -56,8 +56,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    int* b,
-    int* __gpu_stop_status,
+    int* __restrict__ b,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -82,8 +82,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    int* d,
-    int* __gpu_stop_status,
+    int* __restrict__ d,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -126,8 +126,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
-    int* e,
-    int* __gpu_stop_status,
+    int* __restrict__ e,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -152,9 +152,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_4(
-    int* a,
-    int* b,
-    int* c,
+    int* __restrict__ a,
+    int* __restrict__ b,
+    int* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;

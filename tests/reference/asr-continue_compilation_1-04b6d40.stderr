@@ -4310,8 +4310,44 @@ semantic error: reading into the real or imaginary part of a complex variable is
 3465 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
      |                    ^^^^^^^^^^^ 
 
-semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
-    --> tests/errors/continue_compilation_1.f90:3474:14
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3496:26
      |
-3474 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+3496 |         call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3497:26
+     |
+3497 |         call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3498:26
+     |
+3498 |         call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3499:26
+     |
+3499 |         call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3500:26
+     |
+3500 |         call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3501:26
+     |
+3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:3510:14
+     |
+3510 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
      |              ^^^^^^^^^^^^^^ 
