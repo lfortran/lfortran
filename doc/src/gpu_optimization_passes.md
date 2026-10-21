@@ -9,13 +9,18 @@ does preserves the meaning of the program, and leaves the loops as they are
 when it cannot.
 
 They run for `--gpu=cuda` and `--gpu=cuda_cpu` (on by default), right after
-the dispatch has assigned the loops (`gpu_loop_fusion`, before
-`gpu_offload`), so their output is
+the dispatch has assigned the loops (the pass `gpu_loop_transforms`, which
+runs `gpu_loop_fusion`, then `gpu_index_set_split`, before `gpu_offload`;
+each of the two can also be run on its own with `--pass`), so their output is
 ordinary `do concurrent` nests and host code that the rest of the offload
 pipeline lowers as it lowers any other; Metal keeps its loops as written.
 `--gpu-loop-transforms` selects them: `all` (the default), `none`, or a
-comma separated list of `fuse` and `swap` (`swap` only applies to loops
-that are fused); any other value is an error.
+comma separated list of `fuse`, `swap`, `split` and `jam` (`swap` only
+applies to loops that are fused); any other value is an error. The
+choices that depend on the size of the device's last-level cache ask the
+runtime for it (`lfortran_gpu_cache_bytes`, the L2 size on CUDA) unless
+`--gpu-cache-bytes=N` states it (the tests use a small value to exercise
+the paths for large problems on small ones).
 
 The measurements quoted below are of Formal's 2D advection-diffusion
 example (`--solver workspace --order 4`, the `split` kernel: per Runge-Kutta
@@ -135,6 +140,13 @@ Legality:
   it starts; the statements of the loop may therefore change what the end
   reads, and assign it. Without such loops nothing is fused.
 
+The original loops, which run only in the last iteration, are left as
+written by the passes after this one (index-set splitting would split them
+too; `gpu_loop_transforms` hands the list of them from the fusion to the
+splitting): the offload pipeline then still sees that the producer assigns its
+arrays whole, so they are not copied to the device before it runs (4 ms at
+2048², 17 MB per array).
+
 Cost model: an element is computed by every iteration that reads it. The
 fusion is made when that extra arithmetic, the producer's expression with
 the bodies of the functions it calls times the reads beyond the first, is at
@@ -145,6 +157,78 @@ throughput.
 Effect (2048², 1000 steps): 0.544 s to 0.454 s. The fused stage kernel takes
 95 µs, the copy of the renamed field 10 µs, against 137 µs for the two
 original kernels.
+
+When inlining has shifted the subscripts of an intermediate array by its
+lower bounds, the fused loop also requires (at run time) each lower bound to
+be the producer's first index, and uses that value instead of reading the
+bound: the subscripts become constant offsets of the loop indices, which the
+index-set splitting below can reason about.
+
+## Index-set splitting (`split`, `gpu_index_set_split.cpp`)
+
+A stencil evaluates different formulas near the boundaries of its domain:
+its body, often the bodies of the pure functions it calls, tests the loop
+indices against the bounds (`if (i == 1) ... else if (i + 2 < n) ...`). Every
+iteration runs the tests, and the compiler cannot share loads between the
+formulas of neighbouring faces or of different quantities, which sit in
+different branches. Far from the boundaries every such test has one value.
+
+The pass inlines the pure functions the body calls, collects the tests that
+compare one loop index with an expression differing from the loop's lower or
+upper bound by a small constant (up to 16), and takes for each dimension the
+fewest iterations at each end outside of which all of them have one value
+(shrunk as long as no test that had one value stops having it). The nest
+becomes:
+
+* the interior, where every test the affine analysis proves to have one
+  value is replaced by the branch it takes, giving straight-line code;
+* the frame, the iterations outside the interior, numbered by one index and
+  mapped back to the original ones (bands of whole rows at both ends of the
+  outer dimension, then strips at both ends of the inner one), running the
+  original body.
+
+The frame is not a launch of its own: its iterations are few and each runs
+the long general body, so on its own it leaves the device mostly idle for as
+long as one of them takes (8 µs at 2048²). They are packed as extra rows in
+front of the interior's outer dimension instead, so they start first and run
+alongside the interior, in the same launch. The nest keeps the original loop
+indices for the interior; the offload pipeline still picks the contiguous
+index of the launch from the interior's stores (a store whose subscript
+names no loop index, such as the frame's, does not decide it).
+
+The frame's computed indices also hide from the offload that the iterations
+assign every element of an array before reading it, which lets a launch skip
+copying the array to the device (write-discard, see
+[GPU offloading](gpu_offloading.md)). The split nests run the iterations and
+assignments of the original one, so the pass works this out on the original
+nest and records it on the split nests as an `OMPOverwrite` clause, with the
+condition (the loop runs over exactly the array's bounds) the launch then
+evaluates. A pass that later changes which iterations a nest runs drops the
+clause.
+
+A domain too small to have an interior runs the original nest. Nests of one
+and two dimensions are split, and only bodies that compute values of
+intrinsic scalar types (assignments of scalars and array elements, `if`,
+`select case`, `do`, `block`, calls of pure functions with scalar results);
+the offload pipeline analyses other constructs on the loop as written. Tests
+that the analysis cannot decide stay in the interior as they are.
+A parallel loop in a procedure that a parallel loop calls runs on one
+thread, one iteration after the other, so such procedures are not split.
+
+A small domain runs the original nest too. Its launch takes as long as its
+slowest thread, which in the frame first computes its indices and then runs
+the original body, so the split nest only takes longer: on an NVIDIA RTX PRO
+6000 the split stencil kernel of a 256² domain takes 1.15 µs instead of
+0.99 µs, and that of a 512² one 1.15 µs instead of 1.44 µs. The host splits
+only a nest of at least 131072 iterations (`--gpu-split-min-iterations=N`; 0
+splits every nest that has an interior).
+
+Effect (2048², after fusion): 0.454 s to 0.219 s with the frame in a launch
+of its own, and from 0.170 s to 0.149 s (after the ping-pong buffers below)
+by packing the frame into the interior's launch. The fused stage kernel
+goes from 95 µs to 25.5 µs (interior) plus 8.2 µs (frame): with the boundary
+rows gone the diffusive and advective fluxes of a face share their loads,
+and the remaining loads and arithmetic are those of the interior formulas.
 
 ## Ping-pong buffers (`swap`, part of `gpu_loop_fusion.cpp`)
 
@@ -165,5 +249,42 @@ execution left in the copy, if it is there. Exchanging the allocations with
 `move_alloc` would do the same, but the host statements around a move make
 the offload pipeline wait for the device.
 
-Effect (2048²): 0.410 s to 0.361 s with fusion alone (the 10 µs copy per
-stage goes).
+Effect (2048²): 0.217 s to 0.170 s (the 10 µs copy per stage goes).
+
+## Unroll-and-jam of the interior (`jam`, part of `gpu_index_set_split.cpp`)
+
+The interior of a split nest of two dimensions runs several consecutive
+iterations of its outer dimension (the non-contiguous one) in one thread,
+one after the other. The iterations of a parallel loop are independent, so
+any of them may run in one thread in any order; run one after the other in
+straight-line code, what neighbouring rows read and compute in common (the
+loads of the rows between them, and for a stencil the fluxes of the faces
+they share) is loaded and computed once by the device compiler (the kernel
+buffers do not alias, so the stores of one row do not force the next row
+to reload). The interior's rows are a multiple of the factor, and the rows
+left over join the frame.
+
+The factor is three when the body reads some array at two or more offsets
+along the outer dimension, and one otherwise. The outer dimension must not be
+the contiguous one: every array element the body stores must have the inner
+index as its first subscript, so that the offload makes the inner index
+contiguous across the threads of a launch (jamming the contiguous index would
+spread the accesses of neighbouring threads apart). With the fourth-order stencil
+three rows compute 6 instead of 12 y faces; two and four rows were slower
+(more instructions per cell with two, register pressure with four).
+
+The jam pays only while what a launch touches stays in the device's cache,
+where the copies share loads and arithmetic. When the data streams from
+memory it does not reduce the memory traffic, and its registers lower the
+occupancy the memory throughput needs (at 4096² the jammed stage kernel
+reaches 1.22 TB/s of DRAM bandwidth at 60% occupancy, the plain one 1.36
+TB/s at 70%). Both nests are generated, and the host picks the jammed one
+when the launch's iterations times the bytes an iteration names (one
+element of every array of the body) fit in the last-level cache, which the
+runtime reports (`lfortran_gpu_cache_bytes`, the L2 size on CUDA).
+
+Effect (2048²): 0.149 s to 0.133 s. The stage kernel goes from 29 µs to
+24.7 µs, with 37% fewer instructions; it now runs at the L2 bandwidth
+(5.8 TB/s, 166 MB of L2 traffic per stage against 117 MB of compulsory
+traffic). At 4096² the run-time choice keeps the plain nest (1.39 s, against
+1.50 s with the jam).

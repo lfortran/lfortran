@@ -404,6 +404,14 @@ public:
     static void run(const std::set<ASR::OMPRegion_t*> &loops) {
         for (ASR::OMPRegion_t *region : loops) {
             region->m_exec_target = ASR::exec_targetType::ExecSerial;
+            // What a launch need not copy in means nothing without one.
+            size_t n = 0;
+            for (size_t i = 0; i < region->n_clauses; i++) {
+                if (!ASR::is_a<ASR::OMPOverwrite_t>(*region->m_clauses[i])) {
+                    region->m_clauses[n++] = region->m_clauses[i];
+                }
+            }
+            region->n_clauses = n;
         }
     }
 };

@@ -21,6 +21,8 @@ struct GpuLoopTransformName {
 const GpuLoopTransformName gpu_loop_transform_names[] = {
     {"fuse", GpuLoopFuse},
     {"swap", GpuLoopSwap},
+    {"split", GpuLoopSplit},
+    {"jam", GpuLoopJam},
 };
 
 // The transformations a value of `--gpu-loop-transforms` selects, or
@@ -94,6 +96,35 @@ bool gpu_loop_transforms_apply(const PassOptions &pass_options) {
     return gpu_device_selected(pass_options) == GpuDevice::Cuda;
 }
 
+ASR::expr_t *gpu_cache_bytes(Allocator &al, SymbolTable *unit_scope,
+        const PassOptions &pass_options, const Location &loc) {
+    ASRUtils::ASRBuilder b(al, loc);
+    if (pass_options.gpu_cache_bytes >= 0) {
+        return b.i64(pass_options.gpu_cache_bytes);
+    }
+    const std::string name = "lfortran_gpu_cache_bytes";
+    ASR::symbol_t *sym = unit_scope->get_symbol(name);
+    ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+    if (sym == nullptr) {
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit_scope);
+        ASR::expr_t *return_var = b.Variable(fn_symtab, name,
+            ASRUtils::duplicate_type(al, i64),
+            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC,
+            false);
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc,
+            fn_symtab, s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0,
+            return_var, ASR::abiType::BindC, ASR::accessType::Public,
+            ASR::deftypeType::Interface, s2c(al, name), false, false,
+            false, false, false, nullptr, 0, false, false, false,
+            nullptr);
+        sym = ASR::down_cast<ASR::symbol_t>(fn);
+        unit_scope->add_symbol(name, sym);
+    }
+    Vec<ASR::call_arg_t> args;
+    args.reserve(al, 1);
+    return b.Call(sym, args, ASRUtils::duplicate_type(al, i64));
+}
+
 ASR::expr_t *gpu_i32(Allocator &al, const Location &loc, int64_t v) {
     return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
@@ -148,7 +179,7 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
                 nest.privates.push_back(ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(p->m_vars[k])->m_v));
             }
-        } else {
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
             return false;
         }
     }
@@ -186,7 +217,8 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
 
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         const std::vector<ASR::expr_t*> &starts,
-        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body) {
+        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
+        const std::vector<ASR::symbol_t*> &extra_privates) {
     ASR::stmt_t **cur_body = body.p;
     size_t cur_n = body.n;
     for (size_t k = nest.loops.size(); k-- > 0;) {
@@ -207,11 +239,41 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         cur_n = 1;
     }
     Vec<ASR::omp_clause_t*> clauses;
-    clauses.reserve(al, nest.region->n_clauses);
+    clauses.reserve(al, nest.region->n_clauses + 1);
+    bool have_private = false;
     ASRUtils::ExprStmtDuplicator dup(al);
     for (size_t i = 0; i < nest.region->n_clauses; i++) {
-        clauses.push_back(al, dup.duplicate_omp_clause(
-            nest.region->m_clauses[i]));
+        ASR::omp_clause_t *c = nest.region->m_clauses[i];
+        if (ASR::is_a<ASR::OMPPrivate_t>(*c)) {
+            ASR::OMPPrivate_t *p = ASR::down_cast<ASR::OMPPrivate_t>(c);
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, p->n_vars + extra_privates.size());
+            for (size_t k = 0; k < p->n_vars; k++) {
+                vars.push_back(al, dup.duplicate_expr(p->m_vars[k]));
+            }
+            for (ASR::symbol_t *s : extra_privates) {
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                    c->base.loc, s)));
+            }
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPPrivate_t(al, c->base.loc, vars.p, vars.n)));
+            have_private = true;
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
+            // What the iterations of the nest overwrite is not known for
+            // the new heads.
+            clauses.push_back(al, dup.duplicate_omp_clause(c));
+        }
+    }
+    if (!have_private && !extra_privates.empty()) {
+        Vec<ASR::expr_t*> vars;
+        vars.reserve(al, extra_privates.size());
+        for (ASR::symbol_t *s : extra_privates) {
+            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                nest.region->base.base.loc, s)));
+        }
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPPrivate_t(al, nest.region->base.base.loc, vars.p,
+                vars.n)));
     }
     return ASRUtils::STMT(ASR::make_OMPRegion_t(al,
         nest.region->base.base.loc, nest.region->m_region, clauses.p,
@@ -349,8 +411,16 @@ ASR::array_index_t* GpuDuplicator::duplicate_indices(ASR::ArrayItem_t *x,
                 ok = false;
             } else if (map->shift[i]) {
                 ASRUtils::ExprStmtDuplicator d(al);
-                idx.m_right = gpu_int_add(al, idx.m_right,
-                    d.duplicate_expr(map->shift[i]));
+                ASR::expr_t *shift = d.duplicate_expr(map->shift[i]);
+                // In the kind of the subscript (integer(8) indices).
+                ASR::ttype_t *t = ASRUtils::expr_type(idx.m_right);
+                if (ASRUtils::extract_kind_from_ttype_t(t)
+                        != ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(shift))) {
+                    ASRUtils::ASRBuilder b(al, idx.loc);
+                    shift = b.i2i_t(shift, ASRUtils::duplicate_type(al, t));
+                }
+                idx.m_right = gpu_int_add(al, idx.m_right, shift);
             }
         }
         args.push_back(al, idx);
@@ -457,6 +527,8 @@ ASR::asr_t* GpuDuplicator::duplicate_BlockCall(ASR::BlockCall_t *x) {
     SymbolTable *symtab = al.make_new<SymbolTable>(outer);
     for (auto &item : b->m_symtab->get_scope()) {
         ASR::symbol_t *old = item.second;
+        // A BLOCK nested in this one is copied where the body runs it.
+        if (ASR::is_a<ASR::Block_t>(*old)) continue;
         if (!ASR::is_a<ASR::Variable_t>(*old)) {
             ok = false;
             continue;
@@ -1091,6 +1163,19 @@ void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
     ExprReplaceAll r;
     r.f = &f;
     for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
+}
+
+void gpu_collect_blocks(ASR::stmt_t **body, size_t n,
+        std::set<ASR::symbol_t*> &blocks) {
+    struct Blocks : public ASRUtils::BlockBodyWalkVisitor<Blocks> {
+        std::set<ASR::symbol_t*> *blocks;
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            blocks->insert(ASRUtils::symbol_get_past_external(x.m_m));
+            ASRUtils::BlockBodyWalkVisitor<Blocks>::visit_BlockCall(x);
+        }
+    } c;
+    c.blocks = &blocks;
+    for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
 }
 
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms) {

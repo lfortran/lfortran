@@ -28,6 +28,7 @@ OMPMap
 OMPNowait
 OMPNumTeams
 OMPNumThreads
+OMPOverwrite
 OMPPrivate
 OMPReduction
 OMPSchedule

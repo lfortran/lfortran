@@ -15,15 +15,18 @@ namespace LCompilers {
 
 /*
  * Shared pieces of the loop transformations that run on parallel loops
- * assigned to the device before they are offloaded (gpu_loop_fusion.cpp):
- * recognizing a loop nest, copying statements while substituting
- * variables, and inlining calls of pure functions into a loop body.
+ * assigned to the device before they are offloaded (gpu_loop_fusion.cpp,
+ * gpu_index_set_split.cpp): recognizing a loop nest, copying statements
+ * while substituting variables, and inlining calls of pure functions into
+ * a loop body.
  */
 
 // Which of the transformations run (`--gpu-loop-transforms`).
 enum GpuLoopTransform {
     GpuLoopFuse = 1,
     GpuLoopSwap = 2,
+    GpuLoopSplit = 4,
+    GpuLoopJam = 8,
 };
 bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     GpuLoopTransform t);
@@ -36,6 +39,21 @@ bool gpu_loop_transforms_valid(const std::string &value,
 // emulation), where they have been measured; other devices keep their
 // loops as written.
 bool gpu_loop_transforms_apply(const PassOptions &pass_options);
+
+// The parallel loops a transformation keeps for an execution that rarely
+// happens (the original loops of a fusion, which run in the last iteration
+// of the DO loops around them only): the transformations after it leave
+// them as written, so that the offload pipeline still recognizes, for
+// example, that they assign an array whole and need not copy it to the
+// device first. One run of the transformations (pass_gpu_loop_transforms)
+// owns the set and hands it from the fusion to the splitting.
+typedef std::set<ASR::stmt_t*> GpuRarelyRun;
+
+// The size in bytes of the device's last-level cache, as an integer(8)
+// expression: the --gpu-cache-bytes option, or a call of the runtime's
+// lfortran_gpu_cache_bytes() (declared in `unit_scope` if needed).
+ASR::expr_t *gpu_cache_bytes(Allocator &al, SymbolTable *unit_scope,
+    const PassOptions &pass_options, const Location &loc);
 
 // A `do concurrent` nest (or an offloaded `!$omp parallel do`) that the
 // dispatch assigned to the device: a ParallelDo OMPRegion whose body is
@@ -53,14 +71,17 @@ struct GpuLoopNest {
 };
 
 // Whether `s` is such a nest; only the clauses OMPIndependent,
-// OMPCollapse and OMPPrivate are accepted.
+// OMPCollapse, OMPPrivate and OMPOverwrite are accepted.
 bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest);
 
 // A new nest with the loop heads and clauses of `nest` and `body` as its
-// innermost body.
+// innermost body, with `extra_privates` added to its private variables.
+// The OMPOverwrite clauses are dropped: they hold for the iterations of
+// `nest`, not for those of the new heads.
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     const std::vector<ASR::expr_t*> &starts,
-    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body);
+    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
+    const std::vector<ASR::symbol_t*> &extra_privates = {});
 
 // A parallel loop nest assigned to the device that copies every element of
 // the array `src` into the array `dest` of the same bounds, with index
@@ -226,6 +247,10 @@ bool gpu_simple_body(ASR::stmt_t **body, size_t n);
 // runs, each subexpression for which `f` returns an expression.
 void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
     const std::function<ASR::expr_t*(ASR::expr_t*)> &f);
+
+// Every BLOCK a statement list runs, at any depth.
+void gpu_collect_blocks(ASR::stmt_t **body, size_t n,
+    std::set<ASR::symbol_t*> &blocks);
 
 // Every variable referenced.
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms);
