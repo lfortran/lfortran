@@ -11,7 +11,7 @@ FileOpen(int label, expr? newunit, expr? filename, expr? status,
     expr? form, expr? access, expr? iostat, expr? iomsg, expr? action,
     expr? delim, expr? recl, expr? position, expr? blank,
     expr? encoding, expr? sign, expr? decimal, expr? round, expr? pad,
-    expr? asynchronous)
+    expr? asynchronous, expr? convert)
 ```
 
 ### Arguments
@@ -37,6 +37,7 @@ FileOpen(int label, expr? newunit, expr? filename, expr? status,
 | `round` | the rounding mode for formatted conversion. |
 | `pad` | `yes` or `no`: whether short input records are padded with blanks. |
 | `asynchronous` | `yes` or `no`: whether asynchronous transfer is allowed on this unit. |
+| `convert` | `native`, `swap`, `big_endian` or `little_endian`: the byte order of unformatted data (an extension). |
 
 ### Return values
 
@@ -107,6 +108,7 @@ runtime picks a free unit and stores it in that variable.
   :round nil
   :pad nil
   :asynchronous nil
+  :convert nil
 )
 ```
 

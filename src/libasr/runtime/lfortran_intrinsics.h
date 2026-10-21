@@ -291,7 +291,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* sign, int64_t sign_len,
     char* decimal, int64_t decimal_len,
     char* round, int64_t round_len,
-    char* pad, int64_t pad_len
+    char* pad, int64_t pad_len,
+    char* convert, int64_t convert_len
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
