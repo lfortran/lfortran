@@ -333,6 +333,50 @@
                             []
                             ()
                             []
+                            [(Var 2 a)]
+                            [(LogicalBinOp
+                                (IntegerCompare
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    Eq
+                                    (ArrayBound
+                                        (Var 2 a)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        LBound
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Cast
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 4 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    Eq
+                                    (ArrayBound
+                                        (Var 2 a)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        UBound
+                                        (IntegerConstant 4 (Integer 8) Decimal)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )]
                         )]
                         []
                     )

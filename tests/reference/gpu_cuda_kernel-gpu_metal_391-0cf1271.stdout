@@ -17,11 +17,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* r,
-    float* x,
-    float* __gpu_heap_r4,
-    int* __gpu_heap_state,
-    int* __gpu_stop_status,
+    float* __restrict__ r,
+    float* __restrict__ x,
+    float* __restrict__ __gpu_heap_r4,
+    int* __restrict__ __gpu_heap_state,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;

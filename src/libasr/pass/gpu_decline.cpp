@@ -70,6 +70,9 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // stack lives (CUDA C++ Programming Guide, "Features and
             // Technical Specifications", compute capability 2.0 and up).
             caps.thread_stack_bytes = 512 * 1024;
+            // A warp: one warp loads one contiguous 128-byte line of a
+            // `float` array, and a block of 256 threads covers 8 of them.
+            caps.tile_width = 32;
             break;
         case GpuDevice::None:
             break;

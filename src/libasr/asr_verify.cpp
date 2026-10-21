@@ -3278,6 +3278,24 @@ public:
                 "the size and read-back count of a GpuKernelLaunch scratch "
                 "buffer must be integers");
         }
+        require_id(x.n_overwritten == x.n_overwritten_if,
+            "asr.verify.gpu_kernel_launch.overwritten_count",
+            "a GpuKernelLaunch must give one condition per overwritten array");
+        for (size_t i = 0; i < x.n_overwritten && i < x.n_overwritten_if;
+                i++) {
+            require_id(ASRUtils::is_array(ASRUtils::expr_type(
+                    x.m_overwritten[i])),
+                "asr.verify.gpu_kernel_launch.overwritten_array",
+                "an overwritten buffer of a GpuKernelLaunch must be an "
+                "array");
+            ASR::ttype_t *condition = ASRUtils::expr_type(
+                x.m_overwritten_if[i]);
+            require_id(ASRUtils::is_logical(*condition) &&
+                    !ASRUtils::is_array(condition),
+                "asr.verify.gpu_kernel_launch.overwritten_condition",
+                "the condition of an overwritten buffer of a GpuKernelLaunch "
+                "must be a scalar logical");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
