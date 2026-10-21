@@ -7447,6 +7447,28 @@ public:
             external_procedures_mapping[hash].end());
     }
 
+    // With implicit typing, an access statement before `intrinsic sym`
+    // declares `sym` as an implicitly typed variable. The INTRINSIC statement
+    // makes it the intrinsic procedure instead, so drop that variable unless
+    // something else (a type, a value, SAVE, COMMON, ...) was given to it.
+    void erase_implicit_variable_of_intrinsic(const std::string &sym) {
+        if (!compiler_options.implicit_typing) return;
+        ASR::symbol_t *sym_ = current_scope->get_symbol(sym);
+        if (!sym_ || !ASR::is_a<ASR::Variable_t>(*sym_)
+                || explicitly_typed_variables.count(sym_)) {
+            return;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+        if (v->m_intent == ASR::intentType::Local
+                && v->m_storage == ASR::storage_typeType::Default
+                && !v->m_symbolic_value && !v->m_common_block
+                && !ASR::is_a<ASR::Array_t>(*v->m_type)
+                && !ASR::is_a<ASR::Pointer_t>(*v->m_type)
+                && !ASR::is_a<ASR::Allocatable_t>(*v->m_type)) {
+            current_scope->erase_symbol(sym);
+        }
+    }
+
     void erase_from_explicit_intrinsic_mapping(std::string sym) {
         uint64_t hash = get_hash(current_scope->asr_owner);
         explicit_intrinsic_procedures_mapping[hash].erase(
@@ -8445,6 +8467,7 @@ public:
                                         ::AttrIntrinsic) {
                                     if (!reject_non_fortran_intrinsic_attribute(
                                             sym, x.m_syms[i].loc)) {
+                                        erase_implicit_variable_of_intrinsic(sym);
                                         explicit_intrinsic_procedures.push_back(sym);
                                         if (compiler_options.implicit_interface) {
                                             create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
@@ -8626,8 +8649,15 @@ public:
                                     throw SemanticAbort();
                                 }
                                 ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
+                                // An EXTERNAL or INTRINSIC name is a procedure,
+                                // not an implicitly typed variable, also when a
+                                // later access statement names it.
                                 if (!sym_ && compiler_options.implicit_typing &&
-                                    sa->m_attr != AST::simple_attributeType::AttrExternal
+                                    sa->m_attr != AST::simple_attributeType::AttrExternal &&
+                                    sa->m_attr != AST::simple_attributeType::AttrIntrinsic &&
+                                    std::find(explicit_intrinsic_procedures.begin(),
+                                        explicit_intrinsic_procedures.end(), sym)
+                                        == explicit_intrinsic_procedures.end()
                                 ) {
                                     ASR::expr_t* value = nullptr;
                                     if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
