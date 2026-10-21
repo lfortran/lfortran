@@ -4907,6 +4907,30 @@ public:
         return nullptr;
     }
 
+    // The binding `proc_name` of `clss`; an inherited one is copied into `clss` for codegen.
+    ASR::symbol_t* resolve_and_copy_type_bound_proc(
+            ASR::Struct_t *clss, const std::string &proc_name) {
+        ASR::symbol_t *proc_sym = resolve_type_bound_proc_in_parent_chain(clss, proc_name);
+        if (proc_sym == nullptr || ASRUtils::symbol_parent_symtab(proc_sym) == clss->m_symtab) {
+            return proc_sym;
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym));
+        ASR::StructMethodDeclaration_t *parent_decl
+            = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+        std::string local_name = ASRUtils::symbol_name(proc_sym);
+        ASR::symbol_t *local_sym = clss->m_symtab->get_symbol(local_name);
+        if (local_sym == nullptr) {
+            local_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
+                al, proc_sym->base.loc, clss->m_symtab,
+                parent_decl->m_name, parent_decl->m_self_argument,
+                parent_decl->m_proc_name, parent_decl->m_proc,
+                parent_decl->m_abi, parent_decl->m_is_deferred,
+                parent_decl->m_is_nopass));
+            clss->m_symtab->add_symbol(local_name, local_sym);
+        }
+        return local_sym;
+    }
+
     void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
         SymbolTable* enclosing_scope) {
         if (template_struct->n_kind_params == 0) {
@@ -4954,31 +4978,8 @@ public:
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    ASR::symbol_t *cand_proc_sym
-                        = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
+                    ASR::symbol_t *cand_proc_sym = resolve_and_copy_type_bound_proc(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
-                        if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
-                            // Inherited binding lives in a parent type's scope.
-                            // Copy the StructMethodDeclaration into the child's
-                            // symtab so that codegen never sees an ExternalSymbol
-                            // where it expects a StructMethodDeclaration.
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*cand_proc_sym));
-                            ASR::StructMethodDeclaration_t *parent_decl
-                                = ASR::down_cast<ASR::StructMethodDeclaration_t>(cand_proc_sym);
-                            std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
-                            ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
-                            if (local_proc_sym == nullptr) {
-                                ASR::asr_t *new_decl = ASR::make_StructMethodDeclaration_t(
-                                    al, cand_proc_sym->base.loc, clss->m_symtab,
-                                    parent_decl->m_name, parent_decl->m_self_argument,
-                                    parent_decl->m_proc_name, parent_decl->m_proc,
-                                    parent_decl->m_abi, parent_decl->m_is_deferred,
-                                    parent_decl->m_is_nopass);
-                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
-                                clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
-                            }
-                            cand_proc_sym = local_proc_sym;
-                        }
                         cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
