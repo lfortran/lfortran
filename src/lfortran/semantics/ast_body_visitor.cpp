@@ -3410,6 +3410,29 @@ public:
         tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
     }
 
+    // F2018 R1035 and R1036: a bound of a pointer bounds-spec or
+    // bounds-remapping-list is a scalar integer expression.
+    void check_pointer_bound(ASR::expr_t* bound) {
+        ASR::ttype_t* bound_type = ASRUtils::expr_type(bound);
+        if (ASRUtils::is_array(bound_type)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_integer(*bound_type)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be of type integer, found " +
+                ASRUtils::type_to_str_with_kind(bound_type, bound),
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     /*
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
@@ -3453,7 +3476,9 @@ public:
                         Label("", {x.m_target->base.loc})}));
                 throw SemanticAbort();
             }
+            check_pointer_bound(target->m_args[i].m_left);
             if (ast_target->m_args[i].m_end != nullptr) {
+                check_pointer_bound(target->m_args[i].m_right);
                 n_upper_bounds++;
             }
             target->m_args[i].m_step = nullptr;

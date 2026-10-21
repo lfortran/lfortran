@@ -42,13 +42,14 @@ says which of the two it is. For a bounds-spec the section has only the lower
 bound of every dimension and no upper bound: the extents of the pointer are
 those of the value, so a backend computes the upper bound of dimension `i` as
 `lb + size(value, i) - 1`. For a bounds-remapping-list it has the lower and
-the upper bound of every dimension, as written. Neither has a stride, and the
-value and every bound are evaluated once. Every other association has `form`
+the upper bound of every dimension, as written. Every bound is a scalar
+integer expression, neither has a stride, and the value and every bound are
+evaluated once. Every other association has `form`
 `NoPointerBounds`. The verifier checks that the form is set exactly when the
 target is a section of a pointer, that the bounds present are those of the
-form, that the value is not `null()`, that the value of a bounds-spec has the
-rank of the pointer and that the value of a bounds-remapping-list is an
-array. That the value of a bounds-remapping-list has rank one or is simply
+form and are scalar integers, that the value is not `null()`, that the value
+of a bounds-spec has the rank of the pointer and that the value of a
+bounds-remapping-list is an array. That the value of a bounds-remapping-list has rank one or is simply
 contiguous (F2018 9.5.4, 10.2.2.3) is checked by the frontend.
 
 ## Examples

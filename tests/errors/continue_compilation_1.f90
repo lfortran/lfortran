@@ -3566,3 +3566,16 @@ contains
         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
     end subroutine cc1_pointer_bounds_stride_use
 end module cc1_pointer_bounds_stride
+module cc1_pointer_bounds_type
+contains
+    subroutine cc1_pointer_bounds_type_use()
+        real, target :: a(6)
+        real, pointer :: p(:)
+        real :: r
+        integer :: v(1)
+        p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+    end subroutine cc1_pointer_bounds_type_use
+end module cc1_pointer_bounds_type

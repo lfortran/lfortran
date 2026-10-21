@@ -752,6 +752,18 @@ public:
                     "lower bound of every dimension and a bounds-remapping-list "
                     "the lower and the upper bound, and neither a stride",
                     x.base.base.loc);
+                // F2018 R1035 and R1036
+                ASR::expr_t *bounds[2] = {section->m_args[i].m_left,
+                    section->m_args[i].m_right};
+                for (ASR::expr_t *bound : bounds) {
+                    ASR::ttype_t *bound_type = typed_expr_type(bound);
+                    if (bound_type == nullptr) continue;
+                    require_with_loc_id(!ASRUtils::is_array(bound_type) &&
+                            ASRUtils::is_integer(*bound_type),
+                        "asr.verify.associate.pointer_bounds_type",
+                        "Associate::m_target: a pointer bound must be a "
+                        "scalar integer expression", x.base.base.loc);
+                }
             }
             require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
                 "asr.verify.associate.pointer_bounds_null_target",
