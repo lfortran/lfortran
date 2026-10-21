@@ -7,31 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            dble:
-                                (Variable
-                                    2
-                                    dble
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
                             dg:
                                 (Function
                                     (SymbolTable

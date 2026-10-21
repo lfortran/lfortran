@@ -871,11 +871,13 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
             true, x.m_items, x.n_items);
-        // Isolate this module's externals from a previous program unit, and
-        // restore that unit's list when the module ends so a later sibling
-        // does not inherit them.
+        // Isolate this module's externals and intrinsics from a previous
+        // program unit, and restore that unit's lists when the module ends so
+        // a later sibling does not inherit them.
         std::vector<std::string> saved_external_procedures = external_procedures;
         external_procedures.clear();
+        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
         module_instantiated_symbols.clear();
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
@@ -1079,6 +1081,7 @@ public:
             default_storage_save = current_storage_save;
         }
         external_procedures = saved_external_procedures;
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
