@@ -61,6 +61,26 @@ program pointer_section_04
     if (lbound(p, 1) /= 0 .or. ubound(p, 1) /= 2) error stop 20
     if (p(0) /= 2 .or. p(1) /= 5 .or. p(2) /= 8) error stop 21
 
+    ! The subscripts of a bounds-spec data target are evaluated once
+    ncalls = 0
+    p(1:) => a(g(2):g(6))
+    if (ncalls /= 2) error stop 22
+    if (lbound(p, 1) /= 1 .or. ubound(p, 1) /= 5 .or. p(1) /= 2) error stop 23
+    ncalls = 0
+    p(1:) => a(g(2):)
+    if (ncalls /= 1) error stop 24
+    if (ubound(p, 1) /= 9 .or. p(9) /= 10) error stop 25
+    ncalls = 0
+    q(1:, 1:) => b(:, g(1):g(3))
+    if (ncalls /= 2) error stop 26
+    if (ubound(q, 1) /= 4 .or. ubound(q, 2) /= 3) error stop 27
+    if (q(4, 3) /= 43) error stop 28
+    ncalls = 0
+    p(-1:) => b(3, g(2):g(5):g(2))
+    if (ncalls /= 3) error stop 29
+    if (lbound(p, 1) /= -1 .or. ubound(p, 1) /= 0) error stop 30
+    if (p(-1) /= 32 .or. p(0) /= 34) error stop 31
+
     print *, "passed"
 
 contains
@@ -70,5 +90,11 @@ contains
         ncalls = ncalls + 1
         r => a(2:10:3)
     end function every_third
+
+    integer function g(i)
+        integer, intent(in) :: i
+        ncalls = ncalls + 1
+        g = i
+    end function g
 
 end program pointer_section_04

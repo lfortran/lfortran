@@ -3411,15 +3411,89 @@ public:
     }
 
     /*
+        Whether evaluating the designator `x` again gives the same object
+        without any effect: a variable, or a component, element or section
+        of one whose subscripts are constants, variables and bounds of such
+        designators combined by integer arithmetic. Anything else, such as a
+        function reference, may have an effect or give another object.
+    */
+    static bool is_reevaluable_subscript(ASR::expr_t* x) {
+        if (x == nullptr) {
+            return true;
+        }
+        switch (x->type) {
+            case ASR::exprType::IntegerConstant:
+                return true;
+            case ASR::exprType::Var:
+                return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x)->m_v)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(x));
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+                return is_reevaluable_subscript(binop->m_left) &&
+                    is_reevaluable_subscript(binop->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus:
+                return is_reevaluable_subscript(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+            case ASR::exprType::Cast:
+                return is_reevaluable_subscript(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+            case ASR::exprType::ArrayBound: {
+                // The bounds of the array that stand for a `:` subscript
+                ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(x);
+                return is_reevaluable_designator(bound->m_v) &&
+                    is_reevaluable_subscript(bound->m_dim);
+            }
+            default:
+                return false;
+        }
+    }
+
+    static bool is_reevaluable_designator(ASR::expr_t* x) {
+        switch (x->type) {
+            case ASR::exprType::Var:
+                return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x)->m_v));
+            case ASR::exprType::StructInstanceMember:
+                return is_reevaluable_designator(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v);
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
+                for (size_t i = 0; i < item->n_args; i++) {
+                    if (!is_reevaluable_subscript(item->m_args[i].m_right)) {
+                        return false;
+                    }
+                }
+                return is_reevaluable_designator(item->m_v);
+            }
+            case ASR::exprType::ArraySection: {
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
+                for (size_t i = 0; i < section->n_args; i++) {
+                    if (!is_reevaluable_subscript(section->m_args[i].m_left) ||
+                            !is_reevaluable_subscript(section->m_args[i].m_right) ||
+                            !is_reevaluable_subscript(section->m_args[i].m_step)) {
+                        return false;
+                    }
+                }
+                return is_reevaluable_designator(section->m_v);
+            }
+            default:
+                return false;
+        }
+    }
+
+    /*
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
         bounds; the data target cannot be `null()`. With a bounds-spec, the extents of the pointer are those of
         the data target, so the upper bound of dimension `i` is set to
         `lb + size(a, i) - 1`; `target` would otherwise refer to the upper
-        bound of the pointer that is being assigned. A data target that is a
-        function reference is evaluated once, into a temporary pointer.
-        Returns the data target to associate the pointer with.
+        bound of the pointer that is being assigned. The data target is
+        then referenced by the bounds as well, so unless re-evaluating it has
+        no effect (see `is_reevaluable_designator`), it is evaluated once,
+        into a temporary pointer. Returns the data target to associate the
+        pointer with.
     */
     ASR::expr_t* set_pointer_assignment_bounds(const AST::Associate_t& x,
             ASR::ArraySection_t* target, ASR::expr_t* value) {
@@ -3469,9 +3543,14 @@ public:
                     Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        if (ASR::is_a<ASR::FunctionCall_t>(*value) &&
-                ASRUtils::is_pointer(ASRUtils::expr_type(value))) {
+        if (!is_reevaluable_designator(value)) {
             ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            if (!ASRUtils::is_pointer(value_type)) {
+                value_type = ASRUtils::make_Pointer_t_util(al, value->base.loc,
+                    ASRUtils::duplicate_type_with_empty_dims(al,
+                        ASRUtils::type_get_past_allocatable_pointer(value_type),
+                        ASR::array_physical_typeType::DescriptorArray, true));
+            }
             std::string tmp_name = current_scope->get_unique_name(
                 "__lfortran_pointer_target_tmp");
             SetChar variable_dependencies_vec;
