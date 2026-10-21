@@ -740,12 +740,15 @@ public:
         if (pointer_section) {
             ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
             for (size_t i = 0; i < section->n_args; i++) {
+                ASR::expr_t *step = section->m_args[i].m_step;
                 require_with_loc_id(section->m_args[i].m_left != nullptr &&
-                        section->m_args[i].m_right != nullptr,
+                        section->m_args[i].m_right != nullptr &&
+                        (step == nullptr || (ASR::is_a<ASR::IntegerConstant_t>(*step) &&
+                            ASR::down_cast<ASR::IntegerConstant_t>(step)->m_n == 1)),
                     "asr.verify.associate.pointer_bounds_present",
                     "Associate::m_target: a pointer bounds specification "
                     "must give the lower and the upper bound of every "
-                    "dimension", x.base.base.loc);
+                    "dimension, and no stride", x.base.base.loc);
             }
             require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
                 "asr.verify.associate.pointer_bounds_null_target",

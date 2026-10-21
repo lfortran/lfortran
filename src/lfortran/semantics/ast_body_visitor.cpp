@@ -3556,6 +3556,18 @@ public:
                         Label("", {x.m_target->base.loc})}));
                 throw SemanticAbort();
             }
+            // F2018 R1035 and R1036. The parser gives a triplet without a
+            // stride the stride 1, located at the whole triplet.
+            AST::expr_t* step = ast_target->m_args[i].m_step;
+            if (step != nullptr && (step->base.loc.first != ast_target->m_args[i].loc.first ||
+                    step->base.loc.last != ast_target->m_args[i].loc.last)) {
+                diag.add(Diagnostic(
+                    "a stride cannot appear in a pointer bounds specification "
+                    "or remapping list",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_target->base.loc})}));
+                throw SemanticAbort();
+            }
             if (ast_target->m_args[i].m_end != nullptr) {
                 n_upper_bounds++;
             }

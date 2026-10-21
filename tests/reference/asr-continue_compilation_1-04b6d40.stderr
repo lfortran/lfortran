@@ -4417,3 +4417,15 @@ semantic error: the data target of a pointer bounds remapping list must have ran
      |
 3530 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
+
+semantic error: a stride cannot appear in a pointer bounds specification or remapping list
+    --> tests/errors/continue_compilation_1.f90:3538:9
+     |
+3538 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+     |         ^^^^^^^^ 
+
+semantic error: a stride cannot appear in a pointer bounds specification or remapping list
+    --> tests/errors/continue_compilation_1.f90:3539:9
+     |
+3539 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+     |         ^^^^^^^ 

@@ -3558,3 +3558,12 @@ contains
         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
     end subroutine cc1_pointer_remapping_target_use
 end module cc1_pointer_remapping_target
+module cc1_pointer_bounds_stride
+contains
+    subroutine cc1_pointer_bounds_stride_use()
+        integer, target :: a(10)
+        integer, pointer :: p(:)
+        p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+        p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+    end subroutine cc1_pointer_bounds_stride_use
+end module cc1_pointer_bounds_stride
