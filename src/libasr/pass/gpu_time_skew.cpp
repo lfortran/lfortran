@@ -1157,8 +1157,9 @@ public:
                 == 8 ? x : to_i64(x);
         };
         std::vector<ASR::stmt_t*> skewed;
-        // Launches per band: enough that a band's rows stay ahead of the
-        // skew (2 sigma per launch), at most max_stages.
+        // Iterations of the time loop replayed per band: enough that a
+        // band's rows stay ahead of the skew (2 sigma per launch), at most
+        // max_stages.
         int64_t s1 = std::max<int64_t>(sigma, 1);
         skewed.push_back(set(ext, bld.Div(v(rows64), bld.i64(2 * s1))));
         skewed.push_back(bld.If(bld.Gt(v(ext), bld.i64(max_stages)),

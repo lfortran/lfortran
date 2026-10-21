@@ -375,7 +375,7 @@ The rows start at the first loop's lower bound. Otherwise the original loop
 runs.
 
 Index-set splitting then splits the windowed loops by the bounds of their
-domain, which the pass records for them (`gpu_window()`): the host computes
+domain, which the pass records for them (`GpuWindows`): the host computes
 the rows of the interior inside the window, the frame rows below and above
 it and the side strips of the window's interior rows are packed in front as
 before, and the rows the jam leaves over go to the frame. Within a band
