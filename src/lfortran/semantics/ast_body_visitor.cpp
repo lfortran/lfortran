@@ -3534,8 +3534,8 @@ public:
                     Label("", {x.m_target->base.loc})}));
             throw SemanticAbort();
         }
-        if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) !=
-                target->n_args) {
+        if (static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(value))) != target->n_args) {
             diag.add(Diagnostic(
                 "the rank of the pointer and of the data target must agree "
                 "in a pointer bounds specification",
