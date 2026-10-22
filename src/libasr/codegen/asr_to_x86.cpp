@@ -410,6 +410,10 @@ public:
         //HACKISH way to handle print refactoring (always using stringformat).
         // TODO : Implement stringformat visitor.
         if(e && ASR::is_a<ASR::StringFormat_t>(*e)){
+            if (ASR::down_cast<ASR::StringFormat_t>(e)->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the x86 backend yet", x.base.base.loc);
+            }
             e = ASR::down_cast<ASR::StringFormat_t>(e)->m_args[0];
         }
         if (e->type == ASR::exprType::StringConstant) {
