@@ -3648,6 +3648,7 @@ public:
         require_id(x.n_args == 1,
             "asr.verify.storage_size.one_argument",
             "StorageSize must have exactly one argument");
+        if (x.n_args != 1) return;
         ASR::ttype_t* arg_type = ASRUtils::extract_type(
             ASRUtils::expr_type(x.m_args[0]));
         require_id(ASR::is_a<ASR::String_t>(*arg_type),

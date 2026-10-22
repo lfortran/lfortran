@@ -41,6 +41,7 @@ program storage_size_02
     t = "pointer"
     p => t
     if (storage_size(p) /= 56) error stop 14
+    nullify(p)
     allocate(character(len=13) :: p)
     if (storage_size(p) /= 104) error stop 15
     deallocate(p)

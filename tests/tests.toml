@@ -6439,6 +6439,12 @@ options = "--coarray=true"
 filename = "asr/verify/call_actual_type_mismatch.asr"
 asr = true
 
+# A StorageSize intrinsic without a compile-time value must have a character
+# argument; every other storage_size is a TypeInquiry.
+[[test]]
+filename = "asr/verify/storage_size_noncharacter_argument.asr"
+asr = true
+
 [[test]]
 filename = "asr/verify/call_rank_mismatch.asr"
 asr = true
