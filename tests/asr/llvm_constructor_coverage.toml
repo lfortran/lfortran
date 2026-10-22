@@ -93,3 +93,4 @@
 "omp_clause.OMPDevice" = "lowered:openmp"
 "omp_clause.OMPMap" = "lowered:openmp"
 "omp_clause.OMPCriticalName" = "lowered:openmp"
+"omp_clause.OMPOverwrite" = "lowered:gpu_offload"

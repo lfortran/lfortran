@@ -393,6 +393,12 @@ public:
     }
 };
 
+// The routines the parallel loops of `unit` reach, whatever their target.
+// The offload runs the parallel loops of these serially in the caller
+// (GpuSerialRegionMarker), so the loop transformations leave them alone.
+std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,
+    ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
 // A parallel loop that device code has to run cannot become a launch of
 // its own, so it is marked to run serially -- which is what one thread of
 // the enclosing kernel does with it.
@@ -404,6 +410,14 @@ public:
     static void run(const std::set<ASR::OMPRegion_t*> &loops) {
         for (ASR::OMPRegion_t *region : loops) {
             region->m_exec_target = ASR::exec_targetType::ExecSerial;
+            // What a launch need not copy in means nothing without one.
+            size_t n = 0;
+            for (size_t i = 0; i < region->n_clauses; i++) {
+                if (!ASR::is_a<ASR::OMPOverwrite_t>(*region->m_clauses[i])) {
+                    region->m_clauses[n++] = region->m_clauses[i];
+                }
+            }
+            region->n_clauses = n;
         }
     }
 };
