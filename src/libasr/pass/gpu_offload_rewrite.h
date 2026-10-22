@@ -468,32 +468,14 @@ public:
 class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;
-    SymbolTable *kernel_scope;
     // In the order they are first referenced.
     std::vector<ASR::symbol_t*> dangling;
     std::set<SymbolTable*> inner_scopes;
-    DanglingVarCollector(SymbolTable *fs, SymbolTable *ks)
-        : func_scope(fs), kernel_scope(ks) {}
-
-    // Whether `scope` belongs to a procedure copied into the kernel.
-    bool is_copied_scope(SymbolTable *scope) {
-        if (scope == kernel_scope) return false;
-        for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
-            if (s == kernel_scope) return true;
-        }
-        return false;
-    }
+    DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
 
     void visit_Var(const ASR::Var_t &x) {
         if (inner_scopes.count(ASRUtils::symbol_parent_symtab(x.m_v))) return;
         if (ASRUtils::is_visible_from(x.m_v, func_scope)) return;
-        // An entity of the host of a contained procedure, which the copy
-        // of that host declares under the same name.
-        ASR::symbol_t *named = func_scope->resolve_symbol(
-            ASRUtils::symbol_name(x.m_v));
-        if (named && is_copied_scope(ASRUtils::symbol_parent_symtab(named))) {
-            return;
-        }
         if (std::find(dangling.begin(), dangling.end(), x.m_v)
                 == dangling.end()) {
             dangling.push_back(x.m_v);
@@ -534,6 +516,76 @@ public:
         }
     }
 };
+
+// Rebinds the variables and the procedures that the references in a
+// subtree name to the symbols that stand for them.
+class HostSymbolRebinder :
+        public ASRUtils::BlockBodyWalkVisitor<HostSymbolRebinder> {
+public:
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements;
+    explicit HostSymbolRebinder(
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements_)
+        : replacements(replacements_) {}
+    void rebind(ASR::symbol_t *&sym) {
+        auto it = replacements.find(sym);
+        if (it != replacements.end()) sym = it->second;
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        rebind(const_cast<ASR::Var_t&>(x).m_v);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        rebind(const_cast<ASR::FunctionCall_t&>(x).m_name);
+        ASR::BaseWalkVisitor<HostSymbolRebinder>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        rebind(const_cast<ASR::SubroutineCall_t&>(x).m_name);
+        ASR::BaseWalkVisitor<HostSymbolRebinder>::visit_SubroutineCall(x);
+    }
+};
+
+// SymbolDuplicator copies a procedure together with the procedures it
+// contains, but the copy of a contained procedure still references the
+// entities of the original host that it accesses by host association,
+// such as a named constant, a local variable or another contained
+// procedure of the host. Rebinds them to the entities of `copy` that
+// `orig`'s scopes map to by identity.
+inline void gpu_rebind_host_association(ASR::Function_t *orig,
+        ASR::Function_t *copy) {
+    std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
+    std::function<void(SymbolTable*, SymbolTable*)> map_scope =
+            [&](SymbolTable *orig_scope, SymbolTable *copy_scope) {
+        for (auto &item : orig_scope->get_scope()) {
+            ASR::symbol_t *copy_sym = copy_scope->get_symbol(item.first);
+            if (copy_sym == nullptr || copy_sym == item.second
+                    || copy_sym->type != item.second->type) {
+                continue;
+            }
+            replacements[item.second] = copy_sym;
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::Function_t>(item.second)->m_symtab,
+                    ASR::down_cast<ASR::Function_t>(copy_sym)->m_symtab);
+            } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::Block_t>(item.second)->m_symtab,
+                    ASR::down_cast<ASR::Block_t>(copy_sym)->m_symtab);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        item.second)->m_symtab,
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        copy_sym)->m_symtab);
+            }
+        }
+    };
+    map_scope(orig->m_symtab, copy->m_symtab);
+    HostSymbolRebinder rebinder(replacements);
+    for (auto &item : copy->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            rebinder.visit_symbol(*item.second);
+        }
+    }
+}
 
 // Replaces StructInstanceMember(Var(x), a) with Var(x__a) for
 // allocatable array members that have been decomposed into separate

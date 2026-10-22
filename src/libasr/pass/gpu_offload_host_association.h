@@ -19,6 +19,8 @@ instead:
   that is handed a variable is handed it too, to pass it on, and so is the
   variable a shape of such a dummy names.
 
+The same holds one level down: a procedure the kernel calls is copied along
+with the procedures it contains, which are given what they name of the copy.
 Nothing in device code then reaches into an enclosing procedure, so the
 shared pass for nested procedures leaves it alone.
 */

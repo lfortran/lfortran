@@ -196,7 +196,10 @@ ASR::ttype_t* gpu_signature_type(Allocator &al, ASR::ttype_t *type) {
         arr->m_memory_space));
 }
 
-void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel) {
+namespace {
+
+// Lifts what the procedures `kernel` contains name of `kernel`.
+void lift_into_contained(Allocator &al, ASR::Function_t &kernel) {
     SymbolTable *scope = kernel.m_symtab;
     std::set<ASR::Function_t*> procedures;
     for (auto &item : scope->get_scope()) {
@@ -292,6 +295,20 @@ void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel) {
     }
     LiftedCallExtender extender(al, lifted);
     extender.visit_Function(kernel);
+}
+
+} // namespace
+
+void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel) {
+    lift_into_contained(al, kernel);
+    // A procedure the kernel calls is a copy of the original, made along
+    // with the procedures it contains, which name its variables in turn.
+    for (auto &item : kernel.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            gpu_lift_host_association(al,
+                *ASR::down_cast<ASR::Function_t>(item.second));
+        }
+    }
 }
 
 } // namespace LCompilers
