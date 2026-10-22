@@ -2918,7 +2918,6 @@ end subroutine
 }
 #endif
 
-#ifndef __EMSCRIPTEN__
 extern "C" void lfortran_display_data(const char *mime_type, const char *data);
 extern "C" void lfortran_clear_output();
 
@@ -2975,6 +2974,10 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
 
 TEST_CASE("FortranEvaluator execute: inspection cells") {
     for (const std::string magic : {"ast", "asr", "llvm", "asm", "cpp", "fmt"}) {
+#ifdef __EMSCRIPTEN__
+        // In the WASM test build, the compilation after get_asm() traps (#15853).
+        if (magic == "asm") continue;
+#endif
         CAPTURE(magic);
         CompilerOptions cu = execute_options();
         FortranEvaluator e(cu);
@@ -3016,4 +3019,3 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
     CHECK(!cell.ok);
     CHECK(cell.error_name == "DisplayError");
 }
-#endif
