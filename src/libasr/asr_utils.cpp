@@ -3328,107 +3328,91 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     return found;
 }
 
-void process_overloaded_read_write_function(std::string &read_write, ASR::symbol_t* proc, Vec<ASR::expr_t*> &args,
-    ASR::ttype_t* arg_type, bool& found, Allocator& al, const Location& arg_loc,
+// If `proc`, a specific procedure of the defined input/output generic
+// `read_write`, accepts `item` as its dtv dummy, imports it into `curr_scope`
+// (recording the dependencies a call needs) and returns the symbol a call
+// names. `a_original_name` receives the call's original name. For a
+// type-bound procedure, `binding` is its binding in the generic, which the
+// call names.
+static ASR::symbol_t* import_defined_io_procedure(const std::string &read_write,
+    ASR::symbol_t* proc, ASR::expr_t* item, ASR::ttype_t* arg_type, Allocator& al,
     SymbolTable* curr_scope, SetChar& current_function_dependencies,
-    SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
-    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr,
-    ASR::symbol_t* binding=nullptr) {
+    SetChar& current_module_dependencies, ASR::symbol_t* sym, const Location& loc,
+    ASR::expr_t* expr_dt, const std::function<void (const std::string &, const Location &)> err,
+    char* pass_arg, ASR::symbol_t* binding, ASR::symbol_t*& a_original_name) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
-    if( ASRUtils::types_equal(func_arg_type, arg_type, subrout->m_args[0], args[0]) ) {
-        std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
-        if( pass_arg != nullptr ) {
-            std::string pass_arg_str = std::string(pass_arg);
-            if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
-                err(std::string(subrout->m_name) + " is not a procedure of " +
-                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
-                    loc);
-            }
-        }
-        found = true;
-        Vec<ASR::call_arg_t> a_args;
-        a_args.reserve(al, 1);
-        for (size_t i = 0; i < args.size(); i++) {
-            if (i == 0 && (expr_dt != nullptr)) {
-                continue;
-            }
-            ASR::call_arg_t arg;
-            arg.loc = arg_loc;
-            arg.m_value = args[i];
-            a_args.push_back(al, arg);
-        }
-        std::string subrout_name = to_lower(subrout->m_name);
-        ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
-        if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
-            matched_subrout_name = subrout_name;
-        } else {
-            std::string mangled_name = subrout_name + "@" + read_write;
-            matched_subrout_name = mangled_name;
-        }
-        ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
-        if (expr_dt != nullptr) {
-            a_name = ASRUtils::import_class_procedure(al, loc, binding, curr_scope);
-        }
-        if( a_name == nullptr ) {
-            a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
-                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                        nullptr, 0, subrout->m_name, ASR::accessType::Public));
-            curr_scope->add_symbol(matched_subrout_name, a_name);
-        }
-        if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
-        }
-        ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
-        ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
-        ASR::call_arg_t* call_args = a_args.p;
-        size_t n_call_args = a_args.n;
-        ASRUtils::insert_self_arg(al, a_name, call_args, n_call_args, expr_dt);
-        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
-                                        call_args, n_call_args, expr_dt, nullptr, false);
+    if( !ASRUtils::types_equal(func_arg_type, arg_type, subrout->m_args[0], item) ) {
+        return nullptr;
     }
+    std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
+    if( pass_arg != nullptr ) {
+        std::string pass_arg_str = std::string(pass_arg);
+        if( (arg0_name == pass_arg_str && item != expr_dt) ) {
+            err(std::string(subrout->m_name) + " is not a procedure of " +
+                ASRUtils::type_to_str_fortran_expr(arg_type, item),
+                loc);
+        }
+    }
+    std::string subrout_name = to_lower(subrout->m_name);
+    ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
+    if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
+        matched_subrout_name = subrout_name;
+    } else {
+        std::string mangled_name = subrout_name + "@" + read_write;
+        matched_subrout_name = mangled_name;
+    }
+    ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+    if (expr_dt != nullptr) {
+        a_name = ASRUtils::import_class_procedure(al, loc, binding, curr_scope);
+    }
+    if( a_name == nullptr ) {
+        a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
+                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                    nullptr, 0, subrout->m_name, ASR::accessType::Public));
+        curr_scope->add_symbol(matched_subrout_name, a_name);
+    }
+    if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+        ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
+    }
+    ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+    a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
+    return a_name;
 }
 
-bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
-                               SymbolTable* curr_scope, ASR::asr_t*& asr,
-                               Allocator &al, const Location& loc,
+ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
+                               SymbolTable* curr_scope, Allocator &al, const Location& loc,
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
-                               const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[0]));
-    bool found = false;
-    ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
-    ASR::expr_t* expr_dt = nullptr;
-    if( sym == nullptr ) {
-        if( ASR::is_a<ASR::StructType_t>(*arg_type) ) {
-            ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[0])));
-            sym = arg_struct->m_symtab->resolve_symbol(read_write);
-            expr_dt = args[0];
-        }
-    }
-    if (sym) {
+                               const std::function<void (const std::string &, const Location &)> err,
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt) {
+    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(item));
+    ASR::symbol_t* a_name = nullptr;
+    a_original_name = nullptr;
+    expr_dt = nullptr;
+    // The specific procedure of the generic `sym` that takes `item`.
+    auto resolve_generic = [&](ASR::symbol_t* sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         auto process_proc_list = [&](ASR::symbol_t** procs, size_t n_procs) {
-            for( size_t i = 0; i < n_procs && !found; i++ ) {
+            for( size_t i = 0; i < n_procs && a_name == nullptr; i++ ) {
                 ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
                 switch( proc->type ) {
                     case ASR::symbolType::Function: {
-                        process_overloaded_read_write_function(read_write, proc, args, arg_type,
-                            found, al, args[0]->base.loc, curr_scope,
-                            current_function_dependencies, current_module_dependencies, asr, sym,
-                            loc, expr_dt, err);
+                        a_name = import_defined_io_procedure(read_write, proc, item, arg_type,
+                            al, curr_scope, current_function_dependencies,
+                            current_module_dependencies, sym, loc, expr_dt, err, nullptr,
+                            nullptr, a_original_name);
                         break;
                     }
                     case ASR::symbolType::StructMethodDeclaration: {
                         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
                         ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
-                        process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
-                            found, al, args[0]->base.loc, curr_scope,
-                            current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                            expr_dt, err, class_proc->m_self_argument, proc);
+                        a_name = import_defined_io_procedure(read_write, proc_func, item, arg_type,
+                            al, curr_scope, current_function_dependencies,
+                            current_module_dependencies, proc_func, loc, expr_dt, err,
+                            class_proc->m_self_argument, proc, a_original_name);
                         break;
                     }
                     default: {
@@ -3446,8 +3430,59 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
         } else {
             err("Only generic procedures can be used for overloaded read/write statement, found " + std::to_string(orig_sym->type), loc);
         }
+    };
+    // The generic interface visible in the scope or, if there is none, the
+    // type-bound generic of the item's type.
+    ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
+    if( sym == nullptr ) {
+        if( ASR::is_a<ASR::StructType_t>(*arg_type) ) {
+            ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
+            sym = arg_struct->m_symtab->resolve_symbol(read_write);
+            expr_dt = item;
+        }
     }
-    return found;
+    if (sym) {
+        resolve_generic(sym);
+    }
+    if (a_name == nullptr) {
+        expr_dt = nullptr;
+    }
+    return a_name;
+}
+
+bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
+                               SymbolTable* curr_scope, ASR::asr_t*& asr,
+                               Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err) {
+    ASR::symbol_t* a_original_name = nullptr;
+    ASR::expr_t* expr_dt = nullptr;
+    ASR::symbol_t* a_name = resolve_defined_io_procedure(read_write, args[0],
+        curr_scope, al, loc, current_function_dependencies,
+        current_module_dependencies, err, a_original_name, expr_dt);
+    if (a_name == nullptr) {
+        return false;
+    }
+    ASR::Function_t* subrout = ASRUtils::get_function(a_name);
+    Vec<ASR::call_arg_t> a_args;
+    a_args.reserve(al, 1);
+    for (size_t i = 0; i < args.size(); i++) {
+        if (i == 0 && (expr_dt != nullptr)) {
+            continue;
+        }
+        ASR::call_arg_t arg;
+        arg.loc = args[0]->base.loc;
+        arg.m_value = args[i];
+        a_args.push_back(al, arg);
+    }
+    ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
+    ASR::call_arg_t* call_args = a_args.p;
+    size_t n_call_args = a_args.n;
+    ASRUtils::insert_self_arg(al, a_name, call_args, n_call_args, expr_dt);
+    asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
+                                    call_args, n_call_args, expr_dt, nullptr, false);
+    return true;
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
