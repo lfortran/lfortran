@@ -104,6 +104,11 @@ def main():
                            for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # Text that is not UTF-8 cannot go into a Jupyter message.
+            check(client, "achar(200)", ["\ufffd"])
+            messages = check(client, "print *, 'a', achar(200), 'b'", [])
+            assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
+                       for m in messages), messages
             # Cells must not leak file descriptors (MAX_OPEN_FILES).
             for i in range(100):
                 check(client, "%d + 1" % i, [str(i + 1)])

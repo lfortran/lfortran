@@ -80,6 +80,28 @@ namespace LCompilers::LFortran {
         int stdout_fileno;
     };
 
+    // Xeus serializes the messages after execute_request_impl() returns, and
+    // nlohmann::json throws on a string that is not UTF-8, which would leave
+    // the request without a reply. Such bytes are shown as U+FFFD instead.
+    static std::string utf8(const std::string &s)
+    {
+        if (is_valid_utf8(s)) return s;
+        std::string out;
+        size_t i = 0;
+        while (i < s.size()) {
+            const unsigned char c = static_cast<unsigned char>(s[i]);
+            const size_t n = c >= 0xf0 ? 4 : c >= 0xe0 ? 3 : c >= 0xc0 ? 2 : 1;
+            if (i + n <= s.size() && is_valid_utf8(s.data() + i, n)) {
+                out.append(s, i, n);
+                i += n;
+            } else {
+                out += "\xef\xbf\xbd";
+                i++;
+            }
+        }
+        return out;
+    }
+
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
@@ -134,8 +156,8 @@ namespace LCompilers::LFortran {
         const bool silent = config.silent;
         FortranEvaluator::CellIO io;
         io.display = [&](const std::string &mime, const std::string &data) {
-            if (!silent) display_data(nl::json{{mime, data}}, nl::json::object(),
-                nl::json::object());
+            if (!silent) display_data(nl::json{{utf8(mime), utf8(data)}},
+                nl::json::object(), nl::json::object());
         };
         io.clear_output = [&]() { if (!silent) clear_output(false); };
         FortranEvaluator::CellResult cell;
@@ -150,16 +172,19 @@ namespace LCompilers::LFortran {
             cell.error_value = error.msg();
         }
         if (!silent) {
-            if (!std_out.empty()) publish_stream("stdout", std_out);
-            if (!cell.output.empty()) publish_stream("stdout", cell.output);
-            if (!cell.ok) publish_stream("stderr", cell.error_value);
-            else if (!cell.diagnostics.empty()) publish_stream("stderr", cell.diagnostics);
+            if (!std_out.empty()) publish_stream("stdout", utf8(std_out));
+            if (!cell.output.empty()) publish_stream("stdout", utf8(cell.output));
+            if (!cell.ok) publish_stream("stderr", utf8(cell.error_value));
+            else if (!cell.diagnostics.empty()) {
+                publish_stream("stderr", utf8(cell.diagnostics));
+            }
         }
         nl::json result;
         if (cell.ok) {
             if (cell.value.has_value() && !silent) {
                 publish_execution_result(execution_counter,
-                    nl::json{{"text/plain", cell.value.text()}}, nl::json::object());
+                    nl::json{{"text/plain", utf8(cell.value.text())}},
+                    nl::json::object());
             }
             result["status"] = "ok";
             result["payload"] = nl::json::array();
@@ -167,7 +192,7 @@ namespace LCompilers::LFortran {
         } else {
             result["status"] = "error";
             result["ename"] = cell.error_name;
-            result["evalue"] = cell.error_value;
+            result["evalue"] = utf8(cell.error_value);
             result["traceback"] = nl::json::array();
         }
         cb(result);
