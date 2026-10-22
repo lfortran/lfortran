@@ -42,6 +42,19 @@ cudaError_t cudaSetDevice(int device)
     return cudaSuccess;
 }
 
+cudaError_t cudaGetDevice(int *device)
+{
+    *device = 0;
+    return cudaSuccess;
+}
+
+cudaError_t cudaDeviceGetAttribute(int *value, cudaDeviceAttr, int device)
+{
+    require(device == 0, "device 0");
+    *value = 0;
+    return cudaSuccess;
+}
+
 cudaError_t cudaMalloc(void **ptr, size_t size)
 {
     require(size > 0, "positive allocation");

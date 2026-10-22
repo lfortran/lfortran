@@ -1,84 +1,69 @@
-! The implicit mapping of a host applies in the host after its CONTAINS
-! section and in its internal procedures, where an IMPLICIT statement of the
-! procedure overrides it only for the letters it names.
+! A variable first named in a SAVE statement takes its type from the
+! scope's IMPLICIT statements, not from the default implicit typing rule.
 module implicit_typing_18_mod
-implicit double precision (a-h, o-z)
+implicit double precision (a-h,o-z)
+save d
 contains
-    function third(y)
-        third = half(y) * 2d0 / 3d0
-        r = third
-        if (kind(r) /= 8) error stop
-    contains
-        function half(z)
-            half = z / 2d0
-            d = half
-            if (kind(d) /= 8) error stop
-        end function
-    end function
-
-    subroutine own_mapping(n, e)
-        implicit integer (d)
-        d = 2
-        e = 1d0 / 3d0
-        n = d
-        if (kind(d) /= 4) error stop
-        if (kind(e) /= 8) error stop
-    end subroutine
+subroutine bump(r)
+double precision, intent(out) :: r
+save e
+data e /0d0/
+if (kind(d) /= kind(1d0)) error stop 11
+if (kind(e) /= kind(1d0)) error stop 12
+e = e + 1d0/3d0
+d = e
+r = e
+end subroutine
 end module
 
-subroutine external_host(res)
-implicit double precision (a-h, o-z)
-r = 1d0 / 3d0
-call inner(d)
-res = r + d
-if (kind(r) /= 8) error stop
-contains
-    subroutine inner(x)
-        double precision, intent(out) :: x
-        e = 1d0 / 3d0
-        x = e
-        if (kind(e) /= 8) error stop
-    end subroutine
+subroutine accumulate(n, total, count, flag)
+implicit double precision (a-h,o-w)
+implicit integer (x)
+implicit logical (y)
+integer, intent(in) :: n
+double precision, intent(out) :: total
+integer, intent(out) :: count
+logical, intent(out) :: flag
+save d, x, y
+data d /0d0/, x /0/, y /.false./
+if (kind(d) /= kind(1d0)) error stop 1
+d = d + 1d0/3d0
+x = x + n
+if (2*(x/2) == x) error stop 10
+y = .not. y
+total = d
+count = x
+flag = y
+end subroutine
+
+subroutine counter(k_out)
+integer, intent(out) :: k_out
+save k
+data k /0/
+k = k + 1
+k_out = k
 end subroutine
 
 program implicit_typing_18
-use implicit_typing_18_mod
-implicit double precision (a-h, o-z)
-r = 1d0 / 3d0
-if (kind(r) /= 8) error stop
-if (abs(r - 1d0 / 3d0) > 1d-15) error stop
-call set_third(x)
-if (abs(x - 1d0 / 3d0) > 1d-15) error stop
-call internal_local(y)
-if (abs(y - 1d0 / 3d0) > 1d-15) error stop
-call own_mapping(n, e)
-if (n /= 2) error stop
-if (abs(e - 1d0 / 3d0) > 1d-15) error stop
-call partial_override(n, e)
-if (n /= 3) error stop
-if (abs(e - 1d0 / 3d0) > 1d-15) error stop
-w = third(1d0)
-if (abs(w - 1d0 / 3d0) > 1d-15) error stop
-call external_host(v)
-if (abs(v - 2d0 / 3d0) > 1d-15) error stop
-print *, r, x, y, e, w, v
-contains
-    subroutine set_third(z)
-        double precision, intent(out) :: z
-        z = 1d0 / 3d0
-    end subroutine
-
-    subroutine internal_local(z)
-        double precision, intent(out) :: z
-        d = 1d0 / 3d0
-        z = d
-        if (kind(d) /= 8) error stop
-    end subroutine
-
-    subroutine partial_override(m, f)
-        implicit integer (m)
-        m = 3
-        f = 1d0 / 3d0
-        if (kind(f) /= 8) error stop
-    end subroutine
+use implicit_typing_18_mod, only: bump, d
+implicit none
+double precision :: total, r
+integer :: count, k
+logical :: flag
+call accumulate(3, total, count, flag)
+if (abs(total - 1d0/3d0) > 1d-15) error stop 2
+if (count /= 3) error stop 3
+if (.not. flag) error stop 4
+call accumulate(4, total, count, flag)
+if (abs(total - 2d0/3d0) > 1d-15) error stop 5
+if (count /= 7) error stop 6
+if (flag) error stop 8
+call counter(k)
+call counter(k)
+if (k /= 2) error stop 9
+call bump(r)
+call bump(r)
+if (abs(r - 2d0/3d0) > 1d-15) error stop 13
+if (abs(d - 2d0/3d0) > 1d-15) error stop 14
+print *, total, count, flag, k, r, d
 end program

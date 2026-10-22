@@ -4928,6 +4928,33 @@ public:
         return nullptr;
     }
 
+    // The binding `proc_name` of `clss`; an inherited one is copied into `clss` for codegen.
+    ASR::symbol_t* resolve_and_copy_type_bound_proc(
+            ASR::Struct_t *clss, const std::string &proc_name) {
+        ASR::symbol_t *proc_sym = resolve_type_bound_proc_in_parent_chain(clss, proc_name);
+        if (proc_sym == nullptr || ASRUtils::symbol_parent_symtab(proc_sym) == clss->m_symtab) {
+            return proc_sym;
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym));
+        ASR::StructMethodDeclaration_t *parent_decl
+            = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+        std::string local_name = ASRUtils::symbol_name(proc_sym);
+        ASR::symbol_t *local_sym = clss->m_symtab->get_symbol(local_name);
+        if (local_sym == nullptr) {
+            ASR::symbol_t *proc = ASRUtils::import_symbol(al, parent_decl->m_proc,
+                clss->m_symtab->parent, ASR::accessType::Private, "1_");
+            ASRUtils::insert_module_dependency(proc, al, current_module_dependencies);
+            local_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
+                al, proc_sym->base.loc, clss->m_symtab,
+                parent_decl->m_name, parent_decl->m_self_argument,
+                parent_decl->m_proc_name, proc,
+                parent_decl->m_abi, parent_decl->m_is_deferred,
+                parent_decl->m_is_nopass));
+            clss->m_symtab->add_symbol(local_name, local_sym);
+        }
+        return local_sym;
+    }
+
     void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
         SymbolTable* enclosing_scope) {
         if (template_struct->n_kind_params == 0) {
@@ -4975,31 +5002,8 @@ public:
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    ASR::symbol_t *cand_proc_sym
-                        = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
+                    ASR::symbol_t *cand_proc_sym = resolve_and_copy_type_bound_proc(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
-                        if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
-                            // Inherited binding lives in a parent type's scope.
-                            // Copy the StructMethodDeclaration into the child's
-                            // symtab so that codegen never sees an ExternalSymbol
-                            // where it expects a StructMethodDeclaration.
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*cand_proc_sym));
-                            ASR::StructMethodDeclaration_t *parent_decl
-                                = ASR::down_cast<ASR::StructMethodDeclaration_t>(cand_proc_sym);
-                            std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
-                            ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
-                            if (local_proc_sym == nullptr) {
-                                ASR::asr_t *new_decl = ASR::make_StructMethodDeclaration_t(
-                                    al, cand_proc_sym->base.loc, clss->m_symtab,
-                                    parent_decl->m_name, parent_decl->m_self_argument,
-                                    parent_decl->m_proc_name, parent_decl->m_proc,
-                                    parent_decl->m_abi, parent_decl->m_is_deferred,
-                                    parent_decl->m_is_nopass);
-                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
-                                clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
-                            }
-                            cand_proc_sym = local_proc_sym;
-                        }
                         cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
@@ -5044,6 +5048,85 @@ public:
             }
         }
         generic_class_procedures.clear();
+        std::set<ASR::Struct_t*> done;
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                inherit_generic_class_procedures(
+                    ASR::down_cast<ASR::Struct_t>(item.second), done);
+            }
+        }
+    }
+
+    // Merges the parent's generic bindings into `clss`, with each specific binding taken from `clss`.
+    void inherit_generic_class_procedures(ASR::Struct_t *clss,
+            std::set<ASR::Struct_t*> &done) {
+        if (clss->m_parent == nullptr || !done.insert(clss).second) {
+            return;
+        }
+        ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(clss->m_parent));
+        if (parent->m_symtab->parent == current_scope) {
+            inherit_generic_class_procedures(parent, done);
+        }
+        auto generic_procs = [](ASR::symbol_t *generic) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(generic);
+                return std::make_pair(op->m_procs, op->n_procs);
+            }
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+            return std::make_pair(gp->m_procs, gp->n_procs);
+        };
+        for (auto &item : parent->m_symtab->get_scope()) {
+            ASR::symbol_t *parent_generic = item.second;
+            if (!ASR::is_a<ASR::CustomOperator_t>(*parent_generic) &&
+                    !ASR::is_a<ASR::GenericProcedure_t>(*parent_generic)) {
+                continue;
+            }
+            ASR::symbol_t *own_generic = clss->m_symtab->get_symbol(item.first);
+            if (own_generic != nullptr && own_generic->type != parent_generic->type) {
+                continue;
+            }
+            Vec<ASR::symbol_t*> procs;
+            procs.reserve(al, generic_procs(parent_generic).second);
+            std::set<std::string> proc_names;
+            for (ASR::symbol_t *generic : {parent_generic, own_generic}) {
+                if (generic == nullptr) {
+                    continue;
+                }
+                auto [m_procs, n_procs] = generic_procs(generic);
+                for (size_t i = 0; i < n_procs; i++) {
+                    std::string proc_name = ASRUtils::symbol_name(m_procs[i]);
+                    if (!proc_names.insert(proc_name).second) {
+                        continue;
+                    }
+                    ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
+                        ? proc : m_procs[i]);
+                }
+            }
+            if (own_generic == nullptr) {
+                ASR::asr_t *v;
+                if (ASR::is_a<ASR::CustomOperator_t>(*parent_generic)) {
+                    v = ASR::make_CustomOperator_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::CustomOperator_t>(parent_generic)->m_access);
+                } else {
+                    v = ASR::make_GenericProcedure_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::GenericProcedure_t>(parent_generic)->m_access);
+                }
+                clss->m_symtab->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*own_generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(own_generic);
+                op->m_procs = procs.p;
+                op->n_procs = procs.size();
+            } else {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(own_generic);
+                gp->m_procs = procs.p;
+                gp->n_procs = procs.size();
+            }
+        }
+        sync_pdt_specialization_symbols(clss, current_scope);
     }
 
     bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
@@ -5905,8 +5988,8 @@ public:
                         throw SemanticAbort();
                     }
                 }
-                    proc_sym = ASRUtils::symbol_get_past_external(proc_sym);
-                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(proc_sym));
                 // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
                 //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
                 // if (!is_deferred &&

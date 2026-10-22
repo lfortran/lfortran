@@ -17,7 +17,8 @@ extern int64_t _lfortran_open(int32_t unit_num,
     char* sign, int64_t sign_len,
     char* decimal, int64_t decimal_len,
     char* round, int64_t round_len,
-    char* pad, int64_t pad_len);
+    char* pad, int64_t pad_len,
+    char* convert, int64_t convert_len);
 extern void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 extern void _lfortran_close(int32_t unit_num, char* status, int64_t status_len,
     int32_t* iostat);
@@ -30,7 +31,8 @@ int main(void) {
     int32_t iostat = -1;
     FILE *fp = (FILE*)_lfortran_open(unit, NULL, 0, "scratch", 7,
         NULL, 0, "stream", 6, NULL, 0, &iostat, NULL, 0, NULL, 0, NULL, 0,
-        NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
+        NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0,
+        NULL, 0);
     if (iostat != 0 || fp == NULL) {
         fprintf(stderr, "open failed: iostat=%d\n", (int)iostat);
         return 1;

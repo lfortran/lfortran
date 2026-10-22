@@ -21,6 +21,9 @@ struct GpuLoopTransformName {
 const GpuLoopTransformName gpu_loop_transform_names[] = {
     {"fuse", GpuLoopFuse},
     {"swap", GpuLoopSwap},
+    {"split", GpuLoopSplit},
+    {"jam", GpuLoopJam},
+    {"skew", GpuLoopSkew},
 };
 
 // The transformations a value of `--gpu-loop-transforms` selects, or
@@ -94,6 +97,35 @@ bool gpu_loop_transforms_apply(const PassOptions &pass_options) {
     return gpu_device_selected(pass_options) == GpuDevice::Cuda;
 }
 
+ASR::expr_t *gpu_cache_bytes(Allocator &al, SymbolTable *unit_scope,
+        const PassOptions &pass_options, const Location &loc) {
+    ASRUtils::ASRBuilder b(al, loc);
+    if (pass_options.gpu_cache_bytes >= 0) {
+        return b.i64(pass_options.gpu_cache_bytes);
+    }
+    const std::string name = "lfortran_gpu_cache_bytes";
+    ASR::symbol_t *sym = unit_scope->get_symbol(name);
+    ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+    if (sym == nullptr) {
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit_scope);
+        ASR::expr_t *return_var = b.Variable(fn_symtab, name,
+            ASRUtils::duplicate_type(al, i64),
+            ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC,
+            false);
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc,
+            fn_symtab, s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0,
+            return_var, ASR::abiType::BindC, ASR::accessType::Public,
+            ASR::deftypeType::Interface, s2c(al, name), false, false,
+            false, false, false, nullptr, 0, false, false, false,
+            nullptr);
+        sym = ASR::down_cast<ASR::symbol_t>(fn);
+        unit_scope->add_symbol(name, sym);
+    }
+    Vec<ASR::call_arg_t> args;
+    args.reserve(al, 1);
+    return b.Call(sym, args, ASRUtils::duplicate_type(al, i64));
+}
+
 ASR::expr_t *gpu_i32(Allocator &al, const Location &loc, int64_t v) {
     return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, v,
         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
@@ -148,7 +180,7 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
                 nest.privates.push_back(ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(p->m_vars[k])->m_v));
             }
-        } else {
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
             return false;
         }
     }
@@ -186,7 +218,8 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
 
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         const std::vector<ASR::expr_t*> &starts,
-        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body) {
+        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
+        const std::vector<ASR::symbol_t*> &extra_privates) {
     ASR::stmt_t **cur_body = body.p;
     size_t cur_n = body.n;
     for (size_t k = nest.loops.size(); k-- > 0;) {
@@ -207,11 +240,41 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         cur_n = 1;
     }
     Vec<ASR::omp_clause_t*> clauses;
-    clauses.reserve(al, nest.region->n_clauses);
+    clauses.reserve(al, nest.region->n_clauses + 1);
+    bool have_private = false;
     ASRUtils::ExprStmtDuplicator dup(al);
     for (size_t i = 0; i < nest.region->n_clauses; i++) {
-        clauses.push_back(al, dup.duplicate_omp_clause(
-            nest.region->m_clauses[i]));
+        ASR::omp_clause_t *c = nest.region->m_clauses[i];
+        if (ASR::is_a<ASR::OMPPrivate_t>(*c)) {
+            ASR::OMPPrivate_t *p = ASR::down_cast<ASR::OMPPrivate_t>(c);
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, p->n_vars + extra_privates.size());
+            for (size_t k = 0; k < p->n_vars; k++) {
+                vars.push_back(al, dup.duplicate_expr(p->m_vars[k]));
+            }
+            for (ASR::symbol_t *s : extra_privates) {
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                    c->base.loc, s)));
+            }
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPPrivate_t(al, c->base.loc, vars.p, vars.n)));
+            have_private = true;
+        } else if (!ASR::is_a<ASR::OMPOverwrite_t>(*c)) {
+            // What the iterations of the nest overwrite is not known for
+            // the new heads.
+            clauses.push_back(al, dup.duplicate_omp_clause(c));
+        }
+    }
+    if (!have_private && !extra_privates.empty()) {
+        Vec<ASR::expr_t*> vars;
+        vars.reserve(al, extra_privates.size());
+        for (ASR::symbol_t *s : extra_privates) {
+            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                nest.region->base.base.loc, s)));
+        }
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPPrivate_t(al, nest.region->base.base.loc, vars.p,
+                vars.n)));
     }
     return ASRUtils::STMT(ASR::make_OMPRegion_t(al,
         nest.region->base.base.loc, nest.region->m_region, clauses.p,
@@ -349,8 +412,16 @@ ASR::array_index_t* GpuDuplicator::duplicate_indices(ASR::ArrayItem_t *x,
                 ok = false;
             } else if (map->shift[i]) {
                 ASRUtils::ExprStmtDuplicator d(al);
-                idx.m_right = gpu_int_add(al, idx.m_right,
-                    d.duplicate_expr(map->shift[i]));
+                ASR::expr_t *shift = d.duplicate_expr(map->shift[i]);
+                // In the kind of the subscript (integer(8) indices).
+                ASR::ttype_t *t = ASRUtils::expr_type(idx.m_right);
+                if (ASRUtils::extract_kind_from_ttype_t(t)
+                        != ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(shift))) {
+                    ASRUtils::ASRBuilder b(al, idx.loc);
+                    shift = b.i2i_t(shift, ASRUtils::duplicate_type(al, t));
+                }
+                idx.m_right = gpu_int_add(al, idx.m_right, shift);
             }
         }
         args.push_back(al, idx);
@@ -457,6 +528,8 @@ ASR::asr_t* GpuDuplicator::duplicate_BlockCall(ASR::BlockCall_t *x) {
     SymbolTable *symtab = al.make_new<SymbolTable>(outer);
     for (auto &item : b->m_symtab->get_scope()) {
         ASR::symbol_t *old = item.second;
+        // A BLOCK nested in this one is copied where the body runs it.
+        if (ASR::is_a<ASR::Block_t>(*old)) continue;
         if (!ASR::is_a<ASR::Variable_t>(*old)) {
             ok = false;
             continue;
@@ -484,6 +557,15 @@ ASR::asr_t* GpuDuplicator::duplicate_BlockCall(ASR::BlockCall_t *x) {
     outer->add_symbol(name, nbs);
     if (added) added->push_back({outer, name});
     return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, nbs);
+}
+
+ASR::asr_t* GpuDuplicator::duplicate_OMPRegion(ASR::OMPRegion_t *x) {
+    ASR::asr_t *r = ASR::BaseExprStmtDuplicator<GpuDuplicator>::
+        duplicate_OMPRegion(x);
+    if (rarely_run && rarely_run->count(&x->base)) {
+        rarely_run->insert(ASR::down_cast<ASR::stmt_t>(r));
+    }
+    return r;
 }
 
 void GpuDuplicator::duplicate_body(ASR::stmt_t **body, size_t n,
@@ -1091,6 +1173,19 @@ void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
     ExprReplaceAll r;
     r.f = &f;
     for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
+}
+
+void gpu_collect_blocks(ASR::stmt_t **body, size_t n,
+        std::set<ASR::symbol_t*> &blocks) {
+    struct Blocks : public ASRUtils::BlockBodyWalkVisitor<Blocks> {
+        std::set<ASR::symbol_t*> *blocks;
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            blocks->insert(ASRUtils::symbol_get_past_external(x.m_m));
+            ASRUtils::BlockBodyWalkVisitor<Blocks>::visit_BlockCall(x);
+        }
+    } c;
+    c.blocks = &blocks;
+    for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
 }
 
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms) {
@@ -1806,6 +1901,85 @@ void GpuInliner::rollback() {
         }
     }
     added.clear();
+}
+
+namespace {
+
+// Every variable named in a statement, or in the declaration of a variable
+// (its initializer), that takes an address (`GetPointer`, `c_loc`) or
+// associates a pointer, and the variable declared: on either side of such
+// an association. That is how EQUIVALENCE is lowered, in a procedure as a
+// pointer set from the address of the other variable, in a module as a
+// variable whose initializer is that address.
+struct AddressTaken : public ASR::BaseWalkVisitor<AddressTaken> {
+    using Base = ASR::BaseWalkVisitor<AddressTaken>;
+    std::set<ASR::symbol_t*> *syms;
+    struct Frame {
+        bool takes_address = false;
+        std::set<ASR::symbol_t*> vars;
+    };
+    // The statement or declaration being visited, innermost last.
+    std::vector<Frame> frames;
+    void framed(ASR::symbol_t *declared,
+            const std::function<void()> &visit) {
+        frames.emplace_back();
+        if (declared) frames.back().vars.insert(declared);
+        visit();
+        Frame fr = std::move(frames.back());
+        frames.pop_back();
+        if (fr.takes_address) {
+            syms->insert(fr.vars.begin(), fr.vars.end());
+        }
+    }
+    void taken(ASR::expr_t *arg) {
+        if (!frames.empty()) frames.back().takes_address = true;
+        // Also outside a statement or declaration.
+        gpu_collect_symbols(arg, *syms);
+    }
+    void visit_stmt(const ASR::stmt_t &x) {
+        framed(nullptr, [&]() { Base::visit_stmt(x); });
+    }
+    void visit_Variable(const ASR::Variable_t &x) {
+        framed(const_cast<ASR::symbol_t*>(&x.base),
+            [&]() { Base::visit_Variable(x); });
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        if (!frames.empty()) {
+            frames.back().vars.insert(
+                ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    }
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        taken(x.m_arg);
+        Base::visit_GetPointer(x);
+    }
+    void visit_CLoc(const ASR::CLoc_t &x) {
+        taken(x.m_arg);
+        Base::visit_CLoc(x);
+    }
+    void visit_Associate(const ASR::Associate_t &x) {
+        taken(x.m_value);
+        Base::visit_Associate(x);
+    }
+};
+
+} // namespace
+
+void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
+        std::set<ASR::symbol_t*> &syms) {
+    AddressTaken t;
+    t.syms = &syms;
+    t.visit_TranslationUnit(unit);
+}
+
+bool gpu_may_be_aliased(ASR::symbol_t *s,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    s = ASRUtils::symbol_get_past_external(s);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+    if (v->m_storage == ASR::storage_typeType::Parameter) return false;
+    return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
+        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
 }
 
 } // namespace LCompilers

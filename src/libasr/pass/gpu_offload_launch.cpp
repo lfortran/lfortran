@@ -315,23 +315,33 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     overwritten_if.reserve(al, 0);
     {
         ParallelLoopNest source;
-        if (parallel_loop_nest(region, source)) {
+        bool have_source = parallel_loop_nest(region, source);
+        if (have_source) {
             component_fit = build_component_fit(source, starts, ends, loc);
             if (component_fit != nullptr) {
                 launch_stmts.push_back(al, ASRUtils::STMT(
                     ASR::make_BlockCall_t(al, loc, -1, component_fit)));
             }
-            for (size_t i = 0; i < plan.call_args.n; i++) {
-                ASR::expr_t *arg = plan.call_args.p[i].m_value;
-                if (arg == nullptr) continue;
-                ASR::expr_t *condition = gpu_overwrite_condition(al, loc,
-                    source, starts, ends, arg);
-                if (condition == nullptr) continue;
-                ASRUtils::ExprStmtDuplicator dup(al);
-                dup.success = true;
-                overwritten.push_back(al, dup.duplicate_expr(arg));
-                overwritten_if.push_back(al, condition);
+        }
+        for (size_t i = 0; i < plan.call_args.n; i++) {
+            ASR::expr_t *arg = plan.call_args.p[i].m_value;
+            if (arg == nullptr) continue;
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.success = true;
+            ASR::expr_t *condition = have_source
+                ? gpu_overwrite_condition(al, loc, source, starts, ends, arg)
+                : nullptr;
+            // Otherwise what a loop transformation recorded from the loop
+            // it rewrote, which runs the same iterations.
+            if (condition == nullptr) {
+                condition = gpu_recorded_overwrite(region, arg);
+                if (condition != nullptr) {
+                    condition = dup.duplicate_expr(condition);
+                }
             }
+            if (condition == nullptr) continue;
+            overwritten.push_back(al, dup.duplicate_expr(arg));
+            overwritten_if.push_back(al, condition);
         }
     }
     for (size_t gi = 0; gi < plan.gather_stmts.n; gi++) {

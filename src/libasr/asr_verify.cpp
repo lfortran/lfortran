@@ -2563,8 +2563,9 @@ public:
             require(is_method,
                 "StructMethodDeclaration '" + std::string(method->m_name) +
                 "' called without dt (not as a method).");
-            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
-                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+            ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(method->m_proc);
+            if (proc && ASR::is_a<ASR::Function_t>(*proc)) {
+                func = ASR::down_cast<ASR::Function_t>(proc);
                 nopass = method->m_is_nopass;
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
@@ -4711,6 +4712,28 @@ public:
                     ASR::OMPReduction_t *c =
                         ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[i]);
                     vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPOverwrite: {
+                    ASR::OMPOverwrite_t *c =
+                        ASR::down_cast<ASR::OMPOverwrite_t>(x.m_clauses[i]);
+                    require(x.m_region == ASR::omp_region_typeType::ParallelDo
+                        && x.m_exec_target == ASR::exec_targetType::ExecDevice,
+                        "OMPOverwrite may only be a clause of a parallel loop "
+                        "assigned to the device");
+                    ASR::expr_t *a = c->m_array;
+                    while (ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
+                        a = ASR::down_cast<ASR::StructInstanceMember_t>(a)->m_v;
+                    }
+                    require(ASR::is_a<ASR::Var_t>(*a)
+                        && ASRUtils::is_array(ASRUtils::expr_type(c->m_array)),
+                        "the array of an OMPOverwrite clause must be an array "
+                        "variable or a component of one");
+                    ASR::ttype_t *t = ASRUtils::expr_type(c->m_condition);
+                    require(ASR::is_a<ASR::Logical_t>(*t)
+                        && !ASRUtils::is_array(t),
+                        "the condition of an OMPOverwrite clause must be a "
+                        "scalar logical");
                     break;
                 }
                 default: break;

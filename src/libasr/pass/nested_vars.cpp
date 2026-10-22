@@ -1613,8 +1613,10 @@ public:
             if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
                 ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
                 assigned_target_sym = get_root_host_symbol(assignment->m_target);
-                assigns_part = !ASR::is_a<ASR::Var_t>(
-                    *ASRUtils::get_past_array_physical_cast(assignment->m_target));
+                ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(assignment->m_target);
+                // The value keeps a part of the target in `z = cmplx(h(), aimag(z))`, made from `z%re = h()`
+                assigns_part = !ASR::is_a<ASR::Var_t>(*target) || ASRUtils::expr_references_symbol(
+                    assignment->m_value, ASR::down_cast<ASR::Var_t>(target)->m_v);
             }
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
