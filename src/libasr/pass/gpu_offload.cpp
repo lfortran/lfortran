@@ -2799,26 +2799,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // 5. Build function signature
-    // FunctionType arg_types must not contain scope-bound expressions,
-    // so strip dimension expressions that reference variables.
+    // FunctionType arg_types must not contain scope-bound expressions.
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, kernel_args.n);
     for (size_t i = 0; i < kernel_args.n; i++) {
         ASR::Var_t *v = down_cast<ASR::Var_t>(kernel_args.p[i]);
-        ASR::ttype_t *t = ASRUtils::symbol_type(v->m_v);
-        if (ASR::is_a<ASR::Array_t>(*t)) {
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
-            ASR::dimension_t *new_dims = al.allocate<ASR::dimension_t>(arr->n_dims);
-            for (size_t d = 0; d < arr->n_dims; d++) {
-                new_dims[d].loc = arr->m_dims[d].loc;
-                new_dims[d].m_start = nullptr;
-                new_dims[d].m_length = nullptr;
-            }
-            t = ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
-                arr->m_type, new_dims, arr->n_dims,
-                arr->m_physical_type, arr->m_memory_space));
-        }
-        arg_types.push_back(al, t);
+        arg_types.push_back(al,
+            gpu_signature_type(al, ASRUtils::symbol_type(v->m_v)));
     }
     ASR::ttype_t *fn_sig = ASRUtils::TYPE(
         ASR::make_FunctionType_t(al, loc,
