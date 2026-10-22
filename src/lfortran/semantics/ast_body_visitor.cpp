@@ -152,6 +152,48 @@ public:
     std::set<std::string> labels;
     size_t starting_n_body = 0;
     bool in_loop = false;
+    // Temporarily binds names in `scope` to the given symbols, restoring the
+    // previous bindings (if any) when the guard goes out of scope.
+    struct ConstructNameBindings {
+        SymbolTable *scope;
+        std::vector<std::pair<std::string, ASR::symbol_t*>> saved;
+
+        ConstructNameBindings(SymbolTable *scope_,
+                const std::vector<std::pair<std::string, ASR::symbol_t*>> &bindings)
+                : scope(scope_) {
+            for (auto &binding : bindings) {
+                saved.push_back({binding.first, scope->get_symbol(binding.first)});
+                scope->add_or_overwrite_symbol(binding.first, binding.second);
+            }
+        }
+
+        ~ConstructNameBindings() {
+            for (size_t i = saved.size(); i-- > 0;) {
+                if (saved[i].second) {
+                    scope->overwrite_symbol(saved[i].first, saved[i].second);
+                } else {
+                    scope->erase_symbol(saved[i].first);
+                }
+            }
+        }
+    };
+
+    // Source spelling of each compiler-generated DO CONCURRENT index
+    // variable, so that diagnostics name the index-name the user wrote.
+    std::map<ASR::symbol_t*, std::string> dc_index_source_names;
+
+    // Returns `name`, or `name` followed by a counter, that is not visible
+    // from the current scope, so that a new local symbol with this name does
+    // not shadow an entity of an enclosing, host or use-associated scope.
+    std::string get_unique_name_in_scope_chain(const std::string &name) {
+        std::string unique_name = name;
+        for (int counter = 1; current_scope->resolve_symbol(unique_name) != nullptr;
+                counter++) {
+            unique_name = name + std::to_string(counter);
+        }
+        return unique_name;
+    }
+
     // True when the innermost enclosing loop is a DO CONCURRENT construct
     bool in_do_concurrent = false;
 
@@ -365,8 +407,13 @@ public:
         if (std::find(do_loop_variables.begin(), do_loop_variables.end(), sym)
                 != do_loop_variables.end()) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            std::string name = to_lower(std::string(v->m_name));
+            auto source_name = dc_index_source_names.find(sym);
+            if (source_name != dc_index_source_names.end()) {
+                name = source_name->second;
+            }
             diag.add(Diagnostic(
-                "Assignment to loop variable `" + to_lower(std::string(v->m_name)) + "` is not allowed",
+                "Assignment to loop variable `" + name + "` is not allowed",
                 Level::Error, Stage::Semantic, {
                     Label("",{target->base.loc})
                 }));
@@ -10595,6 +10642,7 @@ public:
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
+        std::vector<std::pair<std::string, ASR::symbol_t*>> index_bindings;
         for(size_t i=0;i<x.n_control;i++) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             if (! h.m_var) {
@@ -10622,34 +10670,37 @@ public:
                 throw SemanticAbort();
             }
             std::string var_name = to_lower(h.m_var);
-            ASR::expr_t *var = nullptr;
             if (h.m_type) {
                 current_type = h.m_type;
             }
+            // The index-name has the scope of the construct (F2018 19.4), so
+            // it is a new variable, distinct from any entity of the same name
+            // in the enclosing scope. Without a type-spec it has the type the
+            // name has in the enclosing scope.
+            ASR::ttype_t *index_type = nullptr;
             if (current_type) {
-                // A type-spec (e.g. `do concurrent (integer :: j = ...)`)
-                // declares the index variable. If a variable of the same name
-                // already exists in the current scope, reuse it instead of
-                // adding a duplicate symbol.
-                ASR::symbol_t *var_sym = current_scope->get_symbol(var_name);
-                if (var_sym == nullptr) {
-                    AST::decl_attribute_t *decl_type = current_type;
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 1);
-                    ASR::symbol_t *type_declaration;
-                    ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
-                                                        dims, nullptr, type_declaration, ASR::abiType::Source);
-                    var_sym = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
-                            nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                            type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
-                            false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                    current_scope->add_symbol(var_name, var_sym);
-                }
-                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::symbol_t *type_declaration;
+                index_type = determine_type(x.base.base.loc, var_name, current_type, false, false,
+                                            dims, nullptr, type_declaration, ASR::abiType::Source);
             } else {
-                var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
+                ASR::expr_t *outer_var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
+                index_type = ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(outer_var)));
             }
+            // A valid Fortran name (the Fortran backend prints it), unique
+            // against every scope visible from here so that it cannot hide a
+            // host or use-associated entity of the same spelling.
+            std::string index_name = get_unique_name_in_scope_chain(var_name + "__dc");
+            ASR::symbol_t *index_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, index_name),
+                    nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                    index_type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(index_name, index_sym);
+            index_bindings.push_back({var_name, index_sym});
+            dc_index_source_names[index_sym] = var_name;
+            ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, index_sym));
             visit_expr(*h.m_start);
             ASR::expr_t *start = ASRUtils::EXPR(tmp);
             visit_expr(*h.m_end);
@@ -10678,6 +10729,9 @@ public:
             head.loc = head.m_v->base.loc;
             heads.push_back(al, head);
         }
+        // Inside the construct (body, mask and locality specs) the index
+        // names refer to the new index variables.
+        ConstructNameBindings index_scope(current_scope, index_bindings);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         transform_stmts(body, x.n_body, x.m_body);

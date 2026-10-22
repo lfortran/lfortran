@@ -221,10 +221,10 @@
                                     []
                                     ()
                                 ),
-                            i:
+                            i__dc:
                                 (Variable
                                     5
-                                    i
+                                    i__dc
                                     []
                                     Local
                                     ()
@@ -410,7 +410,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 5 i)
+                        (Var 5 i__dc)
                         (IntegerBinOp
                             (Var 5 __flat_idx)
                             Add
@@ -428,7 +428,7 @@
                         (ArrayItem
                             (Var 5 a)
                             [(()
-                            (Var 5 i)
+                            (Var 5 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -449,7 +449,7 @@
                             Mul
                             (IntrinsicElementalFunction
                                 Real
-                                [(Var 5 i)]
+                                [(Var 5 i__dc)]
                                 0
                                 (Real 4)
                                 ()
@@ -467,7 +467,7 @@
                         (ArrayItem
                             (Var 5 b)
                             [(()
-                            (Var 5 i)
+                            (Var 5 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -478,7 +478,7 @@
                             (ArrayItem
                                 (Var 5 b)
                                 [(()
-                                (Var 5 i)
+                                (Var 5 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -489,7 +489,7 @@
                             (ArrayItem
                                 (Var 5 a)
                                 [(()
-                                (Var 5 i)
+                                (Var 5 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -802,6 +802,31 @@
                                 (Variable
                                     2
                                     i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
                                     []
                                     Local
                                     ()

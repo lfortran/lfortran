@@ -32,10 +32,60 @@
                                     []
                                     ()
                                 ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             j:
                                 (Variable
                                     2
                                     j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            j__dc:
+                                (Variable
+                                    2
+                                    j__dc
                                     []
                                     Local
                                     ()
@@ -86,11 +136,11 @@
                     openmp_36
                     []
                     [(DoConcurrentLoop
-                        [((Var 2 i)
+                        [((Var 2 i__dc)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ())
-                        ((Var 2 j)
+                        ((Var 2 j__dc)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ())]
@@ -103,9 +153,9 @@
                                 (Var 2 res)
                                 Add
                                 (IntegerBinOp
-                                    (Var 2 i)
+                                    (Var 2 i__dc)
                                     Mul
-                                    (Var 2 j)
+                                    (Var 2 j__dc)
                                     (Integer 4)
                                     ()
                                 )
