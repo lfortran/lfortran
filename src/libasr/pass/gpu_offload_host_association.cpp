@@ -177,7 +177,7 @@ ASR::ttype_t* gpu_signature_type(Allocator &al, ASR::ttype_t *type) {
     if (!ASR::is_a<ASR::Array_t>(*type)) return type;
     ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
     auto constant_bound = [&](ASR::expr_t *bound) -> ASR::expr_t* {
-        int64_t value;
+        int64_t value = 0;
         if (bound == nullptr || !ASRUtils::extract_value(
                 ASRUtils::expr_value(bound), value)) {
             return nullptr;

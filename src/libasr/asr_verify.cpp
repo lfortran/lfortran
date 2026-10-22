@@ -4764,7 +4764,7 @@ public:
                 !_inside_template) {
             bool constant_dims = true;
             for (size_t i = 0; i < x.n_dims; i++) {
-                int64_t value;
+                int64_t value = 0;
                 for (ASR::expr_t* bound : {x.m_dims[i].m_start, x.m_dims[i].m_length}) {
                     if (bound == nullptr || !ASRUtils::extract_value(
                             ASRUtils::expr_value(bound), value)) {
