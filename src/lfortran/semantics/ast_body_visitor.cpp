@@ -2119,13 +2119,15 @@ public:
 
     // An output implied-do loop with values of different types is written in
     // one data transfer only by expanding it at compile time, which needs
-    // constant bounds and steps, nested loops with their own variables and,
-    // for bounds that are not all literals, a limited number of iterations
-    // (see `ASRUtils::expand_implied_do_loop`, used by the `implied_do_loops`
-    // pass). Otherwise the values are written a record per iteration, or
-    // through a temporary array that cannot hold values of different derived
-    // types. An unformatted transfer cannot write derived types from such a
-    // loop at all. Reject these forms for loops with values of derived type.
+    // constant bounds and steps, nested loops with their own variables, for
+    // values of two or more different derived types a limited number of
+    // values and, for bounds that are not all literals, a limited number of
+    // iterations (see `ASRUtils::expand_implied_do_loop`,
+    // used by the `implied_do_loops` pass). Otherwise the values are written
+    // a record per iteration, or through a temporary array that cannot hold
+    // values of different derived types. An unformatted transfer cannot write
+    // derived types from such a loop at all. Reject these forms for loops
+    // with values of derived type.
     void check_mixed_derived_type_output_implied_do(ASR::expr_t* item,
             bool unformatted) {
         if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
@@ -2137,38 +2139,46 @@ public:
         if (!has_tuple || !has_struct) {
             return;
         }
+        const std::string values = "values of different types, including "
+            "derived types,";
         std::string what;
+        std::vector<Label> labels = {Label("", {item->base.loc})};
         if (unformatted) {
-            what = "unformatted output of an implied-do loop with values of "
-                "different types, including derived types,";
+            what = "unformatted output of an implied-do loop with " + values;
         } else {
-            Vec<ASR::expr_t*> values;
-            values.reserve(al, 16);
-            switch (ASRUtils::expand_implied_do_loop(al, idl, values).blocker) {
+            Vec<ASR::expr_t*> expanded;
+            expanded.reserve(al, 16);
+            ASRUtils::ImpliedDoExpansion expansion =
+                ASRUtils::expand_implied_do_loop(al, idl, expanded);
+            switch (expansion.blocker) {
                 case ASRUtils::ImpliedDoExpansionBlocker::None:
                     return;
                 case ASRUtils::ImpliedDoExpansionBlocker::RunTimeBounds:
-                    what = "output of an implied-do loop with values of "
-                        "different types, including derived types, and "
-                        "run-time bounds or step";
+                    what = "output of an implied-do loop with run-time bounds "
+                        "or step and " + values;
+                    labels.push_back(Label("not a constant expression",
+                        {expansion.culprit->base.loc}, false));
                     break;
                 case ASRUtils::ImpliedDoExpansionBlocker::ReusedVariable:
-                    what = "output of an implied-do loop with values of "
-                        "different types, including derived types, and a "
-                        "nested implied-do loop that reuses the variable of an "
-                        "enclosing loop";
+                    what = "output of an implied-do loop with a nested loop "
+                        "that reuses an enclosing loop variable and " + values;
+                    labels.push_back(Label("reuses the variable of an enclosing loop",
+                        {expansion.culprit->base.loc}, false));
                     break;
                 case ASRUtils::ImpliedDoExpansionBlocker::TooManyIterations:
-                    what = "output of an implied-do loop with values of "
-                        "different types, including derived types, bounds "
-                        "that are not all literals and more than " +
+                    what = "output of an implied-do loop with more than " +
                         std::to_string(ASRUtils::implied_do_loop_folded_bounds_expansion_limit) +
-                        " iterations";
+                        " iterations, bounds that are not all literals and " + values;
+                    break;
+                case ASRUtils::ImpliedDoExpansionBlocker::TooManyValues:
+                    what = "output of an implied-do loop with more than " +
+                        std::to_string(ASRUtils::implied_do_loop_expansion_limit) +
+                        " values of different derived types";
                     break;
             }
         }
         diag.add(Diagnostic(what + " is not supported yet",
-            Level::Error, Stage::Semantic, {Label("", {item->base.loc})}));
+            Level::Error, Stage::Semantic, labels));
         if (!compiler_options.continue_compilation) {
             throw SemanticAbort();
         }
