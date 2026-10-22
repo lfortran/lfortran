@@ -6544,8 +6544,11 @@ if (LFORTRAN_BACKEND STREQUAL "cuda")
     enable_language(CUDA)
     add_executable(gpu_cuda_scratch_order gpu_cuda_scratch_order.cu
         ../src/libasr/runtime/lfortran_gpu_cuda.cu)
+    # Build for the local GPUs, like the default `--gpu-arch` of the
+    # LFortran-compiled CUDA tests, instead of nvcc's default architecture.
     set_target_properties(gpu_cuda_scratch_order PROPERTIES
-        CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
+        CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
+        CUDA_ARCHITECTURES native)
     add_test(NAME gpu_cuda_scratch_order COMMAND gpu_cuda_scratch_order)
     add_custom_target(gpu_cuda_scratch_order_discard DEPENDS gpu_cuda_scratch_order)
     add_test(NAME gpu_cuda_scratch_order_discard
