@@ -16,7 +16,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     long __flat_idx;
     int i;
     int m;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -69,11 +69,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     long __flat_idx;
     int i;
     int m;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     if ((i == 1)) {
         m = (i + 5);
     }
@@ -104,7 +104,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     long __flat_idx;
     int i;
     int k;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -168,11 +168,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     long __flat_idx;
     int i;
     int k;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     if ((i == 1)) {
         k = (i + 50);
     } else {

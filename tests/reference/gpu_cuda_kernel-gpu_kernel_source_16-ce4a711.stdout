@@ -8,11 +8,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     long __flat_idx;
     int __gpu_bc_i;
     int j;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 1)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)1))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    j = ((int)(__flat_idx + 1));
+    j = ((int)(__flat_idx + ((long)1)));
     __gpu_bc_i = (1 - 1);
     while (((__gpu_bc_i + 1) <= 2)) {
         __gpu_bc_i = (__gpu_bc_i + 1);
@@ -35,11 +35,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     long __flat_idx;
     int j;
     int k;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    j = ((int)(__flat_idx + 1));
+    j = ((int)(__flat_idx + ((long)1)));
     k = 1;
     u[((int)(k) - (1))] =   1.00000000000000000e+00f;
     u[((int)(((k + 1) - 1)) - (1))] =   1.00000000000000000e+00f;

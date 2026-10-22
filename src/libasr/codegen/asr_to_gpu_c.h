@@ -4919,7 +4919,15 @@ public:
             }
             case ASR::exprType::IntegerConstant: {
                 ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(expr);
-                src << c->m_n;
+                // A bare literal is an int in C, so arithmetic between two
+                // integer(8) constants (e.g. a flattened iteration count with
+                // literal bounds) would be done, and overflow, in 32 bits.
+                // Give it the device type of its kind instead.
+                if (ASRUtils::extract_kind_from_ttype_t(c->m_type) == 8) {
+                    src << "((" << gpu_type(c->m_type) << ")" << c->m_n << ")";
+                } else {
+                    src << c->m_n;
+                }
                 break;
             }
             case ASR::exprType::RealConstant: {

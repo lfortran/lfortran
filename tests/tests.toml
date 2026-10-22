@@ -4990,6 +4990,12 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_565.f90"
 gpu_cuda_kernel = true
 
+# The same nest with literal bounds: the kernel's iteration count is a product
+# of integer(8) constants, which must be emitted as 64-bit values.
+[[test]]
+filename = "../integration_tests/gpu_metal_566.f90"
+gpu_cuda_kernel = true
+
 # One dimension has more than huge(0) iterations: its extent and indices are
 # computed in integer(8). Compile-only: a run executes more than 2**32
 # iterations, and GFortran counts them in integer(4) and runs none.

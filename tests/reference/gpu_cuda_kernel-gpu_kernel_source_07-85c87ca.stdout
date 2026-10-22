@@ -13,11 +13,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     long __flat_idx;
     const double c =   2.82094791773878140e-01;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     y[((int)(i) - (1))] = ((c * x[((int)(i) - (1))]) + (  1.00000000000000000e+00 /   3.00000000000000000e+00));
 }
 

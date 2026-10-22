@@ -6,11 +6,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     long __flat_idx;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 4)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)4))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     {
         int t;
         t = (i * 2);
@@ -30,11 +30,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 {
     long __flat_idx;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 4)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)4))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     b[((int)(i) - (1))] = (a[((int)(i) - (1))] + 1);
 }
 

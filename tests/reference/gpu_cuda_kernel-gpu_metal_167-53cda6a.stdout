@@ -58,11 +58,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __workspace_extent = __scalar_args.__workspace_extent;
     long __flat_idx;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     {
         int __libasr_created__result_metadata_;
         float* y = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;

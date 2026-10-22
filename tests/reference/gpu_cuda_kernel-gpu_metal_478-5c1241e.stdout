@@ -16,11 +16,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     long __flat_idx;
     int j;
     int k;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 4)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)4))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    j = ((int)(__flat_idx + 1));
+    j = ((int)(__flat_idx + ((long)1)));
     __do_loop_end = m;
     k = (1 - 1);
     while (((k + 1) <= __do_loop_end)) {

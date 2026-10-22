@@ -17,11 +17,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     long __flat_idx;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 4)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)4))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     result[((int)(i) - (1))] = (f_gpu_9(((float)i)) + second_gpu_10(((float)i)));
 }
 

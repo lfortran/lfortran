@@ -14,11 +14,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_elem_i;
     int __gpu_sec_i;
     int j;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    j = ((int)(__flat_idx + 1));
+    j = ((int)(__flat_idx + ((long)1)));
     {
         float t[4];
         {
@@ -64,11 +64,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_elem_i1;
     int __gpu_sec_i1;
     int j;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    j = ((int)(__flat_idx + 1));
+    j = ((int)(__flat_idx + ((long)1)));
     {
         int __do_loop_end;
         float __libasr__created__var__1__array_constructor_[4];

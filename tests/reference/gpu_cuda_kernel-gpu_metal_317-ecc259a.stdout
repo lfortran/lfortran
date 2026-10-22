@@ -35,11 +35,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __lb___gpu_gather_ops_1__upper__1 = __scalar_args.__lb___gpu_gather_ops_1__upper__1;
     long __flat_idx;
     int i;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 3)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)3))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i = ((int)(__flat_idx + 1));
+    i = ((int)(__flat_idx + ((long)1)));
     r[((int)(i) - (1))] = ((self.x_min_[((int)(1) - (1))] + __gpu_gather_ops___upper_[((int)(i) - (__lb___gpu_gather_ops___upper__0)) + (__dim___gpu_gather_ops___upper__0 * ((int)(1) - (__lb___gpu_gather_ops___upper__1)))]) + __gpu_gather_ops_1__upper_[((int)(1) - (__lb___gpu_gather_ops_1__upper__0)) + (__dim___gpu_gather_ops_1__upper__0 * ((int)(i) - (__lb___gpu_gather_ops_1__upper__1)))]);
 }
 
