@@ -260,6 +260,12 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::HeapArrayUse:
             return "the array " + decline.name + " on the device heap is not "
                 "supported yet";
+        case GpuDeclineReason::ExitOfConstruct:
+            return "an exit" + in_routine(decline) + " of a block or of "
+                "another construct that is not a loop has no gpu lowering yet";
+        case GpuDeclineReason::NamedCycleInNestedConcurrent:
+            return "a named cycle inside a nested do concurrent"
+                + in_routine(decline) + " has no gpu lowering yet";
         case GpuDeclineReason::StructComponentNotSizeable: {
             // `value%component`: a temporary value is not named.
             std::string component = decline.name;

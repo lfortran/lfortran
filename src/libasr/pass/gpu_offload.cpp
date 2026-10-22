@@ -2785,6 +2785,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // A thread runs one iteration of the loop, so a cycle of the loop ends
+    // the thread: it returns from the kernel, whose body comes last in it.
+    {
+        GpuOffloadedLoopLeaves leaves(&al);
+        leaves.transform_stmts(body_copy.p, body_copy.n);
+        LCOMPILERS_ASSERT(leaves.reason == GpuDeclineReason::None);
+    }
+
     // Add copied loop body (already remapped)
     for (size_t i = 0; i < body_copy.n; i++) {
         kernel_body.push_back(al, body_copy.p[i]);

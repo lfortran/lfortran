@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <libasr/asr.h>
+#include <libasr/asr_pass_walk_visitor.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -317,6 +318,128 @@ public:
             return;
         }
         ASR::BaseWalkVisitor<GpuUnsupportedStatementFinder>::visit_stmt(s);
+    }
+};
+
+// The exits and cycles of the body of an offloaded loop, where a thread
+// runs one iteration of it. A cycle of the offloaded loop -- an unnamed one
+// outside the loops of the body, or a named one whose name no loop of the
+// body has -- ends that iteration, and with it the thread, so when the
+// walker is given an allocator it becomes a return. Every other exit and
+// cycle leaves a loop of the body and is left for the device code
+// generator. The ones that have no lowering yet are reported in `reason`
+// and `loc` instead.
+// Walking the body of a procedure the loop calls finds no cycle of the
+// offloaded loop, only the exits that have no lowering.
+class GpuOffloadedLoopLeaves
+        : public ASR::ASRPassBaseWalkVisitor<GpuOffloadedLoopLeaves> {
+    struct Frame {
+        const char *name;
+        // A do concurrent, whose name ASR does not keep.
+        bool concurrent;
+    };
+    std::vector<Frame> frames;
+    Allocator *al;
+    ASR::stmt_t *replacement = nullptr;
+
+    static bool unnamed(const char *name) {
+        return name == nullptr || name[0] == '\0';
+    }
+
+    bool names_a_frame(const char *name) const {
+        for (const Frame &f : frames) {
+            if (!unnamed(f.name) && std::string(f.name) == name) return true;
+        }
+        return false;
+    }
+
+    bool in_concurrent() const {
+        for (const Frame &f : frames) {
+            if (f.concurrent) return true;
+        }
+        return false;
+    }
+
+    void decline(GpuDeclineReason why, const Location &where) {
+        if (reason != GpuDeclineReason::None) return;
+        reason = why;
+        loc = where;
+    }
+
+    template <typename Loop>
+    void loop(const Loop &x, const char *name, bool concurrent) {
+        frames.push_back({name, concurrent});
+        Loop &xx = const_cast<Loop&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        frames.pop_back();
+    }
+
+public:
+    GpuDeclineReason reason = GpuDeclineReason::None;
+    Location loc;
+
+    // Without an allocator, the body is only looked at.
+    explicit GpuOffloadedLoopLeaves(Allocator *al_) : al(al_) {}
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        for (size_t i = 0; i < n_body; i++) {
+            replacement = nullptr;
+            visit_stmt(*m_body[i]);
+            if (replacement != nullptr) m_body[i] = replacement;
+            replacement = nullptr;
+        }
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        loop(x, x.m_name, false);
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        loop(x, x.m_name, false);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        loop(x, nullptr, true);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s == nullptr || !ASR::is_a<ASR::Block_t>(*s)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(s);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*s)) return;
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(s);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) {
+        // An exit cannot leave a do concurrent, so a name that is not of a
+        // loop of the body is of another construct.
+        if (!unnamed(x.m_stmt_name) && !names_a_frame(x.m_stmt_name)) {
+            decline(GpuDeclineReason::ExitOfConstruct, x.base.base.loc);
+        }
+    }
+
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        if (unnamed(x.m_stmt_name)) {
+            if (!frames.empty()) return;
+        } else {
+            if (names_a_frame(x.m_stmt_name)) return;
+            if (in_concurrent()) {
+                decline(GpuDeclineReason::NamedCycleInNestedConcurrent,
+                    x.base.base.loc);
+                return;
+            }
+        }
+        if (al != nullptr) {
+            replacement = ASRUtils::STMT(ASR::make_Return_t(*al,
+                x.base.base.loc));
+        }
     }
 };
 
