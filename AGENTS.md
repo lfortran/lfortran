@@ -375,6 +375,9 @@ only once, redirect to a log file and then examine the log file.
   Both full-suite compilers also use the platform C/C++ diagnostic/hardening
   flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
+  The native phase of `Build LFortran to WASM` is Quick's GCC Release
+  (`NDEBUG`) build and also uses `-Werror`, matching Exhaustive's
+  `Check Release build`.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its

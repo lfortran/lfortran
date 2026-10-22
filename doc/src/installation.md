@@ -216,7 +216,11 @@ Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
 the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
-LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained.
+LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained;
+its native phase is Quick's Linux GCC Release build, so it uses `-Werror`
+with the LSP and runtime-stacktrace options of Exhaustive's `Check Release
+build`. This catches warnings that only appear with `NDEBUG`, such as a
+variable used only in an assertion, before they break main.
 
 Exhaustive runs the full compatibility suites on every LLVM version except
 11 and 19, which run the application catalog instead, as does macOS LLVM 22;

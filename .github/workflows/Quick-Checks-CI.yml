@@ -510,15 +510,23 @@ jobs:
             micromamba run -n xeus-lfortran-wasm-build node -v
 
       # Phase 1: Native build (needs re2c, bison, LLVM from lf env)
+      # This is Quick's only Linux GCC Release (NDEBUG) build, so it uses
+      # -Werror and the LSP/runtime-stacktrace options of Exhaustive's
+      # "Check Release build": the Debug builds cannot catch warnings such
+      # as variables used only in assertions.
       - name: Build native LFortran
         shell: bash -l {0}
         run: |
             set -ex
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DWITH_LLVM=yes \
+                -DWITH_LSP=yes \
                 -DLFORTRAN_BUILD_ALL=yes \
                 -DWITH_STACKTRACE=no \
+                -DWITH_RUNTIME_STACKTRACE=yes \
                 -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$CONDA_PREFIX" \
                 -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
                 -DCMAKE_EXPORT_COMPILE_COMMANDS=yes \
