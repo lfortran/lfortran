@@ -133,13 +133,15 @@ static kernel_func_t entry(void (*thunk)(void **))
     return (kernel_func_t)thunk;
 }
 
-// The runtime uploads host memory asynchronously and reads device memory
-// back synchronously, all on the default stream (the emulation rejects other
+// The runtime allocates only positive sizes, uploads host memory
+// asynchronously and reads device memory back synchronously, naming those
+// directions, all on the default stream (the emulation rejects other
 // streams), never frees memory a pending launch may still use, and does not
 // misuse the API.
 static void check_api_use()
 {
     const lfortran_cuda_cpu_stats &s = stats();
+    require(s.empty_mallocs == 0, "positive allocation");
     for (int kind = 0; kind < 5; kind++) {
         require(kind == cudaMemcpyHostToDevice || s.async_copies[kind] == 0,
             "asynchronous host upload on stream 0");

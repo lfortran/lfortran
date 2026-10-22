@@ -22,7 +22,10 @@ typedef struct lfortran_cuda_cpu_stats {
     // still pending in the stream (issued after the last synchronizing call),
     // which they have to wait for, as CUDA does.
     unsigned long long implicit_synchronizations;
-    // Successful copies by cudaMemcpyKind, of cudaMemcpyAsync and cudaMemcpy.
+    // cudaMalloc calls of size 0, which succeed without allocating.
+    unsigned long long empty_mallocs;
+    // Successful copies of cudaMemcpyAsync and cudaMemcpy, by the
+    // cudaMemcpyKind they were called with (cudaMemcpyDefault included).
     unsigned long long async_copies[5];
     unsigned long long copies[5];
     // Calls that returned an error.

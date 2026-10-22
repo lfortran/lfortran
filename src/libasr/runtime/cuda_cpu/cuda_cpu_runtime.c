@@ -200,7 +200,10 @@ cudaError_t cudaDeviceReset(void) {
 cudaError_t cudaMalloc(void **ptr, size_t size) {
     if (!ptr) return fail(cudaErrorInvalidValue);
     *ptr = NULL;
-    if (size == 0) return cudaSuccess;
+    if (size == 0) {
+        stats.empty_mallocs++;
+        return cudaSuccess;
+    }
     if (n_allocations == allocations_capacity) {
         size_t capacity = allocations_capacity ? 2 * allocations_capacity : 64;
         allocation *grown = (allocation *)realloc(allocations,
@@ -240,12 +243,12 @@ cudaError_t cudaFree(void *ptr) {
 }
 
 // Checks the two ranges of a copy against its direction, and copies.
-// A cudaMemcpyDefault `*kind` becomes the direction of the copy.
 static cudaError_t copy(void *dst, const void *src, size_t count,
-    cudaMemcpyKind *kind_)
+    cudaMemcpyKind kind)
 {
-    cudaMemcpyKind kind = *kind_;
-    if ((unsigned)kind > cudaMemcpyDefault) return fail(cudaErrorInvalidValue);
+    if ((unsigned)kind > cudaMemcpyDefault) {
+        return fail(cudaErrorInvalidMemcpyDirection);
+    }
     if (count == 0) return cudaSuccess;
     if (!dst || !src) return fail(cudaErrorInvalidValue);
     if (kind == cudaMemcpyDefault) {
@@ -254,7 +257,6 @@ static cudaError_t copy(void *dst, const void *src, size_t count,
         kind = to_device
             ? (from_device ? cudaMemcpyDeviceToDevice : cudaMemcpyHostToDevice)
             : (from_device ? cudaMemcpyDeviceToHost : cudaMemcpyHostToHost);
-        *kind_ = kind;
     }
     int to_device = kind == cudaMemcpyHostToDevice
         || kind == cudaMemcpyDeviceToDevice;
@@ -272,7 +274,7 @@ static cudaError_t copy(void *dst, const void *src, size_t count,
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind)
 {
-    cudaError_t err = copy(dst, src, count, &kind);
+    cudaError_t err = copy(dst, src, count, kind);
     if (err != cudaSuccess) return err;
     // The copy waits for the work issued before it.
     pending_work = 0;
@@ -284,7 +286,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind, cudaStream_t stream)
 {
     if (stream) return fail(cudaErrorInvalidResourceHandle);
-    cudaError_t err = copy(dst, src, count, &kind);
+    cudaError_t err = copy(dst, src, count, kind);
     if (err != cudaSuccess) return err;
     pending_work = 1;
     stats.async_copies[kind]++;
@@ -308,8 +310,9 @@ cudaError_t cudaLaunchKernel(const void *func, dim3 grid, dim3 block,
     void **args, size_t shared_mem, cudaStream_t stream)
 {
     if (stream) return fail(cudaErrorInvalidResourceHandle);
+    if (!func) return fail(cudaErrorInvalidDeviceFunction);
     // The generated kernels use no dynamic shared memory.
-    if (!func || shared_mem != 0) return fail(cudaErrorInvalidValue);
+    if (shared_mem != 0) return fail(cudaErrorInvalidValue);
     if (!valid_geometry(grid, block)) {
         return fail(cudaErrorInvalidConfiguration);
     }
@@ -344,6 +347,9 @@ const char *cudaGetErrorString(cudaError_t error) {
         case cudaErrorMemoryAllocation: return "out of memory";
         case cudaErrorInvalidConfiguration:
             return "invalid configuration argument";
+        case cudaErrorInvalidMemcpyDirection:
+            return "invalid copy direction for memcpy";
+        case cudaErrorInvalidDeviceFunction: return "invalid device function";
         case cudaErrorInvalidDevice: return "invalid device ordinal";
         case cudaErrorInvalidResourceHandle:
             return "invalid resource handle";
