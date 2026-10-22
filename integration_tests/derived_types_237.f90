@@ -1,4 +1,4 @@
-module derived_types_235_m
+module derived_types_237_m
   ! An array element passed to an assumed-size dummy of derived type,
   ! `type(t) :: a(*)`, starts the sequence of elements the dummy is
   ! associated with (#15406).
@@ -13,8 +13,8 @@ contains
   end subroutine
 end module
 
-program derived_types_235
-  use derived_types_235_m, only: t, set_second
+program derived_types_237
+  use derived_types_237_m, only: t, set_second
   implicit none
   type(t) :: x(4)
   x%i = 0

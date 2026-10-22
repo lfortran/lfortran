@@ -1,4 +1,4 @@
-module derived_types_234_m
+module derived_types_236_m
   ! An assumed-size dummy of derived type, `type(t) :: a(*)`, is passed as
   ! its data alone, like `integer :: a(*)`, not as a descriptor like the
   ! assumed-shape `a(:)`. A caller without an explicit interface passes the
@@ -10,7 +10,7 @@ module derived_types_234_m
 end module
 
 subroutine set_one(a, n)
-  use derived_types_234_m, only: t
+  use derived_types_236_m, only: t
   implicit none
   integer, intent(in) :: n
   type(t) :: a(*)
@@ -18,15 +18,15 @@ subroutine set_one(a, n)
 end subroutine
 
 subroutine set_column(a, m, n)
-  use derived_types_234_m, only: t
+  use derived_types_236_m, only: t
   implicit none
   integer, intent(in) :: m, n
   type(t) :: a(m, *)
   a(:, n)%i = 7
 end subroutine
 
-program derived_types_234
-  use derived_types_234_m, only: t
+program derived_types_236
+  use derived_types_236_m, only: t
   implicit none
   external :: set_one, set_column
   type(t) :: x(3), y(2, 3)
