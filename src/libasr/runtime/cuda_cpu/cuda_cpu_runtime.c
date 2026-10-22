@@ -33,10 +33,17 @@
 // concurrently, so __syncthreads() cannot be honoured (see cuda_cpu_device.h).
 
 // Built-in thread coordinates, written once per emulated thread.
+#ifdef _MSC_VER
+__declspec(thread) uint3 threadIdx = {0, 0, 0};
+__declspec(thread) uint3 blockIdx = {0, 0, 0};
+__declspec(thread) dim3 blockDim = {1, 1, 1};
+__declspec(thread) dim3 gridDim = {1, 1, 1};
+#else
 __thread uint3 threadIdx = {0, 0, 0};
 __thread uint3 blockIdx = {0, 0, 0};
 __thread dim3 blockDim = {1, 1, 1};
 __thread dim3 gridDim = {1, 1, 1};
+#endif
 
 void lfortran_cuda_cpu_barrier_unsupported(void) {
     fprintf(stderr, "lfortran_cuda_cpu: __syncthreads() is not supported by "

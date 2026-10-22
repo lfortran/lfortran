@@ -25,11 +25,18 @@ extern "C" {
 
 // Built-in thread coordinates. The emulation of cudaLaunchKernel
 // (cuda_cpu_runtime.c) writes these before calling into a kernel, once per
-// emulated thread.
+// emulated thread. MSVC spells thread-local storage its own way.
+#ifdef _MSC_VER
+extern __declspec(thread) uint3 threadIdx;
+extern __declspec(thread) uint3 blockIdx;
+extern __declspec(thread) dim3 blockDim;
+extern __declspec(thread) dim3 gridDim;
+#else
 extern __thread uint3 threadIdx;
 extern __thread uint3 blockIdx;
 extern __thread dim3 blockDim;
 extern __thread dim3 gridDim;
+#endif
 
 // Reports that a barrier cannot be honoured and aborts: the emulation runs
 // the threads of a block one after another, so there is no second thread to
@@ -41,9 +48,17 @@ void lfortran_cuda_cpu_barrier_unsupported(void);
 #endif
 
 // The device heap takes memory with an atomic add (see GpuAtomicFetchAdd).
+#ifdef _MSC_VER
+#include <intrin.h>
+static inline int atomicAdd(int *address, int value) {
+    // long and int are both 32 bits wide on Windows.
+    return (int)_InterlockedExchangeAdd((volatile long *)address, value);
+}
+#else
 static inline int atomicAdd(int *address, int value) {
     return __atomic_fetch_add(address, value, __ATOMIC_RELAXED);
 }
+#endif
 
 // Execution space qualifiers have no meaning on the host.
 #define __global__
