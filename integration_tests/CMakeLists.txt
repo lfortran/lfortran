@@ -3345,6 +3345,8 @@ RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmImplicit fortran)
 RUN(NAME attr_dim_05 LABELS gfortran llvm)
+RUN(NAME attr_dim_06 LABELS gfortran llvm llvmImplicit)
+RUN(NAME attr_dim_07 LABELS gfortran llvm llvmImplicit)
 
 RUN(NAME real_dp_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME real_dp_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)

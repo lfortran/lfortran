@@ -3354,6 +3354,15 @@ contains
     end subroutine cc1_pcd_use
 end module cc1_proc_component_dt_dummy_mod
 
+! An array spec in a type declaration after a DIMENSION statement for the
+! same entity gives it the DIMENSION attribute twice.
+subroutine cc1_duplicate_dimension_attr(x)
+    dimension arr(3)
+    integer, dimension(3) :: arr  ! {Error} Duplicate DIMENSION attribute specified
+    dimension x(*)
+    real :: x(*)  ! {Error} Duplicate DIMENSION attribute specified
+end subroutine cc1_duplicate_dimension_attr
+
 ! The legacy PAUSE stop code must be a scalar integer or default character.
 module cc1_pause_codes
 implicit none
