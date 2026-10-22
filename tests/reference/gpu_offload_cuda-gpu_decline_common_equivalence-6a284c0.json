@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_offload_cuda-gpu_decline_common_equivalence-6a284c0",
+    "cmd": "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
+    "infile": "tests/gpu_decline_common_equivalence.f90",
+    "infile_hash": "5a787e0d23047425e88ee58a6c8177f02b8b9a0e260be00e06fa26d8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "gpu_offload_cuda-gpu_decline_common_equivalence-6a284c0.stderr",
+    "stderr_hash": "1840619ccaa167a3e66f390acafc22595b5264b37e6f353d0be5953a",
+    "returncode": 5
+}

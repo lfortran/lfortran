@@ -4698,6 +4698,15 @@ gpu_offload_cuda = true
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
+[[test]]
+filename = "../integration_tests/gpu_decline_24.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "gpu_decline_common_equivalence.f90"
+gpu_offload_cuda = true
+options = "--openmp --gpu-offload-omp-loops"
+
 # A program whose loops need a lowering the offload pass does not have yet.
 # Each is registered in integration_tests/CMakeLists.txt without the gpu
 # labels of the backends it fails on, and the reference keeps the reason.

@@ -199,6 +199,14 @@ enum class GpuDeclineReason {
     // A procedure that can stop, which is given hidden arguments, but is
     // also passed as an actual argument or is not a copy the kernel owns.
     StoppingProcedureShared,
+    // A variable of a common block that a procedure the loop calls reads,
+    // which the kernel cannot be handed as the storage of the block (see
+    // gpu_pass_common_blocks): `name` is the variable, `common_block` the
+    // block and `routine` the procedure.
+    CommonVariableEquivalence,
+    CommonVariablePointer,
+    CommonVariableCharacter,
+    CommonVariableDerivedType,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,
@@ -292,6 +300,10 @@ struct GpuDecline {
     // and why no copy placed before the statement serves it.
     GpuSectionSite site = GpuSectionSite::Statement;
     GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
+    // The common block, as `/name/`, and the procedure that names its
+    // variable, when the reason is about a variable of a common block.
+    std::string common_block;
+    std::string routine;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}

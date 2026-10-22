@@ -27,6 +27,27 @@ contains
         array_get = w(k) + sum(w) + pad(3)
     end function
 
+    ! Only the variables up to the last one read place it; the character
+    ! and pointer variables before it are not read.
+    pure real function after_others(k)
+        integer, intent(in) :: k
+        character(len=3) :: tag
+        real, pointer :: q
+        real :: v(2)
+        common /gpu_metal_568_d/ tag, q, v
+        after_others = v(mod(k, 2) + 1) * k
+    end function
+
+    ! A run-time sized local, which device code is given a workspace for.
+    pure real function with_workspace(k)
+        integer, intent(in) :: k
+        real :: w(n)
+        common /gpu_metal_568_e/ w
+        real :: t(k)
+        t = w(k)
+        with_workspace = sum(t)
+    end function
+
     pure real function scaled(k)
         integer, intent(in) :: k
         real :: s
@@ -42,6 +63,11 @@ program gpu_metal_568
     integer :: p(3)
     common /gpu_metal_568_a/ d
     common /gpu_metal_568_b/ p, e
+    character(len=3) :: tag
+    real, pointer :: q
+    real :: v(2), x(n)
+    common /gpu_metal_568_d/ tag, q, v
+    common /gpu_metal_568_e/ x
     integer :: k
 
     d = 10
@@ -59,11 +85,27 @@ program gpu_metal_568
     print *, u
     if (any(u /= [111, 112, 113, 114])) error stop 2
 
+    tag = "abc"
+    q => null()
+    v = [10, 20]
+    do concurrent (k = 1:n)
+        u(k) = after_others(k)
+    end do
+    print *, u
+    if (any(u /= [20, 20, 60, 40])) error stop 3
+
+    x = [1, 2, 3, 4]
+    do concurrent (k = 1:n)
+        u(k) = with_workspace(k)
+    end do
+    print *, u
+    if (any(u /= [1, 4, 9, 16])) error stop 4
+
     ! The caller does not declare the block.
     call set_scale(3.0)
     do concurrent (k = 1:n)
         u(k) = scaled(k)
     end do
     print *, u
-    if (any(u /= [3, 6, 9, 12])) error stop 3
+    if (any(u /= [3, 6, 9, 12])) error stop 5
 end program

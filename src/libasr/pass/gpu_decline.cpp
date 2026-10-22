@@ -294,6 +294,23 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StopCodeNotConstant:
             return unsupported + "a character stop code that is not a "
                 "constant" + in_routine(decline);
+        case GpuDeclineReason::CommonVariableEquivalence:
+            return unsupported + "variable '" + decline.name + "', which "
+                "equivalence associates with common block "
+                + decline.common_block + ", read in '" + decline.routine
+                + "'";
+        case GpuDeclineReason::CommonVariablePointer:
+            return unsupported + "pointer '" + decline.name + "' of common "
+                "block " + decline.common_block + ", read in '"
+                + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableCharacter:
+            return unsupported + "character variable '" + decline.name
+                + "' of common block " + decline.common_block
+                + ", read in '" + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableDerivedType:
+            return unsupported + "common block " + decline.common_block
+                + " with derived-type variable '" + decline.name
+                + "', read in '" + decline.routine + "'";
         case GpuDeclineReason::StoppingProcedureShared:
             return unsupported + "procedure '" + decline.name + "', which "
                 "can stop, passed as an argument or shared with the host";

@@ -5,6 +5,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/pass/gpu_decline.h>
 
 namespace LCompilers {
 
@@ -31,11 +32,19 @@ void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel);
 A variable of a common block has no storage of its own: it is the storage of
 the block, which device code cannot reach. The kernel's copy of a procedure
 that names one would otherwise declare it as a local. The host procedure the
-loop is in is given a view of the block that places its variables as the
-procedure's view does, and every such variable the procedure names becomes a
-variable of the kernel, which the launch hands the host's variable for it.
+loop is in is given a view of the block that places the variables the
+procedure names as the procedure's view does, and every such variable becomes
+a variable of the kernel, which the launch hands the host's variable for it.
 gpu_lift_host_association then hands it to the procedure.
+
+Only a numeric or logical variable that the view places as one of its members
+is handed over this way. gpu_common_block_decline says why a procedure names
+one that is not: a variable EQUIVALENCE associates with the block, a pointer,
+a character variable, or a block with a derived-type variable among those
+that place it.
 */
+GpuDecline gpu_common_block_decline(ASR::Function_t &fn);
+
 void gpu_pass_common_blocks(Allocator &al, const Location &loc,
     const std::vector<ASR::Function_t*> &procedures,
     SymbolTable *kernel_scope, SymbolTable *host_scope,
