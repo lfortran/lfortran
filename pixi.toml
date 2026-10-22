@@ -118,7 +118,8 @@ xeus = "==6.0.6"
 xeus-zmq = "==4.0.2"
 nlohmann_json = "==3.12.0"
 jupyter_kernel_test = "==0.7.0"
-# ci/build.sh runs the demo notebooks and generates the man page.
+# ci/source_tarball.sh generates the man page; ci/check_build.sh runs the
+# demo notebooks.
 nbconvert = "==7.17.2"
 pandoc = "==3.12.1"
 numpy = "==1.26.4"
