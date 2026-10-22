@@ -310,6 +310,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --lfortran $<TARGET_FILE:lfortran>
             )
         endif()
+        if (WITH_XEUS)
+            add_test(
+                NAME test_kernel_evaluation
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180)
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"

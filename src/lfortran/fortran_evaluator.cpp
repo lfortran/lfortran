@@ -1,5 +1,7 @@
 #include <cstring>
+#include <iomanip>
 #include <set>
+#include <sstream>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -12,6 +14,7 @@
 #include <libasr/codegen/wasm_to_wat.h>
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
+#include <libasr/stacktrace.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -40,6 +43,40 @@ namespace LCompilers {
 #endif
 }
 #endif
+
+// Defined in the runtime library (lfortran_intrinsics.c), whose
+// lfortran_display_data() and lfortran_clear_output() the lfortran_display
+// module calls; the JIT resolves them to the copy linked into this process.
+extern "C" void _lfortran_set_display_hooks(
+    void (*display_data)(const char *mime_type, const char *data),
+    void (*clear_output)());
+
+namespace {
+// The hooks of the cell FortranEvaluator::execute() is running.
+const LCompilers::FortranEvaluator::CellIO *current_io = nullptr;
+bool display_failed = false;
+
+// A hook must not unwind through the generated code that called it.
+template <typename Hook, typename... Args>
+void call_hook(const Hook &hook, Args&&... args) {
+    if (!hook) return;
+    try {
+        hook(std::forward<Args>(args)...);
+    } catch (...) {
+        display_failed = true;
+    }
+}
+
+void display_data_hook(const char *mime_type, const char *data) {
+    if (current_io) {
+        call_hook(current_io->display, std::string(mime_type), std::string(data));
+    }
+}
+
+void clear_output_hook() {
+    if (current_io) call_hook(current_io->clear_output);
+}
+}
 
 namespace LCompilers {
 
@@ -373,6 +410,120 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 #else
     throw LCompilersException("LLVM is not enabled");
 #endif
+}
+
+std::string FortranEvaluator::EvalResult::type_name() const {
+    switch (type) {
+        case integer4: return "integer";
+        case integer8: return "integer(8)";
+        case real4: return "real";
+        case real8: return "real(8)";
+        case complex4: return "complex";
+        case complex8: return "complex(8)";
+        case boolean: return "logical";
+        case character: return "character";
+        default: return "none";
+    }
+}
+
+namespace {
+// `digits` significant digits, and always a decimal point or an exponent, so
+// that a real such as 1.0 does not look like the integer 1.
+std::string real_text(double x, int digits) {
+    std::ostringstream s;
+    s << std::setprecision(digits) << x;
+    std::string text = s.str();
+    if (text.find_first_not_of("-0123456789") == std::string::npos) {
+        text += ".0";
+    }
+    return text;
+}
+}
+
+std::string FortranEvaluator::EvalResult::text() const {
+    std::ostringstream s;
+    switch (type) {
+        case integer4: s << i32; break;
+        case integer8: s << i64; break;
+        case real4: s << real_text(f32, 8); break;
+        case real8: s << real_text(f64, 17); break;
+        case complex4:
+            s << "(" << real_text(c32.re, 8) << ", " << real_text(c32.im, 8) << ")";
+            break;
+        case complex8:
+            s << "(" << real_text(c64.re, 17) << ", " << real_text(c64.im, 17) << ")";
+            break;
+        case boolean: s << (b ? "True" : "False"); break;
+        case character: s << str; break;
+        case statement: s << "(statement)"; break;
+        case none: s << "(nothing to execute)"; break;
+    }
+    return s.str();
+}
+
+FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
+        bool verbose, const CellIO &io) {
+    CellResult out;
+    out.value.type = EvalResult::none;
+    struct Hooks {
+        explicit Hooks(const CellIO &io) {
+            LCOMPILERS_ASSERT(!current_io);
+            current_io = &io;
+            display_failed = false;
+            _lfortran_set_display_hooks(display_data_hook, clear_output_hook);
+        }
+        ~Hooks() {
+            _lfortran_set_display_hooks(nullptr, nullptr);
+            current_io = nullptr;
+        }
+    } hooks(io);
+    LocationManager lm;
+    diag::Diagnostics diagnostics;
+    PassManager passes;
+    passes.use_default_passes();
+    try {
+        const auto newline = code.find('\n');
+        auto magic = code.substr(0, newline);
+        // Trailing blanks and the \r of a CRLF line ending are not part of it.
+        magic.erase(magic.find_last_not_of(" \t\r") + 1);
+        const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
+        Result<std::string> shown{Error{}};
+        out.inspection = true;
+        if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
+        else if (magic == "%%showasr") shown = get_asr(source, lm, diagnostics);
+        else if (magic == "%%showllvm") shown = get_llvm(source, lm, passes, diagnostics);
+        else if (magic == "%%showasm") shown = get_asm(source, lm, passes, diagnostics);
+        else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
+        else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
+        else {
+            out.inspection = false;
+            auto result = evaluate(code, verbose, lm, passes, diagnostics);
+            out.ok = result.ok;
+            if (out.ok) out.value = std::move(result.result);
+        }
+        if (shown.ok) {
+            out.ok = true;
+            out.output = shown.result;
+        }
+        out.diagnostics = diagnostics.render(lm, compiler_options);
+        if (!out.ok) {
+            out.error_name = "CompilerError";
+            out.error_value = out.diagnostics;
+        } else if (display_failed) {
+            out.ok = false;
+            out.error_name = "DisplayError";
+            out.error_value = "display event delivery failed";
+        }
+    } catch (const LCompilersException &error) {
+        out.ok = false;
+        out.error_name = error.name();
+        auto trace = error.stacktrace_addresses();
+        get_local_addresses(trace);
+        get_local_info(trace);
+        out.error_value = "Internal Compiler Error: Unhandled exception\n" +
+            stacktrace2str(trace, stacktrace_depth) + error.name() + ": " + error.msg() + "\n";
+    }
+    return out;
 }
 
 Result<std::string> FortranEvaluator::get_ast(const std::string &code,

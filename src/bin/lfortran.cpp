@@ -434,7 +434,6 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    Allocator al(64*1024*1024);
     cu.interactive = true;
     LCompilers::FortranEvaluator e(cu);
 
@@ -461,35 +460,21 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        LCompilers::FortranEvaluator::EvalResult r;
-        LCompilers::diag::Diagnostics diagnostics;
-
-        try {
-            LCompilers::LocationManager lm;
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            // The evaluator names this cell and keeps its text; nothing has
-            // to be written out for the error rendering to quote it.
-            LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
-            res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            if (res.ok) {
-                r = res.result;
-            } else {
-                LCOMPILERS_ASSERT(diagnostics.has_error())
-                std::cerr << diagnostics.render(lm, cu);
-                diagnostics.clear();
-                continue;
+        auto cell = e.execute(input, verbose);
+        if (!cell.ok) {
+            std::cerr << cell.error_value;
+            continue;
+        }
+        std::cerr << cell.diagnostics;
+        if (cell.inspection) {
+            std::cout << cell.output;
+            if (!cell.output.empty() && cell.output.back() != '\n') {
+                std::cout << std::endl;
             }
-        } catch (const LCompilers::LCompilersException &e) {
-            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
-            std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
-            get_local_addresses(d);
-            get_local_info(d);
-            std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
-            std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
         }
 
+        auto &r = cell.value;
         if (verbose) {
             section("AST:");
             std::cout << r.ast  << std::endl;
@@ -499,66 +484,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << r.llvm_ir << std::endl;
         }
 
-        switch (r.type) {
-            case (LCompilers::FortranEvaluator::EvalResult::integer4) : {
-                if (verbose) std::cout << "Return type: integer" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::integer8) : {
-                if (verbose) std::cout << "Return type: integer(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real4) : {
-                if (verbose) std::cout << "Return type: real" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << r.f32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real8) : {
-                if (verbose) std::cout << "Return type: real(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << r.f64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
-                if (verbose) std::cout << "Return type: complex" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
-                if (verbose) std::cout << "Return type: complex(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
-                if (verbose) std::cout << "Return type: logical" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << (r.b ? "True" : "False") << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::statement) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(statement)" << std::endl;
-                }
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::none) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(nothing to execute)" << std::endl;
-                }
-                break;
-            }
-            default : throw LCompilers::LCompilersException("Return type not supported");
+        if (verbose) {
+            std::cout << "Return type: " << r.type_name() << std::endl;
+            section("Result:");
+        }
+        if (r.has_value() || verbose) {
+            std::cout << r.text() << std::endl;
         }
     }
     return 0;

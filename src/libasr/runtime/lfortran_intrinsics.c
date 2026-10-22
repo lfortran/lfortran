@@ -15265,6 +15265,30 @@ LFORTRAN_API void _lfortran_set_use_runtime_colors(int use_colors) {
     _lfortran_use_runtime_colors = use_colors;
 }
 
+// The lfortran_display module calls lfortran_display_data() and
+// lfortran_clear_output(). An interactive frontend (the Jupyter kernel) sets
+// hooks for them while it runs a cell; otherwise, as in a compiled program,
+// they do nothing.
+static void (*_lfortran_display_data_hook)(const char*, const char*) = NULL;
+static void (*_lfortran_clear_output_hook)(void) = NULL;
+
+LFORTRAN_API void _lfortran_set_display_hooks(
+        void (*display_data)(const char*, const char*),
+        void (*clear_output)(void)) {
+    _lfortran_display_data_hook = display_data;
+    _lfortran_clear_output_hook = clear_output;
+}
+
+LFORTRAN_API void lfortran_display_data(const char* mime_type, const char* data) {
+    if (_lfortran_display_data_hook && mime_type && data) {
+        _lfortran_display_data_hook(mime_type, data);
+    }
+}
+
+LFORTRAN_API void lfortran_clear_output(void) {
+    if (_lfortran_clear_output_hook) _lfortran_clear_output_hook();
+}
+
 LFORTRAN_API int32_t _lpython_get_argc() {
     return _argc;
 }
