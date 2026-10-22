@@ -13972,8 +13972,8 @@ public:
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate.
-        // A derived-type assignment below allocates its variable itself, and
-        // then does not finalize it (F2018 7.5.6.3 p1).
+        // A derived-type assignment is allocated by the allocate_on_assignment
+        // pass, or below for a polymorphic variable.
         if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
             !ASRUtils::is_character(*asr_value_type) &&
             !((is_target_class || is_target_struct) &&
@@ -14176,10 +14176,12 @@ public:
             // Whether the variable is allocated by the assignment, which
             // then defines it rather than finalizing it first: an
             // unallocated allocatable variable is not finalized
-            // (F2018 7.5.6.3 p1).
+            // (F2018 7.5.6.3 p1). A nonpolymorphic variable has been
+            // allocated by the allocate_on_assignment pass, which marks the
+            // assignment to it with new_allocation.
             llvm::Value* target_is_new = nullptr;
-            if (ASRUtils::is_allocatable(asr_target_type) && 
-                    !(is_target_class && is_value_class)) {
+            if (ASRUtils::is_allocatable(asr_target_type) &&
+                    is_target_class && !is_value_class) {
                 target_is_new = check_and_allocate_scalar(
                     x.m_target, x.m_value, asr_value_type, true);
             }
@@ -14415,7 +14417,7 @@ public:
                 }
 
                 llvm::Value* finalize_target = nullptr;
-                if (x.m_new_target) {
+                if (x.m_new_target || x.m_new_allocation) {
                     finalize_target = llvm::ConstantInt::getFalse(context);
                 } else if (target_is_new != nullptr && ASRUtils::struct_needs_finalization(
                         ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var))) {

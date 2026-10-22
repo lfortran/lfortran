@@ -37,6 +37,15 @@ frontend decides the conversion, and the backend only lowers what it is given.
 An array assignment is a whole-array operation, not a loop: the `array_op`
 pass turns it into loops later.
 
+An assignment to an allocatable scalar of derived type allocates it when it
+is unallocated (F2018 10.2.1.3). The `allocate_on_assignment` pass makes this
+explicit: it inserts an [Allocate](Allocate.md) of `target` before the
+assignment, guarded by `allocated(target)`. When the type is finalizable, the assignment is
+duplicated into both branches of an [If](If.md): the one to the target the
+pass allocated has `new_allocation`, as that target is not finalized
+(F2018 7.5.6.3), and the other one does not. A backend then only lowers the
+allocation and the assignment it is given.
+
 ## Examples
 
 ```clojure
