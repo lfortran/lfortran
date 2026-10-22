@@ -2962,7 +2962,18 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     cell = e.execute("integer :: broken(");
     CHECK(!cell.ok);
     CHECK(cell.error_name == "CompilerError");
+    CHECK(!cell.internal_error);
     CHECK(cell.error_value.find("<cell ") != std::string::npos);
+    CHECK(cell.error_text() == cell.error_value);
+    CHECK(e.execute("n").value.text() == "41");
+    // An internal compiler error keeps its message apart from the stack trace.
+    // Array results are not supported yet (#13456).
+    cell = e.execute("[1, 2, 3]");
+    CHECK(!cell.ok);
+    CHECK(cell.internal_error);
+    CHECK(cell.error_value == "Return type not supported in interactive mode");
+    CHECK(cell.error_text().rfind("Internal Compiler Error: Unhandled exception\n", 0)
+        == 0);
     CHECK(e.execute("n").value.text() == "41");
     // An inspection cell sees the session.
     cell = e.execute("%%showasr\nn + 1");

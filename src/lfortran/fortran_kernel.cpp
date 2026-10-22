@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -174,7 +175,7 @@ namespace LCompilers::LFortran {
         if (!silent) {
             if (!std_out.empty()) publish_stream("stdout", utf8(std_out));
             if (!cell.output.empty()) publish_stream("stdout", utf8(cell.output));
-            if (!cell.ok) publish_stream("stderr", utf8(cell.error_value));
+            if (!cell.ok) publish_stream("stderr", utf8(cell.error_text()));
             else if (!cell.diagnostics.empty()) {
                 publish_stream("stderr", utf8(cell.diagnostics));
             }
@@ -193,7 +194,12 @@ namespace LCompilers::LFortran {
             result["status"] = "error";
             result["ename"] = cell.error_name;
             result["evalue"] = utf8(cell.error_value);
-            result["traceback"] = nl::json::array();
+            nl::json traceback = nl::json::array();
+            std::istringstream lines(cell.error_traceback);
+            for (std::string line; std::getline(lines, line);) {
+                traceback.push_back(utf8(line));
+            }
+            result["traceback"] = traceback;
         }
         cb(result);
     }

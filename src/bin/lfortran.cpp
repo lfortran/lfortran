@@ -462,7 +462,7 @@ int prompt(bool verbose, CompilerOptions &cu)
 
         auto cell = e.execute(input, verbose);
         if (!cell.ok) {
-            std::cerr << cell.error_value;
+            std::cerr << cell.error_text();
             continue;
         }
         std::cerr << cell.diagnostics;

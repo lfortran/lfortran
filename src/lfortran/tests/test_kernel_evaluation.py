@@ -108,6 +108,11 @@ def main():
             check(client, "%%showasr\ninteger :: inspected", [])
             reply, _ = execute(client, "inspected")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # An internal compiler error: the message in evalue, the stack
+            # trace in traceback. Array results are not supported yet (#13456).
+            reply, _ = execute(client, "[1, 2, 3]")
+            assert reply["status"] == "error", reply
+            assert reply["evalue"] == "Return type not supported in interactive mode", reply
             # Text that is not UTF-8 cannot go into a Jupyter message.
             check(client, "achar(200)", ["\ufffd"])
             messages = check(client, "print *, 'a', achar(200), 'b'", [])

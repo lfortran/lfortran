@@ -83,7 +83,15 @@ public:
         EvalResult value{};      // `none` for a %%show* cell
         std::string output;      // the text a %%show* cell shows
         std::string diagnostics; // rendered warnings and errors
-        std::string error_name, error_value; // if !ok
+        // If !ok: the error's name and message (the rendered diagnostics of
+        // a CompilerError) and, for an internal compiler error, the stack
+        // trace (empty without stacktrace support).
+        std::string error_name, error_value;
+        bool internal_error = false;
+        std::string error_traceback;
+
+        // The text a frontend shows for a failed cell.
+        std::string error_text() const;
     };
 
     // Runs one interactive cell: evaluate() with fresh diagnostics and

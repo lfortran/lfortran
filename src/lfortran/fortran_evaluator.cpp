@@ -461,6 +461,17 @@ std::string FortranEvaluator::EvalResult::text() const {
     return s.str();
 }
 
+std::string FortranEvaluator::CellResult::error_text() const {
+    if (internal_error) {
+        return "Internal Compiler Error: Unhandled exception\n" + error_traceback
+            + error_name + ": " + error_value + "\n";
+    }
+    if (!error_value.empty() && error_value.back() != '\n') {
+        return error_value + "\n";
+    }
+    return error_value;
+}
+
 FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     CellResult out;
@@ -529,12 +540,13 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         }
     } catch (const LCompilersException &error) {
         out.ok = false;
+        out.internal_error = true;
         out.error_name = error.name();
+        out.error_value = error.msg();
         auto trace = error.stacktrace_addresses();
         get_local_addresses(trace);
         get_local_info(trace);
-        out.error_value = "Internal Compiler Error: Unhandled exception\n" +
-            stacktrace2str(trace, stacktrace_depth) + error.name() + ": " + error.msg() + "\n";
+        out.error_traceback = stacktrace2str(trace, stacktrace_depth);
     }
     return out;
 }
