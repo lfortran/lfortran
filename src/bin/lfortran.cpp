@@ -2116,6 +2116,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 // TODO: Fix the path usage for Windows
                 CC += "/";
             }
+            std::string linker_dir = CC;
 
             if (!linker.empty()) {
                 CC += linker;
@@ -2170,7 +2171,11 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
+                // Use the clang of the linker path: the first clang on PATH
+                // (e.g. LLVM's clang in a Conda environment) may not know the
+                // macOS SDK and its Metal framework.
+                std::string metal_compile_cmd = linker_dir
+                    + "clang -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
