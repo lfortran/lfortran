@@ -294,6 +294,12 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     (void)size;
 }
 
+// The CPU emulation runs the kernels on the host, whose caches the loop
+// transformations take as one of the size of a large GPU's.
+long long lfortran_gpu_cache_bytes(void) {
+    return 64LL * 1024 * 1024;
+}
+
 long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }

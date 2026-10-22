@@ -216,7 +216,7 @@ LFORTRAN_API float _lfortran_sfix(float x);
 LFORTRAN_API double _lfortran_dfix(double x);
 LFORTRAN_API float _lfortran_cphase(float_complex_t x);
 LFORTRAN_API double _lfortran_zphase(double_complex_t x);
-int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
+LFORTRAN_API int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
 LFORTRAN_API char* _lfortran_float_to_str8_alloc(lfortran_allocator_t* al, double num);
 LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num);
 LFORTRAN_API char* _lfortran_int_to_str1_alloc(lfortran_allocator_t* al, int8_t num);
@@ -291,7 +291,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* sign, int64_t sign_len,
     char* decimal, int64_t decimal_len,
     char* round, int64_t round_len,
-    char* pad, int64_t pad_len
+    char* pad, int64_t pad_len,
+    char* convert, int64_t convert_len
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);

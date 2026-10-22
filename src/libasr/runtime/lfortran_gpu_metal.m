@@ -951,6 +951,10 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     if (i >= 0) remove_entry(i);
 }
 
+long long lfortran_gpu_cache_bytes(void) {
+    return 0;
+}
+
 long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }

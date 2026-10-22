@@ -515,4 +515,52 @@ ASR::expr_t* gpu_overwrite_condition(Allocator &al, const Location &loc,
     return condition;
 }
 
+std::vector<ASR::omp_clause_t*> gpu_overwrite_clauses(Allocator &al,
+        const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
+        const std::vector<ASR::expr_t*> &ends) {
+    // The arrays the iterations assign elements of, each once.
+    struct Targets : public ASR::BaseWalkVisitor<Targets> {
+        std::vector<ASR::expr_t*> arrays;
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                ASR::expr_t *a = ASR::down_cast<ASR::ArrayItem_t>(
+                    x.m_target)->m_v;
+                bool seen = false;
+                for (ASR::expr_t *e : arrays) {
+                    seen = seen || gpu_same_designator(e, a);
+                }
+                if (!seen && is_designator_chain(a)) arrays.push_back(a);
+            }
+            ASR::BaseWalkVisitor<Targets>::visit_Assignment(x);
+        }
+    } targets;
+    for (size_t k = 0; k < loop.n_body; k++) {
+        targets.visit_stmt(*loop.body[k]);
+    }
+    std::vector<ASR::omp_clause_t*> clauses;
+    for (ASR::expr_t *array : targets.arrays) {
+        Location loc = array->base.loc;
+        ASR::expr_t *condition = gpu_overwrite_condition(al, loc, loop,
+            starts, ends, array);
+        if (condition == nullptr) continue;
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.success = true;
+        clauses.push_back(ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPOverwrite_t(al, loc, dup.duplicate_expr(array),
+                condition)));
+    }
+    return clauses;
+}
+
+ASR::expr_t* gpu_recorded_overwrite(const ASR::OMPRegion_t &region,
+        ASR::expr_t *array) {
+    for (size_t i = 0; i < region.n_clauses; i++) {
+        if (!ASR::is_a<ASR::OMPOverwrite_t>(*region.m_clauses[i])) continue;
+        ASR::OMPOverwrite_t *c = ASR::down_cast<ASR::OMPOverwrite_t>(
+            region.m_clauses[i]);
+        if (gpu_same_designator(c->m_array, array)) return c->m_condition;
+    }
+    return nullptr;
+}
+
 } // namespace LCompilers

@@ -481,7 +481,7 @@ static inline ASR::symbol_t* symbol_get_past_StructMethodDeclaration(ASR::symbol
     if(ASR::is_a<ASR::StructMethodDeclaration_t>(*f)){
         ASR::symbol_t* func = ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_proc;
         LCOMPILERS_ASSERT(func != nullptr);
-        return func;
+        return symbol_get_past_external(func);
     }
     return f;
 }
@@ -1277,7 +1277,8 @@ static inline size_t get_pass_arg_index(ASR::symbol_t* a_name) {
         if (clss_proc->m_self_argument == nullptr) {
             return 0;
         }
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            symbol_get_past_external(clss_proc->m_proc));
         for (size_t i = 0; i < func->n_args; i++) {
             ASR::Variable_t* v = EXPR2VAR(func->m_args[i]);
             if (strcmp(v->m_name, clss_proc->m_self_argument) == 0) {

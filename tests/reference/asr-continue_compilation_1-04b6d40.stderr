@@ -1484,6 +1484,30 @@ semantic error: Kind 3 is not supported for Logical
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:3508:20
+     |
+3508 |     integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+     |                    ^^^^^^^^ 
+
+semantic error: null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+    --> tests/errors/continue_compilation_1.f90:3516:28
+     |
+3516 |     type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+     |                            ^^^^^^^^ 
+
+semantic error: an equivalence object must be a variable, an array element or a substring
+    --> tests/errors/continue_compilation_1.f90:3523:18
+     |
+3523 |     equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+     |                  ^^^^^^ not allowed in EQUIVALENCE
+
+semantic error: an equivalence object must be a variable, an array element or a substring
+    --> tests/errors/continue_compilation_1.f90:3529:21
+     |
+3529 |     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+     |                     ^^^ not allowed in EQUIVALENCE
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4347,7 +4371,7 @@ semantic error: Non-variable expression in variable definition context (actual a
      |                          ^^^^^^^^^^^^^^^^^ 
 
 semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
-    --> tests/errors/continue_compilation_1.f90:3510:14
+    --> tests/errors/continue_compilation_1.f90:3537:14
      |
-3510 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+3537 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
      |              ^^^^^^^^^^^^^^ 
