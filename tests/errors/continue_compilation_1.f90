@@ -3702,4 +3702,5 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
     print '(*(i0,1x))', (x(1), y(1), i=1,500)
     print '(*(i0,1x))', (x(1), k(1), i=1,501)
+    print *, (x(i), (y(j), j=1,n), i=1,0)
 end subroutine implied_do_mixed_derived_types_error

@@ -4276,6 +4276,7 @@ RUN(NAME implied_do_loops49 LABELS gfortran llvm)
 RUN(NAME implied_do_loops50 LABELS gfortran llvm)
 RUN(NAME implied_do_loops51 LABELS llvm)
 RUN(NAME implied_do_loops52 LABELS gfortran llvm)
+RUN(NAME implied_do_loops53 LABELS gfortran llvm)
 RUN(NAME implied_do_loops54 LABELS gfortran llvm)
 RUN(NAME internal_write_trim_idl_01 LABELS gfortran llvm)
 
