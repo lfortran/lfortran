@@ -3711,7 +3711,17 @@ public:
 	}
     }
 
+    // `e` without the parentheses around it. The parser keeps them around a
+    // name, an array element or section and a function reference.
+    static AST::expr_t* skip_parentheses(AST::expr_t* e) {
+        while (AST::is_a<AST::Parenthesis_t>(*e)) {
+            e = AST::down_cast<AST::Parenthesis_t>(e)->m_operand;
+        }
+        return e;
+    }
+
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
+        expr = skip_parentheses(expr);
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
             is_pending_generic_procedure(
                 AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func,
@@ -3719,6 +3729,7 @@ public:
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
+        expr = skip_parentheses(expr);
         if (!AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
             return false;
         }
@@ -6511,14 +6522,35 @@ public:
         return nullptr;
     }
 
-    // Fortran 2023 8.10.1.1: the name of an equivalence object shall not be
-    // made accessible by use association, as the module of the entity
-    // provides its storage. Checked for each EQUIVALENCE statement before
-    // any of its sets is lowered.
+    // The first object of the EQUIVALENCE set `set` that is in parentheses,
+    // or nullptr. Such a set is neither placed in a common block nor
+    // lowered: check_equivalence_objects rejects it.
+    static const AST::expr_t* parenthesized_equivalence_object(
+            const AST::equi_t &set) {
+        for (size_t m = 0; m < set.n_set_list; m++) {
+            if (AST::is_a<AST::Parenthesis_t>(*set.m_set_list[m])) {
+                return set.m_set_list[m];
+            }
+        }
+        return nullptr;
+    }
+
+    // Fortran 2023 8.10.1.1: an equivalence object is a variable name, an
+    // array element or a substring, which a parenthesized one is not, and
+    // its name shall not be made accessible by use association, as the
+    // module of the entity provides its storage. Checked for each
+    // EQUIVALENCE statement before any of its sets is lowered.
     void check_equivalence_objects(const AST::AttrEquivalence_t &eq) {
         for (size_t i = 0; i < eq.n_args; i++) {
-            const AST::expr_t *object = use_associated_equivalence_object(
+            const AST::expr_t *object = parenthesized_equivalence_object(
                 eq.m_args[i]);
+            if (object != nullptr) {
+                diag.semantic_error_label("an equivalence object must be a "
+                    "variable, an array element or a substring",
+                    {object->base.loc}, "not allowed in EQUIVALENCE");
+                throw SemanticAbort();
+            }
+            object = use_associated_equivalence_object(eq.m_args[i]);
             if (object != nullptr) {
                 diag.semantic_error_label("'" + equivalence_object_name(*object)
                     + "' is use-associated and cannot appear in an "
@@ -6604,6 +6636,8 @@ public:
                 for (size_t k = 0; k < eq->n_args; k++) {
                     if (eq->m_args[k].n_set_list >= 2 &&
                             use_associated_equivalence_object(
+                                eq->m_args[k]) == nullptr &&
+                            parenthesized_equivalence_object(
                                 eq->m_args[k]) == nullptr) {
                         sets.push_back(&eq->m_args[k]);
                     }
@@ -8493,7 +8527,7 @@ public:
                                         if (compiler_options.implicit_typing) {
                                             ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
                                             if (type) {
-                                                sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                                sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, type);
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Save;
                                             } else {
@@ -10763,9 +10797,13 @@ public:
                     }
                     HiddenDerivedTypeComponents hidden_components(
                         current_scope, is_derived_type, hidden_derived_type_components);
-                    if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
+                    // The value of an initialization expression does not
+                    // depend on parentheses around it.
+                    AST::expr_t* initializer = is_pointer ? s.m_initializer
+                        : skip_parentheses(s.m_initializer);
+                    if (AST::is_a<AST::FuncCallOrArray_t>(*initializer)) {
                         AST::FuncCallOrArray_t* func_call =
-                            AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
+                            AST::down_cast<AST::FuncCallOrArray_t>(initializer);
                         // Fortran is case insensitive and symbols are stored
                         // lowercased, so the name must be lowered before lookup
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(
@@ -10793,8 +10831,8 @@ public:
                                 throw SemanticAbort();
                             }
                         }
-                    } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
-                        std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
+                    } else if (AST::is_a<AST::Name_t>(*initializer)) {
+                        std::string sym_name = AST::down_cast<AST::Name_t>(initializer)->m_id;
                         sym_name = to_lower(sym_name);
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                         if (ASRUtils::is_iso_c_null_symbol(current_scope, sym_found)) {
@@ -10929,29 +10967,31 @@ public:
                             }
                             }
                         }
-                    } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
-                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                    } else if (AST::is_a<AST::ArrayInitializer_t>(*initializer)) {
+                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(initializer);
                         if (array_init->n_args > 0) {
                             bool is_correct_type_func = false;
                             bool is_correct_type_implieddoloop = false;
                             bool is_correct_type_name = false;
                             AST::FuncCallOrArray_t* func_call = nullptr;
 
-                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
-                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
-                            is_correct_type_name = AST::is_a<AST::Name_t>(*array_init->m_args[0]);
+                            AST::expr_t* first_arg = skip_parentheses(array_init->m_args[0]);
+                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*first_arg);
+                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*first_arg);
+                            is_correct_type_name = AST::is_a<AST::Name_t>(*first_arg);
                             
                             if (is_correct_type_func) {
-                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
+                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(first_arg);
                             }
                             else if (is_correct_type_implieddoloop) {
                                 AST::ImpliedDoLoop_t* idoloop = AST::down_cast<AST::ImpliedDoLoop_t>(array_init->m_args[0]);
                                 // Check if the implied do loop values construct the correct type
                                 if (idoloop->n_values > 0) {
-                                    if (AST::is_a<AST::FuncCallOrArray_t>(*idoloop->m_values[0])) {
-                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(idoloop->m_values[0]);
+                                    AST::expr_t* first_value = skip_parentheses(idoloop->m_values[0]);
+                                    if (AST::is_a<AST::FuncCallOrArray_t>(*first_value)) {
+                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(first_value);
                                     }
-                                    else if (AST::is_a<AST::Name_t>(*idoloop->m_values[0])){
+                                    else if (AST::is_a<AST::Name_t>(*first_value)){
                                         // TODO:: Check if Array Type Matches Do Loop Assignment Type, 
                                         is_correct_type_implieddoloop = true;
                                     }
@@ -10978,11 +11018,11 @@ public:
 
                         visit_ArrayInitializer(*array_init);
                         init_expr = ASRUtils::EXPR(tmp);
-                    } else if (AST::is_a<AST::String_t>(*s.m_initializer) ||
-                             AST::is_a<AST::Num_t>(*s.m_initializer) ||
-                             AST::is_a<AST::Real_t>(*s.m_initializer) ||
-                             AST::is_a<AST::BOZ_t>(*s.m_initializer)){
-                        this->visit_expr(*s.m_initializer);
+                    } else if (AST::is_a<AST::String_t>(*initializer) ||
+                             AST::is_a<AST::Num_t>(*initializer) ||
+                             AST::is_a<AST::Real_t>(*initializer) ||
+                             AST::is_a<AST::BOZ_t>(*initializer)){
+                        this->visit_expr(*initializer);
                         init_expr = ASRUtils::EXPR(tmp);
                     } else {
                         diag.add(Diagnostic(
@@ -16779,13 +16819,16 @@ public:
             if (type != nullptr && ASRUtils::is_array(type)) {
                 array_context_type = type;
             }
+            // Parentheses around a structure constructor do not change
+            // its value.
+            AST::expr_t* arg = skip_parentheses(x.m_args[i]);
             if (array_context_type != nullptr
                     && ASRUtils::is_array(array_context_type)
                     && ASR::is_a<ASR::StructType_t>(
                         *ASRUtils::type_get_past_array(array_context_type))
-                    && AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i])) {
+                    && AST::is_a<AST::FuncCallOrArray_t>(*arg)) {
                 AST::FuncCallOrArray_t* func_call =
-                    AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
+                    AST::down_cast<AST::FuncCallOrArray_t>(arg);
                 if (func_call->m_func != nullptr) {
                     // Fortran is case insensitive and symbols are stored
                     // lowercased, so the name must be lowered before lookup
@@ -17256,7 +17299,8 @@ public:
         visit_expr_list(m_args, n_args, args);
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v_class_proc->m_proc));
 
         // Associate written actuals without the receiver before inserting it
         // and instantiating a result type that can depend on any dummy.
@@ -17428,7 +17472,8 @@ public:
                     final_sym_past_ext)->m_is_nopass;
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym_past_ext, current_scope);
-                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
+                final_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc);
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -23878,7 +23923,7 @@ public:
                         }
                         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
                             ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
-                            f4 = f5->m_proc;
+                            f4 = ASRUtils::symbol_get_past_external(f5->m_proc);
                             is_nopass = f5->m_is_nopass;
                             is_class_procedure = true;
                         }
@@ -25639,7 +25684,8 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*op_proc)) {
                 ASR::StructMethodDeclaration_t* temp_struct_method =
                     ASR::down_cast<ASR::StructMethodDeclaration_t>(op_proc);
-                func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(temp_struct_method->m_proc));
 
             } else {
                 func = ASR::down_cast<ASR::Function_t>(
@@ -25652,7 +25698,7 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
                 // Type-bound operator: resolve the underlying function
                 ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = sm->m_proc;
+                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(sm->m_proc);
                 std::string func_name = ASRUtils::symbol_name(func_sym);
                 v = current_scope->resolve_symbol(func_name);
                 if (v == nullptr) {
@@ -26886,7 +26932,10 @@ public:
         return current_scope->resolve_symbol("null") == nullptr;
     }
 
+    // True if `e` is a reference to the intrinsic `NULL()`, possibly
+    // parenthesized, which is not allowed either.
     bool is_null_intrinsic_reference(AST::expr_t* e) {
+        e = skip_parentheses(e);
         if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
             return false;
         }

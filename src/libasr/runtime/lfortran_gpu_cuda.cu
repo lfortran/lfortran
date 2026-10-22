@@ -474,6 +474,20 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
 
 } // extern "C"
 
+extern "C" long long lfortran_gpu_cache_bytes(void) {
+    static long long bytes = -1;
+    if (bytes < 0) {
+        int device = 0, size = 0;
+        if (cudaGetDevice(&device) != cudaSuccess
+                || cudaDeviceGetAttribute(&size, cudaDevAttrL2CacheSize,
+                    device) != cudaSuccess) {
+            size = 0;
+        }
+        bytes = size;
+    }
+    return bytes;
+}
+
 extern "C" long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }

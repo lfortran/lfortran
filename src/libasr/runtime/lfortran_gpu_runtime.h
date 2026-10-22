@@ -188,6 +188,10 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
 
+// The size in bytes of the device's last-level cache, which the loop
+// transformations compare what a launch touches with (gpu_index_set_split).
+long long lfortran_gpu_cache_bytes(void);
+
 void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out);
 void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,

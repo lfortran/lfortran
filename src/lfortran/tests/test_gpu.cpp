@@ -582,11 +582,11 @@ end program
 
 namespace {
 
-// The (tiled, thread count) pair of every CUDA launch of the program
-// `name` in `source`, from the host's launch prelude.
-std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
-        const std::string &source, const std::string &filename,
-        const std::string &name) {
+// Runs the CUDA pipeline on the program `name` in `source` and hands
+// `visit` each statement of its body.
+template <class Visit>
+void visit_cuda_program(const std::string &source,
+        const std::string &filename, const std::string &name, Visit visit) {
     CompilerOptions options;
     options.gpu_backend = "cuda";
     options.po.gpu_offload_cuda = true;
@@ -612,11 +612,35 @@ std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
     REQUIRE_FALSE(diagnostics.has_error());
     auto *program = ASR::down_cast<ASR::Program_t>(
         unit.m_symtab->get_symbol(name));
-    GpuLaunchGeometry geometry;
     for (size_t i = 0; i < program->n_body; i++) {
-        geometry.visit_stmt(*program->m_body[i]);
+        visit(*program->m_body[i]);
     }
+}
+
+// The (tiled, thread count) pair of every CUDA launch of the program
+// `name` in `source`, from the host's launch prelude.
+std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
+        const std::string &source, const std::string &filename,
+        const std::string &name) {
+    GpuLaunchGeometry geometry;
+    visit_cuda_program(source, filename, name,
+        [&](ASR::stmt_t &s) { geometry.visit_stmt(s); });
     return geometry.launches;
+}
+
+// How many arrays every CUDA launch of the program `name` in `source` says
+// the kernel overwrites (write-discard).
+std::vector<size_t> cuda_launch_overwrites(const std::string &source,
+        const std::string &filename, const std::string &name) {
+    struct Overwrites : public ASR::BaseWalkVisitor<Overwrites> {
+        std::vector<size_t> launches;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            launches.push_back(x.n_overwritten);
+        }
+    } overwrites;
+    visit_cuda_program(source, filename, name,
+        [&](ASR::stmt_t &s) { overwrites.visit_stmt(s); });
+    return overwrites.launches;
 }
 
 void check_launch_geometry(
@@ -726,9 +750,15 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
+    // Index-set splitting splits the first two nests, whose bodies test
+    // a loop index against its lower bound: each becomes the split nest
+    // and the original nest, which runs when the domain has no interior.
+    // Both must tile.
     expected = {
         {1, 64 * 64},           // high lower bound along the tile width
+        {1, 64 * 64},           // the same nest, unsplit
         {1, 64 * 64},           // high lower bound along the tile height
+        {1, 64 * 64},           // the same nest, unsplit
         {1, 64 * 32},           // negative lower bounds, partial tiles
         {0, 33 * 31},           // high lower bound, flat fallback
     };
@@ -737,6 +767,94 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
         check_launch_geometry(cuda_launch_geometry(
             read_project_file("integration_tests/" + name + ".f90"),
             name + ".f90", name), expected);
+    }
+}
+
+TEST_CASE("Time skewing leaves the procedures parallel loops call") {
+    // `smooth` runs inside the parallel loop of the program, where its own
+    // parallel loops run serially: its time loop is not skewed (the skewed
+    // host loop would call the runtime from device code).
+    const std::string source = R"(
+module skew_callee_m
+implicit none
+contains
+    pure subroutine smooth(u, d, n, nt)
+        integer, intent(in) :: n, nt
+        real, intent(inout) :: u(n), d(n)
+        integer :: it, k
+        do it = 1, nt
+            do concurrent (k = 2:n - 1)
+                d(k) = 0.25 * (u(k - 1) + 2 * u(k) + u(k + 1))
+            end do
+            do concurrent (k = 2:n - 1)
+                u(k) = d(k)
+            end do
+        end do
+    end subroutine
+end module
+
+program skew_callee
+use skew_callee_m, only: smooth
+implicit none
+integer, parameter :: n = 3000, m = 4
+real :: u(n, m), d(n, m)
+integer :: j
+u = 1
+d = 0
+call smooth(u(:, 1), d(:, 1), n, 5)
+do concurrent (j = 1:m)
+    call smooth(u(:, j), d(:, j), n, 5)
+end do
+print *, sum(u)
+end program
+)";
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.gpu_cache_bytes = 4096;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "skew_callee.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_loop_transforms", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        unit.m_symtab->get_symbol("skew_callee_m"));
+    auto *smooth = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("smooth"));
+    for (auto &item : smooth->m_symtab->get_scope()) {
+        INFO(item.first);
+        CHECK_FALSE(startswith(item.first, "__gpu_skew"));
+    }
+}
+
+TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
+    // gpu_metal_527 splits a 1-D stencil (the split nest, then the original
+    // nest for a domain without an interior) and a 2-D one (the jammed
+    // nest, the plain split nest, the original nest). Each overwrites one
+    // array, which every launch must say.
+    std::vector<size_t> expected = {1, 1, 1, 1, 1};
+    std::vector<size_t> launches = cuda_launch_overwrites(
+        read_project_file("integration_tests/gpu_metal_527.f90"),
+        "gpu_metal_527.f90", "gpu_metal_527");
+    REQUIRE(launches.size() == expected.size());
+    for (size_t i = 0; i < launches.size(); i++) {
+        INFO("launch " << i);
+        CHECK(launches[i] == expected[i]);
     }
 }
 #endif

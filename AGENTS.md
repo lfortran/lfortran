@@ -197,8 +197,9 @@ MCP tools; see "Git Remotes & Issues"), not a compiler build.
 ## Prerequisites
 - **Required:** Git and [Pixi](https://pixi.sh/). The repository manifest
   supplies build/test dependencies and Linux C/C++ compilers. On macOS, install
-  Xcode Command Line Tools; on Windows, use an initialized MSVC developer shell
-  with Git Bash available. Use Pixi inside WSL for Unix-only test runners.
+  Xcode Command Line Tools; on Windows, use an initialized MSVC developer
+  shell. Pixi supplies the cross-platform `shell` that runs the build scripts,
+  so Bash is not required. Use Pixi inside WSL for Unix-only test runners.
   If a prerequisite is missing, report it; do not provision an alternate toolchain.
 
 ## Build, Test, and Development Commands
