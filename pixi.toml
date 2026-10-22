@@ -106,6 +106,9 @@ python = "==3.12"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
 re2c = "==3.1"
+# Cross-platform Bash-like shell (https://github.com/prefix-dev/shell) that
+# runs build0.sh and build1.sh on every platform, including native Windows.
+shell = "==0.3.0"
 
 [feature.build.target.linux.dependencies]
 c-compiler = "*"
@@ -129,7 +132,9 @@ CXX = "/usr/bin/clang++"
 LFORTRAN_LINKER_PATH = "/usr/bin"
 
 [feature.build.target.win.activation.env]
-PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin;$PATH"
+# Windows activation expands only %VAR% references.
+LFORTRAN_BUILD_DIR = "%PIXI_PROJECT_ROOT%\\build\\%PIXI_ENVIRONMENT_NAME%"
+PATH = "%PIXI_PROJECT_ROOT%\\build\\%PIXI_ENVIRONMENT_NAME%\\src\\bin;%PATH%"
 
 # Dependencies to build the project to be installed on the build machine.
 # feature.default.build-dependencies.
@@ -166,14 +171,15 @@ bison = "==3.4"
 m2-bison = "==3.0.4"
 
 [feature.build.tasks]
-build = {cmd = 'bash ./build1.sh "$LFORTRAN_BUILD_DIR"', default-environment = "llvm11"}
+# Extra arguments are forwarded to CMake.
+build = {cmd = 'shell --norc build1.sh "$LFORTRAN_BUILD_DIR"', default-environment = "llvm11"}
 # Incremental: no reconfiguration, so generated sources are not rewritten.
 rebuild = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR"', default-environment = "llvm11"}
 start = {cmd = '"$LFORTRAN_BUILD_DIR/src/bin/lfortran"', default-environment = "llvm11"}
 clean = {cmd = 'cmake --build "$LFORTRAN_BUILD_DIR" --target clean', default-environment = "llvm11"}
 
 [feature.build.target.win.tasks]
-build = {cmd = 'bash ./build1.sh "$LFORTRAN_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DWITH_STACKTRACE=no -DWITH_RUNTIME_STACKTRACE=no', default-environment = "llvm11"}
+build = {cmd = 'shell --norc build1.sh "$LFORTRAN_BUILD_DIR" -DCMAKE_BUILD_TYPE=Release -DWITH_STACKTRACE=no -DWITH_RUNTIME_STACKTRACE=no', default-environment = "llvm11"}
 
 # ─── WASM kernel / JupyterLite ("lab") ───────────────────────────────────────
 # See doc/src/jupyterlite.md. Three environments are involved:
@@ -197,6 +203,8 @@ emscripten_emscripten-wasm32 = "==4.0.9"
 # python (for build0.sh) is unpinned: the emscripten toolchain requires >=3.13
 python = "*"
 re2c = "==3.1"
+# CMake runs build0.sh with it when LFORTRAN_BUILD_ALL=yes.
+shell = "==0.3.0"
 
 [feature.wasm-build.target.unix.dependencies]
 bison = "==3.4"
