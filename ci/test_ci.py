@@ -960,6 +960,8 @@ class QuickScriptTests(unittest.TestCase):
                     else:
                         (work / entry).symlink_to(self.directory / entry)
                 self.env.update(WIN=win, MACOS=mac, LFORTRAN_LLVM_VERSION=llvm)
+                # macOS compiles C with $CC (Xcode's clang in the Pixi environment).
+                self.env["CC"] = str(self.directory / "bin/gcc")
                 self.env.pop("LFORTRAN_TEST_SUITE", None)
                 if suite is not None:
                     self.env["LFORTRAN_TEST_SUITE"] = suite
@@ -986,6 +988,9 @@ class QuickScriptTests(unittest.TestCase):
                                      if path == str(self.directory / "integration_tests/run_tests.py")]
                 self.assertEqual(bool(reference_calls), reference)
                 self.assertEqual(len(integration_calls), count)
+                c_compiles = [Path(path).name for path, args in calls
+                              if "integration_tests/modules_15c.c" in args]
+                self.assertEqual(c_compiles, ["cl"] if win == "1" else ["gcc"])
                 for args in integration_calls:
                     self.assertNotIn("", args)
                     self.assertEqual("--smoke" in args, suite == "smoke")
