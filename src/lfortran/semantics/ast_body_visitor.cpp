@@ -1595,104 +1595,50 @@ public:
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
     }
 
-    static bool has_nested_implied_do(ASR::ImpliedDoLoop_t* idl) {
-        for (size_t i = 0; i < idl->n_values; i++) {
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static void collect_implied_do_vars(ASR::ImpliedDoLoop_t* idl,
-            std::vector<ASR::symbol_t*>& vars) {
+    static void collect_implied_do_vars(ASR::expr_t* e, std::vector<ASR::symbol_t*>& vars) {
+        if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) return;
+        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
         vars.push_back(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
         for (size_t i = 0; i < idl->n_values; i++) {
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
-                collect_implied_do_vars(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), vars);
-            }
+            collect_implied_do_vars(idl->m_values[i], vars);
         }
     }
 
-    // Whether the items `expanded` that unroll the implied-do loop `idl` of
-    // a READ keep no nested loop and no reference to the variables of `idl`
-    // and its nested loops, apart from a remaining loop over one of them.
-    // Unrolling substitutes a loop variable only in a plain subscript of an
-    // element, not in a substring, a component, a subscript expression or
-    // an inner loop bound.
-    static bool is_complete_read_implied_do_expansion(ASR::ImpliedDoLoop_t* idl,
-            Vec<ASR::expr_t*>& expanded) {
-        std::vector<ASR::symbol_t*> vars;
-        collect_implied_do_vars(idl, vars);
-        for (size_t i = 0; i < expanded.size(); i++) {
-            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*expanded[i])) {
-                for (ASR::symbol_t* v : vars) {
-                    if (ASRUtils::expr_references_symbol(expanded[i], v)) {
-                        return false;
-                    }
-                }
-                continue;
-            }
-            ASR::ImpliedDoLoop_t* inner = ASR::down_cast<ASR::ImpliedDoLoop_t>(expanded[i]);
-            if (has_nested_implied_do(inner)) {
-                return false;
-            }
-            ASR::symbol_t* inner_var = ASR::down_cast<ASR::Var_t>(inner->m_var)->m_v;
-            for (ASR::symbol_t* v : vars) {
-                if (ASRUtils::expr_references_symbol(inner->m_start, v) ||
-                        ASRUtils::expr_references_symbol(inner->m_end, v) ||
-                        ASRUtils::expr_references_symbol(inner->m_increment, v)) {
-                    return false;
-                }
-                for (size_t j = 0; v != inner_var && j < inner->n_values; j++) {
-                    if (ASRUtils::expr_references_symbol(inner->m_values[j], v)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    // Which constant-bound implied-do loops of a READ are unrolled.
-    enum class ReadLoopUnrolling {
-        All,             // every loop
-        CompleteNested,  // a loop with a nested loop only if completely
-        Complete,        // every loop only if completely
-    };
-
-    // Unrolls the constant-bound implied-do loops of a READ input list. The
-    // backend does a formatted READ whose list keeps a nested implied-do
-    // loop as one data transfer that runs its loops, so such a READ keeps
-    // the loops that cannot be unrolled completely.
+    // Expands the implied-do loops of a READ input list. Expansion
+    // substitutes a loop variable only in a plain subscript of an element,
+    // and the backend does a formatted READ with a nested implied-do loop as
+    // one data transfer that runs its loops. So such a READ keeps its list
+    // unexpanded if the expansion keeps a nested loop or a reference to a
+    // variable of an expanded loop.
     void expand_implied_do_loops_for_read(Vec<ASR::expr_t*>& values,
-            std::vector<ASR::stmt_t*>& post_stmts, bool formatted_read) {
+            std::vector<ASR::stmt_t*>& post_stmts, bool formatted) {
         Vec<ASR::expr_t*> expanded;
+        expanded.reserve(al, values.size());
         std::vector<ASR::stmt_t*> expanded_post_stmts;
-        ReadLoopUnrolling unrolling = formatted_read ?
-            ReadLoopUnrolling::CompleteNested : ReadLoopUnrolling::All;
-        while (true) {
-            expanded.reserve(al, values.size());
-            expanded_post_stmts.clear();
+        for (size_t i = 0; i < values.size(); i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                expand_implied_do_for_read(ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]),
+                    expanded, expanded_post_stmts);
+            } else {
+                expanded.push_back(al, values[i]);
+            }
+        }
+        if (formatted && ASRUtils::has_nested_implied_do_loop(values.p, values.size())) {
+            std::vector<ASR::symbol_t*> vars;
             for (size_t i = 0; i < values.size(); i++) {
-                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                    expand_implied_do_for_read(ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]),
-                        expanded, expanded_post_stmts, unrolling);
-                } else {
-                    expanded.push_back(al, values[i]);
+                collect_implied_do_vars(values[i], vars);
+            }
+            bool keep = ASRUtils::has_nested_implied_do_loop(expanded.p, expanded.size());
+            for (size_t i = 0; i < expanded.size(); i++) {
+                ASR::symbol_t* own_var = ASR::is_a<ASR::ImpliedDoLoop_t>(*expanded[i]) ?
+                    ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ImpliedDoLoop_t>(
+                        expanded[i])->m_var)->m_v : nullptr;
+                for (ASR::symbol_t* v : vars) {
+                    keep = keep || (v != own_var &&
+                        ASRUtils::expr_references_symbol(expanded[i], v));
                 }
             }
-            bool keeps_nested_loop = false;
-            for (size_t i = 0; i < expanded.size(); i++) {
-                keeps_nested_loop = keeps_nested_loop ||
-                    (ASR::is_a<ASR::ImpliedDoLoop_t>(*expanded[i]) &&
-                     has_nested_implied_do(ASR::down_cast<ASR::ImpliedDoLoop_t>(expanded[i])));
-            }
-            if (unrolling != ReadLoopUnrolling::CompleteNested || !keeps_nested_loop) {
-                break;
-            }
-            unrolling = ReadLoopUnrolling::Complete;
+            if (keep) return;
         }
         values = expanded;
         post_stmts.insert(post_stmts.end(), expanded_post_stmts.begin(),
@@ -1702,9 +1648,7 @@ public:
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
     // For constant bounds: (vals(i), i=1,3) -> vals(1), vals(2), vals(3)
     // For variable bounds: (vals(i), i=1,n) -> vals(1:n)
-    // `unrolling` says which constant-bound loops are kept instead.
-    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out,
-            std::vector<ASR::stmt_t*>& post_stmts, ReadLoopUnrolling unrolling) {
+    void expand_implied_do_for_read(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& out, std::vector<ASR::stmt_t*>& post_stmts) {
         int64_t start_val, end_val, inc_val = 1;
         bool constant_bounds = true;
 
@@ -1726,9 +1670,6 @@ public:
         if (constant_bounds && inc_val != 0) {
             // Expand to individual elements
             ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var);
-            Vec<ASR::expr_t*> expanded;
-            expanded.reserve(al, idl->n_values);
-            std::vector<ASR::stmt_t*> expanded_post_stmts;
             int64_t idx = start_val;
             for (;
                  (inc_val > 0) ? (idx <= end_val) : (idx >= end_val);
@@ -1743,30 +1684,18 @@ public:
                             ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
                         ASR::ImpliedDoLoop_t* substituted_idl =
                             substitute_loop_var_in_idl(inner_idl, loop_var, idx_const);
-                        expand_implied_do_for_read(substituted_idl, expanded,
-                            expanded_post_stmts, unrolling);
+                        expand_implied_do_for_read(substituted_idl, out, post_stmts);
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
                         // Replace loop variable with constant index
                         ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(value);
                         ASR::expr_t* new_item = substitute_loop_var_in_array_item(
                             arr_item, loop_var, idx_const);
-                        expanded.push_back(al, new_item);
+                        out.push_back(al, new_item);
                     } else {
-                        expanded.push_back(al, value);
+                        out.push_back(al, value);
                     }
                 }
             }
-            bool complete_only = unrolling == ReadLoopUnrolling::Complete ||
-                (unrolling == ReadLoopUnrolling::CompleteNested && has_nested_implied_do(idl));
-            if (complete_only && !is_complete_read_implied_do_expansion(idl, expanded)) {
-                out.push_back(al, ASRUtils::EXPR((ASR::asr_t*)idl));
-                return;
-            }
-            for (size_t j = 0; j < expanded.size(); j++) {
-                out.push_back(al, expanded[j]);
-            }
-            post_stmts.insert(post_stmts.end(), expanded_post_stmts.begin(),
-                expanded_post_stmts.end());
             if (compiler_options.use_loop_variable_after_loop ||
                     compiler_options.po.use_loop_variable_after_loop) {
                 ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
