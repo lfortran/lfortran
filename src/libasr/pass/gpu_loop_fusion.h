@@ -4,6 +4,8 @@
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
+#include <set>
+
 namespace LCompilers {
 
     // Fuses a parallel loop that computes arrays into the parallel loop
@@ -12,6 +14,13 @@ namespace LCompilers {
     // gpu_loop_fusion.cpp.
     void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
                               const PassOptions &pass_options);
+
+    // The fusion, adding to `rarely_run` the original loops it keeps for
+    // the last iteration of the DO loops around them (GpuRarelyRun in
+    // gpu_loop_utils.h).
+    void gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
+                         const PassOptions &pass_options,
+                         std::set<ASR::stmt_t*> &rarely_run);
 
 } // namespace LCompilers
 
