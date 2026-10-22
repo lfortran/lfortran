@@ -6652,6 +6652,7 @@ RUN(NAME gpu_kernel_source_23 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARG
 RUN(NAME gpu_kernel_source_24 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_25 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_19 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0)
+RUN(NAME gpu_kernel_source_36 LABELS gfortran llvm cuda_cpu cuda)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
