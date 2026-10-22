@@ -1718,36 +1718,65 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Fix dangling variable references in duplicated kernel functions.
-    // When a contained function references variables from the original
-    // enclosing scope (e.g., a program-scope Parameter used by a
-    // contained function), the duplicated function body retains the
-    // original Var references which are unreachable from the kernel.
-    // For Parameter variables, clone them into the function's scope.
-    // For other variables, add them as extra kernel parameters.
+    // When a copied procedure references entities of the scope its
+    // original was defined in (e.g., a variable of its module, or a
+    // program-scope Parameter used by a contained function), the
+    // duplicated function body retains the original Var references
+    // which are unreachable from the kernel. An entity the kernel
+    // already receives is read through its kernel parameter. Otherwise,
+    // Parameter variables are cloned into the function's scope and other
+    // variables are added as extra kernel parameters, whose actual
+    // argument names the entity itself from the caller, imported there
+    // if the caller cannot name it.
     {
+        // The entity of the caller that the kernel symbol `name` stands
+        // for, if any.
+        auto host_entity = [&](const std::string &name) -> ASR::symbol_t* {
+            ASR::symbol_t *host_sym = orig_scope->resolve_symbol(name);
+            return host_sym ? ASRUtils::symbol_get_past_external(host_sym)
+                : nullptr;
+        };
+        std::map<ASR::symbol_t*, ASR::symbol_t*> entity_params;
+        auto kernel_symbol_of = [&](ASR::symbol_t *entity)
+                -> ASR::symbol_t* {
+            auto it = entity_params.find(entity);
+            if (it != entity_params.end()) return it->second;
+            for (auto &item : kernel_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)
+                        && host_entity(item.first) == entity) {
+                    return item.second;
+                }
+            }
+            return nullptr;
+        };
         for (ASR::Function_t *func : kernel_funcs) {
-            DanglingVarCollector dvc(func->m_symtab);
+            DanglingVarCollector dvc(func->m_symtab, kernel_scope);
             for (size_t bi = 0; bi < func->n_body; bi++) {
                 dvc.visit_stmt(*func->m_body[bi]);
             }
             if (dvc.dangling.empty()) continue;
 
-            std::set<std::string> fixed_names;
-            for (auto &[name, orig_sym] : dvc.dangling) {
+            std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
+            for (ASR::symbol_t *orig_sym : dvc.dangling) {
                 ASR::symbol_t *resolved_sym =
                     ASRUtils::symbol_get_past_external(orig_sym);
                 if (!ASR::is_a<ASR::Variable_t>(*resolved_sym)) continue;
                 ASR::Variable_t *orig_var =
                     ASR::down_cast<ASR::Variable_t>(resolved_sym);
-                if (orig_var->m_storage ==
+                std::string name = ASRUtils::symbol_name(orig_sym);
+                if (ASR::symbol_t *ksym = kernel_symbol_of(resolved_sym)) {
+                    replacements[orig_sym] = ksym;
+                } else if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
                     // Its value, rather than the expression it was
                     // declared with, which names other constants of the
                     // original scope.
+                    std::string local_name =
+                        func->m_symtab->get_unique_name(name, false);
                     ASR::symbol_t *new_var =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
-                                func->m_symtab, s2c(al, name),
+                                func->m_symtab, s2c(al, local_name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
                                 orig_var->m_value ? orig_var->m_value
@@ -1759,51 +1788,51 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                 nullptr, orig_var->m_abi,
                                 orig_var->m_access,
                                 ASR::presenceType::Required, false));
-                    func->m_symtab->add_symbol(name, new_var);
-                    fixed_names.insert(name);
+                    func->m_symtab->add_symbol(local_name, new_var);
+                    replacements[orig_sym] = new_var;
                 } else {
-                    if (!kernel_scope->get_symbol(name)) {
-                        ASR::ttype_t *dup_type =
-                            ASRUtils::duplicate_type(al,
-                                ASRUtils::type_get_past_allocatable(
-                                    orig_var->m_type));
-                        SetChar deps_vec;
-                        deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(
-                            al, deps_vec, dup_type, nullptr,
-                            nullptr, name);
-                        ASR::symbol_t *param =
-                            ASR::down_cast<ASR::symbol_t>(
-                                ASRUtils::make_Variable_t_util(al,
-                                    loc, kernel_scope,
-                                    s2c(al, name),
-                                    deps_vec.p, deps_vec.size(),
-                                    ASR::intentType::InOut,
-                                    nullptr, nullptr,
-                                    ASR::storage_typeType::Default,
-                                    dup_type, nullptr,
-                                    ASR::abiType::Source,
-                                    ASR::accessType::Public,
-                                    ASR::presenceType::Required,
-                                    false));
-                        kernel_scope->add_symbol(name, param);
-                        kernel_args.push_back(al,
-                            ASRUtils::EXPR(ASR::make_Var_t(
-                                al, loc, param)));
-                        ASR::symbol_t *host_sym =
-                            orig_scope->resolve_symbol(name);
-                        ASR::call_arg_t carg;
-                        carg.loc = loc;
-                        carg.m_value = ASRUtils::EXPR(
-                            ASR::make_Var_t(al, loc,
-                                host_sym ? host_sym : orig_sym));
-                        call_args.push_back(al, carg);
-                    }
-                    fixed_names.insert(name);
+                    std::string param_name =
+                        kernel_scope->get_unique_name(name, false);
+                    ASR::ttype_t *dup_type =
+                        ASRUtils::duplicate_type(al,
+                            ASRUtils::type_get_past_allocatable(
+                                orig_var->m_type));
+                    SetChar deps_vec;
+                    deps_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(
+                        al, deps_vec, dup_type, nullptr,
+                        nullptr, param_name);
+                    ASR::symbol_t *param =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(al,
+                                loc, kernel_scope,
+                                s2c(al, param_name),
+                                deps_vec.p, deps_vec.size(),
+                                ASR::intentType::InOut,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                dup_type, nullptr,
+                                ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required,
+                                false));
+                    kernel_scope->add_symbol(param_name, param);
+                    kernel_args.push_back(al,
+                        ASRUtils::EXPR(ASR::make_Var_t(
+                            al, loc, param)));
+                    ASR::call_arg_t carg;
+                    carg.loc = loc;
+                    carg.m_value = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc,
+                            ASRUtils::import_symbol(al, orig_sym,
+                                orig_scope)));
+                    call_args.push_back(al, carg);
+                    entity_params[resolved_sym] = param;
+                    replacements[orig_sym] = param;
                 }
             }
-            if (!fixed_names.empty()) {
-                DanglingVarFixer fixer(func->m_symtab, fixed_names);
+            if (!replacements.empty()) {
+                DanglingVarFixer fixer(replacements);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fixer.visit_stmt(*func->m_body[bi]);
                 }

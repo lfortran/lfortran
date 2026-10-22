@@ -1,6 +1,7 @@
 #ifndef LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 #define LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
@@ -455,24 +456,46 @@ public:
     }
 };
 
-// Collects Var references in function bodies that point to symbols
-// not reachable through the function's scope chain. This happens when
-// a contained function references host-scope variables (e.g., Parameters)
-// that are not present in the kernel scope hierarchy.
+// Collects the symbols that Var references in a function body of the
+// kernel name but that are not reachable through the function's scope
+// chain. This happens when a copied procedure references entities of the
+// scope the original was defined in (e.g., variables or parameters of its
+// module, or of the host of a contained procedure), which are not present
+// in the kernel scope hierarchy. The decision is made by symbol identity:
+// an entity of the same name that the kernel scope happens to hold, such
+// as a variable of the caller passed to the kernel, is a different entity.
 class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;
-    std::map<std::string, ASR::symbol_t*> dangling;
+    SymbolTable *kernel_scope;
+    // In the order they are first referenced.
+    std::vector<ASR::symbol_t*> dangling;
     std::set<SymbolTable*> inner_scopes;
-    DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
-    void visit_Var(const ASR::Var_t &x) {
-        std::string name = ASRUtils::symbol_name(x.m_v);
-        for (auto *scope : inner_scopes) {
-            if (scope->get_symbol(name)) return;
+    DanglingVarCollector(SymbolTable *fs, SymbolTable *ks)
+        : func_scope(fs), kernel_scope(ks) {}
+
+    // Whether `scope` belongs to a procedure copied into the kernel.
+    bool is_copied_scope(SymbolTable *scope) {
+        if (scope == kernel_scope) return false;
+        for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+            if (s == kernel_scope) return true;
         }
-        if (!func_scope->resolve_symbol(name) &&
-                dangling.find(name) == dangling.end()) {
-            dangling[name] = x.m_v;
+        return false;
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (inner_scopes.count(ASRUtils::symbol_parent_symtab(x.m_v))) return;
+        if (ASRUtils::is_visible_from(x.m_v, func_scope)) return;
+        // An entity of the host of a contained procedure, which the copy
+        // of that host declares under the same name.
+        ASR::symbol_t *named = func_scope->resolve_symbol(
+            ASRUtils::symbol_name(x.m_v));
+        if (named && is_copied_scope(ASRUtils::symbol_parent_symtab(named))) {
+            return;
+        }
+        if (std::find(dangling.begin(), dangling.end(), x.m_v)
+                == dangling.end()) {
+            dangling.push_back(x.m_v);
         }
     }
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
@@ -494,22 +517,19 @@ public:
     }
 };
 
-// Fixes dangling Var references in function bodies by resolving symbol
-// names through the function's scope chain and replacing the Var target.
+// Rebinds the Var references to the symbols DanglingVarCollector found to
+// the symbols that stand for them in the kernel.
 class DanglingVarFixer :
         public ASRUtils::BlockBodyWalkVisitor<DanglingVarFixer> {
 public:
-    SymbolTable *func_scope;
-    std::set<std::string> &target_names;
-    DanglingVarFixer(SymbolTable *fs, std::set<std::string> &names)
-        : func_scope(fs), target_names(names) {}
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements;
+    DanglingVarFixer(
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements_)
+        : replacements(replacements_) {}
     void visit_Var(const ASR::Var_t &x) {
-        std::string name = ASRUtils::symbol_name(x.m_v);
-        if (target_names.count(name)) {
-            ASR::symbol_t *new_sym = func_scope->resolve_symbol(name);
-            if (new_sym) {
-                const_cast<ASR::Var_t&>(x).m_v = new_sym;
-            }
+        auto it = replacements.find(x.m_v);
+        if (it != replacements.end()) {
+            const_cast<ASR::Var_t&>(x).m_v = it->second;
         }
     }
 };
