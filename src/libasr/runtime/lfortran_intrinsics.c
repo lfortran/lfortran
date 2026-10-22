@@ -6706,6 +6706,8 @@ static inline bool unit_swaps_bytes(int32_t unit_num) {
 static size_t unf_fread(void *p, size_t elem_size, size_t n, FILE *filep,
         int32_t unit_num) {
     size_t got = input_read(p, elem_size, n, filep);
+    // Never true; it lets GCC see that p holds at most n elements.
+    if (got > n) got = n;
     if (elem_size > 1 && unit_swaps_bytes(unit_num)) {
         swap_element_bytes(p, elem_size, got);
     }
