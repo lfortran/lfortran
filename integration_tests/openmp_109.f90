@@ -58,12 +58,12 @@ do j = 1, n
     end do
 end do
 
-! The inner loop depends on the outer index and has a step
+! The inner loop depends on the outer index and has a negative step
 b = 0
 !$omp parallel do collapse(2)
 do j = 1, n
-    do i = 2*j, 2*n, 2
-        b(i/2, j) = b(i/2, j) + 1
+    do i = n, j, -1
+        b(i, j) = b(i, j) + 1
     end do
 end do
 !$omp end parallel do
