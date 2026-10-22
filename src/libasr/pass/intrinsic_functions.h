@@ -1391,6 +1391,25 @@ namespace StorageSize {
         }
     }
 
+    // `storage_size` of a character whose length is not a compile-time
+    // constant (deferred or assumed length) is its length in bits, which is
+    // read from the string at run time. Every other `storage_size` has a
+    // compile-time value, see eval_StorageSize.
+    static inline ASR::expr_t* instantiate_StorageSize(Allocator &al,
+            const Location &loc, SymbolTable* /*scope*/,
+            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            int /*index_kind*/) {
+        ASR::expr_t* arg = new_args[0].m_value;
+        LCOMPILERS_ASSERT(is_character(*ASRUtils::extract_type(expr_type(arg))));
+        ASR::expr_t* len = EXPR(ASR::make_StringLen_t(al, loc, arg,
+            return_type, nullptr));
+        ASR::expr_t* bits_per_char = EXPR(ASR::make_IntegerConstant_t(al, loc,
+            8, return_type, ASR::integerbozType::Decimal));
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, len, ASR::binopType::Mul,
+            bits_per_char, return_type, nullptr));
+    }
+
 }  // namespace StorageSize
 
 namespace Scale {
