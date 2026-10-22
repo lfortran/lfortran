@@ -2,6 +2,7 @@
 over FortranEvaluator::execute()."""
 
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import time
@@ -9,6 +10,16 @@ import uuid
 
 from jupyter_client import BlockingKernelClient
 from jupyter_client.connect import write_connection_file
+
+# Descriptors the kernel may have open. It needs about 60; a leak of a
+# descriptor per cell exhausts them within the cells below.
+MAX_OPEN_FILES = 128
+
+
+def limit_open_files():
+    import resource
+    _, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (MAX_OPEN_FILES, hard))
 
 
 def execute(client, code, *, silent=False):
@@ -59,6 +70,7 @@ def main():
             process = subprocess.Popen(
                 [args.lfortran, "kernel", "-f", str(connection)],
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
+                preexec_fn=limit_open_files if os.name == "posix" else None,
             )
             client = BlockingKernelClient(connection_file=str(connection))
             client.load_connection_file()
@@ -92,6 +104,9 @@ def main():
                            for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # Cells must not leak file descriptors (MAX_OPEN_FILES).
+            for i in range(100):
+                check(client, "%d + 1" % i, [str(i + 1)])
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
