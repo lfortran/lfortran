@@ -190,7 +190,8 @@
                                                     "overloaded": [],
                                                     "realloc_lhs": false,
                                                     "move_allocation": false,
-                                                    "new_target": false
+                                                    "new_target": false,
+                                                    "new_allocation": false
                                                 },
                                                 "loc": {
                                                     "first": 426,
@@ -407,7 +408,8 @@
                                                                     "overloaded": [],
                                                                     "realloc_lhs": false,
                                                                     "move_allocation": false,
-                                                                    "new_target": false
+                                                                    "new_target": false,
+                                                                    "new_allocation": false
                                                                 },
                                                                 "loc": {
                                                                     "first": 426,

@@ -2140,7 +2140,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     };
     auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
-            loc, target, value, nullptr, false, false, false)));
+            loc, target, value, nullptr, false, false, false, false)));
     };
     auto return_if = [&](ASR::expr_t *test) {
         Vec<ASR::stmt_t*> exit_body;

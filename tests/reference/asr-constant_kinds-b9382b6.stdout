@@ -293,6 +293,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -310,6 +311,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -324,6 +326,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -344,19 +347,22 @@
                         .false.
                         .false.
                         .false.
-                    )
-                    (Assignment
-                        (Var 2 x)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        ()
-                        .false.
-                        .false.
                         .false.
                     )
                     (Assignment
                         (Var 2 x)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -371,6 +377,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

@@ -951,7 +951,7 @@ void GpuOffloadVisitor::privatize_liveout_body(const Location &loc,
         ASR::stmt_t *entry = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
             ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                 kernel_scope->get_symbol(c.copy))),
-            part, nullptr, false, false, false));
+            part, nullptr, false, false, false, false));
         if (c.live) plan.entries.insert(entry);
         entered.push_back(al, entry);
     }
@@ -968,7 +968,7 @@ void GpuOffloadVisitor::enter_liveouts(const Location &loc,
                 kernel_scope->get_symbol(ls.orig_name))),
             gpu_liveout_slot(al, loc, kernel_scope->get_symbol(ls.buf_name),
                 ls.scalar_type),
-            nullptr, false, false, false));
+            nullptr, false, false, false, false));
         plan.entries.insert(entry);
         kernel_body.push_back(al, entry);
     }

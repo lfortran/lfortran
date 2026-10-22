@@ -467,6 +467,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -490,6 +491,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -510,6 +512,7 @@
                         )
                         (IntegerConstant 11 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

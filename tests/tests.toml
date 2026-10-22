@@ -6615,6 +6615,14 @@ filename = "asr/verify/assignment_move_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/assignment_new_allocation_nonallocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_new_target.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/function_signature_argument_mismatch.asr"
 asr = true
 

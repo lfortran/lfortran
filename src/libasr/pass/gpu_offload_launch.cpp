@@ -220,7 +220,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             prelude.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), limit,
-                    nullptr, false, false, false)));
+                    nullptr, false, false, false, false)));
             for (size_t i = 0; i < plan.call_args.n; i++) {
                 if (plan.call_args.p[i].m_value == limit) {
                     plan.call_args.p[i].m_value =
@@ -391,7 +391,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         launch_stmts.push_back(al, gpu_if_present(al, loc,
             ls.orig_scalar_sym, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
-                    nullptr, false, false, false))));
+                    nullptr, false, false, false, false))));
     }
 
     ASR::expr_t *block_size_const = ASRUtils::EXPR(
@@ -457,7 +457,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         launch_stmts.push_back(al, gpu_if_present(al, loc,
             ls.orig_scalar_sym, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
-                    nullptr, false, false, false))));
+                    nullptr, false, false, false, false))));
     }
 
     // Fold the accumulators into the scalar the source named. It still
@@ -490,7 +490,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             keep_body.reserve(al, 1);
             keep_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, scalar_var, slot,
-                    nullptr, false, false, false)));
+                    nullptr, false, false, false, false)));
             Vec<ASR::stmt_t*> keep_else;
             keep_else.reserve(al, 0);
             fold_body.push_back(al, ASRUtils::STMT(
@@ -502,7 +502,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
                         gpu_reduction_fold_binop(r.op), scalar_var, slot,
                         ASRUtils::duplicate_type(al, r.scalar_type))),
-                    nullptr, false, false, false)));
+                    nullptr, false, false, false, false)));
         }
 
         ASR::do_loop_head_t head;

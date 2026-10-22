@@ -628,7 +628,7 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         block_body.reserve(al, 2);
         block_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, tmp_ref(),
-                asgn->m_value, nullptr, false, false, false)));
+                asgn->m_value, nullptr, false, false, false, false)));
         asgn->m_value = tmp_ref();
         block_body.push_back(al, stmt);
         std::string block_name = scope->get_unique_name(
@@ -771,7 +771,7 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
             };
             block_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, tmp_section(),
-                    asgn->m_value, nullptr, false, false, false)));
+                    asgn->m_value, nullptr, false, false, false, false)));
             asgn->m_value = tmp_section();
         } else {
             Vec<ASR::expr_t*> extents;
@@ -787,7 +787,7 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
                 elem_type, extents.p, extents.n, "__gpu_alias");
             block_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, tmp, asgn->m_value,
-                    nullptr, false, false, false)));
+                    nullptr, false, false, false, false)));
             asgn->m_value = tmp;
         }
         block_body.push_back(al, stmt);
@@ -874,7 +874,7 @@ public:
         ASR::expr_t *tmp = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         assignments.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
             al, loc, tmp, ASRUtils::EXPR((ASR::asr_t*)fc), nullptr, !fixed,
-            false, false)));
+            false, false, false)));
         return tmp;
     }
 
@@ -888,7 +888,7 @@ public:
             ASR::expr_t *tmp = create_temporary_variable_for_scalar(
                 al, call, scope(), "__gpu_scalar_actual");
             assignments.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, x->base.base.loc, tmp, call, nullptr, false, false, false)));
+                al, x->base.base.loc, tmp, call, nullptr, false, false, false, false)));
             *current_expr = tmp;
             return;
         }
@@ -1227,7 +1227,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
         inner_body.reserve(al, 1);
         inner_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, array_item, scalar_value,
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
 
         // Build nested DoLoops from innermost to outermost
         ASR::stmt_t *loop_stmt = nullptr;
@@ -1508,7 +1508,7 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
 
     ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
         to_temp ? tmp_elem : src_elem,
-        to_temp ? src_elem : tmp_elem, nullptr, false, false, false));
+        to_temp ? src_elem : tmp_elem, nullptr, false, false, false, false));
     for (int k = (int)range_dims.size() - 1; k >= 0; k--) {
         ASR::do_loop_head_t head;
         head.loc = loc;
@@ -2226,7 +2226,7 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
             if (k == n_guards) {
                 return {ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
                     flag, b.bool_t(true, ASRUtils::expr_type(flag)),
-                    nullptr, false, false, false))};
+                    nullptr, false, false, false, false))};
             }
             const GpuSectionGuard &guard = guards[k];
             if (guard.test) {
@@ -2288,7 +2288,7 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
                             ASRUtils::expr_type(*slot)));
                     std::vector<ASR::stmt_t*> set = {ASRUtils::STMT(
                         ASR::make_Assignment_t(al, loc, value, *slot,
-                            nullptr, false, false, false))};
+                            nullptr, false, false, false, false))};
                     for (ASR::stmt_t *s : guarded(k, set)) {
                         before.push_back(s);
                     }
@@ -2303,7 +2303,7 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
                 std::vector<ASR::stmt_t*> in = {ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, flag,
                         b.bool_t(false, ASRUtils::expr_type(flag)),
-                        nullptr, false, false, false))};
+                        nullptr, false, false, false, false))};
                 for (ASR::stmt_t *s : search(outer, flag, subs)) {
                     in.push_back(s);
                 }
@@ -2981,7 +2981,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
         innermost_body.reserve(al, 1);
         innermost_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, lhs_item,
-                rhs_item, nullptr, false, false, false)));
+                rhs_item, nullptr, false, false, false, false)));
 
         ASR::stmt_t *loop_nest = nullptr;
         for (int d = (int)n_dims - 1; d >= 0; d--) {

@@ -8,7 +8,7 @@ Assigns the value of an expression to a variable.
 
 ```text
 Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs,
-    bool move_allocation, bool new_target)
+    bool move_allocation, bool new_target, bool new_allocation)
 ```
 
 ### Arguments
@@ -21,6 +21,7 @@ Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs,
 | `realloc_lhs` | `true` when an allocatable `target` must be reallocated to the shape of `value` first. |
 | `move_allocation` | `true` when the allocation of `value` is moved to `target` instead of being copied, as for `move_alloc`. Both are allocatable arrays, or both are allocatable noncharacter scalars and `target` is type compatible with `value`; the object is neither copied nor finalized. |
 | `new_target` | `true` when `target` is a new object that the assignment only defines, such as an element of an array allocated with `SOURCE=`. The value is copied into it: `target` is not finalized first, and its components are not assigned by defined assignment, as they are for the variable of an intrinsic assignment. Such an assignment is neither a move nor a defined assignment. |
+| `new_allocation` | `true` when `target` is an allocatable variable that was unallocated and has just been allocated for this intrinsic assignment, by the [Allocate](Allocate.md) before it. Being an unallocated allocatable variable, `target` is not finalized first, but it is otherwise assigned as the variable of an intrinsic assignment: its components are assigned by defined assignment where they have one. Such an assignment is neither a move, a defined assignment, nor the definition of a new target. |
 
 ### Return values
 
@@ -74,6 +75,7 @@ pass turns it into loops later.
   :realloc_lhs false
   :move_allocation false
   :new_target false
+  :new_allocation false
 )
 ```
 

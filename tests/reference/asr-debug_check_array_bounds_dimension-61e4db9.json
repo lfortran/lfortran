@@ -2,7 +2,7 @@
     "basename": "asr-debug_check_array_bounds_dimension-61e4db9",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/debug_check_array_bounds_dimension.asr",
-    "infile_hash": "a107204124152a54d71339014508d97dbb9d2450e3c510ad0f4b6ba0",
+    "infile_hash": "d9e196552feedf31cf2f185c46364e560a22ad0621b59b875b13ff1c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

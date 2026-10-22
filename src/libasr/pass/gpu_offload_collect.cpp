@@ -325,7 +325,7 @@ void GpuLiveoutWriteBack::run(ASR::Function_t &kernel) {
             with_flags.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, d.first)),
                 ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false,
-                    logical)), nullptr, false, false, false)));
+                    logical)), nullptr, false, false, false, false)));
         }
         with_flags.push_back(al, body[body.size() - 1]);
         for (auto &d : deferred) {
@@ -370,7 +370,7 @@ ASR::stmt_t *GpuLiveoutWriteBack::put_back(const Location &loc,
     while (ASR::expr_t **base = gpu_designator_base_slot(*at)) at = base;
     *at = dup.duplicate_expr(shared[copy]);
     return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-        dup.duplicate_expr(designator), nullptr, false, false, false));
+        dup.duplicate_expr(designator), nullptr, false, false, false, false));
 }
 
 void GpuLiveoutWriteBack::define(const Location &loc,
@@ -388,7 +388,7 @@ void GpuLiveoutWriteBack::define(const Location &loc,
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, flag)),
         ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true,
             ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)))),
-        nullptr, false, false, false)));
+        nullptr, false, false, false, false)));
     deferred.push_back({flag, put_back(loc, designator, copy)});
 }
 
@@ -517,7 +517,7 @@ void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
                 saved));
             before.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
                 saved_var, dup.duplicate_expr(part), nullptr, false, false,
-                false)));
+                false, false)));
             std::vector<ASR::stmt_t*> changed;
             define(loc, part, copy, changed);
             Vec<ASR::stmt_t*> then;

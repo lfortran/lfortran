@@ -130,6 +130,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -154,6 +155,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -180,6 +182,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -198,6 +201,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -216,6 +220,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -234,6 +239,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -256,6 +262,7 @@
             :realloc_lhs false
             :move_allocation false
             :new_target false
+            :new_allocation false
           )
         ]
         :global_init nil

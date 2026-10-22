@@ -2392,7 +2392,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString));
                 ASR::expr_t* empty_str = b.StringConstant("", empty_str_type);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false, false));
+                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false, false, false));
                 tmp_vec.push_back((ASR::asr_t*)assign_stmt);
 
                 std::string loop_var = current_scope->get_unique_name("i");
@@ -2428,7 +2428,7 @@ public:
 
                 ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
                 ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false, false));
+                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false, false, false));
                 
                 Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                 body.push_back(al, body_assign);
@@ -3316,7 +3316,7 @@ public:
                     loc, unit_name, ASRUtils::intent_local, unit_type);
                 ASR::expr_t* unit_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, unit_sym));
                 tmp_vec.push_back(ASR::make_Assignment_t(al, loc, unit_var, a_unit,
-                    nullptr, false, false, false));
+                    nullptr, false, false, false, false));
                 a_unit = unit_var;
                 for (ASR::asr_t* newline_if : newline_for_advance) {
                     ASR::If_t* if_stmt = ASR::down_cast2<ASR::If_t>(newline_if);
@@ -5253,7 +5253,7 @@ public:
                 ASR::ttype_t *int_type = ASRUtils::expr_type(alt_ret_var);
                 ret_val = CastingUtil::perform_casting(ret_val, int_type, al, x.base.base.loc);
                 ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                    alt_ret_var, ret_val, nullptr, false, false, false));
+                    alt_ret_var, ret_val, nullptr, false, false, false, false));
                 tmp_vec.push_back(reinterpret_cast<ASR::asr_t*>(assign));
                 tmp_vec.push_back(ASR::make_Return_t(al, x.base.base.loc));
                 tmp = nullptr;

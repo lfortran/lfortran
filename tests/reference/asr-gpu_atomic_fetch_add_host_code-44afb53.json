@@ -2,12 +2,12 @@
     "basename": "asr-gpu_atomic_fetch_add_host_code-44afb53",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_atomic_fetch_add_host_code.asr",
-    "infile_hash": "9eded9294ebaa3ae4d8f99bce2d9b93e78b463c62a4d39743fa0f4e7",
+    "infile_hash": "be253d4b3912756fddc4605383c58a3d2eaf279df8400b623176baf4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-gpu_atomic_fetch_add_host_code-44afb53.stderr",
-    "stderr_hash": "b0fb25b347bc2cff683d83b908d582bd169957c8504660e572bdf60d",
+    "stderr_hash": "ecce3350f6fdf5fd8feda87d4c1e44c2a0557613aaa0a70f1d0bd68a",
     "returncode": 2
 }

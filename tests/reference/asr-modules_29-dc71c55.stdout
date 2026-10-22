@@ -162,6 +162,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -174,6 +175,7 @@
                                         )
                                         (Var 17 branch)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -981,6 +983,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

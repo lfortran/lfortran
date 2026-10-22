@@ -69,6 +69,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -133,6 +134,7 @@
                         (Var 2 j)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

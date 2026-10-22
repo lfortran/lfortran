@@ -289,6 +289,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Associate
                         (Var 2 lsame~fpcast_ptr)
@@ -386,11 +387,13 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 info)
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ()
+                            .false.
                             .false.
                             .false.
                             .false.
