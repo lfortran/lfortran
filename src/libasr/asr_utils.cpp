@@ -312,6 +312,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
             return struct_constant->m_dt_sym;
         }
+        case ASR::exprType::GetPointer: {
+            ASR::GetPointer_t* get_pointer = ASR::down_cast<ASR::GetPointer_t>(expression);
+            return ASRUtils::get_struct_sym_from_struct_expr(get_pointer->m_arg);
+        }
         case ASR::exprType::ArrayPhysicalCast: {
             ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression);
             // `array_physical_cast->m_arg` will be non-null for Struct expressions
@@ -620,7 +624,6 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::ListConcat:
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
-        case ASR::exprType::GetPointer:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
             return nullptr;

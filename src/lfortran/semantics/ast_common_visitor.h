@@ -13839,7 +13839,9 @@ public:
                                         s2c(al, derived_type_name),
                                         tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
-                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                    ASR::array_physical_typeType::DescriptorArray, false,
+                    is_dimension_star);
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
                 type_declaration = v;
                 type = ASRUtils::make_cptr_type(al, loc, current_scope, v);
@@ -13923,7 +13925,7 @@ public:
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument,
                         ASR::array_physical_typeType::DescriptorArray, false,
-                        abi == ASR::abiType::BindC && is_dimension_star);
+                        is_dimension_star);
                 }
                 if (is_pointer) {
                     type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
