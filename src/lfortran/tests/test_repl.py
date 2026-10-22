@@ -74,15 +74,16 @@ def check_keeps_files_in_cwd(lfortran):
 
 
 def check_cell_output(lfortran):
-    # An inspection cell's output ends with a newline and a successful cell
-    # shows its warnings.
-    cells = ["%%showast" + NEW_LINE + "integer :: shown", "max0(1, 2_8)"]
+    # An inspection cell's output ends with a newline, a real result has a
+    # decimal point and a successful cell shows its warnings.
+    cells = ["%%showast" + NEW_LINE + "integer :: shown", "1.0",
+        "max0(1, 2_8)"]
     with tempfile.TemporaryDirectory() as cwd:
         code, out = run_repl(lfortran, cwd, cells)
         if code != 0 or "Exiting." not in out:
             sys.exit("the prompt did not exit cleanly (code %d):\n%s"
                 % (code, out))
-        for expected in [r"^\)\r?$", r"^2\r?$",
+        for expected in [r"^\)\r?$", r"^1\.0\r?$", r"^2\r?$",
                 r"^warning: Different kinds of args in max0"]:
             if not re.search(expected, out, re.M):
                 sys.exit("expected %r in the prompt output:\n%s"

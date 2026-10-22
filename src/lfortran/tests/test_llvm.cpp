@@ -2939,6 +2939,9 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         {"1.2345678901234567_8", "1.2345678901234567"},
         {"(1.25, -2.5)", "(1.25, -2.5)"},
         {"(1.25_8, -2.5_8)", "(1.25, -2.5)"},
+        // A real always has a decimal point or an exponent.
+        {"1.0", "1.0"}, {"-3.0_8", "-3.0"}, {"(1.0, -2.0)", "(1.0, -2.0)"},
+        {"(0.0_8, 4.0_8)", "(0.0, 4.0)"}, {"1.0e20", "1e+20"},
         {".true.", "True"}, {".false.", "False"}, {"'hello'", "hello"}
     };
     for (auto &example : examples) {

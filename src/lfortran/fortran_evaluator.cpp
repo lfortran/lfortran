@@ -430,17 +430,33 @@ std::string FortranEvaluator::EvalResult::type_name() const {
     }
 }
 
+namespace {
+// `digits` significant digits, and always a decimal point or an exponent, so
+// that a real such as 1.0 does not look like the integer 1.
+std::string real_text(double x, int digits) {
+    std::ostringstream s;
+    s << std::setprecision(digits) << x;
+    std::string text = s.str();
+    if (text.find_first_not_of("-0123456789") == std::string::npos) {
+        text += ".0";
+    }
+    return text;
+}
+}
+
 std::string FortranEvaluator::EvalResult::text() const {
     std::ostringstream s;
     switch (type) {
         case integer4: s << i32; break;
         case integer8: s << i64; break;
-        case real4: s << std::setprecision(8) << f32; break;
-        case real8: s << std::setprecision(17) << f64; break;
+        case real4: s << real_text(f32, 8); break;
+        case real8: s << real_text(f64, 17); break;
         case complex4:
-            s << std::setprecision(8) << "(" << c32.re << ", " << c32.im << ")"; break;
+            s << "(" << real_text(c32.re, 8) << ", " << real_text(c32.im, 8) << ")";
+            break;
         case complex8:
-            s << std::setprecision(17) << "(" << c64.re << ", " << c64.im << ")"; break;
+            s << "(" << real_text(c64.re, 17) << ", " << real_text(c64.im, 17) << ")";
+            break;
         case boolean: s << (b ? "True" : "False"); break;
         case character: s << str; break;
         case statement: s << "(statement)"; break;
