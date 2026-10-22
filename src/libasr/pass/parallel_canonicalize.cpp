@@ -231,6 +231,53 @@ static ASR::stmt_t *make_canonical_region(Allocator &al, const Location &loc,
         body.p, body.n, exec_target));
 }
 
+// Whether an expression of a loop head calls nothing, so that evaluating it
+// costs no more than the loop it bounds.
+static bool loop_bound_is_inert(ASR::expr_t *e) {
+    if (e == nullptr) return true;
+    PassUtils::FunctionCallFinder finder;
+    finder.visit_expr(*e);
+    return !finder.found;
+}
+
+static bool loop_heads_are_inert(const ASR::do_loop_head_t *heads,
+        size_t n_heads) {
+    for (size_t i = 0; i < n_heads; i++) {
+        if (!loop_bound_is_inert(heads[i].m_start) ||
+                !loop_bound_is_inert(heads[i].m_end) ||
+                !loop_bound_is_inert(heads[i].m_increment)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Whether running these statements does nothing: there are none, or each is
+// a loop whose head calls nothing and whose body again does nothing.
+static bool statements_do_nothing(ASR::stmt_t **body, size_t n_body) {
+    for (size_t i = 0; i < n_body; i++) {
+        ASR::stmt_t *s = body[i];
+        if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+            ASR::DoLoop_t *loop = ASR::down_cast<ASR::DoLoop_t>(s);
+            if (loop->n_orelse > 0 ||
+                    !loop_heads_are_inert(&loop->m_head, 1) ||
+                    !statements_do_nothing(loop->m_body, loop->n_body)) {
+                return false;
+            }
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+            ASR::DoConcurrentLoop_t *loop =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+            if (!loop_heads_are_inert(loop->m_head, loop->n_head) ||
+                    !statements_do_nothing(loop->m_body, loop->n_body)) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Whether an OpenMP region is left anywhere under a statement. A region
 // inside the loop body -- a `critical` section, a `barrier` -- says the
 // iterations synchronize with each other, which is the opposite of what a
@@ -540,8 +587,14 @@ public:
     // and a thread that opened a second partition inside the first would be
     // dividing what it was already given; a concurrent loop left in the body
     // simply runs its iterations in order inside that thread.
+    //
+    // A concurrent loop whose iterations do nothing is not a parallel loop
+    // at all: there is no work to partition, and a lowering would only pay
+    // for a launch, a thread team or a copy of the data it names. It is left
+    // as it is and runs in order, its heads evaluated as written.
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (x.n_head == 0) return;
+        if (statements_do_nothing(x.m_body, x.n_body)) return;
         pass_result.reserve(al, 1);
         pass_result.push_back(al, make_canonical_region(al, x.base.base.loc,
             x.m_shared, x.n_shared, x.m_local, x.n_local,
