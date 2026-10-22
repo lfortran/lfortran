@@ -70,6 +70,9 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // stack lives (CUDA C++ Programming Guide, "Features and
             // Technical Specifications", compute capability 2.0 and up).
             caps.thread_stack_bytes = 512 * 1024;
+            // A warp: one warp loads one contiguous 128-byte line of a
+            // `float` array, and a block of 256 threads covers 8 of them.
+            caps.tile_width = 32;
             break;
         case GpuDevice::None:
             break;
@@ -167,6 +170,20 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::UnsizedLocalArray:
             return "local array '" + decline.name +
                 "' has no extent the gpu can use";
+        case GpuDeclineReason::LocalityElementType:
+            return "array '" + decline.name + "' of local locality is of "
+                "type " + decline.type_name + ", which a gpu thread cannot "
+                "hold a copy of";
+        case GpuDeclineReason::LocalityCoarray:
+            return "array '" + decline.name + "' of local locality is a "
+                "coarray, which a gpu thread cannot hold a copy of";
+        case GpuDeclineReason::LocalityNamedByAssociate:
+            return "array '" + decline.name + "' of local locality is "
+                "named by an associate construct around the loop";
+        case GpuDeclineReason::LocalityAssociateNotInlined:
+            return "array '" + decline.name + "' of local locality cannot "
+                "be given a copy per gpu thread: the loop body has an "
+                "associate construct the gpu kernel cannot inline";
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
             return "an aliased assignment needs a run-time sized temporary";
         case GpuDeclineReason::UngatherableStridedSection:

@@ -265,6 +265,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 4 r)

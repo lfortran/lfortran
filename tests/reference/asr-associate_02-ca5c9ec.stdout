@@ -194,14 +194,17 @@
                     [(Associate
                         (Var 2 p1)
                         (Var 2 t1)
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 p2)
                         (Var 2 t2)
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 p3)
                         (Var 2 t3)
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 p1)

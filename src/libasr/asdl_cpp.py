@@ -2154,8 +2154,8 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(      'uint32_t last_line = 0, last_col = 0;', 2)
         self.emit(      'std::string last_filename;', 2)
         self.emit(      '')
-        self.emit(      'lm.pos_to_linecol(first, first_line, first_col, first_filename);', 2)
-        self.emit(      'lm.pos_to_linecol(last, last_line, last_col, last_filename);', 2)
+        self.emit(      'lm.output_pos_to_linecol(first, false, first_line, first_col, first_filename);', 2)
+        self.emit(      'lm.output_pos_to_linecol(last, true, last_line, last_col, last_filename);', 2)
         self.emit(      '')
         self.emit(      's.append(",\\n" + indtd);', 2)
         self.emit(      's.append("\\"first_filename\\": \\"" + first_filename + "\\"");', 2)
@@ -3131,6 +3131,9 @@ class SerializationVisitorVisitor(ASDLVisitor):
             self.emit(    'self().write_int8(x.base.type);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
+        else:
+            self.emit(    'self().write_int64(x.loc.first);', 2)
+            self.emit(    'self().write_int64(x.loc.last);', 2)
         self.used = False
         for n, field in enumerate(serialization_fields(name, fields)):
             self.visitField(field, cons, name)
@@ -3375,6 +3378,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
     def visitProduct(self, prod, name):
         self.emit("%s_t deserialize_%s() {" % (name, name), 1)
         self.emit(  '%s_t x;' % (name), 2)
+        self.emit(  'x.loc.first = read_location_position(offset);', 2)
+        self.emit(  'x.loc.last = read_location_position(offset);', 2)
         for field in serialization_fields(name, prod.fields):
             if field.seq:
                 assert not field.opt

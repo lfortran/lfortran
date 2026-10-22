@@ -1,3 +1,4 @@
+#include <cstring>
 #include <set>
 
 #include <lfortran/fortran_evaluator.h>
@@ -245,8 +246,8 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     std::string setup_fn = run_fn + "_setup";
     bool has_setup = (m->get_return_type(setup_fn) == "void");
 
-    // With full-width logical types, logicals are now i32/i64 in LLVM
-    // (same as integers). Check the ASR to distinguish logical from integer.
+    // Logical and Windows complex results share LLVM return types with
+    // integers or subroutines. Use the ASR result kind to select their ABI.
     // This has to look at the tree that was compiled: `run_fn` does not exist
     // in the session ASR, it is created by the wrap-global-statements pass, so
     // in interactive mode it only ever appears in the copy.
@@ -258,6 +259,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
                 ASR::ttype_t *ret_type = ASRUtils::expr_type(fn->m_return_var);
                 if (ASRUtils::is_logical(*ret_type)) {
                     return_type = "logical";
+                } else if (compiler_options.platform == Platform::Windows &&
+                        ASRUtils::is_complex(*ret_type)) {
+                    int kind = ASRUtils::extract_kind_from_ttype_t(ret_type);
+                    LCOMPILERS_ASSERT(kind == 4 || kind == 8);
+                    return_type = kind == 4 ? "complex4" : "complex8";
                 }
             }
         }
@@ -298,27 +304,43 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
+        result.type = EvalResult::complex4;
+        if (compiler_options.platform == Platform::Windows) {
+            // The JIT returns the two floats in an i64, not a C++ class.
+            uint64_t r = e.execfn<uint64_t>(run_fn);
+            float parts[2];
+            static_assert(sizeof(parts) == sizeof(r));
+            std::memcpy(parts, &r, sizeof(r));
+            result.c32.re = parts[0];
+            result.c32.im = parts[1];
+        } else {
 #if defined(__aarch64__) && defined(__linux__)
-        // On Linux/AArch64 the JIT function returns complex_4 as <2 x float>
-        // in V0 (see get_function_type() in llvm_utils.cpp), while
-        // std::complex<float> follows the HFA convention (S0+S1), so the
-        // imaginary part came back as garbage. Read the vector lanes.
-        typedef float v2f32 __attribute__((vector_size(8)));
-        v2f32 r = e.execfn<v2f32>(run_fn);
-        result.type = EvalResult::complex4;
-        result.c32.re = r[0];
-        result.c32.im = r[1];
+            // On Linux/AArch64 the JIT function returns complex_4 as <2 x float>
+            // in V0 (see get_function_type() in llvm_utils.cpp), while
+            // std::complex<float> follows the HFA convention (S0+S1), so the
+            // imaginary part came back as garbage. Read the vector lanes.
+            typedef float v2f32 __attribute__((vector_size(8)));
+            v2f32 r = e.execfn<v2f32>(run_fn);
+            result.c32.re = r[0];
+            result.c32.im = r[1];
 #else
-        std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
-        result.type = EvalResult::complex4;
-        result.c32.re = r.real();
-        result.c32.im = r.imag();
+            std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
+            result.c32.re = r.real();
+            result.c32.im = r.imag();
 #endif
+        }
     } else if (return_type == "complex8") {
-        std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
         result.type = EvalResult::complex8;
-        result.c64.re = r.real();
-        result.c64.im = r.imag();
+        if (compiler_options.platform == Platform::Windows) {
+            double parts[2];
+            e.execfn<void>(run_fn, parts);
+            result.c64.re = parts[0];
+            result.c64.im = parts[1];
+        } else {
+            std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
+            result.c64.re = r.real();
+            result.c64.im = r.imag();
+        }
     } else if (return_type == "logical") {
         int32_t r = e.execfn<int32_t>(run_fn);
         result.type = EvalResult::boolean;
@@ -1046,8 +1068,9 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     // ASR -> MLIR
     std::unique_ptr<LCompilers::MLIRModule> m;
     LCompilers::PassManager pass_manager;
-    // The MLIR backend formats only scalars; the array arguments of a
-    // StringFormat are lowered for the LLVM backend alone.
+    // The MLIR backend formats and transfers only scalars; the array
+    // arguments of a StringFormat and the array items of a READ or WRITE
+    // are lowered for the LLVM backend alone.
     pass_manager.skip_pass("string_format_array_args");
     if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();

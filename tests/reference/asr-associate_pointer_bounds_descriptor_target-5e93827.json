@@ -1,0 +1,13 @@
+{
+    "basename": "asr-associate_pointer_bounds_descriptor_target-5e93827",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/associate_pointer_bounds_descriptor_target.asr",
+    "infile_hash": "f652db4dd56f1f740489b839270a273b05bbb70c04b726c58b06871b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-associate_pointer_bounds_descriptor_target-5e93827.stderr",
+    "stderr_hash": "2d450bd8e0d378ed683356b37554fd6a153dc6f23511a6f01fae2e6b",
+    "returncode": 2
+}

@@ -368,6 +368,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 4 hinit853)

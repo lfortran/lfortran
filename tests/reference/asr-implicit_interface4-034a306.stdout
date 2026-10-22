@@ -459,6 +459,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 f~fpcast_ptr
@@ -505,6 +506,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 driver2~fpcast_ptr

@@ -1590,7 +1590,7 @@ def invalid_procedure_pointer_association(_rng):
             OO_PROGRAM_SYMTAB, "impl", MODULE_SYMTAB, "impl", "m"),
          "p1": variable(OO_PROGRAM_SYMTAB, "p1", pointer_type)},
         [f"(Associate :target {var(OO_PROGRAM_SYMTAB, 'p1')} "
-         f":value {var(OO_PROGRAM_SYMTAB, 'impl')})"],
+         f":value {var(OO_PROGRAM_SYMTAB, 'impl')} :form :NoPointerBounds)"],
     ), "schema-invalid procedure pointer association"
 
 

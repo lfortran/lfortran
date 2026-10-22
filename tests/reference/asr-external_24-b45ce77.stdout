@@ -267,6 +267,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 10 i)
@@ -505,6 +506,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         8 g~fpcast_ptr
@@ -937,6 +939,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_sub~fpcast_ptr
@@ -997,6 +1000,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_sub~fpcast_ptr
@@ -1057,6 +1061,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_fun~fpcast_ptr

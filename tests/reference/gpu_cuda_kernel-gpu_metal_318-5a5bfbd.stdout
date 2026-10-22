@@ -10,14 +10,14 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* centers,
-    float* faces,
+    float* __restrict__ centers,
+    float* __restrict__ faces,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_3,
-    float* __workspace_4,
-    float* __workspace_5,
-    float* __workspace_6,
-    float* __workspace_7)
+    float* __restrict__ __workspace_3,
+    float* __restrict__ __workspace_4,
+    float* __restrict__ __workspace_5,
+    float* __restrict__ __workspace_6,
+    float* __restrict__ __workspace_7)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -30,7 +30,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_sec_i;
     int __gpu_sec_i1;
     int k;
-    const int ny = 3;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

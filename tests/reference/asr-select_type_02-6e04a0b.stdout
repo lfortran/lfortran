@@ -452,6 +452,7 @@
                                             ()
                                             (Var 7 an)
                                         )
+                                        NoPointerBounds
                                     )
                                     (Print
                                         (StringFormat
@@ -567,6 +568,7 @@
                                             ()
                                             (Var 8 an)
                                         )
+                                        NoPointerBounds
                                     )
                                     (Print
                                         (StringFormat
@@ -734,6 +736,7 @@
                     (Associate
                         (Var 4 p_or_cp)
                         (Var 4 cp)
+                        NoPointerBounds
                     )
                     (SelectType
                         (Var 4 p_or_cp)

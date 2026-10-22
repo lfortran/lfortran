@@ -416,6 +416,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 g~fpcast_ptr)
@@ -440,6 +441,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Print
                         (StringFormat

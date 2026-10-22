@@ -365,6 +365,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 driver~fpcast_ptr

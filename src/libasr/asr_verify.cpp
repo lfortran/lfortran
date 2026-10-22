@@ -117,6 +117,8 @@ public:
     bool check_string_length_arguments = false;
     // See ASRVerifyOptions::string_format_array_args.
     bool check_string_format_array_args = false;
+    // The StringFormats whose arguments are the items of a READ statement.
+    std::set<const StringFormat_t*> input_formats;
 
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -722,6 +724,75 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        // A target that is a section of a pointer gives the bounds of the
+        // pointer, with the form recorded in `m_form` (F2018 10.2.2).
+        bool pointer_section = false;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+            ASR::ttype_t *pointer_type = typed_expr_type(
+                ASR::down_cast<ASR::ArraySection_t>(x.m_target)->m_v);
+            pointer_section = pointer_type != nullptr && ASRUtils::is_pointer(pointer_type);
+        }
+        require_with_loc_id(pointer_section ==
+                (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds),
+            "asr.verify.associate.pointer_bounds_form",
+            "Associate::m_form: an association has pointer bounds if and only "
+            "if its target is a section of a pointer", x.base.base.loc);
+        if (pointer_section) {
+            // A bounds-spec gives only the lower bounds, the upper ones
+            // follow from the data target; a bounds-remapping-list gives
+            // both. Neither has a stride.
+            bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
+            ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            for (size_t i = 0; i < section->n_args; i++) {
+                require_with_loc_id(section->m_args[i].m_left != nullptr &&
+                        (section->m_args[i].m_right == nullptr) == bounds_spec &&
+                        section->m_args[i].m_step == nullptr,
+                    "asr.verify.associate.pointer_bounds_present",
+                    "Associate::m_target: a pointer bounds-spec must give the "
+                    "lower bound of every dimension and a bounds-remapping-list "
+                    "the lower and the upper bound, and neither a stride",
+                    x.base.base.loc);
+                // F2018 R1035 and R1036
+                ASR::expr_t *bounds[2] = {section->m_args[i].m_left,
+                    section->m_args[i].m_right};
+                for (ASR::expr_t *bound : bounds) {
+                    ASR::ttype_t *bound_type = typed_expr_type(bound);
+                    if (bound_type == nullptr) continue;
+                    require_with_loc_id(!ASRUtils::is_array(bound_type) &&
+                            ASRUtils::is_integer(*bound_type),
+                        "asr.verify.associate.pointer_bounds_type",
+                        "Associate::m_target: a pointer bound must be a "
+                        "scalar integer expression", x.base.base.loc);
+                }
+            }
+            require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
+                "asr.verify.associate.pointer_bounds_null_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds cannot be null()", x.base.base.loc);
+            size_t value_rank = ASRUtils::extract_n_dims_from_ttype(value);
+            if (bounds_spec) {
+                require_with_loc_id(value_rank == section->n_args,
+                    "asr.verify.associate.pointer_bounds_spec_rank",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-spec must have the rank of the pointer",
+                    x.base.base.loc);
+            } else {
+                // Whether a data target of rank greater than one is simply
+                // contiguous (F2018 10.2.2.3) is checked by the frontend.
+                require_with_loc_id(value_rank >= 1,
+                    "asr.verify.associate.pointer_bounds_remapping_target",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-remapping-list must be an array", x.base.base.loc);
+            }
+            // The data target is an array with the physical type of the
+            // section of the pointer (see make_Associate_t_util), so the
+            // backend reads its address and shape from its descriptor.
+            require_with_loc_id(ASRUtils::extract_physical_type(value) ==
+                    ASR::array_physical_typeType::DescriptorArray,
+                "asr.verify.associate.pointer_bounds_descriptor_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds must be a descriptor array", x.base.base.loc);
+        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }
@@ -2634,8 +2705,9 @@ public:
             require(is_method,
                 "StructMethodDeclaration '" + std::string(method->m_name) +
                 "' called without dt (not as a method).");
-            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
-                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+            ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(method->m_proc);
+            if (proc && ASR::is_a<ASR::Function_t>(*proc)) {
+                func = ASR::down_cast<ASR::Function_t>(proc);
                 nopass = method->m_is_nopass;
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
@@ -3349,6 +3421,24 @@ public:
                 "the size and read-back count of a GpuKernelLaunch scratch "
                 "buffer must be integers");
         }
+        require_id(x.n_overwritten == x.n_overwritten_if,
+            "asr.verify.gpu_kernel_launch.overwritten_count",
+            "a GpuKernelLaunch must give one condition per overwritten array");
+        for (size_t i = 0; i < x.n_overwritten && i < x.n_overwritten_if;
+                i++) {
+            require_id(ASRUtils::is_array(ASRUtils::expr_type(
+                    x.m_overwritten[i])),
+                "asr.verify.gpu_kernel_launch.overwritten_array",
+                "an overwritten buffer of a GpuKernelLaunch must be an "
+                "array");
+            ASR::ttype_t *condition = ASRUtils::expr_type(
+                x.m_overwritten_if[i]);
+            require_id(ASRUtils::is_logical(*condition) &&
+                    !ASRUtils::is_array(condition),
+                "asr.verify.gpu_kernel_launch.overwritten_condition",
+                "the condition of an overwritten buffer of a GpuKernelLaunch "
+                "must be a scalar logical");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
     }
 
@@ -3517,15 +3607,6 @@ public:
 
         verify_args(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
-    }
-
-    void visit_FileWrite(const FileWrite_t &x) {
-        // Formatted output writes derived-type items with defined output
-        // through StringFormat::m_dtio_bindings; m_overloaded is only for
-        // unformatted output.
-        require(!x.m_is_formatted || x.m_overloaded == nullptr,
-            "FileWrite::m_overloaded must be nil for formatted output");
-        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
     }
 
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
@@ -3933,31 +4014,88 @@ public:
         }
         if (check_string_format_array_args) {
             if (x.m_fmt) verify_string_format_array_arg(x.m_fmt);
-            for (size_t i = 0; i < x.n_args; i++) {
+            for (size_t i = 0; i < x.n_args && !input_formats.count(&x); i++) {
                 verify_string_format_array_arg(x.m_args[i]);
             }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 
+    // After the string_format_array_args pass, the array items of an output
+    // statement, and an internal file that is an array, are contiguous data
+    // too. An array item of an input statement is defined in place: it is
+    // contiguous data, or it is transferred element by element through its
+    // descriptor when it is not contiguous by construction. An implied DO
+    // loop transfers its items one element at a time.
+    void verify_transfer_arrays(ASR::expr_t* unit, ASR::expr_t** values,
+            size_t n_values, bool input) {
+        if (unit) {
+            verify_contiguous_array_data(unit, "data_transfer.internal_file",
+                "an internal file that is an array");
+        }
+        for (size_t i = 0; i < n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) continue;
+            if (input && ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                input_formats.insert(sf);
+                verify_transfer_arrays(nullptr, sf->m_args, sf->n_args, input);
+                continue;
+            }
+            ASR::ttype_t* type = ASRUtils::expr_type(values[i]);
+            if (input && ASRUtils::is_array(type) && !ASRUtils::is_allocatable(type)) {
+                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(type);
+                if (phys == ASR::array_physical_typeType::DescriptorArray ||
+                        phys == ASR::array_physical_typeType::AssumedRankArray) {
+                    continue;
+                }
+            }
+            verify_contiguous_array_data(values[i], "data_transfer.array_item",
+                "an array item of a data transfer statement");
+        }
+    }
+
+    void visit_FileWrite(const FileWrite_t& x) {
+        // Formatted output writes derived-type items with defined output
+        // through StringFormat::m_dtio_bindings; m_overloaded is only for
+        // unformatted output.
+        require(!x.m_is_formatted || x.m_overloaded == nullptr,
+            "FileWrite::m_overloaded must be nil for formatted output");
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, false);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
+    void visit_FileRead(const FileRead_t& x) {
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, true);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
+    }
+
     // After the string_format_array_args pass, an array that a StringFormat
     // formats is its contiguous data, with all its dimensions.
     void verify_string_format_array_arg(ASR::expr_t* arg) {
+        verify_contiguous_array_data(arg, "string_format.array_argument",
+            "an array argument of StringFormat");
+    }
+
+    void verify_contiguous_array_data(ASR::expr_t* arg, const std::string& id,
+            const std::string& what) {
         ASR::ttype_t* type = ASRUtils::expr_type(arg);
         if (!ASRUtils::is_array(type)) return;
         require_with_loc_id(ASRUtils::extract_physical_type(type) ==
                 ASR::array_physical_typeType::PointerArray,
-            "asr.verify.string_format.array_argument_not_pointer_array",
-            "an array argument of StringFormat must be a PointerArray "
-            "after the string_format_array_args pass", arg->base.loc);
+            "asr.verify." + id + "_not_pointer_array",
+            what + " must be a PointerArray after the "
+            "string_format_array_args pass", arg->base.loc);
         ASR::dimension_t* dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
         for (size_t i = 0; i < n_dims; i++) {
             require_with_loc_id(dims[i].m_start != nullptr && dims[i].m_length != nullptr,
-                "asr.verify.string_format.array_argument_dimension_missing",
-                "an array argument of StringFormat must have all its "
-                "dimensions after the string_format_array_args pass",
-                arg->base.loc);
+                "asr.verify." + id + "_dimension_missing",
+                what + " must have all its dimensions after the "
+                "string_format_array_args pass", arg->base.loc);
         }
     }
 
@@ -4844,6 +4982,28 @@ public:
                     ASR::OMPReduction_t *c =
                         ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[i]);
                     vars = c->m_vars; n_vars = c->n_vars;
+                    break;
+                }
+                case ASR::omp_clauseType::OMPOverwrite: {
+                    ASR::OMPOverwrite_t *c =
+                        ASR::down_cast<ASR::OMPOverwrite_t>(x.m_clauses[i]);
+                    require(x.m_region == ASR::omp_region_typeType::ParallelDo
+                        && x.m_exec_target == ASR::exec_targetType::ExecDevice,
+                        "OMPOverwrite may only be a clause of a parallel loop "
+                        "assigned to the device");
+                    ASR::expr_t *a = c->m_array;
+                    while (ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
+                        a = ASR::down_cast<ASR::StructInstanceMember_t>(a)->m_v;
+                    }
+                    require(ASR::is_a<ASR::Var_t>(*a)
+                        && ASRUtils::is_array(ASRUtils::expr_type(c->m_array)),
+                        "the array of an OMPOverwrite clause must be an array "
+                        "variable or a component of one");
+                    ASR::ttype_t *t = ASRUtils::expr_type(c->m_condition);
+                    require(ASR::is_a<ASR::Logical_t>(*t)
+                        && !ASRUtils::is_array(t),
+                        "the condition of an OMPOverwrite clause must be a "
+                        "scalar logical");
                     break;
                 }
                 default: break;

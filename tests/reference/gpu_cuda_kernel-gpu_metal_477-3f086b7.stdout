@@ -31,8 +31,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* x,
-    float* y,
+    float* __restrict__ x,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     float r = __scalar_args.r;
@@ -41,7 +41,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float __gpu_scalar_argument;
     float* __libasr_created__subroutine_call_work;
     int j;
-    const int n = 4;
     float w[256];
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
@@ -85,14 +84,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* x,
-    float* y,
+    float* __restrict__ x,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int j;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

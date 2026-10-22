@@ -26,6 +26,23 @@ static inline void lfortran_gpu_copy_kernel_name(char *dest, const char *name,
     dest[name_len] = '\0';
 }
 
+static inline void lfortran_gpu_validate_launch(const int grid[3],
+    const int block[3])
+{
+    for (int i = 0; i < 3; i++) {
+        if (grid[i] <= 0) {
+            fprintf(stderr, "lfortran_gpu_launch: grid[%d] must be positive "
+                "(got %d)\n", i, grid[i]);
+            exit(1);
+        }
+        if (block[i] <= 0) {
+            fprintf(stderr, "lfortran_gpu_launch: block[%d] must be positive "
+                "(got %d)\n", i, block[i]);
+            exit(1);
+        }
+    }
+}
+
 // The size in bytes of the device heap of a launch that allocates on the
 // device: the value of the environment variable LFORTRAN_GPU_HEAP_SIZE, a
 // number with an optional K, M or G suffix (powers of 1024), or 256 MiB when
@@ -101,8 +118,30 @@ enum {
     // The kernel only reads the buffer.
     LFORTRAN_GPU_READ = 0,
     // The kernel may write the buffer.
-    LFORTRAN_GPU_WRITE = 1
+    LFORTRAN_GPU_WRITE = 1,
+    // The kernel writes every byte of the buffer before it reads any, so
+    // what the host holds there need not reach the device: the runtime only
+    // makes room for it. A runtime treats it as LFORTRAN_GPU_WRITE when
+    // another buffer argument of the same launch overlaps it, since the
+    // kernel reads that one as the host holds it.
+    LFORTRAN_GPU_WRITE_DISCARD = 2
 };
+
+// Whether argument `idx` of a launch may be handled as
+// LFORTRAN_GPU_WRITE_DISCARD: no other buffer argument overlaps it. The
+// launch has `n` arguments; `is_buffer` marks those that are host ranges,
+// of `sizes` bytes at `ptrs`.
+static inline int lfortran_gpu_discard_allowed(int idx, void *const *ptrs,
+    const size_t *sizes, const int *is_buffer, int n)
+{
+    const char *p = (const char *)ptrs[idx];
+    for (int j = 0; j < n; j++) {
+        if (j == idx || !is_buffer[j] || sizes[j] == 0) continue;
+        const char *q = (const char *)ptrs[j];
+        if (p < q + sizes[j] && q < p + sizes[idx]) return 0;
+    }
+    return 1;
+}
 
 // The kernel sees the `size` bytes at `ptr` as they are when the launch is
 // made. A launch does not wait for the kernel: the host sees what the kernel
@@ -122,7 +161,8 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     const void* val, size_t size);
 // A buffer of `size` bytes only the device holds: nothing is copied in or
-// back, and the kernel object owns it until it is released.
+// back. What the launch leaves in it lasts until the next launch of the
+// kernel; the runtime may keep the memory for later launches.
 void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     size_t size);
 // Copies the leading `size` bytes of the scratch buffer `idx` into `dst`,
@@ -131,7 +171,11 @@ void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
     void* dst, size_t size);
 
-// Starts the kernel and returns without waiting for it.
+// Starts the kernel and returns without waiting for it. Every component of
+// grid and block must be positive; otherwise the program ends with an error
+// before any launch work or buffer residency changes. This contract is the
+// same for Metal, CUDA and CPU emulation. An empty kernel body is legal, but
+// zero-work Fortran loops must be skipped by compiler lowering, not launched.
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3]);
 // Waits for every launch made so far, and copies what the kernels wrote back
@@ -143,6 +187,10 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
 // range without copying anything back.
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
+
+// The size in bytes of the device's last-level cache, which the loop
+// transformations compare what a launch touches with (gpu_index_set_split).
+long long lfortran_gpu_cache_bytes(void);
 
 void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out);

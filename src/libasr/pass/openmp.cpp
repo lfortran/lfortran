@@ -932,7 +932,7 @@ class ParallelRegionVisitor :
             if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(target_type))) {
                 return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
-                    target, value));
+                    target, value, ASR::pointer_bounds_formType::NoPointerBounds));
             }
             return ASRUtils::ASRBuilder(al, target->base.loc).Assignment(target, value);
         }
@@ -1944,7 +1944,7 @@ class ParallelRegionVisitor :
                     if (private_array == c->private_arrays.end()) {
                         // <sym> => tdata%<sym>
                         body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-                            b.Var(current_scope->get_symbol(it.first)), descriptor)));
+                            b.Var(current_scope->get_symbol(it.first)), descriptor, ASR::pointer_bounds_formType::NoPointerBounds)));
                         continue;
                     }
                     // A private copy exists only if the original is associated, which an
@@ -1958,7 +1958,7 @@ class ParallelRegionVisitor :
                     ASR::expr_t* original = b.Variable(current_scope,
                         current_scope->get_unique_name("original_" + it.first), ASRUtils::expr_type(descriptor),
                         ASR::intentType::Local, nullptr, ASR::abiType::BindC);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor)));
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor, ASR::pointer_bounds_formType::NoPointerBounds)));
                     ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(sym_type);
                     Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
@@ -2183,7 +2183,7 @@ class ParallelRegionVisitor :
                         // tdata%<sym> => <sym>
                         nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, loc,
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
-                            sym, ASRUtils::symbol_type(sym), nullptr)), array_ref)));
+                            sym, ASRUtils::symbol_type(sym), nullptr)), array_ref, ASR::pointer_bounds_formType::NoPointerBounds)));
                         continue;
                     }
                     ASR::expr_t* array_var = array_ref;
@@ -4304,7 +4304,7 @@ class RepointCallArguments: public PassUtils::PassVisitor<RepointCallArguments> 
                     ASRUtils::duplicate_type(al, formal),
                     ASR::intentType::Local);
                 pass_result.push_back(al, ASRUtils::STMT(
-                    ASR::make_Associate_t(al, loc, ptr, args[i].m_value)));
+                    ASR::make_Associate_t(al, loc, ptr, args[i].m_value, ASR::pointer_bounds_formType::NoPointerBounds)));
                 args[i].m_value = ptr;
             }
         }

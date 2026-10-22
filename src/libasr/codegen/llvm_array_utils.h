@@ -45,6 +45,14 @@ namespace LCompilers {
         bool is_explicit_shape(ASR::Variable_t* v);
 
         /*
+        * The type code of an item of type `val_type` in the variadic
+        * protocol of _lfortran_formatted_read. It determines how the
+        * runtime converts the field and the storage size of the item.
+        */
+        int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
+            ASR::expr_t* val_expr);
+
+        /*
         * Available descriptors are listed
         * under this enum.
         */
@@ -345,32 +353,7 @@ namespace LCompilers {
                                             int output_kind, int dim_kind=4) = 0;
 
                 /*
-                * Creates a contiguous copy of data from a DescriptorArray.
-                * Helpful when having strided access to an array.
-                * Returns a pointer to the newly allocated contiguous buffer.
-                * Allocation is done on heap using lfortran_malloc,
-                * So, please make sure to free the memory after use.
-                *
-                * Note: Similar logic exists in ASR passes (pass/print_arr.cpp & pass/array_op.cpp).
-                * But, the ASR pass for print statements was disabled in #6351.
-                * Enabling it opened other issues, hence this separate LLVM implementation
-                * to handle strided arrays for writing array into strings (used in print statements), 
-                * by storing in a contiguous buffer first.
-                */
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module) = 0;
-
-                /*
                 * Copies contiguous data into a potentially-strided descriptor array.
-                * The inverse of create_contiguous_copy_from_descriptor.
                 * Uses element-wise copy respecting the target descriptor's strides.
                 */
                 virtual
@@ -659,17 +642,6 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_array_size(llvm::Type* type, llvm::Value* array, llvm::Value* dim,
                                             int output_kind, int dim_kind=4);
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module);
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module);
 
                 virtual
                 void copy_contiguous_data_to_descriptor(

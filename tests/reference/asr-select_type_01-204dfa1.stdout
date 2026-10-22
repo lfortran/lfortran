@@ -617,6 +617,7 @@
                     (Associate
                         (Var 2 bptr)
                         (Var 2 child_target)
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 perform_select_type
@@ -628,6 +629,7 @@
                     (Associate
                         (Var 2 bptr)
                         (Var 2 base_target)
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 perform_select_type

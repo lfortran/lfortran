@@ -17,7 +17,8 @@ Launches are asynchronous, and the device keeps what a kernel writes.
 
 * A buffer argument the kernel may write (LFORTRAN_GPU_WRITE) is *resident*:
   it gets an entry in a table of host ranges, which owns a device buffer. The
-  host bytes are copied in when the entry is not dirty, and after the launch
+  host bytes are copied in when the entry is not dirty, unless the kernel
+  writes all of them first (LFORTRAN_GPU_WRITE_DISCARD), and after the launch
   the entry is dirty: the device holds the newest values. A later launch
   handed the same range binds the same buffer without copying anything, and
   lfortran_gpu_sync copies every dirty entry back and marks it clean. The
@@ -379,8 +380,10 @@ static int new_entry(lfortran_gpu_ctx *ctx, void *host, size_t size) {
 
 // The resident buffer of a range the kernel may write, with the current host
 // bytes in it unless the device holds newer ones.
+// `discard`: the kernel writes all of the range before it reads it, so the
+// host bytes are not copied in.
 static id<MTLBuffer> resident_for_write(lfortran_gpu_ctx *ctx, void *host,
-    size_t size)
+    size_t size, int discard)
 {
     int i = find_entry(host);
     if (i >= 0 && entries[i].size != size) {
@@ -400,10 +403,12 @@ static id<MTLBuffer> resident_for_write(lfortran_gpu_ctx *ctx, void *host,
         e->buffer = acquire_buffer(ctx, size);
         release_buffer(old, e->last_use);
     }
-    if (ctx->profile_enabled) {
-        ctx->telemetry.memcpy_h2d_bytes += size;
+    if (!discard) {
+        if (ctx->profile_enabled) {
+            ctx->telemetry.memcpy_h2d_bytes += size;
+        }
+        memcpy([e->buffer contents], host, size);
     }
-    memcpy([e->buffer contents], host, size);
     set_dirty(i);
     return e->buffer;
 }
@@ -797,6 +802,7 @@ static void commit_open(lfortran_gpu_ctx *ctx) {
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     // The command buffer, its encoder and the buffers it holds on to are
@@ -817,17 +823,24 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         // ready may have to sync, which leaves nothing dirty: then they are
         // made ready again.
         id<MTLBuffer> written[MAX_ARGS];
+        int is_buffer[MAX_ARGS];
+        for (int i = 0; i < k->n_args; i++) {
+            is_buffer[i] = k->kind[i] == ARG_BUFFER;
+        }
         for (uint64_t syncs = ctx->n_syncs - 1; syncs != ctx->n_syncs;) {
             syncs = ctx->n_syncs;
             for (int i = 0; i < k->n_args; i++) {
                 written[i] = nil;
                 if (k->kind[i] != ARG_BUFFER
-                        || k->access[i] != LFORTRAN_GPU_WRITE
+                        || k->access[i] == LFORTRAN_GPU_READ
                         || k->sizes[i] == 0) {
                     continue;
                 }
+                int discard = k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
+                    && lfortran_gpu_discard_allowed(i, k->ptrs, k->sizes,
+                        is_buffer, k->n_args);
                 written[i] = resident_for_write(ctx, k->ptrs[i],
-                    k->sizes[i]);
+                    k->sizes[i], discard);
             }
         }
         // The launch goes into the open command buffer, which is
@@ -864,7 +877,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBuffer:nil offset:0 atIndex:i];
                         break;
                     }
-                    if (k->access[i] == LFORTRAN_GPU_WRITE) break;
+                    if (k->access[i] != LFORTRAN_GPU_READ) break;
                     id<MTLBuffer> buffer = dirty_resident(k->ptrs[i],
                         k->sizes[i]);
                     if (buffer) {
@@ -936,6 +949,10 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     }
     int i = find_entry(ptr);
     if (i >= 0) remove_entry(i);
+}
+
+long long lfortran_gpu_cache_bytes(void) {
+    return 0;
 }
 
 long long lfortran_gpu_heap_size(void) {

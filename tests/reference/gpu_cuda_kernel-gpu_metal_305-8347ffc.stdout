@@ -9,13 +9,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    leaf_t* c,
-    float* __data_c_m_,
-    int* __offsets_c_m_,
-    int* __sizes_c_m_,
-    float* o,
+    leaf_t* __restrict__ c,
+    float* __restrict__ __data_c_m_,
+    int* __restrict__ __offsets_c_m_,
+    int* __restrict__ __sizes_c_m_,
+    float* __restrict__ o,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_6)
+    float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
@@ -51,13 +51,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    leaf_t* c,
-    float* __data_c_m_,
-    int* __offsets_c_m_,
-    int* __sizes_c_m_,
-    float* p,
+    leaf_t* __restrict__ c,
+    float* __restrict__ __data_c_m_,
+    int* __restrict__ __offsets_c_m_,
+    int* __restrict__ __sizes_c_m_,
+    float* __restrict__ p,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
-    float* __workspace_6)
+    float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;

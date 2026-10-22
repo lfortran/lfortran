@@ -433,6 +433,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 y)
@@ -451,6 +452,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 queries)

@@ -216,7 +216,7 @@ LFORTRAN_API float _lfortran_sfix(float x);
 LFORTRAN_API double _lfortran_dfix(double x);
 LFORTRAN_API float _lfortran_cphase(float_complex_t x);
 LFORTRAN_API double _lfortran_zphase(double_complex_t x);
-int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
+LFORTRAN_API int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len);
 LFORTRAN_API char* _lfortran_float_to_str8_alloc(lfortran_allocator_t* al, double num);
 LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num);
 LFORTRAN_API char* _lfortran_int_to_str1_alloc(lfortran_allocator_t* al, int8_t num);
@@ -291,7 +291,8 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
     char* sign, int64_t sign_len,
     char* decimal, int64_t decimal_len,
     char* round, int64_t round_len,
-    char* pad, int64_t pad_len
+    char* pad, int64_t pad_len,
+    char* convert, int64_t convert_len
 );
 LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* iomsg, int64_t iomsg_len);
@@ -342,6 +343,8 @@ LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *
 // Formatted READ: pad/pad_len specify PAD for this statement.
 // If pad is NULL/len==0, the unit's PAD mode is used.
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, char* pad, int64_t pad_len, ...);
+LFORTRAN_API void _lfortran_read_target_list_push(void** list, int32_t type_code, void* ptr, int64_t len, int32_t kind);
+LFORTRAN_API void _lfortran_read_target_list_free(void* list);
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);

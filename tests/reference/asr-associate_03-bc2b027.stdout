@@ -138,10 +138,12 @@
                         [(Associate
                             (Var 2 p1)
                             (Var 2 t1)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 2 p1)
                             (Var 2 t2)
+                            NoPointerBounds
                         )]
                     )
                     (Print

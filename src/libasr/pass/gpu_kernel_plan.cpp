@@ -1193,6 +1193,9 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         arg.m_written = kind != ASR::gpu_argument_kindType::GpuMemberOffsets
             && kind != ASR::gpu_argument_kindType::GpuMemberSizes
             && writes.written.count(arg.m_variable) > 0;
+        // Set from the launches once they are all known
+        // (pass_gpu_kernel_finalize).
+        arg.m_noalias = false;
         arg.m_type = ASRUtils::extract_type(ASRUtils::symbol_type(
             member ? member : arg.m_variable));
         if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||

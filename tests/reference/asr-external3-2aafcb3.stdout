@@ -355,6 +355,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 brcmp1)

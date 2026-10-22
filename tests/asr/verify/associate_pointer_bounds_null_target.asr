@@ -1,0 +1,166 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "v2" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 6
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr true
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block nil
+            )
+            "p" (Variable
+              :parent_symtab 1
+              :name "p"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Pointer
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                  :memory_space :Global
+                )
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block nil
+            )
+          }
+        )
+        :name "v2"
+        :dependencies []
+        :body [
+          (Associate
+            :target (ArraySection
+              :v (Var
+                :v (SymbolRef 1 "p")
+              )
+              :args [
+                (array_index
+                  :left (IntegerConstant
+                    :n 1
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :right (IntegerConstant
+                    :n 6
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :step nil
+                )
+              ]
+              :type (Array
+                :type (Integer
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start nil
+                    :length nil
+                  )
+                ]
+                :physical_type :DescriptorArray
+                :memory_space :Global
+              )
+              :value nil
+            )
+            :value (PointerNullConstant
+              :type (Pointer
+                :type (Array
+                  :type (Integer
+                    :kind 4
+                  )
+                  :dims [
+                    (dimension
+                      :start nil
+                      :length nil
+                    )
+                  ]
+                  :physical_type :DescriptorArray
+                  :memory_space :Global
+                )
+              )
+              :var_expr nil
+            )
+            :form :PointerBoundsRemapping
+          )
+        ]
+        :global_init nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)

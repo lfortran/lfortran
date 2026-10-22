@@ -1891,6 +1891,7 @@ public:
         { AST::boolopType::Or, "~or" },
         { AST::boolopType::Xor, "~xor" },
         { AST::boolopType::Eqv, "~eqv" },
+        { AST::boolopType::NEqv, "~neqv" },
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -2261,6 +2262,35 @@ public:
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
     std::set<std::string> assgnd_target;
+    // A PARAMETER, POINTER, ALLOCATABLE or TARGET statement that names an
+    // entity not declared yet is recorded above and applied to the entity
+    // when it is declared. Such a statement applies only to the scoping unit
+    // or BLOCK construct in which it appears (8.6), so this guard gives the
+    // unit empty records and restores the host's when it ends, also when a
+    // diagnostic aborts the visit. Otherwise `parameter (m = 10)` in one
+    // subroutine would make a later `integer m` in another one a constant.
+    struct PendingAttributeScope {
+        CommonVisitor &v;
+        std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> storage;
+        std::set<std::string> pointer;
+        std::set<std::string> allocatable;
+        std::set<std::string> target;
+
+        PendingAttributeScope(CommonVisitor &v_) : v{v_} {
+            storage.swap(v.assgnd_storage);
+            pointer.swap(v.assgnd_pointer);
+            allocatable.swap(v.assgnd_allocatable);
+            target.swap(v.assgnd_target);
+        }
+        ~PendingAttributeScope() {
+            v.assgnd_storage.swap(storage);
+            v.assgnd_pointer.swap(pointer);
+            v.assgnd_allocatable.swap(allocatable);
+            v.assgnd_target.swap(target);
+        }
+        PendingAttributeScope(const PendingAttributeScope &) = delete;
+        PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
+    };
     // Tracks (scope, module name) pairs for which the module's symbols were
     // brought into `scope` via a wildcard/all import (`use mod` or
     // `use mod, x => y`), as opposed to an explicit `use mod, only: name`.
@@ -2411,6 +2441,9 @@ public:
     bool current_function_side_effect_free = true;
     ASR::ttype_t* current_variable_type_;
     ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
+    // The subscripts of the data pointer object of a pointer assignment,
+    // whose bounds are checked by the pointer assignment.
+    AST::fnarg_t* pointer_bounds_args = nullptr;
 
     int32_t enum_init_val;
     bool default_storage_save = false;
@@ -3678,7 +3711,17 @@ public:
 	}
     }
 
+    // `e` without the parentheses around it. The parser keeps them around a
+    // name, an array element or section and a function reference.
+    static AST::expr_t* skip_parentheses(AST::expr_t* e) {
+        while (AST::is_a<AST::Parenthesis_t>(*e)) {
+            e = AST::down_cast<AST::Parenthesis_t>(e)->m_operand;
+        }
+        return e;
+    }
+
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
+        expr = skip_parentheses(expr);
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
             is_pending_generic_procedure(
                 AST::down_cast<AST::FuncCallOrArray_t>(expr)->m_func,
@@ -3686,6 +3729,7 @@ public:
     }
 
     bool is_type_bound_func_call(AST::expr_t* expr) {
+        expr = skip_parentheses(expr);
         if (!AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
             return false;
         }
@@ -6478,14 +6522,35 @@ public:
         return nullptr;
     }
 
-    // Fortran 2023 8.10.1.1: the name of an equivalence object shall not be
-    // made accessible by use association, as the module of the entity
-    // provides its storage. Checked for each EQUIVALENCE statement before
-    // any of its sets is lowered.
+    // The first object of the EQUIVALENCE set `set` that is in parentheses,
+    // or nullptr. Such a set is neither placed in a common block nor
+    // lowered: check_equivalence_objects rejects it.
+    static const AST::expr_t* parenthesized_equivalence_object(
+            const AST::equi_t &set) {
+        for (size_t m = 0; m < set.n_set_list; m++) {
+            if (AST::is_a<AST::Parenthesis_t>(*set.m_set_list[m])) {
+                return set.m_set_list[m];
+            }
+        }
+        return nullptr;
+    }
+
+    // Fortran 2023 8.10.1.1: an equivalence object is a variable name, an
+    // array element or a substring, which a parenthesized one is not, and
+    // its name shall not be made accessible by use association, as the
+    // module of the entity provides its storage. Checked for each
+    // EQUIVALENCE statement before any of its sets is lowered.
     void check_equivalence_objects(const AST::AttrEquivalence_t &eq) {
         for (size_t i = 0; i < eq.n_args; i++) {
-            const AST::expr_t *object = use_associated_equivalence_object(
+            const AST::expr_t *object = parenthesized_equivalence_object(
                 eq.m_args[i]);
+            if (object != nullptr) {
+                diag.semantic_error_label("an equivalence object must be a "
+                    "variable, an array element or a substring",
+                    {object->base.loc}, "not allowed in EQUIVALENCE");
+                throw SemanticAbort();
+            }
+            object = use_associated_equivalence_object(eq.m_args[i]);
             if (object != nullptr) {
                 diag.semantic_error_label("'" + equivalence_object_name(*object)
                     + "' is use-associated and cannot appear in an "
@@ -6571,6 +6636,8 @@ public:
                 for (size_t k = 0; k < eq->n_args; k++) {
                     if (eq->m_args[k].n_set_list >= 2 &&
                             use_associated_equivalence_object(
+                                eq->m_args[k]) == nullptr &&
+                            parenthesized_equivalence_object(
                                 eq->m_args[k]) == nullptr) {
                         sets.push_back(&eq->m_args[k]);
                     }
@@ -8413,9 +8480,12 @@ public:
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
-                                    explicit_intrinsic_procedures.push_back(sym);
-                                    if (compiler_options.implicit_interface) {
-                                        create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
+                                    if (!reject_non_fortran_intrinsic_attribute(
+                                            sym, x.m_syms[i].loc)) {
+                                        explicit_intrinsic_procedures.push_back(sym);
+                                        if (compiler_options.implicit_interface) {
+                                            create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
+                                        }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
@@ -8457,7 +8527,7 @@ public:
                                         if (compiler_options.implicit_typing) {
                                             ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
                                             if (type) {
-                                                sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                                sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, type);
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Save;
                                             } else {
@@ -10023,7 +10093,9 @@ public:
                                 value_attr = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
-                                excluded_from_symtab.push_back(sym);
+                                if (!reject_non_fortran_intrinsic_attribute(sym, s.loc)) {
+                                    excluded_from_symtab.push_back(sym);
+                                }
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 is_attr_external = true;
@@ -10725,9 +10797,13 @@ public:
                     }
                     HiddenDerivedTypeComponents hidden_components(
                         current_scope, is_derived_type, hidden_derived_type_components);
-                    if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
+                    // The value of an initialization expression does not
+                    // depend on parentheses around it.
+                    AST::expr_t* initializer = is_pointer ? s.m_initializer
+                        : skip_parentheses(s.m_initializer);
+                    if (AST::is_a<AST::FuncCallOrArray_t>(*initializer)) {
                         AST::FuncCallOrArray_t* func_call =
-                            AST::down_cast<AST::FuncCallOrArray_t>(s.m_initializer);
+                            AST::down_cast<AST::FuncCallOrArray_t>(initializer);
                         // Fortran is case insensitive and symbols are stored
                         // lowercased, so the name must be lowered before lookup
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(
@@ -10755,8 +10831,8 @@ public:
                                 throw SemanticAbort();
                             }
                         }
-                    } else if (AST::is_a<AST::Name_t>(*s.m_initializer)) {
-                        std::string sym_name = AST::down_cast<AST::Name_t>(s.m_initializer)->m_id;
+                    } else if (AST::is_a<AST::Name_t>(*initializer)) {
+                        std::string sym_name = AST::down_cast<AST::Name_t>(initializer)->m_id;
                         sym_name = to_lower(sym_name);
                         ASR::symbol_t *sym_found = current_scope->resolve_symbol(sym_name);
                         if (ASRUtils::is_iso_c_null_symbol(current_scope, sym_found)) {
@@ -10891,29 +10967,31 @@ public:
                             }
                             }
                         }
-                    } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
-                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                    } else if (AST::is_a<AST::ArrayInitializer_t>(*initializer)) {
+                        AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(initializer);
                         if (array_init->n_args > 0) {
                             bool is_correct_type_func = false;
                             bool is_correct_type_implieddoloop = false;
                             bool is_correct_type_name = false;
                             AST::FuncCallOrArray_t* func_call = nullptr;
 
-                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*array_init->m_args[0]);
-                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*array_init->m_args[0]);
-                            is_correct_type_name = AST::is_a<AST::Name_t>(*array_init->m_args[0]);
+                            AST::expr_t* first_arg = skip_parentheses(array_init->m_args[0]);
+                            is_correct_type_func = AST::is_a<AST::FuncCallOrArray_t>(*first_arg);
+                            is_correct_type_implieddoloop = AST::is_a<AST::ImpliedDoLoop_t>(*first_arg);
+                            is_correct_type_name = AST::is_a<AST::Name_t>(*first_arg);
                             
                             if (is_correct_type_func) {
-                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(array_init->m_args[0]);
+                                func_call = AST::down_cast<AST::FuncCallOrArray_t>(first_arg);
                             }
                             else if (is_correct_type_implieddoloop) {
                                 AST::ImpliedDoLoop_t* idoloop = AST::down_cast<AST::ImpliedDoLoop_t>(array_init->m_args[0]);
                                 // Check if the implied do loop values construct the correct type
                                 if (idoloop->n_values > 0) {
-                                    if (AST::is_a<AST::FuncCallOrArray_t>(*idoloop->m_values[0])) {
-                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(idoloop->m_values[0]);
+                                    AST::expr_t* first_value = skip_parentheses(idoloop->m_values[0]);
+                                    if (AST::is_a<AST::FuncCallOrArray_t>(*first_value)) {
+                                        func_call = AST::down_cast<AST::FuncCallOrArray_t>(first_value);
                                     }
-                                    else if (AST::is_a<AST::Name_t>(*idoloop->m_values[0])){
+                                    else if (AST::is_a<AST::Name_t>(*first_value)){
                                         // TODO:: Check if Array Type Matches Do Loop Assignment Type, 
                                         is_correct_type_implieddoloop = true;
                                     }
@@ -10940,11 +11018,11 @@ public:
 
                         visit_ArrayInitializer(*array_init);
                         init_expr = ASRUtils::EXPR(tmp);
-                    } else if (AST::is_a<AST::String_t>(*s.m_initializer) ||
-                             AST::is_a<AST::Num_t>(*s.m_initializer) ||
-                             AST::is_a<AST::Real_t>(*s.m_initializer) ||
-                             AST::is_a<AST::BOZ_t>(*s.m_initializer)){
-                        this->visit_expr(*s.m_initializer);
+                    } else if (AST::is_a<AST::String_t>(*initializer) ||
+                             AST::is_a<AST::Num_t>(*initializer) ||
+                             AST::is_a<AST::Real_t>(*initializer) ||
+                             AST::is_a<AST::BOZ_t>(*initializer)){
+                        this->visit_expr(*initializer);
                         init_expr = ASRUtils::EXPR(tmp);
                     } else {
                         diag.add(Diagnostic(
@@ -15693,6 +15771,45 @@ public:
         array_item->m_in_bounds = false;
     }
 
+    // F2018 R910 and R919-R923: a subscript, a bound or stride of a
+    // subscript triplet, and a substring index are scalar integer
+    // expressions. Only a vector subscript is an array.
+    void check_subscript_types(const Vec<ASR::array_index_t>& args,
+            bool is_substring) {
+        std::string index_kind = is_substring ? "a substring index"
+            : "an array subscript";
+        for (const ASR::array_index_t& a : args) {
+            bool is_vector_subscript_allowed = !is_substring &&
+                a.m_left == nullptr && a.m_step == nullptr;
+            ASR::expr_t* indices[] = {a.m_left, a.m_right, a.m_step};
+            for (ASR::expr_t* index : indices) {
+                if (index == nullptr) {
+                    continue;
+                }
+                ASR::ttype_t* index_type = ASRUtils::expr_type(index);
+                if (!ASRUtils::is_integer(*index_type) &&
+                        !ASRUtils::is_unsigned_integer(*index_type)) {
+                    diag.add(Diagnostic(
+                        index_kind + " must be of type integer, found " +
+                        ASRUtils::type_to_str_with_kind(index_type, index),
+                        Level::Error, Stage::Semantic, {
+                            Label("", {index->base.loc})}));
+                    throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(index_type) &&
+                        !is_vector_subscript_allowed) {
+                    diag.add(Diagnostic(
+                        is_substring ? "a substring index must be scalar"
+                            : "a bound or stride of a subscript triplet must "
+                              "be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {index->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -15954,6 +16071,15 @@ public:
                     }
                 }
             }
+        }
+
+        // The bounds of a pointer bounds specification or remapping list
+        // are checked by the pointer assignment, which names them as such.
+        if (is_item || pointer_bounds_args == nullptr ||
+                m_args != pointer_bounds_args ||
+                !ASRUtils::is_pointer(ASRUtils::symbol_type(v))) {
+            check_subscript_types(args, ASRUtils::is_character(*root_v_type) &&
+                !ASRUtils::is_array(root_v_type));
         }
 
         if( is_item ) {
@@ -16428,19 +16554,30 @@ public:
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                // Only scalar integer indices take part in unifying the kinds
+                // of a triplet. Any other index keeps its type, so that it is
+                // diagnosed as written.
+                auto is_scalar_integer = [](ASR::expr_t* index) {
+                    if (index == nullptr) {
+                        return false;
+                    }
+                    ASR::ttype_t* index_type = ASRUtils::expr_type(index);
+                    return ASRUtils::is_integer(*index_type) &&
+                        !ASRUtils::is_array(index_type);
+                };
                 int max_kind = -1;
                 int left_kind = -1;
                 int right_kind = -1;
                 int step_kind = -1;
-                if (args.p[i].m_left) {
+                if (is_scalar_integer(args.p[i].m_left)) {
                     left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_left));
                     max_kind = std::max(max_kind, left_kind);
                 } 
-                if (args.p[i].m_right) {
+                if (is_scalar_integer(args.p[i].m_right)) {
                     right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_right));
                     max_kind = std::max(max_kind, right_kind);
                 }
-                if (args.p[i].m_step) {
+                if (is_scalar_integer(args.p[i].m_step)) {
                     step_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_step));
                     max_kind = std::max(max_kind, step_kind);
                 }
@@ -16741,13 +16878,16 @@ public:
             if (type != nullptr && ASRUtils::is_array(type)) {
                 array_context_type = type;
             }
+            // Parentheses around a structure constructor do not change
+            // its value.
+            AST::expr_t* arg = skip_parentheses(x.m_args[i]);
             if (array_context_type != nullptr
                     && ASRUtils::is_array(array_context_type)
                     && ASR::is_a<ASR::StructType_t>(
                         *ASRUtils::type_get_past_array(array_context_type))
-                    && AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i])) {
+                    && AST::is_a<AST::FuncCallOrArray_t>(*arg)) {
                 AST::FuncCallOrArray_t* func_call =
-                    AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
+                    AST::down_cast<AST::FuncCallOrArray_t>(arg);
                 if (func_call->m_func != nullptr) {
                     // Fortran is case insensitive and symbols are stored
                     // lowercased, so the name must be lowered before lookup
@@ -17218,7 +17358,8 @@ public:
         visit_expr_list(m_args, n_args, args);
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v_class_proc->m_proc));
 
         // Associate written actuals without the receiver before inserting it
         // and instantiating a result type that can depend on any dummy.
@@ -17390,7 +17531,8 @@ public:
                     final_sym_past_ext)->m_is_nopass;
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym_past_ext, current_scope);
-                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc;
+                final_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc);
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -21118,7 +21260,43 @@ public:
         return name2signature[var_name];
     }
 
+    // Names in the shared intrinsic registries that are neither standard
+    // Fortran intrinsics nor common vendor extensions: they implement
+    // intrinsics of other frontends (symbolic and Python-style functions).
+    static bool is_non_fortran_registry_intrinsic(const std::string &name) {
+        static const std::set<std::string> names = {"diff", "expand", "has",
+            "pi", "stringconcat", "exp2", "expm1", "fix", "trunc", "floordiv",
+            "fma", "type"};
+        return names.find(name) != names.end();
+    }
+
+    // With implicit interfaces, the names above are not intrinsic
+    // procedures, so they cannot have the INTRINSIC attribute. Reports an
+    // error and returns true for such a name.
+    bool reject_non_fortran_intrinsic_attribute(const std::string &name,
+            const Location &loc) {
+        if (!compiler_options.implicit_interface ||
+                !is_non_fortran_registry_intrinsic(name)) {
+            return false;
+        }
+        diag.add(Diagnostic("'" + name + "' is not an intrinsic procedure",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+        return true;
+    }
+
     bool is_intrinsic_registry_function(std::string var_name) {
+        if (compiler_options.implicit_interface &&
+                is_non_fortran_registry_intrinsic(var_name)) {
+            // A reference to such a name is a reference to an external
+            // procedure with an implicit interface, as for any other name
+            // that is not an intrinsic procedure.
+            return false;
+        }
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if (intrinsic_procedures_as_asr_nodes.is_intrinsic_present_in_ASR(var_name) ||
             intrinsic_procedures_as_asr_nodes.is_kind_based_selection_required(var_name) ||
@@ -22061,7 +22239,7 @@ public:
         // same way as `sp => add_ten`, and Assignment's store lowering does
         // not match the Pointer(FunctionType) physical representation.
         association_body->push_back(al, ASRUtils::STMT(
-            ASR::make_Associate_t(al, loc, lhs, cast)));
+            ASR::make_Associate_t(al, loc, lhs, cast, ASR::pointer_bounds_formType::NoPointerBounds)));
         return tmp_var;
     }
 
@@ -23715,7 +23893,7 @@ public:
                         }
                         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
                             ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
-                            f4 = f5->m_proc;
+                            f4 = ASRUtils::symbol_get_past_external(f5->m_proc);
                             is_nopass = f5->m_is_nopass;
                             is_class_procedure = true;
                         }
@@ -25476,7 +25654,8 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*op_proc)) {
                 ASR::StructMethodDeclaration_t* temp_struct_method =
                     ASR::down_cast<ASR::StructMethodDeclaration_t>(op_proc);
-                func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(temp_struct_method->m_proc));
 
             } else {
                 func = ASR::down_cast<ASR::Function_t>(
@@ -25489,7 +25668,7 @@ public:
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
                 // Type-bound operator: resolve the underlying function
                 ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = sm->m_proc;
+                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(sm->m_proc);
                 std::string func_name = ASRUtils::symbol_name(func_sym);
                 v = current_scope->resolve_symbol(func_name);
                 if (v == nullptr) {
@@ -26723,7 +26902,10 @@ public:
         return current_scope->resolve_symbol("null") == nullptr;
     }
 
+    // True if `e` is a reference to the intrinsic `NULL()`, possibly
+    // parenthesized, which is not allowed either.
     bool is_null_intrinsic_reference(AST::expr_t* e) {
+        e = skip_parentheses(e);
         if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
             return false;
         }

@@ -182,7 +182,8 @@ std::vector<std::string> determine_class_procedure_declaration_order(
     for( auto itr: symtab->get_scope() ) {
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*itr.second) ) {
             std::vector<std::string> deps;
-            ASR::symbol_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(itr.second)->m_proc;
+            ASR::symbol_t* cp = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(itr.second)->m_proc);
             if (ASR::is_a<ASR::Function_t>(*cp)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(cp);
                 for( size_t i = 0; i < func->n_dependencies; i++ ) {
@@ -2796,7 +2797,8 @@ bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                    process_overloaded_unary_function(
+                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
                         operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
@@ -2822,7 +2824,8 @@ bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_procedure_t =
                         ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                    process_overloaded_unary_function(
+                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
                         operand, operand_type, op_name, found, al, curr_scope, loc,
                         current_function_dependencies, current_module_dependencies, asr,
                         elemental_pass, err);
@@ -2960,6 +2963,13 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            // When another procedure took the name, use a numbered name that is free or refers to `proc`.
+            std::string taken_name = matched_subrout_name;
+            for( int i = 1; a_name != nullptr &&
+                    ASRUtils::symbol_get_past_external(a_name) != proc; i++ ) {
+                matched_subrout_name = taken_name + std::to_string(i);
+                a_name = curr_scope->get_symbol(matched_subrout_name);
+            }
             ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
             if( a_name == nullptr && matched_subrout_name == subrout_name &&
                     !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
@@ -3269,7 +3279,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    ASR::symbol_t* proc_func = class_proc->m_proc;
+                    ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
@@ -3421,7 +3431,7 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
                     }
                     case ASR::symbolType::StructMethodDeclaration: {
                         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                        ASR::symbol_t* proc_func = class_proc->m_proc;
+                        ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                         a_name = import_defined_io_procedure(read_write, proc_func, item, arg_type,
                             al, curr_scope, current_function_dependencies,
                             current_module_dependencies, proc_func, loc, expr_dt, err,

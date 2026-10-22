@@ -1491,7 +1491,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-            al, loc, array_var_temporary, array_expr)));
+            al, loc, array_var_temporary, array_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
     } else {
         insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
         bool is_array_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*array_expr) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(array_expr)->m_old == ASR::array_physical_typeType::AssumedRankArray;
@@ -1519,7 +1519,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
                 al, array_expr->base.loc, current_scope,
                 "_array_section_pointer_", tmp_type, array_expr);
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                al, loc, array_expr_ptr, array_expr)));
+                al, loc, array_expr_ptr, array_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
             exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
             array_expr = array_expr_ptr;
         }
@@ -1565,7 +1565,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_struct(
     if( ASRUtils::is_pointer(ASRUtils::expr_type(struct_var_temporary)) ) {
         exprs_with_target[struct_expr] = std::make_pair(struct_var_temporary, targetType::GeneratedTarget);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-            al, loc, struct_var_temporary, struct_expr)));
+            al, loc, struct_var_temporary, struct_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
     } else {
         bool is_allocatable_temporary = ASRUtils::is_allocatable(
             ASRUtils::expr_type(struct_var_temporary));
@@ -1893,6 +1893,41 @@ ASR::symbol_t* get_root_var(ASR::expr_t* e) {
     }
 }
 
+// The symbol whose storage `sym` names: for an associate name of an
+// ASSOCIATE construct, that of its selector, e.g. `a` for `b` in
+// `associate (b => a(2:6))`, otherwise `sym` itself.
+ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
+    while (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+        ASR::asr_t* owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
+        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            break;
+        }
+        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        ASR::symbol_t* selector_sym = nullptr;
+        for (size_t i = 0; i < block->n_body; i++) {
+            if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
+                continue;
+            }
+            ASR::Associate_t* assoc = ASR::down_cast<ASR::Associate_t>(block->m_body[i]);
+            if (ASR::is_a<ASR::Var_t>(*assoc->m_target) &&
+                    ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v == sym) {
+                // A whole-array selector that is not a descriptor array is
+                // bound through an ArrayPhysicalCast.
+                selector_sym = extract_symbol(
+                    ASRUtils::get_past_array_physical_cast(assoc->m_value));
+                break;
+            }
+        }
+        if (selector_sym == nullptr || selector_sym == sym) {
+            break;
+        }
+        sym = selector_sym;
+    }
+    return sym;
+}
+
 bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
     if (lhs == nullptr) {
         return false;
@@ -1905,9 +1940,9 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
     rhs_collector.visit_expr(*rhs);
 
     for( size_t i = 0; i < lhs_vars.size(); i++ ) {
-        ASR::symbol_t* lhs_sym = extract_symbol(lhs_vars[i]);
+        ASR::symbol_t* lhs_sym = get_associated_symbol(extract_symbol(lhs_vars[i]));
         for( size_t j = 0; j < rhs_vars.size(); j++ ) {
-            if( extract_symbol(rhs_vars[j]) == lhs_sym ) {
+            if( get_associated_symbol(extract_symbol(rhs_vars[j])) == lhs_sym ) {
                 return true;
             }
         }
@@ -2081,7 +2116,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASRUtils::expr_type(null_constant_no_cast), null_constant_no_cast,
             type_declaration);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-            al, loc, null_pointer_temporary, null_constant_no_cast)));
+            al, loc, null_pointer_temporary, null_constant_no_cast, ASR::pointer_bounds_formType::NoPointerBounds)));
         return null_pointer_temporary;
     }
 
@@ -2125,7 +2160,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::expr_t* section_pointer = create_temporary_variable_for_array(
             al, loc, current_scope, name_hint + "_section_", section_type, section);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-            al, loc, section_pointer, section)));
+            al, loc, section_pointer, section, ASR::pointer_bounds_formType::NoPointerBounds)));
         return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
             designator->base.loc, section_pointer, member->m_m,
             member->m_type, nullptr));
@@ -3474,7 +3509,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     create_temporary_variable_for_scalar(al, arg, current_scope,
                         "_actual_pointer_", true);
                 current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                    al, arg->base.loc, pointer, arg)));
+                    al, arg->base.loc, pointer, arg, ASR::pointer_bounds_formType::NoPointerBounds)));
                 arg = pointer;
                 current_expr = saved_expr;
                 in_array_context = saved_context;
@@ -3719,7 +3754,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                    ASRUtils::is_array(x->m_type)) &&
                    is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
-                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
+                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ||
+                // The call associates its pointer result; the assignment copies from it.
+                ASRUtils::is_pointer(x->m_type) ) {
                 force_replace_current_expr_for_array(current_expr, std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name), al, current_body, current_scope,
                                            exprs_with_target, is_assignment_target_array_section_item);
@@ -3853,7 +3890,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
                 al, loc, current_scope, "_array_section_pointer_", tmp_type, *current_expr);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                al, loc, array_expr_ptr, *current_expr)));
+                al, loc, array_expr_ptr, *current_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
         *current_expr = array_expr_ptr;
         return array_expr_ptr;
     }
@@ -4743,7 +4780,7 @@ class TransformVariableInitialiser:
             if (xx.m_intent == ASR::intentType::Local) {
                 if (ASRUtils::is_pointer(x.m_type)) {
                     result_vec.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                        al, loc, target, value)));
+                        al, loc, target, value, ASR::pointer_bounds_formType::NoPointerBounds)));
                 } else {
                     result_vec.push_back(al, ASRUtils::STMT(make_Assignment_t_util(
                             al, loc, target, value, nullptr, exprs_with_target)));

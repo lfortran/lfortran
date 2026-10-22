@@ -453,6 +453,7 @@ public:
         // ends, otherwise an `external` declared here stays visible to every
         // program unit processed afterwards.
         std::vector<std::string> saved_external_procedures = external_procedures;
+        PendingAttributeScope pending_attribute_scope(*this);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ASR::asr_t* block;
@@ -551,7 +552,7 @@ public:
             body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
                 variable->base.loc,
                 ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, pointer)),
-                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)))));
+                ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)), ASR::pointer_bounds_formType::NoPointerBounds)));
         }
         construct_variable_pointers.clear();
         transform_stmts(body, x.n_items, x.m_items);
@@ -740,7 +741,8 @@ public:
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
             *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr, *a_delim = nullptr,
             *a_recl = nullptr, *a_position = nullptr, *a_blank = nullptr, *a_encoding = nullptr, *a_sign = nullptr,
-            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr, *a_asynchronous = nullptr;
+            *a_decimal = nullptr, *a_round = nullptr, *a_pad = nullptr, *a_asynchronous = nullptr,
+            *a_convert = nullptr;
         int64_t err_label = -1;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
@@ -1273,6 +1275,42 @@ public:
                         }));
                     throw SemanticAbort();
                 }
+            } else if (m_arg_str == std::string("convert")) {
+                // An extension (GFortran, Intel, NAG): the byte order of
+                // unformatted data.
+                if (a_convert != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `convert` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_convert = ASRUtils::EXPR(tmp);
+                if (!ASRUtils::is_character(*ASRUtils::expr_type(a_convert))) {
+                    diag.add(Diagnostic(
+                        "`convert` must be of type String",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                ASR::expr_t* convert_value = ASRUtils::expr_value(a_convert);
+                if (convert_value && ASR::is_a<ASR::StringConstant_t>(*convert_value)) {
+                    std::string convert = to_lower(
+                        ASR::down_cast<ASR::StringConstant_t>(convert_value)->m_s);
+                    rtrim(convert);
+                    if (convert != "native" && convert != "swap" &&
+                            convert != "big_endian" && convert != "little_endian") {
+                        diag.add(Diagnostic(
+                            "`convert` must be 'native', 'swap', 'big_endian' or 'little_endian'",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {kwarg.m_value->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
             }
             else {
                 const std::unordered_set<std::string> unsupported_args {"fileopt"};
@@ -1339,7 +1377,7 @@ public:
             }
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous, a_convert);
         tmp_vec.push_back(tmp);
         if (err_label != -1) {
             emit_err_label_jump(err_label, a_iostat, x.base.base.loc, tmp_vec);
@@ -1607,6 +1645,56 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
+    }
+
+    static void collect_implied_do_vars(ASR::expr_t* e, std::vector<ASR::symbol_t*>& vars) {
+        if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) return;
+        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+        vars.push_back(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+        for (size_t i = 0; i < idl->n_values; i++) {
+            collect_implied_do_vars(idl->m_values[i], vars);
+        }
+    }
+
+    // Expands the implied-do loops of a READ input list. Expansion
+    // substitutes a loop variable only in a plain subscript of an element,
+    // and the backend does a formatted READ with a nested implied-do loop as
+    // one data transfer that runs its loops. So such a READ keeps its list
+    // unexpanded if the expansion keeps a nested loop or a reference to a
+    // variable of an expanded loop.
+    void expand_implied_do_loops_for_read(Vec<ASR::expr_t*>& values,
+            std::vector<ASR::stmt_t*>& post_stmts, bool formatted) {
+        Vec<ASR::expr_t*> expanded;
+        expanded.reserve(al, values.size());
+        std::vector<ASR::stmt_t*> expanded_post_stmts;
+        for (size_t i = 0; i < values.size(); i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                expand_implied_do_for_read(ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]),
+                    expanded, expanded_post_stmts);
+            } else {
+                expanded.push_back(al, values[i]);
+            }
+        }
+        if (formatted && ASRUtils::has_nested_implied_do_loop(values.p, values.size())) {
+            std::vector<ASR::symbol_t*> vars;
+            for (size_t i = 0; i < values.size(); i++) {
+                collect_implied_do_vars(values[i], vars);
+            }
+            bool keep = ASRUtils::has_nested_implied_do_loop(expanded.p, expanded.size());
+            for (size_t i = 0; i < expanded.size(); i++) {
+                ASR::symbol_t* own_var = ASR::is_a<ASR::ImpliedDoLoop_t>(*expanded[i]) ?
+                    ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ImpliedDoLoop_t>(
+                        expanded[i])->m_var)->m_v : nullptr;
+                for (ASR::symbol_t* v : vars) {
+                    keep = keep || (v != own_var &&
+                        ASRUtils::expr_references_symbol(expanded[i], v));
+                }
+            }
+            if (keep) return;
+        }
+        values = expanded;
+        post_stmts.insert(post_stmts.end(), expanded_post_stmts.begin(),
+            expanded_post_stmts.end());
     }
 
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
@@ -2881,16 +2969,16 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            if (_type == AST::decl_stmtType::Write && formatted) {
-                expr = cast_assumed_rank_output_item(expr, loc, "write");
+            if (_type == AST::decl_stmtType::Write) {
+                expr = cast_assumed_rank_io_item(expr, loc, "write");
+            } else if (_type == AST::decl_stmtType::Read) {
+                check_read_item_not_complex_part(expr);
+                expr = cast_assumed_rank_io_item(expr, loc, "read");
             }
-            // For READ: expand implied-do loops to individual elements or array section
-            if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
-                expand_implied_do_for_read(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec, post_stmts);
-            } else {
-                a_values_vec.push_back(al, expr);
-            }
+            a_values_vec.push_back(al, expr);
+        }
+        if (_type == AST::decl_stmtType::Read) {
+            expand_implied_do_loops_for_read(a_values_vec, post_stmts, a_fmt != nullptr);
         }
 
         // A editing of integer items is a legacy Fortran 66 feature (deleted
@@ -3644,8 +3732,147 @@ public:
         tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
     }
 
+    // F2018 R1035 and R1036: a bound of a pointer bounds-spec or
+    // bounds-remapping-list is a scalar integer expression.
+    void check_pointer_bound(ASR::expr_t* bound) {
+        ASR::ttype_t* bound_type = ASRUtils::expr_type(bound);
+        if (ASRUtils::is_array(bound_type)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be scalar",
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::is_integer(*bound_type)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be of type integer, found " +
+                ASRUtils::type_to_str_with_kind(bound_type, bound),
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
+        // F2018 C7109: a BOZ literal constant is typeless and can appear
+        // only in a DATA statement or as an intrinsic argument.
+        if (is_boz_constant(bound)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be of type integer, found a BOZ literal constant",
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    /*
+        A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
+        (bounds-remapping-list) gives the pointer the bounds in `target`.
+        Every lower bound is required, and either all or none of the upper
+        bounds; no stride is allowed, and none is recorded. With a
+        bounds-spec, the upper bounds are left absent: the extents of the
+        pointer are those of the data target, so they follow from it, and
+        the backend evaluates the data target and each lower bound once.
+        The data target of a bounds-remapping-list is not `null()` and has
+        rank one or is simply contiguous. A bounds-spec with the data target
+        `null()` disassociates the pointer, so `target` is replaced by the
+        pointer itself. Returns the form of the bounds.
+    */
+    ASR::pointer_bounds_formType set_pointer_assignment_bounds(
+            const AST::Associate_t& x, ASR::expr_t*& target_expr,
+            ASR::expr_t* value) {
+        ASR::ArraySection_t* target = ASR::down_cast<ASR::ArraySection_t>(target_expr);
+        LCOMPILERS_ASSERT(AST::is_a<AST::FuncCallOrArray_t>(*x.m_target));
+        AST::FuncCallOrArray_t* ast_target =
+            AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
+        LCOMPILERS_ASSERT(ast_target->n_args == target->n_args);
+        size_t n_upper_bounds = 0;
+        for (size_t i = 0; i < ast_target->n_args; i++) {
+            if (ast_target->m_args[i].m_start == nullptr) {
+                diag.add(Diagnostic(
+                    "every lower bound must be present in a pointer bounds "
+                    "specification or remapping list",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_target->base.loc})}));
+                throw SemanticAbort();
+            }
+            // F2018 R1035 and R1036. The parser gives a triplet without a
+            // stride the stride 1, located at the whole triplet.
+            AST::expr_t* step = ast_target->m_args[i].m_step;
+            if (step != nullptr && (step->base.loc.first != ast_target->m_args[i].loc.first ||
+                    step->base.loc.last != ast_target->m_args[i].loc.last)) {
+                diag.add(Diagnostic(
+                    "a stride cannot appear in a pointer bounds specification "
+                    "or remapping list",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_target->base.loc})}));
+                throw SemanticAbort();
+            }
+            check_pointer_bound(target->m_args[i].m_left);
+            if (ast_target->m_args[i].m_end != nullptr) {
+                check_pointer_bound(target->m_args[i].m_right);
+                n_upper_bounds++;
+            }
+            target->m_args[i].m_step = nullptr;
+        }
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            // F2018 10.2.2.3, paragraphs 2 and 9
+            if (n_upper_bounds == target->n_args) {
+                diag.add(Diagnostic(
+                    "the data target of a pointer bounds remapping list "
+                    "cannot be null()",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {value->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (n_upper_bounds == 0) {
+                target_expr = target->m_v;
+                return ASR::pointer_bounds_formType::NoPointerBounds;
+            }
+        }
+        if (n_upper_bounds == target->n_args) {
+            // F2018 10.2.2.3, paragraph 9
+            if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) != 1 &&
+                    !ASRUtils::is_simply_contiguous(value)) {
+                diag.add(Diagnostic(
+                    "the data target of a pointer bounds remapping list must "
+                    "have rank one or be simply contiguous",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {value->base.loc})}));
+                throw SemanticAbort();
+            }
+            return ASR::pointer_bounds_formType::PointerBoundsRemapping;
+        }
+        if (n_upper_bounds != 0) {
+            diag.add(Diagnostic(
+                "either all or none of the upper bounds must be present in a "
+                "pointer bounds remapping list",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_target->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(value))) != target->n_args) {
+            diag.add(Diagnostic(
+                "the rank of the pointer and of the data target must agree "
+                "in a pointer bounds specification",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        for (size_t i = 0; i < target->n_args; i++) {
+            target->m_args[i].m_right = nullptr;
+        }
+        return ASR::pointer_bounds_formType::PointerBoundsSpec;
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
+        if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
+            pointer_bounds_args =
+                AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_args;
+        }
         this->visit_expr(*(x.m_target));
+        pointer_bounds_args = nullptr;
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         bool is_invalid = check_assignment_to_constant_variable(
             extract_assignment_base_symbol(target), x.base.base.loc);
@@ -3691,6 +3918,13 @@ public:
         if (is_invalid) {
             throw SemanticAbort();
         }
+        ASR::pointer_bounds_formType bounds_form =
+            ASR::pointer_bounds_formType::NoPointerBounds;
+        if (ASR::is_a<ASR::ArraySection_t>(*target) && ASRUtils::is_pointer(
+                ASRUtils::expr_type(ASR::down_cast<ASR::ArraySection_t>(target)->m_v))) {
+            bounds_form = set_pointer_assignment_bounds(x, target, value);
+            target_type = ASRUtils::expr_type(target);
+        }
         tmp = nullptr;
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
@@ -3735,7 +3969,8 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct) ||
                     ASRUtils::is_unlimited_polymorphic_type(target_struct) ||
                     seq_or_bindc_from_upoly) {
-                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value,
+                    bounds_form);
             }
         } else if (ASR::is_a<ASR::FunctionType_t>(*target_type_underlying) && ASR::is_a<ASR::FunctionType_t>(*value_type_underlying)) {
             ASR::FunctionType_t* target_func_type = ASR::down_cast<ASR::FunctionType_t>(target_type_underlying);
@@ -3883,7 +4118,8 @@ public:
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
         } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
-            tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+            tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value,
+                bounds_form);
         }
         // Procedure characteristics only have to agree when the pointer has
         // an explicit interface (F2018 10.2.2.4), so a procedure pointer
@@ -4073,11 +4309,16 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type, nullptr, nullptr, name);
             ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, x.base.base.loc, tmp_expr, current_scope);
+            // An associate name for a simply contiguous array is a pointer
+            // that is associated with all of it, so it is contiguous too
+            // (F2018 9.5.4).
+            bool contiguous = create_associate_stmt && ASRUtils::is_array(tmp_type) &&
+                ASRUtils::is_simply_contiguous(tmp_expr);
             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                  ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, struct_sym,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
-                                                 false);
+                                                 false, false, contiguous);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::symbol_t* associate_sym = ASR::down_cast<ASR::symbol_t>(v);
             if (selector_is_constant) {
@@ -8612,7 +8853,7 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f2)) {
                 ASR::StructMethodDeclaration_t* f3 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f2);
-                ASR::symbol_t* f4 = f3->m_proc;
+                ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_proc);
                 bool is_nopass = f3->m_is_nopass;
                 if (!ASR::is_a<ASR::Function_t>(*f4)) {
                     diag.add(Diagnostic(
@@ -8654,7 +8895,7 @@ public:
                 ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_procs[i]);
                 if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
                     ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
-                    f4 = f5->m_proc;
+                    f4 = ASRUtils::symbol_get_past_external(f5->m_proc);
                     is_nopass = f5->m_is_nopass;
                     is_class_procedure = true;
                 }
@@ -9206,7 +9447,7 @@ public:
                         ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
                         Location l = x.base.base.loc;
                         // TODO: Add error message here
-                        if (ASRUtils::select_func_subrout(cp->m_proc, args_with_mdt, l,
+                        if (ASRUtils::select_func_subrout(ASRUtils::symbol_get_past_external(cp->m_proc), args_with_mdt, l,
                             [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,
@@ -9320,7 +9561,7 @@ public:
                     nopass = class_proc->m_is_nopass;
                     final_sym = original_sym;
                     original_sym = nullptr;
-                    ASR::symbol_t* f4 = class_proc->m_proc;
+                    ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                     if (!ASR::is_a<ASR::Function_t>(*f4)) {
                         diag.add(Diagnostic(
                             std::string(class_proc->m_proc_name) + " is not a subroutine.",
@@ -9700,10 +9941,31 @@ public:
         throw SemanticAbort();
     }
 
-    // Inside a `rank (n)` block of `select rank`, an assumed-rank output
-    // item is the selector viewed as a rank n descriptor (a scalar for
-    // `rank (0)`).
-    ASR::expr_t* cast_assumed_rank_output_item(ASR::expr_t* expr,
+    // An input item that is the real or imaginary part of a complex
+    // variable cannot be read yet.
+    void check_read_item_not_complex_part(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                check_read_item_not_complex_part(idl->m_values[i]);
+            }
+            return;
+        }
+        if (!ASR::is_a<ASR::ComplexRe_t>(*expr) && !ASR::is_a<ASR::ComplexIm_t>(*expr)) {
+            return;
+        }
+        diag.add(Diagnostic("reading into the real or imaginary part of a "
+            "complex variable is not supported yet",
+            Level::Error, Stage::Semantic, {
+            Label("", {expr->base.loc})
+        }));
+        throw SemanticAbort();
+    }
+
+    // Inside a `rank (n)` block of `select rank`, an assumed-rank input or
+    // output item is the selector viewed as a rank n descriptor (a scalar
+    // for `rank (0)`).
+    ASR::expr_t* cast_assumed_rank_io_item(ASR::expr_t* expr,
             const Location& loc, const std::string& statement) {
         if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
             return expr;
@@ -9794,7 +10056,7 @@ public:
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            expr = cast_assumed_rank_output_item(expr, x.base.base.loc, "print");
+            expr = cast_assumed_rank_io_item(expr, x.base.base.loc, "print");
             check_mixed_derived_type_output_implied_do(expr, false);
             body.push_back(al, expr);
         }

@@ -313,6 +313,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 lsame~fpcast_ptr)
@@ -337,6 +338,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (If
                         ()

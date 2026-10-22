@@ -16,23 +16,24 @@ namespace LCompilers {
 
         llvm::MaybeAlign known_underalignment(llvm::Type *type,
                 llvm::Value *address, const llvm::DataLayout &data_layout) {
-#if LLVM_VERSION_MAJOR >= 11
             if (!type->isSized()) {
                 return llvm::MaybeAlign();
             }
             // Also for the address of a variable allocated here: it has the
             // alignment of the variable's type, which need not be that of
             // the type accessed through it.
+#if LLVM_VERSION_MAJOR >= 11
             llvm::Align known = llvm::getKnownAlignment(address, data_layout);
             if (known >= data_layout.getABITypeAlign(type)) {
                 return llvm::MaybeAlign();
             }
             return known;
 #else
-            (void)type;
-            (void)address;
-            (void)data_layout;
-            return llvm::MaybeAlign();
+            unsigned known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlignment(type)) {
+                return llvm::MaybeAlign();
+            }
+            return llvm::MaybeAlign(known);
 #endif
         }
 
@@ -11145,7 +11146,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Value* dest_member_ptr = dest_member;
                         // The member is finalized with `dest`, unless it is
                         // an unallocated allocatable component, which the
-                        // copy allocates.
+                        // copy allocates. An allocated `class` component is
+                        // an exception: the VTable allocate call below
+                        // replaces it with a new, zeroed object without
+                        // freeing or finalizing the old one, so the old
+                        // object leaks and the copy function finalizes the
+                        // new one instead (#15431).
                         llvm::Value* finalize_member = finalize_dest;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);

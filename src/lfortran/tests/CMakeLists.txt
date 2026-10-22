@@ -17,6 +17,9 @@ endmacro(ADDTESTC)
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
+    if (NOT EMSCRIPTEN)
+        ADDTESTC(test_runtime_input lfortran_runtime_static)
+    endif()
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
     endif()
@@ -185,6 +188,28 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (NOT WIN32 AND NOT EMSCRIPTEN)
+            add_test(
+                NAME test_gpu_launch_geometry_cpu
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                    --backend cpu --cc ${CMAKE_C_COMPILER}
+                    "--sysroot=${CMAKE_OSX_SYSROOT}"
+                    --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-cpu
+            )
+            set_tests_properties(test_gpu_launch_geometry_cpu PROPERTIES TIMEOUT 180)
+            if (APPLE)
+                add_test(
+                    NAME test_gpu_launch_geometry_metal
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                        --backend metal --cc ${CMAKE_C_COMPILER}
+                        "--sysroot=${CMAKE_OSX_SYSROOT}"
+                        --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-metal
+                )
+                set_tests_properties(test_gpu_launch_geometry_metal PROPERTIES TIMEOUT 300)
+            endif()
+        endif()
         add_test(
             NAME test_dwarf_convert
             COMMAND ${LFORTRAN_TEST_PYTHON}

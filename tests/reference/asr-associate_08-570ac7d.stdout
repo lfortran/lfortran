@@ -400,6 +400,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Assignment
                                                         (Var 8 target)
@@ -673,6 +674,7 @@
                                                             ()
                                                             .false.
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember

@@ -3518,3 +3518,164 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! Reading into the real or imaginary part of a complex variable is not
+! supported yet.
+module cc1_read_complex_part
+implicit none
+contains
+    subroutine cc1_rcp_use()
+        complex :: z, w(3)
+        character(len=20) :: s
+        s = '1 2 3'
+        read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+        read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+    end subroutine cc1_rcp_use
+end module cc1_read_complex_part
+
+! A subobject of a named constant is a constant, not a variable, so it cannot
+! be an actual argument for an INTENT(OUT) or INTENT(INOUT) dummy.
+module cc1_named_constant_subobject
+implicit none
+type :: cc1_ncs_t
+    integer :: k
+    integer :: a(2)
+end type cc1_ncs_t
+type(cc1_ncs_t), parameter :: cc1_ncs_s = cc1_ncs_t(7, [8, 9])
+type(cc1_ncs_t), parameter :: cc1_ncs_p(2) = &
+    [cc1_ncs_t(5, [1, 2]), cc1_ncs_t(6, [3, 4])]
+character(len=4), parameter :: cc1_ncs_c(2) = ["abcd", "efgh"]
+contains
+    subroutine cc1_ncs_int(n)
+        integer, intent(inout) :: n
+        n = 1
+    end subroutine cc1_ncs_int
+    subroutine cc1_ncs_arr(n)
+        integer, intent(out) :: n(:)
+        n = 1
+    end subroutine cc1_ncs_arr
+    subroutine cc1_ncs_chr(n)
+        character(len=*), intent(inout) :: n
+        n = "z"
+    end subroutine cc1_ncs_chr
+    subroutine cc1_ncs_use(i)
+        integer, intent(in) :: i
+        call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+    end subroutine cc1_ncs_use
+end module cc1_named_constant_subobject
+
+! A parenthesized null() is not allowed in an initializer either.
+subroutine cc1_paren_null_initializer_integer()
+    implicit none
+    integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_integer
+
+subroutine cc1_paren_null_initializer_type()
+    implicit none
+    type :: cc1_pni_t
+        integer :: v = 1
+    end type
+    type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_type
+
+! A parenthesized equivalence object is an expression, not a variable.
+subroutine cc1_paren_equivalence_element()
+    implicit none
+    real :: a(3), b
+    equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_element
+
+subroutine cc1_paren_equivalence_name()
+    implicit none
+    real :: a(3), b
+    equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_name
+
+module cc1_pointer_bounds
+contains
+    subroutine cc1_pointer_bounds_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+        q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+        q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+    end subroutine cc1_pointer_bounds_use
+end module cc1_pointer_bounds
+module cc1_pointer_bounds_null
+contains
+    subroutine cc1_pointer_bounds_null_use()
+        real, pointer :: arr(:)
+        arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
+    end subroutine cc1_pointer_bounds_null_use
+end module cc1_pointer_bounds_null
+module cc1_pointer_remapping_target
+contains
+    subroutine cc1_pointer_remapping_target_use(x)
+        integer, target :: x(:, :)
+        integer, target :: a(4, 5), s
+        integer, pointer :: p(:), q(:, :)
+        q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    end subroutine cc1_pointer_remapping_target_use
+end module cc1_pointer_remapping_target
+module cc1_pointer_bounds_stride
+contains
+    subroutine cc1_pointer_bounds_stride_use()
+        integer, target :: a(10)
+        integer, pointer :: p(:)
+        p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+        p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+    end subroutine cc1_pointer_bounds_stride_use
+end module cc1_pointer_bounds_stride
+module cc1_pointer_bounds_type
+contains
+    subroutine cc1_pointer_bounds_type_use()
+        real, target :: a(6)
+        real, pointer :: p(:)
+        real :: r
+        integer :: v(1)
+        integer(2) :: v2(1)
+        character(len=1) :: ch
+        logical(1) :: l1
+        p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+        p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
+    end subroutine cc1_pointer_bounds_type_use
+end module cc1_pointer_bounds_type
+module cc1_subscript_type
+contains
+    subroutine cc1_subscript_type_use()
+        integer :: a(5), b(2, 3), v(1)
+        real :: r
+        character(len=1) :: ch
+        logical :: l
+        print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+        print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+        print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+    end subroutine cc1_subscript_type_use
+end module cc1_subscript_type
+module cc1_pointer_bounds_boz
+contains
+    subroutine cc1_pointer_bounds_boz_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+        q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    end subroutine cc1_pointer_bounds_boz_use
+end module cc1_pointer_bounds_boz

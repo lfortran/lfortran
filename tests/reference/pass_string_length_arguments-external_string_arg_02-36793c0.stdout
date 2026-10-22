@@ -445,6 +445,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 check~fpcast_ptr
