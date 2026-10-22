@@ -4966,11 +4966,12 @@ public:
                         reshape_dim.m_length = nullptr;
                         reshape_dims.push_back(al, reshape_dim);
                     }
+                    // The shape is read from the pointer at run time.
                     ASR::ttype_t* reshape_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, x.base.base.loc,
                             array_type->m_type, reshape_dims.p,
                             reshape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                            ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
                     arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
                         al, x.base.base.loc, arr_const, shape, nullptr,
                         nullptr, reshape_type, nullptr));
@@ -19885,6 +19886,13 @@ public:
             }
         }
 
+        // The result keeps the physical type of `source`, except that a
+        // `source` stored inline cannot give its storage to a result whose
+        // shape is only known at run time.
+        if (array_physical_type == ASR::array_physical_typeType::FixedSizeArray &&
+                !ASRUtils::is_fixed_size_array(dims.p, dims.n)) {
+            array_physical_type = ASR::array_physical_typeType::DescriptorArray;
+        }
         reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
         // Compile time value is same as the "source" ArrayConstant with multi-dimensional type instead of 1-D
