@@ -43,7 +43,11 @@ explicit: it inserts an [Allocate](Allocate.md) of `target` before the
 assignment, guarded by `allocated(target)`. When the type is finalizable, the assignment is
 duplicated into both branches of an [If](If.md): the one to the target the
 pass allocated has `new_allocation`, as that target is not finalized
-(F2018 7.5.6.3), and the other one does not. A backend then only lowers the
+(F2018 7.5.6.3), and the other one does not. A polymorphic allocatable scalar
+assigned a value that is not polymorphic takes the type of the value: the
+pass deallocates it with an [ImplicitDeallocate](ImplicitDeallocate.md),
+which finalizes it when it is allocated, allocates it with that type, and
+gives the assignment `new_allocation`. A backend then only lowers the
 allocation and the assignment it is given.
 
 ## Examples

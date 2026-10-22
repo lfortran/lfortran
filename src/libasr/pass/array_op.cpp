@@ -3229,8 +3229,9 @@ void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
 
 /*
 An intrinsic assignment to an unallocated allocatable variable allocates it
-(F2018 10.2.1.3 p3). This pass makes that allocation explicit for a
-nonpolymorphic scalar of derived type:
+(F2018 10.2.1.3 p3). This pass makes that allocation explicit for a scalar
+of derived type, and for a polymorphic scalar assigned a value that is not
+polymorphic. For a nonpolymorphic variable
 
     type(t), allocatable :: a
     a = b
@@ -3251,6 +3252,20 @@ branches, and the one to the variable allocated here has `new_allocation`:
         a = b    [new_allocation]   ! does not finalize a
     end if
 
+A polymorphic variable takes the dynamic type of the value, which is its
+declared type when it is not polymorphic (F2018 10.2.1.3 p3). The variable
+is deallocated, which finalizes it when it is allocated, and allocated with
+that type:
+
+    class(t), allocatable :: a
+    a = b                           ! b is type(t2)
+
+becomes
+
+    deallocate(a)                   ! ImplicitDeallocate
+    allocate(t2 :: a)
+    a = b    [new_allocation]
+
 The value is evaluated after the allocation, as it was by the backend.
 
 It is a pass of its own, which runs once, after subroutine_from_function,
@@ -3263,38 +3278,54 @@ public:
 
     AllocateOnAssignmentVisitor(Allocator &al) : PassVisitor(al, nullptr) {}
 
-    // Whether the target of `x` is a nonpolymorphic allocatable scalar of
-    // derived type that the intrinsic assignment allocates when it is
-    // unallocated.
-    static bool allocates_target(const ASR::Assignment_t &x) {
+    // Whether `x` is an intrinsic assignment to an allocatable scalar.
+    static bool is_assignment_to_allocatable_scalar(const ASR::Assignment_t &x) {
         if (x.m_overloaded != nullptr || x.m_move_allocation ||
                 x.m_new_target || x.m_new_allocation) {
             return false;
         }
         ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
-        if (!ASRUtils::is_allocatable(target_type) ||
-                ASRUtils::is_array(target_type) ||
-                ASRUtils::is_array(value_type)) {
-            return false;
-        }
-        ASR::ttype_t* target_el_type = ASRUtils::extract_type(target_type);
-        ASR::ttype_t* value_el_type = ASRUtils::extract_type(value_type);
+        return ASRUtils::is_allocatable(target_type) &&
+            !ASRUtils::is_array(target_type) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_value));
+    }
+
+    // Whether the target of `x` is a nonpolymorphic allocatable scalar of
+    // derived type that the intrinsic assignment allocates when it is
+    // unallocated.
+    static bool allocates_nonpolymorphic_target(const ASR::Assignment_t &x) {
+        ASR::ttype_t* target_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_target));
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_value));
         return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
             !ASRUtils::is_class_type(target_el_type) &&
             ASR::is_a<ASR::StructType_t>(*value_el_type) &&
             !ASRUtils::is_unlimited_polymorphic_type(x.m_value);
     }
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
-        if (!allocates_target(x)) {
-            return;
+    // Whether the target of `x` is a polymorphic allocatable scalar that
+    // the intrinsic assignment of a value that is not polymorphic allocates
+    // with the declared type of the value.
+    static bool allocates_polymorphic_target(const ASR::Assignment_t &x) {
+        ASR::ttype_t* target_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_target));
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_value));
+        if (!ASRUtils::is_class_type(target_el_type) ||
+                ASRUtils::is_class_type(value_el_type)) {
+            return false;
         }
-        const Location &loc = x.base.base.loc;
-        ASRUtils::ASRBuilder b(al, loc);
-        ASRUtils::ExprStmtDuplicator d(al);
-        ASR::expr_t* target = x.m_target;
+        if (ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+            return ASRUtils::get_struct_sym_from_struct_expr(x.m_value)
+                != nullptr;
+        }
+        return ASRUtils::is_unlimited_polymorphic_type(x.m_target);
+    }
 
+    ASR::stmt_t* make_allocate(ASR::expr_t* target, ASR::ttype_t* type,
+            ASR::symbol_t* sym_subclass, const Location &loc) {
+        ASRUtils::ExprStmtDuplicator d(al);
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
@@ -3303,13 +3334,32 @@ public:
         alloc_arg.m_dims = nullptr;
         alloc_arg.n_dims = 0;
         alloc_arg.m_len_expr = nullptr;
-        alloc_arg.m_type = nullptr;
-        alloc_arg.m_sym_subclass = nullptr;
+        alloc_arg.m_type = type;
+        alloc_arg.m_sym_subclass = sym_subclass;
         alloc_arg.m_codims = nullptr;
         alloc_arg.n_codims = 0;
         alloc_args.push_back(al, alloc_arg);
-        ASR::stmt_t* allocate = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+        return ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
             alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_assignment_to_allocatable_scalar(x)) {
+            return;
+        }
+        if (allocates_nonpolymorphic_target(x)) {
+            allocate_nonpolymorphic_target(x);
+        } else if (allocates_polymorphic_target(x)) {
+            allocate_polymorphic_target(x);
+        }
+    }
+
+    void allocate_nonpolymorphic_target(const ASR::Assignment_t &x) {
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::expr_t* target = x.m_target;
+        ASR::stmt_t* allocate = make_allocate(target, nullptr, nullptr, loc);
 
         Vec<ASR::expr_t*> allocated_args;
         allocated_args.reserve(al, 1);
@@ -3336,6 +3386,34 @@ public:
             ->m_new_allocation = true;
         pass_result.push_back(al, b.If(is_allocated, {assignment},
             {allocate, new_allocation_assignment}));
+    }
+
+    void allocate_polymorphic_target(const ASR::Assignment_t &x) {
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_value));
+        ASR::ttype_t* type = nullptr;
+        ASR::symbol_t* sym_subclass = nullptr;
+        if (ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+            sym_subclass = ASRUtils::get_struct_sym_from_struct_expr(
+                x.m_value);
+            type = ASRUtils::make_StructType_t_util(al, loc, sym_subclass,
+                true);
+        } else {
+            type = ASRUtils::duplicate_type(al, value_el_type);
+        }
+        Vec<ASR::expr_t*> vars;
+        vars.reserve(al, 1);
+        vars.push_back(al, d.duplicate_expr(x.m_target));
+        pass_result.reserve(al, 3);
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+            al, loc, vars.p, vars.size())));
+        pass_result.push_back(al, make_allocate(x.m_target, type, sym_subclass,
+            loc));
+        ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        xx.m_new_allocation = true;
+        pass_result.push_back(al, &xx.base);
     }
 };
 
