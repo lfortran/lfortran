@@ -22213,39 +22213,40 @@ public:
         }
     }
 
-    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
-            llvm::Value* elem_ptr) {
+    // One scalar target of a formatted READ in the runtime protocol (see
+    // _lfortran_formatted_read). For a character target, `ptr` is the
+    // address of its data pointer and `len` its length.
+    struct FormattedReadScalar {
+        int32_t type_code;
+        llvm::Value* ptr;
+        llvm::Value* len;
+        int64_t char_kind;
+    };
+
+    // The scalar targets of a formatted READ item of type `val_type` at
+    // `elem_ptr`: one, or two (real and imaginary part) for a complex item.
+    std::vector<FormattedReadScalar> get_formatted_read_scalars(
+            ASR::ttype_t* val_type, llvm::Value* elem_ptr) {
         constexpr int32_t kChar = 0;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
         constexpr int32_t kWideChar = 8;
 
-        // Scalar arg: prepend is_descriptor_array=0 before type_code
-        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         if (ASR::is_a<ASR::String_t>(*val_type)) {
             // A destination of character kind > 1 uses its own type code and
             // carries the kind, so the runtime knows the field has to be
             // decoded into code units.
             int64_t char_kind = ASR::down_cast<ASR::String_t>(val_type)->m_kind;
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
-                char_kind > 1 ? kWideChar : kChar)));
             auto [str_data, str_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(val_type), elem_ptr, true);
-            args.push_back(str_data);
-            args.push_back(str_len);
-            if (char_kind > 1) {
-                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, char_kind)));
-            }
+            return {{char_kind > 1 ? kWideChar : kChar, str_data, str_len, char_kind}};
         } else if (ASR::is_a<ASR::Logical_t>(*val_type)
                 || ASR::is_a<ASR::Integer_t>(*val_type)
                 || ASR::is_a<ASR::Real_t>(*val_type)) {
             // The type code carries the kind, so that the runtime stores an
             // item of its own size.
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
-                LLVMArrUtils::get_formatted_read_type_code(val_type, nullptr))));
-            args.push_back(elem_ptr);
+            return {{LLVMArrUtils::get_formatted_read_type_code(val_type, nullptr),
+                elem_ptr, nullptr, 0}};
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
             ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
             int32_t component_type_code = (complex_type->m_kind == 4) ? kFloat : kDouble;
@@ -22254,14 +22255,28 @@ public:
                 : static_cast<llvm::Type*>(complex_type_8);
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
-            args.push_back(re_ptr);
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
-            args.push_back(im_ptr);
+            return {{component_type_code, re_ptr, nullptr, 0},
+                    {component_type_code, im_ptr, nullptr, 0}};
         } else {
             throw CodeGenError("Unsupported type in formatted read");
+        }
+    }
+
+    // Appends the scalar variadic arguments of a formatted READ item:
+    // (0, type code, pointer[, length[, kind]]) per scalar target.
+    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
+            llvm::Value* elem_ptr) {
+        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+        for (const FormattedReadScalar &t : get_formatted_read_scalars(val_type, elem_ptr)) {
+            args.push_back(is_descriptor_array_false);
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, t.type_code)));
+            args.push_back(t.ptr);
+            if (t.len) {
+                args.push_back(t.len);
+                if (t.char_kind > 1) {
+                    args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, t.char_kind)));
+                }
+            }
         }
     }
 
@@ -22424,6 +22439,69 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
             llvm_utils->void_type, param_types, true);
         builder->CreateCall(fn, single_args);
+    }
+
+    // Lowers an implied-do loop of a formatted READ to a loop nest that
+    // appends the address of each item to the run-time target list `list`.
+    // The loop variables are defined as by a DO loop.
+    void push_formatted_read_targets(ASR::ImpliedDoLoop_t* idl, llvm::Value* list) {
+        llvm::Type* var_type = llvm_utils->get_type_from_ttype_t_util(
+            idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+        this->visit_expr_wrapper(idl->m_start, true);
+        llvm::Value* start = llvm_utils->convert_kind(tmp, var_type);
+        this->visit_expr_wrapper(idl->m_end, true);
+        llvm::Value* end = llvm_utils->convert_kind(tmp, var_type);
+        llvm::Value* step = llvm::ConstantInt::get(var_type, 1);
+        if (idl->m_increment) {
+            this->visit_expr_wrapper(idl->m_increment, true);
+            step = llvm_utils->convert_kind(tmp, var_type);
+        }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(idl->m_var, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* var_ptr = tmp;
+        builder->CreateStore(start, var_ptr);
+
+        llvm::Function* push_fn = LLVM::get_or_declare_function(*module,
+            "_lfortran_read_target_list_push", llvm_utils->void_type,
+            {character_type->getPointerTo(), llvm_utils->i32, character_type,
+             llvm_utils->i64, llvm_utils->i32});
+        llvm_utils->create_loop("read_idl", [&]() {
+            llvm::Value* cur = llvm_utils->CreateLoad2(var_type, var_ptr);
+            return builder->CreateSelect(
+                builder->CreateICmpSGT(step, llvm::ConstantInt::get(var_type, 0)),
+                builder->CreateICmpSLE(cur, end), builder->CreateICmpSGE(cur, end));
+        }, [&]() {
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* item = idl->m_values[i];
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+                    push_formatted_read_targets(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), list);
+                    continue;
+                }
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*item);
+                is_assignment_target = is_assignment_target_copy;
+                ptr_loads = ptr_loads_copy;
+                for (const FormattedReadScalar &t :
+                        get_formatted_read_scalars(ASRUtils::expr_type(item), tmp)) {
+                    // The data pointer of a string may be a temporary: push
+                    // the data itself
+                    llvm::Value* ptr = t.len ? llvm_utils->CreateLoad2(character_type, t.ptr)
+                        : builder->CreateBitCast(t.ptr, character_type);
+                    llvm::Value* len = t.len ? t.len : llvm::ConstantInt::get(llvm_utils->i64, 0);
+                    builder->CreateCall(push_fn, {list,
+                        llvm::ConstantInt::get(llvm_utils->i32, t.type_code), ptr, len,
+                        llvm::ConstantInt::get(llvm_utils->i32, t.len ? t.char_kind : 1)});
+                }
+            }
+            builder->CreateStore(builder->CreateAdd(
+                llvm_utils->CreateLoad2(var_type, var_ptr), step), var_ptr);
+        });
     }
 
     void emit_formatted_read_with_idl(const ASR::FileRead_t &x, ASR::expr_t** values,
@@ -22633,7 +22711,10 @@ public:
             }
         }
 
-        if (has_implied_do) {
+        // A READ with a nested implied-do loop is one data transfer, in which
+        // each implied-do loop is a list of targets (the implied_do_loops
+        // pass reports one whose targets cannot be collected first).
+        if (has_implied_do && !ASRUtils::has_nested_implied_do_loop(values, n_values)) {
             // The implied_do_loops pass reads the implied DO loops of an
             // internal file as array sections where it can.
             emit_formatted_read_with_idl(x, values, n_values, unit_val,
@@ -22643,6 +22724,11 @@ public:
 
         size_t total_scalar_values = 0;
         for (size_t i = 0; i < n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                // one target list
+                total_scalar_values += 1;
+                continue;
+            }
             ASR::ttype_t* expr_type = ASRUtils::expr_type(values[i]);
             ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type));
@@ -22689,8 +22775,20 @@ public:
         args.push_back(pad_data);
         args.push_back(pad_len);
 
+        std::vector<llvm::Value*> target_lists;
         for (size_t i = 0; i < n_values; i++) {
             ASR::expr_t* val_expr = values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val_expr)) {
+                // A target list: (2, list)
+                llvm::Value* list = llvm_utils->CreateAlloca(character_type);
+                builder->CreateStore(llvm::Constant::getNullValue(character_type), list);
+                push_formatted_read_targets(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(val_expr), list);
+                target_lists.push_back(list);
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 2)));
+                args.push_back(llvm_utils->CreateLoad2(character_type, list));
+                continue;
+            }
             ASR::ttype_t* expr_type_full = ASRUtils::expr_type(val_expr);
             ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
@@ -22776,6 +22874,14 @@ public:
         }
 
         builder->CreateCall(fn, args);
+        if (!target_lists.empty()) {
+            llvm::Function* free_fn = LLVM::get_or_declare_function(*module,
+                "_lfortran_read_target_list_free", llvm_utils->void_type,
+                {character_type});
+            for (llvm::Value* list : target_lists) {
+                builder->CreateCall(free_fn, {llvm_utils->CreateLoad2(character_type, list)});
+            }
+        }
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {

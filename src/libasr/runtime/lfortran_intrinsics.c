@@ -12267,6 +12267,54 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
     return true;
 }
 
+// One scalar target of a formatted READ, collected at run time from the
+// implied-do loops of the input list (type codes as in the variadic
+// protocol below; for type codes 0 and 8, `ptr` is the character data and
+// `len` its length).
+typedef struct {
+    int32_t type_code;
+    void* ptr;
+    int64_t len;
+    int32_t kind;
+} ReadTarget;
+
+typedef struct {
+    ReadTarget* items;
+    int64_t n;
+    int64_t capacity;
+} ReadTargetList;
+
+LFORTRAN_API void _lfortran_read_target_list_push(void** list,
+    int32_t type_code, void* ptr, int64_t len, int32_t kind)
+{
+    ReadTargetList* l = (ReadTargetList*)*list;
+    if (l == NULL) {
+        l = (ReadTargetList*)internal_malloc(sizeof(ReadTargetList));
+        l->items = NULL;
+        l->n = 0;
+        l->capacity = 0;
+        *list = l;
+    }
+    if (l->n == l->capacity) {
+        l->capacity = (l->capacity == 0) ? 16 : 2 * l->capacity;
+        l->items = (ReadTarget*)internal_realloc(l->items,
+            (size_t)l->capacity * sizeof(ReadTarget));
+    }
+    ReadTarget* t = &l->items[l->n++];
+    t->type_code = type_code;
+    t->ptr = ptr;
+    t->len = len;
+    t->kind = kind;
+}
+
+LFORTRAN_API void _lfortran_read_target_list_free(void* list)
+{
+    ReadTargetList* l = (ReadTargetList*)list;
+    if (l == NULL) return;
+    internal_free(l->items);
+    internal_free(l);
+}
+
 // Tracks pending array elements for one-element-per-format-item reading.
 // In Fortran, each array element consumes its own format edit descriptor,
 // so we read one element per handler call and return to the format processor.
@@ -12286,7 +12334,63 @@ typedef struct {
     bool is_char;
     int32_t char_kind;
     int64_t char_len;
+    // The target list being read, or NULL. Its variadic argument is
+    // consumed, but it counts as read (arg_idx) only after its last target.
+    ReadTargetList* list;
+    int64_t list_pos;      // index of the next target in `list`
 } ArrayReadCont;
+
+// If the next variadic read target is a non-empty target list
+// (is_descriptor_array == 2, followed by a ReadTargetList*), consume it, so
+// that the next scalar targets are taken from it.
+static void start_read_target_list(va_list *args, int32_t no_of_args,
+        int *arg_idx, ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active || arr_cont->list != NULL || *arg_idx >= no_of_args) return;
+    va_list probe;
+    va_copy(probe, *args);
+    int32_t is_descriptor_array = va_arg(probe, int32_t);
+    va_end(probe);
+    if (is_descriptor_array != 2) return;
+    (void)va_arg(*args, int32_t);
+    arr_cont->list = va_arg(*args, ReadTargetList*);
+    arr_cont->list_pos = 0;
+}
+
+// Takes the next scalar target of a formatted READ: the next target of the
+// target list being read, or else the next variadic argument,
+// (0, type code, pointer[, length[, kind]]). Returns false if that argument
+// is an array descriptor instead, with its is_descriptor_array consumed.
+static bool next_scalar_read_target(va_list *args, int *arg_idx,
+        ArrayReadCont *arr_cont, ReadTarget *t)
+{
+    if (arr_cont->list != NULL) {
+        *t = arr_cont->list->items[arr_cont->list_pos++];
+        if (arr_cont->list_pos >= arr_cont->list->n) {
+            arr_cont->list = NULL;
+            (*arg_idx)++;
+        }
+        return true;
+    }
+    int32_t is_descriptor_array = va_arg(*args, int32_t);
+    if (is_descriptor_array) {
+        return false;
+    }
+    t->type_code = va_arg(*args, int32_t);
+    t->ptr = va_arg(*args, void*);
+    t->len = 0;
+    t->kind = 1;
+    if (t->type_code == 0 || t->type_code == 8) {
+        char** str_data_ptr = (char**)t->ptr;
+        t->ptr = str_data_ptr ? *str_data_ptr : NULL;
+        t->len = va_arg(*args, int64_t);
+        if (t->type_code == 8) {
+            t->kind = va_arg(*args, int32_t);
+        }
+    }
+    (*arg_idx)++;
+    return true;
+}
 
 static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
         int *arg_idx)
@@ -12301,6 +12405,17 @@ static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
     if (!is_descriptor_array) {
         va_end(probe);
         return false;
+    }
+    if (is_descriptor_array == 2) {
+        ReadTargetList* list = va_arg(probe, ReadTargetList*);
+        va_end(probe);
+        if (list != NULL && list->n > 0) {
+            return false;
+        }
+        (void)va_arg(*args, int32_t);
+        (void)va_arg(*args, ReadTargetList*);
+        (*arg_idx)++;
+        return true;
     }
 
     int32_t elem_tc = va_arg(probe, int32_t);
@@ -12336,6 +12451,30 @@ static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
     }
     (*arg_idx)++;
     return true;
+}
+
+static bool is_character_read_target(const ReadTarget *t)
+{
+    return t->type_code == 0 || t->type_code == 8;
+}
+
+// A scalar target whose type its edit descriptor cannot read: a character
+// item for a numeric or logical descriptor, or a non-character item for A.
+// This is an error condition: it sets IOSTAT, or else ends the program.
+static bool read_target_type_mismatch(int32_t *iostat, const ReadTarget *t)
+{
+    if (iostat) {
+        *iostat = 5010;
+        return false;
+    }
+    if (is_character_read_target(t)) {
+        fprintf(stderr, "Runtime Error: formatted READ of a character item "
+            "with a numeric or logical edit descriptor\n");
+    } else {
+        fprintf(stderr, "Runtime Error: formatted READ of a non-character item "
+            "with an A edit descriptor\n");
+    }
+    exit(1);
 }
 
 static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
@@ -12454,10 +12593,10 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         return true;
     }
 
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    int32_t type_code = va_arg(*args, int32_t);
-    int32_t char_kind = 1;
-    if (is_descriptor_array) {
+    ReadTarget t;
+    if (!next_scalar_read_target(args, arg_idx, arr_cont, &t)) {
+        int32_t type_code = va_arg(*args, int32_t);
+        int32_t char_kind = 1;
         char* data_ptr = va_arg(*args, char*);
         int32_t n_elems = va_arg(*args, int32_t);
         int32_t rank = va_arg(*args, int32_t);
@@ -12498,16 +12637,11 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         return true;
     }
 
-    char** str_data_ptr = va_arg(*args, char**);
-    int64_t str_len = va_arg(*args, int64_t);
-    if (type_code == 8) {
-        char_kind = va_arg(*args, int32_t);
+    if (!is_character_read_target(&t)) {
+        return read_target_type_mismatch(iostat, &t);
     }
-    (*arg_idx)++;
-
-    char* str_data = str_data_ptr ? *str_data_ptr : NULL;
     return read_character_target(inputSource, width, advance_no, iostat, chunk,
-        consumed_newline, pad_no, str_data, str_len, char_kind);
+        consumed_newline, pad_no, (char*)t.ptr, t.len, t.kind);
 }
 
 // Read the next element of the logical or integer array in `arr_cont` with an
@@ -12545,9 +12679,9 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
             iostat, chunk, consumed_newline, pad_no, arr_cont);
     }
 
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    int32_t type_code = va_arg(*args, int32_t);
-    if (is_descriptor_array) {
+    ReadTarget t;
+    if (!next_scalar_read_target(args, arg_idx, arr_cont, &t)) {
+        int32_t type_code = va_arg(*args, int32_t);
         void* data_ptr = va_arg(*args, void*);
         int32_t n_elems = va_arg(*args, int32_t);
         int32_t rank = va_arg(*args, int32_t);
@@ -12565,8 +12699,11 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         return read_logical_array_component(inputSource, width, advance_no,
             iostat, chunk, consumed_newline, pad_no, arr_cont);
     }
-    void* log_ptr = va_arg(*args, void*);
-    (*arg_idx)++;
+    if (is_character_read_target(&t)) {
+        return read_target_type_mismatch(iostat, &t);
+    }
+    int32_t type_code = t.type_code;
+    void* log_ptr = t.ptr;
 
     int read_width = (width > 0) ? width : 1;
     if (read_width < 0) read_width = 0;
@@ -12618,8 +12755,8 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         return read_integer_array_component(inputSource, width, advance_no,
             iostat, chunk, consumed_newline, pad_no, blank_mode, arr_cont);
     }
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    if (is_descriptor_array) {
+    ReadTarget t;
+    if (!next_scalar_read_target(args, arg_idx, arr_cont, &t)) {
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
@@ -12638,9 +12775,11 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         return read_integer_array_component(inputSource, width, advance_no,
             iostat, chunk, consumed_newline, pad_no, blank_mode, arr_cont);
     }
-    int32_t type_code = va_arg(*args, int32_t);
-    void* int_ptr = va_arg(*args, void*);
-    (*arg_idx)++;
+    if (is_character_read_target(&t)) {
+        return read_target_type_mismatch(iostat, &t);
+    }
+    int32_t type_code = t.type_code;
+    void* int_ptr = t.ptr;
 
     int read_width = (width > 0) ? width : 10;
     if (read_width < 0) read_width = 0;
@@ -12696,8 +12835,8 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         return read_boz_array_component(inputSource, width, advance_no, iostat,
             chunk, consumed_newline, pad_no, blank_mode, base, arr_cont);
     }
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    if (is_descriptor_array) {
+    ReadTarget t;
+    if (!next_scalar_read_target(args, arg_idx, arr_cont, &t)) {
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
@@ -12716,9 +12855,11 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         return read_boz_array_component(inputSource, width, advance_no, iostat,
             chunk, consumed_newline, pad_no, blank_mode, base, arr_cont);
     }
-    int32_t type_code = va_arg(*args, int32_t);
-    void* int_ptr = va_arg(*args, void*);
-    (*arg_idx)++;
+    if (is_character_read_target(&t)) {
+        return read_target_type_mismatch(iostat, &t);
+    }
+    int32_t type_code = t.type_code;
+    void* int_ptr = t.ptr;
 
     int read_width = (width > 0) ? width : 10;
     if (read_width < 0) read_width = 0;
@@ -12826,8 +12967,8 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
             decimal_mode, decimal_places, arr_cont);
     }
 
-    int32_t is_descriptor_array = va_arg(*args, int32_t);
-    if (is_descriptor_array) {
+    ReadTarget t;
+    if (!next_scalar_read_target(args, arg_idx, arr_cont, &t)) {
         int32_t elem_tc  = va_arg(*args, int32_t);
         void*   data_ptr = va_arg(*args, void*);
         int32_t n_elems  = va_arg(*args, int32_t);
@@ -12849,9 +12990,11 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     }
 
     // Scalar path
-    int32_t type_code = va_arg(*args, int32_t);
-    void* real_ptr = va_arg(*args, void*);
-    (*arg_idx)++;
+    if (is_character_read_target(&t)) {
+        return read_target_type_mismatch(iostat, &t);
+    }
+    int32_t type_code = t.type_code;
+    void* real_ptr = t.ptr;
     bool is_complex = (type_code == 6 || type_code == 7);
     if (type_code == 6) type_code = 4;
     if (type_code == 7) type_code = 5;
@@ -13182,6 +13325,10 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 //     int32_t* strides        (rank stride multipliers in elements)
 //     int64_t elem_len        (character only)
 //     int32_t char_kind       (wide character only)
+//
+// Target list (is_descriptor_array == 2), the items of an implied-do loop:
+//     int32_t is_descriptor_array = 2
+//     ReadTargetList* list    (NULL if empty; see _lfortran_read_target_list_push)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
@@ -13393,9 +13540,11 @@ static void process_fmt_items_read(InputSource *inputSource,
             spec == 'D' || spec == 'G' || (spec == 'B' && width > 0));
         for (int rep = 0; rep < repeat_count; rep++)  {
             if (is_data_descriptor) {
-                while (!arr_cont->active && *arg_idx < no_of_args &&
+                while (!arr_cont->active && arr_cont->list == NULL &&
+                        *arg_idx < no_of_args &&
                         skip_empty_descriptor_read_target(args, no_of_args, arg_idx)) {
                 }
+                start_read_target_list(args, no_of_args, arg_idx, arr_cont);
                 if (*arg_idx >= no_of_args && !arr_cont->active) {
                     return;
                 }
@@ -13560,6 +13709,8 @@ static void common_formatted_read(InputSource *inputSource,
         bool cont_before = arr_cont.active;
         int32_t cont_idx_before = arr_cont.current_idx;
         bool cont_imag_before = arr_cont.reading_imag;
+        ReadTargetList* list_before = arr_cont.list;
+        int64_t list_pos_before = arr_cont.list_pos;
         fchar *cycle_fmt;
         int64_t cycle_len;
         if (first_cycle) {
@@ -13573,7 +13724,14 @@ static void common_formatted_read(InputSource *inputSource,
             cycle_fmt, cycle_len, no_of_args, args,
             &arg_idx, &blank_mode, &scale_factor, &consumed_newline, pad_no, &decimal_mode,
             &arr_cont);
+        // Empty targets (a zero-size array or an empty implied-do list) are
+        // no items, so if only they remain, the input list is exhausted and
+        // the format must not revert to a new record.
+        while (!arr_cont.active && arr_cont.list == NULL && arg_idx < no_of_args &&
+                skip_empty_descriptor_read_target(args, no_of_args, &arg_idx)) {
+        }
         bool made_progress = (arg_idx > args_before) ||
+            arr_cont.list != list_before || arr_cont.list_pos != list_pos_before ||
             (cont_before && (arr_cont.current_idx != cont_idx_before ||
                 arr_cont.reading_imag != cont_imag_before || !arr_cont.active));
         if (made_progress && (arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {

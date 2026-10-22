@@ -1632,6 +1632,56 @@ public:
         tmp = ASR::make_FileBackspace_t(al, x.base.base.loc, x.m_label, a_unit, a_iostat, a_iomsg, a_err);
     }
 
+    static void collect_implied_do_vars(ASR::expr_t* e, std::vector<ASR::symbol_t*>& vars) {
+        if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) return;
+        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+        vars.push_back(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+        for (size_t i = 0; i < idl->n_values; i++) {
+            collect_implied_do_vars(idl->m_values[i], vars);
+        }
+    }
+
+    // Expands the implied-do loops of a READ input list. Expansion
+    // substitutes a loop variable only in a plain subscript of an element,
+    // and the backend does a formatted READ with a nested implied-do loop as
+    // one data transfer that runs its loops. So such a READ keeps its list
+    // unexpanded if the expansion keeps a nested loop or a reference to a
+    // variable of an expanded loop.
+    void expand_implied_do_loops_for_read(Vec<ASR::expr_t*>& values,
+            std::vector<ASR::stmt_t*>& post_stmts, bool formatted) {
+        Vec<ASR::expr_t*> expanded;
+        expanded.reserve(al, values.size());
+        std::vector<ASR::stmt_t*> expanded_post_stmts;
+        for (size_t i = 0; i < values.size(); i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                expand_implied_do_for_read(ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]),
+                    expanded, expanded_post_stmts);
+            } else {
+                expanded.push_back(al, values[i]);
+            }
+        }
+        if (formatted && ASRUtils::has_nested_implied_do_loop(values.p, values.size())) {
+            std::vector<ASR::symbol_t*> vars;
+            for (size_t i = 0; i < values.size(); i++) {
+                collect_implied_do_vars(values[i], vars);
+            }
+            bool keep = ASRUtils::has_nested_implied_do_loop(expanded.p, expanded.size());
+            for (size_t i = 0; i < expanded.size(); i++) {
+                ASR::symbol_t* own_var = ASR::is_a<ASR::ImpliedDoLoop_t>(*expanded[i]) ?
+                    ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ImpliedDoLoop_t>(
+                        expanded[i])->m_var)->m_v : nullptr;
+                for (ASR::symbol_t* v : vars) {
+                    keep = keep || (v != own_var &&
+                        ASRUtils::expr_references_symbol(expanded[i], v));
+                }
+            }
+            if (keep) return;
+        }
+        values = expanded;
+        post_stmts.insert(post_stmts.end(), expanded_post_stmts.begin(),
+            expanded_post_stmts.end());
+    }
+
     // Expand ImpliedDoLoop for READ statements into individual elements or array section.
     // For constant bounds: (vals(i), i=1,3) -> vals(1), vals(2), vals(3)
     // For variable bounds: (vals(i), i=1,n) -> vals(1:n)
@@ -2707,13 +2757,10 @@ public:
                 check_read_item_not_complex_part(expr);
                 expr = cast_assumed_rank_io_item(expr, loc, "read");
             }
-            // For READ: expand implied-do loops to individual elements or array section
-            if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
-                expand_implied_do_for_read(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), a_values_vec, post_stmts);
-            } else {
-                a_values_vec.push_back(al, expr);
-            }
+            a_values_vec.push_back(al, expr);
+        }
+        if (_type == AST::decl_stmtType::Read) {
+            expand_implied_do_loops_for_read(a_values_vec, post_stmts, a_fmt != nullptr);
         }
 
         // A editing of integer items is a legacy Fortran 66 feature (deleted
