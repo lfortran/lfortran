@@ -5,11 +5,16 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 import uuid
 
-from jupyter_client import BlockingKernelClient
-from jupyter_client.connect import write_connection_file
+try:
+    from jupyter_client import BlockingKernelClient
+    from jupyter_client.connect import write_connection_file
+except ImportError:
+    print("jupyter_client is not installed; skipping")
+    sys.exit(77)  # SKIP_RETURN_CODE in CMakeLists.txt
 
 # Descriptors the kernel may have open. It needs about 60; a leak of a
 # descriptor per cell exhausts them within the cells below.
@@ -99,10 +104,11 @@ def main():
                        m["content"]["data"]["text/html"] == "<b>hello</b>"
                        for m in messages), messages
             assert any(m["msg_type"] == "clear_output" for m in messages), messages
-            reply, messages = execute(client, "n+1", silent=True)
-            assert reply["status"] == "ok", reply
-            assert not any(m["msg_type"] in ("execute_result", "stream", "display_data")
-                           for m in messages), messages
+            for code in ("n+1", "call display_data('text/html', '<b>silent</b>')"):
+                reply, messages = execute(client, code, silent=True)
+                assert reply["status"] == "ok", reply
+                assert not any(m["msg_type"] in ("execute_result", "stream",
+                    "display_data") for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
             # An inspection cell does not add its declarations to the session.
