@@ -1438,7 +1438,7 @@ public:
                 break;
             }
             if (l->m_head.m_increment) {
-                int64_t inc;
+                int64_t inc = 0;
                 if (!ASRUtils::extract_value(ASRUtils::expr_value(
                         l->m_head.m_increment), inc) || inc != 1) {
                     break;
