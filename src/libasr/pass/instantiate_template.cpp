@@ -523,6 +523,7 @@ public:
         ASR::expr_t *right = duplicate_expr(x.m_right);
         ASR::expr_t *step = duplicate_expr(x.m_step);
         ASR::array_index_t result;
+        result.loc = x.loc;
         result.m_left = left;
         result.m_right = right;
         result.m_step = step;
@@ -3347,6 +3348,7 @@ public:
         ASR::expr_t *right = duplicate_expr(x.m_right);
         ASR::expr_t *step = duplicate_expr(x.m_step);
         ASR::array_index_t result;
+        result.loc = x.loc;
         result.m_left = left;
         result.m_right = right;
         result.m_step = step;

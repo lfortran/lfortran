@@ -10348,7 +10348,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::dimension_t dims_;
                         dims_.m_start = nullptr;
                         dims_.m_length = nullptr;
-                        dim_.loc = arg->base.loc;
+                        dims_.loc = arg->base.loc;
                         dims.push_back(al, dims_);
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
