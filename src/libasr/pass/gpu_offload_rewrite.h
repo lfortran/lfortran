@@ -457,13 +457,14 @@ public:
 };
 
 // Collects the symbols that Var references in a function body of the
-// kernel name but that are not reachable through the function's scope
-// chain. This happens when a copied procedure references entities of the
-// scope the original was defined in (e.g., variables or parameters of its
-// module, or of the host of a contained procedure), which are not present
-// in the kernel scope hierarchy. The decision is made by symbol identity:
-// an entity of the same name that the kernel scope happens to hold, such
-// as a variable of the caller passed to the kernel, is a different entity.
+// kernel, or in the declarations of its variables, name but that are not
+// reachable through the function's scope chain. This happens when a copied
+// procedure references entities of the scope the original was defined in
+// (e.g., variables or parameters of its module, or of the host of a
+// contained procedure), which are not present in the kernel scope
+// hierarchy. The decision is made by symbol identity: an entity of the same
+// name that the kernel scope happens to hold, such as a variable of the
+// caller passed to the kernel, is a different entity.
 class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;

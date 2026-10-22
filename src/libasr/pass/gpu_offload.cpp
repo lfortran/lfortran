@@ -1750,9 +1750,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             return nullptr;
         };
         for (ASR::Function_t *func : kernel_funcs) {
+            // The declarations of its variables, such as the expression
+            // a named constant is declared with or an array bound, can
+            // name such entities as well as its body.
+            std::vector<ASR::symbol_t*> local_vars;
+            for (auto &item : func->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    local_vars.push_back(item.second);
+                }
+            }
             DanglingVarCollector dvc(func->m_symtab, kernel_scope);
             for (size_t bi = 0; bi < func->n_body; bi++) {
                 dvc.visit_stmt(*func->m_body[bi]);
+            }
+            for (ASR::symbol_t *v : local_vars) {
+                dvc.visit_symbol(*v);
             }
             if (dvc.dangling.empty()) continue;
 
@@ -1835,6 +1847,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 DanglingVarFixer fixer(replacements);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fixer.visit_stmt(*func->m_body[bi]);
+                }
+                for (ASR::symbol_t *v : local_vars) {
+                    fixer.visit_symbol(*v);
                 }
             }
         }

@@ -6590,6 +6590,7 @@ RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do
 # Procedures copied into a kernel and the entities they name of their
 # hosts and modules.
 RUN(NAME gpu_metal_570 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_571 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
