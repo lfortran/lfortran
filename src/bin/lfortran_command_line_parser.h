@@ -31,6 +31,7 @@ namespace LCompilers::CommandLineInterface {
         std::string arg_standard;
         bool arg_infer = false;
         bool arg_version = false;
+        std::string arg_status_file;
         // see parser.prescan function for what 'prescanning' does
         bool show_prescan = false;
         bool show_tokens = false;

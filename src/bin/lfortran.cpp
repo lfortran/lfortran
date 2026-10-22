@@ -423,8 +423,38 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose, CompilerOptions &cu)
+// Writes a line to the status file, if there is one, as a cell finishes, so
+// that a tool sending cells to the prompt knows the cell is done without
+// reading the screen (#15512). The cell's output is flushed first. Returns
+// false if the line could not be written, so that the prompt can exit rather
+// than leave the tool waiting for it.
+bool report_cell_status(std::ofstream &status, const std::string &path,
+    int cell, bool ok)
 {
+    if (!status.is_open()) return true;
+    std::cout.flush();
+    fflush(stdout);
+    status << "{\"cell\": " << cell << ", \"status\": \""
+        << (ok ? "ok" : "error") << "\"}" << std::endl;
+    if (!status) {
+        std::cerr << "cannot write to the status file '" << path << "'"
+            << std::endl;
+        return false;
+    }
+    return true;
+}
+
+int prompt(bool verbose, const std::string &status_file, CompilerOptions &cu)
+{
+    std::ofstream status;
+    if (!status_file.empty()) {
+        status.open(status_file);
+        if (!status) {
+            std::cerr << "cannot open the status file '" << status_file
+                << "'" << std::endl;
+            return 1;
+        }
+    }
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
     std::cout << "LFortran version: " << version << std::endl;
@@ -440,6 +470,8 @@ int prompt(bool verbose, CompilerOptions &cu)
 
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
+    // Counted as the evaluator names cells in diagnostics, `<cell 2>`
+    int cell = 0;
     while (true) {
         std::string input;
         {
@@ -455,6 +487,7 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << "Exiting." << std::endl;
             return 0;
         }
+        cell++;
 
         if (verbose) {
             section("Input:");
@@ -478,6 +511,7 @@ int prompt(bool verbose, CompilerOptions &cu)
                 LCOMPILERS_ASSERT(diagnostics.has_error())
                 std::cerr << diagnostics.render(lm, cu);
                 diagnostics.clear();
+                if (!report_cell_status(status, status_file, cell, false)) return 1;
                 continue;
             }
         } catch (const LCompilers::LCompilersException &e) {
@@ -487,6 +521,7 @@ int prompt(bool verbose, CompilerOptions &cu)
             get_local_info(d);
             std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
             std::cerr << e.name() + ": " << e.msg() << std::endl;
+            if (!report_cell_status(status, status_file, cell, false)) return 1;
             continue;
         }
 
@@ -560,6 +595,7 @@ int prompt(bool verbose, CompilerOptions &cu)
             }
             default : throw LCompilers::LCompilersException("Return type not supported");
         }
+        if (!report_cell_status(status, status_file, cell, true)) return 1;
     }
     return 0;
 }
@@ -2946,7 +2982,7 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, compiler_options);
+        return prompt(opts.arg_v, opts.arg_status_file, compiler_options);
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
