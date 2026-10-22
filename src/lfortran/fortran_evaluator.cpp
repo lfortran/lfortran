@@ -1,7 +1,9 @@
+#include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <set>
 #include <sstream>
+#include <type_traits>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -427,12 +429,20 @@ std::string FortranEvaluator::EvalResult::type_name() const {
 }
 
 namespace {
-// `digits` significant digits, and always a decimal point or an exponent, so
-// that a real such as 1.0 does not look like the integer 1.
-std::string real_text(double x, int digits) {
-    std::ostringstream s;
-    s << std::setprecision(digits) << x;
-    std::string text = s.str();
+// The shortest text, with at most `max_digits` significant digits, that reads
+// back as `x`, and always with a decimal point or an exponent, so that a real
+// such as 1.0 does not look like the integer 1.
+template <typename T>
+std::string real_text(T x, int max_digits) {
+    std::string text;
+    for (int digits = 1; digits <= max_digits; digits++) {
+        std::ostringstream s;
+        s << std::setprecision(digits) << x;
+        text = s.str();
+        T y = std::is_same<T, float>::value ? std::strtof(text.c_str(), nullptr)
+            : std::strtod(text.c_str(), nullptr);
+        if (y == x) break;
+    }
     if (text.find_first_not_of("-0123456789") == std::string::npos) {
         text += ".0";
     }
@@ -445,10 +455,10 @@ std::string FortranEvaluator::EvalResult::text() const {
     switch (type) {
         case integer4: s << i32; break;
         case integer8: s << i64; break;
-        case real4: s << real_text(f32, 8); break;
+        case real4: s << real_text(f32, 9); break;
         case real8: s << real_text(f64, 17); break;
         case complex4:
-            s << "(" << real_text(c32.re, 8) << ", " << real_text(c32.im, 8) << ")";
+            s << "(" << real_text(c32.re, 9) << ", " << real_text(c32.im, 9) << ")";
             break;
         case complex8:
             s << "(" << real_text(c64.re, 17) << ", " << real_text(c64.im, 17) << ")";

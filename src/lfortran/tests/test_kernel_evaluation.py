@@ -82,6 +82,7 @@ def main():
             check(client, "'hello'", ["hello"])
             check(client, "1.2345678901234567_8", ["1.2345678901234567"])
             check(client, "1.0", ["1.0"])
+            check(client, "0.1_8", ["0.1"])
             messages = check(client, "max0(1, 2_8)", ["2"])
             assert any(m["msg_type"] == "stream" and m["content"]["name"] == "stderr"
                        and "Different kinds of args in max0" in m["content"]["text"]

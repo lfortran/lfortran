@@ -2941,6 +2941,9 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         // A real always has a decimal point or an exponent.
         {"1.0", "1.0"}, {"-3.0_8", "-3.0"}, {"(1.0, -2.0)", "(1.0, -2.0)"},
         {"(0.0_8, 4.0_8)", "(0.0, 4.0)"}, {"1.0e20", "1e+20"},
+        // The shortest text that reads back as the same value.
+        {"3.14159", "3.14159"}, {"0.1_8", "0.1"}, {"1e-5", "1e-05"},
+        {"1.0/3.0", "0.33333334"}, {"tiny(1.0)", "1.1754944e-38"},
         {".true.", "True"}, {".false.", "False"}, {"'hello'", "hello"}
     };
     for (auto &example : examples) {
