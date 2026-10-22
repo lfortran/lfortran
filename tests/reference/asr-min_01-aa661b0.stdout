@@ -487,6 +487,8 @@
                             ()
                             [(Var 2 output_min)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -586,6 +588,8 @@
                             ()
                             [(Var 2 output_min0)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -658,6 +662,8 @@
                             ()
                             [(Var 2 output_amin0)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -754,6 +760,8 @@
                             ()
                             [(Var 2 output_min1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -820,6 +828,8 @@
                             ()
                             [(Var 2 output_amin1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -910,6 +920,8 @@
                             ()
                             [(Var 2 output_dmin1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -1015,6 +1027,8 @@
                             ()
                             [(Var 2 output_min_different_kinds)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

@@ -416,6 +416,8 @@
                                             [(Var 6 error)
                                             (Var 6 status)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
