@@ -2919,13 +2919,25 @@ public:
             // If no overload found, expand any struct-typed values into their
             // member components (recursively for nested structs).
             if (overloaded_stmt == nullptr && a_values_vec.size() >= 1) {
-                // Check if any value has struct type
-                bool has_struct = false;
-                for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
-                    ASR::ttype_t* vtype = ASRUtils::expr_type(a_values_vec[vi]);
+                // An implied-do loop has the type of its first item, so the
+                // items of (nested) loops are checked one by one.
+                std::function<bool(ASR::expr_t*)> has_struct_value;
+                has_struct_value = [&](ASR::expr_t* expr) {
+                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+                        for (size_t iv = 0; iv < idl->n_values; iv++) {
+                            if (has_struct_value(idl->m_values[iv])) return true;
+                        }
+                        return false;
+                    }
+                    ASR::ttype_t* vtype = ASRUtils::expr_type(expr);
                     vtype = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(vtype));
-                    if (ASR::is_a<ASR::StructType_t>(*vtype)) {
+                    return ASR::is_a<ASR::StructType_t>(*vtype);
+                };
+                bool has_struct = false;
+                for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
+                    if (has_struct_value(a_values_vec[vi])) {
                         has_struct = true;
                         break;
                     }
@@ -2967,6 +2979,29 @@ public:
                     };
                     expand_struct_expr = [&](ASR::expr_t* struct_expr,
                                              Vec<ASR::expr_t*>& expanded) {
+                        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*struct_expr)) {
+                            // For ImpliedDoLoop with struct values like:
+                            //   read(*, *) (recs(i), i = 1, n)
+                            // We expand struct members INSIDE the loop values,
+                            // recursing into nested loops.
+                            // Before: ImpliedDoLoop(values=[recs(i)], ...)
+                            // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
+                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(struct_expr);
+                            Vec<ASR::expr_t*> idl_new_values;
+                            idl_new_values.reserve(al, idl->n_values * 4);
+                            for (size_t iv = 0; iv < idl->n_values; iv++) {
+                                expand_struct_expr(idl->m_values[iv], idl_new_values);
+                            }
+                            ASR::ttype_t* new_type = idl->m_type;
+                            if (idl_new_values.size() > 0) {
+                                new_type = ASRUtils::expr_type(idl_new_values[0]);
+                            }
+                            expanded.push_back(al, ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
+                                al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
+                                idl->m_var, idl->m_start, idl->m_end, idl->m_increment,
+                                new_type, idl->m_value)));
+                            return;
+                        }
                         ASR::ttype_t* stype = ASRUtils::expr_type(struct_expr);
                         stype = ASRUtils::type_get_past_allocatable(
                             ASRUtils::type_get_past_pointer(stype));
@@ -2989,36 +3024,13 @@ public:
                     new_values_vec.reserve(al, a_values_vec.size() * 4);
                     for (size_t vi = 0; vi < a_values_vec.size(); vi++) {
                         ASR::expr_t* expr = a_values_vec[vi];
-                        ASR::ttype_t* etype = ASRUtils::expr_type(expr);
-                        etype = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(etype));
-                        if (!ASR::is_a<ASR::StructType_t>(*etype)) {
+                        if (!has_struct_value(expr)) {
                             // Non-struct value, keep as-is
                             new_values_vec.push_back(al, expr);
-                        } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
-                            // For ImpliedDoLoop with struct values like:
-                            //   read(*, *) (recs(i), i = 1, n)
-                            // We expand struct members INSIDE the loop values.
-                            // Before: ImpliedDoLoop(values=[recs(i)], ...)
-                            // After:  ImpliedDoLoop(values=[recs(i)%x, recs(i)%y, ...], ...)
-                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
-                            Vec<ASR::expr_t*> idl_new_values;
-                            idl_new_values.reserve(al, idl->n_values * 4);
-                            for (size_t iv = 0; iv < idl->n_values; iv++) {
-                                expand_struct_expr(idl->m_values[iv], idl_new_values);
-                            }
-                            ASR::ttype_t* new_type = idl->m_type;
-                            if (idl_new_values.size() > 0) {
-                                new_type = ASRUtils::expr_type(idl_new_values[0]);
-                            }
-                            ASR::expr_t* new_idl = ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(
-                                al, idl->base.base.loc, idl_new_values.p, idl_new_values.size(),
-                                idl->m_var, idl->m_start, idl->m_end, idl->m_increment,
-                                new_type, idl->m_value));
-                            new_values_vec.push_back(al, new_idl);
                         } else {
                             // Direct struct value (e.g., pts(1) from constant-bound
-                            // implied do loop expansion): expand into members.
+                            // implied do loop expansion) or an implied do loop:
+                            // expand into members.
                             expand_struct_expr(expr, new_values_vec);
                         }
                     }
