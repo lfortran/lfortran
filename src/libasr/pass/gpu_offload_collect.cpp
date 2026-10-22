@@ -73,4 +73,19 @@ std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
     return order;
 }
 
+std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
+    std::set<ASR::Function_t*> routines;
+    GpuParallelRegionCollector regions;
+    regions.visit_TranslationUnit(unit);
+    GpuProcedureImplementations implementations(al, unit, pass_options);
+    for (ASR::OMPRegion_t *r : regions.loops) {
+        for (ASR::Function_t *fn : reachable_routines(r->m_body, r->n_body,
+                implementations)) {
+            routines.insert(fn);
+        }
+    }
+    return routines;
+}
+
 } // namespace LCompilers

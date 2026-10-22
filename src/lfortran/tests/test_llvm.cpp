@@ -1181,12 +1181,13 @@ TEST_CASE("FortranEvaluator 9 single complex") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-    if (cu.platform == LCompilers::Platform::Linux) {
+    if (cu.platform == LCompilers::Platform::Linux ||
+            cu.platform == LCompilers::Platform::Windows) {
         FortranEvaluator e(cu);
         LCompilers::Result<FortranEvaluator::EvalResult>
         r = e.evaluate2("(2.5_4, 3.5_4)");
-        CHECK(r.ok);
-        CHECK(r.result.type == FortranEvaluator::EvalResult::complex4);
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex4);
         CHECK(r.result.c32.re == 2.5);
         CHECK(r.result.c32.im == 3.5);
     }
@@ -1196,16 +1197,42 @@ TEST_CASE("FortranEvaluator 9 double complex") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-    if (cu.platform != LCompilers::Platform::Windows) {
-        FortranEvaluator e(cu);
-        LCompilers::Result<FortranEvaluator::EvalResult>
-        r = e.evaluate2("(2.5_8, 3.5_8)");
-        CHECK(r.ok);
-        CHECK(r.result.type == FortranEvaluator::EvalResult::complex8);
-        CHECK(r.result.c64.re == 2.5);
-        CHECK(r.result.c64.im == 3.5);
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("(2.5_8, 3.5_8)");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex8);
+    CHECK(r.result.c64.re == 2.5);
+    CHECK(r.result.c64.im == 3.5);
+}
+
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator Windows complex result ABI") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // Exercise Windows' i64 and output-pointer entry points on native JITs.
+    // These primitive signatures also use the host's scalar/pointer ABI.
+    cu.platform = LCompilers::Platform::Windows;
+    FortranEvaluator e(cu);
+    for (bool swapped : {false, true}) {
+        CAPTURE(swapped);
+        auto r = e.evaluate2(swapped ? "(-2.5_4, 1.25_4)" : "(1.25_4, -2.5_4)");
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex4);
+        CHECK(r.result.c32.re == (swapped ? -2.5f : 1.25f));
+        CHECK(r.result.c32.im == (swapped ? 1.25f : -2.5f));
+    }
+    for (bool swapped : {false, true}) {
+        CAPTURE(swapped);
+        auto r = e.evaluate2(swapped ? "(-2.5_8, 1.25_8)" : "(1.25_8, -2.5_8)");
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex8);
+        CHECK(r.result.c64.re == (swapped ? -2.5 : 1.25));
+        CHECK(r.result.c64.im == (swapped ? 1.25 : -2.5));
     }
 }
+#endif
 
 TEST_CASE("FortranEvaluator logical 1") {
     CompilerOptions cu;
@@ -1223,6 +1250,32 @@ TEST_CASE("FortranEvaluator logical 1") {
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
     CHECK(r.result.b);
+}
+
+TEST_CASE("FortranEvaluator character comparison") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Comparing character dummy arguments calls the runtime's str_compare,
+    // which the JIT must resolve from the runtime library on every platform.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module str_order\n"
+        "contains\n"
+        "logical function before(x, y)\n"
+        "character(len=*), intent(in) :: x, y\n"
+        "before = x < y\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+    r = e.evaluate2("use str_order\nbefore('abc', 'abd')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+    r = e.evaluate2("before('abd', 'abc')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
 }
 
 TEST_CASE("FortranEvaluator logical 2") {

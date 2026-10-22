@@ -167,6 +167,7 @@
             :round nil
             :pad nil
             :asynchronous nil
+            :convert nil
           )
           (FileRead
             :label -1
