@@ -1777,6 +1777,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    gpu_pass_common_blocks(al, loc, kernel_funcs, kernel_scope, orig_scope,
+        kernel_args, call_args);
+
     // Fix dangling variable references in duplicated kernel functions.
     // When a contained function references variables from the original
     // enclosing scope (e.g., a program-scope Parameter used by a

@@ -187,7 +187,173 @@ void append_dummy(Allocator &al, ASR::Function_t &fn, ASR::symbol_t *dummy,
         t->n_restrictions, t->m_is_restriction, t->m_exec_space));
 }
 
+// The type of a variable of a common block, with its constant extents
+// written as the constants they are, so that it names nothing of the scope
+// it was declared in.
+ASR::ttype_t* common_variable_type(Allocator &al, ASR::ttype_t *type) {
+    type = ASRUtils::duplicate_type(al, type);
+    if (!ASR::is_a<ASR::Array_t>(*type)) return type;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+    for (size_t d = 0; d < arr->n_dims; d++) {
+        ASR::dimension_t &dim = arr->m_dims[d];
+        if (dim.m_start && ASRUtils::expr_value(dim.m_start)) {
+            dim.m_start = ASRUtils::expr_value(dim.m_start);
+        }
+        if (dim.m_length && ASRUtils::expr_value(dim.m_length)) {
+            dim.m_length = ASRUtils::expr_value(dim.m_length);
+        }
+    }
+    return type;
+}
+
+// Whether every variable of a common block view can be given to a kernel
+// as a variable of its own: one of an intrinsic numeric or logical type,
+// placed by the view as one of its members.
+bool common_block_view_is_passable(ASR::CommonBlock_t *view) {
+    if (view->n_associations > 0) return false;
+    for (size_t i = 0; i < view->n_members; i++) {
+        ASR::ttype_t *type = ASRUtils::symbol_type(view->m_members[i]);
+        if (ASRUtils::is_pointer(type)) return false;
+        ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::Integer_t>(*element)
+                && !ASR::is_a<ASR::Real_t>(*element)
+                && !ASR::is_a<ASR::Complex_t>(*element)
+                && !ASR::is_a<ASR::Logical_t>(*element)) {
+            return false;
+        }
+        if (!ASR::is_a<ASR::Array_t>(*type)) continue;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            const ASR::dimension_t &dim = arr->m_dims[d];
+            if ((dim.m_start && !ASRUtils::expr_value(dim.m_start))
+                    || (dim.m_length
+                        && !ASRUtils::expr_value(dim.m_length))) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// The scope of the program or procedure that `scope` is part of, which is
+// where a view of a common block can be.
+SymbolTable* common_block_scope(SymbolTable *scope) {
+    for (; scope != nullptr; scope = scope->parent) {
+        if (scope->asr_owner == nullptr
+                || scope->asr_owner->type != ASR::asrType::symbol) {
+            return nullptr;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            scope->asr_owner);
+        if (ASR::is_a<ASR::Program_t>(*owner)
+                || ASR::is_a<ASR::Function_t>(*owner)) {
+            return scope;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace
+
+void gpu_pass_common_blocks(Allocator &al, const Location &loc,
+        const std::vector<ASR::Function_t*> &procedures,
+        SymbolTable *kernel_scope, SymbolTable *host_scope,
+        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
+    SymbolTable *host = common_block_scope(host_scope);
+    if (host == nullptr) return;
+    for (ASR::Function_t *fn : procedures) {
+        std::vector<ASR::CommonBlock_t*> views;
+        for (auto &item : fn->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::CommonBlock_t>(*item.second)) {
+                ASR::CommonBlock_t *view =
+                    ASR::down_cast<ASR::CommonBlock_t>(item.second);
+                if (common_block_view_is_passable(view)) {
+                    views.push_back(view);
+                }
+            }
+        }
+        if (views.empty()) continue;
+        // Only the variables the procedure names are handed to it.
+        std::set<ASR::Function_t*> none;
+        KernelScopeReferences refs(fn->m_symtab, none);
+        refs.visit_Function(*fn);
+        std::map<ASR::symbol_t*, ASR::symbol_t*> own;
+        for (ASR::CommonBlock_t *view : views) {
+            bool named = false;
+            for (size_t i = 0; i < view->n_members && !named; i++) {
+                named = refs.variables.count(view->m_members[i]) > 0;
+            }
+            if (!named) continue;
+            std::string prefix = "__common_"
+                + std::string(view->m_block_name ? view->m_block_name : "")
+                + "_";
+            // The host's view of the block, which places the variables
+            // where the procedure's view does.
+            Vec<ASR::symbol_t*> members;
+            members.reserve(al, view->n_members);
+            std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> passed;
+            for (size_t i = 0; i < view->n_members; i++) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    view->m_members[i]);
+                // The kernel's variable has the name of the host's, which
+                // nothing of the host, the kernel or the procedure has.
+                std::string name = prefix + var->m_name;
+                for (int n = 1; host->resolve_symbol(name) != nullptr
+                        || kernel_scope->resolve_symbol(name) != nullptr
+                        || fn->m_symtab->resolve_symbol(name) != nullptr;
+                        n++) {
+                    name = prefix + var->m_name + "_" + std::to_string(n);
+                }
+                ASR::symbol_t *member = gpu_new_variable(al,
+                    view->m_members[i]->base.loc, host, name,
+                    common_variable_type(al, var->m_type));
+                members.push_back(al, member);
+                if (refs.variables.count(view->m_members[i]) > 0) {
+                    passed.push_back({view->m_members[i], member});
+                }
+            }
+            std::string view_name = host->get_unique_name(
+                std::string(view->m_name) + "~gpu", false);
+            ASR::symbol_t *host_view = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_CommonBlock_t(al, view->base.base.loc, host,
+                    s2c(al, view_name), view->m_block_name,
+                    view->m_link_name, members.p, members.n, nullptr, 0,
+                    view->m_abi, view->m_storage,
+                    ASR::common_block_roleType::Tentative));
+            host->add_symbol(view_name, host_view);
+            for (size_t i = 0; i < members.n; i++) {
+                ASR::down_cast<ASR::Variable_t>(members[i])->m_common_block =
+                    host_view;
+            }
+            // Each variable the procedure names becomes a variable of the
+            // kernel, which the launch hands the host's.
+            for (auto &[variable, member] : passed) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
+                    variable);
+                ASR::symbol_t *param = gpu_new_variable(al,
+                    variable->base.loc, kernel_scope,
+                    ASRUtils::symbol_name(member),
+                    common_variable_type(al, var->m_type),
+                    ASR::intentType::InOut);
+                kernel_args.push_back(al, ASRUtils::EXPR(
+                    ASR::make_Var_t(al, loc, param)));
+                ASR::call_arg_t arg;
+                arg.loc = loc;
+                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    member));
+                call_args.push_back(al, arg);
+                own[variable] = param;
+            }
+            for (size_t i = 0; i < view->n_members; i++) {
+                fn->m_symtab->erase_symbol(
+                    ASRUtils::symbol_name(view->m_members[i]));
+            }
+            fn->m_symtab->erase_symbol(view->m_name);
+        }
+        HostNameRetargeter retarget(own);
+        retarget.visit_Function(*fn);
+    }
+}
 
 void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel) {
     SymbolTable *scope = kernel.m_symtab;

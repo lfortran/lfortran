@@ -6555,6 +6555,7 @@ RUN(NAME gpu_metal_580 LABELS gfortran llvm_omp cuda EXTRA_ARGS --openmp --gpu-o
 RUN(NAME gpu_metal_564 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
+RUN(NAME gpu_metal_568 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
