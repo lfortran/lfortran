@@ -9338,6 +9338,7 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
+                        check_pointer_dummy_actual(v, passed_arg);
                     }
                 } else if (ASR::is_a<ASR::Function_t>(*var->m_v)) {
                     // A procedure actual of another type than the dummy
