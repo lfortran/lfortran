@@ -15269,24 +15269,31 @@ LFORTRAN_API void _lfortran_set_use_runtime_colors(int use_colors) {
 // lfortran_clear_output(). An interactive frontend (the Jupyter kernel) sets
 // hooks for them while it runs a cell; otherwise, as in a compiled program,
 // they do nothing.
-static void (*_lfortran_display_data_hook)(const char*, const char*) = NULL;
-static void (*_lfortran_clear_output_hook)(void) = NULL;
+static void (*_lfortran_display_data_hook)(void*, const char*, const char*) = NULL;
+static void (*_lfortran_clear_output_hook)(void*) = NULL;
+static void* _lfortran_display_context = NULL;
 
-LFORTRAN_API void _lfortran_set_display_hooks(
-        void (*display_data)(const char*, const char*),
-        void (*clear_output)(void)) {
+LFORTRAN_API void* _lfortran_set_display_hooks(
+        void (*display_data)(void* context, const char* mime_type, const char* data),
+        void (*clear_output)(void* context),
+        void* context) {
+    void* previous = _lfortran_display_context;
     _lfortran_display_data_hook = display_data;
     _lfortran_clear_output_hook = clear_output;
+    _lfortran_display_context = context;
+    return previous;
 }
 
 LFORTRAN_API void lfortran_display_data(const char* mime_type, const char* data) {
     if (_lfortran_display_data_hook && mime_type && data) {
-        _lfortran_display_data_hook(mime_type, data);
+        _lfortran_display_data_hook(_lfortran_display_context, mime_type, data);
     }
 }
 
 LFORTRAN_API void lfortran_clear_output(void) {
-    if (_lfortran_clear_output_hook) _lfortran_clear_output_hook();
+    if (_lfortran_clear_output_hook) {
+        _lfortran_clear_output_hook(_lfortran_display_context);
+    }
 }
 
 LFORTRAN_API int32_t _lpython_get_argc() {

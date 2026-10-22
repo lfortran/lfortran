@@ -2,13 +2,29 @@
 over FortranEvaluator::execute()."""
 
 import argparse
+import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 import uuid
 
-from jupyter_client import BlockingKernelClient
-from jupyter_client.connect import write_connection_file
+try:
+    from jupyter_client import BlockingKernelClient
+    from jupyter_client.connect import write_connection_file
+except ImportError:
+    print("jupyter_client is not installed; skipping")
+    sys.exit(77)  # SKIP_RETURN_CODE in CMakeLists.txt
+
+# Descriptors the kernel may have open. It needs about 60; a leak of a
+# descriptor per cell exhausts them within the cells below.
+MAX_OPEN_FILES = 128
+
+
+def limit_open_files():
+    import resource
+    _, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (MAX_OPEN_FILES, hard))
 
 
 def execute(client, code, *, silent=False):
@@ -59,6 +75,7 @@ def main():
             process = subprocess.Popen(
                 [args.lfortran, "kernel", "-f", str(connection)],
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
+                preexec_fn=limit_open_files if os.name == "posix" else None,
             )
             client = BlockingKernelClient(connection_file=str(connection))
             client.load_connection_file()
@@ -70,6 +87,7 @@ def main():
             check(client, "'hello'", ["hello"])
             check(client, "1.2345678901234567_8", ["1.2345678901234567"])
             check(client, "1.0", ["1.0"])
+            check(client, "0.1_8", ["0.1"])
             messages = check(client, "max0(1, 2_8)", ["2"])
             assert any(m["msg_type"] == "stream" and m["content"]["name"] == "stderr"
                        and "Different kinds of args in max0" in m["content"]["text"]
@@ -86,12 +104,30 @@ def main():
                        m["content"]["data"]["text/html"] == "<b>hello</b>"
                        for m in messages), messages
             assert any(m["msg_type"] == "clear_output" for m in messages), messages
-            reply, messages = execute(client, "n+1", silent=True)
-            assert reply["status"] == "ok", reply
-            assert not any(m["msg_type"] in ("execute_result", "stream", "display_data")
-                           for m in messages), messages
+            for code in ("n+1", "call display_data('text/html', '<b>silent</b>')"):
+                reply, messages = execute(client, code, silent=True)
+                assert reply["status"] == "ok", reply
+                assert not any(m["msg_type"] in ("execute_result", "stream",
+                    "display_data") for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # An inspection cell does not add its declarations to the session.
+            check(client, "%%showasr\ninteger :: inspected", [])
+            reply, _ = execute(client, "inspected")
+            assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # An internal compiler error: the message in evalue, the stack
+            # trace in traceback. Array results are not supported yet (#13456).
+            reply, _ = execute(client, "[1, 2, 3]")
+            assert reply["status"] == "error", reply
+            assert reply["evalue"] == "Return type not supported in interactive mode", reply
+            # Text that is not UTF-8 cannot go into a Jupyter message.
+            check(client, "achar(200)", ["\ufffd"])
+            messages = check(client, "print *, 'a', achar(200), 'b'", [])
+            assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
+                       for m in messages), messages
+            # Cells must not leak file descriptors (MAX_OPEN_FILES).
+            for i in range(100):
+                check(client, "%d + 1" % i, [str(i + 1)])
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
