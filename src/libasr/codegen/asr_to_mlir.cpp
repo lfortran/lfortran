@@ -915,6 +915,10 @@ public:
         Vec<mlir::Value> args;
         if (ASR::is_a<ASR::StringFormat_t>(*x)) {
             ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(x);
+            if (sf->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the MLIR backend yet", l);
+            }
             args.reserve(al, sf->n_args+1);
             args.push_back(al, nullptr); // Later used by `printf_fmt`
             for (size_t i=0; i<sf->n_args; i++) {

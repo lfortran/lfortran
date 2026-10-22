@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/dtio_callbacks.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/string_length_arguments.h>
 #include <libasr/pass/string_format_array_args.h>
@@ -139,6 +140,7 @@ namespace LCompilers {
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
+            {"dtio_callbacks", &pass_dtio_callbacks},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"string_length_arguments", &pass_string_length_arguments},
             {"string_format_array_args", &pass_string_format_array_args},
@@ -308,6 +310,11 @@ namespace LCompilers {
                 // other procedure body.
                 "global_init",
                 "function_call_in_declaration",
+                // Each defined output procedure that a formatted output
+                // statement uses gets a callback with the fixed interface
+                // the runtime formatter calls, lowered by the passes below
+                // like any other procedure.
+                "dtio_callbacks",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the

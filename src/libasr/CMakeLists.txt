@@ -50,6 +50,7 @@ set(SRC
     pass/function_result_scope.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
+    pass/dtio_callbacks.cpp
     pass/array_passed_in_function_call.cpp
     pass/string_length_arguments.cpp
     pass/string_format_array_args.cpp

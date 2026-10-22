@@ -1239,6 +1239,10 @@ R"(    // Initialise Numpy
             throw CodeGenError("only Fortran formatting is supported by the C backend",
                 x.base.base.loc);
         }
+        if (x.n_dtio_bindings > 0) {
+            throw CodeGenError("user-defined derived-type output is not supported "
+                "by the C backend yet", x.base.base.loc);
+        }
         std::string leading_blank =
             x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank ? "1" : "0";
         std::string out;

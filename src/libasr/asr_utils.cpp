@@ -3431,21 +3431,22 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
             err("Only generic procedures can be used for overloaded read/write statement, found " + std::to_string(orig_sym->type), loc);
         }
     };
-    // The generic interface visible in the scope or, if there is none, the
-    // type-bound generic of the item's type.
+    // The generic interface visible in the scope, then the type-bound generic
+    // of the item's type.
     ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
-    if( sym == nullptr ) {
-        if( ASR::is_a<ASR::StructType_t>(*arg_type) ) {
-            ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
-            sym = arg_struct->m_symtab->resolve_symbol(read_write);
-            expr_dt = item;
-        }
-    }
     if (sym) {
         resolve_generic(sym);
     }
-    if (a_name == nullptr) {
-        expr_dt = nullptr;
+    if (a_name == nullptr && ASR::is_a<ASR::StructType_t>(*arg_type)) {
+        ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
+        sym = arg_struct->m_symtab->resolve_symbol(read_write);
+        if (sym) {
+            expr_dt = item;
+            resolve_generic(sym);
+            if (a_name == nullptr) {
+                expr_dt = nullptr;
+            }
+        }
     }
     return a_name;
 }
