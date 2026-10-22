@@ -93,7 +93,7 @@ struct PassOptions {
     // The loop transformations applied to parallel loops assigned to the
     // device before they are offloaded (gpu_loop_fusion.cpp and the passes
     // after it): "all", "none", or a comma separated list of `fuse`, `swap`,
-    // `split` and `jam`.
+    // `split`, `jam` and `skew`.
     std::string gpu_loop_transforms = "all";
     // The size in bytes of the device's last-level cache that the loop
     // transformations assume, or -1 to ask the device at run time.

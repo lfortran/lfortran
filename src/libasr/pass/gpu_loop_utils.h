@@ -27,6 +27,7 @@ enum GpuLoopTransform {
     GpuLoopSwap = 2,
     GpuLoopSplit = 4,
     GpuLoopJam = 8,
+    GpuLoopSkew = 16,
 };
 bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     GpuLoopTransform t);
@@ -46,8 +47,22 @@ bool gpu_loop_transforms_apply(const PassOptions &pass_options);
 // them as written, so that the offload pipeline still recognizes, for
 // example, that they assign an array whole and need not copy it to the
 // device first. One run of the transformations (pass_gpu_loop_transforms)
-// owns the set and hands it from the fusion to the splitting.
+// owns the set and hands it from the fusion to the skewing and the
+// splitting.
 typedef std::set<ASR::stmt_t*> GpuRarelyRun;
+
+// The parallel loops that time skewing (gpu_time_skew.cpp) runs on a window
+// of their outermost dimension: the loop's bounds are host variables that
+// hold the intersection of the window with the domain `start` .. `end`,
+// the bounds the loop had. Index-set splitting finds the iterations near
+// the domain's ends from these, not from the window's. One run of the
+// transformations (pass_gpu_loop_transforms) owns the map and hands it from
+// the skewing to the splitting.
+struct GpuWindow {
+    ASR::expr_t *start = nullptr;
+    ASR::expr_t *end = nullptr;
+};
+typedef std::map<ASR::stmt_t*, GpuWindow> GpuWindows;
 
 // The size in bytes of the device's last-level cache, as an integer(8)
 // expression: the --gpu-cache-bytes option, or a call of the runtime's
@@ -116,6 +131,8 @@ public:
     SymbolTable *scope;
     bool ok = true;
     std::vector<std::pair<SymbolTable*, std::string>> *added = nullptr;
+    // When set, a copy of a parallel loop in it is added to it.
+    GpuRarelyRun *rarely_run = nullptr;
 
     GpuDuplicator(Allocator &al, SymbolTable *scope_)
         : BaseExprStmtDuplicator(al), scope(scope_) {}
@@ -126,6 +143,8 @@ public:
     ASR::asr_t* duplicate_ArrayBound(ASR::ArrayBound_t *x);
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t *x);
     ASR::asr_t* duplicate_BlockCall(ASR::BlockCall_t *x);
+    // A copy of a parallel loop in `rarely_run` rarely runs too.
+    ASR::asr_t* duplicate_OMPRegion(ASR::OMPRegion_t *x);
     // The duplicate of the subscripts of an element, shifted for an array
     // dummy.
     ASR::array_index_t* duplicate_indices(ASR::ArrayItem_t *x,
@@ -256,6 +275,18 @@ void gpu_collect_blocks(ASR::stmt_t **body, size_t n,
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms);
 void gpu_collect_symbols(ASR::stmt_t **body, size_t n,
     std::set<ASR::symbol_t*> &syms);
+
+// The variables involved in taking an address or associating a pointer
+// anywhere in the program, on either side (EQUIVALENCE is lowered so).
+void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
+    std::set<ASR::symbol_t*> &syms);
+// Whether a variable may change through another name of its storage,
+// which the analyses of a statement list do not see: a pointer, a variable
+// with the TARGET attribute, one in `address_taken`
+// (gpu_collect_address_taken), a variable of a common block, or a volatile
+// one. Named constants never change.
+bool gpu_may_be_aliased(ASR::symbol_t *s,
+    const std::set<ASR::symbol_t*> &address_taken);
 // Every variable whose value an expression reads: as gpu_collect_symbols,
 // but without the arrays of which it takes only bounds or the size
 // (`size(x)`, `ubound(x%a, 1)`), which writes to their elements do not

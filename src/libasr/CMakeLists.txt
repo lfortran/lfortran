@@ -127,6 +127,7 @@ set(SRC
     pass/gpu_affine.cpp
     pass/gpu_loop_utils.cpp
     pass/gpu_loop_fusion.cpp
+    pass/gpu_time_skew.cpp
     pass/gpu_index_set_split.cpp
     pass/gpu_array_statements.cpp
     pass/dead_array_store.cpp

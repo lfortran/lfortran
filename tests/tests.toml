@@ -4946,6 +4946,11 @@ filename = "../integration_tests/gpu_metal_526.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_19.f90"
+gpu_cuda_kernel = true
+options = "--gpu-cache-bytes=32768"
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_16.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true

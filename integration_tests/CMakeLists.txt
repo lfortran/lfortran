@@ -6507,6 +6507,21 @@ RUN(NAME gpu_metal_524 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-allow
 # tests/tests.toml checks the split instead. `local_init` is not accepted by
 # every supported gfortran.
 RUN(NAME gpu_metal_526 LABELS llvm)
+# No metal or cuda label: a GPU kernel does not copy a LOCAL_INIT scalar in
+# (#14792), and the device compiler folds tests on it as undefined.
+RUN(NAME gpu_metal_513 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_530 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_531 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_532 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_533 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_534 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_535 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_536 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_537 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_539 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_538 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_555 LABELS gfortran llvm cuda_cpu cuda) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_556 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 # GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).
@@ -6630,6 +6645,7 @@ RUN(NAME gpu_kernel_source_18 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_23 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_24 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_25 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_19 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

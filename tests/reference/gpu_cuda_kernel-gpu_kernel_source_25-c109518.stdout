@@ -147,7 +147,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     }
 }
 
-__device__ inline float dflux_gpu_26(float* f, int __1f, int i) {
+__device__ inline float dflux_gpu_29(float* f, int __1f, int i) {
     float r;
     r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
     return r;
@@ -176,6 +176,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 3);
-    q[((int)(i) - (__lb_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_26(flux, __dim_flux_0, i)));
+    q[((int)(i) - (__lb_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_29(flux, __dim_flux_0, i)));
 }
 

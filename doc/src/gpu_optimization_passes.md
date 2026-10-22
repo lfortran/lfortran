@@ -10,13 +10,14 @@ when it cannot.
 
 They run for `--gpu=cuda` and `--gpu=cuda_cpu` (on by default), right after
 the dispatch has assigned the loops (the pass `gpu_loop_transforms`, which
-runs `gpu_loop_fusion`, then `gpu_index_set_split`, before `gpu_offload`;
-each of the two can also be run on its own with `--pass`), so their output is
-ordinary `do concurrent` nests and host code that the rest of the offload
-pipeline lowers as it lowers any other; Metal keeps its loops as written.
-`--gpu-loop-transforms` selects them: `all` (the default), `none`, or a
-comma separated list of `fuse`, `swap`, `split` and `jam` (`swap` only
-applies to loops that are fused); any other value is an error. The
+runs `gpu_loop_fusion`, `gpu_time_skew`, then `gpu_index_set_split`, before
+`gpu_offload`; each of the three can also be run on its own with `--pass`),
+so their output is ordinary `do concurrent` nests and host code that the
+rest of the offload pipeline lowers as it lowers any other; Metal keeps its
+loops as written. `--gpu-loop-transforms` selects them: `all` (the
+default), `none`, or a comma separated list of `fuse`, `swap`, `split`,
+`jam` and `skew` (`swap` only applies to loops that are fused); any other
+value is an error. The
 choices that depend on the size of the device's last-level cache ask the
 runtime for it (`lfortran_gpu_cache_bytes`, the L2 size on CUDA) unless
 `--gpu-cache-bytes=N` states it (the tests use a small value to exercise
@@ -288,3 +289,252 @@ Effect (2048²): 0.149 s to 0.133 s. The stage kernel goes from 29 µs to
 (5.8 TB/s, 166 MB of L2 traffic per stage against 117 MB of compulsory
 traffic). At 4096² the run-time choice keeps the plain nest (1.39 s, against
 1.50 s with the jam).
+
+## Time skewing (`skew`, `gpu_time_skew.cpp`)
+
+After fusion each Runge-Kutta stage is one launch, which at 2048² runs at
+the L2 bandwidth. At 4096² the arrays (6 × 67 MB) do not fit in the 128
+MiB L2, and every stage streams them all from DRAM. Each point of a stage
+only reads points of the previous stage within a few rows of its own, so
+the stages can run on a band of rows that fits in the cache, several in a
+row, before moving to the next band: the band's data then comes from DRAM
+once per few stages instead of once per stage. This is time skewing over
+bands of rows; it reuses the kernels as they are and changes only the host
+loop and the row range of each launch.
+
+The pass takes a DO loop (or a perfect nest of DO loops with rectangular
+bounds, such as `do step` / `do stage`) whose body, run on the host, only
+assigns scalars of intrinsic type, tests them (IF, SELECT CASE) and
+launches parallel loops assigned to the device; host expressions read no
+array (but array bounds and sizes) and call nothing. Such a body can be
+replayed: run again from saved copies of the scalars it assigns, it makes
+the same decisions and launches the same loops with the same scalar
+arguments. With n the number of iterations of the nest, the pass emits
+
+```
+do while (t0 < n)                 ! s iterations of the nest at a time
+  save the scalars the body assigns
+  do b = 0, nb                    ! band by band, in order
+    restore them; k = 0
+    do t = t0, t0 + s - 1         ! the loop indices from t
+      body, where the k-th parallel loop launched runs only its rows
+      in [B + b R - k sigma, B + (b + 1) R - 1 - k sigma] (the first band
+      from the loop's first row, the last up to its last row), k += 1
+  t0 = t0 + s
+```
+
+and then sets the DO variables to the values the original nest leaves in
+them (the last iteration's, or one step past it with
+`--use-loop-variable-after-loop`), so that the result does not depend on
+the run-time choice between the skewed and the original loop.
+
+The window is computed in `integer(8)`, whatever the kinds of the loop
+indices, and is a part of the loop's rows, so its ends convert exactly to
+the kind of the loop's index. For each launch the windows of the bands
+partition the rows, so every
+iteration of every loop runs exactly once, and the rows of one launch keep
+their order. A point x of the k-th launch in a replay runs in band
+floor((x - B + k sigma) / R) and accesses row x + o of an array (o = 0 for
+a write). Let it access the same row r as a point x' of the k'-th launch,
+k' < k, which accesses row x' + o', one of the two writing it. The earlier
+point runs in band floor((x' - B + k' sigma) / R), which is not later when
+x' + k' sigma <= x + k sigma, that is o - o' <= (k - k') sigma;
+o - o' <= sigma suffices, and within a band the launches keep their order.
+A read after a write (o' = 0) needs o <= sigma: the read is at most sigma
+rows ahead of its loop's row. A write after a read (o = 0) needs
+-o' <= sigma: the read is at most sigma rows behind, or a later launch
+overwrites the row before the earlier one has read it. Outputs of two
+launches to the same row (o = o' = 0) keep their order. The pass
+therefore requires:
+
+* every array a launched loop writes (including one declared in a BLOCK
+  around the time loop; the BLOCKs inside a loop body only declare
+  scalars) is written at one subscript, the row, equal to the loop's
+  outermost index;
+* every read of such an array, in any of the loops, has a row subscript at
+  most a constant number of rows ahead of the reading loop's outermost
+  index and at most a constant number of rows behind it, proved with the affine analysis on a copy of the body with its
+  pure functions inlined, under the conditions of the branches around the
+  read and the bounds of the loop (a boundary formula `q(i, 1)` under
+  `j - 1 == 1` is 0 rows ahead). The largest such distance, ahead or
+  behind, is sigma. A
+  lower bound of an array that the subscript of an inlined dummy is shifted
+  by is assumed to be 1 and checked by the host before it skews;
+* every function a loop calls is inlined: a call that cannot be inlined
+  may read arrays (of a module, for example) the analysis does not see;
+* no array may be reached through another name of its storage (a
+  pointer, a TARGET, EQUIVALENCE, a common block, ...) or is an optional
+  argument, no loop assigns a host scalar (only private ones), and a body
+  contains no loop of its own;
+* the bounds of every loop of the launched nests stay the same while the
+  time loop runs and read no array element, and the time loop assigns no
+  optional argument (the host saves and restores what it assigns);
+* the time loop is not in a procedure that a parallel loop calls: there
+  its parallel loops run serially inside the caller's kernel.
+
+The host evaluates before the loop only what the original program would:
+the sizes and pinned bounds of arrays after checking that each allocatable
+link of them is allocated, the bounds of an inner time loop only when the
+loops around it run, and the bounds where the bands start (those of the
+first parallel loop) only when that loop runs in every iteration or its
+bounds are arithmetic that cannot fail: without division, on constants,
+scalars that are not allocatable, pointers or optional arguments, and sizes
+and bounds of arrays that are not optional arguments and are reached through
+no pointer, whose allocation it checks. The pinned lower bounds must be of
+such arrays too.
+
+The cost model runs on the host before the loop: the bytes of the arrays
+that the loops of most iterations touch (the original loops a fusion keeps
+for the last iteration are left out), and of one row of each. It skews when
+they exceed the cache, with bands of R = (3/4 cache - arrays without rows) /
+(bytes per row) rows (at least 8), and s = R / (2 sigma) iterations per
+band, between 2 and 32, so that the skew stays small against the band.
+The rows start at the first loop's lower bound. Otherwise the original loop
+runs.
+
+Index-set splitting then splits the windowed loops by the bounds of their
+domain, which the pass records for them (`GpuWindows`): the host computes
+the rows of the interior inside the window, the frame rows below and above
+it and the side strips of the window's interior rows are packed in front as
+before, and the rows the jam leaves over go to the frame. Within a band
+that fits in the cache the run-time choice picks the jammed interior.
+
+A prototype first measured the idea on the generated stage kernel, launched
+on skewed row ranges with the same checksum as the unskewed order (4096²,
+ms per step): 1.330 unskewed; 256 rows × 4 stages 0.704, 256 × 8 0.626,
+512 × 8 0.583, 1024 × 16 0.530, 1024 × 32 0.510, 1366 × 16 0.759 (the band
+no longer fits), 2048 × 16 1.344. At 2048² and 1024², which fit in the
+cache, bands were 5-30% slower, so the cost model keeps those as they are.
+
+Effect (4096², 1000 steps): 1.389 s to 0.745 s (medians, below), the stage
+kernels now run from L2 like those of 2048² (sigma is 5, as the one-sided
+formulas of the boundary rows reach five rows ahead). Every validation case
+(Formal's strict comparison with the CPU oracle, 13 × 11 to 2048²) passes.
+
+## Results
+
+Formal's 2D advection-diffusion example, `--workspace-kernel split` (the
+original source, with its 512 MiB working-set guard raised for 4096²), 1000
+steps, `solve_seconds`: medians of 7 runs after a warm-up, all
+configurations interleaved, on an NVIDIA RTX PRO 6000 Blackwell Server
+Edition. Each row enables the transformations cumulatively
+(`--gpu-loop-transforms`). 1024² and 2048² use the shared inputs, 4096² the
+analytic initial state (`--cells 4096,4096`). The roof is the compulsory
+traffic of 16 bytes per cell and step at 5.5 TB/s (the L2-resident copy
+rate) for 1024² and 2048² and at 1.598 TB/s (DRAM) for 4096².
+
+| transformations | 1024² | 2048² | 4096² |
+|---|---:|---:|---:|
+| none | 0.0871 | 0.5532 | 3.058 |
+| fuse | 0.1144 | 0.3978 | 2.353 |
+| fuse, swap | 0.0997 | 0.3483 | 2.016 |
+| fuse, swap, split | 0.0474 | 0.1395 | 1.389 |
+| fuse, swap, split, jam | 0.0466 | 0.1259 | 1.403 |
+| all (+ skew) | **0.0463** | **0.1199** | **0.745** |
+| % of the roof (all) | 6.6% | 10.2% | 22.5% |
+| speed-up (all / none) | 1.9x | 4.6x | 4.1x |
+
+Skewing, which the cost model only picks when the arrays exceed the cache,
+leaves 1024² and 2048² as they were (within noise of the row above it).
+`solve_seconds` includes copying the fields to the device at the start of
+the solve and back at its end. Fusion alone is slower at 1024², where the
+two original kernels are short, until index-set splitting removes the
+boundary branches it duplicates.
+
+For comparison, the hand-written C + CUDA of the same method (built from
+Formal's `benchmarks/2d-advection-cuda`, medians of 7 runs in the same
+session, 1024² / 2048² / 4096²): `split` (the same two kernels per stage)
+0.0740 / 0.5543 / 3.023 s; `regyf` (fused stage kernel, register blocking,
+interior and boundary kernels) 0.0388 / 0.1107 / 1.151 s; `lean2` (two
+stages per kernel) 0.0375 / 0.0655 / 0.543 s; `pair` 0.0569 / 0.1615 /
+0.660 s and `march` 0.1417 / 0.1684 / 0.297 s (two and four stages per
+kernel). The compiled Fortran is close to the hand-written per-stage
+kernels (`regyf`) at 1024² and 2048², and at 4096² faster than them, since
+the bands keep several stages in the L2 cache; the kernels that fuse
+stages (`lean2`, `pair`, `march`) remain faster there, and fusing stages
+within a kernel is what these passes do not do.
+
+## What was tried and not kept
+
+* The frame as a launch of its own: the frame's iterations are latency
+  bound (8 µs per stage at 2048², a few blocks on a mostly idle device).
+* Merging the frame into the interior's launch before the offload pipeline
+  could tell which index is contiguous: the stores of the frame, at
+  computed indices, made it number the threads along the wrong dimension
+  (5x slower), hence the rule above.
+* Unroll-and-jam along the contiguous dimension (two columns per thread):
+  strided accesses and the wrong thread numbering, 4x slower.
+* Jam factors of 2 and 4 along the outer dimension (2048²: 0.1353 and
+  0.1346 s against 0.1326 s for 3).
+* Tiles of 64 or 128 iterations of the contiguous dimension, and 512
+  threads per block: within 3% either way.
+* Exchanging the ping-pong buffers with `move_alloc`: the host statements it
+  lowers to make the offload pipeline wait for the device every stage.
+* Unswitching a test the loop does not change (`select case (stage)`, a
+  kernel per stage): 5% faster at 2048², 6% slower at 1024², where the
+  launches of four different kernels leave longer gaps between them.
+* Staging the stencil's input tile and halo in shared memory (block
+  cooperative, as in the hand-written `regyf`): a prototype of the jammed
+  2048² stage kernel with `q` staged went from 25.9 µs to 32.9 µs, with
+  the same L2 traffic and 35% more instructions; the L1 cache already
+  serves the halo's reuse. Its L2 traffic above the compulsory one comes
+  from rows that do not start on a sector (leading dimension 2050): an
+  aligned layout cut L2 sectors by 15% but the time by 4% only.
+* Faster copies at the start and end of a solve: a pageable host-to-device
+  copy of 16.8 MB takes 1.34-1.44 ms (12 GB/s), pinning the buffer for it
+  (`cudaHostRegister`, copy, unregister) 1.7-2.0 ms, and staging through a
+  pinned buffer with 1 to 8 threads 4.2-5.7 ms. The copies themselves
+  (the fields read, and the field written back) are what the runtime's
+  model requires.
+* CUDA graphs over the repeated launches: at 1024² the device is idle
+  between launches for 0.29 µs (median), 1.2 ms of the 38 ms of time
+  steps, so a graph could not save more than 3%.
+* Fusing two Runge-Kutta stages into one kernel, measured first on
+  prototypes of the interior (the stencil without the boundary rows,
+  written in the form a compiler pass would generate; all variants give
+  the same checksum as two separate stages). Two per-stage launches of a
+  plain one-cell-per-thread kernel take 44.8 µs at 2048² (22.4 µs per
+  stage, at the L2 roof of the per-stage scheme; the generated per-stage
+  kernel takes 24.7 µs). Fused versions:
+  * block-cooperative, overlapped tiling in x (6 halo columns recomputed)
+    and the block marching down its rows with the input and the first
+    stage in shared-memory row rings, two barriers per step: 67-92 µs for
+    tiles of 32-128 columns × 4-16 rows and segments of 16-128 rows;
+  * register streaming without shared memory: a warp owns 32 columns (20
+    after the halo lanes the two stages consume), marches down its rows
+    carrying the last rows of the input and of the first stage and the y
+    faces in registers (scalar replacement down the column, every face
+    computed once), and exchanges x neighbours with warp shuffles:
+    39.3 µs (segments of 32 rows; 43.9 µs at 16, 57.6 µs at 128); two
+    columns per lane 42-60 µs, several rows per step (more parallel work
+    per thread) 47-66 µs;
+  * the same streaming for one stage (scalar replacement down the column
+    alone): 54-96 µs for two stages, slower than the plain kernel.
+
+  The best fused form is 12% faster than two plain stages at 2048² and
+  slower at 1024² (17.6 µs against 13.1 µs), and at 4096² it halves the
+  DRAM traffic (322 µs against 602 µs unskewed), which time skewing also
+  gets, from the plain stages in L2, without a new kind of kernel. The
+  hand-written `lean2`, which reaches 28 µs per two
+  stages at 2048² including the boundary rows, adds what a generic pass
+  does not: a padded layout without bounds checks, 64-bit loads of column
+  pairs, x faces shared through shared memory, 167 registers, and a
+  separate boundary grid launched programmatically. A pass for a new
+  block- or warp-cooperative iteration mode was not worth building for 12%.
+* Capping the registers of the kernels for occupancy (`-maxrregcount`):
+  3% faster at 4096² before time skewing (40 registers; 32 was slower),
+  where the plain stage kernel was DRAM bound; with the bands in the L2
+  cache it no longer is.
+
+## Next passes
+
+* Stage fusion within a kernel, only together with the layout and code
+  choices of the hand-written kernels (see the prototypes above): a
+  generic fused kernel gains 12% at most over the plain per-stage kernels
+  that time skewing keeps in the cache.
+* The generated stage kernel takes 24.7 µs at 2048², a plain interior
+  kernel of the same stencil 22.4 µs: about 10% is left in the per-stage
+  kernel itself (the frame packed into the launch, index arithmetic).
+* Keeping arrays on the device across calls of a solver (the copies at the
+  start and end of a solve are 13-17% of `solve_seconds`): the runtime
+  would have to know that the host did not write them between the calls.

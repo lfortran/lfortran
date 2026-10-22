@@ -770,6 +770,78 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     }
 }
 
+TEST_CASE("Time skewing leaves the procedures parallel loops call") {
+    // `smooth` runs inside the parallel loop of the program, where its own
+    // parallel loops run serially: its time loop is not skewed (the skewed
+    // host loop would call the runtime from device code).
+    const std::string source = R"(
+module skew_callee_m
+implicit none
+contains
+    pure subroutine smooth(u, d, n, nt)
+        integer, intent(in) :: n, nt
+        real, intent(inout) :: u(n), d(n)
+        integer :: it, k
+        do it = 1, nt
+            do concurrent (k = 2:n - 1)
+                d(k) = 0.25 * (u(k - 1) + 2 * u(k) + u(k + 1))
+            end do
+            do concurrent (k = 2:n - 1)
+                u(k) = d(k)
+            end do
+        end do
+    end subroutine
+end module
+
+program skew_callee
+use skew_callee_m, only: smooth
+implicit none
+integer, parameter :: n = 3000, m = 4
+real :: u(n, m), d(n, m)
+integer :: j
+u = 1
+d = 0
+call smooth(u(:, 1), d(:, 1), n, 5)
+do concurrent (j = 1:m)
+    call smooth(u(:, j), d(:, j), n, 5)
+end do
+print *, sum(u)
+end program
+)";
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.gpu_cache_bytes = 4096;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "skew_callee.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_loop_transforms", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        unit.m_symtab->get_symbol("skew_callee_m"));
+    auto *smooth = ASR::down_cast<ASR::Function_t>(
+        module->m_symtab->get_symbol("smooth"));
+    for (auto &item : smooth->m_symtab->get_scope()) {
+        INFO(item.first);
+        CHECK_FALSE(startswith(item.first, "__gpu_skew"));
+    }
+}
+
 TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
     // gpu_metal_527 splits a 1-D stencil (the split nest, then the original
     // nest for a domain without an interior) and a 2-D one (the jammed

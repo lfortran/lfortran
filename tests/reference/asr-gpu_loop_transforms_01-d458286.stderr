@@ -1,1 +1,1 @@
-the value `fuse,fusion` of `--gpu-loop-transforms` is not supported: unknown transformation `fusion`; supported values: all, none, or a comma separated list of fuse, swap, split, jam
+the value `fuse,fusion` of `--gpu-loop-transforms` is not supported: unknown transformation `fusion`; supported values: all, none, or a comma separated list of fuse, swap, split, jam, skew
