@@ -104,6 +104,10 @@ def main():
                            for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # An inspection cell does not add its declarations to the session.
+            check(client, "%%showasr\ninteger :: inspected", [])
+            reply, _ = execute(client, "inspected")
+            assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
             # Text that is not UTF-8 cannot go into a Jupyter message.
             check(client, "achar(200)", ["\ufffd"])
             messages = check(client, "print *, 'a', achar(200), 'b'", [])

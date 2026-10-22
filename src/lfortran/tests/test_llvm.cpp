@@ -2964,6 +2964,9 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     CHECK(cell.error_name == "CompilerError");
     CHECK(cell.error_value.find("<cell ") != std::string::npos);
     CHECK(e.execute("n").value.text() == "41");
+    // An inspection cell sees the session.
+    cell = e.execute("%%showasr\nn + 1");
+    CHECK(cell.ok);
     // A successful cell keeps its warnings.
     cell = e.execute("max0(1, 2_8)");
     REQUIRE(cell.ok);
@@ -2991,6 +2994,11 @@ TEST_CASE("FortranEvaluator execute: inspection cells") {
         REQUIRE(cell.ok);
         CHECK(cell.inspection);
         CHECK(!cell.output.empty());
+        // An inspection cell does not run, so its declarations are not part
+        // of the session.
+        cell = e.execute("x");
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "CompilerError");
     }
 }
 

@@ -488,12 +488,25 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         magic.erase(magic.find_last_not_of(" \t\r") + 1);
         const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
         Result<std::string> shown{Error{}};
+        // An inspection cell shows how its code compiles in the session, but
+        // it does not run, so its declarations must not join the session.
+        struct KeepSession {
+            SymbolTable *&scope;
+            SymbolTable *const saved;
+            ~KeepSession() { scope = saved; }
+        };
         out.inspection = true;
         if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
-        else if (magic == "%%showasr") shown = get_asr(source, lm, diagnostics);
-        else if (magic == "%%showllvm") shown = get_llvm(source, lm, passes, diagnostics);
-        else if (magic == "%%showasm") shown = get_asm(source, lm, passes, diagnostics);
-        else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
+        else if (magic == "%%showasr") {
+            KeepSession keep{symbol_table, symbol_table};
+            shown = get_asr(source, lm, diagnostics);
+        } else if (magic == "%%showllvm") {
+            KeepSession keep{symbol_table, symbol_table};
+            shown = get_llvm(source, lm, passes, diagnostics);
+        } else if (magic == "%%showasm") {
+            KeepSession keep{symbol_table, symbol_table};
+            shown = get_asm(source, lm, passes, diagnostics);
+        } else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
         else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
         else {
             out.inspection = false;
