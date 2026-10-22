@@ -800,8 +800,9 @@ public:
         int64_t sigma;
     };
 
-    void window_loops(ASR::stmt_t **orig, size_t n_orig, ASR::stmt_t **&copy,
-            size_t &n_copy, const Names &nm, SymbolTable *fn_scope) {
+    void window_loops(ASR::stmt_t **orig, [[maybe_unused]] size_t n_orig,
+            ASR::stmt_t **&copy, size_t &n_copy, const Names &nm,
+            SymbolTable *fn_scope) {
         LCOMPILERS_ASSERT(n_orig == n_copy);
         Vec<ASR::stmt_t*> out;
         out.reserve(al, n_copy);
