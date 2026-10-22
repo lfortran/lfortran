@@ -4,8 +4,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 project(lfortran_unif_runtime C Fortran)
 
-set(WITH_XEUS no CACHE BOOL "Build runtime modules used by the Xeus kernel")
-
 set(LFORTRAN_NESTED_BUILD no
     CACHE BOOL "Whether we are being called from the LFortran build system")
 
