@@ -60,11 +60,6 @@ if (WITH_JSON)
     )
 endif()
 if (WITH_LLVM)
-    if (NOT EMSCRIPTEN)
-        ADDTEST(test_evaluation)
-        target_compile_definitions(test_evaluation PRIVATE
-            LFORTRAN_BUILD_RUNTIME_DIR="${CMAKE_BINARY_DIR}/src/runtime")
-    endif()
     set(SRC ${SRC}
         test_llvm.cpp
     )
@@ -327,7 +322,6 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
         target_link_options(test_lfortran PRIVATE "LINKER:--export-dynamic")
-        target_link_options(test_evaluation PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()
 

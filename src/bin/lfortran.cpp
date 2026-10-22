@@ -28,7 +28,6 @@
 #include <libasr/codegen/asr_to_wasm.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
-#include <lfortran/evaluation.h>
 #include <lfortran/pipeline.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
@@ -435,12 +434,8 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    LCompilers::LFortran::EvaluationService service(cu);
-    class PromptEvents : public LCompilers::LFortran::EvaluationEvents {
-        void stream(const std::string &name, const std::string &text) override {
-            (name == "stderr" ? std::cerr : std::cout) << text;
-        }
-    } events;
+    cu.interactive = true;
+    LCompilers::FortranEvaluator e(cu);
 
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
@@ -465,16 +460,14 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        LCompilers::LFortran::EvaluationSettings settings;
-        settings.verbose = verbose;
-        auto outcome = service.execute(input, events, settings);
-        if (!outcome.ok) {
-            std::cerr << (outcome.exception_report.empty()
-                ? outcome.diagnostics : outcome.exception_report);
+        auto cell = e.execute(input, verbose);
+        if (!cell.ok) {
+            std::cerr << cell.error_value;
             continue;
         }
+        std::cout << cell.output;
 
-        auto &r = outcome.value;
+        auto &r = cell.value;
         if (verbose) {
             section("AST:");
             std::cout << r.ast  << std::endl;
@@ -485,11 +478,11 @@ int prompt(bool verbose, CompilerOptions &cu)
         }
 
         if (verbose) {
-            std::cout << "Return type: " << outcome.type_name << std::endl;
+            std::cout << "Return type: " << r.type_name() << std::endl;
             section("Result:");
         }
-        if (outcome.has_value || verbose) {
-            std::cout << outcome.text << std::endl;
+        if (r.has_value() || verbose) {
+            std::cout << r.text() << std::endl;
         }
     }
     return 0;

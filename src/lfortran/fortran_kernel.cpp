@@ -32,7 +32,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
-#include <lfortran/evaluation.h>
+#include <lfortran/fortran_evaluator.h>
 #include <lfortran/utils.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
@@ -81,10 +81,15 @@ namespace LCompilers::LFortran {
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
-        EvaluationService service;
+        CompilerOptions compiler_options;
+        FortranEvaluator e;
 
     public:
-        custom_interpreter() = default;
+        custom_interpreter() : compiler_options{}, e{compiler_options} {
+            e.compiler_options.interactive = true;
+            e.compiler_options.po.runtime_library_dir =
+                LCompilers::LFortran::get_runtime_library_dir();
+        }
         virtual ~custom_interpreter() = default;
 
     private:
@@ -124,45 +129,38 @@ namespace LCompilers::LFortran {
                                                   xeus::execute_request_config config,
                                                   nl::json /*user_expressions*/)
     {
-        class KernelEvents : public EvaluationEvents {
-            custom_interpreter &interpreter;
-            bool silent;
-        public:
-            KernelEvents(custom_interpreter &interpreter, bool silent)
-                : interpreter(interpreter), silent(silent) {}
-            void stream(const std::string &name, const std::string &text) override {
-                if (!silent) interpreter.publish_stream(name, text);
-            }
-            void display(const std::string &mime, const std::string &text) override {
-                if (!silent) interpreter.display_data(
-                    nl::json{{mime, text}}, nl::json::object(), nl::json::object());
-            }
-            void clear_output() override {
-                if (!silent) interpreter.clear_output(false);
-            }
-        } events(*this, config.silent);
-        EvaluationOutcome outcome;
+        const bool silent = config.silent;
+        FortranEvaluator::CellIO io;
+        io.display = [&](const std::string &mime, const std::string &data) {
+            if (!silent) display_data(nl::json{{mime, data}}, nl::json::object(),
+                nl::json::object());
+        };
+        io.clear_output = [&]() { if (!silent) clear_output(false); };
+        FortranEvaluator::CellResult cell;
         std::string std_out;
         {
             RedirectStdout capture(std_out);
-            outcome = service.execute(code, events);
+            cell = e.execute(code, false, io);
         }
-        if (!std_out.empty()) events.stream("stdout", std_out);
-        if (!outcome.diagnostics.empty()) events.stream("stderr", outcome.diagnostics);
-        if (!outcome.exception_report.empty()) events.stream("stderr", outcome.exception_report);
+        if (!silent) {
+            if (!std_out.empty()) publish_stream("stdout", std_out);
+            if (!cell.output.empty()) publish_stream("stdout", cell.output);
+            if (!cell.ok) publish_stream("stderr", cell.error_value);
+            else if (!cell.diagnostics.empty()) publish_stream("stderr", cell.diagnostics);
+        }
         nl::json result;
-        if (outcome.ok) {
-            if (outcome.has_value && !config.silent) {
+        if (cell.ok) {
+            if (cell.value.has_value() && !silent) {
                 publish_execution_result(execution_counter,
-                    nl::json{{"text/plain", outcome.text}}, nl::json::object());
+                    nl::json{{"text/plain", cell.value.text()}}, nl::json::object());
             }
             result["status"] = "ok";
             result["payload"] = nl::json::array();
             result["user_expressions"] = nl::json::object();
         } else {
             result["status"] = "error";
-            result["ename"] = outcome.error_name;
-            result["evalue"] = outcome.error_value;
+            result["ename"] = cell.error_name;
+            result["evalue"] = cell.error_value;
             result["traceback"] = nl::json::array();
         }
         cb(result);

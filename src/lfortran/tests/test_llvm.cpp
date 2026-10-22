@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -2914,5 +2915,88 @@ end subroutine
     r = e.evaluate2("new_get()");
     CHECK(r.ok);
     CHECK(r.result.i32 == 2);
+}
+#endif
+
+#ifndef __EMSCRIPTEN__
+extern "C" void lfortran_display_data(const char *mime_type, const char *data);
+extern "C" void lfortran_clear_output();
+
+static CompilerOptions execute_options() {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.use_colors = false;
+    // Cells that use runtime modules need their modfiles.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    return cu;
+}
+
+TEST_CASE("FortranEvaluator execute: results and cells") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    const std::vector<std::pair<std::string, std::string>> examples = {
+        {"42", "42"}, {"42_8", "42"}, {"1.25", "1.25"},
+        {"1.2345678901234567_8", "1.2345678901234567"},
+        {"(1.25, -2.5)", "(1.25, -2.5)"},
+        {"(1.25_8, -2.5_8)", "(1.25, -2.5)"},
+        {".true.", "True"}, {".false.", "False"}, {"'hello'", "hello"}
+    };
+    for (auto &example : examples) {
+        CAPTURE(example.first);
+        auto cell = e.execute(example.first);
+        REQUIRE(cell.ok);
+        CHECK(cell.value.has_value());
+        CHECK(cell.value.text() == example.second);
+    }
+    auto cell = e.execute("integer :: n\nn = 41");
+    REQUIRE(cell.ok);
+    CHECK(!cell.value.has_value());
+    CHECK(e.execute("n+1").value.text() == "42");
+    cell = e.execute("");
+    REQUIRE(cell.ok);
+    CHECK(!cell.value.has_value());
+    cell = e.execute("integer :: broken(");
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "CompilerError");
+    CHECK(cell.error_value.find("<cell ") != std::string::npos);
+    CHECK(e.execute("n").value.text() == "41");
+}
+
+TEST_CASE("FortranEvaluator execute: inspection cells") {
+    for (const std::string magic : {"ast", "asr", "llvm", "asm", "cpp", "fmt"}) {
+        CAPTURE(magic);
+        CompilerOptions cu = execute_options();
+        FortranEvaluator e(cu);
+        auto cell = e.execute("%%show" + magic + "\ninteger :: x");
+        REQUIRE(cell.ok);
+        CHECK(!cell.output.empty());
+        CHECK(!cell.value.has_value());
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: display hooks") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string mime, data;
+    int clears = 0;
+    FortranEvaluator::CellIO io;
+    io.display = [&](const std::string &m, const std::string &d) { mime = m; data = d; };
+    io.clear_output = [&]() { clears++; };
+    auto cell = e.execute("use lfortran_display, only: display_data, clear_output\n"
+        "call display_data('text/html', '<b>hello</b>')\n"
+        "call clear_output()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(mime == "text/html");
+    CHECK(data == "<b>hello</b>");
+    CHECK(clears == 1);
+    // The hooks only receive calls made while their cell runs.
+    lfortran_display_data("text/plain", "outside execution");
+    lfortran_clear_output();
+    CHECK(clears == 1);
+    // A hook's exception must not unwind through generated code.
+    io.clear_output = []() { throw std::runtime_error("display failure"); };
+    cell = e.execute("call clear_output()", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "DisplayError");
 }
 #endif

@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_FORTRAN_EVALUATOR_H
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
+#include <functional>
 #include <memory>
 #include <set>
 
@@ -61,7 +62,35 @@ public:
         std::string ast;
         std::string asr;
         std::string llvm_ir;
+
+        // False for statements and empty cells, which have no value.
+        bool has_value() const { return type != statement && type != none; }
+        // The Fortran type and the text the prompt and kernels show.
+        std::string type_name() const;
+        std::string text() const;
     };
+
+    // Where an executed cell's display data and clear_output() calls go
+    // (the lfortran_display module). Unset hooks ignore them.
+    struct CellIO {
+        std::function<void(const std::string &mime, const std::string &data)> display;
+        std::function<void()> clear_output;
+    };
+
+    struct CellResult {
+        bool ok = false;
+        EvalResult value{};      // `none` for a %%show* cell
+        std::string output;      // the text a %%show* cell shows
+        std::string diagnostics; // rendered warnings and errors
+        std::string error_name, error_value; // if !ok
+    };
+
+    // Runs one interactive cell: evaluate() with fresh diagnostics and
+    // passes, or a %%showast/asr/llvm/asm/cpp/fmt cell. Never throws a
+    // compiler exception; it becomes the error. Only one cell may run at a
+    // time in a process, as the display hooks are process-wide.
+    CellResult execute(const std::string &code, bool verbose = false,
+        const CellIO &io = {});
 
     // Evaluates `code`.
     // If `verbose=true`, it saves ast, asr and llvm_ir in Result.
