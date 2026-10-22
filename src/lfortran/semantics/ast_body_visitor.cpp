@@ -3846,6 +3846,7 @@ public:
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::symbol_t* associate_sym = ASR::down_cast<ASR::symbol_t>(v);
+            construct_associate_names.insert(associate_sym);
             if (selector_is_constant) {
                 non_definable_associate_variables.insert(associate_sym);
             }
@@ -4989,6 +4990,7 @@ public:
                             nullptr, nullptr, ASR::storage_typeType::Default, target_type, type_decl, 
                             ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                         current_scope->add_symbol(x.m_assoc_name, assoc_sym);
+                        construct_associate_names.insert(assoc_sym);
                         ASR::expr_t* assoc_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym));
                         ASR::expr_t* cast_expr = nullptr;
                         if (ASRUtils::is_class_type(variable_type) && rank == 0) {
@@ -5243,6 +5245,7 @@ public:
                     ASR::storage_typeType::Default, nullptr, nullptr, ASR::abiType::Source,
                     ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(std::string(assoc_name), assoc_sym);
+                construct_associate_names.insert(assoc_sym);
                 assoc_variable = ASR::down_cast<ASR::Variable_t>(assoc_sym);
             } else if (selector_variable) {
                 assoc_variable = selector_variable;
@@ -9360,6 +9363,7 @@ public:
             throw SemanticAbort();
         }
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
+        check_call_allocatable_pointer_polymorphism(final_sym, call_args, n_call_args);
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
 
