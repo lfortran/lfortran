@@ -193,6 +193,7 @@
                     (Associate
                         (Var 2 x)
                         (Var 2 y)
+                        NoPointerBounds
                     )
                     (Print
                         (StringFormat

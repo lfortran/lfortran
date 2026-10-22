@@ -78,6 +78,7 @@ body, which binds the name to the target expression rather than copying it.
       :value (Var
         :v (SymbolRef 1 "x")
       )
+      :form :NoPointerBounds
     )
     (Assignment
       :target (Var

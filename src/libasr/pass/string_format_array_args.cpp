@@ -342,7 +342,7 @@ public:
                 ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc, e,
                     logical_type, nullptr))));
             current_body->push_back(al, b.If(b.Not(is_contiguous), copy, {
-                ASRUtils::STMT(ASR::make_Associate_t(al, loc, temporary, e))
+                ASRUtils::STMT(ASR::make_Associate_t(al, loc, temporary, e, ASR::pointer_bounds_formType::NoPointerBounds))
             }));
             body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                 ASRUtils::STMT(ASR::make_Nullify_t(al, loc, vars.p, vars.size()))

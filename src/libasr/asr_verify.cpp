@@ -724,6 +724,75 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        // A target that is a section of a pointer gives the bounds of the
+        // pointer, with the form recorded in `m_form` (F2018 10.2.2).
+        bool pointer_section = false;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+            ASR::ttype_t *pointer_type = typed_expr_type(
+                ASR::down_cast<ASR::ArraySection_t>(x.m_target)->m_v);
+            pointer_section = pointer_type != nullptr && ASRUtils::is_pointer(pointer_type);
+        }
+        require_with_loc_id(pointer_section ==
+                (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds),
+            "asr.verify.associate.pointer_bounds_form",
+            "Associate::m_form: an association has pointer bounds if and only "
+            "if its target is a section of a pointer", x.base.base.loc);
+        if (pointer_section) {
+            // A bounds-spec gives only the lower bounds, the upper ones
+            // follow from the data target; a bounds-remapping-list gives
+            // both. Neither has a stride.
+            bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
+            ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            for (size_t i = 0; i < section->n_args; i++) {
+                require_with_loc_id(section->m_args[i].m_left != nullptr &&
+                        (section->m_args[i].m_right == nullptr) == bounds_spec &&
+                        section->m_args[i].m_step == nullptr,
+                    "asr.verify.associate.pointer_bounds_present",
+                    "Associate::m_target: a pointer bounds-spec must give the "
+                    "lower bound of every dimension and a bounds-remapping-list "
+                    "the lower and the upper bound, and neither a stride",
+                    x.base.base.loc);
+                // F2018 R1035 and R1036
+                ASR::expr_t *bounds[2] = {section->m_args[i].m_left,
+                    section->m_args[i].m_right};
+                for (ASR::expr_t *bound : bounds) {
+                    ASR::ttype_t *bound_type = typed_expr_type(bound);
+                    if (bound_type == nullptr) continue;
+                    require_with_loc_id(!ASRUtils::is_array(bound_type) &&
+                            ASRUtils::is_integer(*bound_type),
+                        "asr.verify.associate.pointer_bounds_type",
+                        "Associate::m_target: a pointer bound must be a "
+                        "scalar integer expression", x.base.base.loc);
+                }
+            }
+            require_with_loc_id(!ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value),
+                "asr.verify.associate.pointer_bounds_null_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds cannot be null()", x.base.base.loc);
+            size_t value_rank = ASRUtils::extract_n_dims_from_ttype(value);
+            if (bounds_spec) {
+                require_with_loc_id(value_rank == section->n_args,
+                    "asr.verify.associate.pointer_bounds_spec_rank",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-spec must have the rank of the pointer",
+                    x.base.base.loc);
+            } else {
+                // Whether a data target of rank greater than one is simply
+                // contiguous (F2018 10.2.2.3) is checked by the frontend.
+                require_with_loc_id(value_rank >= 1,
+                    "asr.verify.associate.pointer_bounds_remapping_target",
+                    "Associate::m_value: the data target of a pointer "
+                    "bounds-remapping-list must be an array", x.base.base.loc);
+            }
+            // The data target is an array with the physical type of the
+            // section of the pointer (see make_Associate_t_util), so the
+            // backend reads its address and shape from its descriptor.
+            require_with_loc_id(ASRUtils::extract_physical_type(value) ==
+                    ASR::array_physical_typeType::DescriptorArray,
+                "asr.verify.associate.pointer_bounds_descriptor_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds must be a descriptor array", x.base.base.loc);
+        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }

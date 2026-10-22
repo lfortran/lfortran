@@ -471,6 +471,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 sub1~fpcast_ptr
@@ -521,6 +522,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 sub2~fpcast_ptr

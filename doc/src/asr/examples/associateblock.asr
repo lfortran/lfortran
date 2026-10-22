@@ -47,6 +47,7 @@
                   :value (Var
                     :v (SymbolRef 1 "x")
                   )
+                  :form :NoPointerBounds
                 )
                 (Assignment
                   :target (Var

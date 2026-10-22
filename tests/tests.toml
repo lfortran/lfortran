@@ -6784,6 +6784,38 @@ filename = "asr/verify/block_data_contains_procedure.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/associate_pointer_bounds_form.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_stride.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_missing_upper.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_real.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_null_target.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_spec_rank.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_remapping_scalar.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_descriptor_target.asr"
+asr = true
+
+[[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
 

@@ -12221,28 +12221,52 @@ public:
         builder->CreateStore(new_desc, target_ptr);
     }
 
+    /*
+        Lowers a pointer assignment with a bounds-spec, `p(lb:) => a`, or a
+        bounds-remapping-list, `p(lb:ub) => a`. The ASR gives the lower bound
+        of every dimension of the pointer, and with a bounds-remapping-list
+        also the upper bound; with a bounds-spec the extents are those of the
+        value. The value and every bound are evaluated once. The value is a
+        descriptor array (checked by the verifier); an array section gets a
+        descriptor here, like in `p => a(...)`.
+    */
     void handle_pointer_section_target(const ASR::Associate_t& x) {
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-        
+
         // Get the base pointer variable from the target section
         ASR::Variable_t* ptr_var = ASRUtils::EXPR2VAR(target_section->m_v);
         ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
-        
+
         // Get the llvm values
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         visit_expr(*target_section->m_v);
         llvm::Value* target_desc = tmp;
-        
-        ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_type);
-        visit_expr(*x.m_value);
-        llvm::Value* value_desc = tmp;
         ptr_loads = ptr_loads_copy;
-        
-        
+
+        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(value_type) ==
+            ASR::array_physical_typeType::DescriptorArray);
         llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value,
             ASRUtils::extract_type(value_type), module.get());
-        
+        ASR::ttype_t* value_desc_ttype = ASRUtils::type_get_past_allocatable_pointer(value_type);
+        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+            value_desc_ttype, module.get());
+        llvm::Value* value_desc = nullptr;
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
+            value_desc = arr_descr->create_descriptor_alloca(value_desc_type,
+                "pointer_target_section_descriptor");
+            fill_array_section_descriptor(x.m_value, value_desc, value_desc_type,
+                value_desc_ttype);
+        } else {
+            ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_type);
+            visit_expr(*x.m_value);
+            ptr_loads = ptr_loads_copy;
+            value_desc = tmp;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
+                value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+            }
+        }
+
         // Create a new descriptor for the pointer with the specified bounds
         ASR::ttype_t* target_ptr_type = ASRUtils::expr_type(target_section->m_v);
         ASR::ttype_t* desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
@@ -12251,101 +12275,38 @@ public:
              ASR::array_physical_typeType::DescriptorArray, true);
         llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(
             target_section->m_v, desc_type, module.get());
-        
-        // Extract bounds from the target section
-        int target_rank = 0;
-        Vec<llvm::Value*> lbs; lbs.reserve(al, target_section->n_args);
-        Vec<llvm::Value*> ubs; ubs.reserve(al, target_section->n_args);
-        Vec<llvm::Value*> target_strides; target_strides.reserve(al, target_section->n_args);
-        
-        for (size_t i = 0; i < target_section->n_args; i++) {
+
+        llvm::Type* idx_type = arr_descr->get_index_type();
+        unsigned idx_bits = idx_type->getIntegerBitWidth();
+        int target_rank = checked_integer_cast<int>(target_section->n_args);
+        Vec<llvm::Value*> lbs; lbs.reserve(al, target_rank);
+        Vec<llvm::Value*> sizes; sizes.reserve(al, target_rank);
+        bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
+        llvm::Value* value_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+            value_desc_type, value_desc);
+        for (int i = 0; i < target_rank; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
-            // For pointer section, we have left:right bounds
-            if (idx.m_left != nullptr) {
-                visit_expr_wrapper(idx.m_left, true);
-                lbs.push_back(al, tmp);
-
-                // Detect a buggy/unsupplied upper bound that resolves to a
-                // bound of the target pointer itself (which is unassociated
-                // at this point). In that case (e.g. `p(lb:) => a`), derive
-                // the upper bound from the value's size in that dimension:
-                // ub = lb + size(value, dim) - 1.
-                bool right_refers_to_target = false;
-                if (idx.m_right != nullptr && ASR::is_a<ASR::ArrayBound_t>(*idx.m_right)) {
-                    ASR::ArrayBound_t* ab = ASR::down_cast<ASR::ArrayBound_t>(idx.m_right);
-                    if (ASR::is_a<ASR::Var_t>(*ab->m_v) &&
-                        ASR::is_a<ASR::Var_t>(*target_section->m_v) &&
-                        ASR::down_cast<ASR::Var_t>(ab->m_v)->m_v ==
-                            ASR::down_cast<ASR::Var_t>(target_section->m_v)->m_v) {
-                        right_refers_to_target = true;
-                    }
-                }
-
-                if (idx.m_right != nullptr && !right_refers_to_target) {
-                    visit_expr_wrapper(idx.m_right, true);
-                    ubs.push_back(al, tmp);
-                } else if (right_refers_to_target) {
-                    // Compute ub = lb + size(value, dim) - 1 using ASR ArraySize.
-                    ASR::ttype_t* int_type = ASRUtils::TYPE(
-                        ASR::make_Integer_t(al, x.base.base.loc, 4));
-                    ASR::expr_t* dim_expr = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                            (int64_t)(i + 1), int_type));
-                    ASR::expr_t* size_expr = ASRUtils::EXPR(
-                        ASR::make_ArraySize_t(al, x.base.base.loc, x.m_value,
-                            dim_expr, int_type, nullptr));
-                    visit_expr_wrapper(size_expr, true);
-                    llvm::Value* size_val = tmp;
-
-                    if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-                        ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-                        ASR::array_index_t& vidx = value_section->m_args[i];
-                        
-                        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                            ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(value_section->m_v))), module.get());
-                        llvm::Value* loaded_desc = value_desc;
-                        if (ASRUtils::is_allocatable(ASRUtils::expr_type(value_section->m_v)) || ASRUtils::is_pointer(ASRUtils::expr_type(value_section->m_v))) {
-                            loaded_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-                        }
-                        llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                            value_desc_type, loaded_desc);
-                        llvm::Type* idx_type = arr_descr->get_index_type();
-                        unsigned idx_bits = idx_type->getIntegerBitWidth();
-                        llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                            src_dim_des_arr, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-                        
-                        llvm::Value* step_val = nullptr;
-                        if (vidx.m_step != nullptr) {
-                            visit_expr_wrapper(vidx.m_step, true);
-                            step_val = tmp;
-                        } else {
-                            step_val = llvm::ConstantInt::get(idx_type, 1);
-                        }
-                        step_val = builder->CreateSExtOrTrunc(step_val, idx_type);
-                        
-                        llvm::Value* base_stride = arr_descr->get_stride(dim_des, true);
-                        target_strides.push_back(al, builder->CreateMul(base_stride, step_val));
-                    }
-                    size_val = builder->CreateSExtOrTrunc(size_val, lbs.p[i]->getType());
-                    llvm::Value* one = llvm::ConstantInt::get(lbs.p[i]->getType(), 1);
-                    llvm::Value* ub_val = builder->CreateSub(
-                        builder->CreateAdd(lbs.p[i], size_val), one);
-                    ubs.push_back(al, ub_val);
-                } else {
-                    // Use left as both bounds for single element
-                    ubs.push_back(al, lbs.p[i]);
-                }
-                target_rank++;
-            } else if (idx.m_right != nullptr) {
-                // Single index - treat as 1:right
-                llvm::Type* idx_type = arr_descr->get_index_type();
-                unsigned idx_bits = idx_type->getIntegerBitWidth();
-                lbs.push_back(al, llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1)));
-                visit_expr_wrapper(idx.m_right, true);
-                ubs.push_back(al, tmp);
-                target_rank++;
+            LCOMPILERS_ASSERT(idx.m_left != nullptr && (idx.m_right == nullptr) == bounds_spec);
+            visit_expr_wrapper(idx.m_left, true);
+            llvm::Value* lb = builder->CreateSExtOrTrunc(tmp, idx_type);
+            lbs.push_back(al, lb);
+            if (bounds_spec) {
+                // The pointer has the extents of the value, so its upper
+                // bound is lb + extent - 1.
+                llvm::Value* extent = arr_descr->get_dimension_size(
+                    arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
+                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i))), true);
+                sizes.push_back(al, builder->CreateSExtOrTrunc(extent, idx_type));
+                continue;
             }
+            visit_expr_wrapper(idx.m_right, true);
+            llvm::Value* ub = builder->CreateSExtOrTrunc(tmp, idx_type);
+            // An upper bound below the lower bound gives the extent zero
+            llvm::Value* size = builder->CreateAdd(builder->CreateSub(ub, lb),
+                llvm::ConstantInt::get(idx_type, 1));
+            llvm::Value* zero = llvm::ConstantInt::get(idx_type, 0);
+            sizes.push_back(al, builder->CreateSelect(
+                builder->CreateICmpSLT(size, zero), zero, size));
         }
 
         // The data of a polymorphic pointer array descriptor is a
@@ -12399,121 +12360,13 @@ public:
         // Dims are inline at FIELD_DIMS - get pointer to first dim element
         llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(
             target_type_llvm, new_desc, false);
-        
-        // Get value data pointer
-        llvm::Value* value_data = nullptr;
-        llvm::Type* idx_type = arr_descr->get_index_type();
-        unsigned idx_bits = idx_type->getIntegerBitWidth();
-        ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
-        ASR::ArraySection_t* value_section_no_desc = nullptr;
-        if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-            ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-            if (ASRUtils::extract_physical_type(ASRUtils::expr_type(value_section->m_v)) !=
-                    ASR::array_physical_typeType::DescriptorArray) {
-                value_section_no_desc = value_section;
-            }
-        }
-        if (value_section_no_desc != nullptr) {
-            // The data pointer is the address of the first element of the
-            // section, computed by indexing the base array at the lower
-            // bound of each sliced dimension.
-            ASR::ArraySection_t* value_section = value_section_no_desc;
-            Vec<ASR::array_index_t> first_args;
-            first_args.reserve(al, value_section->n_args);
-            for (size_t vi = 0; vi < value_section->n_args; vi++) {
-                ASR::array_index_t& vidx = value_section->m_args[vi];
-                ASR::array_index_t first_arg;
-                first_arg.loc = vidx.loc;
-                first_arg.m_left = nullptr;
-                first_arg.m_step = nullptr;
-                if (vidx.m_step == nullptr) {
-                    first_arg.m_right = vidx.m_right;
-                } else {
-                    LCOMPILERS_ASSERT(vidx.m_left != nullptr);
-                    first_arg.m_right = vidx.m_left;
-                }
-                first_args.push_back(al, first_arg);
-            }
-            ASR::expr_t* first_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
-                value_section->base.base.loc, value_section->m_v,
-                first_args.p, first_args.n, ASRUtils::extract_type(value_type),
-                ASR::arraystorageType::ColMajor, nullptr, false));
-            // Only the address of the first element is computed here, the
-            // element is not accessed.
-            int64_t ptr_loads_copy = ptr_loads;
-            bool bounds_checking_copy = compiler_options.po.bounds_checking;
-            ptr_loads = 0;
-            compiler_options.po.bounds_checking = false;
-            visit_expr(*first_elem);
-            compiler_options.po.bounds_checking = bounds_checking_copy;
-            ptr_loads = ptr_loads_copy;
-            value_data = tmp;
-        } else if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-            ASR::ttype_t* value_desc_asr_type = value_type;
-            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-                value_desc_asr_type = ASRUtils::expr_type(value_section->m_v);
-            }
-            ASR::ttype_t* value_type_past_alloc = ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(value_desc_asr_type));
-            llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                value_type_past_alloc, module.get());
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
-                value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-                ASR::ttype_t* v_type = ASRUtils::expr_type(as->m_v);
-                if (ASRUtils::is_allocatable(v_type) || ASRUtils::is_pointer(v_type)) {
-                    value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-                }
-            }
-            value_data = arr_descr->get_pointer_to_data(value_desc_type, value_desc);
-            value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(), value_data);
-            // If the value is an ArraySection, compute offset to the first
-            // element of the section and adjust the data pointer accordingly.
-            if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-                ASR::ArraySection_t* value_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
-                llvm::Value* src_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                    value_desc_type, value_desc);
-                llvm::Value* section_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
-                for (size_t vi = 0; vi < value_section->n_args; vi++) {
-                    ASR::array_index_t& vidx = value_section->m_args[vi];
-                    llvm::Value* first_idx;
-                    if (vidx.m_step != nullptr) {
-                        // Sliced dimension: use the lower bound of the slice
-                        if (vidx.m_left != nullptr) {
-                            visit_expr_wrapper(vidx.m_left, true);
-                            first_idx = tmp;
-                        } else {
-                            first_idx = llvm::ConstantInt::get(idx_type, 1);
-                        }
-                    } else {
-                        // Non-sliced (fixed index) dimension
-                        visit_expr_wrapper(vidx.m_right, true);
-                        first_idx = tmp;
-                    }
-                    first_idx = builder->CreateSExtOrTrunc(first_idx, idx_type);
-                    llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                        src_dim_des_arr,
-                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, vi)));
-                    llvm::Value* stride = arr_descr->get_stride(dim_des, true);
-                    llvm::Value* lb = arr_descr->get_lower_bound(dim_des, true);
-                    section_offset = builder->CreateAdd(section_offset,
-                        builder->CreateMul(stride, builder->CreateSub(first_idx, lb)));
-                }
-                value_data = llvm_utils->create_ptr_gep2(value_el_type, value_data, section_offset);
-            }
-        } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                   value_physical_type == ASR::array_physical_typeType::PointerArray) {
-            llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(value_type)),
-                module.get());
-            value_data = llvm_utils->create_gep2(val_type, value_desc, 0);
-        } else {
-            value_data = value_desc;
-        }
-        
+
+        // The element at the lower bounds of the pointer is the first
+        // element of the value, at its data pointer plus its offset.
+        llvm::Value* value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(value_desc_type, value_desc));
+        llvm::Value* value_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
+
         // Store data pointer in descriptor. If the target is a polymorphic
         // array, the descriptor's data field is a pointer to the class
         // wrapper struct (vtable + data pointer) that the pointer owns.
@@ -12535,60 +12388,52 @@ public:
             }
             builder->CreateStore(value_data, target_data_field);
         }
-        
-        // Set offset to 0
-        llvm::Value* offset_ptr = arr_descr->get_offset(target_type_llvm, new_desc, false);
-        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0)), offset_ptr);
-        
-        
-        bool has_target_strides = (target_strides.n == (uint32_t)target_rank);
-        llvm::Value* current_stride = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
+        builder->CreateStore(value_offset,
+            arr_descr->get_offset(target_type_llvm, new_desc, false));
+
+        // With a bounds-spec the pointer has the shape and the strides of
+        // the value. With a bounds-remapping-list its elements are those of
+        // the value in array element order: the value has rank one or is
+        // simply contiguous, so the stride of each dimension is the first
+        // stride of the value times the extents of the dimensions before it.
+        llvm::Value* current_stride = arr_descr->get_stride(
+            arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0))), true);
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
             llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_idx);
-
-            // Get pointers to dimension descriptor fields
-            // Structure: index 0 = stride, index 1 = lower_bound, index 2 = size
-            llvm::Value* stride_ptr = arr_descr->get_stride(dim_des, false);
-            llvm::Value* lb_ptr = arr_descr->get_lower_bound(dim_des, false);
-            llvm::Value* size_ptr = arr_descr->get_dimension_size(dim_des, false);
-
-            // Set stride: use target_strides if available, otherwise running product
-            if (has_target_strides) {
-                builder->CreateStore(target_strides.p[i], stride_ptr);
-            } else {
-                builder->CreateStore(current_stride, stride_ptr);
+            llvm::Value* stride = current_stride;
+            if (bounds_spec) {
+                stride = arr_descr->get_stride(arr_descr->get_pointer_to_dimension_descriptor(
+                    value_dim_des_arr, dim_idx), true);
             }
-
-            // Set lower bound from target section
-            llvm::Value* lb_idx = builder->CreateSExtOrTrunc(lbs.p[i], idx_type);
-            builder->CreateStore(lb_idx, lb_ptr);
-
-            // Calculate and set size: ub - lb + 1
-            llvm::Value* ub_idx = builder->CreateSExtOrTrunc(ubs.p[i], idx_type);
-            llvm::Value* size = builder->CreateAdd(
-                builder->CreateSub(ub_idx, lb_idx),
-                llvm::ConstantInt::get(idx_type, 1));
-            builder->CreateStore(size, size_ptr);
-
-            // Update running product for next dimension
-            if (!has_target_strides) {
-                current_stride = builder->CreateMul(current_stride, size);
-            }
+            builder->CreateStore(stride, arr_descr->get_stride(dim_des, false));
+            builder->CreateStore(lbs.p[i], arr_descr->get_lower_bound(dim_des, false));
+            builder->CreateStore(sizes.p[i], arr_descr->get_dimension_size(dim_des, false));
+            current_stride = builder->CreateMul(current_stride, sizes.p[i]);
         }
-        
+
         // Store the new descriptor to the target pointer
         builder->CreateStore(new_desc, target_desc);
     }
 
-    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
-        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+    /*
+        Fills `target`, a descriptor of LLVM type `target_type` for the array
+        type `target_desc_type`, with the array section `section_expr`: the
+        address of its first element and, for each sliced dimension, its
+        stride, a lower bound of 1 and its extent.
+    */
+    void fill_array_section_descriptor(ASR::expr_t* section_expr,
+            llvm::Value* target, llvm::Type* target_type,
+            ASR::ttype_t* target_desc_type) {
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(section_expr);
         ASR::ttype_t* value_array_type = ASRUtils::expr_type(array_section->m_v);
 
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
+        ptr_loads = ptr_loads_copy;
         llvm::Value* value_desc = tmp;
         llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
             ASRUtils::type_get_past_allocatable(
@@ -12611,28 +12456,8 @@ public:
             value_desc, "inline_array_section_desc");
         llvm::Type *value_el_type = llvm_utils->get_el_type(array_section->m_v,
               ASRUtils::extract_type(value_array_type), module.get());
-        ptr_loads = 0;
-        visit_expr(*x.m_target);
-        llvm::Value* target_desc = tmp;
-        ptr_loads = ptr_loads_copy;
-
-        ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
-             ASR::array_physical_typeType::DescriptorArray, true);
-        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
         int value_rank = checked_integer_cast<int>(array_section->n_args), target_rank = 0;
-        llvm::Value *target = arr_descr->create_descriptor_alloca(
-            target_type, "array_section_descriptor");
-        // A polymorphic pointer array owns a heap wrapper, which is freed
-        // when the pointer is finalized. A section of a class array gets its
-        // own {vptr, data} wrapper on the stack, so it is copied below into
-        // the wrapper the pointer already owns, or into a new one.
-        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
-        bool own_section_wrapper =
-            ASRUtils::is_class_type(target_elem_type) &&
-            ASRUtils::is_class_type(ASRUtils::extract_type(value_array_type));
-        if( ASRUtils::is_character(*expr_type(x.m_target))){
+        if( ASRUtils::is_character(*target_desc_type)){
             llvm::Value* str_desc = llvm_utils->create_string_descriptor("array_section_string_desc");
             builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(target_type, target));
         }
@@ -12708,9 +12533,7 @@ public:
         // can hold. Cap target_rank at the descriptor's rank so we only fill
         // dims that fit. The first sliced dim gets stride=1 (before any
         // accumulation), which is correct for contiguous sequence association.
-        int desc_rank = ASRUtils::extract_n_dims_from_ttype(
-            ASRUtils::type_get_past_allocatable(
-                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))));
+        int desc_rank = ASRUtils::extract_n_dims_from_ttype(target_desc_type);
         if (target_rank > desc_rank) {
             LCOMPILERS_ASSERT(desc_rank == 1 && "Rank mismatch only expected "
                 "for 1D assumed-size sequence association");
@@ -12761,19 +12584,46 @@ public:
                 }
                 llvm_diminfo.push_back(al, dim_length);
             }
-            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(x.m_value),
-                target, expr_type(x.m_target), x.m_target,
+            arr_descr->fill_descriptor_for_array_section_data_only(value_desc, value_el_type, expr_type(section_expr),
+                target, target_desc_type, nullptr,
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 llvm_diminfo.p, value_rank, target_rank, location_manager);
         } else {
-            arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(x.m_value),
+            arr_descr->fill_descriptor_for_array_section(value_desc, value_el_type, expr_type(section_expr),
                 value_desc_type,
-                target, expr_type(x.m_target), x.m_target,
+                target, target_desc_type, nullptr,
                 target_type,
                 lbs.p, ubs.p, ds.p, non_sliced_indices.p,
                 value_rank, target_rank, location_manager);
         }
+    }
+
+    void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
+        ASR::ttype_t* target_desc_type = ASRUtils::duplicate_type_with_empty_dims(al,
+            ASRUtils::type_get_past_allocatable(
+                ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_target))),
+             ASR::array_physical_typeType::DescriptorArray, true);
+        llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_desc_type, module.get());
+        llvm::Value *target = arr_descr->create_descriptor_alloca(
+            target_type, "array_section_descriptor");
+        fill_array_section_descriptor(x.m_value, target, target_type, target_desc_type);
+
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*x.m_target);
+        llvm::Value* target_desc = tmp;
+        ptr_loads = ptr_loads_copy;
+        // A polymorphic pointer array owns a heap wrapper, which is freed
+        // when the pointer is finalized. A section of a class array gets its
+        // own {vptr, data} wrapper on the stack, so it is copied below into
+        // the wrapper the pointer already owns, or into a new one.
+        ASR::ttype_t* target_elem_type = ASRUtils::extract_type(target_desc_type);
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
+        bool own_section_wrapper =
+            ASRUtils::is_class_type(target_elem_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(
+                ASRUtils::expr_type(array_section->m_v)));
         if (own_section_wrapper) {
             llvm::Type* wrapper_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 x.m_target, target_elem_type, module.get());
@@ -12803,15 +12653,7 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
-        bool is_target_pointer_section = false;
-        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
-            ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-            ASR::ttype_t* target_section_type = ASRUtils::expr_type(target_section->m_v);
-            if (ASRUtils::is_pointer(target_section_type)) {
-                is_target_pointer_section = true;
-            }
-        }
-        if (is_target_pointer_section) {
+        if (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
             handle_pointer_section_target(x);
         } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_value) ) {
             handle_array_section_association_to_pointer(x);

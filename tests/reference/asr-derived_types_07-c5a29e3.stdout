@@ -542,6 +542,7 @@
                                                         )
                                                         ()
                                                     )
+                                                    NoPointerBounds
                                                 )
                                                 (Exit
                                                     ()

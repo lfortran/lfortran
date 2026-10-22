@@ -264,6 +264,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 prinf~fpcast_ptr
@@ -299,6 +300,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 prinf~fpcast_ptr

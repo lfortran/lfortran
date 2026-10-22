@@ -412,7 +412,7 @@ public:
         scope->add_symbol(name, sym);
         ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         associations.push_back(al, ASRUtils::STMT(
-            ASR::make_Associate_t(al, loc, var, expr)));
+            ASR::make_Associate_t(al, loc, var, expr, ASR::pointer_bounds_formType::NoPointerBounds)));
         replaced[expr] = var;
         *current_expr = var;
     }

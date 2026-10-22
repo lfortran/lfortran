@@ -191,6 +191,7 @@
                                     [(Associate
                                         (Var 3 n)
                                         (Var 2 a)
+                                        NoPointerBounds
                                     )
                                     (BlockCall
                                         -1

@@ -555,6 +555,7 @@
                                             (Complex 4)
                                             ()
                                         )
+                                        NoPointerBounds
                                     )
                                     (Assignment
                                         (Var 12 rc)
@@ -920,6 +921,7 @@
                                                 ()
                                             )
                                         )
+                                        NoPointerBounds
                                     )
                                     (If
                                         ()

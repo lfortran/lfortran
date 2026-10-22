@@ -460,6 +460,7 @@
                                             ()
                                         )
                                         (Var 13 table)
+                                        NoPointerBounds
                                     )]
                                     ()
                                     Private

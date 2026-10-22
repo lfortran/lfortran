@@ -1191,6 +1191,14 @@ RUN(NAME pointer_18 LABELS gfortran llvm)
 RUN(NAME pointer_19 LABELS gfortran llvm)
 RUN(NAME pointer_section_01 LABELS gfortran llvm)
 RUN(NAME pointer_section_02 LABELS gfortran llvm)
+RUN(NAME pointer_section_03 LABELS gfortran llvm)
+RUN(NAME pointer_section_04 LABELS gfortran llvm)
+RUN(NAME pointer_section_05 LABELS gfortran llvm)
+RUN(NAME pointer_section_06 LABELS gfortran llvm)
+RUN(NAME pointer_section_07 LABELS gfortran llvm)
+RUN(NAME pointer_section_08 LABELS llvm)
+RUN(NAME pointer_section_09 LABELS gfortran llvm)
+RUN(NAME pointer_section_10 LABELS gfortran llvm)
 RUN(NAME pointer_function_result_01 LABELS gfortran llvm)
 
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4381,6 +4389,7 @@ RUN(NAME array_section_35 LABELS gfortran llvm)
 RUN(NAME array_section_36 LABELS gfortran llvm)
 RUN(NAME array_section_37 LABELS gfortran llvm)
 RUN(NAME array_section_38 LABELS gfortran llvm)
+RUN(NAME array_section_39 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -5507,6 +5516,11 @@ RUN(NAME openmp_102 LABELS gfortran llvm_omp EXTRAFILES openmp_102b.f90 GFORTRAN
 RUN(NAME openmp_103 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_104 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_105 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_106 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_107 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+# Not gfortran: older gfortran versions in CI do not accept the DO CONCURRENT
+# LOCAL locality spec (F2018).
+RUN(NAME openmp_108 LABELS llvm_omp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)

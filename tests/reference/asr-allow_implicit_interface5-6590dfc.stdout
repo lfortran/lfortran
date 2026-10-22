@@ -316,6 +316,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 klvna~fpcast_ptr

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-associate_pointer_bounds_missing_upper-a7997b2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/associate_pointer_bounds_missing_upper.asr",
+    "infile_hash": "4fe7f3ebcf223d52547ed601547a7f2cc37bf891ab577db676062d45",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-associate_pointer_bounds_missing_upper-a7997b2.stderr",
+    "stderr_hash": "f203551937ffd9e9e27f5dada36aa467188beae1495e0363795452c8",
+    "returncode": 2
+}

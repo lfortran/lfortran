@@ -2441,6 +2441,9 @@ public:
     bool current_function_side_effect_free = true;
     ASR::ttype_t* current_variable_type_;
     ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
+    // The subscripts of the data pointer object of a pointer assignment,
+    // whose bounds are checked by the pointer assignment.
+    AST::fnarg_t* pointer_bounds_args = nullptr;
 
     int32_t enum_init_val;
     bool default_storage_save = false;
@@ -15768,6 +15771,45 @@ public:
         array_item->m_in_bounds = false;
     }
 
+    // F2018 R910 and R919-R923: a subscript, a bound or stride of a
+    // subscript triplet, and a substring index are scalar integer
+    // expressions. Only a vector subscript is an array.
+    void check_subscript_types(const Vec<ASR::array_index_t>& args,
+            bool is_substring) {
+        std::string index_kind = is_substring ? "a substring index"
+            : "an array subscript";
+        for (const ASR::array_index_t& a : args) {
+            bool is_vector_subscript_allowed = !is_substring &&
+                a.m_left == nullptr && a.m_step == nullptr;
+            ASR::expr_t* indices[] = {a.m_left, a.m_right, a.m_step};
+            for (ASR::expr_t* index : indices) {
+                if (index == nullptr) {
+                    continue;
+                }
+                ASR::ttype_t* index_type = ASRUtils::expr_type(index);
+                if (!ASRUtils::is_integer(*index_type) &&
+                        !ASRUtils::is_unsigned_integer(*index_type)) {
+                    diag.add(Diagnostic(
+                        index_kind + " must be of type integer, found " +
+                        ASRUtils::type_to_str_with_kind(index_type, index),
+                        Level::Error, Stage::Semantic, {
+                            Label("", {index->base.loc})}));
+                    throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(index_type) &&
+                        !is_vector_subscript_allowed) {
+                    diag.add(Diagnostic(
+                        is_substring ? "a substring index must be scalar"
+                            : "a bound or stride of a subscript triplet must "
+                              "be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {index->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -16029,6 +16071,15 @@ public:
                     }
                 }
             }
+        }
+
+        // The bounds of a pointer bounds specification or remapping list
+        // are checked by the pointer assignment, which names them as such.
+        if (is_item || pointer_bounds_args == nullptr ||
+                m_args != pointer_bounds_args ||
+                !ASRUtils::is_pointer(ASRUtils::symbol_type(v))) {
+            check_subscript_types(args, ASRUtils::is_character(*root_v_type) &&
+                !ASRUtils::is_array(root_v_type));
         }
 
         if( is_item ) {
@@ -16503,19 +16554,30 @@ public:
                     empty_dim.m_length = nullptr;
                     array_section_dims.push_back(al, empty_dim);
                 }
+                // Only scalar integer indices take part in unifying the kinds
+                // of a triplet. Any other index keeps its type, so that it is
+                // diagnosed as written.
+                auto is_scalar_integer = [](ASR::expr_t* index) {
+                    if (index == nullptr) {
+                        return false;
+                    }
+                    ASR::ttype_t* index_type = ASRUtils::expr_type(index);
+                    return ASRUtils::is_integer(*index_type) &&
+                        !ASRUtils::is_array(index_type);
+                };
                 int max_kind = -1;
                 int left_kind = -1;
                 int right_kind = -1;
                 int step_kind = -1;
-                if (args.p[i].m_left) {
+                if (is_scalar_integer(args.p[i].m_left)) {
                     left_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_left));
                     max_kind = std::max(max_kind, left_kind);
                 } 
-                if (args.p[i].m_right) {
+                if (is_scalar_integer(args.p[i].m_right)) {
                     right_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_right));
                     max_kind = std::max(max_kind, right_kind);
                 }
-                if (args.p[i].m_step) {
+                if (is_scalar_integer(args.p[i].m_step)) {
                     step_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args.p[i].m_step));
                     max_kind = std::max(max_kind, step_kind);
                 }
@@ -22177,7 +22239,7 @@ public:
         // same way as `sp => add_ten`, and Assignment's store lowering does
         // not match the Pointer(FunctionType) physical representation.
         association_body->push_back(al, ASRUtils::STMT(
-            ASR::make_Associate_t(al, loc, lhs, cast)));
+            ASR::make_Associate_t(al, loc, lhs, cast, ASR::pointer_bounds_formType::NoPointerBounds)));
         return tmp_var;
     }
 

@@ -194,6 +194,7 @@
               )
               :value nil
             )
+            :form :NoPointerBounds
           )
           (Assignment
             :target (Var

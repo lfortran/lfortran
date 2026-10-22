@@ -1492,8 +1492,22 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
-        visit_expr(*x.m_target);
-        std::string t = std::move(src);
+        std::string t;
+        if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
+            // The upper bounds follow from the data target: `p(lb:) => a`
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            visit_expr(*section->m_v);
+            t = std::move(src) + "(";
+            for (size_t i = 0; i < section->n_args; i++) {
+                visit_expr(*section->m_args[i].m_left);
+                t += src + ":";
+                if (i < section->n_args - 1) t += ", ";
+            }
+            t += ")";
+        } else {
+            visit_expr(*x.m_target);
+            t = std::move(src);
+        }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
         src = t + " => " + v + "\n";

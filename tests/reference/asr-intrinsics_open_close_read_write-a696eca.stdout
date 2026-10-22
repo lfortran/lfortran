@@ -295,6 +295,7 @@
                     [(Associate
                         (Var 2 u_ptr)
                         (Var 2 u)
+                        NoPointerBounds
                     )
                     (DoLoop
                         ()
