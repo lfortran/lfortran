@@ -5153,6 +5153,7 @@ RUN(NAME matmul_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --re
 RUN(NAME matmul_05 LABELS gfortran llvm)
 RUN(NAME matmul_06 LABELS gfortran llvm)
 RUN(NAME matmul_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME matmul_08 LABELS gfortran llvm)
 RUN(NAME array_size_matmul_01 LABELS gfortran llvm)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma NO_FAST_MATH)
