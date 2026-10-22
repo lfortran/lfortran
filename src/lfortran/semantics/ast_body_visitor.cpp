@@ -10066,6 +10066,28 @@ public:
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
         all_loops_blocks_nesting += 1;
         LoopScope loop_scope(in_loop, in_do_concurrent, true);
+        // The loop index is construct-local, but the GPU passes need a
+        // direct DoConcurrentLoop rather than a separate BlockCall.
+        // Use a temporary lexical symbol table for AST name lookup; store
+        // the actual index Variable under a unique name in a lasting scope.
+        struct ScopeRestorer {
+            SymbolTable *&scope;
+            SymbolTable *saved;
+            ~ScopeRestorer() { scope = saved; }
+        } scope_restorer{current_scope, current_scope};
+        SymbolTable *enclosing_scope = current_scope;
+        SymbolTable *owner_scope = enclosing_scope;
+        // An enclosing DO CONCURRENT may already use a temporary lexical
+        // scope. Find the nearest scope owned by lasting ASR.
+        while (owner_scope->parent &&
+               (owner_scope->asr_owner == nullptr ||
+                owner_scope->asr_owner == owner_scope->parent->asr_owner)) {
+            owner_scope = owner_scope->parent;
+        }
+        current_scope = al.make_new<SymbolTable>(enclosing_scope);
+        SymbolTable *index_scope = current_scope;
+        // Preserve procedure context for function dependency tracking.
+        index_scope->asr_owner = owner_scope->asr_owner;
         Vec<ASR::do_loop_head_t> heads;  // Create a vector of loop heads
         heads.reserve(al,x.n_control);
         AST::decl_attribute_t *current_type = nullptr;
@@ -10100,30 +10122,39 @@ public:
             if (h.m_type) {
                 current_type = h.m_type;
             }
+            ASR::ttype_t *type = nullptr;
             if (current_type) {
-                // A type-spec (e.g. `do concurrent (integer :: j = ...)`)
-                // declares the index variable. If a variable of the same name
-                // already exists in the current scope, reuse it instead of
-                // adding a duplicate symbol.
-                ASR::symbol_t *var_sym = current_scope->get_symbol(var_name);
-                if (var_sym == nullptr) {
-                    AST::decl_attribute_t *decl_type = current_type;
-                    Vec<ASR::dimension_t> dims;
-                    dims.reserve(al, 1);
-                    ASR::symbol_t *type_declaration;
-                    ASR::ttype_t *type = determine_type(x.base.base.loc, var_name, decl_type, false, false,
-                                                        dims, nullptr, type_declaration, ASR::abiType::Source);
-                    var_sym = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, var_name),
-                            nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                            type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false,
-                            false, false, nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr, nullptr, 0));
-                    current_scope->add_symbol(var_name, var_sym);
-                }
-                var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
+                // Explicitly typed index (DO CONCURRENT (INTEGER :: j=...)).
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::symbol_t *type_declaration;
+                type = determine_type(x.base.base.loc, var_name, current_type,
+                    false, false, dims, nullptr, type_declaration, ASR::abiType::Source);
             } else {
-                var = ASRUtils::EXPR(resolve_variable(x.base.base.loc, var_name));
+                // Obtain the index type from the outer binding (including
+                // existing implicit typing), without binding the loop to it.
+                // Resolve in the parent scope *before* adding the local symbol.
+                current_scope = enclosing_scope;
+                ASR::expr_t *outer_var = ASRUtils::EXPR(
+                    resolve_variable(x.base.base.loc, var_name));
+                current_scope = index_scope;
+                type = ASRUtils::expr_type(outer_var);
             }
+            // Unique symbol in lasting ASR scope; its source name is only
+            // an alias in the temporary lexical scope used for this loop.
+            std::string index_name = owner_scope->get_unique_name(
+                "lfortran_do_concurrent_" + var_name + "_");
+            ASR::symbol_t *var_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Variable_t(al, x.base.base.loc, owner_scope,
+                    s2c(al, index_name), nullptr, 0, ASR::intentType::Local,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    type, nullptr, ASR::abiType::Source, ASR::Public,
+                    ASR::presenceType::Required, false, false, false,
+                    nullptr, false, false, ASR::pass_attrType::NotMethod,
+                    nullptr, nullptr, 0));
+            owner_scope->add_symbol(index_name, var_sym);
+            index_scope->add_symbol(var_name, var_sym);
+            var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
             visit_expr(*h.m_start);
             ASR::expr_t *start = ASRUtils::EXPR(tmp);
             visit_expr(*h.m_end);
@@ -10218,8 +10249,10 @@ public:
                 }
             }
         }
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
-                body.size());
+        current_scope = enclosing_scope;
+        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p,
+            heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n,
+            reductions.p, reductions.n, body.p, body.size());
         all_loops_blocks_nesting -= 1;
     }
 
