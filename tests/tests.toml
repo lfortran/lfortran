@@ -32,6 +32,14 @@ filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/realloc_one_object.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/realloc_shape_differs_type.asr"
+asr = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true

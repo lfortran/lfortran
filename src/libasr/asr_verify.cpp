@@ -896,6 +896,18 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
+    void visit_ReAlloc(const ReAlloc_t &x) {
+        require_id(x.n_args == 1,
+            "asr.verify.realloc.one_object",
+            "ReAlloc must reallocate exactly one object");
+        ASR::ttype_t* shape_differs_type = ASRUtils::expr_type(x.m_shape_differs);
+        require_id(shape_differs_type != nullptr &&
+                ASR::is_a<ASR::Logical_t>(*shape_differs_type),
+            "asr.verify.realloc.shape_differs_type",
+            "ReAlloc::m_shape_differs must be a scalar logical");
+        BaseWalkVisitor<VerifyVisitor>::visit_ReAlloc(x);
+    }
+
     void visit_StructMethodDeclaration(const StructMethodDeclaration_t &x) {
         require(x.m_name != nullptr,
             "The StructMethodDeclaration::m_name cannot be nullptr");
