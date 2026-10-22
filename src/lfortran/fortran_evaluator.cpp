@@ -467,7 +467,9 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     passes.use_default_passes();
     try {
         const auto newline = code.find('\n');
-        const auto magic = code.substr(0, newline);
+        auto magic = code.substr(0, newline);
+        // Trailing blanks and the \r of a CRLF line ending are not part of it.
+        magic.erase(magic.find_last_not_of(" \t\r") + 1);
         const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
         Result<std::string> shown{Error{}};
         if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);

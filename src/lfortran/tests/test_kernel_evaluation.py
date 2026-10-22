@@ -69,9 +69,10 @@ def main():
             check(client, "'hello'", ["hello"])
             check(client, "1.2345678901234567_8", ["1.2345678901234567"])
             for magic in ("ast", "asr", "llvm", "asm", "cpp", "fmt"):
-                messages = check(client, "%%show" + magic + "\ninteger :: x", [])
-                assert any(m["msg_type"] == "stream" and m["content"]["text"]
-                           for m in messages), (magic, messages)
+                for first_line in ("%%show" + magic, "%%show" + magic + " \r"):
+                    messages = check(client, first_line + "\ninteger :: x", [])
+                    assert any(m["msg_type"] == "stream" and m["content"]["text"]
+                               for m in messages), (magic, messages)
             messages = check(client, "use lfortran_display; "
                              "call display_data('text/html','<b>hello</b>'); "
                              "call clear_output()", [])

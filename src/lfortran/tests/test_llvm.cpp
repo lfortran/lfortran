@@ -2971,6 +2971,10 @@ TEST_CASE("FortranEvaluator execute: inspection cells") {
         REQUIRE(cell.ok);
         CHECK(!cell.output.empty());
         CHECK(!cell.value.has_value());
+        // Trailing blanks and a CRLF line ending after the magic.
+        cell = e.execute("%%show" + magic + " \t\r\ninteger :: y");
+        REQUIRE(cell.ok);
+        CHECK(!cell.output.empty());
     }
 }
 
