@@ -4486,7 +4486,8 @@ struct ImpliedDoExpansion {
 // replaced by their values, and returns `ImpliedDoExpansionBlocker::None`.
 // Otherwise returns what keeps it from being expanded, and `result` is
 // incomplete. The `implied_do_loops` pass expands loops with values of
-// different types this way.
+// different types this way; the semantic checks use it to reject the loops
+// over derived types that cannot be expanded.
 ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
     ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result);
 
