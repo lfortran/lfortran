@@ -30,12 +30,8 @@
 #include <nlohmann/json.hpp>
 
 #include <lfortran/fortran_kernel.h>
-#include <lfortran/parser/parser.h>
-#include <lfortran/semantics/ast_to_asr.h>
-#include <libasr/codegen/asr_to_llvm.h>
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/utils.h>
-#include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
 namespace nl = nlohmann;
