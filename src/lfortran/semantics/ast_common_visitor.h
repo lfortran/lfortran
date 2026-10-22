@@ -8490,7 +8490,7 @@ public:
                                         if (compiler_options.implicit_typing) {
                                             ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
                                             if (type) {
-                                                sym_ = declare_implicit_variable(x.m_syms[i].loc, sym, ASR::intentType::Local);
+                                                sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, type);
                                                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                                 v->m_storage = ASR::storage_typeType::Save;
                                             } else {
