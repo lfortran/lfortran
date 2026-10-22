@@ -6136,6 +6136,16 @@ RUN(NAME gpu_metal_149 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_150 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda cuda_cpu EXTRAFILES gpu_cuda_cpu_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda_cpu STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
+# Only the module's own compilation needs the fallback for its loop that
+# prints: the program that uses it compiles none of the module's loops.
+if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu)$")
+    set_source_files_properties(gpu_separate_compilation_01_mod.f90
+        PROPERTIES COMPILE_OPTIONS "--gpu-allow-cpu-fallback")
+endif()
+# The GPU backends link without `--openmp`: an OpenMP lowering of the
+# module's loops in the program's file would not link.
+RUN(NAME gpu_separate_compilation_02 LABELS gfortran llvm_omp metal cuda cuda_cpu EXTRAFILES gpu_separate_compilation_02_mod.f90 EXTRA_ARGS --separate-compilation --openmp)
 RUN(NAME gpu_metal_151 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_metal_151_dep.f90 gpu_metal_151_net.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_152 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_153 LABELS gfortran llvm metal cuda cuda_cpu)
