@@ -8,9 +8,12 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/symbol_expr_substitution.h>
+#include <libasr/diagnostics.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 
@@ -2023,11 +2026,184 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
+        // The variables that expressions use, and whether they call a
+        // procedure that is not intrinsic, which may use any variable.
+        class UsedVariables : public ASR::BaseWalkVisitor<UsedVariables> {
+        public:
+            std::set<ASR::symbol_t*> vars;
+            bool calls_procedure = false;
+            void visit_Var(const ASR::Var_t &x) {
+                vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
+                calls_procedure = calls_procedure || !is_a<ASR::Function_t>(*fn) ||
+                    !ASRUtils::is_intrinsic_function2(down_cast<ASR::Function_t>(fn));
+                ASR::BaseWalkVisitor<UsedVariables>::visit_FunctionCall(x);
+            }
+        };
+
+        template <typename T>
+        static ASR::expr_t *subscripted_designator(T *x, std::vector<ASR::expr_t*> &uses) {
+            if (ASRUtils::is_array_indexed_with_array_indices(x)) return nullptr;
+            for (size_t i = 0; i < x->n_args; i++) {
+                uses.insert(uses.end(), {x->m_args[i].m_left, x->m_args[i].m_right,
+                    x->m_args[i].m_step});
+            }
+            return x->m_v;
+        }
+
+        // Collects the variable that the input item `e` (a variable, or an
+        // element, section, component or substring of one) defines, and its
+        // components there, into `defined`, and the expressions its address
+        // uses into `uses`. Returns false if `e` is not such a designator or
+        // has a vector subscript.
+        static bool collect_read_item(ASR::expr_t *e, std::vector<ASR::symbol_t*> &defined,
+                std::vector<ASR::expr_t*> &uses) {
+            while (e) {
+                if (is_a<ASR::Var_t>(*e)) {
+                    defined.push_back(ASRUtils::symbol_get_past_external(
+                        down_cast<ASR::Var_t>(e)->m_v));
+                    return true;
+                } else if (is_a<ASR::ArrayItem_t>(*e)) {
+                    e = subscripted_designator(down_cast<ASR::ArrayItem_t>(e), uses);
+                } else if (is_a<ASR::ArraySection_t>(*e)) {
+                    e = subscripted_designator(down_cast<ASR::ArraySection_t>(e), uses);
+                } else if (is_a<ASR::StructInstanceMember_t>(*e)) {
+                    ASR::StructInstanceMember_t *m = down_cast<ASR::StructInstanceMember_t>(e);
+                    defined.push_back(ASRUtils::symbol_get_past_external(m->m_m));
+                    e = m->m_v;
+                } else if (is_a<ASR::StringItem_t>(*e)) {
+                    ASR::StringItem_t *si = down_cast<ASR::StringItem_t>(e);
+                    uses.push_back(si->m_idx);
+                    e = si->m_arg;
+                } else if (is_a<ASR::StringSection_t>(*e)) {
+                    ASR::StringSection_t *ss = down_cast<ASR::StringSection_t>(e);
+                    uses.insert(uses.end(), {ss->m_start, ss->m_end, ss->m_step});
+                    e = ss->m_arg;
+                } else {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        // Whether the variables `a` and `b` may share storage: they are the
+        // same, either is a pointer (which includes an ASSOCIATE name and
+        // EQUIVALENCE outside common blocks), both have TARGET, or they are
+        // in one common block, but not both members of the same view of it,
+        // whose members are laid out one after another.
+        static bool may_share_storage(ASR::symbol_t *a, ASR::symbol_t *b) {
+            if (a == b) return true;
+            if (!is_a<ASR::Variable_t>(*a) || !is_a<ASR::Variable_t>(*b)) return false;
+            ASR::Variable_t *u = down_cast<ASR::Variable_t>(a);
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(b);
+            if (is_a<ASR::Pointer_t>(*u->m_type) || is_a<ASR::Pointer_t>(*v->m_type) ||
+                    (u->m_target_attr && v->m_target_attr)) {
+                return true;
+            }
+            ASR::CommonBlock_t *uc = ASRUtils::get_common_block(u);
+            ASR::CommonBlock_t *vc = ASRUtils::get_common_block(v);
+            auto is_member = [&](ASR::CommonBlock_t *c, ASR::symbol_t *s) {
+                return std::find(c->m_members, c->m_members + c->n_members, s) !=
+                    c->m_members + c->n_members;
+            };
+            return uc && vc && std::string(uc->m_link_name) == vc->m_link_name &&
+                (uc != vc || !is_member(uc, a) || !is_member(vc, b));
+        }
+
+        // Collects the variables that the input items `values` define, and
+        // what is evaluated before any value is read: the bounds of their
+        // implied DO loops and the subscripts of the items. Returns false
+        // for an item that the backend cannot read in a READ with nested
+        // implied DO loops: in a loop, anything but a scalar of intrinsic
+        // type; anywhere, a real or complex item of a kind other than 4 and
+        // 8, which the runtime stores as one of those, a vector-subscripted
+        // item, whose copy would be read instead (#15410), or an
+        // allocatable scalar that is not a character, which a formatted
+        // READ does not store (#15698).
+        static bool collect_read_items(ASR::expr_t **values, size_t n_values,
+                bool in_loop, std::vector<ASR::symbol_t*> &items,
+                std::vector<ASR::expr_t*> &uses) {
+            for (size_t i = 0; i < n_values; i++) {
+                if (is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                    ASR::ImpliedDoLoop_t *idl = down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+                    uses.insert(uses.end(), {idl->m_var, idl->m_start, idl->m_end,
+                        idl->m_increment});
+                    if (!collect_read_items(idl->m_values, idl->n_values, true,
+                            items, uses)) {
+                        return false;
+                    }
+                    continue;
+                }
+                ASR::ttype_t *type = ASRUtils::expr_type(values[i]);
+                ASR::ttype_t *t = ASRUtils::extract_type(type);
+                bool is_real = is_a<ASR::Real_t>(*t) || is_a<ASR::Complex_t>(*t);
+                int kind = is_real ? ASRUtils::extract_kind_from_ttype_t(t) : 4;
+                bool is_scalar = !ASRUtils::is_array(type) &&
+                    !is_a<ASR::Allocatable_t>(*type) && !is_a<ASR::Pointer_t>(*type);
+                bool is_intrinsic = is_real || is_a<ASR::Integer_t>(*t) ||
+                    is_a<ASR::Logical_t>(*t) || is_a<ASR::String_t>(*t);
+                if ((kind != 4 && kind != 8) ||
+                        (in_loop && !(is_scalar && is_intrinsic)) ||
+                        (is_a<ASR::Allocatable_t>(*type) && !ASRUtils::is_array(type) &&
+                            !is_a<ASR::String_t>(*t))) {
+                    return false;
+                }
+                if (!collect_read_item(values[i], items, uses)) return false;
+            }
+            return true;
+        }
+
+        // The backend does a formatted READ with a nested implied DO loop
+        // as one data transfer: it runs each implied DO loop of the input
+        // list first, collecting the addresses of its items, and then reads
+        // the values. So the READ must not define anything those loops use,
+        // and the items have to be ones that it can read. Report any other
+        // such READ as not yet supported.
+        void check_nested_implied_do_read(const ASR::FileRead_t &x) {
+            ASR::expr_t **values = x.m_values;
+            size_t n_values = x.n_values;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_fmt) && n_values == 1 &&
+                    ASR::is_a<ASR::StringFormat_t>(*values[0])) {
+                ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(values[0]);
+                values = sf->m_args;
+                n_values = sf->n_args;
+            }
+            if (!ASRUtils::has_nested_implied_do_loop(values, n_values)) return;
+            std::vector<ASR::symbol_t*> items;
+            std::vector<ASR::expr_t*> uses;
+            bool supported = collect_read_items(values, n_values, false, items, uses);
+            UsedVariables used;
+            for (ASR::expr_t *e : uses) {
+                if (e) used.visit_expr(*e);
+            }
+            supported = supported && !used.calls_procedure;
+            for (ASR::symbol_t *item : items) {
+                for (ASR::symbol_t *var : used.vars) {
+                    supported = supported && !may_share_storage(item, var);
+                }
+            }
+            if (supported) return;
+            std::string msg = "this formatted READ with nested implied-do loops "
+                "is not yet supported";
+            if (pass_options.diagnostics == nullptr) {
+                throw LCompilersException(msg);
+            }
+            pass_options.diagnostics->message_label(msg, {x.base.base.loc},
+                "an item may share storage with a loop bound or subscript, "
+                "or has a type or kind it cannot read yet",
+                diag::Level::Error, diag::Stage::ASRPass);
+        }
+
         void visit_FileRead(const ASR::FileRead_t &x) {
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;
                 return;
+            }
+            if (x.m_fmt) {
+                check_nested_implied_do_read(x);
             }
             if (x.m_fmt && x.m_unit &&
                     ASRUtils::is_character(*ASRUtils::expr_type(x.m_unit))) {

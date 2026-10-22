@@ -215,33 +215,6 @@ public:
     }
 };
 
-// The variables and components that expressions reference, and whether they
-// call a procedure that is not intrinsic, which may reference any variable
-// it can access.
-class ReferencedStorage : public ASR::BaseWalkVisitor<ReferencedStorage> {
-public:
-    std::vector<ASR::symbol_t*> symbols;
-    bool calls_procedure = false;
-
-    void visit_Var(const ASR::Var_t &x) {
-        symbols.push_back(ASRUtils::symbol_get_past_external(x.m_v));
-    }
-
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
-        symbols.push_back(ASRUtils::symbol_get_past_external(x.m_m));
-        ASR::BaseWalkVisitor<ReferencedStorage>::visit_StructInstanceMember(x);
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASR::symbol_t* fn = ASRUtils::symbol_get_past_external(x.m_name);
-        if (!ASR::is_a<ASR::Function_t>(*fn) || !ASRUtils::is_intrinsic_function2(
-                ASR::down_cast<ASR::Function_t>(fn))) {
-            calls_procedure = true;
-        }
-        ASR::BaseWalkVisitor<ReferencedStorage>::visit_FunctionCall(x);
-    }
-};
-
 // For each statement label of a procedure body, the BLOCK and ASSOCIATE
 // constructs that contain the labeled statement, outermost first.
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
@@ -22468,245 +22441,6 @@ public:
         builder->CreateCall(fn, single_args);
     }
 
-    // Collects the variable and components that an input item of a
-    // formatted READ defines, and the subscripts its address uses. Returns
-    // false if the item is not a variable, element, section or component,
-    // or has a vector subscript (#15410). An array item that the
-    // string_format_array_args pass casts to PointerArray is its operand.
-    static bool collect_formatted_read_item(ASR::expr_t* e,
-            std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
-        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
-            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
-        }
-        while (true) {
-            if (ASR::is_a<ASR::Var_t>(*e)) {
-                defined.push_back(ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(e)->m_v));
-                return true;
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
-                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
-                if (ASRUtils::is_array_indexed_with_array_indices(ai)) {
-                    return false;
-                }
-                for (size_t j = 0; j < ai->n_args; j++) {
-                    uses.push_back(ai->m_args[j].m_left);
-                    uses.push_back(ai->m_args[j].m_right);
-                    uses.push_back(ai->m_args[j].m_step);
-                }
-                e = ai->m_v;
-            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
-                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(e);
-                if (ASRUtils::is_array_indexed_with_array_indices(as)) {
-                    return false;
-                }
-                for (size_t j = 0; j < as->n_args; j++) {
-                    uses.push_back(as->m_args[j].m_left);
-                    uses.push_back(as->m_args[j].m_right);
-                    uses.push_back(as->m_args[j].m_step);
-                }
-                e = as->m_v;
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-                ASR::StructInstanceMember_t* m = ASR::down_cast<ASR::StructInstanceMember_t>(e);
-                defined.push_back(ASRUtils::symbol_get_past_external(m->m_m));
-                e = m->m_v;
-            } else if (ASR::is_a<ASR::StringItem_t>(*e)) {
-                ASR::StringItem_t* si = ASR::down_cast<ASR::StringItem_t>(e);
-                uses.push_back(si->m_idx);
-                e = si->m_arg;
-            } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
-                ASR::StringSection_t* ss = ASR::down_cast<ASR::StringSection_t>(e);
-                uses.push_back(ss->m_start);
-                uses.push_back(ss->m_end);
-                uses.push_back(ss->m_step);
-                e = ss->m_arg;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    // Whether the runtime stores a value of this type with the wrong size.
-    // The type code of an integer or logical target carries its kind, but
-    // the runtime stores every real one as a float or a double, so a real
-    // or complex target of another kind would get wrong values and
-    // overwrite its neighbours.
-    static bool has_unstorable_formatted_read_kind(ASR::ttype_t* type) {
-        switch (type->type) {
-            case ASR::ttypeType::Real: {
-                int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
-                return kind != 4 && kind != 8;
-            }
-            case ASR::ttypeType::Complex: {
-                int kind = ASR::down_cast<ASR::Complex_t>(type)->m_kind;
-                return kind != 4 && kind != 8;
-            }
-            default:
-                return false;
-        }
-    }
-
-    // Whether the per-item lowering of a formatted READ fails to store an
-    // input item of this type: it does not store a value into an
-    // allocatable scalar that is not a character, and it crashes for some
-    // of them. Pointer items never take the target-list path, because a
-    // pointer may share storage with the loop variables.
-    static bool is_unstored_formatted_read_scalar(ASR::ttype_t* type) {
-        if (!ASR::is_a<ASR::Allocatable_t>(*type)) {
-            return false;
-        }
-        ASR::ttype_t* t = ASR::down_cast<ASR::Allocatable_t>(type)->m_type;
-        return !ASR::is_a<ASR::Array_t>(*t) && !ASR::is_a<ASR::String_t>(*t);
-    }
-
-    // Whether the runtime target list can store an item of this type.
-    static bool is_formatted_read_target_type(ASR::ttype_t* type) {
-        return (ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Logical_t>(*type) ||
-                ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
-                ASR::is_a<ASR::Complex_t>(*type)) &&
-            !has_unstorable_formatted_read_kind(type);
-    }
-
-    // Collects the items of an implied-do loop of a formatted READ, at any
-    // depth, and the expressions their addresses and the loops use.
-    // Returns false if an item is not a scalar variable, element, component
-    // or substring, or has a type the runtime cannot store.
-    static bool collect_formatted_read_idl_items(ASR::ImpliedDoLoop_t* idl,
-            std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
-        uses.push_back(idl->m_var);
-        uses.push_back(idl->m_start);
-        uses.push_back(idl->m_end);
-        uses.push_back(idl->m_increment);
-        for (size_t i = 0; i < idl->n_values; i++) {
-            ASR::expr_t* item = idl->m_values[i];
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
-                if (!collect_formatted_read_idl_items(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), defined, uses)) {
-                    return false;
-                }
-                continue;
-            }
-            if (!is_formatted_read_target_type(ASRUtils::expr_type(item)) ||
-                    !collect_formatted_read_item(item, defined, uses)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static bool is_common_block_member(ASR::CommonBlock_t* block, ASR::symbol_t* v) {
-        for (size_t i = 0; i < block->n_members; i++) {
-            if (block->m_members[i] == v) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Whether the variables `d` and `u` may live in overlapping storage of
-    // one common block. Blocks with different link names are distinct
-    // storage, which EQUIVALENCE cannot join. The members of one view of a
-    // block are laid out one after another, so they are disjoint, but a
-    // variable that EQUIVALENCE places in the block may overlap any of them,
-    // and the views of the same block in different scopes (a host and its
-    // internal procedure) may lay it out differently.
-    static bool common_storage_may_overlap(ASR::Variable_t* d, ASR::Variable_t* u) {
-        ASR::CommonBlock_t* dc = ASRUtils::get_common_block(d);
-        ASR::CommonBlock_t* uc = ASRUtils::get_common_block(u);
-        if (dc == nullptr || uc == nullptr ||
-                std::string(dc->m_link_name) != std::string(uc->m_link_name)) {
-            return false;
-        }
-        return dc != uc ||
-            !is_common_block_member(dc, (ASR::symbol_t*)d) ||
-            !is_common_block_member(uc, (ASR::symbol_t*)u);
-    }
-
-    // Whether `defined`, a variable or component that a READ defines, may
-    // share storage with `used`, one that the READ references to evaluate
-    // a loop bound or an address: they are the same, either is a pointer
-    // (which includes an ASSOCIATE name and an EQUIVALENCE outside common
-    // blocks), both have TARGET, or their common block storage may overlap.
-    static bool formatted_read_may_alias(ASR::symbol_t* defined, ASR::symbol_t* used) {
-        if (defined == used) {
-            return true;
-        }
-        if (!ASR::is_a<ASR::Variable_t>(*defined) || !ASR::is_a<ASR::Variable_t>(*used)) {
-            return false;
-        }
-        ASR::Variable_t* d = ASR::down_cast<ASR::Variable_t>(defined);
-        ASR::Variable_t* u = ASR::down_cast<ASR::Variable_t>(used);
-        return ASR::is_a<ASR::Pointer_t>(*d->m_type) || ASR::is_a<ASR::Pointer_t>(*u->m_type) ||
-            (d->m_target_attr && u->m_target_attr) ||
-            common_storage_may_overlap(d, u);
-    }
-
-    // Whether an implied-do loop of a READ input list has a nested one.
-    static bool has_nested_formatted_read_idl(ASR::expr_t** values, size_t n_values) {
-        for (size_t i = 0; i < n_values; i++) {
-            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                continue;
-            }
-            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
-            for (size_t j = 0; j < idl->n_values; j++) {
-                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j])) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // Whether a formatted READ whose input list has a nested implied-do
-    // loop can be done as one data transfer, with the items of its
-    // implied-do loops collected into run-time target lists first. The
-    // items of the loops must be scalars, no item, in a loop or not, may
-    // have a kind the runtime stores with the wrong size, and no other item
-    // may be an allocatable scalar that the per-item lowering does not
-    // store. All loop bounds and item addresses are evaluated before any
-    // value is read, so no item may share storage with anything they use,
-    // and they must not call a procedure, which could reference an item.
-    bool can_collect_formatted_read_targets(ASR::expr_t** values, size_t n_values) {
-        if (!has_nested_formatted_read_idl(values, n_values)) {
-            return false;
-        }
-        std::vector<ASR::symbol_t*> defined;
-        std::vector<ASR::expr_t*> uses;
-        for (size_t i = 0; i < n_values; i++) {
-            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                ASR::ttype_t* item_type = ASRUtils::expr_type(values[i]);
-                ASR::ttype_t* type = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable_pointer(item_type));
-                if (has_unstorable_formatted_read_kind(type) ||
-                        is_unstored_formatted_read_scalar(item_type) ||
-                        !collect_formatted_read_item(values[i], defined, uses)) {
-                    return false;
-                }
-                continue;
-            }
-            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
-            if (!collect_formatted_read_idl_items(idl, defined, uses)) {
-                return false;
-            }
-        }
-        ReferencedStorage used;
-        for (ASR::expr_t* use : uses) {
-            if (use) {
-                used.visit_expr(*use);
-            }
-        }
-        if (used.calls_procedure) {
-            return false;
-        }
-        for (ASR::symbol_t* d : defined) {
-            for (ASR::symbol_t* u : used.symbols) {
-                if (formatted_read_may_alias(d, u)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     // Lowers an implied-do loop of a formatted READ to a loop nest that
     // appends the address of each item to the run-time target list `list`.
     // The loop variables are defined as by a DO loop.
@@ -22729,60 +22463,45 @@ public:
         llvm::Value* var_ptr = tmp;
         builder->CreateStore(start, var_ptr);
 
-        llvm::Function* fn = builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock* cond_bb = llvm::BasicBlock::Create(context, "read_idl.cond", fn);
-        llvm::BasicBlock* body_bb = llvm::BasicBlock::Create(context, "read_idl.body", fn);
-        llvm::BasicBlock* end_bb = llvm::BasicBlock::Create(context, "read_idl.end", fn);
-        builder->CreateBr(cond_bb);
-        builder->SetInsertPoint(cond_bb);
-        llvm::Value* cur = llvm_utils->CreateLoad2(var_type, var_ptr);
-        llvm::Value* cond = builder->CreateSelect(
-            builder->CreateICmpSGT(step, llvm::ConstantInt::get(var_type, 0)),
-            builder->CreateICmpSLE(cur, end), builder->CreateICmpSGE(cur, end));
-        builder->CreateCondBr(cond, body_bb, end_bb);
-        builder->SetInsertPoint(body_bb);
-
         llvm::Function* push_fn = LLVM::get_or_declare_function(*module,
             "_lfortran_read_target_list_push", llvm_utils->void_type,
             {character_type->getPointerTo(), llvm_utils->i32, character_type,
              llvm_utils->i64, llvm_utils->i32});
-        for (size_t i = 0; i < idl->n_values; i++) {
-            ASR::expr_t* item = idl->m_values[i];
-            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
-                push_formatted_read_targets(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(item), list);
-                continue;
-            }
-            ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
-            bool is_assignment_target_copy = is_assignment_target;
-            is_assignment_target = true;
-            this->visit_expr(*item);
-            is_assignment_target = is_assignment_target_copy;
-            ptr_loads = ptr_loads_copy;
-            for (const FormattedReadScalar &t :
-                    get_formatted_read_scalars(ASRUtils::expr_type(item), tmp)) {
-                llvm::Value* ptr;
-                llvm::Value* len = llvm::ConstantInt::get(llvm_utils->i64, 0);
-                llvm::Value* kind = llvm::ConstantInt::get(llvm_utils->i32, 1);
-                if (t.len) {
-                    // The data pointer of a string may be a temporary:
-                    // push the data itself
-                    ptr = llvm_utils->CreateLoad2(character_type, t.ptr);
-                    len = t.len;
-                    kind = llvm::ConstantInt::get(llvm_utils->i32, t.char_kind);
-                } else {
-                    ptr = builder->CreateBitCast(t.ptr, character_type);
+        llvm_utils->create_loop("read_idl", [&]() {
+            llvm::Value* cur = llvm_utils->CreateLoad2(var_type, var_ptr);
+            return builder->CreateSelect(
+                builder->CreateICmpSGT(step, llvm::ConstantInt::get(var_type, 0)),
+                builder->CreateICmpSLE(cur, end), builder->CreateICmpSGE(cur, end));
+        }, [&]() {
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* item = idl->m_values[i];
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+                    push_formatted_read_targets(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), list);
+                    continue;
                 }
-                builder->CreateCall(push_fn, {list,
-                    llvm::ConstantInt::get(llvm_utils->i32, t.type_code), ptr, len, kind});
+                int64_t ptr_loads_copy = ptr_loads;
+                ptr_loads = 0;
+                bool is_assignment_target_copy = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*item);
+                is_assignment_target = is_assignment_target_copy;
+                ptr_loads = ptr_loads_copy;
+                for (const FormattedReadScalar &t :
+                        get_formatted_read_scalars(ASRUtils::expr_type(item), tmp)) {
+                    // The data pointer of a string may be a temporary: push
+                    // the data itself
+                    llvm::Value* ptr = t.len ? llvm_utils->CreateLoad2(character_type, t.ptr)
+                        : builder->CreateBitCast(t.ptr, character_type);
+                    llvm::Value* len = t.len ? t.len : llvm::ConstantInt::get(llvm_utils->i64, 0);
+                    builder->CreateCall(push_fn, {list,
+                        llvm::ConstantInt::get(llvm_utils->i32, t.type_code), ptr, len,
+                        llvm::ConstantInt::get(llvm_utils->i32, t.len ? t.char_kind : 1)});
+                }
             }
-        }
-
-        cur = llvm_utils->CreateLoad2(var_type, var_ptr);
-        builder->CreateStore(builder->CreateAdd(cur, step), var_ptr);
-        builder->CreateBr(cond_bb);
-        builder->SetInsertPoint(end_bb);
+            builder->CreateStore(builder->CreateAdd(
+                llvm_utils->CreateLoad2(var_type, var_ptr), step), var_ptr);
+        });
     }
 
     void emit_formatted_read_with_idl(const ASR::FileRead_t &x, ASR::expr_t** values,
@@ -22992,22 +22711,15 @@ public:
             }
         }
 
-        if (has_implied_do) {
-            if (can_collect_formatted_read_targets(values, n_values)) {
-                has_implied_do = false;
-            } else if (has_nested_formatted_read_idl(values, n_values)) {
-                // The per-item lowering cannot read a nested implied-do
-                // loop, nor a vector-subscripted item, which the
-                // array_struct_temporary pass keeps in such a READ. Stop
-                // before it lowers any item.
-                throw CodeGenError("Nested implied-do in formatted READ not yet supported");
-            } else {
-                // The implied_do_loops pass reads the implied DO loops of an
-                // internal file as array sections where it can.
-                emit_formatted_read_with_idl(x, values, n_values, unit_val,
-                    read_size, pad_data, pad_len, is_string, fmt_expr);
-                return;
-            }
+        // A READ with a nested implied-do loop is one data transfer, in which
+        // each implied-do loop is a list of targets (the implied_do_loops
+        // pass reports one whose targets cannot be collected first).
+        if (has_implied_do && !ASRUtils::has_nested_implied_do_loop(values, n_values)) {
+            // The implied_do_loops pass reads the implied DO loops of an
+            // internal file as array sections where it can.
+            emit_formatted_read_with_idl(x, values, n_values, unit_val,
+                read_size, pad_data, pad_len, is_string, fmt_expr);
+            return;
         }
 
         size_t total_scalar_values = 0;

@@ -4437,6 +4437,19 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
     return visitor.found;
 }
 
+// Whether an implied-do loop of the input/output list `values` contains
+// another one.
+static inline bool has_nested_implied_do_loop(ASR::expr_t** values, size_t n_values) {
+    for (size_t i = 0; i < n_values; i++) {
+        if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) continue;
+        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+        for (size_t j = 0; j < idl->n_values; j++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j])) return true;
+        }
+    }
+    return false;
+}
+
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
