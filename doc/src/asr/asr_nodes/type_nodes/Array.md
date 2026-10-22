@@ -37,6 +37,9 @@ that it does:
 * a `FixedSizeArray` is stored inline, so every lower bound and every extent
   is a compile-time constant (`asr.verify.array.fixed_size_constant_dims`).
   The deferred constants of a template are exempt until it is instantiated;
+* an allocatable or pointer array is a `DescriptorArray`
+  (`asr.verify.allocatable.array_descriptor`,
+  `asr.verify.pointer.array_descriptor`);
 * an assumed-size dummy argument, `a(n, *)`, is passed as its data alone and
   has no extent in its last dimension, so it is never a `DescriptorArray`
   unless it is polymorphic and the descriptor carries its dynamic type

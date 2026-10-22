@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.allocatable.array_descriptor]: an allocatable array must have physical type "DescriptorArray"
+  --> tests/asr/verify/allocatable_array_descriptor.asr:17:22
+   |
+17 |               :type (Allocatable
+   |                      ^^^^^^^^^^^ failed here

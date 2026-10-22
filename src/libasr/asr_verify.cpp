@@ -4784,9 +4784,23 @@ public:
         _processing_dims = false;
     }
 
+    // An allocatable or pointer array of unknown rank is an assumed-rank
+    // descriptor.
+    static bool is_descriptor(const ASR::Array_t* array) {
+        return array->m_physical_type == ASR::DescriptorArray ||
+            array->m_physical_type == ASR::AssumedRankArray;
+    }
+
     void visit_Pointer(const Pointer_t &x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Pointer type conflicts with Allocatable type");
+        // Pointer association changes the bounds and the strides at run
+        // time, so only a descriptor can hold them.
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            require_id(is_descriptor(ASR::down_cast<ASR::Array_t>(x.m_type)),
+                "asr.verify.pointer.array_descriptor",
+                "a pointer array must have physical type \"DescriptorArray\"")
+        }
         if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x.m_type);
             for (size_t i = 0; i < array_t->n_dims; i++) {
@@ -4801,6 +4815,13 @@ public:
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type) &&
                 !ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        // Allocation sets the bounds at run time, so only a descriptor can
+        // hold them.
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            require_id(is_descriptor(ASR::down_cast<ASR::Array_t>(x.m_type)),
+                "asr.verify.allocatable.array_descriptor",
+                "an allocatable array must have physical type \"DescriptorArray\"")
+        }
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
         for( size_t i = 0; i < n_dims; i++ ) {
