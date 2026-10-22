@@ -1485,27 +1485,27 @@ semantic error: Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
 semantic error: null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
-    --> tests/errors/continue_compilation_1.f90:3508:20
+    --> tests/errors/continue_compilation_1.f90:3575:20
      |
-3508 |     integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+3575 |     integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
      |                    ^^^^^^^^ 
 
 semantic error: null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
-    --> tests/errors/continue_compilation_1.f90:3516:28
+    --> tests/errors/continue_compilation_1.f90:3583:28
      |
-3516 |     type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+3583 |     type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
      |                            ^^^^^^^^ 
 
 semantic error: an equivalence object must be a variable, an array element or a substring
-    --> tests/errors/continue_compilation_1.f90:3523:18
+    --> tests/errors/continue_compilation_1.f90:3590:18
      |
-3523 |     equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+3590 |     equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
      |                  ^^^^^^ not allowed in EQUIVALENCE
 
 semantic error: an equivalence object must be a variable, an array element or a substring
-    --> tests/errors/continue_compilation_1.f90:3529:21
+    --> tests/errors/continue_compilation_1.f90:3596:21
      |
-3529 |     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+3596 |     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
      |                     ^^^ not allowed in EQUIVALENCE
 
 semantic error: Restriction type mismatch with provided function argument
@@ -4395,211 +4395,211 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
 
 semantic error: reading into the real or imaginary part of a complex variable is not supported yet
-    --> tests/errors/continue_compilation_1.f90:3464:20
+    --> tests/errors/continue_compilation_1.f90:3531:20
      |
-3464 |         read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+3531 |         read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
      |                    ^^^^ 
 
 semantic error: reading into the real or imaginary part of a complex variable is not supported yet
-    --> tests/errors/continue_compilation_1.f90:3465:20
+    --> tests/errors/continue_compilation_1.f90:3532:20
      |
-3465 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+3532 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
      |                    ^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3496:26
+    --> tests/errors/continue_compilation_1.f90:3563:26
      |
-3496 |         call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+3563 |         call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3497:26
+    --> tests/errors/continue_compilation_1.f90:3564:26
      |
-3497 |         call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+3564 |         call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3498:26
+    --> tests/errors/continue_compilation_1.f90:3565:26
      |
-3498 |         call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+3565 |         call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3499:26
+    --> tests/errors/continue_compilation_1.f90:3566:26
      |
-3499 |         call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+3566 |         call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3500:26
+    --> tests/errors/continue_compilation_1.f90:3567:26
      |
-3500 |         call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+3567 |         call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-    --> tests/errors/continue_compilation_1.f90:3501:26
+    --> tests/errors/continue_compilation_1.f90:3568:26
      |
-3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+3568 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
 
 semantic error: every lower bound must be present in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3537:9
+    --> tests/errors/continue_compilation_1.f90:3604:9
      |
-3537 |         p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+3604 |         p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
      |         ^^^^ 
 
 semantic error: either all or none of the upper bounds must be present in a pointer bounds remapping list
-    --> tests/errors/continue_compilation_1.f90:3538:9
+    --> tests/errors/continue_compilation_1.f90:3605:9
      |
-3538 |         q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+3605 |         q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
      |         ^^^^^^^^^^ 
 
 semantic error: the rank of the pointer and of the data target must agree in a pointer bounds specification
-    --> tests/errors/continue_compilation_1.f90:3539:9
+    --> tests/errors/continue_compilation_1.f90:3606:9
      |
-3539 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+3606 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list cannot be null()
-    --> tests/errors/continue_compilation_1.f90:3546:21
+    --> tests/errors/continue_compilation_1.f90:3613:21
      |
-3546 |         arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
+3613 |         arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
      |                     ^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3555:24
+    --> tests/errors/continue_compilation_1.f90:3622:24
      |
-3555 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3622 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                        ^^^^^^^^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3556:19
+    --> tests/errors/continue_compilation_1.f90:3623:19
      |
-3556 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3623 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3557:19
+    --> tests/errors/continue_compilation_1.f90:3624:19
      |
-3557 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3624 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
 
 semantic error: a stride cannot appear in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3565:9
+    --> tests/errors/continue_compilation_1.f90:3632:9
      |
-3565 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+3632 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
      |         ^^^^^^^^ 
 
 semantic error: a stride cannot appear in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3566:9
+    --> tests/errors/continue_compilation_1.f90:3633:9
      |
-3566 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+3633 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
      |         ^^^^^^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3579:11
+    --> tests/errors/continue_compilation_1.f90:3646:11
      |
-3579 |         p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3646 |         p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3580:11
+    --> tests/errors/continue_compilation_1.f90:3647:11
      |
-3580 |         p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3647 |         p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3581:13
+    --> tests/errors/continue_compilation_1.f90:3648:13
      |
-3581 |         p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3648 |         p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |             ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3582:11
+    --> tests/errors/continue_compilation_1.f90:3649:11
      |
-3582 |         p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3649 |         p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3583:11
+    --> tests/errors/continue_compilation_1.f90:3650:11
      |
-3583 |         p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+3650 |         p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
      |           ^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3584:11
+    --> tests/errors/continue_compilation_1.f90:3651:11
      |
-3584 |         p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3651 |         p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3585:11
+    --> tests/errors/continue_compilation_1.f90:3652:11
      |
-3585 |         p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3652 |         p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3586:11
+    --> tests/errors/continue_compilation_1.f90:3653:11
      |
-3586 |         p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3653 |         p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
-    --> tests/errors/continue_compilation_1.f90:3587:11
+    --> tests/errors/continue_compilation_1.f90:3654:11
      |
-3587 |         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
+3654 |         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
      |           ^^ 
 
 semantic error: an array subscript must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3597:20
+    --> tests/errors/continue_compilation_1.f90:3664:20
      |
-3597 |         print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+3664 |         print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
      |                    ^^ 
 
 semantic error: an array subscript must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3598:20
+    --> tests/errors/continue_compilation_1.f90:3665:20
      |
-3598 |         print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+3665 |         print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
      |                    ^^ 
 
 semantic error: an array subscript must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3599:20
+    --> tests/errors/continue_compilation_1.f90:3666:20
      |
-3599 |         print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+3666 |         print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
      |                    ^ 
 
 semantic error: an array subscript must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3600:24
+    --> tests/errors/continue_compilation_1.f90:3667:24
      |
-3600 |         print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+3667 |         print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
      |                        ^ 
 
 semantic error: an array subscript must be of type integer, found logical(4)
-    --> tests/errors/continue_compilation_1.f90:3601:23
+    --> tests/errors/continue_compilation_1.f90:3668:23
      |
-3601 |         print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+3668 |         print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
      |                       ^ 
 
 semantic error: a bound or stride of a subscript triplet must be scalar
-    --> tests/errors/continue_compilation_1.f90:3602:20
+    --> tests/errors/continue_compilation_1.f90:3669:20
      |
-3602 |         print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+3669 |         print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
      |                    ^ 
 
 semantic error: a substring index must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3603:21
+    --> tests/errors/continue_compilation_1.f90:3670:21
      |
-3603 |         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+3670 |         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
      |                     ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
-    --> tests/errors/continue_compilation_1.f90:3611:11
+    --> tests/errors/continue_compilation_1.f90:3678:11
      |
-3611 |         p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+3678 |         p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
      |           ^^^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
-    --> tests/errors/continue_compilation_1.f90:3612:11
+    --> tests/errors/continue_compilation_1.f90:3679:11
      |
-3612 |         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+3679 |         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
      |           ^^^^ 
