@@ -2337,6 +2337,24 @@ block data equivalence_use_associated_block_data_error
     equivalence (m, cc1_eu_arr(1))  ! {Error} 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALENCE statement
 end block data equivalence_use_associated_block_data_error
 
+subroutine intent_in_pointer_assoc_error(w, c, a)
+    implicit none
+    type :: iipa_t
+        integer :: i
+    end type
+    integer, pointer, intent(in) :: w
+    class(iipa_t), pointer, intent(in) :: c
+    integer, pointer, intent(in) :: a(:)
+    integer, target :: y
+    w => y  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    w => null()  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    nullify(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    allocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    deallocate(w)  ! {Error} pointer dummy argument `w` with intent(in) cannot appear in a pointer association context
+    allocate(c)  ! {Error} pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
+    allocate(a(3))  ! {Error} pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
+end subroutine intent_in_pointer_assoc_error
+
 ! A function reference through a dummy procedure or a procedure pointer checks
 ! its actual arguments against the interface of the procedure.
 module cc1_proc_variable_call_mod

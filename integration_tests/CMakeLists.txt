@@ -5321,6 +5321,7 @@ RUN(NAME print_arr_15 LABELS gfortran llvm)
 RUN(NAME print_arr_16 LABELS gfortran llvm)
 RUN(NAME pointer_to_cptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_intent_in_01 LABELS gfortran llvm)
+RUN(NAME pointer_intent_in_03 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
 
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
