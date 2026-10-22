@@ -1,0 +1,52 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int k;
+    int m;
+    int n;
+    int __loop_end_0;
+    int __loop_end_1;
+    int __tiled;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ c,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int m = __scalar_args.m;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    int __tiled = __scalar_args.__tiled;
+    long __flat_idx;
+    long __ordinal;
+    long __tiles;
+    int i;
+    int j;
+    if ((__tiled == 0)) {
+        if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)) * (((((long)__loop_end_1) >= 1)) ? (((((long)__loop_end_1) - 1) + 1)) : (0))))) {
+            return;
+        }
+        __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+        i = ((int)((__flat_idx - ((__flat_idx / ((((long)__loop_end_1) - 1) + 1)) * ((((long)__loop_end_1) - 1) + 1))) + 1));
+        __flat_idx = (__flat_idx / ((((long)__loop_end_1) - 1) + 1));
+        j = ((int)(__flat_idx + 1));
+    } else {
+        __flat_idx = ((long)blockIdx.x);
+        __tiles = ((((((long)__loop_end_1) - 1) + 1) + 31) >> 5);
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + ((long)(threadIdx.x & 31)));
+        if ((__ordinal >= ((((long)__loop_end_1) - 1) + 1))) {
+            return;
+        }
+        i = ((int)(__ordinal + 1));
+        __flat_idx = (__flat_idx / __tiles);
+        __ordinal = ((__flat_idx << 3) + ((long)(threadIdx.x >> 5)));
+        if ((__ordinal >= ((((long)__loop_end_0) - 1) + 1))) {
+            return;
+        }
+        j = ((int)(__ordinal + 1));
+    }
+    if ((j == m)) {
+        c[((int)(i) - (1))] = i;
+    }
+}
+

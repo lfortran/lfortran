@@ -42,17 +42,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
     int __workspace_extent2 = __scalar_args.__workspace_extent2;
-    int __flat_idx;
+    long __flat_idx;
     int __gpu_sec_i;
     int __gpu_sum_k;
     float __gpu_sum_res;
     const int n = 3;
     int p;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    p = (__flat_idx + 1);
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    p = ((int)(__flat_idx + 1));
     {
         int __do_loop_end;
         int __do_loop_end1;
@@ -63,9 +63,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __libasr_index_0_1;
         float* y = __workspace_10 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
         values_gpu_18(outs[((int)(p) - (1))], __data_outs_values_ + __offsets_outs_values_[((int)(p) - (1))], __sizes_outs_values_[(((int)(p) - (1))) * 2 + 0], __sizes_outs_values_[(((int)(p) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
-        for (int __copy_i = 0; __copy_i < ((((int)__sizes_outs_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
+        for (int __copy_i = 0; __copy_i < ((((int)__sizes_outs_values_[(((int)(((int)(((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) + 1))) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
         __libasr_index_0_1 = 1;
-        __do_loop_end = (__sizes_outs_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        __do_loop_end = (__sizes_outs_values_[(((int)(((int)(((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) + 1))) - (1))) * 2 + 0]);
         __libasr_index_0_ = (1 - 1);
         while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);

@@ -2000,6 +2000,24 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     ASR::ttype_t *loop_int_type = ASRUtils::expr_type(work.head(0).m_v);
+    ASR::ttype_t *index_type = gpu_iteration_number_type(al, loc,
+        loop_int_type, device_caps);
+    // Unlike the launch's widen (gpu_offload_launch.cpp), this does not copy
+    // `value`: it widens kernel-scope expressions built for the kernel.
+    auto widen = [&](ASR::expr_t *value) {
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value))
+                == ASRUtils::extract_kind_from_ttype_t(index_type)) {
+            return value;
+        }
+        int64_t constant = 0;
+        if (ASRUtils::extract_value(ASRUtils::expr_value(value), constant)) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                constant, index_type, ASR::integerbozType::Decimal));
+        }
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+            ASR::cast_kindType::IntegerToInteger, index_type, nullptr,
+            nullptr));
+    };
 
     // Save host-side head expressions BEFORE in-place replacement
     std::vector<DimInfo> dim_info;
@@ -2051,7 +2069,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // replacement contains nothing that would be replaced again.
     ASR::expr_t *slot_index = nullptr;
     if (!pending_reductions.empty()) {
-        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, loop_int_type);
+        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, index_type);
         gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
             ASRUtils::duplicate_type(al, slot_type));
         slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -2097,12 +2115,35 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     ASR::expr_t *block_sz = ASRUtils::EXPR(
         ASR::make_GpuBlockSize_t(al, loc, 0, int_type, nullptr));
 
-    // flat_idx = block_idx * block_size + thread_idx
-    ASR::expr_t *flat_idx = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc,
-            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                block_idx, ASR::binopType::Mul, block_sz, int_type, nullptr)),
-            ASR::binopType::Add, thread_idx, int_type, nullptr));
+    auto index_binop = [&](ASR::expr_t *left, ASR::binopType op,
+            ASR::expr_t *right) {
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            left, op, right, index_type, nullptr));
+    };
+    // ASR has no integer remainder operator: a - (a/b)*b.
+    auto index_mod = [&](ASR::expr_t *left, ASR::expr_t *right) {
+        return index_binop(left, ASR::binopType::Sub, index_binop(
+            index_binop(left, ASR::binopType::Div, right),
+            ASR::binopType::Mul, right));
+    };
+    // A loop index, recovered from the iteration number by adding its start
+    // to its ordinal in the iteration-number type, fits its kind.
+    auto narrow = [&](ASR::expr_t *value) {
+        if (ASRUtils::extract_kind_from_ttype_t(index_type)
+                == ASRUtils::extract_kind_from_ttype_t(int_type)) {
+            return value;
+        }
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+            ASR::cast_kindType::IntegerToInteger, int_type, nullptr,
+            nullptr));
+    };
+
+    // flat_idx = block_idx * block_size + thread_idx, in the type that
+    // numbers the iterations: the product of the device's (unsigned 32-bit)
+    // built-ins would wrap.
+    ASR::expr_t *flat_idx = index_binop(index_binop(widen(block_idx),
+        ASR::binopType::Mul, widen(block_sz)), ASR::binopType::Add,
+        widen(thread_idx));
 
     // For multi-dimensional: linearize index
     // For an iteration space (i=1:m, j=1:n, k=1:p):
@@ -2191,12 +2232,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
             left, op, right, int_type, nullptr));
     };
-    // ASR has no integer remainder operator: a - (a/b)*b.
-    auto int_mod = [&](ASR::expr_t *left, ASR::expr_t *right) {
-        return int_binop(left, ASR::binopType::Sub, int_binop(
-            int_binop(left, ASR::binopType::Div, right),
-            ASR::binopType::Mul, right));
-    };
     auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
             loc, target, value, nullptr, false, false, false)));
@@ -2210,15 +2245,23 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
             nullptr, test, exit_body.p, exit_body.n, no_else.p, no_else.n)));
     };
-    auto kernel_local = [&](const std::string &name) {
+    auto kernel_local = [&](const std::string &name, ASR::ttype_t *type) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, gpu_new_variable(al,
-            loc, kernel_scope, name, ASRUtils::duplicate_type(al,
-                int_type))));
+            loc, kernel_scope, name, ASRUtils::duplicate_type(al, type))));
     };
-    // The number of iterations of dimension d, in a launch that has some.
+    // The number of iterations of dimension d, in a launch that has some,
+    // in the type that numbers the iterations: a dimension can have more
+    // of them than the largest value of its indices' kind.
     auto kernel_range = [&](size_t d) {
-        return int_binop(int_binop(kernel_ends[d], ASR::binopType::Sub,
-            kernel_starts[d]), ASR::binopType::Add, one_const);
+        return index_binop(index_binop(widen(kernel_ends[d]),
+            ASR::binopType::Sub, widen(kernel_starts[d])),
+            ASR::binopType::Add, widen(one_const));
+    };
+    // The loop index of dimension d at the 0-based `ordinal`, an
+    // iteration number.
+    auto index_at = [&](size_t d, ASR::expr_t *ordinal) {
+        return narrow(index_binop(ordinal, ASR::binopType::Add,
+            widen(kernel_starts[d])));
     };
     auto loop_var = [&](size_t d) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
@@ -2286,9 +2329,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         for (size_t d = 0; d < n_dims; d++) {
             // dim_range = max(0, kernel_end - kernel_start + 1)
             ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
-                kernel_starts[d], kernel_ends[d], int_type);
+                widen(kernel_starts[d]), widen(kernel_ends[d]), index_type);
             total_size_kernel = total_size_kernel == nullptr ? dim_range
-                : int_binop(total_size_kernel, ASR::binopType::Mul,
+                : index_binop(total_size_kernel, ASR::binopType::Mul,
                     dim_range);
         }
 
@@ -2300,7 +2343,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // Compute per-dim loop variable from flat_idx
     // We need a "remaining" variable in kernel scope
-    ASR::expr_t *remain_var = kernel_local("__flat_idx");
+    ASR::expr_t *remain_var = kernel_local("__flat_idx", index_type);
     // The loop indices at positions [first, last) of the order, recovered
     // by dividing __flat_idx down.
     auto number_flat = [&](size_t first, size_t last) {
@@ -2308,16 +2351,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             size_t d = order[position];
             if (position < n_dims - 1) {
                 // loop_var = __flat_idx % dim_range + start
-                assign(loop_var(d), int_binop(int_mod(remain_var,
-                    kernel_range(d)), ASR::binopType::Add,
-                    kernel_starts[d]));
+                assign(loop_var(d), index_at(d, index_mod(remain_var,
+                    kernel_range(d))));
                 // __flat_idx = __flat_idx / dim_range
-                assign(remain_var, int_binop(remain_var,
+                assign(remain_var, index_binop(remain_var,
                     ASR::binopType::Div, kernel_range(d)));
             } else {
                 // Last dim: loop_var = __flat_idx + start
-                assign(loop_var(d), int_binop(remain_var,
-                    ASR::binopType::Add, kernel_starts[d]));
+                assign(loop_var(d), index_at(d, remain_var));
             }
         }
     };
@@ -2349,44 +2390,47 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         };
         // ceil(range / 2**shift)
         auto tiles_of = [&](ASR::expr_t *range, int64_t shift) {
-            return int_binop(int_binop(range, ASR::binopType::Add,
-                constant((int64_t(1) << shift) - 1)), ASR::binopType::BitRShift,
-                constant(shift));
+            return index_binop(index_binop(range, ASR::binopType::Add,
+                widen(constant((int64_t(1) << shift) - 1))),
+                ASR::binopType::BitRShift, widen(constant(shift)));
         };
-        ASR::expr_t *tiles = kernel_local("__tiles");
-        assign(remain_var, block_idx);
+        ASR::expr_t *tiles = kernel_local("__tiles", index_type);
+        // The thread's ordinal along a dimension, an iteration number.
+        ASR::expr_t *ordinal = kernel_local("__ordinal", index_type);
+        // Reject a padded ordinal before adding the lower bound: a padded
+        // index could overflow even when every valid index fits.
+        auto index_in_tile = [&](size_t d) {
+            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                ordinal, ASR::cmpopType::GtE, kernel_range(d),
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+            assign(loop_var(d), index_at(d, ordinal));
+        };
+        assign(remain_var, widen(block_idx));
         assign(tiles, tiles_of(kernel_range(across), width_shift));
-        assign(loop_var(across), int_binop(
-            int_binop(int_mod(remain_var, tiles), ASR::binopType::BitLShift,
-                constant(width_shift)),
-            ASR::binopType::Add, int_binop(thread_idx, ASR::binopType::BitAnd,
-                constant(device_caps.tile_width - 1))));
-        assign(remain_var, int_binop(remain_var, ASR::binopType::Div, tiles));
+        assign(ordinal, index_binop(
+            index_binop(index_mod(remain_var, tiles),
+                ASR::binopType::BitLShift, widen(constant(width_shift))),
+            ASR::binopType::Add, widen(int_binop(thread_idx,
+                ASR::binopType::BitAnd,
+                constant(device_caps.tile_width - 1)))));
+        index_in_tile(across);
+        assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
+            tiles));
         ASR::expr_t *row_tile = remain_var;
         if (n_dims > 2) {
             // The tiles of the first two dimensions repeat over the others.
             assign(tiles, tiles_of(kernel_range(down), height_shift));
-            row_tile = int_mod(remain_var, tiles);
+            row_tile = index_mod(remain_var, tiles);
         }
-        assign(loop_var(down), int_binop(
-            int_binop(row_tile, ASR::binopType::BitLShift,
-                constant(height_shift)),
-            ASR::binopType::Add, int_binop(thread_idx,
-                ASR::binopType::BitRShift, constant(width_shift))));
+        assign(ordinal, index_binop(
+            index_binop(row_tile, ASR::binopType::BitLShift,
+                widen(constant(height_shift))),
+            ASR::binopType::Add, widen(int_binop(thread_idx,
+                ASR::binopType::BitRShift, constant(width_shift)))));
+        index_in_tile(down);
         if (n_dims > 2) {
-            assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
+            assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
                 tiles));
-        }
-        // Reject padded ordinals before adding the lower bounds: a padded
-        // source index could overflow even when every valid index fits.
-        for (size_t d : {across, down}) {
-            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                loop_var(d), ASR::cmpopType::GtE, kernel_range(d),
-                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
-        }
-        for (size_t d : {across, down}) {
-            assign(loop_var(d), int_binop(loop_var(d), ASR::binopType::Add,
-                kernel_starts[d]));
         }
         Vec<ASR::stmt_t*> tiled_body = kernel_body;
         kernel_body = enclosing_body;

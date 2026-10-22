@@ -544,8 +544,10 @@ end program
         bool has_lanes = false;
         size_t wide_counts = 0;
         for (auto *launch : work.launches) {
-            // CUDA launches the two-dimensional nest in whole tiles, whose
-            // count can exceed the kind of the loop indices.
+            // CUDA counts the iterations of a nest, and the whole tiles it
+            // launches a two-dimensional one in, in integer(8): the count
+            // can exceed the kind of the loop indices. Metal has no
+            // integer(8).
             if (ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::expr_type(launch->m_thread_count)) == 8) {
                 wide_counts++;
@@ -564,7 +566,7 @@ end program
             }
         }
         CHECK(has_lanes == metal);
-        CHECK(wide_counts == (metal ? 0 : 1));
+        CHECK(wide_counts == (metal ? 0 : 3));
         pass_gpu_launch_sync(allocator, unit, options.po);
         pass_device_launch_expand(allocator, unit, options.po);
         REQUIRE(asr_verify(unit, true, diagnostics));

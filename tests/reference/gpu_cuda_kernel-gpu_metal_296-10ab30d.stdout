@@ -35,14 +35,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
-    int __flat_idx;
+    long __flat_idx;
     int __gpu_sec_i;
     int jj;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    jj = (__flat_idx + 1);
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    jj = ((int)(__flat_idx + 1));
     {
         int __do_loop_end;
         int __do_loop_end1;
