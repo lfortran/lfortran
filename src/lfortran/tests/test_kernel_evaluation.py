@@ -1,4 +1,5 @@
-"""Exercise the real optional Xeus adapter against the shared service."""
+"""Drive the optional Xeus kernel through jupyter_client: the Jupyter adapter
+over FortranEvaluator::execute()."""
 
 import argparse
 from pathlib import Path
