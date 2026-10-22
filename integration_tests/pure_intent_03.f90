@@ -65,7 +65,6 @@ program pure_intent_03
     use pure_intent_03_mod
     implicit none
     type(t) :: x, y(2)
-    type(t), target :: z
     type(wp) :: p
     type(wa) :: a
     type(wn) :: n
@@ -79,7 +78,6 @@ program pure_intent_03
     call set_type(x)
     if (x%i /= 3) error stop
     if (get_class(x) /= 3) error stop
-    p%p => z
     call set_ptr_comp(p)
     if (associated(p%p)) error stop
     call set_alloc_comp(a)
