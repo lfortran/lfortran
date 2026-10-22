@@ -4757,6 +4757,26 @@ public:
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of classes can't be of physical type \"FixedSizeArray\"")
         }
+        // A "FixedSizeArray" is stored inline, so its bounds must be known
+        // at compile time. The deferred constants of a template have no
+        // value until the template is instantiated.
+        if (x.m_physical_type == ASR::FixedSizeArray && check_external &&
+                !_inside_template) {
+            bool constant_dims = true;
+            for (size_t i = 0; i < x.n_dims; i++) {
+                int64_t value;
+                for (ASR::expr_t* bound : {x.m_dims[i].m_start, x.m_dims[i].m_length}) {
+                    if (bound == nullptr || !ASRUtils::extract_value(
+                            ASRUtils::expr_value(bound), value)) {
+                        constant_dims = false;
+                    }
+                }
+            }
+            require_id(constant_dims,
+                "asr.verify.array.fixed_size_constant_dims",
+                "an array with physical type \"FixedSizeArray\" must have"
+                " compile-time constant lower bounds and extents")
+        }
         _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);

@@ -34,6 +34,9 @@ argument passed to it may have the same element type and rank but different
 The physical type has to agree with the dimensions, and the verifier checks
 that it does:
 
+* a `FixedSizeArray` is stored inline, so every lower bound and every extent
+  is a compile-time constant (`asr.verify.array.fixed_size_constant_dims`).
+  The deferred constants of a template are exempt until it is instantiated;
 * an assumed-size dummy argument, `a(n, *)`, is passed as its data alone and
   has no extent in its last dimension, so it is never a `DescriptorArray`
   unless it is polymorphic and the descriptor carries its dynamic type
