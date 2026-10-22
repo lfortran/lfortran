@@ -46,37 +46,47 @@ namespace LCompilers {
 }
 #endif
 
-// Defined in the runtime library (lfortran_intrinsics.c), whose
-// lfortran_display_data() and lfortran_clear_output() the lfortran_display
-// module calls; the JIT resolves them to the copy linked into this process.
-extern "C" void _lfortran_set_display_hooks(
-    void (*display_data)(const char *mime_type, const char *data),
-    void (*clear_output)());
+// Defined in the runtime library (lfortran_intrinsics.c, declared in
+// lfortran_intrinsics.h, a C header), whose lfortran_display_data() and
+// lfortran_clear_output() the lfortran_display module calls; the JIT
+// resolves them to the copy linked into this process.
+extern "C" void *_lfortran_set_display_hooks(
+    void (*display_data)(void *context, const char *mime_type, const char *data),
+    void (*clear_output)(void *context),
+    void *context);
 
 namespace {
-// The hooks of the cell FortranEvaluator::execute() is running.
-const LCompilers::FortranEvaluator::CellIO *current_io = nullptr;
-bool display_failed = false;
+// The context of the display hooks while FortranEvaluator::execute() runs a
+// cell.
+struct DisplayContext {
+    const LCompilers::FortranEvaluator::CellIO &io;
+    std::string error; // why a hook failed; empty if none has
+};
 
-// A hook must not unwind through the generated code that called it.
-template <typename Hook, typename... Args>
-void call_hook(const Hook &hook, Args&&... args) {
-    if (!hook) return;
+// A hook is called from generated code, so its exception must not unwind
+// through it.
+template <typename Call>
+void run_hook(DisplayContext &context, const Call &call) {
     try {
-        hook(std::forward<Args>(args)...);
+        call();
+    } catch (const std::exception &error) {
+        if (context.error.empty()) context.error = error.what();
     } catch (...) {
-        display_failed = true;
+        if (context.error.empty()) context.error = "unknown exception";
     }
 }
-
-void display_data_hook(const char *mime_type, const char *data) {
-    if (current_io) {
-        call_hook(current_io->display, std::string(mime_type), std::string(data));
-    }
 }
 
-void clear_output_hook() {
-    if (current_io) call_hook(current_io->clear_output);
+extern "C" {
+static void display_data_hook(void *context, const char *mime_type,
+        const char *data) {
+    DisplayContext &c = *static_cast<DisplayContext *>(context);
+    run_hook(c, [&]() { if (c.io.display) c.io.display(mime_type, data); });
+}
+
+static void clear_output_hook(void *context) {
+    DisplayContext &c = *static_cast<DisplayContext *>(context);
+    run_hook(c, [&]() { if (c.io.clear_output) c.io.clear_output(); });
 }
 }
 
@@ -486,18 +496,15 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     CellResult out;
     out.value.type = EvalResult::none;
+    DisplayContext display{io, ""};
     struct Hooks {
-        explicit Hooks(const CellIO &io) {
-            LCOMPILERS_ASSERT(!current_io);
-            current_io = &io;
-            display_failed = false;
-            _lfortran_set_display_hooks(display_data_hook, clear_output_hook);
+        explicit Hooks(DisplayContext &display) {
+            [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
+                clear_output_hook, &display);
+            LCOMPILERS_ASSERT(previous == nullptr);
         }
-        ~Hooks() {
-            _lfortran_set_display_hooks(nullptr, nullptr);
-            current_io = nullptr;
-        }
-    } hooks(io);
+        ~Hooks() { _lfortran_set_display_hooks(nullptr, nullptr, nullptr); }
+    } hooks(display);
     LocationManager lm;
     diag::Diagnostics diagnostics;
     PassManager passes;
@@ -543,10 +550,10 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         if (!out.ok) {
             out.error_name = "CompilerError";
             out.error_value = out.diagnostics;
-        } else if (display_failed) {
+        } else if (!display.error.empty()) {
             out.ok = false;
             out.error_name = "DisplayError";
-            out.error_value = "display event delivery failed";
+            out.error_value = "display failed: " + display.error;
         }
     } catch (const LCompilersException &error) {
         out.ok = false;

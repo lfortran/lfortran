@@ -3034,10 +3034,17 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
     // The hooks only receive calls made while their cell runs.
     lfortran_display_data("text/plain", "outside execution");
     lfortran_clear_output();
+    CHECK(mime == "text/html");
+    CHECK(data == "<b>hello</b>");
     CHECK(clears == 1);
     // A hook's exception must not unwind through generated code.
     io.clear_output = []() { throw std::runtime_error("display failure"); };
     cell = e.execute("call clear_output()", false, io);
     CHECK(!cell.ok);
     CHECK(cell.error_name == "DisplayError");
+    CHECK(cell.error_value == "display failed: display failure");
+    // The session goes on, with the hooks of the next cell.
+    cell = e.execute("call display_data('text/plain', 'again')", false, io);
+    REQUIRE(cell.ok);
+    CHECK(data == "again");
 }
