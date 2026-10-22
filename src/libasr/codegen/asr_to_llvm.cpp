@@ -14288,38 +14288,8 @@ public:
                 // For same-type or base-to-derived, use source's copy function.
                 llvm::Value* copy_source = use_target_copy ? target_struct : llvm_dt;
                 
-                // Use runtime allocate function for class to class assignments
-                if (ASRUtils::is_allocatable(asr_target_type)) {
-                    // Deallocating target first
-                    Vec<ASR::expr_t*> dealloc_stmts;
-                    dealloc_stmts.reserve(al, 1);
-                    dealloc_stmts.push_back(al, x.m_target);
-                    ASR::stmt_t* del = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, 
-                        x.m_target->base.loc, dealloc_stmts.p, dealloc_stmts.n));
-                    this->visit_stmt(*del);
-                    llvm::FunctionType* fnTy = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr->getPointerTo()}, false);
-                    llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
-                    llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
-                    llvm::PointerType *fnPtrPtrPtrTy = llvm::PointerType::get(fnPtrPtrTy, 0);
-                    llvm::Value* vtable_ptr = builder->CreateBitCast(copy_source, fnPtrPtrPtrTy);
-                    vtable_ptr = llvm_utils->CreateLoad2(fnPtrPtrTy, vtable_ptr);
-                    llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy, vtable_ptr, 1));
-                    fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-                    
-                    builder->CreateCall(fnTy, fn, {builder->CreateBitCast(
-                        ptr_to_target_struct, llvm_utils->i8_ptr->getPointerTo())});
-
-                    // Reload target_struct after allocation
-                    target_struct_orig = llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), ptr_to_target_struct);
-                    ptr_to_target_struct = llvm_utils->create_gep2(target_llvm_type, target_struct_orig, 1);
-                    if (!is_target_unlimited_polymorphic) {
-                        target_struct = llvm_utils->CreateLoad2(llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))), module.get(), true), ptr_to_target_struct);
-                    } else {
-                        target_struct = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, ptr_to_target_struct);
-                    }
-                }
+                // An allocatable variable has been given the dynamic type
+                // of the value by the allocate_on_assignment pass.
 
                 // ONE-wrapper layout: if target data is NULL (freshly allocated
                 // wrapper for array element assignment), initialize the actual
@@ -14378,12 +14348,11 @@ public:
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
-                // An allocatable variable has been reallocated above, and
-                // a new target is defined by the copy.
+                // A new target, or a variable just allocated for the
+                // assignment, is defined by the copy without finalizing it.
                 builder->CreateCall(fnTy, fn, {value_struct, target_struct,
                     llvm::ConstantInt::get(llvm::Type::getInt1Ty(context),
-                        !ASRUtils::is_allocatable(asr_target_type) &&
-                        !x.m_new_target)});
+                        !x.m_new_target && !x.m_new_allocation)});
             } else {
                 ASR::symbol_t* vptr_sym;
                 ASR::expr_t* deepcopy_var;
