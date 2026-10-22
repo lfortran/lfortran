@@ -375,12 +375,17 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
         that_expr = that_tuple
         if that_is_pointer:
             that_expr = f'*{that_expr}'
-        this_expr = that_expr
         if this_is_pointer:
             with self.type_declaration_options(wrap_ptr=False):
                 tuple_type = self.get_type_declaration(tuple_spec)
-                this_expr = f'std::make_unique<{tuple_type}>({this_expr})'
-        self.gen_assign(this_tuple, this_expr)
+            # The union member is not constructed yet: assigning to it would
+            # reset an uninitialized pointer.
+            self.update_union_field(
+                this_tuple, tuple_type,
+                f'std::make_unique<{tuple_type}>({that_expr})'
+            )
+        else:
+            self.gen_assign(this_tuple, that_expr)
 
     def gen_struct_copy_tuple_1(
             self,
