@@ -1,5 +1,7 @@
 #include "cuda_link_helpers.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -27,6 +29,59 @@ std::string cuda_device_compiler_command(
     }
     return device_compiler + " -arch="
         + (gpu_arch.empty() ? "native" : gpu_arch);
+}
+
+std::string cuda_toolkit_include_dir(const std::string &device_compiler)
+{
+    std::string compiler = device_compiler.substr(0,
+        device_compiler.find_first_of(" \t"));
+    if (compiler.empty()) return "";
+    std::error_code ec;
+    std::filesystem::path nvcc(compiler);
+    if (compiler.find('/') == std::string::npos) {
+        // A bare name is looked up in PATH, as the shell does.
+        nvcc.clear();
+        const char *env_path = std::getenv("PATH");
+        std::string path_list = env_path ? env_path : "";
+        size_t start = 0;
+        while (start <= path_list.size()) {
+            size_t end = path_list.find(':', start);
+            if (end == std::string::npos) end = path_list.size();
+            std::string dir = path_list.substr(start, end - start);
+            std::filesystem::path candidate
+                = std::filesystem::path(dir.empty() ? "." : dir) / compiler;
+            if (std::filesystem::is_regular_file(candidate, ec)) {
+                nvcc = candidate;
+                break;
+            }
+            start = end + 1;
+        }
+        if (nvcc.empty()) return "";
+    }
+    // nvcc is <toolkit>/bin/nvcc; the headers are in <toolkit>/include or,
+    // in a layout with a target directory, <toolkit>/targets/<target>/include.
+    std::filesystem::path toolkit = nvcc.parent_path().parent_path();
+    std::filesystem::path include = toolkit / "include";
+    if (std::filesystem::is_regular_file(include / "cuda_runtime.h", ec)) {
+        return include.string();
+    }
+    std::filesystem::path targets = toolkit / "targets";
+    if (std::filesystem::is_directory(targets, ec)) {
+        std::vector<std::filesystem::path> candidates;
+        for (const auto &target
+                : std::filesystem::directory_iterator(targets, ec)) {
+            std::filesystem::path candidate = target.path() / "include";
+            if (std::filesystem::is_regular_file(
+                    candidate / "cuda_runtime.h", ec)) {
+                candidates.push_back(candidate);
+            }
+        }
+        if (!candidates.empty()) {
+            std::sort(candidates.begin(), candidates.end());
+            return candidates.front().string();
+        }
+    }
+    return "";
 }
 
 namespace {

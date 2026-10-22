@@ -2328,17 +2328,30 @@ int link_executable(const std::vector<std::string> &infiles,
                 // Compile the GPU runtime. The CPU emulation uses its own
                 // implementation of the same C API, and is C rather than C++,
                 // so the language is named explicitly for the C++ driver that
-                // compiled the kernel.
+                // compiled the kernel. The CUDA runtime is host C code that
+                // calls the CUDA runtime API, so the host C compiler builds it
+                // against the headers of the device compiler's toolkit, and
+                // the device compiler's link below adds the CUDA runtime
+                // library.
                 std::string cuda_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/"
                     + (emulate_cpu ? "lfortran_gpu_cpu.c"
-                                   : "lfortran_gpu_cuda.cu");
+                                   : "lfortran_gpu_cuda.c");
                 std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string cuda_rt_cmd = device_cc + " -c -O2"
-                    + runtime_include
-                    + (emulate_cpu ? " -x c" : "")
-                    + " -o " + cuda_runtime_obj
+                std::string cuda_rt_cmd;
+                if (emulate_cpu) {
+                    cuda_rt_cmd = device_cc + " -c -O2" + runtime_include
+                        + " -x c";
+                } else {
+                    std::string cuda_include = cuda_toolkit_include_dir(
+                        compiler_options.device_compiler);
+                    cuda_rt_cmd = get_c_compiler("cc") + " -c -O2"
+                        + runtime_include
+                        + (cuda_include.empty() ? ""
+                            : " -I\"" + cuda_include + "\"");
+                }
+                cuda_rt_cmd += " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
                 int cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {

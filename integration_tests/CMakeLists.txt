@@ -6543,7 +6543,13 @@ RUN(NAME gpu_metal_484 LABELS gfortran llvm metal cuda cuda_cpu)
 if (LFORTRAN_BACKEND STREQUAL "cuda")
     enable_language(CUDA)
     add_executable(gpu_cuda_scratch_order gpu_cuda_scratch_order.cu
-        ../src/libasr/runtime/lfortran_gpu_cuda.cu)
+        ../src/libasr/runtime/lfortran_gpu_cuda.c)
+    # The runtime is host C: it needs the CUDA headers, and nvcc links it
+    # with the CUDA runtime library like the LFortran driver does.
+    target_include_directories(gpu_cuda_scratch_order PRIVATE
+        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    set_target_properties(gpu_cuda_scratch_order PROPERTIES
+        LINKER_LANGUAGE CUDA)
     # Build for the local GPUs, like the default `--gpu-arch` of the
     # LFortran-compiled CUDA tests, instead of nvcc's default architecture.
     set_target_properties(gpu_cuda_scratch_order PROPERTIES
