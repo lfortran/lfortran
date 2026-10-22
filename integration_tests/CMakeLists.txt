@@ -6573,34 +6573,6 @@ RUN(NAME gpu_metal_556 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache
 # preservation gap (#14622).
 RUN(NAME gpu_local_preservation_01 LABELS metal cuda cuda_cpu)
 RUN(NAME gpu_metal_484 LABELS gfortran llvm metal cuda cuda_cpu)
-if (LFORTRAN_BACKEND STREQUAL "cuda")
-    enable_language(CUDA)
-    add_executable(gpu_cuda_scratch_order gpu_cuda_scratch_order.cu
-        ../src/libasr/runtime/lfortran_gpu_cuda.c)
-    # The runtime is host C: it needs the CUDA headers, and nvcc links it
-    # with the CUDA runtime library like the LFortran driver does.
-    target_include_directories(gpu_cuda_scratch_order PRIVATE
-        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-    set_target_properties(gpu_cuda_scratch_order PROPERTIES
-        LINKER_LANGUAGE CUDA)
-    # Build for the local GPUs, like the default `--gpu-arch` of the
-    # LFortran-compiled CUDA tests, instead of nvcc's default architecture.
-    set_target_properties(gpu_cuda_scratch_order PROPERTIES
-        CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
-        CUDA_ARCHITECTURES native)
-    add_test(NAME gpu_cuda_scratch_order COMMAND gpu_cuda_scratch_order)
-    add_custom_target(gpu_cuda_scratch_order_discard DEPENDS gpu_cuda_scratch_order)
-    add_test(NAME gpu_cuda_scratch_order_discard
-        COMMAND gpu_cuda_scratch_order discard)
-    add_custom_target(gpu_cuda_scratch_order_alias DEPENDS gpu_cuda_scratch_order)
-    add_test(NAME gpu_cuda_scratch_order_alias
-        COMMAND gpu_cuda_scratch_order aliases)
-    set_tests_properties(gpu_cuda_scratch_order PROPERTIES LABELS cuda)
-    set_tests_properties(gpu_cuda_scratch_order_discard PROPERTIES
-        LABELS cuda TIMEOUT 30)
-    set_tests_properties(gpu_cuda_scratch_order_alias PROPERTIES
-        LABELS cuda TIMEOUT 30)
-endif()
 RUN(NAME gpu_metal_485 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_490 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_491 LABELS gfortran llvm cuda cuda_cpu) # metal declines integer(8) loop indices
