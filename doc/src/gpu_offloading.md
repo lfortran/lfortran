@@ -903,13 +903,16 @@ with a `stop` before that.
   with `--gpu=metal` in CI.
 
 The `test_gpu_cuda_api_state*` unit tests compile the production CUDA runtime
-against a small host CUDA API test double. They exercise deferred-queue saturation
-for scratch and read-only buffers, and residency-table eviction. Copies and
-launches are queued in order, and the tests check readback and allocation lifetime.
-Discard variants exercise both flush paths without uploading the output.
-Alias cases also check that a discard shares the covering writable resident,
-falls back to one upload, and preserves values read before an overlapping write.
-These are API-state tests, not CUDA_CPU emulation, native GPU execution, or
+against the CPU emulation of the CUDA runtime API that `--gpu=cuda_cpu` uses,
+with kernels of their own, and check how the runtime uses the API through the
+statistics the emulation keeps (`cuda_cpu/cuda_cpu_emulator.h`). They exercise
+deferred-queue saturation for scratch and read-only buffers, and
+residency-table eviction, and check readback, allocation lifetime, and that no
+memory is freed while a copy or launch issued since the last synchronization
+may still use it. Discard variants exercise both flush paths without uploading
+the output. Alias cases also check that a discard shares the covering writable
+resident, falls back to one upload, and preserves values read before an
+overlapping write. These are API-state tests, not native GPU execution or
 performance evidence:
 
 ```bash
@@ -930,7 +933,7 @@ pixi run -e llvm11 integration_tests -b cuda -t '^gpu_cuda_scratch_order$' -j6 >
 `gpu_cuda_scratch_order_alias` includes the mixed write/discard alias cases.
 `gpu_metal_507` checks a full overwrite through a target array that reads its
 old elements through a pointer alias, on the ordinary, CPU-emulated, Metal and
-native CUDA paths. The CUDA API-state double does not replace any of these
+native CUDA paths. The CUDA API-state tests do not replace any of these
 backend tests.
 
 `gpu_discard_guard_extremes` checks strict and inclusive guards at both

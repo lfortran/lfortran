@@ -1,9 +1,12 @@
 add_library(doctest STATIC doctest.cpp)
 add_library(p::doctest ALIAS doctest)
 
-add_executable(test_gpu_cuda_api_state test_gpu_cuda_api_state.cpp)
+# The production CUDA runtime on the CPU emulation of the CUDA runtime API,
+# whose cuda_runtime.h the include path has to find.
+add_executable(test_gpu_cuda_api_state test_gpu_cuda_api_state.cpp
+    ../libasr/runtime/cuda_cpu/cuda_cpu_runtime.c)
 target_include_directories(test_gpu_cuda_api_state PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_api_test_double")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libasr/runtime/cuda_cpu")
 add_test(NAME test_gpu_cuda_api_state COMMAND test_gpu_cuda_api_state)
 add_test(NAME test_gpu_cuda_api_state_read_only
     COMMAND test_gpu_cuda_api_state read-only)
