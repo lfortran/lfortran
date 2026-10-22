@@ -465,7 +465,14 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cerr << cell.error_value;
             continue;
         }
-        std::cout << cell.output;
+        std::cerr << cell.diagnostics;
+        if (cell.inspection) {
+            std::cout << cell.output;
+            if (!cell.output.empty() && cell.output.back() != '\n') {
+                std::cout << std::endl;
+            }
+            continue;
+        }
 
         auto &r = cell.value;
         if (verbose) {

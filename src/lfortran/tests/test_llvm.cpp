@@ -2945,11 +2945,13 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         CAPTURE(example.first);
         auto cell = e.execute(example.first);
         REQUIRE(cell.ok);
+        CHECK(!cell.inspection);
         CHECK(cell.value.has_value());
         CHECK(cell.value.text() == example.second);
     }
     auto cell = e.execute("integer :: n\nn = 41");
     REQUIRE(cell.ok);
+    CHECK(cell.diagnostics.empty());
     CHECK(!cell.value.has_value());
     CHECK(e.execute("n+1").value.text() == "42");
     cell = e.execute("");
@@ -2960,6 +2962,12 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     CHECK(cell.error_name == "CompilerError");
     CHECK(cell.error_value.find("<cell ") != std::string::npos);
     CHECK(e.execute("n").value.text() == "41");
+    // A successful cell keeps its warnings.
+    cell = e.execute("max0(1, 2_8)");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "2");
+    CHECK(cell.diagnostics.find("warning: Different kinds of args in max0")
+        != std::string::npos);
 }
 
 TEST_CASE("FortranEvaluator execute: inspection cells") {
@@ -2969,11 +2977,13 @@ TEST_CASE("FortranEvaluator execute: inspection cells") {
         FortranEvaluator e(cu);
         auto cell = e.execute("%%show" + magic + "\ninteger :: x");
         REQUIRE(cell.ok);
+        CHECK(cell.inspection);
         CHECK(!cell.output.empty());
         CHECK(!cell.value.has_value());
         // Trailing blanks and a CRLF line ending after the magic.
         cell = e.execute("%%show" + magic + " \t\r\ninteger :: y");
         REQUIRE(cell.ok);
+        CHECK(cell.inspection);
         CHECK(!cell.output.empty());
     }
 }

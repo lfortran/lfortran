@@ -79,6 +79,7 @@ public:
 
     struct CellResult {
         bool ok = false;
+        bool inspection = false; // a %%show* cell
         EvalResult value{};      // `none` for a %%show* cell
         std::string output;      // the text a %%show* cell shows
         std::string diagnostics; // rendered warnings and errors

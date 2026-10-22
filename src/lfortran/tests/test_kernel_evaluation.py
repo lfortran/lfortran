@@ -68,6 +68,10 @@ def main():
             check(client, ".true.", ["True"])
             check(client, "'hello'", ["hello"])
             check(client, "1.2345678901234567_8", ["1.2345678901234567"])
+            messages = check(client, "max0(1, 2_8)", ["2"])
+            assert any(m["msg_type"] == "stream" and m["content"]["name"] == "stderr"
+                       and "Different kinds of args in max0" in m["content"]["text"]
+                       for m in messages), messages
             for magic in ("ast", "asr", "llvm", "asm", "cpp", "fmt"):
                 for first_line in ("%%show" + magic, "%%show" + magic + " \r"):
                     messages = check(client, first_line + "\ninteger :: x", [])

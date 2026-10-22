@@ -472,6 +472,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         magic.erase(magic.find_last_not_of(" \t\r") + 1);
         const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
         Result<std::string> shown{Error{}};
+        out.inspection = true;
         if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
         else if (magic == "%%showasr") shown = get_asr(source, lm, diagnostics);
         else if (magic == "%%showllvm") shown = get_llvm(source, lm, passes, diagnostics);
@@ -479,6 +480,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
         else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
         else {
+            out.inspection = false;
             auto result = evaluate(code, verbose, lm, passes, diagnostics);
             out.ok = result.ok;
             if (out.ok) out.value = std::move(result.result);

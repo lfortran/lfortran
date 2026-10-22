@@ -14,13 +14,14 @@ import time
 
 ENTER = b"\r"
 CTRL_D = b"\x04"
+NEW_LINE = "\x0e"  # Ctrl-N: a new line in the cell
 
 
-def run_repl(lfortran, cwd, cells, timeout=60, max_output=1 << 20):
+def run_repl(lfortran, cwd, cells, timeout=60, max_output=1 << 20, args=()):
     # A prompt that never finishes can print without end, so its output is
     # capped and it is killed after `timeout` seconds.
     keys = b"".join(cell.encode() + ENTER for cell in cells) + CTRL_D
-    p = subprocess.Popen([lfortran, "--no-color"], cwd=cwd,
+    p = subprocess.Popen([lfortran, "--no-color", *args], cwd=cwd,
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     timer = threading.Timer(timeout, p.kill)
     timer.start()
@@ -70,6 +71,28 @@ def check_keeps_files_in_cwd(lfortran):
         if sorted(os.listdir(cwd)) != ["input"]:
             sys.exit("the prompt left files in its directory: %s"
                 % sorted(os.listdir(cwd)))
+
+
+def check_cell_output(lfortran):
+    # An inspection cell's output ends with a newline and a successful cell
+    # shows its warnings.
+    cells = ["%%showast" + NEW_LINE + "integer :: shown", "max0(1, 2_8)"]
+    with tempfile.TemporaryDirectory() as cwd:
+        code, out = run_repl(lfortran, cwd, cells)
+        if code != 0 or "Exiting." not in out:
+            sys.exit("the prompt did not exit cleanly (code %d):\n%s"
+                % (code, out))
+        for expected in [r"^\)\r?$", r"^2\r?$",
+                r"^warning: Different kinds of args in max0"]:
+            if not re.search(expected, out, re.M):
+                sys.exit("expected %r in the prompt output:\n%s"
+                    % (expected, out))
+        # In verbose mode an inspection cell shows its output only.
+        code, out = run_repl(lfortran, cwd, cells[:1], args=["-v"])
+        if code != 0 or "TranslationUnit" not in out \
+                or "Return type" in out:
+            sys.exit("unexpected verbose output of an inspection cell "
+                "(code %d):\n%s" % (code, out))
 
 
 class PtyRepl:
@@ -265,6 +288,7 @@ def main():
     parser.add_argument("--lfortran", required=True)
     args = parser.parse_args()
     check_keeps_files_in_cwd(os.path.abspath(args.lfortran))
+    check_cell_output(os.path.abspath(args.lfortran))
     check_read_from_terminal(os.path.abspath(args.lfortran))
     check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
     print("ok")
