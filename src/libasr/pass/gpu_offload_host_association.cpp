@@ -278,8 +278,13 @@ void lift_into_contained(Allocator &al, ASR::Function_t &kernel) {
                 fn->m_symtab->add_symbol(name, own);
                 l.own[v] = own;
             } else {
+                // A dummy of the kernel's host, such as an `intent(in)` one
+                // of a procedure the kernel calls, keeps its intent.
+                ASR::intentType intent =
+                    var->m_intent == ASR::intentType::In
+                        ? ASR::intentType::In : ASR::intentType::InOut;
                 ASR::symbol_t *own = gpu_new_variable(al, v->base.loc,
-                    fn->m_symtab, name, type, ASR::intentType::InOut,
+                    fn->m_symtab, name, type, intent,
                     var->m_type_declaration);
                 append_dummy(al, *fn, own, var->m_type);
                 l.passed.push_back(v);
