@@ -22796,6 +22796,7 @@ public:
         llvm::Value *decimal_data{}, *decimal_len{};
         llvm::Value *round_data{}, *round_len{};
         llvm::Value *pad_data{}, *pad_len{};
+        llvm::Value *convert_data{}, *convert_len{};
 
         this->visit_expr_wrapper(x.m_newunit, true);
         unit_val = llvm_utils->convert_kind(tmp, llvm::Type::getInt32Ty(context));
@@ -22904,6 +22905,12 @@ public:
             pad_data = llvm::Constant::getNullValue(character_type);
             pad_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
+        if (x.m_convert) {
+            std::tie(convert_data, convert_len) = get_string_data_and_length(x.m_convert);
+        } else {
+            convert_data = llvm::Constant::getNullValue(character_type);
+            convert_len  = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
+        }
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
@@ -22926,7 +22933,8 @@ public:
                     character_type, i64,  // sign_data, sign_len
                     character_type, i64,  // decimal_data, decimal_len
                     character_type, i64,   // round_data, round_len
-                    character_type, i64    // pad_data, pad_len
+                    character_type, i64,   // pad_data, pad_len
+                    character_type, i64    // convert_data, convert_len
                 });
         tmp = builder->CreateCall(fn, {unit_val,
             f_name_data, f_name_len,
@@ -22944,7 +22952,8 @@ public:
             sign_data, sign_len,
             decimal_data, decimal_len,
             round_data, round_len,
-            pad_data, pad_len
+            pad_data, pad_len,
+            convert_data, convert_len
         });
     }
 
@@ -24217,6 +24226,11 @@ public:
                 ASR::ttype_t* value_type = ASRUtils::extract_type(ASRUtils::expr_type(m_values[i]));
                 ASR::ttype_t* value_type_base = ASRUtils::type_get_past_array(value_type);
                 int kind = ASRUtils::extract_kind_from_ttype_t(value_type_base);
+                // Each item is passed as (byte length, element size, data).
+                // The runtime reverses the bytes of every element on a unit
+                // opened with a non-native CONVERT=: a complex value is two
+                // reals and a character is one code unit of its kind.
+                llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(32, kind, true));
                 if (ASR::is_a<ASR::Complex_t>(*value_type_base)) {
                     kind *= 2;
                 }
@@ -24237,9 +24251,11 @@ public:
                             ASRUtils::get_string_type(value_type_base), tmp);
                         args.push_back(builder->CreateMul(n_elems,
                             builder->CreateTrunc(str_len, llvm_utils->i32)));
+                        args.push_back(elem_size_val);
                         args.push_back(str_data);
                     } else {
                         args.push_back(builder->CreateMul(kind_val, n_elems));
+                        args.push_back(elem_size_val);
                         args.push_back(tmp);
                     }
                     continue;
@@ -24248,10 +24264,12 @@ public:
                     std::tie(str_data, str_len) = get_string_data_and_length(m_values[i]);
                     args.push_back(builder->CreateMul(kind_val,
                         builder->CreateTrunc(str_len, llvm_utils->i32)));
+                    args.push_back(elem_size_val);
                     args.push_back(str_data);
                     continue;
                 } else if (ASR::is_a<ASR::Logical_t>(*value_type_base)) {
                     args.push_back(kind_val);
+                    args.push_back(elem_size_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Value* logical_val = tmp;
                     if (logical_val->getType()->isPointerTy()) {
@@ -24267,6 +24285,7 @@ public:
                     continue;
                 } else {
                     args.push_back(kind_val);
+                    args.push_back(elem_size_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(m_values[i], ASRUtils::expr_type(m_values[i]), module.get());
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
@@ -25131,10 +25150,11 @@ public:
                 set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
             } else if( func_subrout->type == ASR::symbolType::StructMethodDeclaration ) {
                 ASR::StructMethodDeclaration_t* clss_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_subrout);
-                if( clss_proc->m_proc->type == ASR::symbolType::Function ) {
-                    ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
+                ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+                if( proc->type == ASR::symbolType::Function ) {
+                    ASR::Function_t* func = down_cast<ASR::Function_t>(proc);
                     set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i);
-                    func_subrout = clss_proc->m_proc;
+                    func_subrout = proc;
                 }
             } else if( func_subrout->type == ASR::symbolType::Variable ) {
                 ASR::Variable_t* v = down_cast<ASR::Variable_t>(func_subrout);
@@ -27629,7 +27649,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*m_name)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(m_name);
-            function = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+            function = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(clss_proc->m_proc));
         } else if (ASR::is_a<ASR::Variable_t>(*m_name)) {
             // Called through a procedure pointer or a dummy procedure. The
             // declared interface of the variable is the callee's signature,
@@ -28003,8 +28024,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(proc_sym);
-            s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-            proc_sym = clss_proc->m_proc;
+            proc_sym = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+            s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
             LCOMPILERS_ASSERT(type_decl && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(type_decl)));
@@ -28635,8 +28656,8 @@ public:
         } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
             ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
                 ASR::StructMethodDeclaration_t>(proc_sym);
-            s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
-            proc_sym = clss_proc->m_proc;
+            proc_sym = ASRUtils::symbol_get_past_external(clss_proc->m_proc);
+            s = ASR::down_cast<ASR::Function_t>(proc_sym);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::Variable_t* proc_var = ASR::down_cast<ASR::Variable_t>(proc_sym);
             ASR::symbol_t *type_decl = proc_var->m_type_declaration;

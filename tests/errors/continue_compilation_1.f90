@@ -3562,3 +3562,30 @@ contains
         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
     end subroutine cc1_ncs_use
 end module cc1_named_constant_subobject
+
+! A parenthesized null() is not allowed in an initializer either.
+subroutine cc1_paren_null_initializer_integer()
+    implicit none
+    integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_integer
+
+subroutine cc1_paren_null_initializer_type()
+    implicit none
+    type :: cc1_pni_t
+        integer :: v = 1
+    end type
+    type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_type
+
+! A parenthesized equivalence object is an expression, not a variable.
+subroutine cc1_paren_equivalence_element()
+    implicit none
+    real :: a(3), b
+    equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_element
+
+subroutine cc1_paren_equivalence_name()
+    implicit none
+    real :: a(3), b
+    equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_name

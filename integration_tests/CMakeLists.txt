@@ -508,6 +508,8 @@ RUN(NAME fixed_form_generic_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFOR
 RUN(NAME fixed_form_namelist_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_attr_stmt_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_cycle_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_named_construct_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_named_construct_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2606,6 +2608,7 @@ RUN(NAME implicit_typing_14 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_15 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_typing_16 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_17 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+RUN(NAME implicit_typing_18 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2683,6 +2686,7 @@ RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
 RUN(NAME operator_overloading_46 LABELS gfortran llvm)
 RUN(NAME operator_overloading_49 LABELS gfortran llvm)
+RUN(NAME operator_overloading_override_01 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3067,6 +3071,8 @@ RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
 RUN(NAME defined_assignment_elemental_01 LABELS gfortran llvm)
+RUN(NAME defined_assignment_override_01 LABELS gfortran llvm)
+RUN(NAME defined_assignment_same_name_01 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 
 RUN(NAME derived_type_with_default_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3092,6 +3098,7 @@ RUN(NAME multi_file_member_access_02 LABELS gfortran llvm_single_invocation EXTR
 RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME type_bound_generic_extend_01 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3330,6 +3337,8 @@ RUN(NAME associate_56 LABELS llvm)
 RUN(NAME associate_57 LABELS gfortran llvm)
 RUN(NAME associate_58 LABELS gfortran llvm)
 RUN(NAME associate_59 LABELS llvm)
+RUN(NAME associate_60 LABELS llvm) # gfortran skips the temporary for associate names of overlapping sections
+RUN(NAME associate_61 LABELS llvm) # gfortran aliases a parenthesized (expression) selector instead of copying it, and rejects the (str(2:4)) selector
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3532,6 +3541,7 @@ RUN(NAME nested_vars_22 LABELS gfortran llvm)
 RUN(NAME nested_vars_24 LABELS gfortran llvm)
 RUN(NAME nested_vars_25 LABELS gfortran llvm)
 RUN(NAME nested_vars_26 LABELS gfortran llvm)
+RUN(NAME nested_vars_30 LABELS gfortran llvm)
 
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3652,6 +3662,7 @@ RUN(NAME file_open_11 LABELS gfortran llvm)
 RUN(NAME file_open_12 LABELS gfortran llvm)
 RUN(NAME file_open_13 LABELS gfortran llvm)
 RUN(NAME file_open_14 LABELS gfortran llvm)
+RUN(NAME file_open_15 LABELS gfortran llvm)
 
 RUN(NAME file_overwrite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4617,6 +4628,8 @@ RUN(NAME write_49 LABELS gfortran c)
 RUN(NAME write_51 LABELS gfortran llvm)
 RUN(NAME write_52 LABELS gfortran llvm)
 RUN(NAME write_53 LABELS gfortran llvm)
+RUN(NAME write_54 LABELS gfortran llvm)
+RUN(NAME write_55 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -5671,12 +5684,15 @@ RUN(NAME separate_compilation_63 LABELS llvm EXTRAFILES separate_compilation_63a
 RUN(NAME separate_compilation_64 LABELS llvm EXTRAFILES separate_compilation_64a.f90 EXTRA_ARGS --separate-compilation) # component of a named constant holding a procedure-pointer component targeting an imported procedure (#14794) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
 RUN(NAME separate_compilation_65 LABELS llvm EXTRAFILES separate_compilation_65a.f90 EXTRA_ARGS --separate-compilation) # data component of a named constant holding a procedure-pointer component targeting an imported procedure (#14794) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
 RUN(NAME separate_compilation_66 LABELS llvm EXTRAFILES separate_compilation_66a.f90 EXTRA_ARGS --separate-compilation) # procedure-local procedure pointer and saved derived-type initializers targeting an imported procedure (#14793) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
+RUN(NAME separate_compilation_69 LABELS gfortran llvm EXTRAFILES separate_compilation_69a.f90)
+RUN(NAME separate_compilation_70 LABELS gfortran llvm EXTRAFILES separate_compilation_70a.f90)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
 
 RUN(NAME logical_testing LABELS gfortran llvm)
 
+RUN(NAME runtime_input_records LABELS gfortran llvm)
 RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input_01.txt)
 RUN(NAME formatted_read_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME formatted_read_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -6175,7 +6191,7 @@ RUN(NAME gpu_metal_201 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_202 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_203 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
-RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm)
 RUN(NAME gpu_metal_208 LABELS gfortran llvm metal cuda_cpu)
@@ -6322,7 +6338,7 @@ RUN(NAME gpu_metal_338 LABELS gfortran llvm metal cuda_cpu)
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
 # which does accept it.
 RUN(NAME gpu_metal_339 LABELS llvm metal cuda_cpu)
-RUN(NAME gpu_metal_340 LABELS llvm metal cuda_cpu EXTRA_ARGS --separate-compilation) # `shared` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_340 LABELS llvm metal cuda_cpu EXTRA_ARGS --separate-compilation --gpu-split-min-iterations=0) # `shared` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_341 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_342 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
@@ -6395,7 +6411,7 @@ RUN(NAME gpu_metal_423 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_424 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_425 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_426 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_427 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_427 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_428 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_429 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_430 LABELS gfortran llvm metal cuda_cpu)
@@ -6434,7 +6450,7 @@ RUN(NAME gpu_metal_471 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_472 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_473 FAIL LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_474 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_475 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_475 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_476 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_477 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_478 LABELS gfortran llvm metal cuda_cpu)
@@ -6444,7 +6460,7 @@ RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_488 LABELS gfortran llvm cuda cuda_cpu)
 RUN(NAME gpu_metal_489 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_metal_489_mod.f90 EXTRA_ARGS --separate-compilation)
 # GFortran 13 in Quick cannot compile the LOCAL locality of gpu_metal_505.
-RUN(NAME gpu_metal_505 LABELS llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_505 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_506 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_507 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_discard_guard_extremes LABELS gfortran llvm cuda_cpu cuda)
@@ -6452,9 +6468,9 @@ RUN(NAME gpu_discard_guard_extremes LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
 RUN(NAME gpu_metal_483 LABELS llvm metal cuda cuda_cpu)
-RUN(NAME gpu_metal_510 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_510 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_512 LABELS gfortran llvm metal cuda_cpu cuda)
-RUN(NAME gpu_metal_515 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_515 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_516 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_517 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_518 LABELS gfortran llvm metal cuda_cpu cuda)
@@ -6478,6 +6494,41 @@ RUN(NAME gpu_metal_551 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_552 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME gpu_metal_553 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_554 LABELS gfortran llvm metal cuda_cpu cuda)
+# Loop fusion legality: the fusion runs only for --gpu=cuda and cuda_cpu.
+RUN(NAME gpu_metal_560 LABELS gfortran llvm cuda_cpu cuda)
+RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda_cpu cuda)
+RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
+# Index-set splitting runs only for --gpu=cuda and cuda_cpu: the split nests
+# keep the write-discard of the arrays the loops overwrite, and only those.
+# The split tests run small domains, which only
+# --gpu-split-min-iterations=0 splits.
+RUN(NAME gpu_metal_527 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_528 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_529 LABELS gfortran llvm cuda_cpu cuda)
+RUN(NAME gpu_metal_524 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-allow-cpu-fallback)
+# gpu_metal_526 reads a LOCAL_INIT scalar, which the GPU kernels leave
+# uninitialized (#14792), so on cuda_cpu and cuda its results depend on what
+# the device compiler makes of that; the CUDA kernel-source reference in
+# tests/tests.toml checks the split instead. `local_init` is not accepted by
+# every supported gfortran.
+RUN(NAME gpu_metal_526 LABELS llvm)
+# No metal or cuda label: a GPU kernel does not copy a LOCAL_INIT scalar in
+# (#14792), and the device compiler folds tests on it as undefined.
+RUN(NAME gpu_metal_513 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_530 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_531 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_532 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_533 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_534 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_535 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_536 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_537 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_539 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_538 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_555 LABELS gfortran llvm cuda_cpu cuda) # not checked on metal: a never-run loop over an allocatable component
+RUN(NAME gpu_metal_556 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 # GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).
@@ -6505,8 +6556,8 @@ endif()
 RUN(NAME gpu_metal_485 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_490 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_491 LABELS gfortran llvm cuda cuda_cpu) # metal declines integer(8) loop indices
-RUN(NAME gpu_tile_high_bounds_i4 LABELS gfortran llvm metal cuda cuda_cpu)
-RUN(NAME gpu_tile_high_bounds_i8 LABELS gfortran llvm cuda cuda_cpu) # metal declines integer(8) loop indices
+RUN(NAME gpu_tile_high_bounds_i4 LABELS gfortran llvm metal cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_tile_high_bounds_i8 LABELS gfortran llvm cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6596,6 +6647,12 @@ RUN(NAME gpu_kernel_source_30 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_20 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_21 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-loop-transforms=fuse)
 RUN(NAME gpu_kernel_source_22 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_17 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_kernel_source_18 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_23 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_kernel_source_24 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_25 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_19 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
@@ -6616,7 +6673,7 @@ RUN(NAME real128_intrinsic_math_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME real128_intrinsic_math_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME real128_intrinsic_math_03 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23) # exp2 is an LFortran extension, an external procedure with --std=f23
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
-RUN(NAME real128_intrinsic_real_02 LABELS gfortran llvm)
+RUN(NAME real128_intrinsic_real_02 LABELS gfortran llvm NO_FAST_MATH) # real(8) overflow to +Infinity; --fast sets no-infs (#15792)
 RUN(NAME real128_intrinsic_sqrt_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_02 LABELS gfortran llvm)

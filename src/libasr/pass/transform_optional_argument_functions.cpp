@@ -384,7 +384,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
-        func_sym = class_proc->m_proc;
+        func_sym = ASRUtils::symbol_get_past_external(class_proc->m_proc);
     }
 
     if (!ASR::is_a<ASR::Function_t>(*func_sym)) {

@@ -1,0 +1,11 @@
+syntax error: Newline is unexpected here
+ --> tests/errors/continue_compilation_ff_3.f:5:15
+  |
+5 |          K K K
+  |               ^ 
+
+semantic error: Variable 'undef' is not declared
+ --> tests/errors/continue_compilation_ff_3.f:7:11
+  |
+7 |       K = UNDEF
+  |           ^^^^^ 'undef' is undeclared
