@@ -6,11 +6,7 @@
 // We implement the same C API as the Metal runtime
 // (lfortran_gpu_runtime.h), but using CUDA.
 
-extern "C" {
-
 #include "lfortran_gpu_runtime.h"
-
-} // extern "C" for the header
 
 #define MAX_ARGS 32
 
@@ -75,7 +71,12 @@ static void *deferred_free[MAX_DEFERRED];
 static int n_deferred = 0;
 static uint64_t n_syncs = 0;
 
-extern "C" void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
+// Kernel code declares this function with C linkage, and a unit test
+// compiles this file as C++ next to such a declaration.
+#ifdef __cplusplus
+extern "C"
+#endif
+void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
     if (n_registered == registry_capacity) {
         int capacity = registry_capacity ? 2 * registry_capacity : 64;
         kernel_entry **grown = (kernel_entry**)realloc(kernel_registry,
@@ -244,8 +245,6 @@ static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
     cache->capacities[idx] = length;
     return cache->buffers[idx];
 }
-
-extern "C" {
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
@@ -451,9 +450,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
     }
 
-    dim3 gridDim(grid[0], grid[1], grid[2]);
-    dim3 blockDim(block[0], block[1], block[2]);
-    check(cudaLaunchKernel((const void*)k->func, gridDim, blockDim, args, 0,
+    dim3 grid_dim = {(unsigned)grid[0], (unsigned)grid[1], (unsigned)grid[2]};
+    dim3 block_dim = {(unsigned)block[0], (unsigned)block[1],
+        (unsigned)block[2]};
+    check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
 }
 
@@ -472,9 +472,7 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     }
 }
 
-} // extern "C"
-
-extern "C" long long lfortran_gpu_cache_bytes(void) {
+long long lfortran_gpu_cache_bytes(void) {
     static long long bytes = -1;
     if (bytes < 0) {
         int device = 0, size = 0;
@@ -488,11 +486,11 @@ extern "C" long long lfortran_gpu_cache_bytes(void) {
     return bytes;
 }
 
-extern "C" long long lfortran_gpu_heap_size(void) {
+long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }
 
-extern "C" void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out)
 {
     (void)ctx;
@@ -500,7 +498,7 @@ extern "C" void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     memset(out, 0, sizeof(*out));
 }
 
-extern "C" void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out)
 {
     if (ctx) lfortran_gpu_sync(ctx);

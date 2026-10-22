@@ -65,7 +65,7 @@ def main():
 
     # Native CUDA is not emulated here. Its entry point must call the same
     # validator before any handle checks, uploads or residency changes.
-    for name in ("lfortran_gpu_cpu.c", "lfortran_gpu_cuda.cu",
+    for name in ("lfortran_gpu_cpu.c", "lfortran_gpu_cuda.c",
                  "lfortran_gpu_metal.m"):
         source = (runtime / name).read_text()
         first_statement = (r"void lfortran_gpu_launch\([^)]*\)\s*\{\s*"

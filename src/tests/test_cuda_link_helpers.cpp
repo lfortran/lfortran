@@ -65,6 +65,41 @@ TEST_CASE("CUDA architecture selection configures only the native device compile
     CHECK(cuda_device_compiler_command("clang++", true, "sm_120") == "clang++");
 }
 
+TEST_CASE("CUDA toolkit headers are found next to the device compiler")
+{
+    OwnedDirectory workdir(fs::path(cuda_link_helpers_fixture::plain_archive).parent_path(),
+        "cuda_link_helper_toolkit");
+
+    const fs::path flat = workdir.path / "flat";
+    fs::create_directories(flat / "bin");
+    fs::create_directories(flat / "include");
+    write_file(flat / "bin" / "nvcc", "");
+    write_file(flat / "include" / "cuda_runtime.h", "");
+    const std::string flat_nvcc = (flat / "bin" / "nvcc").string();
+    CHECK(fs::equivalent(cuda_toolkit_include_dir(flat_nvcc),
+        flat / "include"));
+    CHECK(fs::equivalent(cuda_toolkit_include_dir(flat_nvcc + " -ccbin=g++"),
+        flat / "include"));
+
+    const fs::path targets = workdir.path / "targets_layout";
+    const fs::path target_include = targets / "targets" / "x86_64-linux"
+        / "include";
+    fs::create_directories(targets / "bin");
+    fs::create_directories(target_include);
+    write_file(targets / "bin" / "nvcc", "");
+    write_file(target_include / "cuda_runtime.h", "");
+    CHECK(fs::equivalent(
+        cuda_toolkit_include_dir((targets / "bin" / "nvcc").string()),
+        target_include));
+
+    const fs::path missing = workdir.path / "missing";
+    fs::create_directories(missing / "bin");
+    write_file(missing / "bin" / "nvcc", "");
+    CHECK(cuda_toolkit_include_dir((missing / "bin" / "nvcc").string())
+        == "");
+    CHECK(cuda_toolkit_include_dir("") == "");
+}
+
 TEST_CASE("CUDA library resolution prefers shared libraries unless static is effective")
 {
     OwnedDirectory workdir(fs::path(cuda_link_helpers_fixture::plain_archive).parent_path(),

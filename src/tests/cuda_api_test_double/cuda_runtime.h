@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-// Only the host CUDA API used by lfortran_gpu_cuda.cu, not a device emulator.
+// Only the host CUDA API used by lfortran_gpu_cuda.c, not a device emulator.
 enum cudaError_t { cudaSuccess };
 enum cudaMemcpyKind { cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost };
 enum cudaDeviceAttr { cudaDevAttrL2CacheSize };

@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../libasr/runtime/lfortran_gpu_cuda.cu"
+#include "../libasr/runtime/lfortran_gpu_cuda.c"
 #include "cuda_api_test_double/gpu_cuda_scratch_order.h"
 
 // Compile the production runtime against a small, ordered host API double.
