@@ -55,7 +55,6 @@ _CPack_Packages
 .cmake
 ## Pixi
 .pixi/
-pixi.lock
 ## libraries
 *.a
 *.a.*

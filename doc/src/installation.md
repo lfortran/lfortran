@@ -104,6 +104,12 @@ Set `CMAKE_BUILD_PARALLEL_LEVEL` to limit build parallelism. Keep the same Pixi
 entry points as dependencies/build details evolve in `pixi.toml` and the scripts,
 rather than maintaining a separate list of packages or CMake flags.
 
+`pixi.toml` pins every package to an exact version, except zlib and zstd,
+whose versions differ between LLVM versions, and the committed `pixi.lock`
+records the solved environments for every platform, so local builds and CI use
+the same packages. When you change a dependency, pin it to an exact version,
+run `pixi lock` and commit both files.
+
 Use the Pixi workflow for builds and tests; it supplies the declared
 project dependencies without separate system/global package installation.
 AI contributors must follow the
