@@ -1307,7 +1307,8 @@ R"(    // Initialise Numpy
         out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
             "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
             + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
-            + sign_mode + ", " + round_mode + ", " + leading_blank + item_ptrs + ");\n";
+            + sign_mode + ", " + round_mode + ", " + leading_blank + ", 0, 0, NULL"
+            + item_ptrs + ");\n";
         return out;
     }
 
