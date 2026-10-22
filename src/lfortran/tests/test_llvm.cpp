@@ -3014,6 +3014,8 @@ TEST_CASE("FortranEvaluator execute: inspection cells") {
         CHECK(!cell.ok);
         CHECK(cell.error_name == "CompilerError");
     }
+    FortranEvaluator::CellResult defaults;
+    CHECK(!defaults.value.has_value());
 }
 
 TEST_CASE("FortranEvaluator execute: display hooks") {

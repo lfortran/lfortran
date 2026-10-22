@@ -494,8 +494,8 @@ std::string FortranEvaluator::CellResult::error_text() const {
 
 FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
+    LCOMPILERS_ASSERT(compiler_options.interactive);
     CellResult out;
-    out.value.type = EvalResult::none;
     DisplayContext display{io, ""};
     struct Hooks {
         explicit Hooks(DisplayContext &display) {
@@ -548,6 +548,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         }
         out.diagnostics = diagnostics.render(lm, compiler_options);
         if (!out.ok) {
+            LCOMPILERS_ASSERT(diagnostics.has_error());
             out.error_name = "CompilerError";
             out.error_value = out.diagnostics;
         } else if (!display.error.empty()) {

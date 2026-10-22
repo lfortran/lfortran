@@ -48,7 +48,7 @@ public:
         enum {
             integer4, integer8, real4, real8, complex4, complex8, boolean,
             character, statement, none
-        } type;
+        } type = none;
         union {
             bool b;
             int32_t i32;
@@ -97,8 +97,9 @@ public:
     // Runs one interactive cell: evaluate() with fresh diagnostics and
     // passes, or a %%showast/asr/llvm/asm/cpp/fmt cell, which does not add
     // its declarations to the session. Never throws a compiler exception; it
-    // becomes the error. Only one cell may run at a time in a process, as the
-    // display hooks are process-wide.
+    // becomes the error. `compiler_options.interactive` must be set. Only one
+    // cell may run at a time in a process, as the display hooks are
+    // process-wide.
     CellResult execute(const std::string &code, bool verbose = false,
         const CellIO &io = {});
 
