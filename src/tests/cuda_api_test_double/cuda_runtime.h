@@ -5,6 +5,7 @@
 // Only the host CUDA API used by lfortran_gpu_cuda.cu, not a device emulator.
 enum cudaError_t { cudaSuccess };
 enum cudaMemcpyKind { cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost };
+enum cudaDeviceAttr { cudaDevAttrL2CacheSize };
 using cudaStream_t = void *;
 
 struct dim3 {
@@ -13,6 +14,8 @@ struct dim3 {
 };
 
 cudaError_t cudaSetDevice(int);
+cudaError_t cudaGetDevice(int *);
+cudaError_t cudaDeviceGetAttribute(int *, cudaDeviceAttr, int);
 cudaError_t cudaMalloc(void **, size_t);
 cudaError_t cudaFree(void *);
 cudaError_t cudaDeviceSynchronize();

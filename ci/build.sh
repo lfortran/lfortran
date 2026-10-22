@@ -79,7 +79,7 @@ cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
     cp $source_dir/test-bld/src/bin/lfortran.exe src/bin
-    cp $source_dir/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
+    cp $source_dir/test-bld/src/runtime/lfortran_runtime* src/runtime/
 else # Linux or macOS
     cp $source_dir/test-bld/src/bin/lfortran src/bin
     cp $source_dir/test-bld/src/runtime/liblfortran_runtime* src/runtime/

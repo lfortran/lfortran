@@ -82,6 +82,7 @@ struct lfortran_gpu_kernel {
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
     // A buffer only the device holds, which the kernel object owns.
     int arg_is_scratch[MAX_ARGS];
+    int access[MAX_ARGS];
     int n_args;
 };
 
@@ -172,11 +173,11 @@ void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     void* ptr, size_t size, int access)
 {
-    (void)access;
     if (!k || idx >= MAX_ARGS) return;
     // Memory is unified, so there is nothing to allocate or copy.
     k->buffer_device_ptrs[idx] = ptr;
     k->buffer_sizes[idx] = size;
+    k->access[idx] = access;
     k->arg_is_buffer[idx] = 1;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
@@ -217,6 +218,23 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 {
     lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
+
+    // A device runtime does not copy in what the kernel writes before it
+    // reads it, so the kernel finds there whatever the device memory held.
+    // Garbage stands in for that here, so that a kernel that reads such a
+    // buffer before writing it all shows it as it would on a device.
+    int is_host_buffer[MAX_ARGS];
+    for (int i = 0; i < k->n_args; i++) {
+        is_host_buffer[i] = k->arg_is_buffer[i] && !k->arg_is_scratch[i];
+    }
+    for (int i = 0; i < k->n_args; i++) {
+        if (is_host_buffer[i] && k->buffer_sizes[i] > 0
+                && k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
+                && lfortran_gpu_discard_allowed(i, k->buffer_device_ptrs,
+                    k->buffer_sizes, is_host_buffer, k->n_args)) {
+            memset(k->buffer_device_ptrs[i], 0xff, k->buffer_sizes[i]);
+        }
+    }
 
     // Same argument array the CUDA runtime hands to cudaLaunchKernel: every
     // entry points at the argument value.
@@ -274,6 +292,12 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     (void)ctx;
     (void)ptr;
     (void)size;
+}
+
+// The CPU emulation runs the kernels on the host, whose caches the loop
+// transformations take as one of the size of a large GPU's.
+long long lfortran_gpu_cache_bytes(void) {
+    return 64LL * 1024 * 1024;
 }
 
 long long lfortran_gpu_heap_size(void) {

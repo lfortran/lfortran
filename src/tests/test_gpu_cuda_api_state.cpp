@@ -12,7 +12,7 @@
 static std::unordered_map<void *, size_t> allocations;
 static std::vector<std::function<void()>> pending;
 static std::vector<int> sync_launches;
-static int launches = 0, mallocs = 0, frees = 0;
+static int launches = 0, mallocs = 0, frees = 0, h2d_copies = 0;
 static bool scratch = true;
 
 static void require(bool condition, const char *message)
@@ -42,11 +42,25 @@ cudaError_t cudaSetDevice(int device)
     return cudaSuccess;
 }
 
+cudaError_t cudaGetDevice(int *device)
+{
+    *device = 0;
+    return cudaSuccess;
+}
+
+cudaError_t cudaDeviceGetAttribute(int *value, cudaDeviceAttr, int device)
+{
+    require(device == 0, "device 0");
+    *value = 0;
+    return cudaSuccess;
+}
+
 cudaError_t cudaMalloc(void **ptr, size_t size)
 {
     require(size > 0, "positive allocation");
     *ptr = malloc(size);
     require(*ptr != nullptr, "host allocation");
+    memset(*ptr, 0xa5, size);
     allocations[*ptr] = size;
     ++mallocs;
     return cudaSuccess;
@@ -86,6 +100,7 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t size,
 {
     require(kind == cudaMemcpyHostToDevice && stream == nullptr,
         "asynchronous host upload on stream 0");
+    ++h2d_copies;
     std::vector<unsigned char> bytes(size);
     memcpy(bytes.data(), src, size);
     pending.push_back([dst, bytes]() {
@@ -127,13 +142,19 @@ static void alias_read_entry()
     require(false, "unexpected host execution of alias_read_entry");
 }
 
+static void alias_discard_entry()
+{
+    require(false, "unexpected host execution of alias_discard_entry");
+}
+
 cudaError_t cudaLaunchKernel(const void *entry, dim3 grid, dim3 block,
     void **args, size_t shared, cudaStream_t stream)
 {
     require(entry == (const void *)device_entry
         || entry == (const void *)alias_entry
         || entry == (const void *)alias_reverse_entry
-        || entry == (const void *)alias_read_entry, "registered device entry");
+        || entry == (const void *)alias_read_entry
+        || entry == (const void *)alias_discard_entry, "registered device entry");
     require(grid.x == 1 && grid.y == 1 && grid.z == 1
         && block.x == 1 && block.y == 1 && block.z == 1,
         "positive unit launch geometry");
@@ -143,13 +164,22 @@ cudaError_t cudaLaunchKernel(const void *entry, dim3 grid, dim3 block,
         memcpy(&first, args[0], sizeof(first));
         memcpy(&second, args[1], sizeof(second));
         bool reverse = entry == (const void *)alias_reverse_entry;
+        bool read_before_write = entry == (const void *)alias_discard_entry;
         if (entry == (const void *)alias_read_entry) {
             memcpy(&reader, args[2], sizeof(reader));
         }
-        pending.push_back([first, second, reader, reverse]() {
+        pending.push_back([first, second, reader, reverse, read_before_write]() {
             int32_t *wide = reverse ? second : first;
             int32_t *narrow = reverse ? first : second;
             live(wide, 2 * sizeof(int32_t));
+            if (read_before_write) {
+                live(narrow, sizeof(int32_t));
+                require(wide == narrow, "read alias shares the writable resident");
+                int32_t value = narrow[0];
+                wide[0] = value + 1;
+                wide[1] = value + 2;
+                return;
+            }
             wide[0] = 201;
             if (narrow) {
                 live(narrow, sizeof(int32_t));
@@ -190,7 +220,7 @@ const char *cudaGetErrorString(cudaError_t)
     return "CUDA API test double";
 }
 
-static int resident_table_order()
+static int resident_table_order(int output_access)
 {
     auto *ctx = lfortran_gpu_init();
     require(ctx != nullptr, "runtime initialization");
@@ -201,14 +231,14 @@ static int resident_table_order()
         auto *k = lfortran_gpu_load_kernel(ctx, "resident_order", 14);
         int index = sequence == 1025 ? 1023 : sequence - 1;
         lfortran_gpu_set_buffer_arg(k, 0, &output[index], sizeof(int),
-            LFORTRAN_GPU_WRITE);
+            output_access);
         lfortran_gpu_set_scalar_arg(k, 1, &sequence, sizeof(sequence));
         for (int slot = 2; slot < 32; slot++) {
             if (sequence == 1025 && slot == 2) {
                 // Adding this range evicts the full residency table after
                 // slot 0 has already been bound to one of its old entries.
                 lfortran_gpu_set_buffer_arg(k, slot, &output[1024],
-                    sizeof(int), LFORTRAN_GPU_WRITE);
+                    sizeof(int), output_access);
             } else {
                 lfortran_gpu_set_scratch_arg(k, slot, sizeof(int));
             }
@@ -225,16 +255,26 @@ static int resident_table_order()
     }
     require(sync_launches.size() == 2 && sync_launches[0] == 1024
         && sync_launches[1] == 1025, "one residency-table flush");
+    if (output_access == LFORTRAN_GPU_WRITE_DISCARD) {
+        require(h2d_copies == 0, "discarded residents need no host upload");
+    }
     lfortran_gpu_shutdown(ctx);
     return result;
 }
 
 int main(int argc, char **argv)
 {
+    bool discard = argc > 1 && strcmp(argv[1], "discard") == 0;
+    if (discard) {
+        --argc;
+        ++argv;
+    }
+    int output_access = discard ? LFORTRAN_GPU_WRITE_DISCARD : LFORTRAN_GPU_WRITE;
     if (argc == 3 && strcmp(argv[1], "alias") == 0) {
         int result = gpu_cuda_alias_order(alias_entry, alias_reverse_entry,
-            alias_read_entry, argv[2]);
-        int expected_launches = strcmp(argv[2], "repeat") == 0 ? 2 : 1;
+            alias_read_entry, alias_discard_entry, argv[2]);
+        int expected_launches = strcmp(argv[2], "repeat") == 0
+            || strcmp(argv[2], "discard-repeat") == 0 ? 2 : 1;
         printf("API-state aliases: launches=%d, synchronizations=%zu\n",
             launches, sync_launches.size());
         require(launches == expected_launches, "each requested dispatch runs once");
@@ -242,14 +282,17 @@ int main(int argc, char **argv)
             && sync_launches[0] == expected_launches
             && sync_launches[1] == expected_launches,
             "no synchronization during stable alias preparation");
+        if (strncmp(argv[2], "discard-", 8) == 0) {
+            require(h2d_copies == 1, "aliased discard falls back to one upload");
+        }
         require(allocations.empty(), "shutdown releases alias memory");
         return result;
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
-        return resident_table_order();
+        return resident_table_order(output_access);
     }
     if (argc == 2 && strcmp(argv[1], "read-only") == 0) scratch = false;
-    int result = gpu_cuda_scratch_order(device_entry, scratch);
+    int result = gpu_cuda_scratch_order(device_entry, scratch, output_access);
     printf("API-state only: launches=%d, allocations=%d, deferred frees=%d, "
         "first sync after launch=%d\n", launches, mallocs, frees,
         sync_launches.empty() ? -1 : sync_launches.front());
@@ -259,5 +302,8 @@ int main(int argc, char **argv)
         && sync_launches.front() == 200 && sync_launches[1] == 201,
         "one capacity flush before launch 201, no eager launch synchronization");
     require(allocations.empty(), "shutdown releases cached memory");
+    if (discard && scratch) {
+        require(h2d_copies == 0, "discard remains upload-free across a retry");
+    }
     return result;
 }

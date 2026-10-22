@@ -16,23 +16,24 @@ namespace LCompilers {
 
         llvm::MaybeAlign known_underalignment(llvm::Type *type,
                 llvm::Value *address, const llvm::DataLayout &data_layout) {
-#if LLVM_VERSION_MAJOR >= 11
             if (!type->isSized()) {
                 return llvm::MaybeAlign();
             }
             // Also for the address of a variable allocated here: it has the
             // alignment of the variable's type, which need not be that of
             // the type accessed through it.
+#if LLVM_VERSION_MAJOR >= 11
             llvm::Align known = llvm::getKnownAlignment(address, data_layout);
             if (known >= data_layout.getABITypeAlign(type)) {
                 return llvm::MaybeAlign();
             }
             return known;
 #else
-            (void)type;
-            (void)address;
-            (void)data_layout;
-            return llvm::MaybeAlign();
+            unsigned known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlignment(type)) {
+                return llvm::MaybeAlign();
+            }
+            return llvm::MaybeAlign(known);
 #endif
         }
 

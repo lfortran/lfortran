@@ -8,7 +8,8 @@ extern "C" void lfortran_gpu_register_kernel(const char *, void (*)(void));
 
 // Shared by the native CUDA regression and the host-only CUDA API-state unit.
 // Each name has its own cache even though all names use the same device entry.
-static int gpu_cuda_scratch_order(void (*entry)(void), bool scratch = true)
+static int gpu_cuda_scratch_order(void (*entry)(void), bool scratch = true,
+    int output_access = LFORTRAN_GPU_WRITE)
 {
     static_assert(sizeof(int) == 4);
     lfortran_gpu_ctx *ctx = lfortran_gpu_init();
@@ -28,7 +29,7 @@ static int gpu_cuda_scratch_order(void (*entry)(void), bool scratch = true)
             auto *k = lfortran_gpu_load_kernel(ctx, names[i],
                 (int)strlen(names[i]));
             lfortran_gpu_set_buffer_arg(k, 0, &output, sizeof(output),
-                LFORTRAN_GPU_WRITE);
+                output_access);
             ++sequence;
             lfortran_gpu_set_scalar_arg(k, 1, &sequence, sizeof(sequence));
             for (int slot = 2; slot < 32; slot++) {
@@ -62,6 +63,7 @@ static int gpu_cuda_scratch_order(void (*entry)(void), bool scratch = true)
 
 static int gpu_cuda_alias_order(void (*write_entry)(void),
     void (*reverse_entry)(void), void (*read_entry)(void),
+    void (*discard_entry)(void),
     const char *selected = NULL)
 {
     lfortran_gpu_ctx *ctx = lfortran_gpu_init();
@@ -75,6 +77,7 @@ static int gpu_cuda_alias_order(void (*write_entry)(void),
         size_t read_size;
         int32_t expected[2];
         int dispatches = 1;
+        int access[2] = {LFORTRAN_GPU_WRITE, LFORTRAN_GPU_WRITE};
     } cases[] = {
         {"wide-first", write_entry, {wide, narrow}, false, 0, {202, 17}},
         {"narrow-first", reverse_entry, {narrow, wide}, false, 0, {202, 83}},
@@ -83,7 +86,17 @@ static int gpu_cuda_alias_order(void (*write_entry)(void),
         {"read-prefix", read_entry, {wide, narrow}, false, narrow, {202, 202}},
         {"read-same", read_entry, {wide, wide}, false, wide, {202, 202}},
         {"zero-size", write_entry, {wide, 0}, false, 0, {201, 17}},
-        {"repeat", write_entry, {wide, narrow}, false, 0, {202, 17}, 2}
+        {"repeat", write_entry, {wide, narrow}, false, 0, {202, 17}, 2},
+        {"discard-narrow-first", reverse_entry, {narrow, wide}, false, 0,
+            {202, 83}, 1, {LFORTRAN_GPU_WRITE, LFORTRAN_GPU_WRITE_DISCARD}},
+        {"discard-read-prefix", read_entry, {wide, narrow}, false, narrow,
+            {202, 202}, 1, {LFORTRAN_GPU_WRITE_DISCARD, LFORTRAN_GPU_WRITE}},
+        {"discard-read-same", read_entry, {wide, wide}, false, wide,
+            {202, 202}, 1, {LFORTRAN_GPU_WRITE_DISCARD, LFORTRAN_GPU_WRITE}},
+        {"discard-repeat", reverse_entry, {narrow, wide}, false, 0,
+            {202, 83}, 2, {LFORTRAN_GPU_WRITE, LFORTRAN_GPU_WRITE_DISCARD}},
+        {"discard-read-before-write", discard_entry, {wide, narrow}, false, 0,
+            {1, 2}, 1, {LFORTRAN_GPU_WRITE_DISCARD, LFORTRAN_GPU_READ}}
     };
     int result = 0, checked = 0;
     int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
@@ -94,9 +107,9 @@ static int gpu_cuda_alias_order(void (*write_entry)(void),
             (int)strlen(test.name));
         int32_t host[2] = {0, 17}, other[2] = {1, 19};
         lfortran_gpu_set_buffer_arg(k, 0, host, test.sizes[0],
-            LFORTRAN_GPU_WRITE);
+            test.access[0]);
         lfortran_gpu_set_buffer_arg(k, 1, test.separate ? other : host,
-            test.sizes[1], LFORTRAN_GPU_WRITE);
+            test.sizes[1], test.access[1]);
         if (test.read_size) {
             lfortran_gpu_set_buffer_arg(k, 2, host, test.read_size,
                 LFORTRAN_GPU_READ);

@@ -21,7 +21,7 @@ endif ()
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 if (NOT "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-    foreach(header IN ITEMS lfortran_intrinsics.h ISO_Fortran_binding.h)
+    foreach(header IN ITEMS lfortran_intrinsics.h lfortran_stdin.h ISO_Fortran_binding.h)
         configure_file(
             "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${header}"
             "${CMAKE_CURRENT_BINARY_DIR}/runtime/${header}"
@@ -103,6 +103,7 @@ set(SRC
     pass/gpu_offload_body.cpp
     pass/gpu_offload_decide.cpp
     pass/gpu_offload_launch.cpp
+    pass/gpu_offload_overwrite.cpp
     pass/gpu_offload_host_association.cpp
     pass/gpu_offload_privatize.cpp
     pass/gpu_procedure_implementation.cpp
@@ -123,6 +124,11 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_launch_sync.cpp
+    pass/gpu_affine.cpp
+    pass/gpu_loop_utils.cpp
+    pass/gpu_loop_fusion.cpp
+    pass/gpu_time_skew.cpp
+    pass/gpu_index_set_split.cpp
     pass/gpu_array_statements.cpp
     pass/dead_array_store.cpp
     pass/gpu_vector_lanes.cpp

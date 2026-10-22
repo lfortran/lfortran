@@ -1176,9 +1176,11 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define TRUE(x, l) make_Logical_t(p.m_a, l, true, str2str_null(p.m_a, x))
 #define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
-// Parentheses around an operation only group it and are dropped. Around a
-// designator they make it an expression, `(x)` or `(a(i))`, whose value is
-// not the variable itself, so they are kept.
+// Parentheses are kept around a name, an array element or section and a
+// function reference (the parser cannot tell the last ones apart): around a
+// designator, `(x)` is an expression, not a variable (F2018 R1001, 9.1), so
+// semantics needs to know about them, e.g. for an ASSOCIATE selector. Around
+// any other expression they only group and are dropped.
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {
         case LCompilers::LFortran::AST::exprType::Name:

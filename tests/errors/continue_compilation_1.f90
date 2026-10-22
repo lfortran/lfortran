@@ -3465,3 +3465,66 @@ contains
         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
     end subroutine cc1_rcp_use
 end module cc1_read_complex_part
+
+! A subobject of a named constant is a constant, not a variable, so it cannot
+! be an actual argument for an INTENT(OUT) or INTENT(INOUT) dummy.
+module cc1_named_constant_subobject
+implicit none
+type :: cc1_ncs_t
+    integer :: k
+    integer :: a(2)
+end type cc1_ncs_t
+type(cc1_ncs_t), parameter :: cc1_ncs_s = cc1_ncs_t(7, [8, 9])
+type(cc1_ncs_t), parameter :: cc1_ncs_p(2) = &
+    [cc1_ncs_t(5, [1, 2]), cc1_ncs_t(6, [3, 4])]
+character(len=4), parameter :: cc1_ncs_c(2) = ["abcd", "efgh"]
+contains
+    subroutine cc1_ncs_int(n)
+        integer, intent(inout) :: n
+        n = 1
+    end subroutine cc1_ncs_int
+    subroutine cc1_ncs_arr(n)
+        integer, intent(out) :: n(:)
+        n = 1
+    end subroutine cc1_ncs_arr
+    subroutine cc1_ncs_chr(n)
+        character(len=*), intent(inout) :: n
+        n = "z"
+    end subroutine cc1_ncs_chr
+    subroutine cc1_ncs_use(i)
+        integer, intent(in) :: i
+        call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+    end subroutine cc1_ncs_use
+end module cc1_named_constant_subobject
+
+! A parenthesized null() is not allowed in an initializer either.
+subroutine cc1_paren_null_initializer_integer()
+    implicit none
+    integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_integer
+
+subroutine cc1_paren_null_initializer_type()
+    implicit none
+    type :: cc1_pni_t
+        integer :: v = 1
+    end type
+    type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_type
+
+! A parenthesized equivalence object is an expression, not a variable.
+subroutine cc1_paren_equivalence_element()
+    implicit none
+    real :: a(3), b
+    equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_element
+
+subroutine cc1_paren_equivalence_name()
+    implicit none
+    real :: a(3), b
+    equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_name

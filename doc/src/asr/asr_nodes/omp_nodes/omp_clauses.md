@@ -25,6 +25,7 @@ omp_clause
   | OMPIndependent()
   | OMPTargetRequested()
   | OMPCriticalName(identifier name)
+  | OMPOverwrite(expr array, expr condition)
 ```
 
 ### Arguments
@@ -55,6 +56,9 @@ one another, and [OMPTargetRequested](OMPTargetRequested.md) says a device
 was asked for. [OMPCriticalName](OMPCriticalName.md) names a critical
 construct, which selects the lock it shares with the critical constructs of
 the same name.
+[OMPOverwrite](OMPOverwrite.md) is never written by the source: a loop
+transformation records with it which arrays the loop it rewrote assigns whole
+before reading them.
 
 A clause that is not written is simply absent from the list; there is no
 default clause node.

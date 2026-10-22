@@ -37,12 +37,22 @@ __global__ void read_aliases(int32_t *wide, int32_t *narrow,
     wide[1] = reader[0];
 }
 
+__global__ void read_before_discard(int32_t *wide, const int32_t *reader)
+{
+    int32_t value = reader[0];
+    wide[0] = value + 1;
+    wide[1] = value + 2;
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && strcmp(argv[1], "aliases") == 0) {
         return gpu_cuda_alias_order((void (*)(void))write_aliases,
             (void (*)(void))write_aliases_reversed,
-            (void (*)(void))read_aliases);
+            (void (*)(void))read_aliases,
+            (void (*)(void))read_before_discard);
     }
-    return gpu_cuda_scratch_order((void (*)(void))write_sequence);
+    bool discard = argc == 2 && strcmp(argv[1], "discard") == 0;
+    return gpu_cuda_scratch_order((void (*)(void))write_sequence, true,
+        discard ? LFORTRAN_GPU_WRITE_DISCARD : LFORTRAN_GPU_WRITE);
 }

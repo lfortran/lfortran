@@ -118,8 +118,30 @@ enum {
     // The kernel only reads the buffer.
     LFORTRAN_GPU_READ = 0,
     // The kernel may write the buffer.
-    LFORTRAN_GPU_WRITE = 1
+    LFORTRAN_GPU_WRITE = 1,
+    // The kernel writes every byte of the buffer before it reads any, so
+    // what the host holds there need not reach the device: the runtime only
+    // makes room for it. A runtime treats it as LFORTRAN_GPU_WRITE when
+    // another buffer argument of the same launch overlaps it, since the
+    // kernel reads that one as the host holds it.
+    LFORTRAN_GPU_WRITE_DISCARD = 2
 };
+
+// Whether argument `idx` of a launch may be handled as
+// LFORTRAN_GPU_WRITE_DISCARD: no other buffer argument overlaps it. The
+// launch has `n` arguments; `is_buffer` marks those that are host ranges,
+// of `sizes` bytes at `ptrs`.
+static inline int lfortran_gpu_discard_allowed(int idx, void *const *ptrs,
+    const size_t *sizes, const int *is_buffer, int n)
+{
+    const char *p = (const char *)ptrs[idx];
+    for (int j = 0; j < n; j++) {
+        if (j == idx || !is_buffer[j] || sizes[j] == 0) continue;
+        const char *q = (const char *)ptrs[j];
+        if (p < q + sizes[j] && q < p + sizes[idx]) return 0;
+    }
+    return 1;
+}
 
 // The kernel sees the `size` bytes at `ptr` as they are when the launch is
 // made. A launch does not wait for the kernel: the host sees what the kernel
@@ -165,6 +187,10 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
 // range without copying anything back.
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
+
+// The size in bytes of the device's last-level cache, which the loop
+// transformations compare what a launch touches with (gpu_index_set_split).
+long long lfortran_gpu_cache_bytes(void);
 
 void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out);
