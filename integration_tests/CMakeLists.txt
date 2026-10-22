@@ -444,6 +444,7 @@ RUN(NAME ilp64_file_ops_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 G
 RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME ilp64_dtio_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME fpie_flag_01 LABELS gfortran llvm EXTRA_ARGS -fPIE GFORTRAN_ARGS -fPIE)
 # CMake links the shared library through the compiler driver with `--shared`
 # for LFortran and `-shared` for GFortran (see SHARED_LIBRARY_FILES above).
@@ -4639,8 +4640,7 @@ RUN(NAME write_45 LABELS gfortran llvm)
 RUN(NAME write_46 LABELS gfortran llvm)
 RUN(NAME write_47 LABELS gfortran llvm c)
 RUN(NAME write_48 LABELS gfortran llvm c)
-# llvm: an iostat= variable of a non-default kind fails module verification (#13947)
-RUN(NAME write_49 LABELS gfortran c)
+RUN(NAME write_49 LABELS gfortran llvm c)
 RUN(NAME write_51 LABELS gfortran llvm)
 RUN(NAME write_52 LABELS gfortran llvm)
 RUN(NAME write_53 LABELS gfortran llvm)
