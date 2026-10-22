@@ -138,9 +138,14 @@ namespace LCompilers::LFortran {
         io.clear_output = [&]() { if (!silent) clear_output(false); };
         FortranEvaluator::CellResult cell;
         std::string std_out;
-        {
+        try {
             RedirectStdout capture(std_out);
             cell = e.execute(code, false, io);
+        } catch (const LCompilersException &error) {
+            // Capturing stdout failed; the request still needs a reply.
+            cell.ok = false;
+            cell.error_name = error.name();
+            cell.error_value = error.msg();
         }
         if (!silent) {
             if (!std_out.empty()) publish_stream("stdout", std_out);
