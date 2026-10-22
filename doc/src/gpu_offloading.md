@@ -694,10 +694,21 @@ an `intent(in)` dummy -- and *written* otherwise.
   have completed. A scratch buffer -- a run-time sized local of the kernel
   (a workspace), an arena of the device heap -- is only on the device.
 
-On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
-host's memory before it returns, so there is never anything to copy or wait
-for. It poison-fills unaliased discard buffers before dispatch so that a wrong
-overwrite proof cannot rely on their previous contents.
+The CPU emulation (`--gpu=cuda_cpu`) runs this same CUDA runtime
+(`lfortran_gpu_cuda.c`), on an emulation of the CUDA runtime API that it uses
+(`src/libasr/runtime/cuda_cpu/`), so it needs no GPU and no CUDA toolkit; the
+host compiler builds everything. The emulated device memory is separate from
+host memory: `cudaMalloc` makes an allocation of its own, filled with 0xff
+bytes, and only the copies move data, so a missing or late copy, or a read of
+a discard buffer before the kernel writes it, shows as it does on a device.
+The stream runs every copy and launch to completion before the call that
+issues it returns, in the order they are issued, which a program that waits
+for its results before reading them cannot tell apart from a device. A kernel
+is reached through a thunk that the CUDA code generator emits for it in
+emulation and registers in its place; the emulated `cudaLaunchKernel` runs the
+blocks one after another, and the threads of a block one after another, so a
+`__syncthreads()` cannot be honoured and stops the program. The emulated
+device reports a 64 MiB L2 cache.
 The CUDA runtime keeps the same table and orders copies and launches
 on one stream. It keeps scratch and read-only upload buffers per kernel and
 argument slot, reusing their capacity and deferring replaced allocations until
