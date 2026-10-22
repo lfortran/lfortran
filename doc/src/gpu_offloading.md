@@ -899,7 +899,12 @@ with a `stop` before that.
 * Every entry of the unsupported list has a test for the error, and a test that
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
-  backends (`metal`, `cuda_cpu` labels) and checks the results.
+  backends (`metal`, `cuda` labels) and checks the results.
+* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
+  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
+  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
+  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). A leftover
+  `cuda_cpu` label is still accepted and read as `cuda`.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
