@@ -3337,6 +3337,8 @@ RUN(NAME associate_56 LABELS llvm)
 RUN(NAME associate_57 LABELS gfortran llvm)
 RUN(NAME associate_58 LABELS gfortran llvm)
 RUN(NAME associate_59 LABELS llvm)
+RUN(NAME associate_60 LABELS llvm) # gfortran skips the temporary for associate names of overlapping sections
+RUN(NAME associate_61 LABELS llvm) # gfortran aliases a parenthesized (expression) selector instead of copying it, and rejects the (str(2:4)) selector
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
