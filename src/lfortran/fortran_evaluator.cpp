@@ -44,9 +44,15 @@ namespace LCompilers {
 }
 #endif
 
+// Defined in the runtime library (lfortran_intrinsics.c), whose
+// lfortran_display_data() and lfortran_clear_output() the lfortran_display
+// module calls; the JIT resolves them to the copy linked into this process.
+extern "C" void _lfortran_set_display_hooks(
+    void (*display_data)(const char *mime_type, const char *data),
+    void (*clear_output)());
+
 namespace {
-// The hooks of the cell FortranEvaluator::execute() is running, for the C
-// entry points the lfortran_display module calls from JIT-compiled code.
+// The hooks of the cell FortranEvaluator::execute() is running.
 const LCompilers::FortranEvaluator::CellIO *current_io = nullptr;
 bool display_failed = false;
 
@@ -60,26 +66,16 @@ void call_hook(const Hook &hook, Args&&... args) {
         display_failed = true;
     }
 }
-}
 
-#ifdef _WIN32
-extern "C" __declspec(dllexport)
-#else
-extern "C" __attribute__((visibility("default")))
-#endif
-void lfortran_display_data(const char *mime_type, const char *data) {
-    if (current_io && mime_type && data) {
+void display_data_hook(const char *mime_type, const char *data) {
+    if (current_io) {
         call_hook(current_io->display, std::string(mime_type), std::string(data));
     }
 }
 
-#ifdef _WIN32
-extern "C" __declspec(dllexport)
-#else
-extern "C" __attribute__((visibility("default")))
-#endif
-void lfortran_clear_output() {
+void clear_output_hook() {
     if (current_io) call_hook(current_io->clear_output);
+}
 }
 
 namespace LCompilers {
@@ -474,8 +470,12 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             LCOMPILERS_ASSERT(!current_io);
             current_io = &io;
             display_failed = false;
+            _lfortran_set_display_hooks(display_data_hook, clear_output_hook);
         }
-        ~Hooks() { current_io = nullptr; }
+        ~Hooks() {
+            _lfortran_set_display_hooks(nullptr, nullptr);
+            current_io = nullptr;
+        }
     } hooks(io);
     LocationManager lm;
     diag::Diagnostics diagnostics;
