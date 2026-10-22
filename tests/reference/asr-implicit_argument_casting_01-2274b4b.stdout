@@ -413,14 +413,12 @@
                                             (Var 4 w_cast)
                                             DescriptorArray
                                             PointerArray
-                                            (Pointer
-                                                (Array
-                                                    (Real 8)
-                                                    [(()
-                                                    ())]
-                                                    PointerArray
-                                                    Global
-                                                )
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
                                             )
                                             ()
                                         ))]

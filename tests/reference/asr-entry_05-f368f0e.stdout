@@ -193,14 +193,12 @@
                             (Var 3 r)
                             DescriptorArray
                             PointerArray
-                            (Pointer
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
                             )
                             ()
                         ))]

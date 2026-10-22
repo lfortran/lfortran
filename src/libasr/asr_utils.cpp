@@ -11713,6 +11713,12 @@ ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     }
 
     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) == a_old);
+    // Only a descriptor can be allocatable or a pointer, so the result of a
+    // cast to any other physical type is a plain array.
+    if( a_new != ASR::array_physical_typeType::DescriptorArray &&
+        a_new != ASR::array_physical_typeType::AssumedRankArray ) {
+        a_type = ASRUtils::type_get_past_allocatable_pointer(a_type);
+    }
     // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
     // later on
     if( a_old == a_new ) {
@@ -12682,9 +12688,8 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                         dims.p, dims.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global);
-                        ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
+                                                        ASR::array_physical_typeType::PointerArray, ASRUtils::TYPE(array_t), nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }
