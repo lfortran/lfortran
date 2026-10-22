@@ -4369,3 +4369,9 @@ semantic error: Non-variable expression in variable definition context (actual a
      |
 3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+    --> tests/errors/continue_compilation_1.f90:3535:5
+     |
+3535 |     call i(a=1)  ! {Error} Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+     |     ^^^^^^^^^^^ 

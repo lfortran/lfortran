@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_call_03-59683cc",
+    "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/implicit_call_03.f90",
+    "infile_hash": "72376d1a2a6fb87c140ddeaa2d8efa054c2e20b336e5c5567c4ca5f2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_call_03-59683cc.stderr",
+    "stderr_hash": "8bfdeccdbc70267e2468511d2714d217904f437ac619f06951ff3fad",
+    "returncode": 2
+}

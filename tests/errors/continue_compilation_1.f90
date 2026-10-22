@@ -3528,3 +3528,9 @@ subroutine cc1_paren_equivalence_name()
     real :: a(3), b
     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
 end subroutine cc1_paren_equivalence_name
+
+! A data variable is not a procedure, also when the call uses keyword arguments.
+subroutine cc1_call_variable_keyword_arg()
+    integer :: i
+    call i(a=1)  ! {Error} Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+end subroutine cc1_call_variable_keyword_arg
