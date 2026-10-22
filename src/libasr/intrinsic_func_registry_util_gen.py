@@ -1268,10 +1268,23 @@ def gen_verify_args(func_name):
     add_verify_return_type_src(func_name)
     src += indent + "}\n\n"
 
+STORAGE_SIZE_DATA_OBJECT_CHECK = r'''        if (ASRUtils::is_operation_on_variable(args[0])) {
+            diag.add(diag::Diagnostic(
+                "the argument of the `storage_size` intrinsic must be a data object",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("this expression is not a variable or a constant", {args[0]->base.loc}),
+                    diag::Label("help: assign the value to a variable and pass the variable instead",
+                        {args[0]->base.loc}, false)}));
+            return nullptr;
+        }
+'''
+
 def gen_create_function(func_name):
     global src
     src += indent + Rf"static inline ASR::asr_t* create_{func_name}(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) " + "{\n"
     add_create_func_arg_type_src(func_name)
+    if func_name == "StorageSize":
+        src += STORAGE_SIZE_DATA_OBJECT_CHECK
     add_create_func_return_src(func_name)
     src += indent + "}\n"
 
