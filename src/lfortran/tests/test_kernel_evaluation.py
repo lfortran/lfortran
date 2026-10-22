@@ -104,6 +104,8 @@ def main():
                        m["content"]["data"]["text/html"] == "<b>hello</b>"
                        for m in messages), messages
             assert any(m["msg_type"] == "clear_output" for m in messages), messages
+            check(client, "program unavailable\ninteger :: i,ios\n"
+                  "read(*,*,iostat=ios) i\nif(ios<=0) error stop\nend program", [])
             for code in ("n+1", "call display_data('text/html', '<b>silent</b>')"):
                 reply, messages = execute(client, code, silent=True)
                 assert reply["status"] == "ok", reply

@@ -157,6 +157,8 @@ namespace LCompilers::LFortran {
                 nl::json::object(), nl::json::object());
         };
         io.clear_output = [&]() { if (!silent) clear_output(false); };
+        // A disabled input channel must not read the host terminal.
+        if (!config.allow_stdin) io.input = [](std::string &) { return 1; };
         FortranEvaluator::CellResult cell;
         std::string std_out;
         try {
