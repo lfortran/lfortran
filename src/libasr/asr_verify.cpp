@@ -1688,6 +1688,27 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        // An assumed-size dummy `a(n, *)` has no extent in its last
+        // dimension, so it is passed as its data alone, never as a
+        // descriptor of the actual argument. Only a polymorphic dummy needs
+        // a descriptor, for the dynamic type. A rank one `a(*)` has the
+        // same dimensions as `a(:)`, so only its physical type tells them
+        // apart and it cannot be checked here.
+        if (x.m_type && ASRUtils::is_arg_dummy(x.m_intent) &&
+                ASR::is_a<ASR::Array_t>(*x.m_type) &&
+                !ASRUtils::is_class_type(ASRUtils::type_get_past_array(x.m_type))) {
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(x.m_type);
+            bool assumed_size = array->n_dims >= 2 &&
+                array->m_dims[array->n_dims - 1].m_length == nullptr;
+            for (size_t i = 0; i + 1 < array->n_dims; i++) {
+                assumed_size = assumed_size && array->m_dims[i].m_length != nullptr;
+            }
+            require_id(!assumed_size ||
+                array->m_physical_type != ASR::DescriptorArray,
+                "asr.verify.variable.assumed_size_descriptor",
+                "assumed-size dummy argument '" + std::string(x.m_name) +
+                    "' must not have physical type \"DescriptorArray\"")
+        }
         // A compile time value is stored into the variable's own storage,
         // so a value whose type disagrees with the declaration produces a
         // store LLVM rejects. The frontend casts such initializers; a graph
