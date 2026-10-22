@@ -406,6 +406,11 @@ namespace LCompilers {
 
         ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
 
+        // The run-time shape check of the assignment to `target` of an
+        // expression whose array operands are `components`, which it takes.
+        ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
+            ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);

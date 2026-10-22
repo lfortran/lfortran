@@ -2880,9 +2880,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 Vec<ASR::expr_t*> components;
                 components.reserve(al, 1);
                 components.push_back(al, checked_constructor);
-                stmts.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+                stmts.push_back(al, PassUtils::make_DebugCheckArrayBounds(
                     al, x.base.base.loc, expr_duplicator.duplicate_expr(xx.m_target),
-                    components.p, components.size(), false)));
+                    components, false));
                 if (pass_result.size() == 0 && !remove_original_stmt) {
                     stmts.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
                 }
@@ -3009,12 +3009,26 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             Vec<ASR::expr_t*> vars;
             vars.reserve(al, components.size());
             for (size_t i = 0; i < components.size(); i++) {
-                vars.push_back(al, expr_duplicator.duplicate_expr(components[i]));
+                ASR::expr_t* component = components[i];
+                // A component of a named constant is checked through its
+                // constant value, which is how this pass reads it
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*component)) {
+                    ASR::StructInstanceMember_t* member =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(component);
+                    if (member->m_value != nullptr &&
+                            is_parameter_designator(member->m_v) &&
+                            ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
+                            ASRUtils::is_value_constant(member->m_value)) {
+                        component = member->m_value;
+                    }
+                }
+                vars.push_back(al, expr_duplicator.duplicate_expr(component));
             }
 
             if (!conforms_at_compile_time &&
                     debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
+                pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
+                    x.base.base.loc, d_target, vars, x.m_move_allocation));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
                 }
