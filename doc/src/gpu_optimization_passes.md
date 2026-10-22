@@ -406,61 +406,53 @@ ms per step): 1.330 unskewed; 256 rows × 4 stages 0.704, 256 × 8 0.626,
 no longer fits), 2048 × 16 1.344. At 2048² and 1024², which fit in the
 cache, bands were 5-30% slower, so the cost model keeps those as they are.
 
-Effect (4096², 1000 steps): 1.390 s to 0.556 s, the stage kernels now run
-from L2 like those of 2048² (bands of about 1000 rows, 32 stages; sigma
-is 5, as the one-sided formulas of the boundary rows reach five rows
-ahead). The final field differs from the unskewed build by at most 6.3e-7
-(the jammed and plain interiors contract floating-point operations
-differently). Every validation case (Formal's strict comparison with the
-CPU oracle) passes with `--gpu-cache-bytes` 4 KiB, 64 KiB and 256 KiB,
-which between them skew the cases from 13 × 11 to 2048² (bands of 8 rows
-and more).
+Effect (4096², 1000 steps): 1.389 s to 0.745 s (medians, below), the stage
+kernels now run from L2 like those of 2048² (sigma is 5, as the one-sided
+formulas of the boundary rows reach five rows ahead). Every validation case
+(Formal's strict comparison with the CPU oracle, 13 × 11 to 2048²) passes.
 
 ## Results
 
 Formal's 2D advection-diffusion example, `--workspace-kernel split` (the
-original source), 1000 steps, `solve_seconds` (medians of 5 interleaved
-runs), with the transformations enabled cumulatively. 4096² uses the
-analytic initial state (`--cells 4096,4096`, with Formal's 512 MiB
-working-set guard raised for the benchmark), the other sizes the shared
-inputs. The roof is the compulsory traffic of 16 bytes per cell and step at
-5.5 TB/s (the L2-resident copy rate) for 1024² and 2048² and at 1.598 TB/s
-(DRAM) for 4096².
+original source, with its 512 MiB working-set guard raised for 4096²), 1000
+steps, `solve_seconds`: medians of 7 runs after a warm-up, all
+configurations interleaved, on an NVIDIA RTX PRO 6000 Blackwell Server
+Edition. Each row enables the transformations cumulatively
+(`--gpu-loop-transforms`). 1024² and 2048² use the shared inputs, 4096² the
+analytic initial state (`--cells 4096,4096`). The roof is the compulsory
+traffic of 16 bytes per cell and step at 5.5 TB/s (the L2-resident copy
+rate) for 1024² and 2048² and at 1.598 TB/s (DRAM) for 4096².
 
 | transformations | 1024² | 2048² | 4096² |
 |---|---:|---:|---:|
-| none | 0.0879 | 0.5435 | 3.066 |
-| fuse | 0.1190 | 0.4096 | 2.561 |
-| fuse, swap | 0.1048 | 0.3614 | 2.192 |
-| fuse, swap, split | 0.0479 | 0.1341 | 1.391 |
-| fuse, swap, split, jam | 0.0463 | 0.1186 | 1.390 |
-| all (+ skew) | **0.0431** | **0.1186** | **0.556** |
-| % of the roof (all) | 7.1% | 10.3% | 30.2% |
-| speed-up (all / none) | 2.0x | 4.6x | 5.5x |
+| none | 0.0871 | 0.5532 | 3.058 |
+| fuse | 0.1144 | 0.3978 | 2.353 |
+| fuse, swap | 0.0997 | 0.3483 | 2.016 |
+| fuse, swap, split | 0.0474 | 0.1395 | 1.389 |
+| fuse, swap, split, jam | 0.0466 | 0.1259 | 1.403 |
+| all (+ skew) | **0.0463** | **0.1199** | **0.745** |
+| % of the roof (all) | 6.6% | 10.2% | 22.5% |
+| speed-up (all / none) | 1.9x | 4.6x | 4.1x |
 
-The rows up to the jam were measured with the commits that introduced
-them; the last row in a later run (none: 0.0846 / 0.5441 / 3.069 s), where
-skewing, which the cost model only picks at 4096², leaves 1024² and 2048²
-as they were (1024² within noise of 0.0432 s).
-
+Skewing, which the cost model only picks when the arrays exceed the cache,
+leaves 1024² and 2048² as they were (within noise of the row above it).
 `solve_seconds` includes copying the fields to the device at the start of
-the solve and back at its end (about 5.5 ms at 1024², 20 ms at 2048² and
-95 ms at 4096²); without it the timesteps take 38 ms, 99.5 ms and 0.46 s
-(1.30 s before skewing), 8%, 12% and 36% of the roof. Fusion alone is slower at 1024², where the two
-original kernels are short, until index-set splitting removes the boundary
-branches it duplicates.
+the solve and back at its end. Fusion alone is slower at 1024², where the
+two original kernels are short, until index-set splitting removes the
+boundary branches it duplicates.
 
 For comparison, the hand-written C + CUDA of the same method (built from
-Formal's `benchmarks/2d-advection-cuda`, measured in the same runs as the
-last row): `split` (the same two kernels per stage) 0.0740 / 0.5547 /
-3.023 s; `regyf` (fused stage kernel, register blocking, interior and
-boundary kernels) 0.0388 / 0.1102 / 1.151 s; `lean2` 0.0375 / 0.0654 s
-(two stages per kernel); `pair` 0.652 s and `march` 0.294 s at 4096² (two
-and four stages per kernel). The compiled Fortran is at the level of the
-hand-written per-stage kernels at 1024² and 2048², and at 4096² faster
-than them and than `pair`, since the bands keep several stages in the L2
-cache; what remains is fusing stages within a kernel, which these passes
-do not do.
+Formal's `benchmarks/2d-advection-cuda`, medians of 7 runs in the same
+session, 1024² / 2048² / 4096²): `split` (the same two kernels per stage)
+0.0740 / 0.5543 / 3.023 s; `regyf` (fused stage kernel, register blocking,
+interior and boundary kernels) 0.0388 / 0.1107 / 1.151 s; `lean2` (two
+stages per kernel) 0.0375 / 0.0655 / 0.543 s; `pair` 0.0569 / 0.1615 /
+0.660 s and `march` 0.1417 / 0.1684 / 0.297 s (two and four stages per
+kernel). The compiled Fortran is close to the hand-written per-stage
+kernels (`regyf`) at 1024² and 2048², and at 4096² faster than them, since
+the bands keep several stages in the L2 cache; the kernels that fuse
+stages (`lean2`, `pair`, `march`) remain faster there, and fusing stages
+within a kernel is what these passes do not do.
 
 ## What was tried and not kept
 
@@ -521,9 +513,9 @@ do not do.
 
   The best fused form is 12% faster than two plain stages at 2048² and
   slower at 1024² (17.6 µs against 13.1 µs), and at 4096² it halves the
-  DRAM traffic (322 µs against 602 µs unskewed) but stays above what time
-  skewing gets from the plain stages in L2 (about 230 µs per two stages in
-  the full solver). The hand-written `lean2`, which reaches 28 µs per two
+  DRAM traffic (322 µs against 602 µs unskewed), which time skewing also
+  gets, from the plain stages in L2, without a new kind of kernel. The
+  hand-written `lean2`, which reaches 28 µs per two
   stages at 2048² including the boundary rows, adds what a generic pass
   does not: a padded layout without bounds checks, 64-bit loads of column
   pairs, x faces shared through shared memory, 167 registers, and a
