@@ -24192,6 +24192,14 @@ public:
         std::string module_name = intrinsic_procedures.get_module(remote_sym, loc, diag);
 
         if (module_name == "lfortran_intrinsic_ieee_arithmetic") {
+            // The generic is already in scope from ieee_arithmetic, so loading
+            // the module again cannot find a better match.
+            if (unmatched_generic) {
+                diag.add(Diagnostic("no specific procedure of the generic '"
+                    + remote_sym + "' matches the arguments",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
             diag.add(Diagnostic(
                 "'" + remote_sym + "' is not accessible in the current scope; "
                 "add 'use, intrinsic :: ieee_arithmetic' to use it",

@@ -4369,3 +4369,9 @@ semantic error: Non-variable expression in variable definition context (actual a
      |
 3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:3537:14
+     |
+3537 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+     |              ^^^^^^^^^^^^^^ 
