@@ -1902,6 +1902,41 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // them (e.g., type-bound procedure calls in associate blocks)
     // still point to the original scope after duplication.
     {
+        // The procedures a routine contains were copied with it and call
+        // the kernel's copies as well. The entities of the routine and of
+        // its hosts are named through their own scopes already.
+        std::function<void(ASR::Function_t&, std::set<SymbolTable*>)>
+        remap_routine_calls = [&](ASR::Function_t &fn,
+                std::set<SymbolTable*> host_scopes) {
+            host_scopes.insert(fn.m_symtab);
+            GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
+            fn_replacer.replacer.skip_scopes = host_scopes;
+            for (size_t bi = 0; bi < fn.n_body; bi++) {
+                fn_replacer.visit_stmt(*fn.m_body[bi]);
+            }
+            for (auto &fn_item : fn.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::AssociateBlock_t>(
+                        *fn_item.second)) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(
+                            fn_item.second);
+                    for (size_t bi = 0; bi < ab->n_body; bi++) {
+                        fn_replacer.visit_stmt(*ab->m_body[bi]);
+                    }
+                } else if (ASR::is_a<ASR::Block_t>(
+                               *fn_item.second)) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(fn_item.second);
+                    for (size_t bi = 0; bi < block->n_body; bi++) {
+                        fn_replacer.visit_stmt(*block->m_body[bi]);
+                    }
+                } else if (ASR::is_a<ASR::Function_t>(*fn_item.second)) {
+                    remap_routine_calls(
+                        *ASR::down_cast<ASR::Function_t>(fn_item.second),
+                        host_scopes);
+                }
+            }
+        };
         for (auto &item : kernel_scope->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
@@ -1918,29 +1953,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // routine is the kernel's own copy: the host's is left as it is.
             inline_sum_in_stmts(func->m_body, func->n_body, func->m_symtab);
             gather_strided_sections_in_routine(*func);
-            GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
-            fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
-            for (size_t bi = 0; bi < func->n_body; bi++) {
-                fn_replacer.visit_stmt(*func->m_body[bi]);
-            }
-            for (auto &fn_item : func->m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::AssociateBlock_t>(
-                        *fn_item.second)) {
-                    ASR::AssociateBlock_t *ab =
-                        ASR::down_cast<ASR::AssociateBlock_t>(
-                            fn_item.second);
-                    for (size_t bi = 0; bi < ab->n_body; bi++) {
-                        fn_replacer.visit_stmt(*ab->m_body[bi]);
-                    }
-                } else if (ASR::is_a<ASR::Block_t>(
-                               *fn_item.second)) {
-                    ASR::Block_t *block =
-                        ASR::down_cast<ASR::Block_t>(fn_item.second);
-                    for (size_t bi = 0; bi < block->n_body; bi++) {
-                        fn_replacer.visit_stmt(*block->m_body[bi]);
-                    }
-                }
-            }
+            remap_routine_calls(*func, {});
         }
     }
 
