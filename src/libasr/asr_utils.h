@@ -4451,6 +4451,30 @@ static inline bool has_nested_implied_do_loop(ASR::expr_t** values, size_t n_val
     return false;
 }
 
+// How many loops of the perfect loop nest `loops`, from the outermost one,
+// form a rectangular iteration space: the bounds of each of them read none
+// of the indices of the loops around it in the nest. A collapsed iteration
+// space is described by bounds evaluated before any iteration runs, so a
+// loop whose bounds depend on an enclosing index (a non-rectangular nest,
+// e.g. `do j = 1, n; do i = j, n`) cannot be part of it.
+static inline size_t rectangular_loop_nest_depth(
+        const std::vector<ASR::DoLoop_t*> &loops) {
+    for (size_t level = 0; level < loops.size(); level++) {
+        const ASR::do_loop_head_t &head = loops[level]->m_head;
+        for (size_t outer = 0; outer < level; outer++) {
+            ASR::expr_t *index = loops[outer]->m_head.m_v;
+            if (index == nullptr || !ASR::is_a<ASR::Var_t>(*index)) continue;
+            ASR::symbol_t *index_sym = ASR::down_cast<ASR::Var_t>(index)->m_v;
+            if (expr_references_symbol(head.m_start, index_sym)
+                    || expr_references_symbol(head.m_end, index_sym)
+                    || expr_references_symbol(head.m_increment, index_sym)) {
+                return level;
+            }
+        }
+    }
+    return loops.size();
+}
+
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
