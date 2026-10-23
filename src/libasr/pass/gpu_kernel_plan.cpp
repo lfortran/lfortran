@@ -380,6 +380,18 @@ public:
                     bad);
             }
         }
+
+        // Its elements are values the walk does not reach, and device code
+        // has no array of device structs to give them to.
+        void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
+            if (found.declined()) return;
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    x.m_type))) {
+                found = GpuDecline(GpuDeclineReason::StructArrayConstant);
+                return;
+            }
+            ASR::BaseWalkVisitor<StructConstantFinder>::visit_ArrayConstant(x);
+        }
     };
 
     bool supported(ASR::symbol_t *kernel_sym,

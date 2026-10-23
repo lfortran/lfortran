@@ -337,6 +337,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 decline.name + "', which is not an integer, real or logical "
                 "scalar, an integer or real array, or a derived-type scalar "
                 "of these";
+        case GpuDeclineReason::StructArrayConstant:
+            return unsupported + "a constant array of derived-type values";
 
         case GpuDeclineReason::ClassComponentArrayRank:
             return unsupported + "a polymorphic argument with a component "
