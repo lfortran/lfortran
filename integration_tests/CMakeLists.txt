@@ -77,11 +77,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 
     # One `cuda` label selects a test for both CUDA modes: the `cuda` backend
     # runs it natively on an NVIDIA GPU, `cuda_cpu` in the CPU emulation.
-    # A leftover `cuda_cpu` label is read as `cuda`.
     if ("cuda_cpu" IN_LIST labels)
-        list(REMOVE_ITEM labels cuda_cpu)
-        list(APPEND labels cuda)
-        list(REMOVE_DUPLICATES labels)
+        message(FATAL_ERROR "${name}: use the `cuda` label, there is no `cuda_cpu` label")
     endif()
     set(label_backend ${LFORTRAN_BACKEND})
     if (LFORTRAN_BACKEND STREQUAL "cuda_cpu")
