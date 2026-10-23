@@ -498,7 +498,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // a private copy of it, and puts what it defines back where the value
     // is shared (gpu_offload_liveout.cpp).
     GpuLiveoutPlan liveouts;
-    if (!plan_liveouts(loc, assigned_vars, loop_var_set, reduction_names,
+    if (!plan_liveouts(loc, work.body, work.n_body, assigned_vars,
+            loop_var_set, reduction_names,
             local_scalar_names, involved_syms, liveouts)) {
         return;
     }
@@ -1988,6 +1989,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             decomp_visitor.visit_stmt(*body_copy.p[i]);
         }
     }
+    privatize_liveout_body(loc, kernel_scope, body_copy, liveouts);
 
     // The accumulator slot this thread owns. Created here because the
     // substitution below has to run before the body is remapped into
@@ -2533,6 +2535,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     item.second);
             for (size_t j = 0; j < ab->n_body; j++) {
                 block_replacer.visit_stmt(*ab->m_body[j]);
+            }
+        }
+        privatize_liveout_block(kernel_scope, block->m_body, block->n_body,
+            liveouts);
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                privatize_liveout_block(kernel_scope, ab->m_body,
+                    ab->n_body, liveouts);
             }
         }
         // Replace StructInstanceMember references to decomposed

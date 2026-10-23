@@ -488,6 +488,26 @@ public:
     // gpu_offload_liveout.cpp).
     struct GpuLiveoutPlan {
         std::vector<LiveoutScalarInfo> scalars;
+        // A derived-type variable of a type with nothing allocatable or a
+        // pointer in it, which each thread keeps a private copy of whole:
+        // the kernel takes the variable as `shared`, and the copy is a
+        // local under the variable's own name, which the body names.
+        struct Whole {
+            std::string name;
+            std::string shared;
+        };
+        std::vector<Whole> wholes;
+        // A scalar component of a derived-type variable of another type,
+        // which each thread keeps a private copy of, named `copy`.
+        struct Component {
+            // The variable past use association, and as the loop names it.
+            ASR::symbol_t *variable;
+            ASR::symbol_t *named;
+            ASR::symbol_t *member;
+            ASR::ttype_t *type;
+            std::string copy;
+        };
+        std::vector<Component> components;
         // The assignments that give each private copy its value on entry
         // to the kernel.
         std::set<ASR::stmt_t*> entries;
@@ -497,8 +517,8 @@ public:
     // it reaches the kernel, and makes the kernel take what it needs for
     // that in place of the variable in `involved_syms`. False when one
     // cannot be offloaded; the error is then reported.
-    bool plan_liveouts(const Location &loc,
-        const std::set<std::string> &assigned_vars,
+    bool plan_liveouts(const Location &loc, ASR::stmt_t **body,
+        size_t n_body, const std::set<std::string> &assigned_vars,
         const std::set<std::string> &loop_var_set,
         const std::set<std::string> &reduction_names,
         std::set<std::string> &local_scalar_names,
@@ -508,6 +528,15 @@ public:
     // Declares the private copies in the kernel scope.
     void declare_liveout_copies(const Location &loc,
         SymbolTable *kernel_scope, GpuLiveoutPlan &plan);
+    // Makes the loop body, a copy of it still naming the host's symbols,
+    // and the body of a BLOCK of it, already naming the kernel's, work on
+    // the private copies of components, and gives those their values at
+    // the start of the loop body.
+    void privatize_liveout_body(const Location &loc,
+        SymbolTable *kernel_scope, Vec<ASR::stmt_t*> &body,
+        GpuLiveoutPlan &plan);
+    void privatize_liveout_block(SymbolTable *kernel_scope,
+        ASR::stmt_t **body, size_t n_body, GpuLiveoutPlan &plan);
     // Gives the private copies their values, at the start of the body.
     void enter_liveouts(const Location &loc, SymbolTable *kernel_scope,
         Vec<ASR::stmt_t*> &kernel_body, GpuLiveoutPlan &plan);

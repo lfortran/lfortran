@@ -255,6 +255,18 @@ public:
 bool is_single_assignment_binding(ASR::symbol_t *sym,
         ASR::stmt_t **body, size_t n_body);
 
+// Whether the procedure a call names may define its `i`-th actual argument:
+// the dummy argument it is associated with is not `intent(in)` and not
+// passed by value, or is not known.
+bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i);
+
+// The scalar variable whose own storage a designator that is defined
+// defines: `k`, `y`, `y%k`, `y%a%x` or `y%c(i)` for a component `c` that is
+// neither allocatable nor a pointer. Nullptr for anything else: an array
+// variable, or a part of an allocatable or pointer array or component,
+// which is not stored in the variable.
+ASR::symbol_t *gpu_defined_variable(ASR::expr_t *designator);
+
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector :
@@ -442,11 +454,6 @@ public:
 ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
     ASR::symbol_t *buffer, ASR::ttype_t *scalar_type);
 
-// Whether the procedure a call names may define its `i`-th actual argument:
-// the dummy argument it is associated with is not `intent(in)` and not
-// passed by value, or is not known.
-bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i);
-
 // Puts the value of the private copy each thread of a kernel keeps of a
 // variable whose value is kept after the loop back where it is shared,
 // after every statement that defines the copy or a part of it: only the
@@ -473,6 +480,68 @@ private:
     // other way round.
     ASR::stmt_t *put_back(const Location &loc, ASR::expr_t *designator,
         ASR::symbol_t *copy);
+};
+
+// For derived-type variables of a type with allocatable or pointer parts,
+// which a thread cannot keep a private copy of whole: the scalar
+// components the loop body defines, which each thread can keep a private
+// copy of instead -- a number or a logical, neither allocatable nor a
+// pointer, that is assigned or passed to a procedure that may define it.
+// A variable the body names whole, or of whose own storage it defines
+// anything else (a component of a component, an element of a component
+// array that is not allocatable), is `unsafe`: no thread can keep a copy
+// of it. What the body defines of an allocatable or pointer array
+// component is not stored in the variable, and is shared.
+class GpuPrivateComponentCollector :
+        public ASRUtils::BlockBodyWalkVisitor<GpuPrivateComponentCollector> {
+public:
+    const std::set<ASR::symbol_t*> &variables;
+    // (variable, component name) -> the component and its type.
+    std::map<std::pair<ASR::symbol_t*, std::string>,
+        std::pair<ASR::symbol_t*, ASR::ttype_t*>> defined;
+    std::set<ASR::symbol_t*> unsafe;
+
+    GpuPrivateComponentCollector(const std::set<ASR::symbol_t*> &v)
+        : variables(v) {}
+
+    void visit_Assignment(const ASR::Assignment_t &x);
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x);
+    void visit_Var(const ASR::Var_t &x);
+
+private:
+    void note_definition(ASR::expr_t *designator);
+};
+
+// Whether `name`, of type `type`, is a derived-type variable of a type with
+// allocatable or pointer parts that a thread cannot keep a copy of whole,
+// only of some components (GpuPrivateComponentCollector).
+bool gpu_partially_private_struct(SymbolTable *scope,
+    const std::string &name, ASR::ttype_t *type);
+
+// Replaces each component `v%c` the map names with the private copy the
+// thread keeps of it.
+class GpuPrivateComponentReplacer :
+        public ASR::BaseExprReplacer<GpuPrivateComponentReplacer> {
+public:
+    Allocator &al;
+    // (variable, component name) -> the private copy.
+    std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*> copies;
+
+    GpuPrivateComponentReplacer(Allocator &al_) : al(al_) {}
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x);
+};
+
+class GpuPrivateComponentVisitor : public ASR::CallReplacerOnExpressionsVisitor<
+        GpuPrivateComponentVisitor> {
+public:
+    GpuPrivateComponentReplacer replacer;
+    GpuPrivateComponentVisitor(Allocator &al) : replacer(al) {}
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
 };
 
 // Collects StructInstanceMember references to allocatable array members

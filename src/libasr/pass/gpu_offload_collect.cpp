@@ -2,6 +2,7 @@
 
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
+#include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_offload_collect.h>
 
 namespace LCompilers {
@@ -106,6 +107,46 @@ bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
     return v->m_intent != ASR::intentType::In && !v->m_value_attr;
 }
 
+ASR::symbol_t *gpu_defined_variable(ASR::expr_t *e) {
+    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+    }
+    // An allocatable or pointer array component handed over whole: what
+    // is defined is its elements.
+    if (!ASR::is_a<ASR::Var_t>(*e) && ASRUtils::is_array(
+            ASRUtils::expr_type(e)) && ASRUtils::is_allocatable_or_pointer(
+                ASRUtils::expr_type(e))) {
+        return nullptr;
+    }
+    while (true) {
+        ASR::expr_t *base = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(e))) return nullptr;
+            return ASR::down_cast<ASR::Var_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            base = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            base = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            base = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+        } else {
+            return nullptr;
+        }
+        // A part of what an allocatable or a pointer designates is not
+        // stored in the variable.
+        if (!ASR::is_a<ASR::Var_t>(*base) &&
+                ASRUtils::is_allocatable_or_pointer(
+                    ASRUtils::expr_type(base))) {
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::Var_t>(*base) && ASRUtils::is_array(
+                ASRUtils::expr_type(base))) {
+            return nullptr;
+        }
+        e = base;
+    }
+}
+
 namespace {
 
 // Where the base of a designator is: the operand a component, an element
@@ -189,6 +230,108 @@ void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
     if (after.empty()) return;
     pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
     for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
+}
+
+namespace {
+
+// The variable `e` is a component of, past use association.
+ASR::symbol_t *gpu_component_base(ASR::expr_t *e) {
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return nullptr;
+    ASR::expr_t *base = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+    if (!ASR::is_a<ASR::Var_t>(*base)) return nullptr;
+    return ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(base)->m_v);
+}
+
+} // namespace
+
+bool gpu_partially_private_struct(SymbolTable *scope,
+        const std::string &name, ASR::ttype_t *type) {
+    if (ASRUtils::is_array(type) || ASRUtils::is_class_type(type)
+            || ASRUtils::is_allocatable_or_pointer(type)
+            || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        return false;
+    }
+    ASR::symbol_t *sym = scope->resolve_symbol(name);
+    if (sym == nullptr) return false;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    return gpu_struct_has_allocatable_parts(
+        ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration);
+}
+
+void GpuPrivateComponentCollector::note_definition(ASR::expr_t *designator) {
+    ASR::symbol_t *v = gpu_defined_variable(designator);
+    if (v == nullptr) return;
+    v = ASRUtils::symbol_get_past_external(v);
+    if (!variables.count(v)) return;
+    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*designator)) {
+        designator = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+            designator)->m_arg;
+    }
+    if (gpu_component_base(designator) == v) {
+        ASR::StructInstanceMember_t *m =
+            ASR::down_cast<ASR::StructInstanceMember_t>(designator);
+        ASR::ttype_t *t = m->m_type;
+        if (!ASRUtils::is_array(t) && !ASRUtils::is_allocatable(t)
+                && !ASRUtils::is_pointer(t)
+                && (ASR::is_a<ASR::Integer_t>(*t)
+                    || ASR::is_a<ASR::Real_t>(*t)
+                    || ASR::is_a<ASR::Complex_t>(*t)
+                    || ASR::is_a<ASR::Logical_t>(*t))) {
+            defined[{v, ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(m->m_m))}] = {m->m_m, t};
+            return;
+        }
+    }
+    unsafe.insert(v);
+}
+
+void GpuPrivateComponentCollector::visit_Assignment(
+        const ASR::Assignment_t &x) {
+    note_definition(x.m_target);
+    ASR::BaseWalkVisitor<GpuPrivateComponentCollector>::visit_Assignment(x);
+}
+
+void GpuPrivateComponentCollector::visit_SubroutineCall(
+        const ASR::SubroutineCall_t &x) {
+    for (size_t i = 0; i < x.n_args; i++) {
+        if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
+            note_definition(x.m_args[i].m_value);
+        }
+    }
+    ASR::BaseWalkVisitor<GpuPrivateComponentCollector>::visit_SubroutineCall(x);
+}
+
+void GpuPrivateComponentCollector::visit_StructInstanceMember(
+        const ASR::StructInstanceMember_t &x) {
+    // The variable is the base of a component, not used whole.
+    if (variables.count(gpu_component_base(
+            const_cast<ASR::expr_t*>(&x.base)))) {
+        return;
+    }
+    ASR::BaseWalkVisitor<GpuPrivateComponentCollector>::
+        visit_StructInstanceMember(x);
+}
+
+void GpuPrivateComponentCollector::visit_Var(const ASR::Var_t &x) {
+    ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+    if (variables.count(v)) unsafe.insert(v);
+}
+
+void GpuPrivateComponentReplacer::replace_StructInstanceMember(
+        ASR::StructInstanceMember_t *x) {
+    if (ASR::symbol_t *v = gpu_component_base(&x->base)) {
+        auto it = copies.find({v, ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(x->m_m))});
+        if (it != copies.end()) {
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                x->base.base.loc, it->second));
+            return;
+        }
+    }
+    ASR::BaseExprReplacer<GpuPrivateComponentReplacer>::
+        replace_StructInstanceMember(x);
 }
 
 std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,
