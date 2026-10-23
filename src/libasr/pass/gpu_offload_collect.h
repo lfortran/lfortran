@@ -514,6 +514,14 @@ private:
 bool gpu_no_kernel_local_struct(SymbolTable *scope,
     const std::string &name, ASR::ttype_t *type);
 
+// Whether `name`, of type `type`, is a derived-type variable of which the
+// loop body defines a component, and not only the whole value: its other
+// components keep the values they had before the loop, so a thread cannot
+// take it as an uninitialized local of its own. Each thread keeps private
+// copies of the parts the loop defines instead (gpu_offload_liveout.cpp).
+bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
+    ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body);
+
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel
 // parameters into separate flat array buffers for Metal.

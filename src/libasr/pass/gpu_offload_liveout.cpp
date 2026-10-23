@@ -440,6 +440,26 @@ public:
 
 } // namespace
 
+bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
+        ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body) {
+    if (ASRUtils::is_array(type)
+            || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        return false;
+    }
+    ASR::symbol_t *sym = scope->resolve_symbol(name);
+    if (sym == nullptr) return false;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    std::set<ASR::symbol_t*> variables = {sym};
+    std::set<std::string> no_indices;
+    GpuStructParts parts(variables, no_indices);
+    for (size_t i = 0; i < n_body; i++) parts.visit_stmt(*body[i]);
+    for (auto &d : parts.definitions) {
+        if (!d.path.empty()) return true;
+    }
+    return false;
+}
+
 bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
         ASR::stmt_t **body, size_t n_body,
         const std::set<std::string> &assigned_vars,

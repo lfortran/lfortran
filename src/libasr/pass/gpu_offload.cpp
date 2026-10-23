@@ -428,7 +428,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
-            if (gpu_no_kernel_local_struct(current_scope, name, type)) {
+            if (gpu_no_kernel_local_struct(current_scope, name, type)
+                    || gpu_struct_defined_in_part(current_scope, name, type,
+                        work.body, work.n_body)) {
                 continue;
             }
             if (!ASRUtils::is_array(type)) {
