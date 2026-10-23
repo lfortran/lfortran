@@ -19259,6 +19259,17 @@ public:
         return handle_kind(kind);
     }
 
+    // A pointer function reference is not a whole array: lbound is 1, ubound is the extent.
+    ASR::asr_t* make_pointer_function_reference_bound(const Location& loc,
+            ASR::expr_t* v, ASR::expr_t* dim, ASR::ttype_t* type,
+            ASR::arrayboundType bound) {
+        if( bound == ASR::arrayboundType::LBound ) {
+            return ASR::make_ArrayBound_t(al, loc, v, dim, type, bound,
+                make_ConstantWithType(make_IntegerConstant_t, 1, type, loc));
+        }
+        return ASRUtils::make_ArraySize_t_util(al, loc, v, dim, type, nullptr, false);
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -19272,6 +19283,8 @@ public:
         }
         int64_t kind_const = handle_index_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
+        bool is_pointer_function_reference = ASR::is_a<ASR::FunctionCall_t>(*v_Var) &&
+            ASRUtils::is_pointer(ASRUtils::expr_type(v_Var));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
@@ -19294,6 +19307,11 @@ public:
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             for (int i = 1; i <= n_dims; i++) {
                 ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int_type));
+                if( is_pointer_function_reference ) {
+                    arr_args.push_back(al, ASRUtils::EXPR(make_pointer_function_reference_bound(
+                        x.base.base.loc, v_Var, dim_, type, bound)));
+                    continue;
+                }
                 arr_args.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim_, type,
                                       bound, bound_value)));
             }
@@ -19373,6 +19391,10 @@ public:
                                     ub_val, type, x.base.base.loc);
                 }
             }
+        }
+        if( is_pointer_function_reference ) {
+            return make_pointer_function_reference_bound(
+                x.base.base.loc, v_Var, dim, type, bound);
         }
         return ASR::make_ArrayBound_t(al, x.base.base.loc, v_Var, dim, type,
                                       bound, bound_value);

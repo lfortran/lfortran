@@ -5422,6 +5422,7 @@ RUN(NAME types_real_array_to_complex_array_cast LABELS gfortran llvm llvm_wasm l
 RUN(NAME lbound_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME lbound_02 LABELS gfortran llvm)
 RUN(NAME lbound_03 LABELS gfortran llvm)
+RUN(NAME lbound_05 LABELS gfortran llvm)
 RUN(NAME module_function_with_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
