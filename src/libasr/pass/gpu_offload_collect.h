@@ -282,13 +282,13 @@ ASR::symbol_t *gpu_defined_variable(ASR::expr_t *designator);
 class GpuLocalVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuLocalVarCollector> {
 public:
-    // What the body defines: by assignment, or by passing it to a
-    // procedure that defines it whole (`intent(out)`).
+    // What the body assigns.
     std::set<std::string> &assigned_vars;
     std::set<std::string> &inner_loop_vars;
     std::set<SymbolTable*> enclosing_scopes;
     // What the body passes to a procedure that may define it, or may
-    // leave it alone, and does not also define.
+    // leave it alone, and does not also assign. An `intent(out)` actual
+    // argument counts here too: the call may not run in every iteration.
     std::set<std::string> may_define;
 
     GpuLocalVarCollector(std::set<std::string> &av,
@@ -325,12 +325,11 @@ public:
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
     }
 
-    // An actual argument the procedure defines, or may define.
+    // An actual argument the procedure may define.
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
-                note(gpu_defined_variable(x.m_args[i].m_value),
-                    gpu_call_defines(x, i) ? assigned_vars : may_define);
+                note(gpu_defined_variable(x.m_args[i].m_value), may_define);
             }
         }
         if (x.m_dt && gpu_call_may_define(x, x.n_args)) {

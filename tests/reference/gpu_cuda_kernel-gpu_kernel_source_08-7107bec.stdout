@@ -78,6 +78,7 @@ __device__ inline void row_sum_device_t_gpu_56(float* a, int __1a, float& r) {
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    float r;
     int __loop_end_0;
 };
 
@@ -86,12 +87,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
+    float r = __scalar_args.r;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
+    float __gpu_scalar_argument;
     int j;
     int k;
     const int m = 10000;
-    float r;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -116,7 +118,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
                 __gpu_gather_i = (__gpu_gather_i + 1);
                 __gpu_gather[((int)(__gpu_gather_i) - (1))] = xs[((int)(j) - (1)) + (4 * ((int)(__gpu_gather_i) - (1)))];
             }
-            row_sum_device_t_gpu_56(__gpu_gather, 64, r);
+            __gpu_scalar_argument = r;
+            row_sum_device_t_gpu_56(__gpu_gather, 64, __gpu_scalar_argument);
+            r = __gpu_scalar_argument;
         }
         y[((int)(j) - (1))] = (r + t[((int)(m) - (1))]);
     }

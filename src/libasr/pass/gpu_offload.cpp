@@ -418,10 +418,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
 
-    // Only what the loop is sure to define can be a kernel local, which
-    // starts undefined; a variable a procedure only may define keeps the
-    // value it had, as a kernel argument, unless its value is kept after
-    // the loop.
+    // Only a variable the loop assigns can be a kernel local, which starts
+    // undefined; a variable passed to a procedure that may define it, in
+    // a call that may not run, keeps the value it had: a scalar as a
+    // kernel argument, and a derived-type value in a whole copy each
+    // thread takes on entry, unless its value is kept after the loop.
     std::set<std::string> live_vars;
     for (auto *names : {&assigned_vars, &may_define}) {
         for (auto &name : *names) {
@@ -460,7 +461,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
     std::set<std::string> liveout_candidates = assigned_vars;
     for (auto &name : may_define) {
-        if (live_vars.count(name)) liveout_candidates.insert(name);
+        auto it = involved_syms.find(name);
+        if (live_vars.count(name) || (it != involved_syms.end()
+                && gpu_struct_privately_copyable(current_scope, name,
+                    it->second.first))) {
+            liveout_candidates.insert(name);
+        }
     }
 
     // Remove local scalars from involved_syms (they become kernel locals)
