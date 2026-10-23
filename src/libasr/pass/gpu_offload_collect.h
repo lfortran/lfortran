@@ -57,6 +57,12 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
+        // A routine named as an actual argument is code, which
+        // GpuFunctionCollector imports, not a value the kernel is handed.
+        if (ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(x.m_v))) {
+            return;
+        }
         // A variable owned by a Block or AssociateBlock scope that is
         // nested *inside* the loop travels with that scope into the
         // kernel, so it must not become a kernel parameter. A variable
@@ -373,11 +379,28 @@ public:
 };
 
 // Collects all Function symbols referenced by FunctionCall/SubroutineCall
-// nodes in the loop body so they can be imported into the kernel.
+// nodes in the loop body so they can be imported into the kernel, and the
+// routines named as actual arguments, which whoever receives them calls.
 class GpuFunctionCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuFunctionCollector> {
 public:
     std::map<std::string, ASR::symbol_t*> functions;
+
+    // A dummy procedure is not a routine of its own: device code calls
+    // the routines its callers hand over (see
+    // gpu_specialize_dummy_procedures).
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Function_t>(*resolved) ||
+                ASRUtils::is_dummy_procedure(
+                    *ASR::down_cast<ASR::Function_t>(resolved))) {
+            return;
+        }
+        std::string name = ASRUtils::symbol_name(x.m_v);
+        if (functions.find(name) == functions.end()) {
+            functions[name] = x.m_v;
+        }
+    }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);

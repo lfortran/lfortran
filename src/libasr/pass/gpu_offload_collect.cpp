@@ -62,13 +62,15 @@ std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
         fn = implementations.implementation(fn);
         if (seen.insert(fn).second) work.push_back(fn);
     };
-    for (ASR::Function_t *fn : gpu_callees(body, n_body, false)) reach(fn);
+    // A routine handed over as an actual argument is reached too: whoever
+    // receives it calls it.
+    for (ASR::Function_t *fn : gpu_callees(body, n_body, true)) reach(fn);
     while (!work.empty()) {
         ASR::Function_t *fn = work.front();
         work.pop_front();
         order.push_back(fn);
         for (ASR::Function_t *callee : gpu_callees(fn->m_body,
-                fn->n_body, false)) {
+                fn->n_body, true)) {
             reach(callee);
         }
     }
