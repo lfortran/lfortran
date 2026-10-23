@@ -1,0 +1,96 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct pt {
+    int x;
+    int y;
+};
+
+inline void maybe_move_gpu_13(thread pt& p, int i) {
+    if ((i == 9)) {
+        p.y = 90;
+    }
+}
+
+inline void maybe_set_gpu_14(thread int& k, int i) {
+    if ((i == 7)) {
+        k = 70;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* __gpu_buf_k [[buffer(0)]],
+    device int* a [[buffer(1)]],
+    device pt& p [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int __gpu_before;
+    int __gpu_before1;
+    int __gpu_before2;
+    pt __gpu_private_p;
+    int i;
+    int k;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    k = __gpu_buf_k[((int)(1) - (1))];
+    __gpu_private_p = p;
+    a[((int)(i) - (__lb_a_0))] = i;
+    __gpu_before = k;
+    maybe_set_gpu_14(k, i);
+    if ((k != __gpu_before)) {
+        __gpu_buf_k[((int)(1) - (1))] = k;
+    }
+    __gpu_before1 = __gpu_private_p.x;
+    __gpu_before2 = __gpu_private_p.y;
+    maybe_move_gpu_13(__gpu_private_p, i);
+    if ((__gpu_private_p.x != __gpu_before1)) {
+        p.x = __gpu_private_p.x;
+    }
+    if ((__gpu_private_p.y != __gpu_before2)) {
+        p.y = __gpu_private_p.y;
+    }
+}
+
+inline void set_gpu_22(thread int& k, int i) {
+    k = (2 * i);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device int* __gpu_buf_m [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    int m;
+    const int n = 100000;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    m = __gpu_buf_m[((int)(1) - (1))];
+    if ((i == n)) {
+        set_gpu_22(m, i);
+        __gpu_buf_m[((int)(1) - (1))] = m;
+    }
+}
+

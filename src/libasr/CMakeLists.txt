@@ -104,6 +104,7 @@ set(SRC
     pass/gpu_offload_body.cpp
     pass/gpu_offload_decide.cpp
     pass/gpu_offload_launch.cpp
+    pass/gpu_offload_liveout.cpp
     pass/gpu_offload_overwrite.cpp
     pass/gpu_offload_host_association.cpp
     pass/gpu_offload_privatize.cpp

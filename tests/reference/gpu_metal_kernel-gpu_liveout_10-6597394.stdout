@@ -1,0 +1,41 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline void maybe_set_gpu_9(thread float& x, int i) {
+    if ((i == 7)) {
+        x =   7.50000000000000000e+00;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* __gpu_buf_x [[buffer(0)]],
+    device int* a [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    float __gpu_before;
+    int i;
+    float x;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    x = __gpu_buf_x[((int)(1) - (1))];
+    a[((int)(i) - (__lb_a_0))] = i;
+    __gpu_before = x;
+    maybe_set_gpu_9(x, i);
+    if (((int)((x != __gpu_before) && ((int)((x == x) || (__gpu_before == __gpu_before)))))) {
+        __gpu_buf_x[((int)(1) - (1))] = x;
+    }
+}
+
