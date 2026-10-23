@@ -1,6 +1,8 @@
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <type_traits>
@@ -29,6 +31,12 @@
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
 
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
@@ -70,6 +78,79 @@ struct DisplayContext {
 struct InputContext {
     const LCompilers::FortranEvaluator::CellIO &io;
     std::string record;
+};
+
+#ifdef _WIN32
+int dup_fd(int fd) { return _dup(fd); }
+int dup2_fd(int from, int to) { return _dup2(from, to); }
+void close_fd(int fd) { _close(fd); }
+void rewind_fd(int fd) { _lseek(fd, 0, SEEK_SET); }
+int read_fd(int fd, char *buffer, unsigned size) { return _read(fd, buffer, size); }
+bool truncate_fd(int fd) { return _chsize(fd, 0) == 0; }
+#else
+int dup_fd(int fd) { return dup(fd); }
+int dup2_fd(int from, int to) { return dup2(from, to); }
+void close_fd(int fd) { close(fd); }
+void rewind_fd(int fd) { lseek(fd, 0, SEEK_SET); }
+int read_fd(int fd, char *buffer, unsigned size) { return read(fd, buffer, size); }
+bool truncate_fd(int fd) { return ftruncate(fd, 0) == 0; }
+#endif
+
+// While a cell runs with CellIO::output set, its stdout and stderr (file
+// descriptors 1 and 2) go to temporary files rather than pipes: a file never
+// fills up, so nothing has to read it while the cell runs.
+class OutputCapture {
+    FILE *files[2];
+    int saved[2];
+public:
+    OutputCapture() {
+        files[0] = tmpfile();
+        files[1] = tmpfile();
+        if (!files[0] || !files[1]) {
+            if (files[0]) fclose(files[0]);
+            if (files[1]) fclose(files[1]);
+            throw LCompilers::LCompilersException(
+                "cannot create a temporary file for the cell's output");
+        }
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            saved[i] = dup_fd(1 + i);
+            dup2_fd(fileno(files[i]), 1 + i);
+        }
+    }
+    ~OutputCapture() {
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            dup2_fd(saved[i], 1 + i);
+            close_fd(saved[i]);
+            fclose(files[i]);
+        }
+    }
+    OutputCapture(const OutputCapture &) = delete;
+    OutputCapture &operator=(const OutputCapture &) = delete;
+    // Passes what the cell has written since the last call to `output`.
+    void flush(const std::function<void(int, const std::string &)> &output) {
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            int fd = fileno(files[i]);
+            std::string text;
+            char buffer[4096];
+            rewind_fd(fd);
+            int n;
+            while ((n = read_fd(fd, buffer, sizeof(buffer))) > 0) text.append(buffer, n);
+            // Descriptor 1 or 2 shares this file offset, so the cell's next
+            // write starts again at the beginning.
+            if (!truncate_fd(fd)) {
+                throw LCompilers::LCompilersException(
+                    "cannot truncate the temporary file of the cell's output");
+            }
+            rewind_fd(fd);
+            if (!text.empty()) output(1 + i, text);
+        }
+    }
 };
 
 // A hook is called from generated code, so its exception must not unwind
@@ -520,8 +601,33 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     LCOMPILERS_ASSERT(compiler_options.interactive);
     CellResult out;
-    DisplayContext display{io, ""};
-    InputContext input{io, ""};
+    // What the cell writes goes to io.output before anything it displays,
+    // clears or reads.
+    std::optional<OutputCapture> capture;
+    auto flush_output = [&]() { if (capture) capture->flush(io.output); };
+    CellIO hooks_io = io;
+    if (io.output) {
+        if (io.display) {
+            hooks_io.display = [&](const std::string &mime, const std::string &data) {
+                flush_output();
+                io.display(mime, data);
+            };
+        }
+        if (io.clear_output) {
+            hooks_io.clear_output = [&]() {
+                flush_output();
+                io.clear_output();
+            };
+        }
+        if (io.input) {
+            hooks_io.input = [&](std::string &record) {
+                flush_output();
+                return io.input(record);
+            };
+        }
+    }
+    DisplayContext display{hooks_io, ""};
+    InputContext input{hooks_io, ""};
     struct Hooks {
         Hooks(DisplayContext &display, InputContext &input) {
             [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
@@ -539,6 +645,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     PassManager passes;
     passes.use_default_passes();
     try {
+        if (io.output) capture.emplace();
         const auto newline = code.find('\n');
         auto magic = code.substr(0, newline);
         // Trailing blanks and the \r of a CRLF line ending are not part of it.
@@ -595,6 +702,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         get_local_info(trace);
         out.error_traceback = stacktrace2str(trace, stacktrace_depth);
     }
+    flush_output();
     return out;
 }
 

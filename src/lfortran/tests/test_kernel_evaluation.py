@@ -127,6 +127,16 @@ def main():
             messages = check(client, "print *, 'a', achar(200), 'b'", [])
             assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
                        for m in messages), messages
+            # All of a cell's stdout, however long, and its stderr.
+            messages = check(client, "program long_output\ninteger :: i\n"
+                             "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
+                             "write(0, '(a)') 'to stderr'\nend program", [])
+            streams = {"stdout": "", "stderr": ""}
+            for m in messages:
+                if m["msg_type"] == "stream":
+                    streams[m["content"]["name"]] += m["content"]["text"]
+            assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
+            assert streams["stderr"] == "to stderr\n", streams["stderr"]
             # Cells must not leak file descriptors (MAX_OPEN_FILES).
             for i in range(100):
                 check(client, "%d + 1" % i, [str(i + 1)])
