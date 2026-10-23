@@ -3198,7 +3198,8 @@ public:
         // visible there, so the getter reads it through a pointer of that
         // procedure or program instead, see construct_variable_pointers.
         SymbolTable* parent_scope = ASRUtils::scope_past_constructs(current_scope->parent);
-        ASR::ttype_t* type = ASRUtils::symbol_type(end_sym);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::symbol_type(end_sym));
         ASR::symbol_t* read_sym = end_sym;
         if (parent_scope != current_scope->parent &&
                 !ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
@@ -3531,7 +3532,7 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*dim_expr_sym)) {
                 ASR::Variable_t* dim_expr_variable = ASR::down_cast<ASR::Variable_t>(dim_expr_sym);
 
-                if (ASRUtils::type_get_past_pointer(dim_expr_variable->m_type)->type != ASR::ttypeType::Integer) {
+                if (ASRUtils::type_get_past_allocatable_pointer(dim_expr_variable->m_type)->type != ASR::ttypeType::Integer) {
                     error = true;
                 } else {
 
