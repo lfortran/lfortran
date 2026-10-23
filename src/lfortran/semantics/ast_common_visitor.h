@@ -1306,12 +1306,10 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
     return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc, res_data, type, arr->m_storage_format));
 }
 
-  // The call of the user-defined unary operator `op` (stored as `op_name`)
-  // that applies to `operand`, whose element type is `element_type`;
-  // reports an error if there is none.
-  inline static ASR::expr_t* overloaded_unary_op(Allocator &al,
+  // The call of the user-defined unary operator stored as `op_name` that
+  // applies to `operand`, or nullptr if there is none.
+  inline static ASR::expr_t* find_overloaded_unary_op(Allocator &al,
           const AST::UnaryOp_t &x, ASR::expr_t *operand,
-          ASR::ttype_t *element_type, const std::string &op,
           const std::string &op_name, SymbolTable* current_scope,
           SetChar& current_function_dependencies,
           SetChar& current_module_dependencies, diag::Diagnostics &diag) {
@@ -1329,6 +1327,24 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             throw SemanticAbort();
         }) ) {
         return ASRUtils::EXPR(asr);
+    }
+    return nullptr;
+  }
+
+  // The call of the user-defined unary operator `op` (stored as `op_name`)
+  // that applies to `operand`, whose element type is `element_type`;
+  // reports an error if there is none.
+  inline static ASR::expr_t* overloaded_unary_op(Allocator &al,
+          const AST::UnaryOp_t &x, ASR::expr_t *operand,
+          ASR::ttype_t *element_type, const std::string &op,
+          const std::string &op_name, SymbolTable* current_scope,
+          SetChar& current_function_dependencies,
+          SetChar& current_module_dependencies, diag::Diagnostics &diag) {
+    ASR::expr_t *call = find_overloaded_unary_op(al, x, operand, op_name,
+        current_scope, current_function_dependencies,
+        current_module_dependencies, diag);
+    if (call) {
+        return call;
     }
     std::string msg = "No matching `operator(" + op + ")` found for this operand type";
     if (ASR::is_a<ASR::TypeParameter_t>(*element_type)) {
@@ -1509,6 +1525,13 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             return;
         }
         else {
+            ASR::expr_t *overloaded_not = find_overloaded_unary_op(al, x,
+                operand, "~not", current_scope, current_function_dependencies,
+                current_module_dependencies, diag);
+            if (overloaded_not) {
+                asr = (ASR::asr_t*) overloaded_not;
+                return;
+            }
             diag.add(diag::Diagnostic(
                 "Operand of .not. operator is "+
                 std::string(ASRUtils::type_to_str_fortran_expr(operand_type, operand)),

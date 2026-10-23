@@ -2703,6 +2703,7 @@ RUN(NAME operator_overloading_43 LABELS gfortran llvm)
 RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
 RUN(NAME operator_overloading_46 LABELS gfortran llvm)
+RUN(NAME operator_overloading_47 LABELS gfortran llvm)
 RUN(NAME operator_overloading_49 LABELS gfortran llvm)
 RUN(NAME operator_overloading_override_01 LABELS gfortran llvm)
 
