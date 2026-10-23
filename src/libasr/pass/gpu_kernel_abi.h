@@ -26,8 +26,9 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
 
 // The variables a statement list may define: the target of an assignment,
 // what an `allocate` or `deallocate` names, an actual argument of a dummy
-// that may be defined, and everything a statement not known to be harmless
-// names. The procedures it calls are not looked into.
+// that may be defined, everything a statement not known to be harmless
+// names, and the index of a DO loop. The procedures it calls are not looked
+// into.
 std::set<ASR::symbol_t*> gpu_written_variables(ASR::stmt_t **body,
     size_t n_body);
 

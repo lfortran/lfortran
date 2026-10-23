@@ -1,17 +1,23 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'last' of common block /gpu_decline_22_l/, defined in 'record'
-  --> tests/../integration_tests/gpu_decline_22.f90:49:5
+  --> tests/../integration_tests/gpu_decline_22.f90:61:5
    |
-49 |     !$omp parallel do
+61 |     !$omp parallel do
    |     ^^^^^^^^^^^^^^^^^ the gpu backend does not support scalar variable 'last' of common block /gpu_decline_22_l/, defined in 'record'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'base' of common block /gpu_decline_22_b/ in external procedure 'gpu_decline_22_add'
-  --> tests/../integration_tests/gpu_decline_22.f90:57:5
+  --> tests/../integration_tests/gpu_decline_22.f90:69:5
    |
-57 |     !$omp parallel do
+69 |     !$omp parallel do
    |     ^^^^^^^^^^^^^^^^^ the gpu backend does not support variable 'base' of common block /gpu_decline_22_b/ in external procedure 'gpu_decline_22_add'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support common block /gpu_decline_22_w/ laid out differently in 'put', which defines variable 'w', and in 'get', which names variable 'a'
-  --> tests/../integration_tests/gpu_decline_22.f90:64:5
+  --> tests/../integration_tests/gpu_decline_22.f90:76:5
    |
-64 |     !$omp parallel do
+76 |     !$omp parallel do
    |     ^^^^^^^^^^^^^^^^^ the gpu backend does not support common block /gpu_decline_22_w/ laid out differently in 'put', which defines variable 'w', and in 'get', which names variable 'a'
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'j' of common block /gpu_decline_22_j/, defined in 'count_up'
+  --> tests/../integration_tests/gpu_decline_22.f90:85:5
+   |
+85 |     !$omp parallel do
+   |     ^^^^^^^^^^^^^^^^^ the gpu backend does not support scalar variable 'j' of common block /gpu_decline_22_j/, defined in 'count_up'

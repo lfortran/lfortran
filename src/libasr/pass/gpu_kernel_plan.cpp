@@ -981,11 +981,38 @@ private:
 
 } // namespace
 
+// The indices of the DO loops of a statement list, the bodies of the BLOCKs
+// it runs included.
+class DoLoopIndices : public ASR::BaseWalkVisitor<DoLoopIndices> {
+public:
+    std::set<ASR::symbol_t*> &indices;
+    std::set<ASR::symbol_t*> blocks;
+    explicit DoLoopIndices(std::set<ASR::symbol_t*> &indices_)
+        : indices(indices_) {}
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (x.m_head.m_v != nullptr && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
+            indices.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v));
+        }
+        ASR::BaseWalkVisitor<DoLoopIndices>::visit_DoLoop(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
 std::set<ASR::symbol_t*> gpu_written_variables(ASR::stmt_t **body,
         size_t n_body) {
     KernelWrites writes;
+    DoLoopIndices indices(writes.written);
     for (size_t i = 0; i < n_body; i++) {
         writes.visit_stmt(*body[i]);
+        indices.visit_stmt(*body[i]);
     }
     return writes.written;
 }

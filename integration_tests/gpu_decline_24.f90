@@ -2,9 +2,10 @@
 ! reads, which the gpu kernel cannot be handed: a pointer, a character
 ! variable, a block that places the variable read after a derived-type
 ! variable, a block the loop defines that the procedure lays out
-! differently, and a scalar the loop defines that the procedure reads. The
-! gpu offload reports each loop as an error (see tests/tests.toml); without
-! it the program runs on the host.
+! differently, and a scalar the loop defines, by assignment or as the index
+! of a DO loop, or through a variable EQUIVALENCE associates with the block,
+! that the procedure reads. The gpu offload reports each loop as an error
+! (see tests/tests.toml); without it the program runs on the host.
 module gpu_decline_24_mod
     implicit none
     type :: pair_t
@@ -49,6 +50,21 @@ contains
         common /gpu_decline_24_y/ y
         defined_by_loop = y
     end function
+
+    ! Reads the scalar the loop defines as the index of a DO loop.
+    pure integer function index_by_loop()
+        integer :: i
+        common /gpu_decline_24_i/ i
+        index_by_loop = i
+    end function
+
+    ! Reads the block the loop defines through a variable that EQUIVALENCE
+    ! associates with it.
+    pure integer function aliased_by_loop()
+        integer :: v
+        common /gpu_decline_24_e/ v
+        aliased_by_loop = v
+    end function
 end module
 
 program gpu_decline_24
@@ -66,6 +82,11 @@ program gpu_decline_24
     common /gpu_decline_24_w/ a
     real :: y
     common /gpu_decline_24_y/ y
+    integer :: i, n(4)
+    common /gpu_decline_24_i/ i
+    integer :: v, e
+    common /gpu_decline_24_e/ v
+    equivalence (e, v)
     integer :: k
 
     t = 10
@@ -101,5 +122,21 @@ program gpu_decline_24
         u(k) = defined_by_loop()
     end do
     if (any(u /= [10, 20, 30, 40])) error stop 5
+
+    i = -1
+    do concurrent (k = 1:4)
+        do i = 10 * k, 100
+            exit
+        end do
+        n(k) = index_by_loop()
+    end do
+    if (any(n /= [10, 20, 30, 40])) error stop 6
+
+    v = -1
+    do concurrent (k = 1:4)
+        e = 10 * k
+        n(k) = aliased_by_loop()
+    end do
+    if (any(n /= [10, 20, 30, 40])) error stop 7
     print *, u
 end program

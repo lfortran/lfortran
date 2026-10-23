@@ -326,6 +326,13 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "variable '" + decline.name + "' of common "
                 "block " + decline.common_block + " in external procedure '"
                 + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableEquivalenceDefined:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + ", defined in '"
+                + decline.routine + "', and variable '"
+                + decline.other_variable + "' of the block, named in '"
+                + decline.other_routine + "', one of which equivalence "
+                "associates with the block";
         case GpuDeclineReason::CommonVariableDefinedInLoop:
             return unsupported + "scalar variable '" + decline.name
                 + "' of common block " + decline.common_block

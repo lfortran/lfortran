@@ -449,7 +449,9 @@ GpuDecline gpu_common_block_access_decline(ASR::stmt_t **body, size_t n_body,
                 decline.other_routine = routine_name(o.place.view);
                 return decline;
             }
-            GpuDecline decline(GpuDeclineReason::CommonBlockLayouts,
+            GpuDecline decline(d.place.member < 0 || o.place.member < 0
+                    ? GpuDeclineReason::CommonVariableEquivalenceDefined
+                    : GpuDeclineReason::CommonBlockLayouts,
                 ASRUtils::symbol_name(d.variable));
             decline.common_block = block_name(d.place.view);
             decline.routine = routine_name(d.place.view);

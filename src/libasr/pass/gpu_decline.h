@@ -223,6 +223,9 @@ enum class GpuDeclineReason {
     // kernel as memory of its own, so one need not see the other's
     // definitions.
     CommonBlockLayouts,
+    // As CommonBlockLayouts, where `name` or `other_variable` is a variable
+    // that EQUIVALENCE associates with the block.
+    CommonVariableEquivalenceDefined,
     // A scalar variable `name` of a common block that the loop defines,
     // in `routine`, and that `other_routine` names as `other_variable`
     // through a view of its own: each iteration has its own copy of the
