@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_kernel_source_37-27bb334",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_kernel_source_37.f90",
+    "infile_hash": "fd511356071a6632357c97d013495ed41881a5ff8fb84b9b10b75bb5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_kernel_source_37-27bb334.stdout",
+    "stdout_hash": "3aaf71d408e2924ab39bad227de5f199e7b2737bdd0d7b47be1320bc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

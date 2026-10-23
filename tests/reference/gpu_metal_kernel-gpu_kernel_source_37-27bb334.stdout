@@ -1,0 +1,75 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int m;
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* a [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int m = __scalar_args.m;
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
+    int __flat_idx;
+    int i;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    {
+        int w[2];
+        w[((int)(1) - (1))] = i;
+        if ((__gpu_lane == 0)) {
+            a[((int)(i) - (__lb_a_0))] = w[((int)(m) - (1))];
+        }
+        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __dim_b_0;
+    int __lb_b_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device int* b [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(1)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __lb_b_0 = __scalar_args.__lb_b_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
+    int __flat_idx;
+    int i;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    {
+        int w[2];
+        w[((int)(1) - (1))] = (2 * i);
+        if ((__gpu_lane == 0)) {
+            b[((int)(i) - (__lb_b_0))] = (w[((int)(1) - (1))] + 1);
+        }
+        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+

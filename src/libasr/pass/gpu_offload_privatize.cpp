@@ -232,6 +232,28 @@ public:
     // defines.
     GpuArrayFlow run(ASR::stmt_t **body, size_t n_body, bool &escaped) {
         counters.clear();
+        return flow(body, n_body, escaped);
+    }
+
+    // `run` for the body of the loop itself, entered with the values of
+    // integer locals `known` from the statements before the loop.
+    GpuArrayFlow run_known(ASR::stmt_t **body, size_t n_body, bool &escaped,
+            const std::map<ASR::symbol_t*, int64_t> &known) {
+        counters = known;
+        return flow(body, n_body, escaped);
+    }
+
+    // The values of integer locals known after the statements, given
+    // those known before them.
+    std::map<ASR::symbol_t*, int64_t> follow(ASR::stmt_t **body,
+            size_t n_body, const std::map<ASR::symbol_t*, int64_t> &start) {
+        counters = start;
+        elements.clear();
+        for (size_t i = 0; i < n_body; i++) count(body[i]);
+        return counters;
+    }
+
+    GpuArrayFlow flow(ASR::stmt_t **body, size_t n_body, bool &escaped) {
         elements.clear();
         for (size_t i = 0; i < n_body; i++) {
             Leaves leaves;
@@ -440,6 +462,17 @@ private:
         return true;
     }
 
+    // `x = v` where `x` does not name the array and `v` reads it only
+    // through elements the run has defined, `a(i) = t(m)` after
+    // `t(1) = i` with `m` known to be 1. It uses what the iteration
+    // defined itself, not the value the array held on entry.
+    bool uses_defined(ASR::stmt_t *s) {
+        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
+        return a->m_overloaded == nullptr && !access.expr(a->m_target)
+            && reads_defined(a->m_value) && !calls_impure(a->m_value)
+            && !calls_impure(a->m_target);
+    }
+
     // The number of elements of the array, when it is a constant.
     bool extent(int64_t &n) {
         n = 1;
@@ -638,7 +671,10 @@ private:
             case ASR::stmtType::Assignment: {
                 if (defines_whole(s)) return GpuArrayFlow::Defined;
                 int64_t offset = 0, n = 0;
-                if (!element(s, &offset)) return GpuArrayFlow::Read;
+                if (!element(s, &offset)) {
+                    return uses_defined(s) ? GpuArrayFlow::Untouched
+                                           : GpuArrayFlow::Read;
+                }
                 elements.insert(offset);
                 return extent(n) && (int64_t)elements.size() == n
                     ? GpuArrayFlow::Defined : GpuArrayFlow::Untouched;
@@ -840,6 +876,20 @@ bool read_after_region(GpuArrayFlowReader &reader,
     return false;
 }
 
+// The values of integer locals known where the region starts: what the
+// statements before it, in each list around it, assign. Where a loop
+// holds the region they may change between its iterations: none known.
+std::map<ASR::symbol_t*, int64_t> known_before_region(
+        GpuArrayFlowReader &reader,
+        const std::vector<GpuStmtPathStep> &path) {
+    std::map<ASR::symbol_t*, int64_t> known;
+    for (const GpuStmtPathStep &step : path) {
+        if (step.repeats) return {};
+        known = reader.follow(step.body, step.index, known);
+    }
+    return known;
+}
+
 } // namespace
 
 // An array of unspecified locality that every iteration of a DO
@@ -1002,7 +1052,8 @@ GpuOffloadVisitor::iteration_array_candidates(
 
         GpuArrayFlowReader reader(sym, access, host_associated);
         bool escaped = false;
-        if (reader.run(work.body, work.n_body, escaped)
+        if (reader.run_known(work.body, work.n_body, escaped,
+                    known_before_region(reader, path))
                 == GpuArrayFlow::Read) {
             continue;
         }
