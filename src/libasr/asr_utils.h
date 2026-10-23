@@ -812,6 +812,17 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Whether `sym` is a symbol of `scope` or of a scope that contains it.
+static inline bool is_symbol_of_scope_chain(SymbolTable *scope, ASR::symbol_t *sym) {
+    SymbolTable *sym_scope = symbol_parent_symtab(sym);
+    for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+        if (s == sym_scope) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr);
 
 // Returns the Module_t the symbol is in, or nullptr if not in a module
