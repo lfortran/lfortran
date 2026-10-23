@@ -1493,10 +1493,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         ASR::down_cast<ASR::Function_t>(proc_sym);
                     std::string pname =
                         ASRUtils::symbol_name(proc_sym);
+                    // The kernel's copy of the procedure, found by
+                    // identity: a procedure bound to a type of another
+                    // module can have its name.
+                    ASR::symbol_t *kernel_func = nullptr;
+                    auto known = procedure_copies.find(proc_sym);
+                    if (known != procedure_copies.end()) {
+                        kernel_func = known->second;
+                    }
                     ASR::symbol_t *existing =
                         kernel_scope->get_symbol(pname);
-                    bool already_has_body = false;
-                    if (existing &&
+                    bool already_has_body = kernel_func != nullptr;
+                    if (!kernel_func && existing &&
+                            !copied_procedures.count(existing) &&
                             ASR::is_a<ASR::Function_t>(*existing)) {
                         ASR::FunctionType_t *eft =
                             ASR::down_cast<ASR::FunctionType_t>(
@@ -1506,10 +1515,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         if (eft->m_deftype ==
                                 ASR::deftypeType::Implementation) {
                             already_has_body = true;
+                            kernel_func = existing;
                         }
                     }
+                    // The copy is added under the procedure's name,
+                    // unless that names the copy of another procedure.
+                    std::string copy_name = pname;
+                    auto add_copy = [&](ASR::Function_t *impl) {
+                        ASR::symbol_t *dup =
+                            copy_procedure(impl, kernel_scope);
+                        if (!dup) return;
+                        ASR::down_cast<ASR::Function_t>(dup)->m_name =
+                            s2c(al, copy_name);
+                        kernel_scope->add_symbol(copy_name, dup);
+                        procedure_copies[proc_sym] = dup;
+                        procedure_copies[&impl->base] = dup;
+                        copied_procedures.insert(dup);
+                        kernel_func = dup;
+                    };
                     if (!already_has_body) {
-                        if (existing) {
+                        if (existing && copied_procedures.count(existing)) {
+                            copy_name = kernel_scope->get_unique_name(
+                                pname, false);
+                        } else if (existing) {
                             kernel_scope->erase_symbol(pname);
                         }
                         ASR::FunctionType_t *ftype =
@@ -1544,13 +1572,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                 if (impl_ft->m_deftype !=
                                         ASR::deftypeType::Implementation)
                                     continue;
-                                ASR::symbol_t *dup =
-                                    copy_procedure(
-                                        impl_func, kernel_scope);
-                                if (dup) {
-                                    kernel_scope->add_symbol(
-                                        pname, dup);
-                                }
+                                add_copy(impl_func);
                                 found = true;
                                 break;
                             }
@@ -1661,15 +1683,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                                     deftypeType::
                                                     Implementation)
                                                 continue;
-                                            ASR::symbol_t *dup =
-                                                copy_procedure(
-                                                    impl_func,
-                                                    kernel_scope);
-                                            if (dup) {
-                                                kernel_scope
-                                                    ->add_symbol(
-                                                        pname, dup);
-                                            }
+                                            add_copy(impl_func);
                                             found = true;
                                             break;
                                         }
@@ -1687,20 +1701,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                             }
                         } else {
                             // Non-submodule: function has a body.
-                            ASR::symbol_t *dup =
-                                copy_procedure(
-                                    proc_func, kernel_scope);
-                            if (dup) {
-                                kernel_scope->add_symbol(pname, dup);
-                            }
+                            add_copy(proc_func);
                         }
                     }
                     // Update the StructMethodDeclaration in the
                     // kernel's struct to point to the kernel-scope
                     // function copy instead of the original module
                     // interface (which may have no body).
-                    ASR::symbol_t *kernel_func =
-                        kernel_scope->get_symbol(pname);
+                    if (!kernel_func && copy_name == pname) {
+                        kernel_func = kernel_scope->get_symbol(pname);
+                    }
                     if (kernel_func) {
                         SymbolTable *method_st =
                             ASRUtils::symbol_parent_symtab(resolved);

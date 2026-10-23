@@ -300,7 +300,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
             // For PDT instantiations (e.g., network_t_4), also match
             // ExternalSymbols pointing to the PDT template struct
             // (e.g., network_t) when the instantiated struct has a
-            // member with the same original name.
+            // member with the same original name. A member of another
+            // derived type with that name is not one of ours.
             SymbolTable *es_parent_st =
                 ASRUtils::symbol_parent_symtab(es_external);
             bool is_member = (es_parent_st == orig_struct->m_symtab);
@@ -309,6 +310,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
                 ASR::symbol_t *es_struct_owner =
                     down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                 if (is_a<ASR::Struct_t>(*es_struct_owner) &&
+                        down_cast<ASR::Struct_t>(es_struct_owner)
+                            ->n_kind_params > 0 &&
                         gpu_struct_lookup_member(kernel_struct,
                             es->m_original_name)) {
                     is_member = true;
