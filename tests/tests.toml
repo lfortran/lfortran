@@ -40,6 +40,22 @@ filename = "asr/verify/realloc_shape_differs_type.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/array_fixed_size_constant_dims.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/allocatable_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/pointer_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_assumed_size_descriptor.asr"
+asr = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true

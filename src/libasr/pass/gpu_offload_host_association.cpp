@@ -146,22 +146,6 @@ bool is_parameter(ASR::symbol_t *s) {
         == ASR::storage_typeType::Parameter;
 }
 
-// The type of a dummy in a procedure signature, which must not name the
-// symbols of a scope.
-ASR::ttype_t* signature_type(Allocator &al, ASR::ttype_t *type) {
-    if (!ASR::is_a<ASR::Array_t>(*type)) return type;
-    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
-    ASR::dimension_t *dims = al.allocate<ASR::dimension_t>(arr->n_dims);
-    for (size_t d = 0; d < arr->n_dims; d++) {
-        dims[d].loc = arr->m_dims[d].loc;
-        dims[d].m_start = nullptr;
-        dims[d].m_length = nullptr;
-    }
-    return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
-        arr->m_type, dims, arr->n_dims, arr->m_physical_type,
-        arr->m_memory_space));
-}
-
 void append_dummy(Allocator &al, ASR::Function_t &fn, ASR::symbol_t *dummy,
         ASR::ttype_t *type) {
     const Location &loc = dummy->base.loc;
@@ -179,7 +163,7 @@ void append_dummy(Allocator &al, ASR::Function_t &fn, ASR::symbol_t *dummy,
     for (size_t i = 0; i < t->n_arg_types; i++) {
         types.push_back(al, t->m_arg_types[i]);
     }
-    types.push_back(al, signature_type(al, type));
+    types.push_back(al, gpu_signature_type(al, type));
     fn.m_function_signature = ASRUtils::TYPE(ASR::make_FunctionType_t(al,
         t->base.base.loc, types.p, types.n, t->m_return_var_type, t->m_abi,
         t->m_deftype, t->m_bindc_name, t->m_elemental, t->m_pure,
@@ -188,6 +172,29 @@ void append_dummy(Allocator &al, ASR::Function_t &fn, ASR::symbol_t *dummy,
 }
 
 } // namespace
+
+ASR::ttype_t* gpu_signature_type(Allocator &al, ASR::ttype_t *type) {
+    if (!ASR::is_a<ASR::Array_t>(*type)) return type;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+    auto constant_bound = [&](ASR::expr_t *bound) -> ASR::expr_t* {
+        int64_t value = 0;
+        if (bound == nullptr || !ASRUtils::extract_value(
+                ASRUtils::expr_value(bound), value)) {
+            return nullptr;
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, bound->base.loc,
+            value, ASRUtils::expr_type(bound)));
+    };
+    ASR::dimension_t *dims = al.allocate<ASR::dimension_t>(arr->n_dims);
+    for (size_t d = 0; d < arr->n_dims; d++) {
+        dims[d].loc = arr->m_dims[d].loc;
+        dims[d].m_start = constant_bound(arr->m_dims[d].m_start);
+        dims[d].m_length = constant_bound(arr->m_dims[d].m_length);
+    }
+    return ASRUtils::TYPE(ASR::make_Array_t(al, arr->base.base.loc,
+        arr->m_type, dims, arr->n_dims, arr->m_physical_type,
+        arr->m_memory_space));
+}
 
 void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel) {
     SymbolTable *scope = kernel.m_symtab;

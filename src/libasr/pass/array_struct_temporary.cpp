@@ -3017,6 +3017,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             return ; 
         }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
+        if( !ASRUtils::is_fixed_size_array(xx.m_type) ) {
+            // A result whose shape is only known at run time cannot be stored
+            // inline, so it is reshaped from a descriptor of `source`.
+            ASR::ttype_t* array_ttype = ASRUtils::expr_type(xx.m_array);
+            ASR::array_physical_typeType array_ptype = ASRUtils::extract_physical_type(array_ttype);
+            if( array_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                xx.m_array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, xx.m_array->base.loc, xx.m_array, array_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, array_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr));
+            }
+            return;
+        }
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
             ASR::array_physical_typeType::FixedSizeArray &&

@@ -532,14 +532,12 @@
                             (Var 2 r_t)
                             DescriptorArray
                             PointerArray
-                            (Pointer
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
                             )
                             ()
                         ))]

@@ -639,7 +639,7 @@
                                                 ())
                                                 (()
                                                 ())]
-                                                FixedSizeArray
+                                                DescriptorArray
                                                 Global
                                             )
                                             ()
@@ -1658,7 +1658,7 @@
                                                 (Real 8)
                                                 [(()
                                                 ())]
-                                                FixedSizeArray
+                                                DescriptorArray
                                                 Global
                                             )
                                             ()

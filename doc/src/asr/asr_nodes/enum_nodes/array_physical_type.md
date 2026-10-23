@@ -41,7 +41,13 @@ type, rank and extents may be represented differently, and
 between the representations without changing the value.
 
 Passing a `FixedSizeArray` to a procedure expecting a `DescriptorArray` is the
-common case: the cast builds the descriptor.
+common case: the cast builds the descriptor. The result of a cast to any
+physical type other than `DescriptorArray` is a plain array value, never an
+allocatable or a pointer, since only a descriptor can hold bounds that change
+at run time.
+
+[Array](../type_nodes/Array.md) lists the rules the verifier checks between the
+physical type and the dimensions.
 
 ## See Also
 
