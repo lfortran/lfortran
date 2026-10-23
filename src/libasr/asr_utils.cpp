@@ -2530,7 +2530,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
                             ASR::expr_t* first_array_arg =
-                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                                elemental_operation_shape_operand(func, left, right);
                             if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
