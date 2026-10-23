@@ -3667,3 +3667,40 @@ contains
         end subroutine
     end subroutine
 end module cc1_pure_poly_intent_out
+
+! An output implied-do loop with values of different types, some of them of
+! derived type, is not supported yet with run-time bounds or step, with a
+! nested loop that reuses the variable of an enclosing loop, with more than
+! 256 iterations of bounds that are not all literals, with more than 1000
+! values of different derived types, or in an unformatted transfer.
+subroutine implied_do_mixed_derived_types_error(n)
+    implicit none
+    type :: cc1_idl_a
+        integer :: i = 1
+    end type
+    type :: cc1_idl_b
+        integer :: j = 2
+    end type
+    integer, intent(in) :: n
+    integer, parameter :: m = 300
+    type(cc1_idl_a) :: x(3)
+    type(cc1_idl_b) :: y(3)
+    integer :: i, j, k(3)
+    character(80) :: line
+    k = 3
+    print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+    write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+    write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+    print '(*(i0,1x))', (x(i), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,2), i=1,3)
+    print '(*(i0,1x))', ((x(i), j=1,1), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,i), i=1,3)
+    print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,500)
+    print '(*(i0,1x))', (x(1), k(1), i=1,501)
+    print *, (x(i), (y(j), j=1,n), i=1,0)
+end subroutine implied_do_mixed_derived_types_error
