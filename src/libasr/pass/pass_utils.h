@@ -406,6 +406,11 @@ namespace LCompilers {
 
         ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
 
+        // The run-time shape check of the assignment to `target` of an
+        // expression whose array operands are `components`, which it takes.
+        ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
+            ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
@@ -600,7 +605,8 @@ namespace LCompilers {
 
             public:
 
-                bool asr_changed, retain_original_stmt, remove_original_stmt;
+                bool asr_changed, retain_original_stmt = false,
+                    remove_original_stmt = false;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
 
@@ -610,7 +616,16 @@ namespace LCompilers {
                     pass_result.n = 0;
                 }
 
+                // A statement list nested in a compound statement (the body
+                // of an IF or a loop) is transformed while that statement is
+                // being visited. What the last statement of the nested list
+                // asked for itself must not be taken for what the enclosing
+                // statement asks for, or removing that last statement would
+                // remove the whole enclosing statement as well, so the
+                // enclosing statement's requests are restored afterwards.
                 void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                    bool enclosing_retain = retain_original_stmt;
+                    bool enclosing_remove = remove_original_stmt;
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
                     if (pass_result.size() > 0) {
@@ -643,6 +658,8 @@ namespace LCompilers {
                     }
                     m_body = body.p;
                     n_body = body.size();
+                    retain_original_stmt = enclosing_retain;
+                    remove_original_stmt = enclosing_remove;
                 }
 
                 void visit_Program(const ASR::Program_t &x) {

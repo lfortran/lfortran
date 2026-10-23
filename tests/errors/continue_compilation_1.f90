@@ -3679,3 +3679,58 @@ contains
         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
     end subroutine cc1_pointer_bounds_boz_use
 end module cc1_pointer_bounds_boz
+
+! C1588: an intent(out) dummy argument of a pure procedure shall not be
+! polymorphic or have a polymorphic allocatable ultimate component.
+module cc1_pure_poly_intent_out
+    implicit none
+    type :: cc1_ppo_t
+        integer :: i
+    end type
+    type :: cc1_ppo_w
+        class(cc1_ppo_t), allocatable :: c
+    end type
+    type :: cc1_ppo_w2
+        type(cc1_ppo_w) :: inner
+    end type
+    abstract interface
+        pure subroutine cc1_ppo_iface(a)
+            import :: cc1_ppo_t
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+        end subroutine
+    end interface
+contains
+    pure subroutine cc1_ppo_class(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure subroutine cc1_ppo_class_alloc(a)
+        class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+    end subroutine
+    pure subroutine cc1_ppo_star(a)
+        class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+    end subroutine
+    elemental subroutine cc1_ppo_elemental(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure integer function cc1_ppo_func(a)
+        class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+        cc1_ppo_func = 1
+    end function
+    pure subroutine cc1_ppo_comp(a)
+        type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    pure subroutine cc1_ppo_nested_comp(a)
+        type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    subroutine cc1_ppo_host()
+        type(cc1_ppo_t) :: x
+        call cc1_ppo_internal(x)
+    contains
+        pure subroutine cc1_ppo_internal(a)
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+            a%i = 1
+        end subroutine
+    end subroutine
+end module cc1_pure_poly_intent_out

@@ -1389,6 +1389,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "call_arg" or
             field.type == "do_loop_head" or
             field.type == "array_index" or
+            field.type == "array_extent_check" or
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
             field.type == "type_stmt" or
@@ -1401,6 +1402,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 pointer_char = ''
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
+                    field.type != "array_extent_check" and
                     field.type != "alloc_arg" and
                     field.type != "dimension" and
                     field.type != "do_loop_head"):
@@ -1453,6 +1455,11 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    array_index_copy.m_right = duplicate_expr(x->m_%s[i].m_right);"%(field.name), level)
                     self.emit("    array_index_copy.m_step = duplicate_expr(x->m_%s[i].m_step);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, array_index_copy);"%(field.name), level)
+                elif field.type == "array_extent_check":
+                    self.emit("    ASR::array_extent_check_t check_copy = x->m_%s[i];"%(field.name), level)
+                    self.emit("    check_copy.m_left_extent = self().duplicate_expr(x->m_%s[i].m_left_extent);"%(field.name), level)
+                    self.emit("    check_copy.m_right_extent = self().duplicate_expr(x->m_%s[i].m_right_extent);"%(field.name), level)
+                    self.emit("    m_%s.push_back(al, check_copy);"%(field.name), level)
                 elif field.type == "dimension":
                     self.emit("    ASR::dimension_t dim_copy;", level)
                     self.emit("    dim_copy.loc = x->m_%s[i].loc;"%(field.name), level)

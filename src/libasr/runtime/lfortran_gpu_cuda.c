@@ -6,11 +6,7 @@
 // We implement the same C API as the Metal runtime
 // (lfortran_gpu_runtime.h), but using CUDA.
 
-extern "C" {
-
 #include "lfortran_gpu_runtime.h"
-
-} // extern "C" for the header
 
 #define MAX_ARGS 32
 
@@ -75,7 +71,12 @@ static void *deferred_free[MAX_DEFERRED];
 static int n_deferred = 0;
 static uint64_t n_syncs = 0;
 
-extern "C" void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
+// Kernel code declares this function with C linkage, and a unit test
+// compiles this file as C++ next to such a declaration.
+#ifdef __cplusplus
+extern "C"
+#endif
+void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
     if (n_registered == registry_capacity) {
         int capacity = registry_capacity ? 2 * registry_capacity : 64;
         kernel_entry **grown = (kernel_entry**)realloc(kernel_registry,
@@ -244,8 +245,6 @@ static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
     cache->capacities[idx] = length;
     return cache->buffers[idx];
 }
-
-extern "C" {
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
@@ -439,6 +438,22 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
     } while (syncs != n_syncs);
 
+#ifdef LFORTRAN_CUDA_CPU_EMULATION
+    // In the CPU emulation, a range the kernel discards holds garbage (0xff
+    // bytes) at every launch, not only in fresh device memory: whatever an
+    // earlier launch left in a reused buffer must not let a kernel that reads
+    // the range before writing all of it pass. A device keeps the old bytes.
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] == ARG_BUFFER && k->buffer_sizes[i] > 0
+                && k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
+                && lfortran_gpu_discard_allowed(i, k->buffer_host_ptrs,
+                    k->buffer_sizes, is_buffer, k->n_args)) {
+            check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0xff,
+                k->buffer_sizes[i], 0), "cudaMemsetAsync");
+        }
+    }
+#endif
+
     // Build the kernel argument array for cudaLaunchKernel: a device
     // pointer for a buffer, the value for a scalar.
     void *args[MAX_ARGS];
@@ -451,9 +466,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
     }
 
-    dim3 gridDim(grid[0], grid[1], grid[2]);
-    dim3 blockDim(block[0], block[1], block[2]);
-    check(cudaLaunchKernel((const void*)k->func, gridDim, blockDim, args, 0,
+    dim3 grid_dim = {(unsigned)grid[0], (unsigned)grid[1], (unsigned)grid[2]};
+    dim3 block_dim = {(unsigned)block[0], (unsigned)block[1],
+        (unsigned)block[2]};
+    check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
 }
 
@@ -472,9 +488,7 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     }
 }
 
-} // extern "C"
-
-extern "C" long long lfortran_gpu_cache_bytes(void) {
+long long lfortran_gpu_cache_bytes(void) {
     static long long bytes = -1;
     if (bytes < 0) {
         int device = 0, size = 0;
@@ -488,11 +502,11 @@ extern "C" long long lfortran_gpu_cache_bytes(void) {
     return bytes;
 }
 
-extern "C" long long lfortran_gpu_heap_size(void) {
+long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }
 
-extern "C" void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out)
 {
     (void)ctx;
@@ -500,7 +514,7 @@ extern "C" void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     memset(out, 0, sizeof(*out));
 }
 
-extern "C" void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out)
 {
     if (ctx) lfortran_gpu_sync(ctx);

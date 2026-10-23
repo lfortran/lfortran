@@ -62,7 +62,9 @@ stmt
     -- an intrinsic assignment, it is not finalized first (F2018 7.5.6.3)
     -- and its components are not assigned by defined assignment (10.2.1.3).
     | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation, bool new_target)
-    | DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
+    -- The run-time shape check of an array assignment: `checks` are the
+    -- extents it compares, in that order (see array_extent_check)
+    | DebugCheckArrayBounds(expr target, expr* components, array_extent_check* checks, bool move_allocation)
     -- Pointer assignment `target => value`. A target that is an array
     -- section of a pointer gives the bounds of the pointer: `form` is
     -- PointerBoundsSpec for a bounds-spec-list (`p(lb:) => a`: only the
@@ -328,6 +330,11 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
+-- A comparison, by DebugCheckArrayBounds, of the extents of two of its
+-- arrays in dimension `dim`. An array is numbered 0 for `target` and i for
+-- the i-th element of `components`; `left_extent` and `right_extent` are the
+-- integer(4) extents of arrays `left` and `right`.
+array_extent_check = (int left, int right, int dim, expr left_extent, expr right_extent)
 array_index = (expr? left, expr? right, expr? step)
 coarray_index = (expr? index, codimension_type star)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)

@@ -21929,6 +21929,73 @@ public:
         return resolve_intrinsic_function(x.base.base.loc, var_name, unmatched_generic);
     }
 
+    // Whether the derived type `struct_sym` has a polymorphic allocatable
+    // ultimate component. Ultimate components are reached through nonpointer,
+    // nonallocatable derived-type components and the parent type.
+    static bool has_polymorphic_allocatable_ultimate_component(
+            ASR::symbol_t* struct_sym, std::set<ASR::symbol_t*> &visited) {
+        if (!struct_sym) return false;
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        if (!ASR::is_a<ASR::Struct_t>(*struct_sym) ||
+                !visited.insert(struct_sym).second) {
+            return false;
+        }
+        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        if (has_polymorphic_allocatable_ultimate_component(st->m_parent, visited)) {
+            return true;
+        }
+        for (auto &item: st->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t* comp = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (ASRUtils::is_pointer(comp->m_type)) continue;
+            ASR::ttype_t* comp_type = ASRUtils::extract_type(comp->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*comp_type)) continue;
+            if (ASRUtils::is_allocatable(comp->m_type)) {
+                if (ASRUtils::is_class_type(comp_type)) return true;
+            } else if (has_polymorphic_allocatable_ultimate_component(
+                    comp->m_type_declaration, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // F2018 C1588: an INTENT(OUT) dummy argument of a pure procedure shall
+    // not be polymorphic or have a polymorphic allocatable ultimate component.
+    void check_pure_intent_out_polymorphic_args(const Vec<ASR::expr_t*> &args,
+            const std::string &proc_name) {
+        for (size_t i = 0; i < args.size(); i++) {
+            if (!ASR::is_a<ASR::Var_t>(*args[i])) continue;
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Out) continue;
+            ASR::ttype_t* type = ASRUtils::extract_type(v->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*type)) continue;
+            std::string msg;
+            if (ASRUtils::is_class_type(type)) {
+                msg = "intent(out) dummy argument '" + std::string(v->m_name) +
+                    "' of pure procedure '" + proc_name +
+                    "' cannot be polymorphic";
+            } else {
+                std::set<ASR::symbol_t*> visited;
+                if (!has_polymorphic_allocatable_ultimate_component(
+                        v->m_type_declaration, visited)) {
+                    continue;
+                }
+                msg = "intent(out) dummy argument '" + std::string(v->m_name) +
+                    "' of pure procedure '" + proc_name +
+                    "' cannot have a polymorphic allocatable ultimate component";
+            }
+            diag.add(diag::Diagnostic(msg,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {v->base.base.loc})}));
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+        }
+    }
+
     bool struct_has_descriptor_string_member(ASR::expr_t* expr) {
         ASR::ttype_t* type = ASRUtils::expr_type(expr);
         type = ASRUtils::type_get_past_array(

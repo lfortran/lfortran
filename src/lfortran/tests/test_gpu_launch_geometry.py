@@ -30,11 +30,16 @@ def main():
     if args.backend == "metal":
         command += ["-x", "objective-c", "-fobjc-arc",
                     "-framework", "Foundation", "-framework", "Metal"]
-        implementation = runtime / "lfortran_gpu_metal.m"
+        implementation = [runtime / "lfortran_gpu_metal.m"]
     else:
-        implementation = runtime / "lfortran_gpu_cpu.c"
-    command += [str(here / "test_gpu_launch_geometry.c"),
-                str(implementation), "-o", str(binary)]
+        # The CUDA runtime on the CPU emulation of the CUDA runtime API,
+        # whose cuda_runtime.h has to come first on the include path.
+        command.insert(2, "-I" + str(runtime / "cuda_cpu"))
+        implementation = [runtime / "lfortran_gpu_cuda.c",
+                          runtime / "cuda_cpu/cuda_cpu_runtime.c"]
+    command += [str(here / "test_gpu_launch_geometry.c")]
+    command += [str(source) for source in implementation]
+    command += ["-o", str(binary)]
     print("compile:", command, flush=True)
     subprocess.run(command, cwd=workdir, check=True)
     run = [str(binary)]
@@ -63,10 +68,9 @@ def main():
             failures += 1
             print(f"FAIL: expected exit {status} and {expected!r}", flush=True)
 
-    # Native CUDA is not emulated here. Its entry point must call the same
-    # validator before any handle checks, uploads or residency changes.
-    for name in ("lfortran_gpu_cpu.c", "lfortran_gpu_cuda.cu",
-                 "lfortran_gpu_metal.m"):
+    # The entry point of every runtime must call the same validator before
+    # any handle checks, uploads or residency changes.
+    for name in ("lfortran_gpu_cuda.c", "lfortran_gpu_metal.m"):
         source = (runtime / name).read_text()
         first_statement = (r"void lfortran_gpu_launch\([^)]*\)\s*\{\s*"
                            r"lfortran_gpu_validate_launch\(grid, block\);")

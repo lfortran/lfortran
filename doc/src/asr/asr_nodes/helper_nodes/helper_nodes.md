@@ -10,6 +10,7 @@ printed in ASR text as `(name :member value ...)`.
 maxdepth: 1
 ---
 alloc_arg
+array_extent_check
 array_index
 attribute
 call_arg

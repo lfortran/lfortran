@@ -1083,6 +1083,7 @@ RUN(NAME array_128 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_131 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_132 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_133 LABELS gfortran llvm EXTRAFILES arrays_133_mod.f90 arrays_133b.f90 arrays_133c.f90) # bound getters in two object files link (#14542)
+RUN(NAME arrays_134 LABELS gfortran llvm) # size() of an explicit-shape dummy with an integer(8) extent
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5546,6 +5547,7 @@ RUN(NAME openmp_107 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 # Not gfortran: older gfortran versions in CI do not accept the DO CONCURRENT
 # LOCAL locality spec (F2018).
 RUN(NAME openmp_108 LABELS llvm_omp)
+RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -5954,6 +5956,7 @@ RUN(NAME pure_side_effects_03 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_04 LABELS gfortran llvm)
 RUN(NAME pure_intent_01 LABELS gfortran llvm)
 RUN(NAME pure_intent_02 LABELS gfortran llvm)
+RUN(NAME pure_intent_03 LABELS gfortran llvm)
 RUN(NAME merge_str_01 LABELS gfortran llvm)
 RUN(NAME merge_derived_01 LABELS gfortran llvm)
 RUN(NAME io_direct_slash LABELS gfortran llvm)
@@ -6182,6 +6185,16 @@ RUN(NAME gpu_metal_149 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_150 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda cuda_cpu EXTRAFILES gpu_cuda_cpu_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda_cpu STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
+# Only the module's own compilation needs the fallback for its loop that
+# prints: the program that uses it compiles none of the module's loops.
+if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu)$")
+    set_source_files_properties(gpu_separate_compilation_01_mod.f90
+        PROPERTIES COMPILE_OPTIONS "--gpu-allow-cpu-fallback")
+endif()
+# The GPU backends link without `--openmp`: an OpenMP lowering of the
+# module's loops in the program's file would not link.
+RUN(NAME gpu_separate_compilation_02 LABELS gfortran llvm_omp metal cuda cuda_cpu EXTRAFILES gpu_separate_compilation_02_mod.f90 EXTRA_ARGS --separate-compilation --openmp)
 RUN(NAME gpu_metal_151 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_metal_151_dep.f90 gpu_metal_151_net.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_152 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_153 LABELS gfortran llvm metal cuda cuda_cpu)
@@ -6485,6 +6498,7 @@ RUN(NAME gpu_metal_464 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_465 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_447 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_448 LABELS gfortran llvm metal cuda cuda_cpu)
+RUN(NAME gpu_temp_lifetime_01 LABELS gfortran llvm cuda cuda_cpu)
 RUN(NAME gpu_metal_455 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_456 LABELS gfortran llvm metal cuda cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_451 LABELS gfortran llvm metal cuda cuda_cpu)
@@ -6542,6 +6556,11 @@ RUN(NAME gpu_metal_554 LABELS gfortran llvm metal cuda_cpu cuda)
 # Loop fusion legality: the fusion runs only for --gpu=cuda and cuda_cpu.
 RUN(NAME gpu_metal_560 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda_cpu cuda)
+# A non-rectangular collapsed `!$omp parallel do` offloaded to the device,
+# or with llvm_omp dispatched as a canonical region to host threads.
+RUN(NAME gpu_metal_580 LABELS gfortran llvm_omp cuda_cpu cuda EXTRA_ARGS --openmp --gpu-offload-omp-loops GFORTRAN_ARGS -fopenmp)
+# A nested `do concurrent` ending an IF/loop/SELECT body in a device procedure.
+RUN(NAME gpu_metal_564 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -6582,7 +6601,13 @@ RUN(NAME gpu_metal_484 LABELS gfortran llvm metal cuda cuda_cpu)
 if (LFORTRAN_BACKEND STREQUAL "cuda")
     enable_language(CUDA)
     add_executable(gpu_cuda_scratch_order gpu_cuda_scratch_order.cu
-        ../src/libasr/runtime/lfortran_gpu_cuda.cu)
+        ../src/libasr/runtime/lfortran_gpu_cuda.c)
+    # The runtime is host C: it needs the CUDA headers, and nvcc links it
+    # with the CUDA runtime library like the LFortran driver does.
+    target_include_directories(gpu_cuda_scratch_order PRIVATE
+        ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    set_target_properties(gpu_cuda_scratch_order PROPERTIES
+        LINKER_LANGUAGE CUDA)
     # Build for the local GPUs, like the default `--gpu-arch` of the
     # LFortran-compiled CUDA tests, instead of nvcc's default architecture.
     set_target_properties(gpu_cuda_scratch_order PROPERTIES
@@ -6606,6 +6631,7 @@ RUN(NAME gpu_metal_490 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_491 LABELS gfortran llvm cuda cuda_cpu) # metal declines integer(8) loop indices
 RUN(NAME gpu_tile_high_bounds_i4 LABELS gfortran llvm metal cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_tile_high_bounds_i8 LABELS gfortran llvm cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
+RUN(NAME gpu_pointer_bound_01 LABELS gfortran llvm metal cuda cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6760,6 +6786,9 @@ RUN(NAME decl_order_02 LABELS gfortran llvm)
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
 RUN(NAME runtime_checks_01 LABELS gfortran llvm)
 RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
+# lfortran_display is an LFortran runtime module that GFortran does not have.
+# Its procedures do not link with --separate-compilation yet (#15852).
+RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)

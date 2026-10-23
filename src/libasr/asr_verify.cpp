@@ -2376,6 +2376,35 @@ public:
 
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
             }
+            for (size_t i = 0; i < x.n_checks; i++) {
+                const ASR::array_extent_check_t &check = x.m_checks[i];
+                bool arrays_exist = 0 <= check.m_left && check.m_left < check.m_right &&
+                    check.m_right <= (int64_t) x.n_components;
+                require_id(arrays_exist,
+                    "asr.verify.debug_check_array_bounds.check_arrays",
+                    "a shape check must compare the target or an operand with a later operand");
+                if (!arrays_exist) {
+                    continue;
+                }
+                ASR::expr_t* left = check.m_left == 0 ? x.m_target
+                    : x.m_components[check.m_left - 1];
+                ASR::expr_t* right = x.m_components[check.m_right - 1];
+                int64_t rank = std::min(
+                    ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(left)),
+                    ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(right)));
+                require_id(1 <= check.m_dim && check.m_dim <= rank,
+                    "asr.verify.debug_check_array_bounds.check_dimension",
+                    "a shape check must compare a dimension of both arrays");
+                for (ASR::expr_t* extent : {check.m_left_extent, check.m_right_extent}) {
+                    ASR::ttype_t* extent_type = ASRUtils::expr_type(extent);
+                    require_with_loc_id(ASRUtils::is_integer(*extent_type) &&
+                        !ASRUtils::is_array(extent_type) &&
+                        ASRUtils::extract_kind_from_ttype_t(extent_type) == 4,
+                        "asr.verify.debug_check_array_bounds.check_extent_type",
+                        "the extents a shape check compares must be scalar integer(4)",
+                        extent->base.loc);
+                }
+            }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
     }

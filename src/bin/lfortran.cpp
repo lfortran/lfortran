@@ -434,7 +434,6 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    Allocator al(64*1024*1024);
     cu.interactive = true;
     LCompilers::FortranEvaluator e(cu);
 
@@ -461,35 +460,21 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        LCompilers::FortranEvaluator::EvalResult r;
-        LCompilers::diag::Diagnostics diagnostics;
-
-        try {
-            LCompilers::LocationManager lm;
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            // The evaluator names this cell and keeps its text; nothing has
-            // to be written out for the error rendering to quote it.
-            LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
-            res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            if (res.ok) {
-                r = res.result;
-            } else {
-                LCOMPILERS_ASSERT(diagnostics.has_error())
-                std::cerr << diagnostics.render(lm, cu);
-                diagnostics.clear();
-                continue;
+        auto cell = e.execute(input, verbose);
+        if (!cell.ok) {
+            std::cerr << cell.error_text();
+            continue;
+        }
+        std::cerr << cell.diagnostics;
+        if (cell.inspection) {
+            std::cout << cell.output;
+            if (!cell.output.empty() && cell.output.back() != '\n') {
+                std::cout << std::endl;
             }
-        } catch (const LCompilers::LCompilersException &e) {
-            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
-            std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
-            get_local_addresses(d);
-            get_local_info(d);
-            std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
-            std::cerr << e.name() + ": " << e.msg() << std::endl;
             continue;
         }
 
+        auto &r = cell.value;
         if (verbose) {
             section("AST:");
             std::cout << r.ast  << std::endl;
@@ -499,66 +484,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << r.llvm_ir << std::endl;
         }
 
-        switch (r.type) {
-            case (LCompilers::FortranEvaluator::EvalResult::integer4) : {
-                if (verbose) std::cout << "Return type: integer" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::integer8) : {
-                if (verbose) std::cout << "Return type: integer(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real4) : {
-                if (verbose) std::cout << "Return type: real" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << r.f32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real8) : {
-                if (verbose) std::cout << "Return type: real(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << r.f64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
-                if (verbose) std::cout << "Return type: complex" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
-                if (verbose) std::cout << "Return type: complex(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
-                if (verbose) std::cout << "Return type: logical" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << (r.b ? "True" : "False") << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::statement) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(statement)" << std::endl;
-                }
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::none) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(nothing to execute)" << std::endl;
-                }
-                break;
-            }
-            default : throw LCompilers::LCompilersException("Return type not supported");
+        if (verbose) {
+            std::cout << "Return type: " << r.type_name() << std::endl;
+            section("Result:");
+        }
+        if (r.has_value() || verbose) {
+            std::cout << r.text() << std::endl;
         }
     }
     return 0;
@@ -2279,8 +2210,13 @@ int link_executable(const std::vector<std::string> &infiles,
                 // declarations stay local and identical definitions do not
                 // collide when archive members are aggregated at link time.
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
-                std::string runtime_include = " -I" + runtime_library_dir
+                std::string runtime_dir = runtime_library_dir
                     + "/../libasr/runtime";
+                // The CPU emulation of the CUDA runtime API comes first, so
+                // that its cuda_runtime.h is the one the GPU runtime finds.
+                std::string runtime_include = (emulate_cpu
+                        ? " -I" + runtime_dir + "/cuda_cpu" : std::string())
+                    + " -I" + runtime_dir;
                 // Every fragment, the runtime and the native link share this
                 // architecture; the CPU-emulation driver must not receive it.
                 std::string device_cc = cuda_device_compiler_command(
@@ -2307,11 +2243,9 @@ int link_executable(const std::vector<std::string> &infiles,
                     // Compile the kernel .cu with the device compiler. When
                     // emulating, the device code is ordinary host C++, and
                     // the language has to be named explicitly because no host
-                    // compiler knows the .cu suffix. The emulation is built
-                    // without OpenMP, so the threads of a block run one after
-                    // another and a __syncthreads() reports that it cannot be
-                    // honoured; the device code and the runtime below have to
-                    // agree on that, so neither is given -fopenmp.
+                    // compiler knows the .cu suffix. The emulation runs the
+                    // threads of a block one after another, so a
+                    // __syncthreads() reports that it cannot be honoured.
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
                         + (emulate_cpu ? runtime_include + " -x c++" : "")
                         + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
@@ -2325,26 +2259,45 @@ int link_executable(const std::vector<std::string> &infiles,
                     cuda_kernel_index++;
                 }
 
-                // Compile the GPU runtime. The CPU emulation uses its own
-                // implementation of the same C API, and is C rather than C++,
-                // so the language is named explicitly for the C++ driver that
-                // compiled the kernel.
-                std::string cuda_runtime_src = runtime_library_dir
-                    + "/../libasr/runtime/"
-                    + (emulate_cpu ? "lfortran_gpu_cpu.c"
-                                   : "lfortran_gpu_cuda.cu");
-                std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string cuda_rt_cmd = device_cc + " -c -O2"
-                    + runtime_include
-                    + (emulate_cpu ? " -x c" : "")
-                    + " -o " + cuda_runtime_obj
-                    + " " + cuda_runtime_src;
-                int cuda_err = system(cuda_rt_cmd.c_str());
-                if (cuda_err) {
-                    std::cerr << "Failed to compile CUDA runtime: "
-                        << cuda_rt_cmd << std::endl;
-                    return 10;
+                // Compile the GPU runtime. It is host C code that calls the
+                // CUDA runtime API. Natively, the host C compiler builds it
+                // against the headers of the device compiler's toolkit, and
+                // the device compiler's link below adds the CUDA runtime
+                // library. The CPU emulation builds it, and the emulation of
+                // the API, with the host C++ driver that compiled the kernels,
+                // so the language is named explicitly.
+                std::vector<std::string> cuda_runtime_srcs = {
+                    runtime_dir + "/lfortran_gpu_cuda.c"};
+                if (emulate_cpu) {
+                    cuda_runtime_srcs.push_back(
+                        runtime_dir + "/cuda_cpu/cuda_cpu_runtime.c");
+                }
+                std::string cuda_rt_cmd_base;
+                if (emulate_cpu) {
+                    cuda_rt_cmd_base = device_cc + " -c -O2" + runtime_include
+                        + " -x c";
+                } else {
+                    std::string cuda_include = cuda_toolkit_include_dir(
+                        compiler_options.device_compiler);
+                    cuda_rt_cmd_base = get_c_compiler("cc") + " -c -O2"
+                        + runtime_include
+                        + (cuda_include.empty() ? ""
+                            : " -I\"" + cuda_include + "\"");
+                }
+                std::vector<std::string> cuda_runtime_objs;
+                for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
+                    std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
+                        + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID
+                        + "_" + std::to_string(i) + ".o";
+                    std::string cuda_rt_cmd = cuda_rt_cmd_base + " -o "
+                        + cuda_runtime_obj + " " + cuda_runtime_srcs[i];
+                    int cuda_err = system(cuda_rt_cmd.c_str());
+                    if (cuda_err) {
+                        std::cerr << "Failed to compile CUDA runtime: "
+                            << cuda_rt_cmd << std::endl;
+                        return 10;
+                    }
+                    cuda_runtime_objs.push_back(std::move(cuda_runtime_obj));
                 }
 
                 if (emulate_cpu) {
@@ -2364,8 +2317,11 @@ int link_executable(const std::vector<std::string> &infiles,
                     for (auto &cuda_kernel_obj : cuda_kernel_objs) {
                         compile_cmd += " " + cuda_kernel_obj;
                     }
-                    compile_cmd += " " + cuda_runtime_obj
-                        + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
+                    for (auto &cuda_runtime_obj : cuda_runtime_objs) {
+                        compile_cmd += " " + cuda_runtime_obj;
+                    }
+                    compile_cmd += std::string(is_macos ? " -lc++" : " -lstdc++")
+                        + " -lm";
                 } else {
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
@@ -2378,7 +2334,9 @@ int link_executable(const std::vector<std::string> &infiles,
                     for (auto &cuda_kernel_obj : cuda_kernel_objs) {
                         compile_cmd += cuda_kernel_obj + " ";
                     }
-                    compile_cmd += cuda_runtime_obj;
+                    for (auto &cuda_runtime_obj : cuda_runtime_objs) {
+                        compile_cmd += cuda_runtime_obj + " ";
+                    }
                     compile_cmd += extra_library_flags;
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path

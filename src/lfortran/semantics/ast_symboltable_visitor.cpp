@@ -2598,6 +2598,10 @@ public:
             }
         }
 
+        if (is_pure) {
+            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
+        }
+
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -3427,6 +3431,10 @@ public:
         // pure.
         if( is_elemental && !is_impure ) {
             is_pure = true;
+        }
+
+        if (is_pure) {
+            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
         }
 
         SetChar func_deps;

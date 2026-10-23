@@ -6816,6 +6816,18 @@ filename = "asr/verify/associate_pointer_bounds_descriptor_target.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/debug_check_array_bounds_arrays.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_dimension.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_extent_type.asr"
+asr = true
+
+[[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
 

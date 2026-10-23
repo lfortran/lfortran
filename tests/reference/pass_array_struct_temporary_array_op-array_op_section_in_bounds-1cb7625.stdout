@@ -620,6 +620,37 @@
                             ()
                         )
                         [(Var 2 b)]
+                        [(0
+                        1
+                        1
+                        (ArraySize
+                            (ArraySection
+                                (Var 2 a)
+                                [((IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                (()
+                                (Var 2 __libasr_created__array_section_subscript_3)
+                                ())]
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
                         .false.
                     )
                     (Assignment

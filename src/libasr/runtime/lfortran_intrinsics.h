@@ -403,6 +403,13 @@ LFORTRAN_API int32_t _lfortran_iachar(char *c);
 LFORTRAN_API void _lpython_set_argv(int32_t argc_1, char *argv_1[]);
 LFORTRAN_API void _lpython_free_argv();
 LFORTRAN_API void _lfortran_set_use_runtime_colors(int use_colors);
+// Returns the context of the hooks it replaces.
+LFORTRAN_API void* _lfortran_set_display_hooks(
+    void (*display_data)(void* context, const char* mime_type, const char* data),
+    void (*clear_output)(void* context),
+    void* context);
+LFORTRAN_API void lfortran_display_data(const char* mime_type, const char* data);
+LFORTRAN_API void lfortran_clear_output(void);
 LFORTRAN_API int32_t _lpython_get_argc();
 LFORTRAN_API char *_lpython_get_argv(int32_t index);
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]);
