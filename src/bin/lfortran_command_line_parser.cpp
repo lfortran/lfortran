@@ -243,6 +243,10 @@ namespace LCompilers::CommandLineInterface {
             "DEPRECATED: legacy alias for --separate-compilation");
         app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
         app.add_flag("-v", opts.arg_v, "Be more verbose");
+        app.add_option("--serve", opts.session_serve,
+            "Serve an interactive session on the Unix socket PATH");
+        app.add_option("--connect", opts.session_connect,
+            "Run the prompt in the session served on the Unix socket PATH");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", opts.arg_l, "Link library option")->allow_extra_args(false);
         app.add_option("-L", opts.arg_L, "Library path option")->allow_extra_args(false);

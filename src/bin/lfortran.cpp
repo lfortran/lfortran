@@ -74,6 +74,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <bin/session.h>
 
 
 #ifdef WITH_LSP
@@ -423,7 +424,8 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose, CompilerOptions &cu)
+// With `connect`, the cells run in the session served there instead of here.
+int prompt(bool verbose, CompilerOptions &cu, const std::string &connect)
 {
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
@@ -434,8 +436,19 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    cu.interactive = true;
-    LCompilers::FortranEvaluator e(cu);
+    std::unique_ptr<LCompilers::LFortran::SessionClient> session;
+    std::unique_ptr<LCompilers::FortranEvaluator> e;
+    if (!connect.empty()) {
+        try {
+            session = std::make_unique<LCompilers::LFortran::SessionClient>(connect);
+        } catch (const std::runtime_error &error) {
+            std::cerr << "error: " << error.what() << std::endl;
+            return 1;
+        }
+    } else {
+        cu.interactive = true;
+        e = std::make_unique<LCompilers::FortranEvaluator>(cu);
+    }
 
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
@@ -460,7 +473,15 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        auto cell = e.execute(input, verbose);
+        if (session) {
+            if (!session->execute(input)) {
+                std::cerr << "error: the session server has gone" << std::endl;
+                return 1;
+            }
+            continue;
+        }
+
+        auto cell = e->execute(input, verbose);
         if (!cell.ok) {
             std::cerr << cell.error_text();
             continue;
@@ -2902,9 +2923,18 @@ int main_app(int argc, char *argv[]) {
     }
 #endif
 
+    if (!opts.session_serve.empty()) {
+#ifdef HAVE_LFORTRAN_LLVM
+        return LCompilers::LFortran::serve_session(compiler_options, opts.session_serve);
+#else
+        std::cerr << "The session server requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+        return 1;
+#endif
+    }
+
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, compiler_options);
+        return prompt(opts.arg_v, compiler_options, opts.session_connect);
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;

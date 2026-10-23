@@ -1,6 +1,7 @@
 set(LFORTRAN_SRC
     lfortran_command_line_parser.cpp
     lfortran.cpp
+    session.cpp
 )
 set(LFORTRAN_LINK_LIBRARIES
     lfortran_lib

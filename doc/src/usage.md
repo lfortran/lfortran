@@ -132,6 +132,28 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+### Sharing a session
+
+Several prompts can share one session, with its variables, procedures and
+modules. Start a session server on a Unix socket, then connect prompts to it
+from other terminals:
+
+```console
+$ lfortran --serve /tmp/fortran-session.sock
+$ lfortran --connect /tmp/fortran-session.sock
+```
+
+The server runs one cell at a time, in the order the cells arrive, on a single
+thread. A cell's output, result and errors go to the prompt that ran it, and
+so does a READ's request for input; the other prompts' cells wait until it is
+done. The output is shown when the cell finishes or asks for input. The
+socket is accessible to its owner only; whoever can connect can run code as
+that user. Ctrl-C or SIGTERM stops the server, which removes the socket.
+Sessions are not supported on Windows yet.
+
+The protocol is a sequence of frames (a 4-byte big-endian length, a kind byte
+and a payload), described in `src/bin/session.cpp`.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select

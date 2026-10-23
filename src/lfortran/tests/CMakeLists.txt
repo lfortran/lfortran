@@ -310,6 +310,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+            # Sessions use Unix sockets, which are not supported on Windows yet.
+            add_test(
+                NAME test_session
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_session PROPERTIES TIMEOUT 180)
         endif()
         if (WITH_XEUS)
             add_test(
