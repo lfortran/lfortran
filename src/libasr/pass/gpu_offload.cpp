@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -466,6 +467,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             loop_var_set, reduction_names,
             local_scalar_names, involved_syms, liveouts)) {
         return;
+    }
+    // An optional scalar the loop may define reaches the kernel in a
+    // buffer of the launch's own, which is there whether or not the
+    // argument is present: the loop runs either way, and the launch copies
+    // the value in and out only when it is present.
+    for (auto &ls : liveouts.scalars) {
+        optional_syms.erase(std::remove(optional_syms.begin(),
+            optional_syms.end(), ls.orig_scalar_sym), optional_syms.end());
     }
     {
         // One accumulator per iteration. The extent is only known when the

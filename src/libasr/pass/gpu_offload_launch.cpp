@@ -14,6 +14,34 @@
 
 namespace LCompilers {
 
+namespace {
+
+// `stmt`, or `if (present(sym)) stmt` for an optional dummy argument `sym`.
+ASR::stmt_t *gpu_if_present(Allocator &al, const Location &loc,
+        ASR::symbol_t *sym, ASR::stmt_t *stmt) {
+    ASR::symbol_t *v = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*v) || ASR::down_cast<ASR::Variable_t>(
+            v)->m_presence != ASR::presenceType::Optional) {
+        return stmt;
+    }
+    Vec<ASR::expr_t*> args;
+    args.reserve(al, 1);
+    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+    ASR::expr_t *present = ASRUtils::EXPR(
+        ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::Present),
+            args.p, args.n, 0,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+    Vec<ASR::stmt_t*> then;
+    then.reserve(al, 1);
+    then.push_back(al, stmt);
+    return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, present, then.p,
+        then.n, nullptr, 0));
+}
+
+} // namespace
+
 // Replaces the region with the launch of the kernel the draft above built:
 // the copies the host makes on either side of the dispatch and the dispatch
 // itself. Everything it needs is in `plan`; the region was committed to the
@@ -360,9 +388,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
         ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
             ls.scalar_type);
-        launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
-                nullptr, false, false, false)));
+        launch_stmts.push_back(al, gpu_if_present(al, loc,
+            ls.orig_scalar_sym, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
+                    nullptr, false, false, false))));
     }
 
     ASR::expr_t *block_size_const = ASRUtils::EXPR(
@@ -425,9 +454,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
         ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
             ls.scalar_type);
-        launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
-                nullptr, false, false, false)));
+        launch_stmts.push_back(al, gpu_if_present(al, loc,
+            ls.orig_scalar_sym, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
+                    nullptr, false, false, false))));
     }
 
     // Fold the accumulators into the scalar the source named. It still
