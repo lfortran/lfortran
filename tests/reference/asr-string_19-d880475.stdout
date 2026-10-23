@@ -752,10 +752,10 @@
                                                     []
                                                     ()
                                                 ),
-                                            len1:
+                                            len@len_string:
                                                 (ExternalSymbol
                                                     9
-                                                    len1
+                                                    len@len_string
                                                     2 len
                                                     string_19_stdlib_string_type
                                                     []
@@ -827,7 +827,7 @@
                                             [((Var 9 string))]
                                             (String 1 (FunctionCall
                                                 6 len_string
-                                                9 len1
+                                                9 len@len_string
                                                 [((Var 9 string))]
                                                 (Integer 4)
                                                 ()
@@ -1224,10 +1224,10 @@
                                     (SymbolTable
                                         10
                                         {
-                                            len1:
+                                            len@len_string:
                                                 (ExternalSymbol
                                                     10
-                                                    len1
+                                                    len@len_string
                                                     2 len
                                                     string_19_stdlib_string_type
                                                     []
@@ -1371,7 +1371,7 @@
                                                     [((Var 10 string))]
                                                     (String 1 (FunctionCall
                                                         6 len_string
-                                                        10 len1
+                                                        10 len@len_string
                                                         [((Var 10 string))]
                                                         (Integer 4)
                                                         ()
@@ -1394,7 +1394,7 @@
                                                             [((Var 10 string))]
                                                             (String 1 (FunctionCall
                                                                 6 len_string
-                                                                10 len1
+                                                                10 len@len_string
                                                                 [((Var 10 string))]
                                                                 (Integer 4)
                                                                 ()
@@ -1440,10 +1440,10 @@
                                     (SymbolTable
                                         11
                                         {
-                                            len1:
+                                            len@len_string:
                                                 (ExternalSymbol
                                                     11
-                                                    len1
+                                                    len@len_string
                                                     2 len
                                                     string_19_stdlib_string_type
                                                     []
@@ -1614,7 +1614,7 @@
                                                     [((Var 11 string))]
                                                     (String 1 (FunctionCall
                                                         6 len_string
-                                                        11 len1
+                                                        11 len@len_string
                                                         [((Var 11 string))]
                                                         (Integer 4)
                                                         ()
@@ -1634,7 +1634,7 @@
                                                             [((Var 11 string))]
                                                             (String 1 (FunctionCall
                                                                 6 len_string
-                                                                11 len1
+                                                                11 len@len_string
                                                                 [((Var 11 string))]
                                                                 (Integer 4)
                                                                 ()
