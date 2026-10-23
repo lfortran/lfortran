@@ -508,24 +508,76 @@ bool gpu_struct_privately_copyable(SymbolTable *scope, const std::string &name,
         && gpu_struct_bytes(struct_sym) <= gpu_private_struct_limit;
 }
 
-bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
-        ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body) {
-    if (ASRUtils::is_array(type)
-            || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
-        return false;
+namespace {
+
+// How the assignments of the loop body define the variable `v`: whether
+// any does, whether all define it whole, and whether all define it whole
+// or define a component of it whole (`y = ...`, `y%k = ...`, `y%c = ...`,
+// not `y%c(i) = ...` or `y%in%k = ...`).
+class GpuAssignmentsOf
+        : public ASRUtils::BlockBodyWalkVisitor<GpuAssignmentsOf> {
+public:
+    ASR::symbol_t *v;
+    bool any = false, all_whole = true, all_whole_or_component = true;
+    GpuAssignmentsOf(ASR::symbol_t *v_) : v(v_) {}
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        ASR::expr_t *target = x.m_target;
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*target)) {
+            target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(target)->m_arg;
+        }
+        ASR::expr_t *root = target;
+        while (true) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*root)) {
+                root = ASR::down_cast<ASR::StructInstanceMember_t>(root)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*root)) {
+                root = ASR::down_cast<ASR::ArrayItem_t>(root)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*root)) {
+                root = ASR::down_cast<ASR::ArraySection_t>(root)->m_v;
+            } else {
+                break;
+            }
+        }
+        if (ASR::is_a<ASR::Var_t>(*root) && ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(root)->m_v) == v) {
+            any = true;
+            bool whole = ASR::is_a<ASR::Var_t>(*target);
+            all_whole = all_whole && whole;
+            all_whole_or_component = all_whole_or_component && (whole
+                || (ASR::is_a<ASR::StructInstanceMember_t>(*target)
+                    && ASR::is_a<ASR::Var_t>(*ASR::down_cast<
+                        ASR::StructInstanceMember_t>(target)->m_v)));
+        }
+        ASR::BaseWalkVisitor<GpuAssignmentsOf>::visit_Assignment(x);
+    }
+};
+
+} // namespace
+
+GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
+        ASR::ttype_t *type, bool live, bool assigned, ASR::stmt_t **body,
+        size_t n_body) {
+    if (live) return GpuLocality::PrivateCopies;
+    if (ASRUtils::is_array(type)) return GpuLocality::KernelArgument;
+    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        return assigned ? GpuLocality::KernelLocal
+            : GpuLocality::KernelArgument;
+    }
+    bool copyable = gpu_struct_privately_copyable(scope, name, type);
+    if (!assigned) {
+        // Only passed to procedures that may define it.
+        return copyable ? GpuLocality::PrivateCopies
+            : GpuLocality::KernelArgument;
     }
     ASR::symbol_t *sym = scope->resolve_symbol(name);
-    if (sym == nullptr) return false;
-    sym = ASRUtils::symbol_get_past_external(sym);
-    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
-    std::set<ASR::symbol_t*> variables = {sym};
-    std::set<std::string> no_indices;
-    GpuStructParts parts(variables, no_indices);
-    for (size_t i = 0; i < n_body; i++) parts.visit_stmt(*body[i]);
-    for (auto &d : parts.definitions) {
-        if (!d.path.empty()) return true;
+    sym = sym ? ASRUtils::symbol_get_past_external(sym) : nullptr;
+    GpuAssignmentsOf assignments(sym);
+    for (size_t i = 0; i < n_body; i++) assignments.visit_stmt(*body[i]);
+    if (assignments.all_whole) return GpuLocality::KernelLocal;
+    if (copyable || gpu_no_kernel_local_struct(scope, name, type)) {
+        return GpuLocality::PrivateCopies;
     }
-    return false;
+    if (assignments.all_whole_or_component) return GpuLocality::KernelLocal;
+    return GpuLocality::PrivateCopies;
 }
 
 bool GpuOffloadVisitor::plan_liveouts(const Location &loc,

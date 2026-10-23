@@ -6735,6 +6735,7 @@ RUN(NAME gpu_derived_component_12 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_13 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_14 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_15 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_derived_component_16 LABELS gfortran llvm metal cuda)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

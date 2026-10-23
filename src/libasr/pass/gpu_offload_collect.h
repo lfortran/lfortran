@@ -540,20 +540,43 @@ private:
 bool gpu_no_kernel_local_struct(SymbolTable *scope,
     const std::string &name, ASR::ttype_t *type);
 
-// Whether `name`, of type `type`, is a derived-type variable of which the
-// loop body defines a component, and not only the whole value: its other
-// components keep the values they had before the loop, so a thread cannot
-// take it as an uninitialized local of its own. Each thread keeps private
-// copies of the parts the loop defines instead (gpu_offload_liveout.cpp).
-bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
-    ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body);
-
 // Whether `name`, of type `type`, is a derived-type variable that each
 // thread can keep a private copy of whole: not polymorphic, allocatable or
 // a pointer, of a type without allocatable or pointer parts, and small
 // enough.
 bool gpu_struct_privately_copyable(SymbolTable *scope, const std::string &name,
     ASR::ttype_t *type);
+
+// Where a kernel keeps a variable that a parallel loop assigns (`assigned`)
+// or passes to a procedure that may define it.
+enum class GpuLocality {
+    // A local of the kernel, which starts undefined in every thread.
+    KernelLocal,
+    // A kernel argument, as a variable the loop only reads is.
+    KernelArgument,
+    // A kernel argument of which each thread keeps private copies of the
+    // parts the loop defines, taken on entry, and puts back what it defines
+    // of them when `live` (plan_liveouts in gpu_offload_liveout.cpp).
+    PrivateCopies,
+};
+
+// The one place that decides it. The invariant: a variable is a kernel
+// local iff its value is not kept after the loop (`live`), it is not an
+// array, and every assignment to it in the loop assigns it whole -- or, for
+// a derived-type value no thread can copy whole and the kernel can hold as
+// a local, assigns it whole or a component of it whole (`y%k = ...`,
+// `y%c = ...`); the components such a local leaves undefined are then
+// undefined, as before this pass kept anything after the loop. A
+// derived-type value the loop defines in other parts (`y%c(i)`,
+// `y%in%k`), in parts at all when each thread can copy it whole, or that
+// the kernel cannot hold as a local (gpu_no_kernel_local_struct) gets
+// private copies of those parts, taken from the kernel argument; so does
+// one each thread can copy whole that a procedure may define. Anything
+// else is a kernel argument: a variable only a procedure may define keeps
+// its value.
+GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
+    ASR::ttype_t *type, bool live, bool assigned, ASR::stmt_t **body,
+    size_t n_body);
 
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel

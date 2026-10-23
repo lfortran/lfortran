@@ -418,11 +418,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
 
-    // Only a variable the loop assigns can be a kernel local, which starts
-    // undefined; a variable passed to a procedure that may define it, in
-    // a call that may not run, keeps the value it had: a scalar as a
-    // kernel argument, and a derived-type value in a whole copy each
-    // thread takes on entry, unless its value is kept after the loop.
     std::set<std::string> live_vars;
     for (auto *names : {&assigned_vars, &may_define}) {
         for (auto &name : *names) {
@@ -434,38 +429,32 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             }
         }
     }
-    std::set<std::string> local_scalar_names;
-    for (auto &name : assigned_vars) {
-        if (loop_var_set.count(name)) continue;
-        if (all_reduction_targets.count(name)) continue;
-        if (reduction_names.count(name)) continue;
-        if (live_vars.count(name)) continue;
-        auto it = involved_syms.find(name);
-        if (it != involved_syms.end()) {
-            ASR::ttype_t *type = it->second.first;
-            // A derived type the kernel cannot hold as a local, or a
-            // variable of which the loop defines only components and that
-            // each thread can copy whole, keeps the values of its other
-            // components through private copies (plan_liveouts).
-            if (gpu_no_kernel_local_struct(current_scope, name, type)
-                    || (gpu_struct_defined_in_part(current_scope, name, type,
-                            work.body, work.n_body)
-                        && gpu_struct_privately_copyable(current_scope,
-                            name, type))) {
+    // Where the kernel keeps each variable the loop defines or may define
+    // (gpu_locality).
+    std::set<std::string> local_scalar_names, liveout_candidates;
+    for (auto *names : {&assigned_vars, &may_define}) {
+        for (auto &name : *names) {
+            if (loop_var_set.count(name)) continue;
+            if (reduction_names.count(name)) continue;
+            // The result of an inlined all() goes back to the host.
+            if (all_reduction_targets.count(name)) {
+                liveout_candidates.insert(name);
                 continue;
             }
-            if (!ASRUtils::is_array(type)) {
-                local_scalar_names.insert(name);
+            auto it = involved_syms.find(name);
+            if (it == involved_syms.end()) continue;
+            switch (gpu_locality(current_scope, name, it->second.first,
+                    live_vars.count(name) > 0, assigned_vars.count(name) > 0,
+                    work.body, work.n_body)) {
+                case GpuLocality::KernelLocal:
+                    local_scalar_names.insert(name);
+                    break;
+                case GpuLocality::PrivateCopies:
+                    liveout_candidates.insert(name);
+                    break;
+                case GpuLocality::KernelArgument:
+                    break;
             }
-        }
-    }
-    std::set<std::string> liveout_candidates = assigned_vars;
-    for (auto &name : may_define) {
-        auto it = involved_syms.find(name);
-        if (live_vars.count(name) || (it != involved_syms.end()
-                && gpu_struct_privately_copyable(current_scope, name,
-                    it->second.first))) {
-            liveout_candidates.insert(name);
         }
     }
 
