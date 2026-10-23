@@ -819,26 +819,24 @@
                                             (Var 10 targets)
                                             DescriptorArray
                                             PointerArray
-                                            (Allocatable
-                                                (Array
-                                                    (StructType
-                                                        [(Pointer
-                                                            (StructType
-                                                                []
-                                                                []
-                                                                .true.
-                                                                .false.
-                                                            )
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    [(()
-                                                    ())]
-                                                    PointerArray
-                                                    Global
+                                            (Array
+                                                (StructType
+                                                    [(Pointer
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
                                                 )
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
                                             )
                                             ()
                                         ))

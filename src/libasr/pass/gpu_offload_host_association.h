@@ -24,6 +24,14 @@ shared pass for nested procedures leaves it alone.
 */
 void gpu_lift_host_association(Allocator &al, ASR::Function_t &kernel);
 
+/*
+The type of a dummy argument in a procedure signature, which must not name the
+symbols of a scope: a bound of an array that is not a compile-time constant is
+left out. A constant bound is kept, so a "FixedSizeArray" keeps the constant
+dimensions its physical type requires.
+*/
+ASR::ttype_t* gpu_signature_type(Allocator &al, ASR::ttype_t *type);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_GPU_OFFLOAD_HOST_ASSOCIATION_H

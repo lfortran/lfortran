@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.pointer.array_descriptor]: a pointer array must have physical type "DescriptorArray"
+  --> tests/asr/verify/pointer_array_descriptor.asr:17:22
+   |
+17 |               :type (Pointer
+   |                      ^^^^^^^ failed here

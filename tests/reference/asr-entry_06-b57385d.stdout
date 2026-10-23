@@ -930,14 +930,12 @@
                             (Var 3 w)
                             DescriptorArray
                             UnboundedPointerArray
-                            (Pointer
-                                (Array
-                                    (Real 8)
-                                    [(()
-                                    ())]
-                                    UnboundedPointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 8)
+                                [(()
+                                ())]
+                                UnboundedPointerArray
+                                Global
                             )
                             ()
                         ))]

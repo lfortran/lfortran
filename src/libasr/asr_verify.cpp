@@ -1688,6 +1688,27 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        // An assumed-size dummy `a(n, *)` has no extent in its last
+        // dimension, so it is passed as its data alone, never as a
+        // descriptor of the actual argument. Only a polymorphic dummy needs
+        // a descriptor, for the dynamic type. A rank one `a(*)` has the
+        // same dimensions as `a(:)`, so only its physical type tells them
+        // apart and it cannot be checked here.
+        if (x.m_type && ASRUtils::is_arg_dummy(x.m_intent) &&
+                ASR::is_a<ASR::Array_t>(*x.m_type) &&
+                !ASRUtils::is_class_type(ASRUtils::type_get_past_array(x.m_type))) {
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(x.m_type);
+            bool assumed_size = array->n_dims >= 2 &&
+                array->m_dims[array->n_dims - 1].m_length == nullptr;
+            for (size_t i = 0; i + 1 < array->n_dims; i++) {
+                assumed_size = assumed_size && array->m_dims[i].m_length != nullptr;
+            }
+            require_id(!assumed_size ||
+                array->m_physical_type != ASR::DescriptorArray,
+                "asr.verify.variable.assumed_size_descriptor",
+                "assumed-size dummy argument '" + std::string(x.m_name) +
+                    "' must not have physical type \"DescriptorArray\"")
+        }
         // A compile time value is stored into the variable's own storage,
         // so a value whose type disagrees with the declaration produces a
         // store LLVM rejects. The frontend casts such initializers; a graph
@@ -4741,6 +4762,26 @@ public:
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of classes can't be of physical type \"FixedSizeArray\"")
         }
+        // A "FixedSizeArray" is stored inline, so its bounds must be known
+        // at compile time. The deferred constants of a template have no
+        // value until the template is instantiated.
+        if (x.m_physical_type == ASR::FixedSizeArray && check_external &&
+                !_inside_template) {
+            bool constant_dims = true;
+            for (size_t i = 0; i < x.n_dims; i++) {
+                int64_t value = 0;
+                for (ASR::expr_t* bound : {x.m_dims[i].m_start, x.m_dims[i].m_length}) {
+                    if (bound == nullptr || !ASRUtils::extract_value(
+                            ASRUtils::expr_value(bound), value)) {
+                        constant_dims = false;
+                    }
+                }
+            }
+            require_id(constant_dims,
+                "asr.verify.array.fixed_size_constant_dims",
+                "an array with physical type \"FixedSizeArray\" must have"
+                " compile-time constant lower bounds and extents")
+        }
         _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
@@ -4748,9 +4789,23 @@ public:
         _processing_dims = false;
     }
 
+    // An allocatable or pointer array of unknown rank is an assumed-rank
+    // descriptor.
+    static bool is_descriptor(const ASR::Array_t* array) {
+        return array->m_physical_type == ASR::DescriptorArray ||
+            array->m_physical_type == ASR::AssumedRankArray;
+    }
+
     void visit_Pointer(const Pointer_t &x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Pointer type conflicts with Allocatable type");
+        // Pointer association changes the bounds and the strides at run
+        // time, so only a descriptor can hold them.
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            require_id(is_descriptor(ASR::down_cast<ASR::Array_t>(x.m_type)),
+                "asr.verify.pointer.array_descriptor",
+                "a pointer array must have physical type \"DescriptorArray\"")
+        }
         if( ASR::is_a<ASR::Array_t>(*x.m_type) ) {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x.m_type);
             for (size_t i = 0; i < array_t->n_dims; i++) {
@@ -4765,6 +4820,13 @@ public:
         require(!ASR::is_a<ASR::Pointer_t>(*x.m_type) &&
                 !ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        // Allocation sets the bounds at run time, so only a descriptor can
+        // hold them.
+        if (ASR::is_a<ASR::Array_t>(*x.m_type)) {
+            require_id(is_descriptor(ASR::down_cast<ASR::Array_t>(x.m_type)),
+                "asr.verify.allocatable.array_descriptor",
+                "an allocatable array must have physical type \"DescriptorArray\"")
+        }
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
         for( size_t i = 0; i < n_dims; i++ ) {

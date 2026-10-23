@@ -1473,11 +1473,30 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     return scalar_var_temporary;
 }
 
+// A defined operation is evaluated as its function call `m_overloaded`.
+static ASR::expr_t* get_past_defined_operation(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::OverloadedBinOp:
+            return ASR::down_cast<ASR::OverloadedBinOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedBoolOp:
+            return ASR::down_cast<ASR::OverloadedBoolOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedCompare:
+            return ASR::down_cast<ASR::OverloadedCompare_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedStringConcat:
+            return ASR::down_cast<ASR::OverloadedStringConcat_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedUnaryMinus:
+            return ASR::down_cast<ASR::OverloadedUnaryMinus_t>(x)->m_overloaded;
+        default:
+            return x;
+    }
+}
+
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
     ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false) {
+    array_expr = get_past_defined_operation(array_expr);
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
         allocate_size_reference = array_expr;
@@ -3017,6 +3036,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             return ; 
         }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
+        if( !ASRUtils::is_fixed_size_array(xx.m_type) ) {
+            // A result whose shape is only known at run time cannot be stored
+            // inline, so it is reshaped from a descriptor of `source`.
+            ASR::ttype_t* array_ttype = ASRUtils::expr_type(xx.m_array);
+            ASR::array_physical_typeType array_ptype = ASRUtils::extract_physical_type(array_ttype);
+            if( array_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                xx.m_array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, xx.m_array->base.loc, xx.m_array, array_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, array_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr));
+            }
+            return;
+        }
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
             ASR::array_physical_typeType::FixedSizeArray &&

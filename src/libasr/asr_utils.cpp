@@ -312,6 +312,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
             return struct_constant->m_dt_sym;
         }
+        case ASR::exprType::GetPointer: {
+            ASR::GetPointer_t* get_pointer = ASR::down_cast<ASR::GetPointer_t>(expression);
+            return ASRUtils::get_struct_sym_from_struct_expr(get_pointer->m_arg);
+        }
         case ASR::exprType::ArrayPhysicalCast: {
             ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression);
             // `array_physical_cast->m_arg` will be non-null for Struct expressions
@@ -620,7 +624,6 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::ListConcat:
         case ASR::exprType::PointerAssociated:
         case ASR::exprType::PointerToCPtr:
-        case ASR::exprType::GetPointer:
         case ASR::exprType::CLoc:
         case ASR::exprType::FunctionParam: {
             return nullptr;
@@ -11040,6 +11043,23 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         m_side_effect_free, m_c_header, nullptr, m_start_name, m_end_name);
 }
 
+void cast_to_wider_kind(Allocator& al, ASR::expr_t*& a, ASR::expr_t*& b) {
+    ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(a));
+    ASR::ttype_t* b_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(b));
+    if( !ASRUtils::is_integer(*a_type) || !ASRUtils::is_integer(*b_type) ) {
+        return;
+    }
+    int a_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+    int b_kind = ASRUtils::extract_kind_from_ttype_t(b_type);
+    if( a_kind < b_kind ) {
+        a = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, a->base.loc, a,
+            ASR::cast_kindType::IntegerToInteger, b_type));
+    } else if( b_kind < a_kind ) {
+        b = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, b->base.loc, b,
+            ASR::cast_kindType::IntegerToInteger, a_type));
+    }
+}
+
 ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
@@ -11165,6 +11185,7 @@ ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, AS
                     nullptr));
     }
 
+    cast_to_wider_kind(al, start, end);
     ASR::expr_t* diff = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, end,
                                        ASR::binopType::Sub, start, ASRUtils::expr_type(end),
                                        nullptr));
@@ -11710,6 +11731,12 @@ ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     }
 
     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) == a_old);
+    // Only a descriptor can be allocatable or a pointer, so the result of a
+    // cast to any other physical type is a plain array.
+    if( a_new != ASR::array_physical_typeType::DescriptorArray &&
+        a_new != ASR::array_physical_typeType::AssumedRankArray ) {
+        a_type = ASRUtils::type_get_past_allocatable_pointer(a_type);
+    }
     // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
     // later on
     if( a_old == a_new ) {
@@ -12679,9 +12706,8 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                         dims.p, dims.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global);
-                        ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
                         ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
+                                                        ASR::array_physical_typeType::PointerArray, ASRUtils::TYPE(array_t), nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }

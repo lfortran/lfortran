@@ -227,14 +227,12 @@
                                             (Var 8 littlefile)
                                             DescriptorArray
                                             PointerArray
-                                            (Allocatable
-                                                (Array
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                    [(()
-                                                    ())]
-                                                    PointerArray
-                                                    Global
-                                                )
+                                            (Array
+                                                (String 1 () DeferredLength DescriptorString)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
                                             )
                                             ()
                                         ))

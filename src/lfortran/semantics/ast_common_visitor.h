@@ -4027,6 +4027,7 @@ public:
                 && start_int == 1)) {
             return end;
         }
+        ASRUtils::cast_to_wider_kind(al, start, end);
         const Location &loc = end->base.loc;
         ASR::ttype_t* type = ASRUtils::expr_type(end);
         auto make_binop = [&](ASR::expr_t* left, ASR::binopType op,
@@ -4974,11 +4975,12 @@ public:
                         reshape_dim.m_length = nullptr;
                         reshape_dims.push_back(al, reshape_dim);
                     }
+                    // The shape is read from the pointer at run time.
                     ASR::ttype_t* reshape_type = ASRUtils::TYPE(
                         ASR::make_Array_t(al, x.base.base.loc,
                             array_type->m_type, reshape_dims.p,
                             reshape_dims.size(),
-                            ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                            ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
                     arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
                         al, x.base.base.loc, arr_const, shape, nullptr,
                         nullptr, reshape_type, nullptr));
@@ -13847,7 +13849,9 @@ public:
                                         s2c(al, derived_type_name),
                                         tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
-                    al, loc, type, dims.p, dims.size(), abi, is_argument);
+                    al, loc, type, dims.p, dims.size(), abi, is_argument,
+                    ASR::array_physical_typeType::DescriptorArray, false,
+                    is_dimension_star);
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
                 type_declaration = v;
                 type = ASRUtils::make_cptr_type(al, loc, current_scope, v);
@@ -13931,7 +13935,7 @@ public:
                     type = ASRUtils::make_Array_t_util(
                         al, loc, type, dims.p, dims.size(), abi, is_argument,
                         ASR::array_physical_typeType::DescriptorArray, false,
-                        abi == ASR::abiType::BindC && is_dimension_star);
+                        is_dimension_star);
                 }
                 if (is_pointer) {
                     type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
@@ -19913,6 +19917,13 @@ public:
             }
         }
 
+        // The result keeps the physical type of `source`, except that a
+        // `source` stored inline cannot give its storage to a result whose
+        // shape is only known at run time.
+        if (array_physical_type == ASR::array_physical_typeType::FixedSizeArray &&
+                !ASRUtils::is_fixed_size_array(dims.p, dims.n)) {
+            array_physical_type = ASR::array_physical_typeType::DescriptorArray;
+        }
         reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
         // Compile time value is same as the "source" ArrayConstant with multi-dimensional type instead of 1-D
