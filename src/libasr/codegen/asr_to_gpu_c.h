@@ -5744,8 +5744,10 @@ public:
                 break;
             }
             case ASR::exprType::StructConstant: {
-                // The value of a derived-type named constant, which a pass
-                // assigns to it, as the brace list of its device struct.
+                // The value of a derived-type named constant, or of an
+                // element of one, as a temporary of its device struct: it
+                // can be the object of a component reference or the value
+                // of an assignment, where a bare brace list is not valid.
                 ASR::StructConstant_t *sc =
                     ASR::down_cast<ASR::StructConstant_t>(expr);
                 ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
@@ -5763,7 +5765,8 @@ public:
                         "constant reached the device code with a component "
                         "it cannot be given a value of", expr->base.loc);
                 }
-                src << init;
+                src << struct_c_name(ASR::down_cast<ASR::Struct_t>(st))
+                    << init;
                 break;
             }
             default:
