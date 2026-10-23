@@ -804,6 +804,29 @@ public:
     // the initialiser leaves every reference reading whatever the thread's
     // stack happened to hold.
     void emit_named_constant_decl(ASR::Variable_t *var) {
+        // A derived-type constant device code cannot be given the value of,
+        // an array of derived-type values or one with such a component, is
+        // not declared: the kernel plan declines a loop whose device code
+        // reads one, so only one nothing reads, whose declaration would be
+        // left out anyway, gets here.
+        if (ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(var->m_type))) {
+            if (ASRUtils::is_array(var->m_type)
+                    || !ASR::is_a<ASR::StructConstant_t>(*var->m_value)) {
+                return;
+            }
+            ASR::StructConstant_t *sc =
+                ASR::down_cast<ASR::StructConstant_t>(var->m_value);
+            ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
+                sc->m_dt_sym);
+            size_t next_arg = 0;
+            if (!ASR::is_a<ASR::Struct_t>(*st)
+                    || !gpu_struct_constant_unsupported_component(
+                        ASR::down_cast<ASR::Struct_t>(st), sc, next_arg)
+                        .empty()) {
+                return;
+            }
+        }
         if (ASR::is_a<ASR::Array_t>(*var->m_type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
             int64_t total = 1;
