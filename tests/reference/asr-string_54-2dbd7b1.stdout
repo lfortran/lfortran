@@ -33,13 +33,10 @@
                                     ()
                                 ),
                             double:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     5
                                     double
-                                    2 double
-                                    string_54_mod
-                                    []
-                                    double
+                                    [5 double_@double]
                                     Public
                                 ),
                             double_:
@@ -51,6 +48,16 @@
                                     []
                                     double_
                                     Public
+                                ),
+                            double_@double:
+                                (ExternalSymbol
+                                    5
+                                    double_@double
+                                    2 double_
+                                    string_54_mod
+                                    []
+                                    double_
+                                    Private
                                 ),
                             foo_sub:
                                 (ExternalSymbol

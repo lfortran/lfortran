@@ -15,7 +15,7 @@
                                     overload_assignment_m
                                     []
                                     logical_gets_integer
-                                    Public
+                                    Private
                                 ),
                             tf:
                                 (Variable
@@ -43,13 +43,10 @@
                                     ()
                                 ),
                             ~assign:
-                                (ExternalSymbol
+                                (CustomOperator
                                     5
                                     ~assign
-                                    2 ~assign
-                                    overload_assignment_m
-                                    []
-                                    ~assign
+                                    [5 logical_gets_integer@~assign]
                                     Public
                                 )
                         })
@@ -252,16 +249,6 @@
                                                     []
                                                     ()
                                                 ),
-                                            logical_gets_integer:
-                                                (ExternalSymbol
-                                                    4
-                                                    logical_gets_integer
-                                                    2 logical_gets_integer
-                                                    overload_assignment_m
-                                                    []
-                                                    logical_gets_integer
-                                                    Public
-                                                ),
                                             tf:
                                                 (Variable
                                                     4
@@ -305,15 +292,15 @@
                                         .false.
                                         Host
                                     )
-                                    []
+                                    [logical_gets_integer]
                                     [(Var 4 tf)
                                     (Var 4 i)]
                                     [(Assignment
                                         (Var 4 tf)
                                         (Var 4 i)
                                         (SubroutineCall
-                                            4 logical_gets_integer
-                                            4 logical_gets_integer
+                                            2 logical_gets_integer
+                                            2 ~assign
                                             [((Var 4 tf))
                                             ((Var 4 i))]
                                             ()
@@ -339,7 +326,7 @@
                         })
                     overload_assignment_m
                     ()
-                    [overload_assignment_m]
+                    []
                     .false.
                     .false.
                     .false.

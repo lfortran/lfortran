@@ -79,24 +79,12 @@
                                                     ()
                                                 ),
                                             toml_parse:
-                                                (ExternalSymbol
+                                                (GenericProcedure
                                                     3
                                                     toml_parse
-                                                    5 toml_parse
-                                                    module_52_tomlf_de
-                                                    []
-                                                    toml_parse
+                                                    [3 toml_parse_unit@toml_parse
+                                                    3 toml_parse_string@toml_parse]
                                                     Public
-                                                ),
-                                            toml_parse@toml_parse_string:
-                                                (ExternalSymbol
-                                                    3
-                                                    toml_parse@toml_parse_string
-                                                    5 toml_parse_string
-                                                    module_52_tomlf_de
-                                                    []
-                                                    toml_parse_string
-                                                    Private
                                                 ),
                                             toml_parse_string@toml_parse:
                                                 (ExternalSymbol
@@ -106,7 +94,7 @@
                                                     module_52_tomlf_de
                                                     []
                                                     toml_parse_string
-                                                    Public
+                                                    Private
                                                 ),
                                             toml_parse_unit@toml_parse:
                                                 (ExternalSymbol
@@ -116,7 +104,7 @@
                                                     module_52_tomlf_de
                                                     []
                                                     toml_parse_unit
-                                                    Public
+                                                    Private
                                                 ),
                                             toml_table:
                                                 (ExternalSymbol
@@ -170,7 +158,7 @@
                                         []
                                     )
                                     (SubroutineCall
-                                        3 toml_parse@toml_parse_string
+                                        3 toml_parse_string@toml_parse
                                         3 toml_parse
                                         [((Var 3 table))
                                         ((Var 3 input))

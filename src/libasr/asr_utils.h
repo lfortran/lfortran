@@ -812,6 +812,13 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Whether `sym` is a generic procedure or operator bound to a derived type.
+static inline bool is_type_bound_generic(ASR::symbol_t *sym) {
+    ASR::asr_t *owner = symbol_parent_symtab(symbol_get_past_external(sym))->asr_owner;
+    return owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)
+        && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+}
+
 // Whether `sym` is a symbol of `scope` or of a scope that contains it.
 static inline bool is_symbol_of_scope_chain(SymbolTable *scope, ASR::symbol_t *sym) {
     SymbolTable *sym_scope = symbol_parent_symtab(sym);

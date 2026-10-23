@@ -28,13 +28,12 @@
                                     Public
                                 ),
                             f_string:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     2
                                     f_string
-                                    4 f_string
-                                    fpm_strings
-                                    []
-                                    f_string
+                                    [2 f_string~genericprocedure@f_string
+                                    2 f_string_cptr@f_string
+                                    2 f_string_cptr_n@f_string]
                                     Public
                                 ),
                             f_string_cptr@f_string:
@@ -45,7 +44,7 @@
                                     fpm_strings
                                     []
                                     f_string_cptr
-                                    Public
+                                    Private
                                 ),
                             f_string_cptr_n@f_string:
                                 (ExternalSymbol
@@ -55,7 +54,7 @@
                                     fpm_strings
                                     []
                                     f_string_cptr_n
-                                    Public
+                                    Private
                                 ),
                             f_string~genericprocedure@f_string:
                                 (ExternalSymbol
@@ -65,7 +64,7 @@
                                     fpm_strings
                                     []
                                     f_string~genericprocedure
-                                    Public
+                                    Private
                                 ),
                             get_temp_filename:
                                 (Function
@@ -104,16 +103,6 @@
                                                     ()
                                                     []
                                                     ()
-                                                ),
-                                            f_string@f_string~genericprocedure:
-                                                (ExternalSymbol
-                                                    21
-                                                    f_string@f_string~genericprocedure
-                                                    4 f_string~genericprocedure
-                                                    fpm_strings
-                                                    []
-                                                    f_string~genericprocedure
-                                                    Private
                                                 ),
                                             tempfile:
                                                 (Variable
@@ -166,7 +155,7 @@
                                     [(Assignment
                                         (Var 21 tempfile)
                                         (FunctionCall
-                                            21 f_string@f_string~genericprocedure
+                                            2 f_string~genericprocedure@f_string
                                             2 f_string
                                             [((Var 21 c_tempfile))]
                                             (Allocatable
@@ -245,16 +234,6 @@
                                                     []
                                                     ()
                                                 ),
-                                            f_string@f_string_cptr:
-                                                (ExternalSymbol
-                                                    20
-                                                    f_string@f_string_cptr
-                                                    4 f_string_cptr
-                                                    fpm_strings
-                                                    []
-                                                    f_string_cptr
-                                                    Private
-                                                ),
                                             string_fortran:
                                                 (Variable
                                                     20
@@ -325,7 +304,7 @@
                                             [(Assignment
                                                 (Var 20 string_fortran)
                                                 (FunctionCall
-                                                    20 f_string@f_string_cptr
+                                                    2 f_string_cptr@f_string
                                                     2 f_string
                                                     [((Var 20 dir_entry_c))]
                                                     (Allocatable

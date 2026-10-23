@@ -9406,11 +9406,9 @@ public:
                         args_with_mdt.push_back(al, args[i]);
                     }
                 }
-                // A generic interface of a template block is only visible
-                // inside the template and cannot be imported.
-                if( !ASR::is_a<ASR::Module_t>(*original_sym_owner) &&
-                    !ASR::is_a<ASR::Program_t>(*original_sym_owner) &&
-                    !ASR::is_a<ASR::Template_t>(*original_sym_owner) ) {
+                // The call names a generic bound to a type through an import
+                // of it. Any other generic is a symbol of this scope or a host.
+                if( ASR::is_a<ASR::Struct_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
                     std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {

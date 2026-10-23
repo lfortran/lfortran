@@ -182,7 +182,7 @@
                                     module_operator_overloading_12
                                     []
                                     and
-                                    Public
+                                    Private
                                 ),
                             b:
                                 (Variable
@@ -235,13 +235,10 @@
                                     ()
                                 ),
                             ~and:
-                                (ExternalSymbol
+                                (CustomOperator
                                     5
                                     ~and
-                                    2 ~and
-                                    module_operator_overloading_12
-                                    []
-                                    ~and
+                                    [5 and@~and]
                                     Public
                                 )
                         })
