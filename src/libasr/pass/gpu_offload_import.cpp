@@ -20,6 +20,42 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+namespace {
+
+// Points every structure constant of an expression, nested ones included,
+// at the kernel's copy of the derived type it names.
+class GpuStructConstantRetargeter
+        : public ASR::BaseWalkVisitor<GpuStructConstantRetargeter> {
+public:
+    std::function<ASR::symbol_t*(ASR::Struct_t*)> kernel_struct;
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        ASR::symbol_t *type_sym = ASRUtils::symbol_get_past_external(
+            x.m_dt_sym);
+        if (type_sym && is_a<ASR::Struct_t>(*type_sym)) {
+            const_cast<ASR::StructConstant_t&>(x).m_dt_sym = kernel_struct(
+                down_cast<ASR::Struct_t>(type_sym));
+        }
+        ASR::BaseWalkVisitor<GpuStructConstantRetargeter>
+            ::visit_StructConstant(x);
+    }
+};
+
+// A copy of `value` whose structure constants, nested ones included, name
+// the derived types `kernel_struct` gives for the ones they name.
+ASR::expr_t *gpu_retarget_struct_constants(Allocator &al, ASR::expr_t *value,
+        const std::function<ASR::symbol_t*(ASR::Struct_t*)> &kernel_struct) {
+    if (!value) return nullptr;
+    ASRUtils::ExprStmtDuplicator dup(al);
+    ASR::expr_t *copy = dup.duplicate_expr(value);
+    GpuStructConstantRetargeter retarget;
+    retarget.kernel_struct = kernel_struct;
+    retarget.visit_expr(*copy);
+    return copy;
+}
+
+} // namespace
+
 void GpuOffloadVisitor::load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
     implementations.load_submodule_deps(sub_tu);
 }
@@ -151,6 +187,23 @@ void GpuOffloadVisitor::fixup_struct_refs_in_scope(SymbolTable *scope,
                 ASR::symbol_t *ks =
                     kernel_scope->get_symbol(sn);
                 if (ks) var->m_type_declaration = ks;
+            }
+            // A named constant's value names the type as well, which a
+            // compile-time value put in place of a reference to it has to
+            // agree with (see import_constant_value).
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && tdecl_resolved
+                    && ASR::is_a<ASR::Struct_t>(*tdecl_resolved)) {
+                auto kernel_struct = [&](ASR::Struct_t *st)
+                        -> ASR::symbol_t* {
+                    ASR::symbol_t *ks = kernel_scope->get_symbol(st->m_name);
+                    return ks && ASR::is_a<ASR::Struct_t>(*ks)
+                        ? ks : &st->base;
+                };
+                var->m_value = gpu_retarget_struct_constants(al,
+                    var->m_value, kernel_struct);
+                var->m_symbolic_value = gpu_retarget_struct_constants(al,
+                    var->m_symbolic_value, kernel_struct);
             }
         }
         // Recurse into nested scopes
@@ -376,29 +429,6 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_type(ASR::symbol_t *orig_sym,
         orig_scope, kernel_scope, loc);
 }
 
-namespace {
-
-// Points every structure constant of an expression, nested ones included,
-// at the kernel's copy of the derived type it names.
-class GpuStructConstantRetargeter
-        : public ASR::BaseWalkVisitor<GpuStructConstantRetargeter> {
-public:
-    std::function<ASR::symbol_t*(ASR::Struct_t*)> kernel_struct;
-
-    void visit_StructConstant(const ASR::StructConstant_t &x) {
-        ASR::symbol_t *type_sym = ASRUtils::symbol_get_past_external(
-            x.m_dt_sym);
-        if (type_sym && is_a<ASR::Struct_t>(*type_sym)) {
-            const_cast<ASR::StructConstant_t&>(x).m_dt_sym = kernel_struct(
-                down_cast<ASR::Struct_t>(type_sym));
-        }
-        ASR::BaseWalkVisitor<GpuStructConstantRetargeter>
-            ::visit_StructConstant(x);
-    }
-};
-
-} // namespace
-
 // The value of a named constant cloned into the kernel: a copy of `value`
 // whose structure constants name the kernel's copies of their derived
 // types, as the clone's type declaration does. The original value is
@@ -408,15 +438,11 @@ public:
 ASR::expr_t* GpuOffloadVisitor::import_constant_value(ASR::expr_t *value,
         SymbolTable *orig_scope, SymbolTable *kernel_scope,
         const Location &loc) {
-    if (!value) return nullptr;
-    ASRUtils::ExprStmtDuplicator dup(al);
-    ASR::expr_t *copy = dup.duplicate_expr(value);
-    GpuStructConstantRetargeter retarget;
-    retarget.kernel_struct = [&](ASR::Struct_t *orig_struct) {
-        return import_struct_def(orig_struct, orig_scope, kernel_scope, loc);
-    };
-    retarget.visit_expr(*copy);
-    return copy;
+    return gpu_retarget_struct_constants(al, value,
+        [&](ASR::Struct_t *orig_struct) {
+            return import_struct_def(orig_struct, orig_scope, kernel_scope,
+                loc);
+        });
 }
 
 } // namespace LCompilers
