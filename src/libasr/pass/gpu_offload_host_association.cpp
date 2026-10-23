@@ -423,13 +423,31 @@ GpuDecline gpu_common_block_access_decline(ASR::stmt_t **body, size_t n_body,
     }
     // Each view of a block reaches the kernel as memory of its own, so a
     // definition through one view is seen through another only where the
-    // two place the variable alike.
+    // two place the variable alike. A scalar is not seen through another
+    // view at all: each iteration of the loop, which alone can define one
+    // (see above), has its own, while the other view is handed its value
+    // before the launch.
     for (const Access &d : accesses) {
         if (!d.defined) continue;
         for (const Access &o : accesses) {
-            if (block_name(o.place.view) != block_name(d.place.view)
-                    || same_or_apart(d.place, o.place)) {
+            if (block_name(o.place.view) != block_name(d.place.view)) {
                 continue;
+            }
+            if (same_or_apart(d.place, o.place)) {
+                if (o.place.view == d.place.view
+                        || o.place.member != d.place.member
+                        || ASRUtils::is_array(
+                            ASRUtils::symbol_type(d.variable))) {
+                    continue;
+                }
+                GpuDecline decline(
+                    GpuDeclineReason::CommonVariableDefinedInLoop,
+                    ASRUtils::symbol_name(d.variable));
+                decline.common_block = block_name(d.place.view);
+                decline.routine = routine_name(d.place.view);
+                decline.other_variable = ASRUtils::symbol_name(o.variable);
+                decline.other_routine = routine_name(o.place.view);
+                return decline;
             }
             GpuDecline decline(GpuDeclineReason::CommonBlockLayouts,
                 ASRUtils::symbol_name(d.variable));

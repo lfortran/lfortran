@@ -292,8 +292,9 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     // gpu_pass_common_blocks). Any other would be a local of the device
     // copy of the procedure, which is a wrong value and no diagnostic. So
     // would a variable an external procedure names, a scalar one a
-    // procedure defines, or one defined through a view of a block that
-    // another view, which names a variable of it, lays out differently.
+    // procedure defines, one defined through a view of a block that
+    // another view, which names a variable of it, lays out differently, or
+    // a scalar one the loop defines that another view names.
     {
         std::vector<ASR::Function_t*> routines = reachable_routines(
             work.body, work.n_body, implementations);
