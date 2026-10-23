@@ -150,6 +150,18 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
         ? ASR::down_cast<ASR::Variable_t>(dummy) : nullptr;
 }
 
+bool gpu_call_object_is_argument(const ASR::SubroutineCall_t &x) {
+    if (x.m_dt == nullptr) return false;
+    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+    if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) return false;
+    ASR::StructMethodDeclaration_t *m =
+        ASR::down_cast<ASR::StructMethodDeclaration_t>(callee);
+    ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(m->m_proc);
+    return !m->m_is_nopass && proc != nullptr
+        && ASR::is_a<ASR::Function_t>(*proc)
+        && ASR::down_cast<ASR::Function_t>(proc)->n_args == x.n_args;
+}
+
 bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
     bool not_passed;
     ASR::Variable_t *v = gpu_call_dummy(x, i, &not_passed);
@@ -504,7 +516,8 @@ void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             actual(x.m_args[i].m_value, gpu_call_defines(x, i));
         }
     }
-    if (x.m_dt != nullptr && gpu_call_may_define(x, x.n_args)) {
+    if (x.m_dt != nullptr && !gpu_call_object_is_argument(x)
+            && gpu_call_may_define(x, x.n_args)) {
         actual(x.m_dt, false);
     }
     if (after.empty()) return;

@@ -263,6 +263,11 @@ bool is_single_assignment_binding(ASR::symbol_t *sym,
 ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
     bool *not_passed = nullptr);
 
+// Whether the passed object of a type-bound call is also one of its actual
+// arguments, as it is once the call has been resolved: it is then not
+// looked at a second time.
+bool gpu_call_object_is_argument(const ASR::SubroutineCall_t &x);
+
 // Whether the procedure a call names may define its `i`-th actual argument
 // (see gpu_call_dummy): the dummy argument it is associated with is not
 // `intent(in)` and not passed by value, or is not known.
@@ -334,7 +339,8 @@ public:
                 note(gpu_defined_variable(x.m_args[i].m_value), may_define);
             }
         }
-        if (x.m_dt && gpu_call_may_define(x, x.n_args)) {
+        if (x.m_dt && !gpu_call_object_is_argument(x)
+                && gpu_call_may_define(x, x.n_args)) {
             note(gpu_defined_variable(x.m_dt), may_define);
         }
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_SubroutineCall(x);

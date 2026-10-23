@@ -361,7 +361,8 @@ public:
                 note_definition(x.m_args[i].m_value, x.base.base.loc, true);
             }
         }
-        if (x.m_dt && gpu_call_may_define(x, x.n_args)) {
+        if (x.m_dt && !gpu_call_object_is_argument(x)
+                && gpu_call_may_define(x, x.n_args)) {
             note_definition(x.m_dt, x.base.base.loc, true);
         }
         ASR::BaseWalkVisitor<GpuStructParts>::visit_SubroutineCall(x);
