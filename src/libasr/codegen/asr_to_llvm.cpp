@@ -24178,6 +24178,24 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 llvm_utils->void_type, args_type, true);
         tmp = builder->CreateCall(fn, printf_args);
+        bool has_dtio_bindings = false;
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]) &&
+                    ASR::down_cast<ASR::StringFormat_t>(
+                        x.m_values[i])->n_dtio_bindings > 0) {
+                has_dtio_bindings = true;
+            }
+        }
+        if (x.m_iomsg && has_dtio_bindings) {
+            // The iomsg of a defined output procedure whose error the
+            // statement took.
+            llvm::Value *iomsg_data, *iomsg_len;
+            std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            llvm::Function *iomsg_fn = LLVM::get_or_declare_function(*module,
+                "_lfortran_io_take_iomsg", llvm::Type::getVoidTy(context),
+                {character_type, llvm::Type::getInt64Ty(context)});
+            builder->CreateCall(iomsg_fn, {iomsg_data, iomsg_len});
+        }
         llvm_utils->stringFormat_return.free();
 
         this->current_decimal_mode = nullptr;
