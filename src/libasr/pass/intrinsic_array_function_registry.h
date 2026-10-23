@@ -2752,6 +2752,33 @@ namespace Spread {
             "cannot be nullptr", x.base.base.loc, diagnostics);
         ASRUtils::require_impl(x.m_args[2], "`ncopies` argument of `spread` "
             "cannot be nullptr", x.base.base.loc, diagnostics);
+        if (x.m_overload_id == -1) {
+            // `create_Spread` stores a scalar `source` as the one element
+            // array `[source]` and marks it with `overload_id` -1, so that
+            // the scalar can be recovered (the Fortran printer does). Passes
+            // may move the array constructor into a temporary, possibly of
+            // deferred shape, so only its shape is checked: rank 1, and
+            // extent 1 when the extent is a constant.
+            ASR::dimension_t* source_dims = nullptr;
+            size_t source_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(x.m_args[0]), source_dims);
+            int64_t source_extent = 1;
+            if (source_rank == 1 && source_dims[0].m_length &&
+                    ASRUtils::expr_value(source_dims[0].m_length)) {
+                ASRUtils::extract_value(ASRUtils::expr_value(
+                    source_dims[0].m_length), source_extent);
+            }
+            ASRUtils::require_impl(source_rank == 1 && source_extent == 1,
+                "asr.verify.spread.scalar_source",
+                "`spread` with `overload_id` -1 (a scalar `source`) must have "
+                "a rank 1 array with one element as `source`",
+                x.base.base.loc, diagnostics);
+            ASRUtils::require_impl(
+                ASRUtils::extract_n_dims_from_ttype(x.m_type) == 1,
+                "asr.verify.spread.scalar_source_rank",
+                "`spread` of a scalar `source` must return a rank 1 array",
+                x.base.base.loc, diagnostics);
+        }
     }
 
     static ASR::expr_t *eval_Spread(Allocator &al, const Location &loc,

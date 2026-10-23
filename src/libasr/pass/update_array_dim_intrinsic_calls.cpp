@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
 
@@ -54,7 +55,51 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     ReplaceArrayDimIntrinsicCalls(Allocator& al_) : al(al_)
     {}
 
+    // The size of an array section follows from its subscripts, so it is
+    // computed here and the backend only reads the sizes of the arrays it
+    // stores. A `dim` known only at run time selects among the extents
+    // with `merge(extent 1, merge(extent 2, ..., dim == 2), dim == 1)`.
+    ASR::expr_t* section_size(ASR::expr_t* section, ASR::expr_t* dim,
+            ASR::ttype_t* type, const Location& loc) {
+        int64_t dim_value = -1;
+        if( dim == nullptr || ASRUtils::extract_value(
+                ASRUtils::expr_value(dim), dim_value) ) {
+            return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, loc,
+                section, dim, type, nullptr, false));
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* dim_type = ASRUtils::expr_type(dim);
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(section));
+        auto extent = [&](size_t i) {
+            return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, loc,
+                section, b.i_t(i, dim_type), type, nullptr, false));
+        };
+        ASR::expr_t* size = extent(rank);
+        for( size_t i = rank - 1; i >= 1; i-- ) {
+            Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+            merge_args.push_back(al, extent(i));
+            merge_args.push_back(al, size);
+            merge_args.push_back(al, b.Eq(dim, b.i_t(i, dim_type)));
+            diag::Diagnostics diag;
+            ASR::asr_t* merged = ASRUtils::Merge::create_Merge(al, loc,
+                merge_args, diag);
+            // Two integer extents of `type` and a logical test cannot be
+            // rejected by Merge.
+            LCOMPILERS_ASSERT(merged != nullptr && !diag.has_error());
+            size = ASRUtils::EXPR(merged);
+        }
+        return size;
+    }
+
     void replace_ArraySize(ASR::ArraySize_t* x) {
+        ASR::expr_t* size_v = ASRUtils::get_expr_size_expr(x->m_v);
+        if( x->m_value == nullptr && size_v != nullptr &&
+                ASR::is_a<ASR::ArraySection_t>(*size_v) ) {
+            *current_expr = section_size(size_v, x->m_dim, x->m_type,
+                x->base.base.loc);
+            return ;
+        }
         ASR::expr_t* x_m_v = x->m_v;
         if ( ASR::is_a<ASR::Cast_t>(*x_m_v) ) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(x_m_v);

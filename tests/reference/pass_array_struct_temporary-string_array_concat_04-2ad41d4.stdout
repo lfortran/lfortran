@@ -538,13 +538,13 @@
                                     )
                                     (Assignment
                                         (Var 5 __libasr_created__result_metadata_1)
-                                        (IfExp
-                                            (IntegerCompare
-                                                (IntegerConstant 0 (Integer 4) Decimal)
-                                                Gt
-                                                (IntegerBinOp
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    Mul
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            Mul
+                                            (IfExp
+                                                (IntegerCompare
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Gt
                                                     (IntegerBinOp
                                                         (IntegerBinOp
                                                             (IntegerBinOp
@@ -554,26 +554,20 @@
                                                                 (Integer 4)
                                                                 ()
                                                             )
-                                                            Div
+                                                            Add
                                                             (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        Add
+                                                        Div
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    (Integer 4)
+                                                    (Logical 4)
                                                     ()
                                                 )
-                                                (Logical 4)
-                                                ()
-                                            )
-                                            (IntegerConstant 0 (Integer 4) Decimal)
-                                            (IntegerBinOp
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                Mul
+                                                (IntegerConstant 0 (Integer 4) Decimal)
                                                 (IntegerBinOp
                                                     (IntegerBinOp
                                                         (IntegerBinOp
@@ -583,12 +577,12 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        Div
+                                                        Add
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (Integer 4)
                                                         ()
                                                     )
-                                                    Add
+                                                    Div
                                                     (IntegerConstant 1 (Integer 4) Decimal)
                                                     (Integer 4)
                                                     ()

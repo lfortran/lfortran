@@ -5320,6 +5320,27 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
     return merged;
 }
 
+// The number of elements of the subscript triplet `start:end:step`,
+// max(0, (end - start + step) / step) (F2018 9.5.3.3.2). Each extent is
+// clamped on its own: `(end - start) / step + 1` is one for the empty
+// triplet `1:0:2`, and the product of two negative extents is positive.
+static ASR::expr_t* triplet_extent(Allocator &al, const Location &a_loc,
+    ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+    ASR::ttype_t* a_type) {
+    ASRBuilder builder(al, a_loc);
+    start = CastingUtil::perform_casting(start, a_type, al, a_loc);
+    end = CastingUtil::perform_casting(end, a_type, al, a_loc);
+    step = CastingUtil::perform_casting(step, a_type, al, a_loc);
+    ASR::expr_t* count = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc,
+            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, a_loc, end,
+                ASR::binopType::Sub, start, a_type, nullptr)),
+            ASR::binopType::Add, step, a_type, nullptr)),
+        ASR::binopType::Div, step, a_type, nullptr));
+    return builder.Max(ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc,
+        0, a_type)), count);
+}
+
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,
@@ -5515,23 +5536,11 @@ ASR::asr_t* make_ArraySize_t_util(
                             nullptr, a_type, ASRUtils::expr_value(end), !is_func_with_unknown_return));
                     }
                 } else {
-                    start = CastingUtil::perform_casting(start, a_type, al, a_loc);
-                    end = CastingUtil::perform_casting(end, a_type, al, a_loc);
-                    d = CastingUtil::perform_casting(d, a_type, al, a_loc);
-                    ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                        al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
-                    ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                        al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
-                    plus1 = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                        al, a_loc, byd, ASR::binopType::Add, ASRUtils::EXPR(const1), a_type, nullptr));
+                    plus1 = triplet_extent(al, a_loc, start, end, d, a_type);
                 }
                 size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
                     ASR::binopType::Mul, plus1, a_type, nullptr);
             }
-            // ArraySize should not be negative
-            ASR::expr_t* const0 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_loc, 0, a_type));
-            ASRBuilder builder(al, a_loc);
-            size = (ASR::asr_t *)builder.Max(const0, ASRUtils::EXPR(size));
             return size;
         } else if( is_dimension_constant ) {
             ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
@@ -5583,15 +5592,7 @@ ASR::asr_t* make_ArraySize_t_util(
             if( start == nullptr && d == nullptr ) {
                 return const1;
             }
-            start = CastingUtil::perform_casting(start, a_type, al, a_loc);
-            end = CastingUtil::perform_casting(end, a_type, al, a_loc);
-            d = CastingUtil::perform_casting(d, a_type, al, a_loc);
-            ASR::expr_t* endminusstart = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                al, a_loc, end, ASR::binopType::Sub, start, a_type, nullptr));
-            ASR::expr_t* byd = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
-                al, a_loc, endminusstart, ASR::binopType::Div, d, a_type, nullptr));
-            return ASR::make_IntegerBinOp_t(al, a_loc, byd, ASR::binopType::Add,
-                ASRUtils::EXPR(const1), a_type, nullptr);
+            return &(triplet_extent(al, a_loc, start, end, d, a_type)->base);
         }
     }
     if( ASR::is_a<ASR::ArrayItem_t>(*a_v) ) {
