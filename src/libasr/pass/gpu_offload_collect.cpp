@@ -257,8 +257,9 @@ void GpuLiveoutWriteBack::run(ASR::Function_t &kernel) {
     }
     kernel.m_body = body.p;
     kernel.n_body = body.size();
-    // The BLOCKs of the kernel, and the procedures it calls, whose
-    // statements are not statements of the kernel body.
+    // The BLOCK and ASSOCIATE constructs of the kernel, whose statements
+    // are not statements of the kernel body. A procedure the kernel calls
+    // defines its own dummy arguments; the call is what is put back after.
     deferring = false;
     for (auto &item : kernel.m_symtab->get_scope()) {
         if (ASR::is_a<ASR::Block_t>(*item.second)) {
@@ -340,28 +341,50 @@ bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i) {
         ASR::Variable_t>(dummy)->m_intent == ASR::intentType::Out;
 }
 
-// `a /= b`, for two scalars of one intrinsic type.
+// Whether a call changed the scalar `a`, which was `b` before it: `a /= b`,
+// except that a NaN that stays a NaN is not a change, which every thread
+// would otherwise put back over the value the defining iteration gave.
+// A zero that changes sign compares equal and is not put back; the GPU
+// code has no way of comparing the bits of a real yet.
 ASR::expr_t *gpu_differs(Allocator &al, const Location &loc, ASR::expr_t *a,
         ASR::expr_t *b) {
     ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(a));
     ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
         4));
+    ASRUtils::ExprStmtDuplicator dup(al);
+    auto compare = [&](ASR::expr_t *x, ASR::cmpopType op, ASR::expr_t *y) {
+        x = dup.duplicate_expr(x);
+        y = dup.duplicate_expr(y);
+        if (ASR::is_a<ASR::Complex_t>(*t)) {
+            return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, x, op,
+                y, logical_type, nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, x, op, y,
+            logical_type, nullptr));
+    };
     ASR::cmpopType ne = ASR::cmpopType::NotEq;
     switch (t->type) {
         case ASR::ttypeType::Integer:
             return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, a, ne,
                 b, logical_type, nullptr));
-        case ASR::ttypeType::Real:
-            return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, a, ne, b,
-                logical_type, nullptr));
         case ASR::ttypeType::Logical:
             return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, a, ne,
                 b, logical_type, nullptr));
-        default:
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*t));
-            return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, a, ne,
-                b, logical_type, nullptr));
+        default: {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*t)
+                || ASR::is_a<ASR::Complex_t>(*t));
+            // a /= b .and. (a == a .or. b == b)
+            ASR::expr_t *not_both_nan = ASRUtils::EXPR(
+                ASR::make_LogicalBinOp_t(al, loc,
+                    compare(a, ASR::cmpopType::Eq, a),
+                    ASR::logicalbinopType::Or,
+                    compare(b, ASR::cmpopType::Eq, b), logical_type,
+                    nullptr));
+            return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+                compare(a, ne, b), ASR::logicalbinopType::And, not_both_nan,
+                logical_type, nullptr));
+        }
     }
 }
 
