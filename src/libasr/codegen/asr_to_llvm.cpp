@@ -15308,199 +15308,93 @@ public:
         }
     }
 
-    void generate_binop_check(ASR::expr_t* left, ASR::expr_t* right) {
-        ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, left->base.loc, 4));
-
-        ASR::ttype_t* left_type = ASRUtils::expr_type(left);
-        ASR::ttype_t* right_type = ASRUtils::expr_type(right);
-        ASR::dimension_t* m_dims = nullptr;
-        size_t lrank = ASRUtils::extract_dimensions_from_ttype(left_type, m_dims);
-        ASR::dimension_t* n_dims = nullptr;
-        size_t rrank = ASRUtils::extract_dimensions_from_ttype(right_type, n_dims);
-
-        if (lrank == 0 || rrank == 0 || lrank != rrank) {
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
+        if (!compiler_options.po.bounds_checking) {
             return;
         }
-
-        for (size_t dim = 0; dim < lrank; dim++) {
-            ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
-
-            ASR::expr_t* left_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, left->base.loc,
-                left, dim_asr, type32, nullptr));
-            visit_expr(*left_size);
-            llvm::Value* left_llvm_size = tmp;
-
-            ASR::expr_t* right_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, right->base.loc,
-                right, dim_asr, type32, nullptr));
-            visit_expr(*right_size);
-            llvm::Value* right_llvm_size = tmp;
-
-            ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
-            ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
-
-            llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
-            if (left_var && right_var) {
-                llvm::Value *left_name = llvm_utils->get_runtime_error_string(left_var->m_name);
-                llvm::Value *right_name = llvm_utils->get_runtime_error_string(right_var->m_name);
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Array shape mismatch in binary operation with operands '%s' and '%s'. Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.",
-                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_llvm_size}),
-                                                    LLVMUtils::RuntimeLabel("RHS size is %d", {right->base.loc}, {right_llvm_size})},
-                                                    infile,
-                                                    location_manager,
-                                                    left_name,
-                                                    right_name,
-                                                    left_llvm_size,
-                                                    dim_llvm,
-                                                    left_name,
-                                                    right_llvm_size,
-                                                    dim_llvm,
-                                                    right_name);
-            } else {
-                llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
-                                                    "Array shape mismatch in binary operation. Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.",
-                                                    {LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_llvm_size}),
-                                                    LLVMUtils::RuntimeLabel("RHS size is %d", {right->base.loc}, {right_llvm_size})},
-                                                    infile,
-                                                    location_manager,
-                                                    left_llvm_size,
-                                                    dim_llvm,
-                                                    right_llvm_size,
-                                                    dim_llvm);
-            }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
+            ASRUtils::is_allocatable(target_type) &&
+            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
+        if (is_allocatable_descriptor_target && !x.m_move_allocation) {
+            llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+            generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
         }
-    }
-
-    void generate_binop_checks(ASR::expr_t** components, size_t n) {
-        for (size_t i = 0; i < n - 1; i++) {
-            generate_binop_check(components[i], components[i + 1]);
+        // The target may be a plain variable, an array element or a
+        // derived type component; name it the way the source spells it.
+        // The message does not vary by dimension, so build it once.
+        std::string target_name = get_expr_name_for_runtime_message(x.m_target);
+        std::string message = "Array shape mismatch in assignment";
+        if (!target_name.empty()) {
+            message += " to '%s'";
         }
-    }
-
-    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
-        if (compiler_options.po.bounds_checking) {
-            Vec<ASR::expr_t*> components;
-            components.reserve(al, x.n_components);
-            for (size_t i = 0; i < x.n_components; i++) {
-                ASR::expr_t* component = x.m_components[i];
-                if (ASR::is_a<ASR::StructInstanceMember_t>(*component)) {
-                    ASR::StructInstanceMember_t* member =
-                        ASR::down_cast<ASR::StructInstanceMember_t>(component);
-                    if (member->m_value != nullptr &&
-                                is_parameter_designator(member->m_v) &&
-                                ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
-                                ASRUtils::is_value_constant(member->m_value)) {
-                        component = member->m_value;
-                    }
+        message += ". Tried to match size %d of dimension %d of LHS"
+            " with size %d of dimension %d of RHS.";
+        if (is_allocatable_descriptor_target) {
+            // Only a target that can actually be reallocated is told
+            // about the option that would reallocate it.
+            message += " Use '--realloc-lhs-arrays' option to"
+                " reallocate LHS automatically.";
+        }
+        for (size_t i = 0; i < x.n_checks; i++) {
+            const ASR::array_extent_check_t &check = x.m_checks[i];
+            ASR::expr_t* left = check.m_left == 0 ? x.m_target
+                : x.m_components[check.m_left - 1];
+            ASR::expr_t* right = x.m_components[check.m_right - 1];
+            visit_expr_wrapper(check.m_left_extent, true);
+            llvm::Value* left_size = tmp;
+            visit_expr_wrapper(check.m_right_extent, true);
+            llvm::Value* right_size = tmp;
+            llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, check.m_dim));
+            std::vector<LLVMUtils::RuntimeLabel> labels = {
+                LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_size}),
+                LLVMUtils::RuntimeLabel("RHS size is %d", {right->base.loc}, {right_size})};
+            if (check.m_left != 0) {
+                // Two operands of the right hand side
+                llvm::Value* shape_mismatch = builder->CreateICmpNE(right_size, left_size);
+                ASR::Variable_t* left_var = ASRUtils::expr_to_variable_or_null(left);
+                ASR::Variable_t* right_var = ASRUtils::expr_to_variable_or_null(right);
+                if (left_var && right_var) {
+                    llvm::Value *left_name = llvm_utils->get_runtime_error_string(left_var->m_name);
+                    llvm::Value *right_name = llvm_utils->get_runtime_error_string(right_var->m_name);
+                    llvm_utils->generate_runtime_error(shape_mismatch,
+                        "Array shape mismatch in binary operation with operands '%s' and '%s'. Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.",
+                        labels, infile, location_manager,
+                        left_name, right_name, left_size, dim_llvm, left_name,
+                        right_size, dim_llvm, right_name);
+                } else {
+                    llvm_utils->generate_runtime_error(shape_mismatch,
+                        "Array shape mismatch in binary operation. Tried to match size %d of dimension %d of one argument with size %d of dimension %d of the other.",
+                        labels, infile, location_manager,
+                        left_size, dim_llvm, right_size, dim_llvm);
                 }
-                components.push_back(al, component);
+                continue;
             }
-            // Check for errors in array operations in the RHS of the assignment
-            generate_binop_checks(components.p, components.size());
-
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, components[0]->base.loc, 4));
-
-            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-            bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
-                ASRUtils::is_allocatable(target_type) &&
-                ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
-            if (is_allocatable_descriptor_target && !x.m_move_allocation) {
-                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-                generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
-            }
-            ASR::dimension_t* m_dims = nullptr;
-            size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
-            ASR::dimension_t* component_dims = nullptr;
-            size_t component_rank = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(components[0]), component_dims);
-            // The target may be a plain variable, an array element or a
-            // derived type component; name it the way the source spells it.
-            // The message does not vary by dimension, so build it once.
-            std::string target_name = get_expr_name_for_runtime_message(x.m_target);
-            std::string message = "Array shape mismatch in assignment";
-            if (!target_name.empty()) {
-                message += " to '%s'";
-            }
-            message += ". Tried to match size %d of dimension %d of LHS"
-                " with size %d of dimension %d of RHS.";
+            llvm::BasicBlock* mergeBB = nullptr;
             if (is_allocatable_descriptor_target) {
-                // Only a target that can actually be reallocated is told
-                // about the option that would reallocate it.
-                message += " Use '--realloc-lhs-arrays' option to"
-                    " reallocate LHS automatically.";
+                // An unallocated target is reported on its own, its shape
+                // must not be inspected here.
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
+                builder->SetInsertPoint(thenBB);
             }
-            for (size_t dim = 0; dim < rank; dim++) {
-                if (dim < component_rank && m_dims[dim].m_length != nullptr
-                        && component_dims[dim].m_length != nullptr) {
-                    int64_t target_len = 0, component_len = 0;
-                    if (ASRUtils::extract_value(m_dims[dim].m_length, target_len) &&
-                            ASRUtils::extract_value(component_dims[dim].m_length,
-                                component_len) &&
-                            target_len == component_len) {
-                        continue;
-                    }
-                }
-                ASR::expr_t* dim_asr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, m_dims[dim].loc, dim + 1,
-                            ASRUtils::TYPE(ASR::make_Integer_t(al, m_dims[dim].loc, 4))));
-                llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
-
-                ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
-                    x.m_target, dim_asr, type32, nullptr));
-
-                // A constructor is not evaluated here, its type has its
-                // integer(4) size
-                ASR::expr_t* x_m_components_0_size = nullptr;
-                if (ASR::is_a<ASR::ArrayConstructor_t>(*components[0])) {
-                    x_m_components_0_size = component_dims[dim].m_length;
-                } else {
-                    x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
-                        components[0], dim_asr, type32, nullptr));
-                }
-                ASR::expr_t* target_size_value = ASRUtils::expr_value(target_size_asr);
-                ASR::expr_t* component_size_value = ASRUtils::expr_value(x_m_components_0_size);
-                if (target_size_value && component_size_value &&
-                        ASR::is_a<ASR::IntegerConstant_t>(*target_size_value) &&
-                        ASR::is_a<ASR::IntegerConstant_t>(*component_size_value) &&
-                        ASR::down_cast<ASR::IntegerConstant_t>(target_size_value)->m_n ==
-                        ASR::down_cast<ASR::IntegerConstant_t>(component_size_value)->m_n) {
-                    continue;
-                }
-                visit_expr(*target_size_asr);
-                llvm::Value* target_size = tmp;
-
-                visit_expr(*x_m_components_0_size);
-                llvm::Value* value_size = tmp;
-
-                std::vector<LLVMUtils::RuntimeLabel> labels = {
-                    LLVMUtils::RuntimeLabel("LHS size is %d", {x.m_target->base.loc}, {target_size}),
-                    LLVMUtils::RuntimeLabel("RHS size is %d", {components[0]->base.loc}, {value_size})};
-                llvm::BasicBlock* mergeBB = nullptr;
-                if (is_allocatable_descriptor_target) {
-                    // An unallocated target is reported on its own, its shape
-                    // must not be inspected here.
-                    llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                    llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                    mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-                    builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
-                    builder->SetInsertPoint(thenBB);
-                }
-                llvm::Value* shape_mismatch = builder->CreateICmpNE(value_size, target_size);
-                if (target_name.empty()) {
-                    llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
-                        infile, location_manager,
-                        target_size, dim_llvm, value_size, dim_llvm);
-                } else {
-                    llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
-                        infile, location_manager,
-                        llvm_utils->get_runtime_error_string(target_name),
-                        target_size, dim_llvm, value_size, dim_llvm);
-                }
-                if (mergeBB != nullptr) {
-                    builder->CreateBr(mergeBB);
-                    start_new_block(mergeBB);
-                }
+            llvm::Value* shape_mismatch = builder->CreateICmpNE(right_size, left_size);
+            if (target_name.empty()) {
+                llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
+                    infile, location_manager,
+                    left_size, dim_llvm, right_size, dim_llvm);
+            } else {
+                llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
+                    infile, location_manager,
+                    llvm_utils->get_runtime_error_string(target_name),
+                    left_size, dim_llvm, right_size, dim_llvm);
+            }
+            if (mergeBB != nullptr) {
+                builder->CreateBr(mergeBB);
+                start_new_block(mergeBB);
             }
         }
     }
