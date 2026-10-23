@@ -154,7 +154,7 @@ static void check_api_use()
 {
     const lfortran_cuda_cpu_stats &s = stats();
     require(s.empty_mallocs == 0, "positive allocation");
-    for (int kind = 0; kind < 5; kind++) {
+    for (int kind = 0; kind <= cudaMemcpyDefault; kind++) {
         require(kind == cudaMemcpyHostToDevice || s.async_copies[kind] == 0,
             "asynchronous host upload on stream 0");
         require(kind == cudaMemcpyDeviceToHost || s.copies[kind] == 0,

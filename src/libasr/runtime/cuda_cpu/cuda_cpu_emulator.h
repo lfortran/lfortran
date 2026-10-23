@@ -26,8 +26,8 @@ typedef struct lfortran_cuda_cpu_stats {
     unsigned long long empty_mallocs;
     // Successful copies of cudaMemcpyAsync and cudaMemcpy, by the
     // cudaMemcpyKind they were called with (cudaMemcpyDefault included).
-    unsigned long long async_copies[5];
-    unsigned long long copies[5];
+    unsigned long long async_copies[cudaMemcpyDefault + 1];
+    unsigned long long copies[cudaMemcpyDefault + 1];
     // Successful calls of cudaMemsetAsync.
     unsigned long long async_memsets;
     // Calls that returned an error.
