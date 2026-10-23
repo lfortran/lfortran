@@ -355,6 +355,33 @@ public:
         }
     };
 
+    // The first derived-type constant device code reads, in a statement
+    // or as the value of a named constant, that the device struct cannot
+    // be given the value of.
+    class StructConstantFinder :
+            public ASR::BaseWalkVisitor<StructConstantFinder> {
+    public:
+        GpuDecline found;
+
+        void visit_StructConstant(const ASR::StructConstant_t &x) {
+            if (found.declined()) return;
+            ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
+                x.m_dt_sym);
+            if (!ASR::is_a<ASR::Struct_t>(*st)) {
+                found = GpuDecline(GpuDeclineReason::StructDeclarationUnknown);
+                return;
+            }
+            size_t next_arg = 0;
+            std::string bad = gpu_struct_constant_unsupported_component(
+                ASR::down_cast<ASR::Struct_t>(st),
+                const_cast<ASR::StructConstant_t*>(&x), next_arg);
+            if (!bad.empty()) {
+                found = GpuDecline(GpuDeclineReason::StructConstantComponent,
+                    bad);
+            }
+        }
+    };
+
     bool supported(ASR::symbol_t *kernel_sym,
             ASR::call_arg_t *call_args, size_t n_call_args,
             const std::vector<GpuVlaWorkspace> &workspaces,
@@ -381,6 +408,12 @@ public:
             opaque.visit_body(function->m_body, function->n_body);
         }
         if (opaque.found.declined()) return unsupported(opaque.found);
+        StructConstantFinder constants;
+        constants.visit_symbol(*kernel_sym);
+        for (size_t i = 0; i < device_functions.n; i++) {
+            constants.visit_symbol(*device_functions[i]);
+        }
+        if (constants.found.declined()) return unsupported(constants.found);
         for (auto &workspace : workspaces) {
             for (auto &dim : workspace.dims) {
                 if (!workspace_dim_can_expand(dim, kernel)) {

@@ -6699,6 +6699,7 @@ RUN(NAME gpu_decline_20 LABELS gfortran llvm)
 RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_decline_25 LABELS gfortran llvm)
 RUN(NAME gpu_decline_26 LABELS gfortran llvm)
+RUN(NAME gpu_decline_27 LABELS gfortran llvm)
 RUN(NAME gpu_decline_28 LABELS gfortran llvm)
 RUN(NAME gpu_decline_29 LABELS gfortran llvm)
 RUN(NAME gpu_decline_30 LABELS gfortran llvm)

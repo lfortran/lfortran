@@ -229,6 +229,10 @@ enum class GpuDeclineReason {
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
+    // A derived-type constant device code reads, such as a named constant,
+    // with a component the device struct cannot be given a value of (see
+    // gpu_struct_constant_unsupported_component); the name is the component.
+    StructConstantComponent,
 
     // --- the layout of a kernel argument: polymorphic arguments ---
     ClassComponentArrayRank,
