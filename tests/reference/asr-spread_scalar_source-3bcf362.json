@@ -2,7 +2,7 @@
     "basename": "asr-spread_scalar_source-3bcf362",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/spread_scalar_source.asr",
-    "infile_hash": "21f81ec99108c5375b5ccc6b10826eee903793950451d51899b9c99a",
+    "infile_hash": "06baaf48503e894e2b7b669f47f23db97add25f527a512e23b52a406",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
