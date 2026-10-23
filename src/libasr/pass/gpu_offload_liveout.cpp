@@ -257,7 +257,7 @@ void GpuOffloadVisitor::write_back_liveouts(ASR::Function_t &kernel,
     if (plan.entries.empty()) return;
     GpuLiveoutWriteBack write_back(al);
     write_back.entries = plan.entries;
-    write_back.visit_Function(kernel);
+    write_back.run(kernel);
 }
 
 } // namespace LCompilers

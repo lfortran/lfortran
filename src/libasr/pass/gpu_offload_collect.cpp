@@ -4,6 +4,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_rewrite.h>
 
 namespace LCompilers {
 
@@ -178,6 +179,97 @@ GpuLiveoutWriteBack::GpuLiveoutWriteBack(Allocator &al_)
     pass_result.reserve(al, 4);
 }
 
+namespace {
+
+// Whether a statement can be left before its end other than by finishing
+// it.
+class GpuEarlyExitFinder
+        : public ASRUtils::BlockBodyWalkVisitor<GpuEarlyExitFinder> {
+public:
+    bool found = false;
+    void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+    void visit_Exit(const ASR::Exit_t &) { found = true; }
+    void visit_Return(const ASR::Return_t &) { found = true; }
+    void visit_GoTo(const ASR::GoTo_t &) { found = true; }
+    void visit_Stop(const ASR::Stop_t &) { found = true; }
+    void visit_ErrorStop(const ASR::ErrorStop_t &) { found = true; }
+};
+
+// Whether a designator names the whole of what it is a part of or a
+// component of it: no element or section, which can name another part on
+// the next trip of a loop.
+bool gpu_component_designator(ASR::expr_t *e) {
+    while (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+        e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+    }
+    return ASR::is_a<ASR::Var_t>(*e);
+}
+
+} // namespace
+
+void GpuLiveoutWriteBack::run(ASR::Function_t &kernel) {
+    kernel_scope = kernel.m_symtab;
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, kernel.n_body);
+    for (size_t i = 0; i < kernel.n_body; i++) {
+        ASR::stmt_t *s = kernel.m_body[i];
+        GpuEarlyExitFinder exits;
+        exits.visit_stmt(*s);
+        deferring = !exits.found;
+        loops = 0;
+        deferred.clear();
+        pass_result.n = 0;
+        visit_stmt(*s);
+        if (pass_result.size() > 0) {
+            for (size_t j = 0; j < pass_result.size(); j++) {
+                body.push_back(al, pass_result[j]);
+            }
+            pass_result.n = 0;
+        } else {
+            body.push_back(al, s);
+        }
+        if (deferred.empty()) continue;
+        // Each flag is cleared before the statement and tested after it.
+        Vec<ASR::stmt_t*> with_flags;
+        with_flags.reserve(al, body.size() + 2 * deferred.size());
+        const Location &loc = s->base.loc;
+        ASR::ttype_t *logical = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+            4));
+        for (size_t j = 0; j + 1 < body.size(); j++) {
+            with_flags.push_back(al, body[j]);
+        }
+        for (auto &d : deferred) {
+            with_flags.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, d.first)),
+                ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false,
+                    logical)), nullptr, false, false, false)));
+        }
+        with_flags.push_back(al, body[body.size() - 1]);
+        for (auto &d : deferred) {
+            Vec<ASR::stmt_t*> then;
+            then.reserve(al, 1);
+            then.push_back(al, d.second);
+            with_flags.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                nullptr, ASRUtils::EXPR(ASR::make_Var_t(al, loc, d.first)),
+                then.p, then.n, nullptr, 0)));
+        }
+        body = with_flags;
+    }
+    kernel.m_body = body.p;
+    kernel.n_body = body.size();
+    // The BLOCKs of the kernel, and the procedures it calls, whose
+    // statements are not statements of the kernel body.
+    deferring = false;
+    for (auto &item : kernel.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Block_t>(*item.second)) {
+            visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
+        } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+            visit_AssociateBlock(
+                *ASR::down_cast<ASR::AssociateBlock_t>(item.second));
+        }
+    }
+}
+
 ASR::symbol_t *GpuLiveoutWriteBack::copy_of(ASR::expr_t *designator) {
     ASR::expr_t *root = designator;
     while (ASR::expr_t **base = gpu_designator_base_slot(root)) root = *base;
@@ -197,6 +289,25 @@ ASR::stmt_t *GpuLiveoutWriteBack::put_back(const Location &loc,
         dup.duplicate_expr(designator), nullptr, false, false, false));
 }
 
+void GpuLiveoutWriteBack::define(const Location &loc,
+        ASR::expr_t *designator, ASR::symbol_t *copy,
+        std::vector<ASR::stmt_t*> &after) {
+    if (!deferring || loops == 0 || kernel_scope == nullptr
+            || !gpu_component_designator(designator)) {
+        after.push_back(put_back(loc, designator, copy));
+        return;
+    }
+    ASR::symbol_t *flag = gpu_new_variable(al, loc, kernel_scope,
+        kernel_scope->get_unique_name("__gpu_defined"),
+        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
+    after.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, flag)),
+        ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)))),
+        nullptr, false, false, false)));
+    deferred.push_back({flag, put_back(loc, designator, copy)});
+}
+
 void GpuLiveoutWriteBack::visit_Assignment(const ASR::Assignment_t &x) {
     if (entries.count(const_cast<ASR::stmt_t*>(&x.base))) {
         if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
@@ -207,8 +318,10 @@ void GpuLiveoutWriteBack::visit_Assignment(const ASR::Assignment_t &x) {
     }
     ASR::symbol_t *copy = copy_of(x.m_target);
     if (copy == nullptr) return;
+    std::vector<ASR::stmt_t*> after;
+    define(x.base.base.loc, x.m_target, copy, after);
     pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
-    pass_result.push_back(al, put_back(x.base.base.loc, x.m_target, copy));
+    for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
 }
 
 void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
@@ -218,18 +331,37 @@ void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         if (a == nullptr || !gpu_call_may_define(x, i)) continue;
         a = gpu_actual_designator(a);
         if (ASR::symbol_t *copy = copy_of(a)) {
-            after.push_back(put_back(x.base.base.loc, a, copy));
+            define(x.base.base.loc, a, copy, after);
         }
     }
     if (x.m_dt != nullptr) {
         ASR::expr_t *a = gpu_actual_designator(x.m_dt);
         if (ASR::symbol_t *copy = copy_of(a)) {
-            after.push_back(put_back(x.base.base.loc, a, copy));
+            define(x.base.base.loc, a, copy, after);
         }
     }
     if (after.empty()) return;
     pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
     for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
+}
+
+void GpuLiveoutWriteBack::visit_DoLoop(const ASR::DoLoop_t &x) {
+    loops++;
+    PassUtils::PassVisitor<GpuLiveoutWriteBack>::visit_DoLoop(x);
+    loops--;
+}
+
+void GpuLiveoutWriteBack::visit_WhileLoop(const ASR::WhileLoop_t &x) {
+    loops++;
+    PassUtils::PassVisitor<GpuLiveoutWriteBack>::visit_WhileLoop(x);
+    loops--;
+}
+
+void GpuLiveoutWriteBack::visit_DoConcurrentLoop(
+        const ASR::DoConcurrentLoop_t &x) {
+    loops++;
+    PassUtils::PassVisitor<GpuLiveoutWriteBack>::visit_DoConcurrentLoop(x);
+    loops--;
 }
 
 namespace {

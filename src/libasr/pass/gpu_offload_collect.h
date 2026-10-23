@@ -454,30 +454,54 @@ ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
 
 // Puts the value of the private copy each thread of a kernel keeps of a
 // variable whose value is kept after the loop back where it is shared,
-// after every statement that defines the copy or a part of it: only the
+// after the statements that define the copy or a part of it: only the
 // part an assignment or the actual argument of a call defines is put
 // back, so that what other iterations define of the variable is left
 // alone. `entries` are the assignments that give each copy its value on
 // entry, from where the value is shared, which is where it is put back.
+//
+// A definition in a loop of a statement of the kernel body would put the
+// value back on every trip; a flag records it instead, and the value is
+// put back once, after that statement, if the flag is set. That is only
+// done for a definition of the whole copy or of a component of it (the
+// part an element names can change from one trip to the next), and for a
+// statement that nothing leaves early (CYCLE, EXIT, RETURN, GO TO, STOP),
+// which could skip the write after it.
 class GpuLiveoutWriteBack : public PassUtils::PassVisitor<GpuLiveoutWriteBack> {
 public:
     std::set<ASR::stmt_t*> entries;
 
     GpuLiveoutWriteBack(Allocator &al_);
 
+    void run(ASR::Function_t &kernel);
+
     void visit_Assignment(const ASR::Assignment_t &x);
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
+    void visit_DoLoop(const ASR::DoLoop_t &x);
+    void visit_WhileLoop(const ASR::WhileLoop_t &x);
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x);
 
 private:
     // The private copy, and where its value is shared.
     std::map<ASR::symbol_t*, ASR::expr_t*> shared;
+    SymbolTable *kernel_scope = nullptr;
+    // Whether the statement of the kernel body being visited can have a
+    // write put after it, and how many loops of it are around the one
+    // visited.
+    bool deferring = false;
+    int loops = 0;
+    // The writes put after the statement, under their flags.
+    std::vector<std::pair<ASR::symbol_t*, ASR::stmt_t*>> deferred;
 
     // The private copy `designator` is a part of, if it is one.
     ASR::symbol_t *copy_of(ASR::expr_t *designator);
-    // `designator = <the same part of the shared value>`, written the
-    // other way round.
+    // `<the same part of the shared value> = designator`.
     ASR::stmt_t *put_back(const Location &loc, ASR::expr_t *designator,
         ASR::symbol_t *copy);
+    // Puts a definition of `designator` back, after the statement visited
+    // (into `after`) or after the statement of the kernel body.
+    void define(const Location &loc, ASR::expr_t *designator,
+        ASR::symbol_t *copy, std::vector<ASR::stmt_t*> &after);
 };
 
 // For derived-type variables of a type with allocatable or pointer parts,
