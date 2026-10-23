@@ -48,9 +48,11 @@ const char *const language = "fortran";
 const char *const language_version = "2018";
 const char *const mimetype = "text/x-fortran";
 const char *const file_extension = ".f90";
-inline std::string banner()
+// `version` is the LFortran version, which only .cpp files expand, as it
+// changes with every commit (ci/test_ci.py).
+inline std::string banner(const std::string &version)
 {
-    return "LFortran " + std::string(LFORTRAN_VERSION) + "\nJupyter kernel for Fortran";
+    return "LFortran " + version + "\nJupyter kernel for Fortran";
 }
 
 // Runs the code of an execute_request: what the cell writes, its diagnostics

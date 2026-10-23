@@ -204,7 +204,7 @@ namespace LCompilers::LFortran {
             "",
             std::string(kernel::mimetype),
             "",
-            kernel::banner()
+            kernel::banner(LFORTRAN_VERSION)
         );
     }
 

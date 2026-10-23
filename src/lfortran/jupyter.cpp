@@ -1132,7 +1132,7 @@ private:
                     {"mimetype", kernel::mimetype},
                     {"file_extension", kernel::file_extension},
                     {"codemirror_mode", kernel::mimetype}}},
-                {"banner", kernel::banner()}, {"help_links", Array{}}});
+                {"banner", kernel::banner(LFORTRAN_VERSION)}, {"help_links", Array{}}});
         } else if (type == "is_complete_request") {
             reply(peer, request, "is_complete_reply", Object{{"status", "complete"}});
         } else if (type == "complete_request") {
