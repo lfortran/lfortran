@@ -6599,7 +6599,7 @@ RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda) # metal declines real(8)
 RUN(NAME gpu_metal_577 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_578 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_579 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_metal_590 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_590 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_metal_591 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
