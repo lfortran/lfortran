@@ -324,23 +324,125 @@ void GpuLiveoutWriteBack::visit_Assignment(const ASR::Assignment_t &x) {
     for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
 }
 
+namespace {
+
+// Whether the procedure a call names defines its `i`-th actual argument
+// whole: the dummy argument it is associated with is `intent(out)`.
+bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i) {
+    if (x.m_dt != nullptr) return false;
+    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+    if (!ASR::is_a<ASR::Function_t>(*callee)) return false;
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
+    if (i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i])) return false;
+    ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+    return ASR::is_a<ASR::Variable_t>(*dummy) && ASR::down_cast<
+        ASR::Variable_t>(dummy)->m_intent == ASR::intentType::Out;
+}
+
+// `a /= b`, for two scalars of one intrinsic type.
+ASR::expr_t *gpu_differs(Allocator &al, const Location &loc, ASR::expr_t *a,
+        ASR::expr_t *b) {
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        ASRUtils::expr_type(a));
+    ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+        4));
+    ASR::cmpopType ne = ASR::cmpopType::NotEq;
+    switch (t->type) {
+        case ASR::ttypeType::Integer:
+            return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, a, ne,
+                b, logical_type, nullptr));
+        case ASR::ttypeType::Real:
+            return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc, a, ne, b,
+                logical_type, nullptr));
+        case ASR::ttypeType::Logical:
+            return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc, a, ne,
+                b, logical_type, nullptr));
+        default:
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*t));
+            return ASRUtils::EXPR(ASR::make_ComplexCompare_t(al, loc, a, ne,
+                b, logical_type, nullptr));
+    }
+}
+
+// The scalar parts of `designator`: itself when it is a scalar of an
+// intrinsic type, else each scalar component, or component of one. A
+// thread keeps a copy of a whole derived-type value only of a type
+// without array components that a procedure may define.
+void gpu_scalar_parts(Allocator &al, ASR::expr_t *designator,
+        std::vector<ASR::expr_t*> &parts) {
+    ASR::ttype_t *t = ASRUtils::expr_type(designator);
+    if (!ASR::is_a<ASR::StructType_t>(*t)) {
+        parts.push_back(designator);
+        return;
+    }
+    ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+        ASRUtils::get_struct_sym_from_struct_expr(designator));
+    for (ASR::Struct_t *st = gpu_struct_definition(struct_sym); st;
+            st = st->m_parent ? gpu_struct_definition(st->m_parent)
+                : nullptr) {
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *member = st->m_symtab->get_symbol(
+                st->m_members[i]);
+            if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+            ASRUtils::ExprStmtDuplicator dup(al);
+            gpu_scalar_parts(al, ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, designator->base.loc,
+                    dup.duplicate_expr(designator), member,
+                    ASRUtils::duplicate_type(al, ASRUtils::symbol_type(
+                        member)), nullptr)), parts);
+        }
+    }
+}
+
+} // namespace
+
+// A procedure may leave an actual argument it may define as it was, and
+// another thread may define what it designates in the meantime, so each
+// scalar of it is put back only when the call changed it; only what an
+// `intent(out)` dummy argument is associated with is put back whole.
 void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-    std::vector<ASR::stmt_t*> after;
-    for (size_t i = 0; i < x.n_args; i++) {
-        ASR::expr_t *a = x.m_args[i].m_value;
-        if (a == nullptr || !gpu_call_may_define(x, i)) continue;
+    const Location &loc = x.base.base.loc;
+    std::vector<ASR::stmt_t*> before, after;
+    auto actual = [&](ASR::expr_t *a, bool defined) {
         a = gpu_actual_designator(a);
-        if (ASR::symbol_t *copy = copy_of(a)) {
-            define(x.base.base.loc, a, copy, after);
+        ASR::symbol_t *copy = copy_of(a);
+        if (copy == nullptr) return;
+        if (defined) {
+            define(loc, a, copy, after);
+            return;
+        }
+        std::vector<ASR::expr_t*> parts;
+        gpu_scalar_parts(al, a, parts);
+        for (ASR::expr_t *part : parts) {
+            ASRUtils::ExprStmtDuplicator dup(al);
+            ASR::symbol_t *saved = gpu_new_variable(al, loc, kernel_scope,
+                kernel_scope->get_unique_name("__gpu_before"),
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(part)));
+            ASR::expr_t *saved_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                saved));
+            before.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                saved_var, dup.duplicate_expr(part), nullptr, false, false,
+                false)));
+            std::vector<ASR::stmt_t*> changed;
+            define(loc, part, copy, changed);
+            Vec<ASR::stmt_t*> then;
+            then.reserve(al, changed.size());
+            for (ASR::stmt_t *s : changed) then.push_back(al, s);
+            after.push_back(ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+                gpu_differs(al, loc, dup.duplicate_expr(part),
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, saved))),
+                then.p, then.n, nullptr, 0)));
+        }
+    };
+    for (size_t i = 0; i < x.n_args; i++) {
+        if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
+            actual(x.m_args[i].m_value, gpu_call_defines(x, i));
         }
     }
-    if (x.m_dt != nullptr) {
-        ASR::expr_t *a = gpu_actual_designator(x.m_dt);
-        if (ASR::symbol_t *copy = copy_of(a)) {
-            define(x.base.base.loc, a, copy, after);
-        }
-    }
+    if (x.m_dt != nullptr) actual(x.m_dt, false);
     if (after.empty()) return;
+    for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
     pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
     for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
 }

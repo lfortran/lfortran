@@ -457,7 +457,8 @@ ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
 // after the statements that define the copy or a part of it: only the
 // part an assignment or the actual argument of a call defines is put
 // back, so that what other iterations define of the variable is left
-// alone. `entries` are the assignments that give each copy its value on
+// alone, and after a call only the scalars it changed, unless the dummy
+// argument is `intent(out)`. `entries` are the assignments that give each copy its value on
 // entry, from where the value is shared, which is where it is put back.
 //
 // A definition in a loop of a statement of the kernel body would put the
