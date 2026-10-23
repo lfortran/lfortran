@@ -562,20 +562,22 @@ enum class GpuLocality {
     PrivateCopies,
 };
 
-// The one place that decides it. The invariant: a variable is a kernel
-// local iff its value is not kept after the loop (`live`), it is not an
-// array, and every assignment to it in the loop assigns it whole -- or, for
-// a derived-type value no thread can copy whole and the kernel can hold as
-// a local, assigns it whole or a component of it whole (`y%k = ...`,
-// `y%c = ...`); the components such a local leaves undefined are then
-// undefined, as before this pass kept anything after the loop. A
-// derived-type value the loop defines in other parts (`y%c(i)`,
-// `y%in%k`), in parts at all when each thread can copy it whole, or that
-// the kernel cannot hold as a local (gpu_no_kernel_local_struct) gets
-// private copies of those parts, taken from the kernel argument; so does
-// one each thread can copy whole that a procedure may define. Anything
-// else is a kernel argument: a variable only a procedure may define keeps
-// its value.
+// The one place that decides it. The invariant: a variable the loop
+// assigns is a kernel local iff its value is not kept after the loop
+// (`live`), it is not an array, and either every assignment to it assigns
+// it whole, or the first statement of the loop body that names it assigns
+// it whole, so that every iteration defines all of it first -- or, for a
+// derived-type value no thread can copy whole and the kernel can hold as a
+// local, every assignment assigns it whole or a component of it whole
+// (`y%k = ...`, `y%c = ...`); the components such a local leaves
+// undefined are then undefined, as before this pass kept anything after the
+// loop. A derived-type value the loop otherwise defines in parts
+// (`y%c(i)`, `y%in%k`), in parts at all when each thread can copy it
+// whole, or that the kernel cannot hold as a local
+// (gpu_no_kernel_local_struct) gets private copies of those parts, taken
+// from the kernel argument; so does one each thread can copy whole that a
+// procedure may define. Anything else is a kernel argument: a variable
+// only a procedure may define keeps its value.
 GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
     ASR::ttype_t *type, bool live, bool assigned, ASR::stmt_t **body,
     size_t n_body);

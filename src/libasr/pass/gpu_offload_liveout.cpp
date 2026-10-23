@@ -541,6 +541,41 @@ public:
     }
 };
 
+// Whether the statements walked name the variable `v`.
+class GpuNamesVariable
+        : public ASRUtils::BlockBodyWalkVisitor<GpuNamesVariable> {
+public:
+    ASR::symbol_t *v;
+    bool found = false;
+    GpuNamesVariable(ASR::symbol_t *v_) : v(v_) {}
+    void visit_Var(const ASR::Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == v) found = true;
+    }
+};
+
+// Whether the first statement of the loop body that names `v` assigns it
+// whole, from a value that does not name it: every iteration then defines
+// all of it before anything else references it.
+bool gpu_assigned_whole_first(ASR::symbol_t *v, ASR::stmt_t **body,
+        size_t n_body) {
+    for (size_t i = 0; i < n_body; i++) {
+        if (ASR::is_a<ASR::Assignment_t>(*body[i])) {
+            ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(body[i]);
+            if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                    && ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v) == v) {
+                GpuNamesVariable value(v);
+                value.visit_expr(*a->m_value);
+                return !value.found;
+            }
+        }
+        GpuNamesVariable names(v);
+        names.visit_stmt(*body[i]);
+        if (names.found) return false;
+    }
+    return false;
+}
+
 } // namespace
 
 GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
@@ -562,7 +597,10 @@ GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
     sym = sym ? ASRUtils::symbol_get_past_external(sym) : nullptr;
     GpuAssignmentsOf assignments(sym);
     for (size_t i = 0; i < n_body; i++) assignments.visit_stmt(*body[i]);
-    if (assignments.all_whole) return GpuLocality::KernelLocal;
+    if (assignments.all_whole
+            || gpu_assigned_whole_first(sym, body, n_body)) {
+        return GpuLocality::KernelLocal;
+    }
     if (copyable || gpu_no_kernel_local_struct(scope, name, type)) {
         return GpuLocality::PrivateCopies;
     }
