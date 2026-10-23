@@ -2138,7 +2138,7 @@ end subroutine intent_list_assignment_error
 subroutine intent_list_non_dummy_error(x)
     implicit none
     integer :: x, y
-    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+    intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
 end subroutine intent_list_non_dummy_error
 
 subroutine intent_in_bound_before_decl_error(a, nz)
@@ -3704,3 +3704,9 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(1), k(1), i=1,501)
     print *, (x(i), (y(j), j=1,n), i=1,0)
 end subroutine implied_do_mixed_derived_types_error
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement

@@ -77,7 +77,7 @@ module continue_compilation_templates_02_template_args
     template tt{n}
         deferred integer, parameter :: n
     end template
-    integer, intent(in) :: n  ! {Error} Intent attribute can only be applied to procedure arguments
+    integer, intent(in) :: n  ! {Error} 'n' has an intent attribute but is not a dummy argument
 end module
 
 program continue_compilation_templates_02

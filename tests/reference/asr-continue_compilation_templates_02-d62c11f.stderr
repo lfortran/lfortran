@@ -45,8 +45,8 @@ semantic error: a `deferred` declaration is only allowed in a requirement, a tem
 70 |         deferred integer, parameter :: n  ! {Error} a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Intent attribute can only be applied to procedure arguments
-  --> tests/errors/continue_compilation_templates_02.f90:80:14
+semantic error: 'n' has an intent attribute but is not a dummy argument
+  --> tests/errors/continue_compilation_templates_02.f90:80:28
    |
-80 |     integer, intent(in) :: n  ! {Error} Intent attribute can only be applied to procedure arguments
-   |              ^^^^^^^^^^ 
+80 |     integer, intent(in) :: n  ! {Error} 'n' has an intent attribute but is not a dummy argument
+   |                            ^ 'n' is not a dummy argument
