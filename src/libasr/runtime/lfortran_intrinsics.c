@@ -3703,9 +3703,19 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
     }
 }
 
+static char* dtio_call(lfortran_allocator_t* al, char** result,
+        int64_t* cursor, int64_t* extent, int64_t* content_end,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
+        int32_t k, void* dtv, const char* iotype, int64_t iotype_len,
+        int32_t n_v, int32_t* v_list);
+
 // With `leading_blank`, a blank is written before the first item, so that
-// output with no items stays empty.
-void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode, bool leading_blank){
+// output with no items stays empty. A derived-type item with defined output
+// is separated like a non-character item, and its procedure is called with
+// iotype "LISTDIRECTED" and an empty v_list to write it. If the procedure
+// fails, the result is the error message, starting with '\b'.
+void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode, bool leading_blank,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
     int64_t items_start = 0;
@@ -3716,6 +3726,9 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
     bool prev_is_char = false;
     bool prev_is_logical = false;
     bool prev_is_integer = false;
+    // Whether a derived-type item with defined output was written; it is
+    // separated from the next item even if its procedure wrote nothing.
+    bool dtio_item_written = false;
 
     while(move_to_next_element(s_info, false)){
         bool curr_is_char = (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -3748,7 +3761,7 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
             result_size += 1;
             items_start = 1;
         }
-        if(result_size > items_start && !(prev_is_char && curr_is_char)){
+        if((result_size > items_start || dtio_item_written) && !(prev_is_char && curr_is_char)){
             if (prev_is_logical || curr_is_logical) {
                 (*result)[result_size] = ' ';
                 result_size += 1;
@@ -3760,8 +3773,33 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
                 result_size += default_spacing_len;
             }
         }
-        int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size, decimal_mode);
-        result_size += printed_arg_size;
+        if (s_info->current_element_type == DTIO_TYPE) {
+            int64_t extent = result_size;
+            int64_t content_end = result_size;
+            int32_t empty_v_list[1] = {0};
+            char* error = dtio_call(al, result, &result_size, &extent,
+                &content_end, dtio_unit, n_dtio, dtio_procs,
+                s_info->current_dtio_index, s_info->current_arg_info.current_arg,
+                "LISTDIRECTED", 12, 0, empty_v_list);
+            // The child output may have reallocated the buffer to its
+            // exact size.
+            result_capacity = result_size;
+            dtio_item_written = true;
+            if (error != NULL) {
+                ALLOCATOR_DEALLOC(al, *result);
+                int64_t error_len = (int64_t)strlen(error) + 32;
+                *result = (char*)ALLOCATOR_ALLOC(al, error_len * sizeof(char));
+                snprintf(*result, error_len, " Runtime Error : %s\n", error);
+                internal_free(error);
+                // Special indication for error --> "\b" to be handled by `lfortran_print` or `lfortran_file_write`
+                (*result)[0] = '\b';
+                (*result_size_ptr) = strlen(*result);
+                return;
+            }
+        } else {
+            int64_t printed_arg_size = print_into_string(s_info,  (*result) + result_size, decimal_mode);
+            result_size += printed_arg_size;
+        }
         prev_is_char = curr_is_char;
         prev_is_logical = curr_is_logical;
         prev_is_integer = curr_is_integer;
@@ -4032,7 +4070,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     {fprintf(stderr,"Internal Error : default formatting error\n");exit(1);}
 
     if(format == NULL){
-        default_formatting(al, &result, result_size, &s_info, decimal_mode, leading_blank != 0);
+        default_formatting(al, &result, result_size, &s_info, decimal_mode, leading_blank != 0,
+            dtio_unit, n_dtio, dtio_procs);
         free_serialization_info(&s_info);
         return result;
     }
