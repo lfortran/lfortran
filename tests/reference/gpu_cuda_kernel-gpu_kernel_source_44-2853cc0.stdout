@@ -1,0 +1,52 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0_41gpu_kernel_source_array_element_temporary {
+    int m;
+    int __dim_a_0;
+    int __lb_a_0;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_41gpu_kernel_source_array_element_temporary(
+    int* __restrict__ a,
+    __ScalarArgs___lfortran_gpu_kernel_0_41gpu_kernel_source_array_element_temporary __scalar_args)
+{
+    int m = __scalar_args.m;
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1000)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    {
+        int w[2];
+        w[((int)(1) - (1))] = i__dc;
+        a[((int)(i__dc) - (__lb_a_0))] = w[((int)(m) - (1))];
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1_41gpu_kernel_source_array_element_temporary {
+    int __dim_b_0;
+    int __lb_b_0;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_41gpu_kernel_source_array_element_temporary(
+    int* __restrict__ b,
+    __ScalarArgs___lfortran_gpu_kernel_1_41gpu_kernel_source_array_element_temporary __scalar_args)
+{
+    int __lb_b_0 = __scalar_args.__lb_b_0;
+    int __flat_idx;
+    int i__dc1;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1000)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc1 = (__flat_idx + 1);
+    {
+        int w[2];
+        w[((int)(1) - (1))] = (2 * i__dc1);
+        b[((int)(i__dc1) - (__lb_b_0))] = (w[((int)(1) - (1))] + 1);
+    }
+}
+
