@@ -3387,8 +3387,12 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
                                const std::function<void (const std::string &, const Location &)> err,
-                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt) {
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt,
+                               bool elementwise) {
     ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(item));
+    if (elementwise) {
+        arg_type = ASRUtils::type_get_past_array(arg_type);
+    }
     ASR::symbol_t* a_name = nullptr;
     a_original_name = nullptr;
     expr_dt = nullptr;

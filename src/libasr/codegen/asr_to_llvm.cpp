@@ -24409,13 +24409,13 @@ public:
         return res;
     }
     // The index of the defined output binding of the StringFormat `x` that
-    // writes its item `arg`, or -1. Only scalar items are bound.
+    // writes its item `arg`, or each element of an array item, or -1.
     int64_t dtio_binding_index(const ASR::StringFormat_t &x, ASR::expr_t* arg) {
         if (x.n_dtio_bindings == 0 || ASR::is_a<ASR::ImpliedDoLoop_t>(*arg)) {
             return -1;
         }
-        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(arg));
+        ASR::ttype_t* type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arg)));
         if (!ASR::is_a<ASR::StructType_t>(*type)) {
             return -1;
         }
@@ -24438,7 +24438,8 @@ public:
     // Serializes the types of a list of expressions. An item written by
     // defined output procedure `k` of `string_format` is `D<k>-<bytes>`,
     // where `bytes` is the size of the struct, or of the class wrapper of a
-    // polymorphic item, that is passed for it.
+    // polymorphic item, that is passed for it, and an array of such items is
+    // `[D<k>-<bytes>]`, walked with that stride.
     llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args,
             const ASR::StringFormat_t* string_format=nullptr){
         std::string serialization_res = "";
@@ -24454,8 +24455,10 @@ public:
                     : llvm_utils->getStructType(struct_t, module.get());
                 int64_t bytes = (llvm_type->isSized())
                     ? (int64_t) module->getDataLayout().getTypeAllocSize(llvm_type) : 0;
-                serialization_res += "D" + std::to_string(dtio_index) + "-" +
+                std::string element = "D" + std::to_string(dtio_index) + "-" +
                     std::to_string(bytes);
+                serialization_res += ASRUtils::is_array(ASRUtils::expr_type(args[i]))
+                    ? "[" + element + "]" : element;
             } else {
                 serialization_res += SerializeType(args[i], ASRUtils::expr_type(args[i]), false);
             }
