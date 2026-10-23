@@ -115,7 +115,8 @@ int main(void) {
     point p = {7, NULL}, q = {2, NULL}, outer = {1, &q}, wide = {12345, NULL};
     int32_t i = 42;
     string_descriptor z = {"Z", 1};
-    char dt_i4[48], dt_a[48], dt_dt[48];
+    // Room for two item serializations and a separator.
+    char dt_i4[2*sizeof(dt_item)], dt_a[2*sizeof(dt_item)], dt_dt[2*sizeof(dt_item)];
     snprintf(dt_item, sizeof(dt_item), "D0-%zu", sizeof(point));
     snprintf(dt_i4, sizeof(dt_i4), "%s,I4", dt_item);
     snprintf(dt_a, sizeof(dt_a), "%s,S-DESC-K1-1", dt_item);
