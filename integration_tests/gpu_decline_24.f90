@@ -4,8 +4,9 @@
 ! variable, a block the loop defines that the procedure lays out
 ! differently, and a scalar the loop defines, by assignment or as the index
 ! of a DO loop, or through a variable EQUIVALENCE associates with the block,
-! that the procedure reads. The gpu offload reports each loop as an error
-! (see tests/tests.toml); without it the program runs on the host.
+! that the procedure reads, also inside an ASSOCIATE construct. The gpu
+! offload reports each loop as an error (see tests/tests.toml); without it the
+! program runs on the host.
 module gpu_decline_24_mod
     implicit none
     type :: pair_t
@@ -138,5 +139,35 @@ program gpu_decline_24
         n(k) = aliased_by_loop()
     end do
     if (any(n /= [10, 20, 30, 40])) error stop 7
+
+    ! The same, inside ASSOCIATE constructs.
+    i = -1
+    do concurrent (k = 1:4)
+        associate (z => k)
+            do i = 10 * z, 100
+                exit
+            end do
+        end associate
+        n(k) = index_by_loop()
+    end do
+    if (any(n /= [10, 20, 30, 40])) error stop 8
+
+    y = -1
+    do concurrent (k = 1:4)
+        associate (z => k)
+            y = 10 * z
+        end associate
+        u(k) = defined_by_loop()
+    end do
+    if (any(u /= [10, 20, 30, 40])) error stop 9
+
+    y = -1
+    do concurrent (k = 1:4)
+        associate (z => y)
+            z = 10 * k
+        end associate
+        u(k) = defined_by_loop()
+    end do
+    if (any(u /= [10, 20, 30, 40])) error stop 10
     print *, u
 end program

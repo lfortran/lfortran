@@ -269,8 +269,10 @@ SymbolTable* common_block_scope(SymbolTable *scope) {
 }
 
 // The variables of common blocks an ASR subtree names, in the order it
-// first names them, the bodies of the BLOCKs it runs included.
-class CommonVariableNames : public ASR::BaseWalkVisitor<CommonVariableNames> {
+// first names them, the bodies of the BLOCK and ASSOCIATE constructs it runs
+// included.
+class CommonVariableNames :
+        public ASRUtils::BlockBodyWalkVisitor<CommonVariableNames> {
 public:
     std::vector<ASR::symbol_t*> variables;
 
@@ -284,18 +286,8 @@ public:
         }
     }
 
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!blocks.insert(b).second) return;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
 private:
     std::set<ASR::symbol_t*> seen;
-    std::set<ASR::symbol_t*> blocks;
 };
 
 // Whether `fn` is an external procedure, or one an external procedure

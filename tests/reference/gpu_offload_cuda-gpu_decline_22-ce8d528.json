@@ -2,12 +2,12 @@
     "basename": "gpu_offload_cuda-gpu_decline_22-ce8d528",
     "cmd": "lfortran --no-color --gpu=cuda -c {infile} -o {outfile}",
     "infile": "tests/../integration_tests/gpu_decline_22.f90",
-    "infile_hash": "3462ffa90b7d6f317700c6d0126cdaf54c0fe3dbdab6dc64a1064258",
+    "infile_hash": "7780d26c7423ae0e82f9419b34631e2ea8440d71a25a5994492b2e83",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "gpu_offload_cuda-gpu_decline_22-ce8d528.stderr",
-    "stderr_hash": "09e073c096ff005795b9062f32c05ded670829ab6c73bcb138dfd076",
+    "stderr_hash": "0c4fa8b231afdc9ea035ca5f06007641799b93e4879e90e7c7c0b11d",
     "returncode": 5
 }

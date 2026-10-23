@@ -1,8 +1,8 @@
 ! Variables of common blocks that procedures called in an OpenMP loop
 ! offloaded to the gpu name, which the gpu kernel cannot be handed: a scalar
-! a procedure defines, by assignment or as the index of a DO loop, a variable
-! an external procedure reads, and a block one procedure defines that another
-! lays out differently. The gpu offload
+! a procedure defines, by assignment or as the index of a DO loop (also in an
+! ASSOCIATE construct), a variable an external procedure reads, and a block
+! one procedure defines that another lays out differently. The gpu offload
 ! reports each loop as an error (see tests/tests.toml); without it the
 ! program runs on the host.
 module gpu_decline_22_mod
@@ -36,6 +36,18 @@ contains
         do j = 1, 10
             if (j == 3) exit
         end do
+    end subroutine
+
+    ! The same, inside an ASSOCIATE construct.
+    subroutine count_up_associated(k)
+        integer, intent(in) :: k
+        integer :: j
+        common /gpu_decline_22_j/ j
+        associate (z => k)
+            do j = 1, 10
+                if (j == z - 1) exit
+            end do
+        end associate
     end subroutine
 end module
 
@@ -88,5 +100,13 @@ program gpu_decline_22
     end do
     !$omp end parallel do
     if (j /= 3) error stop 4
+
+    j = -1
+    !$omp parallel do
+    do k = 1, 4
+        if (k == 4) call count_up_associated(k)
+    end do
+    !$omp end parallel do
+    if (j /= 3) error stop 5
     print *, last, n, u, j
 end program
