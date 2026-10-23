@@ -3300,12 +3300,15 @@ namespace Anint {
         *     r = aint(x-0.5)
         * end if
         */
+        // Make the calls one by one, so the helpers get the same names with every C++ compiler.
+        ASR::expr_t *aint_up = b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
+                                    return_type, 0, Aint::instantiate_Aint);
+        ASR::expr_t *aint_down = b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
+                                    return_type, 0, Aint::instantiate_Aint);
         body.push_back(al, b.If(b.Gt(args[0], b.f_t(0, arg_types[0])), {
-            b.Assignment(result, b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
-                                        return_type, 0, Aint::instantiate_Aint))
+            b.Assignment(result, aint_up)
         }, {
-            b.Assignment(result, b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
-                                        return_type, 0, Aint::instantiate_Aint))
+            b.Assignment(result, aint_down)
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
