@@ -6589,16 +6589,16 @@ RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 # Procedures copied into a kernel and the entities they name of their
 # hosts and modules.
-RUN(NAME gpu_metal_570 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_571 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_572 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_573 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_574 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_577 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_578 LABELS gfortran llvm cuda)
-RUN(NAME gpu_metal_579 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_570 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_571 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_572 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_573 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_574 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda) # not checked on metal: a module derived-type variable a device procedure reads is handed to it as a thread reference
+RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda) # metal declines real(8)
+RUN(NAME gpu_metal_577 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_578 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_579 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_590 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
