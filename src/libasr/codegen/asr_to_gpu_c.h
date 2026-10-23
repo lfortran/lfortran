@@ -1835,7 +1835,8 @@ public:
                     std::string len_str = dim_extent_str(arr, d, arr_name,
                         as->base.base.loc);
                     stride = stride == "1" ? len_str
-                        : "(" + stride + " * " + len_str + ")";
+                        : gpu_index_product(stride, len_str,
+                            dialect.index_type());
                 }
             }
         }

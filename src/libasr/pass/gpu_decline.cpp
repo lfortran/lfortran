@@ -81,7 +81,12 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
 }
 
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
-    return gpu_device_capabilities(gpu_device_selected(pass_options));
+    GpuDeviceCapabilities caps = gpu_device_capabilities(
+        gpu_device_selected(pass_options));
+    if (pass_options.descriptor_index_64 && caps.max_integer_kind >= 8) {
+        caps.offset_kind = 8;
+    }
+    return caps;
 }
 
 bool GpuDeviceCapabilities::has_scalar_type(ASR::ttype_t *t) const {

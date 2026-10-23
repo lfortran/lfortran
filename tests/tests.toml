@@ -5003,6 +5003,13 @@ gpu_cuda_kernel = true
 filename = "gpu_cuda_kernel_wide_extent.f90"
 gpu_cuda_kernel = true
 
+# With --descriptor-index-64 element offsets, extents and lower bounds are
+# 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
+[[test]]
+filename = "../integration_tests/gpu_metal_567.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # An integer(8) subscript of an array whose lower bound is beyond huge(0):
 # the lower bound is subtracted before the offset is narrowed to `int`.
 [[test]]

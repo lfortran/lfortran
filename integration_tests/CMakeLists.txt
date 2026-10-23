@@ -6558,7 +6558,10 @@ RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_567 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_595 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) elements needs --descriptor-index-64
+RUN(NAME gpu_metal_598 FAIL LABELS cuda) # stops: a block-local workspace of more than huge(0) elements needs --descriptor-index-64
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices

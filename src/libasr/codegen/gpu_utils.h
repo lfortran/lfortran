@@ -448,6 +448,15 @@ inline std::string gpu_offset_term(const std::string &sub,
     return parts.first + sub + parts.second;
 }
 
+// The product `a * b` of two extents, as device source, computed in
+// `index_type`: two extents of a large array multiply past huge(0). A
+// dialect whose offsets are C `int` already multiplies in it.
+inline std::string gpu_index_product(const std::string &a,
+        const std::string &b, const std::string &index_type) {
+    if (index_type == "int") return "(" + a + " * " + b + ")";
+    return "(((" + index_type + ")(" + a + ")) * " + b + ")";
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -476,9 +485,11 @@ inline std::string gpu_offset_term(const std::string &sub,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
 //
-// Each subscript's offset is gpu_offset_term(), given the subscript's
-// integer kind in `subscript_kinds`, in `index_type`, the dialect's integer
-// for element offsets.
+// The position is counted in `index_type`, the dialect's integer for element
+// offsets: each subscript's offset (gpu_offset_term, given the subscript's
+// integer kind in `subscript_kinds`) and each product of extents is
+// converted to it before it is multiplied, so with a 64-bit `index_type` an
+// array of more than huge(0) elements is addressed without wrapping.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
         const std::vector<int> &subscript_kinds,
@@ -496,7 +507,7 @@ inline std::string gpu_linearized_index_str(
             std::string ext = extent(d);
             if (ext.empty()) continue;
             stride = stride.empty() ? ext
-                : ("(" + stride + " * " + ext + ")");
+                : gpu_index_product(stride, ext, index_type);
         }
     }
     return out;
