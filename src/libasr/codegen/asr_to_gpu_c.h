@@ -5729,16 +5729,18 @@ public:
                     sc->m_dt_sym);
                 std::string init;
                 size_t next_arg = 0;
-                if (ASR::is_a<ASR::Struct_t>(*st)
-                        && struct_constant_initializer(
+                // The kernel plan declines a constant with a component the
+                // device cannot be given a value of this way (see
+                // gpu_struct_constant_unsupported_component).
+                if (!ASR::is_a<ASR::Struct_t>(*st)
+                        || !struct_constant_initializer(
                             ASR::down_cast<ASR::Struct_t>(st), sc, next_arg,
                             init)) {
-                    src << init;
-                } else {
-                    // Something that does not compile rather than a value
-                    // with members of whatever value.
-                    src << "/* unsupported derived-type constant */";
+                    throw CodeGenError("gpu offload: a derived-type "
+                        "constant reached the device code with a component "
+                        "it cannot be given a value of", expr->base.loc);
                 }
+                src << init;
                 break;
             }
             default:
