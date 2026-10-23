@@ -1509,57 +1509,57 @@ semantic error: an equivalence object must be a variable, an array element or a 
      |                     ^^^ not allowed in EQUIVALENCE
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3632:46
+    --> tests/errors/continue_compilation_1.f90:3699:46
      |
-3632 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+3699 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
      |                                              ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3637:42
+    --> tests/errors/continue_compilation_1.f90:3704:42
      |
-3637 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+3704 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
      |                                          ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3641:55
+    --> tests/errors/continue_compilation_1.f90:3708:55
      |
-3641 |         class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+3708 |         class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
      |                                                       ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3644:34
+    --> tests/errors/continue_compilation_1.f90:3711:34
      |
-3644 |         class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+3711 |         class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
      |                                  ^^^^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3647:42
+    --> tests/errors/continue_compilation_1.f90:3714:42
      |
-3647 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+3714 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
      |                                          ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3651:51
+    --> tests/errors/continue_compilation_1.f90:3718:51
      |
-3651 |         class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+3718 |         class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
      |                                                   ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
-    --> tests/errors/continue_compilation_1.f90:3655:41
+    --> tests/errors/continue_compilation_1.f90:3722:41
      |
-3655 |         type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+3722 |         type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
      |                                         ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
-    --> tests/errors/continue_compilation_1.f90:3658:42
+    --> tests/errors/continue_compilation_1.f90:3725:42
      |
-3658 |         type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+3725 |         type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
      |                                          ^ 
 
 semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
-    --> tests/errors/continue_compilation_1.f90:3665:46
+    --> tests/errors/continue_compilation_1.f90:3732:46
      |
-3665 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+3732 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
      |                                              ^ 
 
 semantic error: Restriction type mismatch with provided function argument
