@@ -93,16 +93,19 @@ ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
         ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
-ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i) {
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
+        bool *not_passed) {
+    if (not_passed != nullptr) *not_passed = false;
     ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
     // A type-bound call passes its object as the dummy argument the
     // binding names, the first one unless PASS names another.
-    bool passes = false;
+    bool passes = false, nopass = false;
     const char *self_name = nullptr;
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
         ASR::StructMethodDeclaration_t *m =
             ASR::down_cast<ASR::StructMethodDeclaration_t>(callee);
         passes = x.m_dt != nullptr && !m->m_is_nopass;
+        nopass = m->m_is_nopass;
         self_name = m->m_self_argument;
         callee = ASRUtils::symbol_get_past_external(m->m_proc);
     }
@@ -122,7 +125,13 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i) {
     }
     size_t k;
     if (i == x.n_args) {
-        if (!passes) return nullptr;
+        if (!passes) {
+            // The object of a NOPASS binding is not an argument.
+            if (not_passed != nullptr && nopass && x.m_dt != nullptr) {
+                *not_passed = true;
+            }
+            return nullptr;
+        }
         k = self;
     } else if (x.n_args == f->n_args) {
         // The actual arguments include the passed object.
@@ -142,7 +151,9 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i) {
 }
 
 bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
-    ASR::Variable_t *v = gpu_call_dummy(x, i);
+    bool not_passed;
+    ASR::Variable_t *v = gpu_call_dummy(x, i, &not_passed);
+    if (not_passed) return false;
     if (v == nullptr) return true;
     return v->m_intent != ASR::intentType::In && !v->m_value_attr;
 }

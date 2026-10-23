@@ -258,8 +258,10 @@ bool is_single_assignment_binding(ASR::symbol_t *sym,
 // The dummy argument the `i`-th actual argument of a call is associated
 // with, or, for `i` equal to the number of actual arguments, the passed
 // object of a type-bound call; for a type-bound call, of the procedure
-// the binding names. Nullptr when it is not known.
-ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i);
+// the binding names. Nullptr when it is not known, or when the object of
+// a NOPASS binding is asked for, which is not passed (`not_passed`).
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
+    bool *not_passed = nullptr);
 
 // Whether the procedure a call names may define its `i`-th actual argument
 // (see gpu_call_dummy): the dummy argument it is associated with is not
