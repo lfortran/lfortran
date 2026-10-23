@@ -3439,13 +3439,26 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
     }
     if (a_name == nullptr && ASR::is_a<ASR::StructType_t>(*arg_type)) {
         ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
-        sym = arg_struct->m_symtab->resolve_symbol(read_write);
-        if (sym) {
-            expr_dt = item;
-            resolve_generic(sym);
-            if (a_name == nullptr) {
-                expr_dt = nullptr;
+        // The type-bound generic of the item's type, or else the one it
+        // inherits from an ancestor, then the scopes around the type.
+        for (ASR::Struct_t* s = arg_struct; s != nullptr && a_name == nullptr;
+                s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+            sym = s->m_symtab->get_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
             }
+        }
+        if (a_name == nullptr) {
+            sym = arg_struct->m_symtab->parent->resolve_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
+            }
+        }
+        if (a_name == nullptr) {
+            expr_dt = nullptr;
         }
     }
     return a_name;
