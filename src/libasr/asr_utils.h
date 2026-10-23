@@ -2856,8 +2856,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             break;
         }
         case ASR::ttypeType::Logical: {
-            ASR::Logical_t *logical = ASR::down_cast<ASR::Logical_t>(t);
-            res = "l" + std::to_string(logical->m_kind * 8);
+            ASR::Logical_t *logical_type = ASR::down_cast<ASR::Logical_t>(t);
+            res = "l" + std::to_string(logical_type->m_kind * 8);
             break;
         }
         case ASR::ttypeType::String: {
