@@ -1,0 +1,161 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct point {
+    float x;
+    float y;
+};
+
+struct outer {
+    point a;
+    int k;
+};
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_r_0;
+    int __lb_r_0;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device point& __gpu_shared_last [[buffer(0)]],
+    device point& __gpu_shared_q [[buffer(1)]],
+    device float* r [[buffer(2)]],
+    device float* x [[buffer(3)]],
+    device float* y [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(5)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_r_0 = __scalar_args.__lb_r_0;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    point last;
+    const int n = 100000;
+    point q;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    last = __gpu_shared_last;
+    q = __gpu_shared_q;
+    q.x = y[((int)(i) - (__lb_y_0))];
+    q.y = x[((int)(i) - (__lb_x_0))];
+    __gpu_shared_q = q;
+    r[((int)(i) - (__lb_r_0))] = (q.x - q.y);
+    if ((i == n)) {
+        last = q;
+        __gpu_shared_last = last;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __dim_r_0;
+    int __lb_r_0;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device point& __gpu_shared_p [[buffer(0)]],
+    device float* r [[buffer(1)]],
+    device float* x [[buffer(2)]],
+    device float* y [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(4)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_r_0 = __scalar_args.__lb_r_0;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    point p;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    p = __gpu_shared_p;
+    p.x = x[((int)(i) - (__lb_x_0))];
+    p.y = y[((int)(i) - (__lb_y_0))];
+    __gpu_shared_p = p;
+    r[((int)(i) - (__lb_r_0))] = (p.x + p.y);
+}
+
+inline float _lcompilers_aint_f32_gpu_29(float a) {
+    float _lcompilers_aint_f32;
+    if ((abs(a) <   9.22337203685477581e+18)) {
+        _lcompilers_aint_f32 = ((float)((long)a));
+    } else {
+        _lcompilers_aint_f32 = a;
+    }
+    return _lcompilers_aint_f32;
+}
+
+inline float _lcompilers_aint_f321_gpu_30(float a) {
+    float _lcompilers_aint_f321;
+    if ((abs(a) <   9.22337203685477581e+18)) {
+        _lcompilers_aint_f321 = ((float)((long)a));
+    } else {
+        _lcompilers_aint_f321 = a;
+    }
+    return _lcompilers_aint_f321;
+}
+
+inline float _lcompilers_anint_f32_gpu_28(float a) {
+    float _lcompilers_anint_f32;
+    if ((a >   0.00000000000000000e+00)) {
+        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_30((a +   5.00000000000000000e-01));
+    } else {
+        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_29((a -   5.00000000000000000e-01));
+    }
+    return _lcompilers_anint_f32;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_2(
+    device outer& __gpu_shared_o [[buffer(0)]],
+    device int* a [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    outer o;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    o = __gpu_shared_o;
+    o.a.x = ((float)i);
+    __gpu_shared_o.a.x = o.a.x;
+    a[((int)(i) - (__lb_a_0))] = ((int)o.a.x);
+    if ((i == 3)) {
+        o.k = 7;
+        __gpu_shared_o.k = o.k;
+    }
+    if ((i == 5)) {
+        o.a.y = ((float)50);
+        __gpu_shared_o.a.y = o.a.y;
+    }
+}
+

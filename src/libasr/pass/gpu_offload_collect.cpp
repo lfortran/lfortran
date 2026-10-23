@@ -260,6 +260,36 @@ bool gpu_partially_private_struct(SymbolTable *scope,
         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration);
 }
 
+namespace {
+
+bool gpu_struct_has_derived_component(ASR::symbol_t *struct_sym) {
+    ASR::Struct_t *st = gpu_struct_definition(struct_sym);
+    if (!st) return false;
+    if (st->m_parent && gpu_struct_has_derived_component(st->m_parent)) {
+        return true;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                ASRUtils::symbol_type(member)))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+bool gpu_no_kernel_local_struct(SymbolTable *scope,
+        const std::string &name, ASR::ttype_t *type) {
+    if (!gpu_partially_private_struct(scope, name, type)) return false;
+    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+        scope->resolve_symbol(name));
+    return gpu_struct_has_derived_component(
+        ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration);
+}
+
 void GpuPrivateComponentCollector::note_definition(ASR::expr_t *designator) {
     ASR::symbol_t *v = gpu_defined_variable(designator);
     if (v == nullptr) return;
@@ -332,6 +362,172 @@ void GpuPrivateComponentReplacer::replace_StructInstanceMember(
     }
     ASR::BaseExprReplacer<GpuPrivateComponentReplacer>::
         replace_StructInstanceMember(x);
+}
+
+namespace {
+
+// The procedure or main program whose body holds the statements of
+// `scope`, past the BLOCK and ASSOCIATE constructs around them.
+ASR::symbol_t *gpu_procedure_of(SymbolTable *scope) {
+    for (; scope && scope->asr_owner; scope = scope->parent) {
+        if (scope->asr_owner->type != ASR::asrType::symbol) return nullptr;
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            scope->asr_owner);
+        if (ASR::is_a<ASR::Program_t>(*owner)
+                || ASR::is_a<ASR::Function_t>(*owner)) {
+            return owner;
+        }
+        if (!ASR::is_a<ASR::Block_t>(*owner)
+                && !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+class GpuLoopFinder : public ASRUtils::BlockBodyWalkVisitor<GpuLoopFinder> {
+public:
+    const ASR::OMPRegion_t *loop;
+    bool found = false;
+    GpuLoopFinder(const ASR::OMPRegion_t *loop_) : loop(loop_) {}
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (&x == loop) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<GpuLoopFinder>::visit_OMPRegion(x);
+    }
+};
+
+// Adds to `names` what may be referenced once `loop` has run, when one of
+// `stmts` holds it, and says whether one does.
+bool gpu_collect_after_loop(ASR::stmt_t **stmts, size_t n,
+        const ASR::OMPRegion_t &loop, std::set<std::string> &names) {
+    for (size_t i = 0; i < n; i++) {
+        GpuLoopFinder finder(&loop);
+        finder.visit_stmt(*stmts[i]);
+        if (!finder.found) continue;
+        ASR::stmt_t *s = stmts[i];
+        if (s != &loop.base) {
+            // Only the branch of an IF or the body of a BLOCK or ASSOCIATE
+            // holding the loop is followed into; any other construct, a
+            // loop around it in particular, can run its statements again
+            // after the loop, so all of them count.
+            bool inner = false;
+            if (ASR::is_a<ASR::If_t>(*s)) {
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                inner = gpu_collect_after_loop(x->m_body, x->n_body, loop,
+                        names)
+                    || gpu_collect_after_loop(x->m_orelse, x->n_orelse,
+                        loop, names);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (ASR::is_a<ASR::Block_t>(*m)) {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(m);
+                    inner = gpu_collect_after_loop(b->m_body, b->n_body,
+                        loop, names);
+                }
+            } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*s)) {
+                ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(s)->m_m);
+                if (ASR::is_a<ASR::AssociateBlock_t>(*m)) {
+                    ASR::AssociateBlock_t *b =
+                        ASR::down_cast<ASR::AssociateBlock_t>(m);
+                    inner = gpu_collect_after_loop(b->m_body, b->n_body,
+                        loop, names);
+                }
+            }
+            if (!inner) {
+                PostLoopVarCollector c(names, &loop);
+                c.visit_stmt(*s);
+            }
+        }
+        PostLoopVarCollector c(names, &loop);
+        for (size_t j = i + 1; j < n; j++) {
+            c.visit_stmt(*stmts[j]);
+        }
+        return true;
+    }
+    return false;
+}
+
+class GpuGoToFinder : public ASRUtils::BlockBodyWalkVisitor<GpuGoToFinder> {
+public:
+    bool found = false;
+    void visit_GoTo(const ASR::GoTo_t &) { found = true; }
+};
+
+// Adds to `names` what the procedures contained in `scope` reference,
+// any of which a statement after a loop may call.
+void gpu_collect_contained(SymbolTable *scope, std::set<std::string> &names) {
+    for (auto &item : scope->get_scope()) {
+        if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(item.second);
+        PostLoopVarCollector c(names);
+        for (size_t i = 0; i < f->n_body; i++) c.visit_stmt(*f->m_body[i]);
+        gpu_collect_contained(f->m_symtab, names);
+    }
+}
+
+} // namespace
+
+std::set<std::string> gpu_names_referenced_after_loop(
+        const ASR::OMPRegion_t &loop, SymbolTable *scope, bool &everything) {
+    std::set<std::string> names;
+    everything = false;
+    ASR::symbol_t *proc = gpu_procedure_of(scope);
+    if (proc == nullptr) return names;
+    ASR::stmt_t **body;
+    size_t n_body;
+    if (ASR::is_a<ASR::Program_t>(*proc)) {
+        ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(proc);
+        body = p->m_body;
+        n_body = p->n_body;
+    } else {
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(proc);
+        body = f->m_body;
+        n_body = f->n_body;
+    }
+    GpuGoToFinder jumps;
+    for (size_t i = 0; i < n_body && !jumps.found; i++) {
+        jumps.visit_stmt(*body[i]);
+    }
+    if (jumps.found) {
+        everything = true;
+        return names;
+    }
+    gpu_collect_after_loop(body, n_body, loop, names);
+    gpu_collect_contained(ASRUtils::symbol_symtab(proc), names);
+    return names;
+}
+
+bool gpu_visible_outside_procedure(ASR::symbol_t *sym, SymbolTable *scope) {
+    if (sym == nullptr) return false;
+    if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) return true;
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+    if (v->m_intent != ASR::intentType::Local) return true;
+    ASR::symbol_t *proc = gpu_procedure_of(scope);
+    if (proc == nullptr) return true;
+    if (v->m_storage == ASR::storage_typeType::Save
+            && ASR::is_a<ASR::Function_t>(*proc)) {
+        return true;
+    }
+    SymbolTable *proc_scope = ASRUtils::symbol_symtab(proc);
+    for (SymbolTable *t = v->m_parent_symtab; t != proc_scope;
+            t = t->parent) {
+        if (t == nullptr || t->asr_owner == nullptr
+                || t->asr_owner->type != ASR::asrType::symbol) {
+            return true;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(t->asr_owner);
+        if (!ASR::is_a<ASR::Block_t>(*owner)
+                && !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,

@@ -281,45 +281,43 @@ public:
         const std::set<SymbolTable*> &scopes = {})
         : assigned_vars(av), inner_loop_vars(ilv), enclosing_scopes(scopes) {}
 
+    // A variable the body defines, unless it is a local of a BLOCK or
+    // ASSOCIATE in the body.
+    void note(ASR::symbol_t *sym) {
+        if (sym == nullptr || ASR::is_a<ASR::Variable_t>(*sym) == false) {
+            if (sym != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                assigned_vars.insert(ASRUtils::symbol_name(sym));
+            }
+            return;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_parent_symtab->asr_owner) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                var->m_parent_symtab->asr_owner);
+            if ((ASR::is_a<ASR::Block_t>(*owner) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*owner)) &&
+                    enclosing_scopes.find(var->m_parent_symtab)
+                        == enclosing_scopes.end()) {
+                return;
+            }
+        }
+        assigned_vars.insert(ASRUtils::symbol_name(sym));
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
-        // Check if target is a simple Var (not ArrayItem)
-        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            // Skip variables local to Block or AssociateBlock scopes
-            bool is_block_local = false;
-            if (ASR::is_a<ASR::Variable_t>(*v->m_v)) {
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                if (var->m_parent_symtab->asr_owner) {
-                    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner);
-                    if (ASR::is_a<ASR::Block_t>(*owner) ||
-                        ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                        if (enclosing_scopes.find(var->m_parent_symtab)
-                                == enclosing_scopes.end()) {
-                            is_block_local = true;
-                        }
-                    }
-                }
-            }
-            if (!is_block_local) {
-                std::string name = ASRUtils::symbol_name(v->m_v);
-                ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
-                if (!ASRUtils::is_array(type)) {
-                    assigned_vars.insert(name);
-                }
-            }
-        }
-        // Check if target is a StructInstanceMember (e.g., x%v = ...)
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
-            ASR::StructInstanceMember_t *sm =
-                ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
-                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(sm->m_v);
-                std::string name = ASRUtils::symbol_name(v->m_v);
-                assigned_vars.insert(name);
-            }
-        }
+        note(gpu_defined_variable(x.m_target));
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
+    }
+
+    // An actual argument the procedure may define.
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
+                note(gpu_defined_variable(x.m_args[i].m_value));
+            }
+        }
+        if (x.m_dt) note(gpu_defined_variable(x.m_dt));
+        ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_SubroutineCall(x);
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
@@ -519,6 +517,15 @@ private:
 bool gpu_partially_private_struct(SymbolTable *scope,
     const std::string &name, ASR::ttype_t *type);
 
+// Whether `name`, of type `type`, is a derived-type variable of a type with
+// allocatable or pointer parts and a derived-type component, which the
+// kernel cannot hold as a local of its own (the lowering of such a local
+// is not done yet). Each thread keeps a private copy of its scalar
+// components instead (GpuPrivateComponentCollector), whether or not its
+// value is kept after the loop.
+bool gpu_no_kernel_local_struct(SymbolTable *scope,
+    const std::string &name, ASR::ttype_t *type);
+
 // Replaces each component `v%c` the map names with the private copy the
 // thread keeps of it.
 class GpuPrivateComponentReplacer :
@@ -547,17 +554,42 @@ public:
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel
 // parameters into separate flat array buffers for Metal.
-// Collects all variable names referenced (read) in a set of statements.
-// Used to determine which variables are live after a parallel loop.
+// Collects all variable names referenced in a set of statements, except
+// in the parallel loop `skip`. Used to determine which variables are live
+// after that loop.
 class PostLoopVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<PostLoopVarCollector> {
 public:
     std::set<std::string> &referenced_vars;
-    PostLoopVarCollector(std::set<std::string> &rv) : referenced_vars(rv) {}
+    const ASR::OMPRegion_t *skip;
+    PostLoopVarCollector(std::set<std::string> &rv,
+        const ASR::OMPRegion_t *skip_ = nullptr)
+        : referenced_vars(rv), skip(skip_) {}
     void visit_Var(const ASR::Var_t &x) {
         referenced_vars.insert(ASRUtils::symbol_name(x.m_v));
     }
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (&x == skip) return;
+        ASR::BaseWalkVisitor<PostLoopVarCollector>::visit_OMPRegion(x);
+    }
 };
+
+// The names of the variables that may be referenced once the parallel
+// loop `loop` has run: by a statement of the procedure (or main program)
+// that holds it -- the statements after it, in the statement list that
+// holds it and in each construct around it, and every other statement of
+// a loop around it, which can run again -- or by a procedure it contains,
+// which a later statement may call. When the procedure has a GO TO, which
+// can run any statement again, `everything` is set instead.
+std::set<std::string> gpu_names_referenced_after_loop(
+    const ASR::OMPRegion_t &loop, SymbolTable *scope, bool &everything);
+
+// Whether the value a parallel loop in `scope` gives the variable `sym`
+// can be read once the procedure (or main program) holding the loop has
+// returned, or by another procedure: it is a dummy argument or the
+// function result, it is saved, or it belongs to a module or to a host
+// procedure.
+bool gpu_visible_outside_procedure(ASR::symbol_t *sym, SymbolTable *scope);
 
 // Collects the symbols targeted by Var nodes in a set of statements,
 // including the bodies of nested Block and AssociateBlock scopes. Used to

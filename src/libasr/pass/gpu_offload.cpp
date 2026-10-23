@@ -396,58 +396,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Identify which symbols are local temporaries (assigned scalar, non-array)
     // vs kernel parameters (arrays or read-only scalars).
     // Assigned scalars are kernel-local unless they are reduction
-    // targets from inlined all(), or are referenced after the do
-    // concurrent loop (liveout) — those need to be communicated back
-    // to the host via 1-element array device buffers.
-
-    // Collect variables referenced in statements after this parallel loop
-    // in the parent body, to identify liveout scalars.
-    std::set<std::string> post_loop_vars;
-    {
-        ASR::stmt_t **parent_body = nullptr;
-        size_t parent_n_body = 0;
-        SymbolTable *scope = current_scope;
-        while (scope && scope->asr_owner) {
-            if (scope->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(
-                    scope->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
-                    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
-                        owner_sym);
-                    parent_body = prog->m_body;
-                    parent_n_body = prog->n_body;
-                    break;
-                } else if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
-                    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                        owner_sym);
-                    parent_body = fn->m_body;
-                    parent_n_body = fn->n_body;
-                    break;
-                } else if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
-                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(
-                        owner_sym);
-                    parent_body = blk->m_body;
-                    parent_n_body = blk->n_body;
-                    break;
-                }
-            }
-            scope = scope->parent;
-        }
-        if (parent_body) {
-            bool found_dc = false;
-            for (size_t si = 0; si < parent_n_body; si++) {
-                if (!found_dc) {
-                    if (parent_body[si]->base.loc.first == loc.first &&
-                            parent_body[si]->base.loc.last == loc.last) {
-                        found_dc = true;
-                    }
-                    continue;
-                }
-                PostLoopVarCollector plvc(post_loop_vars);
-                plvc.visit_stmt(*parent_body[si]);
-            }
-        }
-    }
+    // targets from inlined all(), or their value can be read once the
+    // loop has run (liveout): a statement that can run after the loop or a
+    // contained procedure references them, or they outlive the procedure
+    // holding the loop -- a dummy argument, the function result, a saved,
+    // module or host variable. A variable defined in only one iteration
+    // has that value after the loop (Fortran 2018, 11.1.7.5), so those
+    // have to be communicated back to the host (plan_liveouts).
+    bool everything_live = false;
+    std::set<std::string> post_loop_vars = gpu_names_referenced_after_loop(
+        region, current_scope, everything_live);
 
     // A `reduce` accumulator is live after the loop by definition, whether
     // or not anything the scan above found reads it: an intent(out) dummy
@@ -462,10 +420,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         if (loop_var_set.count(name)) continue;
         if (all_reduction_targets.count(name)) continue;
         if (reduction_names.count(name)) continue;
-        if (post_loop_vars.count(name) && !inner_loop_vars.count(name)) continue;
+        bool live = everything_live || post_loop_vars.count(name) > 0
+            || gpu_visible_outside_procedure(
+                current_scope->resolve_symbol(name), current_scope);
+        if (live && !inner_loop_vars.count(name)) continue;
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
+            if (gpu_no_kernel_local_struct(current_scope, name, type)) {
+                continue;
+            }
             if (!ASRUtils::is_array(type)) {
                 local_scalar_names.insert(name);
             }
