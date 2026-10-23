@@ -11,12 +11,14 @@ namespace {
 
 class GpuLaunchSupport {
     GpuDecline &reason;
+    bool values_replaced;
     bool unsupported(const GpuDecline &failure) {
         reason = failure;
         return false;
     }
 public:
-    explicit GpuLaunchSupport(GpuDecline &reason) : reason(reason) {
+    GpuLaunchSupport(GpuDecline &reason, bool values_replaced)
+            : reason(reason), values_replaced(values_replaced) {
         reason = GpuDecline();
     }
     bool is_numeric_scalar(ASR::ttype_t *type) {
@@ -356,12 +358,64 @@ public:
     };
 
     // The first derived-type constant device code reads, in a statement
-    // or as the value of a named constant, that the device struct cannot
-    // be given the value of.
+    // or as the value of a named constant a statement names, that the
+    // device struct cannot be given the value of. Constants device code
+    // does not read, such as one only another constant is declared with,
+    // or one read only where --fast puts the value read in place of the
+    // read, are not looked at.
     class StructConstantFinder :
-            public ASR::BaseWalkVisitor<StructConstantFinder> {
+            public ASRUtils::BlockBodyWalkVisitor<StructConstantFinder> {
     public:
         GpuDecline found;
+        // Whether designators with a compile-time value are replaced by
+        // it (--fast).
+        bool values_replaced = false;
+
+        void visit_StructInstanceMember(
+                const ASR::StructInstanceMember_t &x) {
+            if (values_replaced && x.m_value) {
+                visit_expr(*x.m_value);
+                return;
+            }
+            ASRUtils::BlockBodyWalkVisitor<StructConstantFinder>
+                ::visit_StructInstanceMember(x);
+        }
+
+        void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+            if (values_replaced && x.m_value) {
+                visit_expr(*x.m_value);
+                return;
+            }
+            ASRUtils::BlockBodyWalkVisitor<StructConstantFinder>
+                ::visit_ArrayItem(x);
+        }
+
+        void visit_body(ASR::stmt_t **body, size_t n_body) {
+            for (size_t i = 0; i < n_body && !found.declined(); i++) {
+                visit_stmt(*body[i]);
+            }
+        }
+
+        void visit_Var(const ASR::Var_t &x) {
+            if (found.declined()) return;
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)
+                    || !read.insert(sym).second) {
+                return;
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            // Device code has no array of device structs to give the
+            // elements of a constant array of a derived type to, whether
+            // its value is known here or not.
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && ASRUtils::is_array(var->m_type)
+                    && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(var->m_type))) {
+                found = GpuDecline(GpuDeclineReason::StructArrayConstant);
+                return;
+            }
+            if (var->m_value) visit_expr(*var->m_value);
+        }
 
         void visit_StructConstant(const ASR::StructConstant_t &x) {
             if (found.declined()) return;
@@ -390,8 +444,13 @@ public:
                 found = GpuDecline(GpuDeclineReason::StructArrayConstant);
                 return;
             }
-            ASR::BaseWalkVisitor<StructConstantFinder>::visit_ArrayConstant(x);
+            ASRUtils::BlockBodyWalkVisitor<StructConstantFinder>
+                ::visit_ArrayConstant(x);
         }
+
+    private:
+        // The variables whose values were looked at.
+        std::set<ASR::symbol_t*> read;
     };
 
     bool supported(ASR::symbol_t *kernel_sym,
@@ -421,9 +480,12 @@ public:
         }
         if (opaque.found.declined()) return unsupported(opaque.found);
         StructConstantFinder constants;
-        constants.visit_symbol(*kernel_sym);
+        constants.values_replaced = values_replaced;
+        constants.visit_body(kernel->m_body, kernel->n_body);
         for (size_t i = 0; i < device_functions.n; i++) {
-            constants.visit_symbol(*device_functions[i]);
+            ASR::Function_t *function =
+                ASR::down_cast<ASR::Function_t>(device_functions[i]);
+            constants.visit_body(function->m_body, function->n_body);
         }
         if (constants.found.declined()) return unsupported(constants.found);
         for (auto &workspace : workspaces) {
@@ -1083,7 +1145,8 @@ ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
 }
 
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
-        ASR::call_arg_t *args, size_t n_args, GpuDecline &decline) {
+        ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
+        bool values_replaced) {
     if (kernel.m_gpu) return true;
     std::string unresolved_workspace;
     if (!gpu_kernel_workspace_extents_resolvable(kernel, unresolved_workspace)) {
@@ -1125,7 +1188,7 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         return true;
     };
     if (!close_graph(&kernel)) return false;
-    GpuLaunchSupport support(decline);
+    GpuLaunchSupport support(decline, values_replaced);
     auto workspaces = collect_gpu_vla_workspaces(kernel, 0, true);
     if (!support.supported(&kernel.base, args, n_args, workspaces,
             device_functions)) {
