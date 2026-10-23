@@ -25349,30 +25349,8 @@ public:
             }
 
             std::string func_name = to_lower(single_func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-
-            if (call_sym == nullptr) {
-                call_sym = current_scope->resolve_symbol(matched_func_name);
-            }
-            if (call_sym == nullptr && first_struct != nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter() == current_scope->get_counter())
-                    call_sym = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        call_sym = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, real_proc->base.loc, current_scope,
-                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
-                        current_scope->add_symbol(matched_func_name, call_sym);
-                    }
-                }
-            }
+            ASR::symbol_t* call_sym = ASRUtils::import_type_bound_specific(al,
+                current_scope, operator_sym, to_lower(new_op));
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
                 != current_scope->get_counter()) {
                 ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
@@ -25416,44 +25394,8 @@ public:
                     al, ASRUtils::expr_type(func->m_return_var));
             }
 
-            std::string func_name = to_lower(func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-            ASR::symbol_t* a_name = current_scope->resolve_symbol(func_name);
-            if(a_name == nullptr) {
-                a_name = current_scope->resolve_symbol(matched_func_name);
-            }
-            if (a_name == nullptr && first_struct != nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                        == current_scope->get_counter())
-                    a_name = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        a_name = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        a_name = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(
-                                al, real_proc->base.loc, current_scope,
-                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                            )
-                        );
-                        current_scope->add_symbol(matched_func_name, a_name);
-                    }
-                }
-            }
-
-            if (!a_name) {
-                diag.add(Diagnostic(
-                    "Unable to resolve matched function: " + func_name
-                    + " for defined binary operation",
-                    Level::Error,
-                    Stage::Semantic,
-                    { Label("", { loc }) }));
-                throw SemanticAbort();
-            }
+            ASR::symbol_t* a_name = ASRUtils::import_type_bound_specific(al,
+                current_scope, operator_sym, to_lower(new_op));
 
             tmp = ASRUtils::make_FunctionCall_t_util(
                 al, loc, a_name, nullptr,
@@ -25544,43 +25486,13 @@ public:
                 return_type = handle_return_type(return_type, loc, a_args, func);
             }
             std::string func_name = to_lower(func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
             ASR::symbol_t* call_sym = nullptr;
             if (op_sym != nullptr && !ASRUtils::is_type_bound_generic(operator_sym)
                     && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 call_sym = gen_proc->m_procs[i];
             } else {
-                call_sym = current_scope->resolve_symbol(func_name);
-            }
-            if (call_sym == nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                        == current_scope->get_counter())
-                    call_sym = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        call_sym = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        call_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(
-                                al, real_proc->base.loc, current_scope,
-                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                            )
-                        );
-                        current_scope->add_symbol(matched_func_name, call_sym);
-                    }
-                }
-            }
-
-            if (call_sym == nullptr) {
-                diag.add(Diagnostic(
-                    "Unable to resolve matched function: " + func_name + " for defined operator",
-                    Level::Error, Stage::Semantic, { Label("", { loc }) }
-                ));
-                throw SemanticAbort();
+                call_sym = ASRUtils::import_type_bound_specific(al, current_scope,
+                    proc, to_lower(new_op));
             }
 
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
@@ -25648,31 +25560,8 @@ public:
                             al, ASRUtils::expr_type(func->m_return_var));
                     }
                     std::string func_name = to_lower(func->m_name);
-                    std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-                    ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-                    if (call_sym == nullptr) {
-                        ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
-                        ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                        std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                        if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                                == current_scope->get_counter())
-                            call_sym = real_proc;
-                        else {
-                            if (current_scope->resolve_symbol(matched_func_name))
-                                call_sym = current_scope->resolve_symbol(matched_func_name);
-                            else {
-                                call_sym = ASR::down_cast<ASR::symbol_t>(
-                                    ASR::make_ExternalSymbol_t(
-                                        al, real_proc->base.loc, current_scope,
-                                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                                    )
-                                );
-                                current_scope->add_symbol(matched_func_name, call_sym);
-                            }
-                        }
-                    }
-                    if (call_sym == nullptr) continue;
+                    ASR::symbol_t* call_sym = ASRUtils::import_type_bound_specific(al,
+                        current_scope, proc, to_lower(new_op));
                     if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
                             != current_scope->get_counter()) {
                         ADD_ASR_DEPENDENCIES_WITH_NAME(
@@ -25783,52 +25672,13 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
-                // Type-bound operator: resolve the underlying function
-                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(sm->m_proc);
-                std::string func_name = ASRUtils::symbol_name(func_sym);
-                v = current_scope->resolve_symbol(func_name);
-                if (v == nullptr) {
-                    // Function is in another module, import it
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    v = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_name), func_sym,
-                            ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_name, v);
-                }
-            } else if (!ASRUtils::is_symbol_of_scope_chain(current_scope, v)) {
-                // An operator found through an operand's type is not imported.
-                std::string func_name = ASRUtils::symbol_name(v);
-                ASR::symbol_t* resolved = current_scope->resolve_symbol(func_name);
-                if (resolved == nullptr) {
-                    resolved = current_scope->resolve_symbol(func_name + "@~concat");
-                }
-                if (resolved == nullptr) {
-                    // The specific procedure is not directly accessible in the
-                    // current scope. This happens when the operator interface is
-                    // re-exported through an intermediate module (only the
-                    // operator, not the specific procedures, is made public). The
-                    // procedure symbol `op_proc` is still valid, so import the
-                    // underlying function via an ExternalSymbol pointing to it.
-                    ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(op_proc);
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    resolved = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_name), func_sym,
-                            ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_name, resolved);
-                }
-                v = resolved;
+            // An operator found through an operand's type is not imported.
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)
+                    || !ASRUtils::is_symbol_of_scope_chain(current_scope, v)) {
+                ASR::symbol_t* proc = ASR::is_a<ASR::StructMethodDeclaration_t>(*v)
+                    ? ASR::down_cast<ASR::StructMethodDeclaration_t>(v)->m_proc : op_proc;
+                v = ASRUtils::import_type_bound_specific(al, current_scope, proc,
+                    intrinsic_op_name);
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);

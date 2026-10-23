@@ -830,6 +830,13 @@ static inline bool is_symbol_of_scope_chain(SymbolTable *scope, ASR::symbol_t *s
     return false;
 }
 
+// The symbol through which `scope` calls `proc`, a procedure bound to the
+// type-bound operator `generic`. A type and its bindings can be used
+// without `use`, so the procedure is imported here, at the call, as
+// `<proc>@<generic>`, unless `scope` already has it.
+ASR::symbol_t *import_type_bound_specific(Allocator &al, SymbolTable *scope,
+    ASR::symbol_t *proc, const std::string &generic);
+
 ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr);
 
 // Returns the Module_t the symbol is in, or nullptr if not in a module
