@@ -209,6 +209,11 @@ enum class GpuDeclineReason {
     // `other_variable` is the derived-type variable that `name` is placed
     // after, or empty when `name` is that variable.
     CommonVariableDerivedType,
+    // A variable `name` of a common block that the declaration of a dummy
+    // `other_variable` of procedure `routine` names: the kernel's variable
+    // for it would be named in the procedure's signature, which can name
+    // only its dummies.
+    CommonVariableDummyDeclaration,
     // A scalar variable of a common block that a procedure the loop calls
     // may define: the kernel is handed its value, and the host would never
     // see the definition.

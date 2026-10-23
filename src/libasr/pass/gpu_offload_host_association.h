@@ -41,7 +41,8 @@ Only a numeric or logical variable that the view places as one of its members
 is handed over this way. gpu_common_block_decline says why a procedure names
 one that is not: a variable EQUIVALENCE associates with the block, a pointer,
 a character variable, or a block with a derived-type variable among those
-that place it.
+that place it; or why it cannot be handed one at all: the declaration of a
+dummy names a variable of a common block.
 */
 GpuDecline gpu_common_block_decline(ASR::Function_t &fn);
 

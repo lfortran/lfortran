@@ -6659,6 +6659,7 @@ RUN(NAME gpu_decline_20 LABELS gfortran llvm)
 RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_decline_22 LABELS gfortran llvm GFORTRAN_ARGS -fopenmp)
 RUN(NAME gpu_decline_24 LABELS gfortran llvm)
+RUN(NAME gpu_decline_33 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error

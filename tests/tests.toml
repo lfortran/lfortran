@@ -4708,6 +4708,10 @@ filename = "../integration_tests/gpu_decline_24.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_33.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_common_equivalence.f90"
 gpu_offload_cuda = true
 options = "--openmp --gpu-offload-omp-loops"

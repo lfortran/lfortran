@@ -456,9 +456,27 @@ GpuDecline gpu_common_block_access_decline(ASR::stmt_t **body, size_t n_body,
 }
 
 GpuDecline gpu_common_block_decline(ASR::Function_t &fn) {
+    std::vector<ASR::CommonBlock_t*> views = common_block_views(fn);
+    if (views.empty()) return GpuDecline();
+    // The declarations of the dummies are part of the signature, which
+    // cannot name the kernel's variable for one.
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) continue;
+        ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v;
+        CommonVariableNames names;
+        names.visit_ttype(*ASRUtils::symbol_type(dummy));
+        if (names.variables.empty()) continue;
+        ASR::symbol_t *v = names.variables[0];
+        GpuDecline d(GpuDeclineReason::CommonVariableDummyDeclaration,
+            ASRUtils::symbol_name(v));
+        d.common_block = block_name(common_place(v).view);
+        d.routine = fn.m_name;
+        d.other_variable = ASRUtils::symbol_name(dummy);
+        return d;
+    }
     std::set<ASR::symbol_t*> named;
     bool looked = false;
-    for (ASR::CommonBlock_t *view : common_block_views(fn)) {
+    for (ASR::CommonBlock_t *view : views) {
         if (!looked) {
             named = named_variables(fn);
             looked = true;

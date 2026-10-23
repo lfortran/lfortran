@@ -318,6 +318,11 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 "block " + decline.common_block + ", read in '"
                 + decline.routine + "', which the block places after "
                 "derived-type variable '" + decline.other_variable + "'";
+        case GpuDeclineReason::CommonVariableDummyDeclaration:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + " in the declaration of "
+                "dummy '" + decline.other_variable + "' of '"
+                + decline.routine + "'";
         case GpuDeclineReason::CommonVariableDefined:
             return unsupported + "scalar variable '" + decline.name
                 + "' of common block " + decline.common_block
