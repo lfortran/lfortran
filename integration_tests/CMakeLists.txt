@@ -2266,6 +2266,7 @@ RUN(NAME modules_84 LABELS gfortran llvm)
 RUN(NAME modules_85 LABELS gfortran llvm)
 RUN(NAME modules_86 LABELS gfortran llvm)
 RUN(NAME modules_87 LABELS gfortran llvm fortran)
+RUN(NAME modules_88 LABELS gfortran llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
