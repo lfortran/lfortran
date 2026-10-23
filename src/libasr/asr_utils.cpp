@@ -2499,35 +2499,17 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                                 a_args.push_back(al, right_call_arg);
                             }
-                            std::string func_name = to_lower(func->m_name);
                             ASR::symbol_t* a_name = nullptr;
                             if (i < n_interface_proc && !is_type_bound_generic(sym)) {
                                 a_name = op_overloading_procs[i];
-                                matched_func_name = ASRUtils::symbol_name(a_name);
                             } else if (i >= n_interface_proc && !iter_found_on_right) {
-                                ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
-                                matched_func_name = ASRUtils::symbol_name(mem_ext);
+                                a_name = import_class_procedure(al, loc, orig_proc, curr_scope);
                                 self_arg = left;
-                            } else if( curr_scope->resolve_symbol(func_name) ) {
-                                matched_func_name = func_name;
                             } else {
-                                std::string mangled_name = func_name + "@" + intrinsic_op_name;
-                                matched_func_name = mangled_name;
+                                a_name = import_type_bound_specific(al, curr_scope, proc,
+                                    intrinsic_op_name);
                             }
-                            if (a_name == nullptr) {
-                                a_name = curr_scope->resolve_symbol(matched_func_name);
-                            }
-                            if( a_name == nullptr ) {
-                                if (i >= n_interface_proc && !iter_found_on_right) {
-                                    err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
-                                } else {
-                                    a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                                                al, loc, curr_scope, s2c(al, matched_func_name), proc,
-                                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                                                nullptr, 0, func->m_name, ASR::accessType::Public));
-                                    curr_scope->add_symbol(matched_func_name, a_name);
-                                }
-                            }
+                            matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
                             ASR::expr_t* first_array_arg =
                                 ASRUtils::find_first_array_arg_if_elemental(func, a_args);
@@ -2634,24 +2616,9 @@ void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand
             operand_call_arg.loc = operand->base.loc;
             operand_call_arg.m_value = operand;
             a_args.push_back(al, operand_call_arg);
-            std::string func_name = to_lower(func->m_name);
-            if (specific != nullptr) {
-                matched_func_name = ASRUtils::symbol_name(specific);
-            } else if( curr_scope->resolve_symbol(func_name) ) {
-                matched_func_name = func_name;
-            } else {
-                std::string mangled_name = func_name + "@" + op_name;
-                matched_func_name = mangled_name;
-            }
             ASR::symbol_t* a_name = specific != nullptr
-                ? specific : curr_scope->resolve_symbol(matched_func_name);
-            if( a_name == nullptr ) {
-                a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                            al, loc, curr_scope, s2c(al, matched_func_name), proc,
-                            ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                            nullptr, 0, func->m_name, ASR::accessType::Public));
-                curr_scope->add_symbol(matched_func_name, a_name);
-            }
+                ? specific : import_type_bound_specific(al, curr_scope, proc, op_name);
+            matched_func_name = ASRUtils::symbol_name(a_name);
             ASR::ttype_t *return_type = nullptr;
             ASR::expr_t* first_array_arg =
                 ASRUtils::find_first_array_arg_if_elemental(func, a_args);
@@ -3378,28 +3345,15 @@ static ASR::symbol_t* import_defined_io_procedure(const std::string &read_write,
                 loc);
         }
     }
-    std::string subrout_name = to_lower(subrout->m_name);
-    ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
-    if (specific != nullptr) {
-        matched_subrout_name = ASRUtils::symbol_name(specific);
-    } else if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
-        matched_subrout_name = subrout_name;
-    } else {
-        std::string mangled_name = subrout_name + "@" + read_write;
-        matched_subrout_name = mangled_name;
-    }
-    ASR::symbol_t *a_name = specific != nullptr
-        ? specific : curr_scope->resolve_symbol(matched_subrout_name);
+    ASR::symbol_t *a_name = nullptr;
     if (expr_dt != nullptr) {
         a_name = ASRUtils::import_class_procedure(al, loc, binding, curr_scope);
+    } else if (specific != nullptr) {
+        a_name = specific;
+    } else {
+        a_name = import_type_bound_specific(al, curr_scope, proc, read_write);
     }
-    if( a_name == nullptr ) {
-        a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                    al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
-                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                    nullptr, 0, subrout->m_name, ASR::accessType::Public));
-        curr_scope->add_symbol(matched_subrout_name, a_name);
-    }
+    matched_subrout_name = ASRUtils::symbol_name(a_name);
     if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
         ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
     }
@@ -3640,35 +3594,17 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                                 a_args.push_back(al, right_call_arg);
                             }
-                            std::string func_name = to_lower(func->m_name);
                             ASR::symbol_t* a_name = nullptr;
                             if (i < n_interface_proc && !is_type_bound_generic(sym)) {
                                 a_name = op_overloading_procs[i];
-                                matched_func_name = ASRUtils::symbol_name(a_name);
                             } else if (i >= n_interface_proc && !pass_right) {
-                                ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
-                                matched_func_name = ASRUtils::symbol_name(mem_ext);
+                                a_name = import_class_procedure(al, loc, orig_proc, curr_scope);
                                 self_arg = left;
-                            } else if( curr_scope->resolve_symbol(func_name) ) {
-                                matched_func_name = func_name;
                             } else {
-                                std::string mangled_name = func_name + "@" + intrinsic_op_name;
-                                matched_func_name = mangled_name;
+                                a_name = import_type_bound_specific(al, curr_scope, proc,
+                                    intrinsic_op_name);
                             }
-                            if (a_name == nullptr) {
-                                a_name = curr_scope->resolve_symbol(matched_func_name);
-                            }
-                            if( a_name == nullptr ) {
-                                if (i >= n_interface_proc && !pass_right) {
-                                    err("Unable to resolve matched function for operator overloading, " + matched_func_name, loc);
-                                } else {
-                                    a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                                                al, loc, curr_scope, s2c(al, matched_func_name), proc,
-                                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                                                nullptr, 0, func->m_name, ASR::accessType::Public));
-                                    curr_scope->add_symbol(matched_func_name, a_name);
-                                }
-                            }
+                            matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
                             if( ASRUtils::get_FunctionType(func)->m_elemental &&
                                 func->n_args >= 1 &&
@@ -3803,25 +3739,15 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.reserve(al, 2);
                             a_args.push_back(al, ASR::call_arg_t{ left->base.loc, left });
                             a_args.push_back(al, ASR::call_arg_t{ right->base.loc, right });
-                            std::string func_name = to_lower(func->m_name);
                             ASR::symbol_t* a_name = nullptr;
                             if (sym != nullptr && !is_type_bound_generic(sym)
                                     && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                                 a_name = gen_proc->m_procs[i];
-                                matched_func_name = ASRUtils::symbol_name(a_name);
-                            } else if (curr_scope->resolve_symbol(func_name)) {
-                                matched_func_name = func_name;
                             } else {
-                                matched_func_name = func_name + "@" + intrinsic_op_name;
+                                a_name = import_type_bound_specific(al, curr_scope, proc,
+                                    intrinsic_op_name);
                             }
-                            if (a_name == nullptr) {
-                                a_name = curr_scope->resolve_symbol(matched_func_name);
-                            }
-                            if (a_name == nullptr) {
-                                err("Unable to resolve matched function for overloaded logical operator: "
-                                        + matched_func_name,
-                                    loc);
-                            }
+                            matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t* return_type = nullptr;
                             ASR::expr_t* first_array_arg =
                                 ASRUtils::find_first_array_arg_if_elemental(func, a_args);
@@ -7660,6 +7586,33 @@ std::string cell_prefix(const SymbolTable *s) {
     }
     if (depth == 1) return "";
     return "__cell" + std::to_string(depth) + "_";
+}
+
+ASR::symbol_t *import_type_bound_specific(Allocator &al, SymbolTable *scope,
+        ASR::symbol_t *proc, const std::string &generic) {
+    ASR::symbol_t *target = symbol_get_past_external(proc);
+    std::string name = std::string(symbol_name(target)) + "@" + generic;
+    for (const std::string &n : {name, std::string(symbol_name(target))}) {
+        ASR::symbol_t *s = scope->resolve_symbol(n);
+        if (s != nullptr && symbol_get_past_external(s) == target) {
+            return s;
+        }
+    }
+    // Two types can bind procedures of the same name to the same operator.
+    std::string local_name = name;
+    for (int i = 1; scope->get_symbol(local_name) != nullptr; i++) {
+        if (symbol_get_past_external(scope->get_symbol(local_name)) == target) {
+            return scope->get_symbol(local_name);
+        }
+        local_name = name + std::to_string(i);
+    }
+    ASR::Module_t *owner = get_sym_module(target);
+    LCOMPILERS_ASSERT(owner != nullptr);
+    ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+        al, target->base.loc, scope, s2c(al, local_name), target, owner->m_name,
+        nullptr, 0, symbol_name(target), ASR::accessType::Private));
+    scope->add_symbol(local_name, s);
+    return s;
 }
 
 ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr) {
