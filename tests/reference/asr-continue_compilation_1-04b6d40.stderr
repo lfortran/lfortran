@@ -4645,3 +4645,15 @@ semantic error: output of an implied-do loop with more than 1000 values of diffe
      |
 3702 |     print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: defined output of the elements of a polymorphic array is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3733:29
+     |
+3733 |         print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+     |                             ^ 
+
+semantic error: defined output of the elements of a polymorphic array is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3734:30
+     |
+3734 |         print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+     |                              ^^^^ 
