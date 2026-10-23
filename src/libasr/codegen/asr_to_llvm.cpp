@@ -28661,10 +28661,10 @@ public:
         LCOMPILERS_ASSERT(m_v);
 
         if (ASR::is_a<ASR::ArraySection_t>(*m_v)) {
-            ASR::expr_t* size_expr = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                al, m_v->base.loc, m_v, m_dim, m_type, nullptr, false));
-            visit_expr_wrapper(size_expr, true);
-            return;
+            // The array_dim_intrinsics_update pass computes the size of
+            // a section from its subscripts.
+            throw CodeGenError("The size of an array section must be "
+                "computed before code generation", m_v->base.loc);
         }
 
         int output_kind = ASRUtils::extract_kind_from_ttype_t(m_type);
