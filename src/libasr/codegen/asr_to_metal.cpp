@@ -24,11 +24,11 @@ struct MetalDialect {
         return "float";
     }
 
-    // The integer type an element's offset in an array is computed in. The
+    // The integer kind an element's offset in an array is computed in. The
     // offload pass hands Metal no integer(8) (see real_type), so its arrays
     // are indexed in 32 bits.
-    std::string index_type() const {
-        return "int";
+    int offset_kind() const {
+        return 4;
     }
 
     void emit_prologue(std::stringstream &src) const {

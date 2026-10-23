@@ -1836,7 +1836,7 @@ public:
                         as->base.base.loc);
                     stride = stride == "1" ? len_str
                         : gpu_index_product(stride, len_str,
-                            dialect.index_type());
+                            dialect.offset_kind());
                 }
             }
         }
@@ -1948,7 +1948,7 @@ public:
     }
 
     // The integer kind of a subscript, which gpu_offset_term() narrows to
-    // the dialect's offset type.
+    // the dialect's offset kind.
     static int subscript_kind(ASR::expr_t *idx) {
         return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx));
     }
@@ -1956,7 +1956,7 @@ public:
     // Emits gpu_offset_term() of the subscript `idx` and lower bound `lb`.
     void emit_offset_term(ASR::expr_t *idx, const std::string &lb) {
         auto parts = gpu_offset_term_parts(lb, subscript_kind(idx),
-            dialect.index_type());
+            dialect.offset_kind());
         src << parts.first;
         visit_expr(idx);
         src << parts.second;
@@ -2634,7 +2634,7 @@ public:
             [&](size_t d) {
                 return struct_member_extent_expr(sizes_param, arr_idx_str,
                     rank, d);
-            }, dialect.index_type());
+            }, dialect.offset_kind());
     }
 
     // Emit the array size for a StructInstanceMember expression whose
@@ -5829,7 +5829,7 @@ public:
                 if (subscripts[d].empty()) continue;
                 std::string term = gpu_offset_term(subscripts[d],
                     get_lower_bound_str(arr, d, arr_var_name),
-                    subscript_kinds[d], dialect.index_type());
+                    subscript_kinds[d], dialect.offset_kind());
                 if (strides[d] != "1") {
                     term = "(" + strides[d] + " * " + term + ")";
                 }
@@ -5848,7 +5848,7 @@ public:
                 if (arr == nullptr || d >= arr->n_dims) return "";
                 return dim_extent_str(arr, d, arr_var_name,
                     ai->base.base.loc);
-            }, dialect.index_type());
+            }, dialect.offset_kind());
     }
 
     void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {

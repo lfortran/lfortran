@@ -14,12 +14,13 @@ struct CudaDialect {
     // Whether to emit the extra shims the CPU emulation needs. The real CUDA
     // output is left untouched.
     bool emulate_cpu = false;
-    // Whether element offsets are 64-bit (GpuDeviceCapabilities::offset_kind).
-    bool wide_offsets = false;
+    // The integer kind element offsets are computed in
+    // (GpuDeviceCapabilities::offset_kind).
+    int element_offset_kind = 4;
 
-    CudaDialect(bool emit_registrar_, bool emulate_cpu_, bool wide_offsets_)
+    CudaDialect(bool emit_registrar_, bool emulate_cpu_, int offset_kind_)
         : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
-          wide_offsets(wide_offsets_) {}
+          element_offset_kind(offset_kind_) {}
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -37,11 +38,11 @@ struct CudaDialect {
         return (kind == 8) ? "double" : "float";
     }
 
-    // The integer type an element's offset in an array is computed in:
-    // 64-bit with --descriptor-index-64, the flag that selects 64-bit array
-    // indexing, and `int` otherwise, which is cheaper to compute in.
-    std::string index_type() const {
-        return wide_offsets ? "long" : "int";
+    // The integer kind an element's offset in an array is computed in:
+    // 8 with --descriptor-index-64, the flag that selects 64-bit array
+    // indexing, and 4 otherwise, which is cheaper to compute in.
+    int offset_kind() const {
+        return element_offset_kind;
     }
 
     void emit_prologue(std::stringstream &src) const {
@@ -223,7 +224,7 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
         CudaDialect(emit_registrar, co.gpu_cpu_emulation,
-            gpu_device_capabilities(co.po).offset_kind == 8));
+            gpu_device_capabilities(co.po).offset_kind));
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {
