@@ -3487,21 +3487,11 @@ public:
                 if (in_submodule) {
                     parent_scope->erase_symbol(sym_name);
                 } else {
-                    ASR::symbol_t *orig = ASRUtils::symbol_get_past_external(f1);
-                    bool is_private_orig = false;
-                    if (ASR::is_a<ASR::Function_t>(*orig)) {
-                        is_private_orig = ASR::down_cast<ASR::Function_t>(
-                            orig)->m_access == ASR::accessType::Private;
-                    }
-                    if (is_private_orig) {
-                        parent_scope->erase_symbol(sym_name);
-                    } else {
-                        diag.add(diag::Diagnostic(
-                            "Function already defined",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {tmp->loc})}));
-                        throw SemanticAbort();
-                    }
+                    diag.add(diag::Diagnostic(
+                        "Function already defined",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {tmp->loc})}));
+                    throw SemanticAbort();
                 }
             } else if (ASR::is_a<ASR::Function_t>(*f1)) {
                 ASR::Function_t* f2 = ASR::down_cast<ASR::Function_t>(f1);
