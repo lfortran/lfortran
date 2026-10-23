@@ -171,7 +171,9 @@ static void sync_all(void) {
             cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
         entries[i].dirty = 0;
     }
-    for (int i = 0; i < n_deferred; i++) cudaFree(deferred_free[i]);
+    for (int i = 0; i < n_deferred; i++) {
+        check(cudaFree(deferred_free[i]), "cudaFree");
+    }
     n_deferred = 0;
 }
 
