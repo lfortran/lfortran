@@ -5016,6 +5016,12 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_595.f90"
 gpu_cuda_kernel = true
 
+# integer(8) loop indices: the kernel widens the device's 32-bit thread and
+# block built-ins before it numbers the iterations, flat and in tiles.
+[[test]]
+filename = "../integration_tests/gpu_metal_599.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true

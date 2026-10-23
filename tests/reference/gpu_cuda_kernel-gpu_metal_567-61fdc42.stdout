@@ -17,10 +17,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     long __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     long k;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + ((long)1))) : (((long)0))))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
     k = (__flat_idx + __loop_start_0);
     a[((long)(k) - (__lb_a_0))] = ((char)1);
 }
@@ -108,23 +108,23 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     long k;
     long l;
     if ((__tiled == ((long)0))) {
-        if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + ((long)1))) : (((long)0))) * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + ((long)1))) : (((long)0)))))) {
+        if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + ((long)1))) : (((long)0))) * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + ((long)1))) : (((long)0)))))) {
             return;
         }
-        __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+        __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
         k = ((__flat_idx - ((__flat_idx / ((__loop_end_1 - __loop_start_1) + ((long)1))) * ((__loop_end_1 - __loop_start_1) + ((long)1)))) + __loop_start_1);
         __flat_idx = (__flat_idx / ((__loop_end_1 - __loop_start_1) + ((long)1)));
         l = (__flat_idx + __loop_start_0);
     } else {
-        __flat_idx = blockIdx.x;
+        __flat_idx = ((long)blockIdx.x);
         __tiles = ((((__loop_end_1 - __loop_start_1) + ((long)1)) + ((long)31)) >> ((long)5));
-        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << ((long)5)) + (threadIdx.x & ((long)31)));
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << ((long)5)) + ((long)(threadIdx.x & 31)));
         if ((__ordinal >= ((__loop_end_1 - __loop_start_1) + ((long)1)))) {
             return;
         }
         k = (__ordinal + __loop_start_1);
         __flat_idx = (__flat_idx / __tiles);
-        __ordinal = ((__flat_idx << ((long)3)) + (threadIdx.x >> ((long)5)));
+        __ordinal = ((__flat_idx << ((long)3)) + ((long)(threadIdx.x >> 5)));
         if ((__ordinal >= ((__loop_end_0 - __loop_start_0) + ((long)1)))) {
             return;
         }

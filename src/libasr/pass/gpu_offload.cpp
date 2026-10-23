@@ -2112,12 +2112,25 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     ASR::ttype_t *int_type = loop_int_type;
 
+    // The device's thread and block built-ins are 32-bit whatever the kind
+    // of the loop indices, so they are integer(4) and widen() casts them to
+    // the iteration-number type before any arithmetic: typed as integer(8)
+    // indices, they would be multiplied unwidened and wrap at 2**32.
+    ASR::ttype_t *builtin_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, 4));
     ASR::expr_t *thread_idx = ASRUtils::EXPR(
-        ASR::make_GpuThreadIndex_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuThreadIndex_t(al, loc, 0, builtin_type, nullptr));
     ASR::expr_t *block_idx = ASRUtils::EXPR(
-        ASR::make_GpuBlockIndex_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuBlockIndex_t(al, loc, 0, builtin_type, nullptr));
     ASR::expr_t *block_sz = ASRUtils::EXPR(
-        ASR::make_GpuBlockSize_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuBlockSize_t(al, loc, 0, builtin_type, nullptr));
+    // `op` of the thread index and a constant, in the built-ins' type.
+    auto thread_idx_op = [&](ASR::binopType op, int64_t value) {
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, thread_idx,
+            op, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                builtin_type, ASR::integerbozType::Decimal)),
+            builtin_type, nullptr));
+    };
 
     auto index_binop = [&](ASR::expr_t *left, ASR::binopType op,
             ASR::expr_t *right) {
@@ -2414,9 +2427,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         assign(ordinal, index_binop(
             index_binop(index_mod(remain_var, tiles),
                 ASR::binopType::BitLShift, widen(constant(width_shift))),
-            ASR::binopType::Add, widen(int_binop(thread_idx,
-                ASR::binopType::BitAnd,
-                constant(device_caps.tile_width - 1)))));
+            ASR::binopType::Add, widen(thread_idx_op(ASR::binopType::BitAnd,
+                device_caps.tile_width - 1))));
         index_in_tile(across);
         assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
             tiles));
@@ -2429,8 +2441,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         assign(ordinal, index_binop(
             index_binop(row_tile, ASR::binopType::BitLShift,
                 widen(constant(height_shift))),
-            ASR::binopType::Add, widen(int_binop(thread_idx,
-                ASR::binopType::BitRShift, constant(width_shift)))));
+            ASR::binopType::Add, widen(thread_idx_op(
+                ASR::binopType::BitRShift, width_shift))));
         index_in_tile(down);
         if (n_dims > 2) {
             assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
