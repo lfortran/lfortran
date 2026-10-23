@@ -6,10 +6,13 @@ program gpu_metal_567
     ! huge(0) must reach the kernel unwrapped. Compiled with
     ! --descriptor-index-64, the flag that selects 64-bit array indexing, which
     ! makes the kernel compute offsets in 64 bits. Only the elements the loops
-    ! write are read, so the 2-4 GB arrays are mostly never touched.
+    ! write are read, so the 2 GB arrays are mostly never touched. An array
+    ! whose first extent alone exceeds huge(0) takes 4 GB, too much to copy to
+    ! the device and back in a test: gpu_cuda_kernel_wide_stride.f90 checks
+    ! the stride of its second dimension in the kernel source instead.
     implicit none
-    logical(1), allocatable :: a(:), b(:,:), c(:,:)
-    integer(8) :: k, n, l
+    logical(1), allocatable :: a(:), b(:,:)
+    integer(8) :: k, n
     integer :: i, j, m
     n = 2_8**31 + 10
     allocate(a(n))
@@ -29,20 +32,4 @@ program gpu_metal_567
     if (.not. (b(1, m - 1) .and. b(3, m - 1) .and. b(1, m) .and. b(3, m))) &
         error stop 2
     deallocate(b)
-    ! The first extent alone, 2**31 + 1, exceeds huge(0): the stride of the
-    ! second dimension must not wrap onto the first column.
-    n = 2_8**31 + 1
-    allocate(c(n, 2))
-    c(1, 1) = .false.
-    c(2, 1) = .false.
-    c(n - 1, 2) = .false.
-    c(n, 2) = .false.
-    do concurrent (l = 1:2, k = n - 1:n)
-        c(k, l) = .true.
-    end do
-    print *, c(n - 1, 1), c(n, 1), c(n - 1, 2), c(n, 2), c(1, 1), c(2, 1)
-    if (.not. (c(n - 1, 1) .and. c(n, 1) .and. c(n - 1, 2) .and. c(n, 2))) &
-        error stop 3
-    if (c(1, 1) .or. c(2, 1)) error stop 4
-    deallocate(c)
 end program

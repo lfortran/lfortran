@@ -5010,6 +5010,14 @@ filename = "../integration_tests/gpu_metal_567.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
+# The same flag with an array whose first extent alone exceeds huge(0): the
+# stride of its second dimension is 64-bit. Compile-only: the array takes
+# 4 GB, which a run copies to the device and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_stride.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # An integer(8) subscript of an array whose lower bound is beyond huge(0):
 # the lower bound is subtracted before the offset is narrowed to `int`.
 [[test]]
