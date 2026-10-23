@@ -3813,8 +3813,10 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
                 &content_end, dtio_unit, n_dtio, dtio_procs,
                 s_info->current_dtio_index, s_info->current_arg_info.current_arg,
                 "LISTDIRECTED", 12, 0, empty_v_list, &failed);
-            // The child output may have reallocated the buffer to its
-            // exact size.
+            // The next item follows the child's output, or the position
+            // where the child ended if that is after it. The child output
+            // may have reallocated the buffer to its exact size.
+            result_size = extent;
             result_capacity = result_size;
             dtio_item_written = true;
             if (failed) {
@@ -3897,6 +3899,32 @@ static inline char* write_to_result_at_pos(lfortran_allocator_t* al,
     to the innermost frame of that unit. An internal file has no unit: its
     child is given a pseudo-unit from a range near INT32_MIN.
 
+    Where the parent continues. The output of a child statement is its
+    record up to the last character written, but the statement can end at
+    another position: before that end after TL or T, after it after TR or X.
+    As in gfortran, a statement ends at its final position but not before
+    the end of its last field, so a trailing T or TL that no field follows
+    does not move back: a child `(a,tl2)` 'abc' followed by the parent's
+    `a` 'Z' gives `abcZ`. The capture writes the whole output at the
+    parent's cursor and then moves the parent's cursor to the position
+    where the child ended, so the parent's T, TL, TR and next field
+    continue from there. The child's output after that position stays in
+    the record (`(dt)` alone keeps it).
+    As in gfortran, the parent's fields after a child blank-fill the
+    positions skipped since the child ended, and since the end of each of
+    their own fields, until the record ends (`fill_from` in the formatter):
+    a child `(a,tl2,a)` 'abc', 'X' followed by the parent's `tr1,a` 'Z'
+    gives `aX Z`.
+
+    The formatter does not know which unit its result is written to (a
+    child statement passes it no unit). So the formatter of every statement
+    that runs inside a defined output procedure reports where its output
+    ended in the innermost frame (`formatted_len`, `formatted_cursor`), and
+    the next formatted writer takes the report: the capture uses it if it
+    describes an output of the captured length, and otherwise (list-directed
+    output, or a write that is not captured) the child ended at the end of
+    its output. Each formatter call and each writer clears the report.
+
     The stack is a global like the unit table, so it is not thread safe.
 */
 typedef struct dtio_capture_frame {
@@ -3906,6 +3934,10 @@ typedef struct dtio_capture_frame {
     int64_t* cursor;        // its current position,
     int64_t* extent;        // its end,
     int64_t* content_end;   // and the end of its non-blank content.
+    // The length of the output that a statement of the child procedure has
+    // just formatted, or -1, and the position where that output ended.
+    int64_t formatted_len;
+    int64_t formatted_cursor;
 } DTIO_Capture_Frame;
 
 static DTIO_Capture_Frame* dtio_capture_stack = NULL;
@@ -3995,11 +4027,32 @@ static DTIO_Capture_Frame* dtio_find_capture_frame(int32_t unit_num) {
     return NULL;
 }
 
+// Reports that the formatter of a statement running inside a defined output
+// procedure produced an output `len` characters long that ended at
+// position `cursor`. With `len` -1, clears the report.
+static void dtio_report_formatted(int64_t len, int64_t cursor) {
+    if (dtio_capture_depth == 0) return;
+    DTIO_Capture_Frame* frame = &dtio_capture_stack[dtio_capture_depth - 1];
+    frame->formatted_len = len;
+    frame->formatted_cursor = cursor;
+}
+
+// Takes the report of `dtio_report_formatted` for an output `str_len`
+// characters long, and returns the position where that output ended.
+static int64_t dtio_take_formatted_cursor(int64_t str_len) {
+    if (dtio_capture_depth == 0) return str_len;
+    DTIO_Capture_Frame* frame = &dtio_capture_stack[dtio_capture_depth - 1];
+    int64_t cursor = frame->formatted_len == str_len ? frame->formatted_cursor : str_len;
+    frame->formatted_len = -1;
+    return cursor;
+}
+
 // Captures the formatted output `str` that a defined output procedure writes
 // to `unit_num`. Returns false if no parent statement captures that unit.
 static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
         const char* str, int64_t str_len) {
     if (dtio_capture_depth == 0) return false;
+    int64_t end_cursor = dtio_take_formatted_cursor(str_len);
     DTIO_Capture_Frame* frame = dtio_find_capture_frame(unit_num);
     if (frame == NULL) return false;
     if (str_len > 0 && str[0] == '\b') {
@@ -4010,11 +4063,18 @@ static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
         *iostat = 11;
         return true;
     }
+    int64_t start = *frame->cursor;
     *frame->result = write_to_result_at_pos(frame->al, *frame->result,
-        frame->extent, *frame->cursor, str, str_len);
-    *frame->cursor += str_len;
-    if (*frame->cursor > *frame->content_end) {
-        *frame->content_end = *frame->cursor;
+        frame->extent, start, str, str_len);
+    if (start + str_len > *frame->content_end) {
+        *frame->content_end = start + str_len;
+    }
+    *frame->cursor = start + end_cursor;
+    if (*frame->cursor > *frame->extent) {
+        // The child moved past its output: those positions are blank, as
+        // after TR in the parent.
+        *frame->result = write_to_result_at_pos(frame->al, *frame->result,
+            frame->extent, *frame->cursor, "", 0);
     }
     if (iostat != NULL) *iostat = 0;
     return true;
@@ -4041,7 +4101,7 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
             dtio_capture_capacity * sizeof(DTIO_Capture_Frame));
     }
     int32_t unit = (dtio_unit == INT32_MIN) ? INT32_MIN + 1 + dtio_capture_depth : dtio_unit;
-    DTIO_Capture_Frame frame = {unit, al, result, cursor, extent, content_end};
+    DTIO_Capture_Frame frame = {unit, al, result, cursor, extent, content_end, -1, 0};
     dtio_capture_stack[dtio_capture_depth++] = frame;
 
     int32_t iostat = 0;
@@ -4124,6 +4184,21 @@ static char* dtio_invoke(lfortran_allocator_t* al, char** result,
     return error;
 }
 
+// Before a field is written at `pos` of the record `result` (`extent`
+// characters): sets `*field_written`, so that the end of the field is
+// recorded, and after a defined output child blank-fills the positions from
+// `*fill_from` to `pos` (see "Where the parent continues" above). Fills
+// nothing if `*fill_from` is -1 (no child in this record).
+static inline void dtio_fill_before_field(char* result, int64_t extent,
+        int64_t* fill_from, bool* field_written, int64_t pos) {
+    *field_written = true;
+    if (*fill_from < 0) return;
+    int64_t end = pos < extent ? pos : extent;
+    if (end > *fill_from) {
+        memset(result + *fill_from, ' ', (size_t)(end - *fill_from));
+    }
+}
+
 FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *access_id, bool *read_access, bool *write_access, int *delim, bool *blank_zero, int32_t *recl, int *sign_mode, int *decimal_mode, int *encoding_mode, int *round_mode, int *pad_mode);
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
@@ -4135,6 +4210,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
         dtio_statement_alloc_serial = internal_alloc_next_serial();
     }
 #endif
+    dtio_report_formatted(-1, 0);
     va_list args;
     va_start(args, dtio_procs);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
@@ -4229,12 +4305,24 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     // X edit descriptors advance position but don't produce content, so trailing
     // blanks from X should be trimmed from the output record.
     int64_t content_end = 0;  // end of real content in current record
+    // After a defined output child in the current record: the position from
+    // which the next field blank-fills, else -1 (see `dtio_fill_before_field`).
+    int64_t fill_from = -1;
+    // The end of the last field written in the current record.
+    int64_t last_field_end = 0;
+    bool field_written = false;
     while (1) {
         bool consumed_data_item_in_cycle = false;
         bool is_array = false;
         bool array_looping = false;
         for (int64_t i = item_start; i < format_values_count; i++) {
             char* value;
+            if (field_written) {
+                // The previous format item wrote a field ending here.
+                last_field_end = result_len;
+                if (fill_from >= 0 && result_len > fill_from) fill_from = result_len;
+                field_written = false;
+            }
             if(format_values[i] == NULL) continue;
             value = format_values[i];
             int64_t value_len = strlen(value);
@@ -4282,6 +4370,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
                 result_len += 1;
                 content_end = result_len;  // reset for next record
+                fill_from = -1;
+                last_field_end = result_len;
             } else if (value[0] == '*') {
                 array = true;
             } else if (isdigit(value[0]) && tolower(value[1]) == 'p') {
@@ -4297,6 +4387,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 char* inner_value = substring(value, 1, (int)strlen(value) - 1);
                 int64_t val_len = 0;
                 char* unescaped_value = unescape_quoted_literal(inner_value, strlen(inner_value), quote_char, &val_len);
+                dtio_fill_before_field(result, result_extent, &fill_from, &field_written, result_len);
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, unescaped_value, val_len);
                 result_len += val_len;
                 if (result_len > content_end) content_end = result_len;
@@ -4309,6 +4400,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 }
                 if (hollerith != NULL) {
                     int64_t hollerith_len = (int64_t)strlen(hollerith + 1);
+                    dtio_fill_before_field(result, result_extent, &fill_from, &field_written, result_len);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len,
                         hollerith + 1, hollerith_len);
                     result_len += hollerith_len;
@@ -4428,10 +4520,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         error = (char*)internal_malloc(strlen(prefix) + strlen(type) + 1);
                         sprintf(error, "%s%s", prefix, type);
                     } else {
+                        dtio_fill_before_field(result, result_extent, &fill_from,
+                            &field_written, result_len);
                         error = dtio_invoke(al, &result, &result_len, &result_extent,
                             &content_end, dtio_unit, n_dtio, dtio_procs,
                             s_info.current_dtio_index,
                             s_info.current_arg_info.current_arg, value, &failed);
+                        // The parent continues where the child ended.
+                        fill_from = result_len;
+                        last_field_end = result_len;
+                        field_written = false;
                     }
                     if (failed) {
                         // The items after it are not written; the record
@@ -4540,6 +4638,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     default:
                         break;
                 }
+                dtio_fill_before_field(result, result_extent, &fill_from, &field_written, result_len);
                 if (tolower(value[0]) == 'a') {
                     // For integer values with A editing, transfer the bytes of the
                     // internal representation as a character string of length equal
@@ -5038,6 +5137,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 result = write_to_result_at_pos(al, result, &result_extent, result_len, "\n", 1);
                 result_len += 1;
                 content_end = result_len;
+                fill_from = -1;
+                last_field_end = result_len;
+                field_written = false;
             }
             item_start = item_start_idx;
         } else {
@@ -5052,6 +5154,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     internal_free(format_values);
     free_serialization_info(&s_info);
 
+    // The statement ends at its final position, but as in gfortran not
+    // before the end of its last field: a trailing T or TL that no field
+    // follows does not move back.
+    if (field_written) last_field_end = result_len;
+    int64_t end_cursor = result_len > last_field_end ? result_len : last_field_end;
     // Trim trailing blanks from X/T positioning in the final record.
     // Skip trimming when result is an error message (starts with '\b').
     if (result_len > 0 && result[0] != '\b') {
@@ -5067,6 +5174,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     if (result_extent > result_len) result_extent = result_len;
 
     (*result_size) = result_extent;
+    if (result[0] != '\b') {
+        dtio_report_formatted(result_extent, end_cursor);
+    }
     return result;
 }
 
@@ -14479,6 +14589,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         internal_free(wide_encoded);
         return;
     }
+    dtio_report_formatted(-1, 0);
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
@@ -14756,6 +14867,7 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
     bool is_array_unit, int32_t char_kind, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
     int32_t dtio_iostat = dtio_take_error(iostat);
+    dtio_report_formatted(-1, 0);
     va_list args;
     va_start(args, format_len);
     char* str = "";
