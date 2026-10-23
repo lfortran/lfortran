@@ -1437,8 +1437,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     } else {
                         // Name is occupied by an unrelated symbol (possibly in a
                         // parent scope). Create a unique alias for this external
-                        // symbol in the current scope.
-                        new_func_sym_name = current_scope->get_unique_name(new_func_sym_name, false);
+                        // symbol in the scope it is added to.
+                        new_func_sym_name = func_ext_sym->m_parent_symtab->get_unique_name(
+                            new_func_sym_name, false);
                         existing_sym = nullptr;
                     }
                 }
