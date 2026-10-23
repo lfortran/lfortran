@@ -293,6 +293,18 @@ cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
     return cudaSuccess;
 }
 
+cudaError_t cudaMemsetAsync(void *ptr, int value, size_t count,
+    cudaStream_t stream)
+{
+    if (stream) return fail(cudaErrorInvalidResourceHandle);
+    if (count == 0) return cudaSuccess;
+    if (!ptr || !device_range(ptr, count)) return fail(cudaErrorInvalidValue);
+    memset(ptr, value, count);
+    pending_work = 1;
+    stats.async_memsets++;
+    return cudaSuccess;
+}
+
 static int valid_geometry(dim3 grid, dim3 block) {
     unsigned long long threads =
         (unsigned long long)block.x * block.y * block.z;

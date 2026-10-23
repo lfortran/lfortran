@@ -128,6 +128,18 @@ static void alias_discard_entry(void **args)
     wide[1] = value + 2;
 }
 
+static void discard_fill_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    int32_t value = arg<int32_t>(args, 1);
+    live(out, 2 * sizeof(int32_t));
+    require(out[0] == -1 && out[1] == -1,
+        "a discarded range holds garbage at every launch");
+    out[0] = value;
+    out[1] = value + 1;
+}
+
 static kernel_func_t entry(void (*thunk)(void **))
 {
     return (kernel_func_t)thunk;
@@ -197,6 +209,38 @@ static int resident_table_order(int output_access)
     return result;
 }
 
+// A range the kernel discards holds 0xff bytes at every launch: in fresh
+// device memory, in the resident a pending launch wrote, and in the buffer
+// it keeps after a synchronization.
+static int discard_fill()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("discard_fill", entry(discard_fill_entry));
+    int32_t out[2] = {1, 2};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    for (int32_t value = 10; value <= 30; value += 10) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "discard_fill", 12);
+        lfortran_gpu_set_buffer_arg(k, 0, out, sizeof(out),
+            LFORTRAN_GPU_WRITE_DISCARD);
+        lfortran_gpu_set_scalar_arg(k, 1, &value, sizeof(value));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        if (value == 20) lfortran_gpu_sync(ctx);
+    }
+    lfortran_gpu_sync(ctx);
+    printf("discard fill: out=%d %d, memsets=%llu\n", out[0], out[1],
+        stats().async_memsets);
+    require(out[0] == 30 && out[1] == 31, "the last launch's values return");
+    require(stats().launches == 3 && stats().async_memsets == 3,
+        "one fill per launch");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == 0,
+        "discarded ranges need no host upload");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     lfortran_cuda_cpu_set_synchronize_hook(on_synchronize);
@@ -229,6 +273,9 @@ int main(int argc, char **argv)
             "shutdown releases alias memory");
         check_api_use();
         return result;
+    }
+    if (argc == 2 && strcmp(argv[1], "discard-fill") == 0) {
+        return discard_fill();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);

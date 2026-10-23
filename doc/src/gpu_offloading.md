@@ -699,8 +699,11 @@ The CPU emulation (`--gpu=cuda_cpu`) runs this same CUDA runtime
 (`src/libasr/runtime/cuda_cpu/`), so it needs no GPU and no CUDA toolkit; the
 host compiler builds everything. The emulated device memory is separate from
 host memory: `cudaMalloc` makes an allocation of its own, filled with 0xff
-bytes, and only the copies move data, so a missing or late copy, or a read of
-a discard buffer before the kernel writes it, shows as it does on a device.
+bytes, and only the copies move data, so a missing or late copy shows as it
+does on a device. In the emulation the runtime also refills every unaliased
+discard buffer with 0xff bytes (`cudaMemsetAsync`) before each launch, so a
+wrong overwrite proof cannot pass on what an earlier launch left in a reused
+buffer; natively the buffer keeps those bytes.
 The stream runs every copy and launch to completion before the call that
 issues it returns, in the order they are issued, which a program that waits
 for its results before reading them cannot tell apart from a device. A kernel

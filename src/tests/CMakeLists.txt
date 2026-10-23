@@ -18,6 +18,8 @@ add_test(NAME test_gpu_cuda_api_state_discard_read_only
     COMMAND test_gpu_cuda_api_state discard read-only)
 add_test(NAME test_gpu_cuda_api_state_discard_resident
     COMMAND test_gpu_cuda_api_state discard resident)
+add_test(NAME test_gpu_cuda_api_state_discard_fill
+    COMMAND test_gpu_cuda_api_state discard-fill)
 foreach(case IN ITEMS wide-first narrow-first same-size nonalias read-prefix
         read-same zero-size repeat discard-narrow-first discard-read-prefix
         discard-read-same discard-repeat discard-read-before-write)

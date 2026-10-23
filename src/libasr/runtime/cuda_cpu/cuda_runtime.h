@@ -12,6 +12,9 @@
 
 #include <stddef.h>
 
+// Set when the CUDA runtime API is this emulation.
+#define LFORTRAN_CUDA_CPU_EMULATION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,6 +74,8 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind);
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind, cudaStream_t stream);
+cudaError_t cudaMemsetAsync(void *ptr, int value, size_t count,
+    cudaStream_t stream);
 // `func` is the address of a function `void f(void **args)` that runs one
 // thread of the kernel: the CUDA code generator emits such a thunk for every
 // kernel in emulation, and registers it in place of the kernel.
