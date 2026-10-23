@@ -502,6 +502,9 @@ public:
             std::vector<ASR::symbol_t*> members;
             ASR::ttype_t *type;
             std::string copy;
+            // Whether the value of the variable is kept after the loop:
+            // only then is what the thread defines of the copy put back.
+            bool live;
         };
         std::vector<Copy> copies;
         // The assignments that give each private copy its value on entry
@@ -511,10 +514,13 @@ public:
 
     // Decides how each variable the loop defines and the host reads after
     // it reaches the kernel, and makes the kernel take what it needs for
-    // that in place of the variable in `involved_syms`. False when one
-    // cannot be offloaded; the error is then reported.
+    // that in place of the variable in `involved_syms`; also how each
+    // thread keeps a copy of a derived-type variable that is not in
+    // `live_vars` but cannot be a kernel local. False when one cannot be
+    // offloaded; the error is then reported.
     bool plan_liveouts(const Location &loc, ASR::stmt_t **body,
         size_t n_body, const std::set<std::string> &assigned_vars,
+        const std::set<std::string> &live_vars,
         const std::set<std::string> &loop_var_set,
         const std::set<std::string> &reduction_names,
         std::set<std::string> &local_scalar_names,

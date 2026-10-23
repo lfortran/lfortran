@@ -442,9 +442,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
+            // A derived type the kernel cannot hold as a local, or a
+            // variable of which the loop defines only components and that
+            // each thread can copy whole, keeps the values of its other
+            // components through private copies (plan_liveouts).
             if (gpu_no_kernel_local_struct(current_scope, name, type)
-                    || gpu_struct_defined_in_part(current_scope, name, type,
-                        work.body, work.n_body)) {
+                    || (gpu_struct_defined_in_part(current_scope, name, type,
+                            work.body, work.n_body)
+                        && gpu_struct_privately_copyable(current_scope,
+                            name, type))) {
                 continue;
             }
             if (!ASRUtils::is_array(type)) {
@@ -484,7 +490,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // is shared (gpu_offload_liveout.cpp).
     GpuLiveoutPlan liveouts;
     if (!plan_liveouts(loc, work.body, work.n_body, liveout_candidates,
-            loop_var_set, reduction_names,
+            live_vars, loop_var_set, reduction_names,
             local_scalar_names, involved_syms, liveouts)) {
         return;
     }

@@ -442,6 +442,23 @@ public:
 
 } // namespace
 
+bool gpu_struct_privately_copyable(SymbolTable *scope, const std::string &name,
+        ASR::ttype_t *type) {
+    if (ASRUtils::is_array(type) || ASRUtils::is_class_type(type)
+            || ASRUtils::is_allocatable_or_pointer(type)
+            || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        return false;
+    }
+    ASR::symbol_t *sym = scope->resolve_symbol(name);
+    if (sym == nullptr) return false;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::symbol_t *struct_sym =
+        ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+    return !gpu_struct_has_allocatable_parts(struct_sym)
+        && gpu_struct_bytes(struct_sym) <= gpu_private_struct_limit;
+}
+
 bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
         ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body) {
     if (ASRUtils::is_array(type)
@@ -465,6 +482,7 @@ bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
 bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
         ASR::stmt_t **body, size_t n_body,
         const std::set<std::string> &assigned_vars,
+        const std::set<std::string> &live_vars,
         const std::set<std::string> &loop_var_set,
         const std::set<std::string> &reduction_names,
         std::set<std::string> &local_scalar_names,
@@ -514,6 +532,17 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
         using Kind = GpuStructParts::Definition::Kind;
         for (ASR::symbol_t *v : structs) {
             ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v);
+            bool live = live_vars.count(ASRUtils::symbol_name(named[v])) > 0;
+            // A temporary of the iteration whose other components keep
+            // the values they had: each thread works on a copy of the whole
+            // value, which nothing needs put back.
+            if (!live && gpu_struct_privately_copyable(current_scope,
+                    ASRUtils::symbol_name(named[v]), var->m_type)) {
+                copies.push_back({v, named[v], {}, {}, var->m_type,
+                    "__gpu_private_" + std::string(ASRUtils::symbol_name(v)),
+                    false});
+                continue;
+            }
             std::set<std::vector<std::string>> privatized;
             Location first = loc;
             for (auto &d : parts.definitions) {
@@ -647,7 +676,8 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                 std::string copy = "__gpu_private_"
                     + std::string(ASRUtils::symbol_name(v));
                 for (auto &c : p) copy += "_" + c;
-                copies.push_back({v, named[v], p, use->members, t, copy});
+                copies.push_back({v, named[v], p, use->members, t, copy,
+                    live});
             }
         }
     }
@@ -751,7 +781,7 @@ void GpuOffloadVisitor::privatize_liveout_body(const Location &loc,
             ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                 kernel_scope->get_symbol(c.copy))),
             part, nullptr, false, false, false));
-        plan.entries.insert(entry);
+        if (c.live) plan.entries.insert(entry);
         entered.push_back(al, entry);
     }
     for (size_t i = 0; i < body.n; i++) entered.push_back(al, body.p[i]);

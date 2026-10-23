@@ -541,6 +541,13 @@ bool gpu_no_kernel_local_struct(SymbolTable *scope,
 bool gpu_struct_defined_in_part(SymbolTable *scope, const std::string &name,
     ASR::ttype_t *type, ASR::stmt_t **body, size_t n_body);
 
+// Whether `name`, of type `type`, is a derived-type variable that each
+// thread can keep a private copy of whole: not polymorphic, allocatable or
+// a pointer, of a type without allocatable or pointer parts, and small
+// enough.
+bool gpu_struct_privately_copyable(SymbolTable *scope, const std::string &name,
+    ASR::ttype_t *type);
+
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel
 // parameters into separate flat array buffers for Metal.
