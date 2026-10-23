@@ -369,7 +369,8 @@ the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
 
 1. Write `.fix-issue/<id>/pr_body.md` from `repro.md` and all the
    `fix_<j>.md` files. Use plain Markdown with the headings Summary, Scope,
-   Verification, Rationale.
+   Verification, Rationale. Write it in plain English, as `AGENTS.md`
+   requires: short, common words and short, direct sentences.
    - Summary: `Fixes #<N>` for each fully verified included issue (omit for
      non-GitHub input), then a bullet per distinct bug, in commit order.
    - Scope: what is and is not covered, including unrelated bugs found along
@@ -412,7 +413,8 @@ distinct bug it:
    self-contained reproducer, the exact LFortran command and output, the
    reference compiler's result (or expected diagnostic for invalid input),
    confirmation that it fails on `main`, and the originating issue/PR links
-   available so far. Do not invent a PR number when none exists.
+   available so far. Do not invent a PR number when none exists. Write the
+   title and body in plain English, as `AGENTS.md` requires.
 4. Updates `followups.md`, adds every filed or duplicate issue to the Scope
    section of `pr_body.md` when there is a PR, and runs
    `gh pr edit <PR> --repo lfortran/lfortran --body-file .fix-issue/<id>/pr_body.md`.
