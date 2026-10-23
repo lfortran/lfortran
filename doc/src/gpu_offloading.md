@@ -899,7 +899,12 @@ with a `stop` before that.
 * Every entry of the unsupported list has a test for the error, and a test that
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
-  backends (`metal`, `cuda_cpu` labels) and checks the results.
+  backends (`metal`, `cuda` labels) and checks the results.
+* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
+  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
+  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
+  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). There is no
+  `cuda_cpu` label.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
@@ -922,18 +927,19 @@ performance evidence:
 pixi run -e llvm11 ctest -R '^test_gpu_cuda_api_state' -V > cuda-api-state.log 2>&1
 ```
 
-The same scratch saturation sequence is registered as `gpu_cuda_scratch_order`
-in the native `cuda` integration backend. It needs NVCC and an NVIDIA device:
+The same sequences also run against the real CUDA runtime in
+`src/tests/gpu_cuda_scratch_order.cu`, which calls the CUDA API directly and is
+therefore not an integration test. It needs NVCC and an NVIDIA device:
 64 kernel caches with 30 small scratch buffers reach the 4096-entry deferred
 queue boundary before dispatch 201, whose output and scratch readback must both
-be 201. Run it on native CUDA even when the host API-state tests pass:
+be 201. The script builds it and runs the scratch sequence, its variant with a
+discarded output, and the mixed write/discard alias cases. Run it on a GPU
+machine even when the host API-state tests pass:
 
 ```bash
-pixi run -e llvm11 integration_tests -b cuda -t '^gpu_cuda_scratch_order$' -j6 > cuda-scratch-order.log 2>&1
+src/tests/gpu_cuda_scratch_order.sh > cuda-scratch-order.log 2>&1
 ```
 
-`gpu_cuda_scratch_order_discard` repeats that sequence with a discarded output;
-`gpu_cuda_scratch_order_alias` includes the mixed write/discard alias cases.
 `gpu_metal_507` checks a full overwrite through a target array that reads its
 old elements through a pointer alias, on the ordinary, CPU-emulated, Metal and
 native CUDA paths. The CUDA API-state tests do not replace any of these
