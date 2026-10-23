@@ -15,6 +15,7 @@
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
 
@@ -1780,8 +1781,8 @@ class GpuComponentFit {
         Vec<ASR::expr_t*> components;
         components.reserve(al, 1);
         components.push_back(al, value);
-        return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
-            target, components.p, components.n, false));
+        return PassUtils::make_DebugCheckArrayBounds(al, loc, target,
+            components, false);
     }
 
     // Gives every element of the array `w` names whose component is not

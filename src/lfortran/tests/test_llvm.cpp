@@ -2941,6 +2941,9 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         // A real always has a decimal point or an exponent.
         {"1.0", "1.0"}, {"-3.0_8", "-3.0"}, {"(1.0, -2.0)", "(1.0, -2.0)"},
         {"(0.0_8, 4.0_8)", "(0.0, 4.0)"}, {"1.0e20", "1e+20"},
+        // The shortest text that reads back as the same value.
+        {"3.14159", "3.14159"}, {"0.1_8", "0.1"}, {"1e-5", "1e-05"},
+        {"1.0/3.0", "0.33333334"}, {"tiny(1.0)", "1.1754944e-38"},
         {".true.", "True"}, {".false.", "False"}, {"'hello'", "hello"}
     };
     for (auto &example : examples) {
@@ -2962,8 +2965,22 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     cell = e.execute("integer :: broken(");
     CHECK(!cell.ok);
     CHECK(cell.error_name == "CompilerError");
+    CHECK(!cell.internal_error);
     CHECK(cell.error_value.find("<cell ") != std::string::npos);
+    CHECK(cell.error_text() == cell.error_value);
     CHECK(e.execute("n").value.text() == "41");
+    // An internal compiler error keeps its message apart from the stack trace.
+    // Array results are not supported yet (#13456).
+    cell = e.execute("[1, 2, 3]");
+    CHECK(!cell.ok);
+    CHECK(cell.internal_error);
+    CHECK(cell.error_value == "Return type not supported in interactive mode");
+    CHECK(cell.error_text().rfind("Internal Compiler Error: Unhandled exception\n", 0)
+        == 0);
+    CHECK(e.execute("n").value.text() == "41");
+    // An inspection cell sees the session.
+    cell = e.execute("%%showasr\nn + 1");
+    CHECK(cell.ok);
     // A successful cell keeps its warnings.
     cell = e.execute("max0(1, 2_8)");
     REQUIRE(cell.ok);
@@ -2991,7 +3008,14 @@ TEST_CASE("FortranEvaluator execute: inspection cells") {
         REQUIRE(cell.ok);
         CHECK(cell.inspection);
         CHECK(!cell.output.empty());
+        // An inspection cell does not run, so its declarations are not part
+        // of the session.
+        cell = e.execute("x");
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "CompilerError");
     }
+    FortranEvaluator::CellResult defaults;
+    CHECK(!defaults.value.has_value());
 }
 
 TEST_CASE("FortranEvaluator execute: display hooks") {
@@ -3012,10 +3036,17 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
     // The hooks only receive calls made while their cell runs.
     lfortran_display_data("text/plain", "outside execution");
     lfortran_clear_output();
+    CHECK(mime == "text/html");
+    CHECK(data == "<b>hello</b>");
     CHECK(clears == 1);
     // A hook's exception must not unwind through generated code.
     io.clear_output = []() { throw std::runtime_error("display failure"); };
     cell = e.execute("call clear_output()", false, io);
     CHECK(!cell.ok);
     CHECK(cell.error_name == "DisplayError");
+    CHECK(cell.error_value == "display failed: display failure");
+    // The session goes on, with the hooks of the next cell.
+    cell = e.execute("call display_data('text/plain', 'again')", false, io);
+    REQUIRE(cell.ok);
+    CHECK(data == "again");
 }

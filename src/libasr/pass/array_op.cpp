@@ -905,7 +905,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::expr_t*> fmt_args; fmt_args.reserve(al, 1);
         fmt_args.push_back(al, val_i);
         ASR::expr_t* fmt_i = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(
-            al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind, fmt->m_type, fmt->m_value));
+            al, loc, fmt->m_fmt, fmt_args.p, 1, fmt->m_kind,
+            fmt->m_dtio_bindings, fmt->n_dtio_bindings, fmt->m_dtio_unit,
+            fmt->m_type, fmt->m_value));
         Vec<ASR::expr_t*> inner_vals; inner_vals.reserve(al, 1);
         inner_vals.push_back(al, fmt_i);
         ASR::stmt_t* inner_write = ASRUtils::STMT(ASR::make_FileWrite_t(
@@ -1941,7 +1943,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_args.push_back(al, alloc_arg);
         if (mold == nullptr) {
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
-                al, loc, alloc_args.p, alloc_args.size())));
+                al, loc, alloc_args.p, alloc_args.size(),
+                make_shape_differs(alloc_arg, loc))));
             return;
         }
         ASRUtils::ASRBuilder b(al, loc);
@@ -1949,6 +1952,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             alloc_args.p, alloc_args.size(), nullptr, nullptr, mold));
         pass_result.push_back(al, b.If(b.Not(make_allocated(alloc_arg.m_a,
             loc)), {allocate}, {}));
+    }
+
+    // Whether the allocated object of `alloc_arg` has a shape other than
+    // the one `alloc_arg` gives it (F2018 10.2.1.3), also when both have the
+    // same number of elements, e.g. `a = transpose(a)`. It reads the
+    // descriptor, so it is evaluated only while the object is allocated.
+    // An object of rank 0 never differs.
+    ASR::expr_t* make_shape_differs(const ASR::alloc_arg_t& alloc_arg,
+            const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        ASR::expr_t* shape_differs = nullptr;
+        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
+            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
+                    != get_index_kind()) {
+                length = b.i2i_t(length, idx_type);
+            }
+            ASR::expr_t* dim_differs = b.NotEq(b.ArraySize(
+                d.duplicate_expr(alloc_arg.m_a), b.i_t(i + 1, idx_type),
+                idx_type), length);
+            shape_differs = shape_differs == nullptr ? dim_differs
+                : b.Or(shape_differs, dim_differs);
+        }
+        if (shape_differs == nullptr) {
+            shape_differs = b.bool_t(false, ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4)));
+        }
+        return shape_differs;
     }
 
     // The variable whose dynamic type a polymorphic array `value` has, for
@@ -2035,7 +2068,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     // ReAlloc of `alloc_arg`, which then allocates it with the dynamic type
     // set by set_dynamic_type_of_polymorphic_target, or the ALLOCATE with
     // `mold`, which then allocates it with the dynamic type of the mold.
-    // The ReAlloc itself only compares the size. The value is read after
+    // The ReAlloc itself only compares the shape. The value is read after
     // the deallocation: a function result is already in a temporary here,
     // and a value that can refer to the variable is evaluated into one by
     // array_struct_temporary.
@@ -2048,7 +2081,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::expr_t* target = alloc_arg.m_a;
         ASRUtils::ASRBuilder b(al, loc);
         ASRUtils::ExprStmtDuplicator d(al);
-        ASR::ttype_t* idx_type = get_index_type(loc);
         ASR::ttype_t* logical_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
         auto make_deallocate = [&]() {
@@ -2058,18 +2090,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, vars.p, vars.size()));
         };
-        ASR::expr_t* shape_differs = nullptr;
-        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
-            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
-            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
-                    != get_index_kind()) {
-                length = b.i2i_t(length, idx_type);
-            }
-            ASR::expr_t* dim_differs = b.NotEq(
-                b.ArraySize(target, b.i_t(i + 1, idx_type), idx_type), length);
-            shape_differs = shape_differs == nullptr ? dim_differs
-                : b.Or(shape_differs, dim_differs);
-        }
+        ASR::expr_t* shape_differs = alloc_arg.n_dims > 0
+            ? make_shape_differs(alloc_arg, loc) : nullptr;
         // The guard naming the type of the expression keeps a variable of
         // that type. A character expression has no guard, as its length is
         // part of its dynamic type but not of a guard. A variable of the
@@ -2880,9 +2902,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 Vec<ASR::expr_t*> components;
                 components.reserve(al, 1);
                 components.push_back(al, checked_constructor);
-                stmts.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+                stmts.push_back(al, PassUtils::make_DebugCheckArrayBounds(
                     al, x.base.base.loc, expr_duplicator.duplicate_expr(xx.m_target),
-                    components.p, components.size(), false)));
+                    components, false));
                 if (pass_result.size() == 0 && !remove_original_stmt) {
                     stmts.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
                 }
@@ -3009,12 +3031,26 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             Vec<ASR::expr_t*> vars;
             vars.reserve(al, components.size());
             for (size_t i = 0; i < components.size(); i++) {
-                vars.push_back(al, expr_duplicator.duplicate_expr(components[i]));
+                ASR::expr_t* component = components[i];
+                // A component of a named constant is checked through its
+                // constant value, which is how this pass reads it
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*component)) {
+                    ASR::StructInstanceMember_t* member =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(component);
+                    if (member->m_value != nullptr &&
+                            is_parameter_designator(member->m_v) &&
+                            ASRUtils::is_array(ASRUtils::expr_type(member->m_value)) &&
+                            ASRUtils::is_value_constant(member->m_value)) {
+                        component = member->m_value;
+                    }
+                }
+                vars.push_back(al, expr_duplicator.duplicate_expr(component));
             }
 
             if (!conforms_at_compile_time &&
                     debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
+                pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
+                    x.base.base.loc, d_target, vars, x.m_move_allocation));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
                 }

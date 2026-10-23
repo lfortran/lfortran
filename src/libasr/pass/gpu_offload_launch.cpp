@@ -186,7 +186,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             if (ASR::is_a<ASR::IntegerConstant_t>(*limit)) return;
             ASR::symbol_t *sym = gpu_new_variable(al, loc, current_scope,
                 current_scope->get_unique_name(name),
-                ASRUtils::duplicate_type(al, ASRUtils::expr_type(limit)));
+                ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(limit))));
             prelude.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), limit,

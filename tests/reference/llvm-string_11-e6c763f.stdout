@@ -455,7 +455,7 @@ else:                                             ; preds = %.entry
   %33 = call i32 @_lcompilers_index_str1(i8* %28, i8* %30, i32* %call_arg_value, i32* %call_arg_value1, i64 %31, i64 %32)
   %34 = alloca i32, align 4
   store i32 %33, i32* %34, align 4
-  %35 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @serialization_info, i32 0, i32 0), i64* %26, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const.6, i32* %34)
+  %35 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([16 x i8], [16 x i8]* @serialization_info, i32 0, i32 0), i64* %26, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.6, i32* %34)
   %36 = load i64, i64* %26, align 8
   %37 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %35, i8** %37, align 8
@@ -510,7 +510,7 @@ declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
 

@@ -3776,6 +3776,19 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
+// The specific procedure of the defined input/output generic `read_write`
+// (such as "~write_formatted") that `item` is transferred with, imported into
+// `curr_scope` with the dependencies a call needs: the symbol a
+// SubroutineCall names, or nullptr if there is none. `a_original_name`
+// receives the call's original name, and `expr_dt` the item for a type-bound
+// procedure (the call's `m_dt`), or nullptr.
+ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
+                               SymbolTable* curr_scope, Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt);
+
 void set_intrinsic(ASR::symbol_t* sym);
 
 static inline bool is_pointer(ASR::ttype_t *x) {
@@ -4449,6 +4462,30 @@ static inline bool has_nested_implied_do_loop(ASR::expr_t** values, size_t n_val
         }
     }
     return false;
+}
+
+// How many loops of the perfect loop nest `loops`, from the outermost one,
+// form a rectangular iteration space: the bounds of each of them read none
+// of the indices of the loops around it in the nest. A collapsed iteration
+// space is described by bounds evaluated before any iteration runs, so a
+// loop whose bounds depend on an enclosing index (a non-rectangular nest,
+// e.g. `do j = 1, n; do i = j, n`) cannot be part of it.
+static inline size_t rectangular_loop_nest_depth(
+        const std::vector<ASR::DoLoop_t*> &loops) {
+    for (size_t level = 0; level < loops.size(); level++) {
+        const ASR::do_loop_head_t &head = loops[level]->m_head;
+        for (size_t outer = 0; outer < level; outer++) {
+            ASR::expr_t *index = loops[outer]->m_head.m_v;
+            if (index == nullptr || !ASR::is_a<ASR::Var_t>(*index)) continue;
+            ASR::symbol_t *index_sym = ASR::down_cast<ASR::Var_t>(index)->m_v;
+            if (expr_references_symbol(head.m_start, index_sym)
+                    || expr_references_symbol(head.m_end, index_sym)
+                    || expr_references_symbol(head.m_increment, index_sym)) {
+                return level;
+            }
+        }
+    }
+    return loops.size();
 }
 
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
@@ -10063,7 +10100,8 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
                 ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
-            ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
+            ASR::string_format_kindType::FormatFortran, nullptr, 0, nullptr,
+            char_type, nullptr)));
     }
 }
 
@@ -10688,6 +10726,7 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
 
 static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
+        ASR::dtio_binding_t* a_dtio_bindings, size_t n_dtio_bindings, ASR::expr_t* a_dtio_unit,
         ASR::ttype_t* a_type, ASR::expr_t* a_value) {
     if (a_fmt && ASR::is_a<ASR::Var_t>(*a_fmt)) {
         ASR::Variable_t* fmt_str = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(a_fmt)->m_v));
@@ -10707,7 +10746,8 @@ static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location
             }
         }
     }
-    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
+    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind,
+        a_dtio_bindings, n_dtio_bindings, a_dtio_unit, a_type, a_value);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {

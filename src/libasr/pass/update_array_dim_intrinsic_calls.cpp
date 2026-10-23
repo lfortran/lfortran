@@ -79,7 +79,17 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         if( x->m_dim != nullptr ) {
             int64_t dim = -1;
             ASRUtils::extract_value(x->m_dim, dim);
-            *current_expr = dims[dim - 1].m_length;
+            // The extent is declared with a kind of its own, as for `a(n)`
+            // with an integer(8) `n`, and SIZE returns its own kind
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* length = duplicator.duplicate_expr(dims[dim - 1].m_length);
+            if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length)) !=
+                    ASRUtils::extract_kind_from_ttype_t(x->m_type) ) {
+                length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
+                    x->base.base.loc, length, ASR::cast_kindType::IntegerToInteger,
+                    x->m_type));
+            }
+            *current_expr = length;
             return ;
         }
 

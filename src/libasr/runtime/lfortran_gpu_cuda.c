@@ -171,7 +171,9 @@ static void sync_all(void) {
             cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
         entries[i].dirty = 0;
     }
-    for (int i = 0; i < n_deferred; i++) cudaFree(deferred_free[i]);
+    for (int i = 0; i < n_deferred; i++) {
+        check(cudaFree(deferred_free[i]), "cudaFree");
+    }
     n_deferred = 0;
 }
 
@@ -437,6 +439,22 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 : slot_buffer(k->cache, i, k->buffer_sizes[i]);
         }
     } while (syncs != n_syncs);
+
+#ifdef LFORTRAN_CUDA_CPU_EMULATION
+    // In the CPU emulation, a range the kernel discards holds garbage (0xff
+    // bytes) at every launch, not only in fresh device memory: whatever an
+    // earlier launch left in a reused buffer must not let a kernel that reads
+    // the range before writing all of it pass. A device keeps the old bytes.
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] == ARG_BUFFER && k->buffer_sizes[i] > 0
+                && k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
+                && lfortran_gpu_discard_allowed(i, k->buffer_host_ptrs,
+                    k->buffer_sizes, is_buffer, k->n_args)) {
+            check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0xff,
+                k->buffer_sizes[i], 0), "cudaMemsetAsync");
+        }
+    }
+#endif
 
     // Build the kernel argument array for cudaLaunchKernel: a device
     // pointer for a buffer, the value for a scalar.

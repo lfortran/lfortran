@@ -21,6 +21,10 @@ namespace LCompilers {
         // present. An array item of a READ statement must be one too, unless
         // it is a descriptor that is not contiguous by construction.
         bool string_format_array_args = false;
+        // Set once the intrinsic_function pass has run: no StorageSize
+        // IntrinsicElementalFunction remains. The pass lowers each one to the
+        // length of its character argument in bits.
+        bool intrinsic_function = false;
     };
 
     // Verifies that ASR is correctly constructed and contains valid Fortran

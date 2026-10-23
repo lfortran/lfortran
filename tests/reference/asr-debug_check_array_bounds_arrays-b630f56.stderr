@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.debug_check_array_bounds.check_arrays]: a shape check must compare the target or an operand with a later operand
+   --> tests/asr/verify/debug_check_array_bounds_arrays.asr:100:12
+    |
+100 |           (DebugCheckArrayBounds
+    |            ^^^^^^^^^^^^^^^^^^^^^ failed here

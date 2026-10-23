@@ -792,6 +792,49 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_SubroutineCall(x);
     }
 
+    // The copy of a procedure shares the defined output bindings of its
+    // StringFormats with the original, so a binding that names a symbol of
+    // the original's scope is copied and made to name the symbol of the
+    // same name in the copy's scope.
+    void visit_StringFormat(const ASR::StringFormat_t& x) {
+        ASR::StringFormat_t& xx = const_cast<ASR::StringFormat_t&>(x);
+        auto outside = [&](ASR::symbol_t* sym) {
+            if (sym == nullptr) {
+                return false;
+            }
+            SymbolTable* sym_symtab = ASRUtils::symbol_parent_symtab(sym);
+            return sym_symtab->get_counter() != current_scope->get_counter() &&
+                !ASRUtils::is_parent(sym_symtab, current_scope);
+        };
+        auto in_scope = [&](ASR::symbol_t* sym) {
+            if (!outside(sym)) {
+                return sym;
+            }
+            ASR::symbol_t* resolved = current_scope->resolve_symbol(
+                ASRUtils::symbol_name(sym));
+            LCOMPILERS_ASSERT(resolved != nullptr);
+            return resolved;
+        };
+        bool needs_copy = false;
+        for (size_t i = 0; i < xx.n_dtio_bindings; i++) {
+            ASR::dtio_binding_t &b = xx.m_dtio_bindings[i];
+            needs_copy = needs_copy || outside(b.m_type_declaration) ||
+                outside(b.m_procedure) || outside(b.m_callback);
+        }
+        if (needs_copy) {
+            ASR::dtio_binding_t* bindings = v.al.allocate<ASR::dtio_binding_t>(
+                xx.n_dtio_bindings);
+            for (size_t i = 0; i < xx.n_dtio_bindings; i++) {
+                bindings[i] = xx.m_dtio_bindings[i];
+                bindings[i].m_type_declaration = in_scope(bindings[i].m_type_declaration);
+                bindings[i].m_procedure = in_scope(bindings[i].m_procedure);
+                bindings[i].m_callback = in_scope(bindings[i].m_callback);
+            }
+            xx.m_dtio_bindings = bindings;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_StringFormat(x);
+    }
+
     void update_procedure_variable_type_declarations(SymbolTable* symtab) {
         for (auto it: symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*it.second) &&
@@ -1531,6 +1574,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_SubroutineCall(x);
             visit_Call(x);
+        }
+
+        // A defined output procedure is called by its callback, whose call is
+        // edited like any other. The binding keeps naming the procedure, so
+        // the procedure is kept as well.
+        void visit_dtio_binding(const ASR::dtio_binding_t& x) {
+            not_to_be_erased.insert(ASRUtils::symbol_get_past_external(x.m_procedure));
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {

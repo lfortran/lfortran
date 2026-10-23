@@ -537,6 +537,15 @@ public:
             decline(x);
             return;
         }
+        // Only the rectangular prefix of the nest is partitioned; a loop
+        // whose bounds read an enclosing index, and the loops inside it,
+        // stay sequential loops in the body, which runs the same iterations.
+        int64_t rectangular = (int64_t)ASRUtils::rectangular_loop_nest_depth(
+            nest.loops);
+        if (rectangular < collapse) {
+            collapse = rectangular;
+            descend_loop_nest(body[0], collapse, nest, why);
+        }
 
         NestedRegionFinder finder;
         for (size_t i = 0; i < nest.n_body; i++) {
@@ -595,11 +604,18 @@ public:
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (x.n_head == 0) return;
         if (statements_do_nothing(x.m_body, x.n_body)) return;
+        ASR::stmt_t *loop = build_loop_nest(x);
+        ParallelLoopNest nest;
+        int64_t collapse = (int64_t)x.n_head;
+        if (parallel_loop_nest_of(loop, collapse, nest)) {
+            collapse = (int64_t)ASRUtils::rectangular_loop_nest_depth(
+                nest.loops);
+        }
         pass_result.reserve(al, 1);
         pass_result.push_back(al, make_canonical_region(al, x.base.base.loc,
             x.m_shared, x.n_shared, x.m_local, x.n_local,
-            x.m_reduction, x.n_reduction, (int64_t)x.n_head, nullptr, 0,
-            false, build_loop_nest(x), ASR::exec_targetType::ExecAuto));
+            x.m_reduction, x.n_reduction, collapse, nullptr, 0,
+            false, loop, ASR::exec_targetType::ExecAuto));
     }
 
     // A FORALL is lowered later, by the forall pass, so its body is left as it is.

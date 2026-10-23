@@ -626,6 +626,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         sep = "\" \"";
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the C++ backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         } else if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
@@ -655,6 +659,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         size_t n_values = x.n_values;
         if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the C++ backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         }
         for (size_t i=0; i<n_values; i++) {

@@ -48,7 +48,7 @@ public:
         enum {
             integer4, integer8, real4, real8, complex4, complex8, boolean,
             character, statement, none
-        } type;
+        } type = none;
         union {
             bool b;
             int32_t i32;
@@ -83,13 +83,23 @@ public:
         EvalResult value{};      // `none` for a %%show* cell
         std::string output;      // the text a %%show* cell shows
         std::string diagnostics; // rendered warnings and errors
-        std::string error_name, error_value; // if !ok
+        // If !ok: the error's name and message (the rendered diagnostics of
+        // a CompilerError) and, for an internal compiler error, the stack
+        // trace (empty without stacktrace support).
+        std::string error_name, error_value;
+        bool internal_error = false;
+        std::string error_traceback;
+
+        // The text a frontend shows for a failed cell.
+        std::string error_text() const;
     };
 
     // Runs one interactive cell: evaluate() with fresh diagnostics and
-    // passes, or a %%showast/asr/llvm/asm/cpp/fmt cell. Never throws a
-    // compiler exception; it becomes the error. Only one cell may run at a
-    // time in a process, as the display hooks are process-wide.
+    // passes, or a %%showast/asr/llvm/asm/cpp/fmt cell, which does not add
+    // its declarations to the session. Never throws a compiler exception; it
+    // becomes the error. `compiler_options.interactive` must be set. Only one
+    // cell may run at a time in a process, as the display hooks are
+    // process-wide.
     CellResult execute(const std::string &code, bool verbose = false,
         const CellIO &io = {});
 

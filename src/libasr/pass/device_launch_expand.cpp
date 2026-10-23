@@ -261,6 +261,11 @@ class DeviceLaunchExpandVisitor :
             ASR::expr_t *byte_size;
             // A buffer only the device holds (see GpuKernelLaunch.scratch).
             const ASR::gpu_scratch_buffer_t *scratch = nullptr;
+            // False for a copy of this pass that nothing is copied back
+            // from: the host never reads what the kernel writes there, so
+            // it is handed over as read only, and the runtime does not keep
+            // it on the device past the launch, when the copy may be gone.
+            bool host_reads_writes = true;
         };
 
         // One array argument inside the combined buffer of a packed launch.
@@ -767,9 +772,14 @@ class DeviceLaunchExpandVisitor :
         // the kernel is generated against the declared type, so reading a
         // component of it would read the descriptor. Copy the declared
         // type's own components into a plain local and hand that over.
+        // The local is copied back right after the launch when the kernel
+        // may write it; one with nothing to copy back -- every component
+        // of the type is an allocatable array the device is handed on its
+        // own -- leaves `written` false, since what the kernel writes there
+        // is never read.
         ASR::expr_t* plain_struct_argument(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                ASR::Variable_t *kparam, bool written,
+                ASR::Variable_t *kparam, bool &written,
                 std::vector<ASR::stmt_t*> &writebacks) {
             if (!gpu_argument_is_polymorphic_value(arg)) return arg;
             ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
@@ -790,6 +800,7 @@ class DeviceLaunchExpandVisitor :
                     + std::string(kparam->m_name) + "' to a gpu kernel");
             }
             for (ASR::stmt_t *stmt : forward) out.push_back(al, stmt);
+            written = written && !back.empty();
             if (written) {
                 for (ASR::stmt_t *stmt : back) writebacks.push_back(stmt);
             }
@@ -954,13 +965,15 @@ class DeviceLaunchExpandVisitor :
                     // bytes, so such an argument is copied into a
                     // contiguous temporary first, and copied back after
                     // when the kernel writes it.
+                    bool written = entry.m_written;
                     ASR::expr_t *buffer_arg = plain_struct_argument(loc,
-                        out, arg, kparam, entry.m_written, writebacks);
+                        out, arg, kparam, written, writebacks);
                     buffer_arg = contiguous_argument(loc, out,
-                        buffer_arg, entry.m_written, writebacks);
+                        buffer_arg, written, writebacks);
                     buffers.push_back({buffer_arg,
                         address_of(loc, buffer_arg),
                         buffer_byte_size(loc, buffer_arg)});
+                    buffers.back().host_reads_writes = written;
                     if (ASRUtils::is_array(arg_type)) {
                         // The buffers the device reads a component through
                         // are named after the kernel's own parameter, so
@@ -983,6 +996,7 @@ class DeviceLaunchExpandVisitor :
             // the launch says so, need not be copied to the device first.
             auto buffer_access = [&](size_t i) {
                 const auto &entry = layout.m_buffers[i];
+                if (!buffers[i].host_reads_writes) return access(false);
                 if (!entry.m_written || entry.m_member
                         || entry.m_kind != ASR::gpu_argument_kindType::GpuArray) {
                     return access(entry.m_written);

@@ -490,7 +490,7 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
             {nullptr, &Radix::verify_args, &Radix::create_Radix}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::StorageSize),
-            {nullptr, &StorageSize::verify_args, &StorageSize::create_StorageSize}},
+            {&StorageSize::instantiate_StorageSize, &StorageSize::verify_args, &StorageSize::create_StorageSize}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
             {&Scale::instantiate_Scale, &Scale::verify_args, &Scale::create_Scale}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
