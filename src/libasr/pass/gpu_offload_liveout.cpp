@@ -806,11 +806,25 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                         : ASR::down_cast<ASR::Variable_t>(
                             ASRUtils::symbol_get_past_external(
                                 use->members.back()))->m_type_declaration;
+                    // A variable the loop defines only whole, or assigns
+                    // whole before it names it, costs a thread no more as
+                    // a copy than as the kernel local it would be if its
+                    // value were not kept: no size limit applies to it.
+                    bool whole = p.empty()
+                        && gpu_assigned_whole_first(v, body, n_body);
+                    if (p.empty() && !whole) {
+                        whole = true;
+                        for (auto &d : parts.definitions) {
+                            if (d.variable == v && !d.path.empty()) {
+                                whole = false;
+                            }
+                        }
+                    }
                     if ((!p.empty() && (ASRUtils::is_class_type(t)
                                 || ASRUtils::is_allocatable_or_pointer(t)))
                             || gpu_struct_has_allocatable_parts(struct_sym)
-                            || gpu_struct_bytes(struct_sym)
-                                > gpu_private_struct_limit) {
+                            || (!whole && gpu_struct_bytes(struct_sym)
+                                > gpu_private_struct_limit)) {
                         report_not_offloaded(first, GpuDecline(
                             GpuDeclineReason::LiveoutDerivedType,
                             gpu_designator_text(v, p)));
