@@ -33,6 +33,11 @@ struct CudaDialect {
         return (kind == 8) ? "double" : "float";
     }
 
+    // The integer type an element's offset in an array is computed in.
+    std::string index_type() const {
+        return "int";
+    }
+
     void emit_prologue(std::stringstream &src) const {
         src << "#include <stdint.h>\n";
         if (emulate_cpu) {

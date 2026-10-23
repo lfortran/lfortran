@@ -422,6 +422,32 @@ inline std::string gpu_referenced_declarations(
     return result;
 }
 
+// The offset `sub - lb` of a subscript of integer kind `subscript_kind`
+// within its dimension, as device source in `index_type`, the dialect's
+// integer for element offsets. A subscript wider than that is narrowed only
+// once its lower bound is subtracted: the difference fits where the
+// subscript itself need not, as in an integer(8) subscript of an array whose
+// lower bound is 3000000000.
+//
+// The source before and after the subscript is the pair this returns, for
+// a caller that emits the subscript itself in between.
+inline std::pair<std::string, std::string> gpu_offset_term_parts(
+        const std::string &lb, int subscript_kind,
+        const std::string &index_type) {
+    int index_kind = index_type == "int" ? 4 : 8;
+    if (subscript_kind > index_kind) {
+        return {"((" + index_type + ")((", ") - (" + lb + ")))"};
+    }
+    return {"((" + index_type + ")(", ") - (" + lb + "))"};
+}
+
+inline std::string gpu_offset_term(const std::string &sub,
+        const std::string &lb, int subscript_kind,
+        const std::string &index_type) {
+    auto parts = gpu_offset_term_parts(lb, subscript_kind, index_type);
+    return parts.first + sub + parts.second;
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -449,15 +475,21 @@ inline std::string gpu_referenced_declarations(
 // component's extents travel in. The last dimension is never counted past,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
+//
+// Each subscript's offset is gpu_offset_term(), given the subscript's
+// integer kind in `subscript_kinds`, in `index_type`, the dialect's integer
+// for element offsets.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
+        const std::vector<int> &subscript_kinds,
         const std::function<std::string(size_t)> &lower,
-        const std::function<std::string(size_t)> &extent) {
+        const std::function<std::string(size_t)> &extent,
+        const std::string &index_type) {
     std::string out, stride;
     for (size_t d = 0; d < subscripts.size(); d++) {
         if (subscripts[d].empty()) continue;
-        std::string term = "((int)(" + subscripts[d] + ") - ("
-            + lower(d) + "))";
+        std::string term = gpu_offset_term(subscripts[d], lower(d),
+            subscript_kinds[d], index_type);
         if (!stride.empty()) term = "(" + stride + " * " + term + ")";
         out += out.empty() ? term : (" + " + term);
         if (d + 1 < subscripts.size()) {

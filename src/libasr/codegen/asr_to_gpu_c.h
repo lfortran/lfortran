@@ -1861,15 +1861,9 @@ public:
                 first_dim = false;
                 std::string lb = arr ? deferred_lower_bound_str(as->m_v,
                     arr, d) : std::string("1");
-                if (stride == "1") {
-                    src << "((int)(";
-                    visit_expr(idx_expr);
-                    src << ") - (" << lb << "))";
-                } else {
-                    src << "(" << stride << " * ((int)(";
-                    visit_expr(idx_expr);
-                    src << ") - (" << lb << ")))";
-                }
+                if (stride != "1") src << "(" << stride << " * ";
+                emit_offset_term(idx_expr, lb);
+                if (stride != "1") src << ")";
             }
             if (is_range) {
                 std::string dim_size = expr_str_of_range_extent(
@@ -1950,6 +1944,21 @@ public:
             return false;
         }
         return value == 1;
+    }
+
+    // The integer kind of a subscript, which gpu_offset_term() narrows to
+    // the dialect's offset type.
+    static int subscript_kind(ASR::expr_t *idx) {
+        return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx));
+    }
+
+    // Emits gpu_offset_term() of the subscript `idx` and lower bound `lb`.
+    void emit_offset_term(ASR::expr_t *idx, const std::string &lb) {
+        auto parts = gpu_offset_term_parts(lb, subscript_kind(idx),
+            dialect.index_type());
+        src << parts.first;
+        visit_expr(idx);
+        src << parts.second;
     }
 
     // Renders an expression to device source without disturbing the output
@@ -2602,6 +2611,7 @@ public:
                 ai->base.base.loc);
         }
         std::vector<std::string> subscripts;
+        std::vector<int> subscript_kinds;
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right
                 ? ai->m_args[d].m_right : ai->m_args[d].m_left;
@@ -2612,8 +2622,9 @@ public:
                     ai->base.base.loc);
             }
             subscripts.push_back(expr_str(idx));
+            subscript_kinds.push_back(subscript_kind(idx));
         }
-        return gpu_linearized_index_str(subscripts,
+        return gpu_linearized_index_str(subscripts, subscript_kinds,
             [&](size_t d) {
                 if (sizes_param.empty()) return std::string("1");
                 return struct_member_lower_bound_expr(sizes_param,
@@ -2622,7 +2633,7 @@ public:
             [&](size_t d) {
                 return struct_member_extent_expr(sizes_param, arr_idx_str,
                     rank, d);
-            });
+            }, dialect.index_type());
     }
 
     // Emit the array size for a StructInstanceMember expression whose
@@ -5418,9 +5429,7 @@ public:
                             array_shape_key(ai->m_v), 1, strides)
                             && strides[0] != "1";
                         if (strided) src << "(" << strides[0] << " * ";
-                        src << "((int)(";
-                        visit_expr(idx);
-                        src << ") - (" << lb << "))";
+                        emit_offset_term(idx, lb);
                         if (strided) src << ")";
                     } else {
                         src << "0";
@@ -5803,10 +5812,12 @@ public:
         // "var.member" for a component of a derived-type argument.
         std::string arr_var_name = array_shape_key(ai->m_v);
         std::vector<std::string> subscripts;
+        std::vector<int> subscript_kinds;
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right
                 ? ai->m_args[d].m_right : ai->m_args[d].m_left;
             subscripts.push_back(idx ? expr_str(idx) : "");
+            subscript_kinds.push_back(idx ? subscript_kind(idx) : 4);
         }
         // A view whose elements are not laid out by its own extents is
         // stepped through by the strides it was registered with.
@@ -5815,8 +5826,9 @@ public:
             std::string out;
             for (size_t d = 0; d < subscripts.size(); d++) {
                 if (subscripts[d].empty()) continue;
-                std::string term = "((int)(" + subscripts[d] + ") - ("
-                    + get_lower_bound_str(arr, d, arr_var_name) + "))";
+                std::string term = gpu_offset_term(subscripts[d],
+                    get_lower_bound_str(arr, d, arr_var_name),
+                    subscript_kinds[d], dialect.index_type());
                 if (strides[d] != "1") {
                     term = "(" + strides[d] + " * " + term + ")";
                 }
@@ -5825,7 +5837,7 @@ public:
             src << out;
             return;
         }
-        src << gpu_linearized_index_str(subscripts,
+        src << gpu_linearized_index_str(subscripts, subscript_kinds,
             [&](size_t d) {
                 return get_lower_bound_str(arr, d, arr_var_name);
             },
@@ -5835,7 +5847,7 @@ public:
                 if (arr == nullptr || d >= arr->n_dims) return "";
                 return dim_extent_str(arr, d, arr_var_name,
                     ai->base.base.loc);
-            });
+            }, dialect.index_type());
     }
 
     void emit_intrinsic(ASR::IntrinsicElementalFunction_t *f) {

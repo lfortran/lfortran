@@ -5003,6 +5003,12 @@ gpu_cuda_kernel = true
 filename = "gpu_cuda_kernel_wide_extent.f90"
 gpu_cuda_kernel = true
 
+# An integer(8) subscript of an array whose lower bound is beyond huge(0):
+# the lower bound is subtracted before the offset is narrowed to `int`.
+[[test]]
+filename = "../integration_tests/gpu_metal_595.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true
