@@ -19,7 +19,7 @@
  * dynamic type of a polymorphic item), and its dtv dummy may be polymorphic.
  * So this pass gives each binding a `callback` with a fixed interface,
  *
- *     subroutine __lfortran_dtio_write_wf(dtv, unit, iotype, n_v, v_list, iostat, iomsg)
+ *     subroutine __lfortran_dtio_write_wf_t(dtv, unit, iotype, n_v, v_list, iostat, iomsg)
  *         type(t), intent(in) :: dtv            ! class(t) for a polymorphic item
  *         integer(4), intent(in) :: unit, n_v
  *         character(len=*), intent(in) :: iotype
@@ -40,7 +40,9 @@
  * Only the statements this translation unit generates code for get callbacks.
  * Under separate compilation a module read from a `.mod` file is compiled
  * into an object file of its own, which defines the callbacks of its
- * statements, so its procedures are skipped here.
+ * statements, so its procedures are skipped here. A callback is private, since
+ * only the callback table of its statement refers to it (one in the
+ * translation unit is then not exported from the object file).
  */
 
 namespace LCompilers {
@@ -86,6 +88,18 @@ ASR::symbol_t* scope_owner(SymbolTable* scope) {
         return ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
     }
     return nullptr;
+}
+
+// The name of `sym` preceded by the name of the module, program or procedure
+// that defines it, so that same-named types or procedures of different
+// program units give different names.
+std::string qualified_name(ASR::symbol_t* sym) {
+    std::string name = ASRUtils::symbol_name(sym);
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+    if (owner != nullptr) {
+        name = std::string(ASRUtils::symbol_name(owner)) + "_" + name;
+    }
+    return name;
 }
 
 class DtioCallbackBuilder {
@@ -149,13 +163,19 @@ public:
         ASRUtils::ASRBuilder b(al, loc);
         ASR::symbol_t* target = ASRUtils::symbol_get_past_external(procedure);
         bool type_bound = ASR::is_a<ASR::StructMethodDeclaration_t>(*target);
+        // A binding is named by the type it belongs to, a procedure by the
+        // program unit that defines it.
         std::string proc_name = type_bound
-            ? ASR::down_cast<ASR::StructMethodDeclaration_t>(target)->m_name
-            : ASRUtils::symbol_name(target);
-        // A callback in the translation unit, for a statement in an external
-        // procedure, is a global symbol, so its name also includes the name
-        // of that procedure.
-        std::string base_name = "__lfortran_dtio_write_" + proc_name;
+            ? std::string(ASR::down_cast<ASR::StructMethodDeclaration_t>(target)->m_name)
+            : qualified_name(target);
+        // The name includes the type, qualified by the program unit that
+        // defines it, and the polymorphism, so that the callbacks of a scope
+        // have distinct names (an overriding binding has the name of the
+        // binding it overrides, and types of different modules may have the
+        // same name). A callback in the translation unit, for a statement in
+        // an external procedure, also includes the name of that procedure.
+        std::string base_name = "__lfortran_dtio_write_" + proc_name + "_"
+            + qualified_name(struct_sym) + (polymorphic ? "_class" : "");
         if (ASRUtils::is_tu_scope(parent) && !unit_name.empty()) {
             base_name += "_" + unit_name;
         }
@@ -260,7 +280,7 @@ public:
         ASR::symbol_t* callback = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Function_t_util(al, loc, fn_symtab, s2c(al, fn_name),
                 dependencies.p, dependencies.n, args.p, args.n, body.p, body.n,
-                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                nullptr, ASR::abiType::Source, ASR::accessType::Private,
                 ASR::deftypeType::Implementation, nullptr, false, false, false,
                 false, false, nullptr, 0, false, false, false));
         parent->add_symbol(fn_name, callback);
