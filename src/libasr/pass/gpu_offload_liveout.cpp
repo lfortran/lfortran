@@ -120,7 +120,7 @@ int64_t gpu_struct_bytes(ASR::symbol_t *struct_sym) {
         ASR::dimension_t *dims = nullptr;
         size_t rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
         for (size_t d = 0; d < rank; d++) {
-            int64_t extent;
+            int64_t extent = 0;
             if (dims[d].m_length == nullptr || !ASRUtils::extract_value(
                     ASRUtils::expr_value(dims[d].m_length), extent)) {
                 return unknown;
@@ -172,7 +172,7 @@ ASR::ttype_t *gpu_private_array_type(Allocator &al, const Location &loc,
     dims.reserve(al, a->n_dims);
     ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
     for (size_t d = 0; d < a->n_dims; d++) {
-        int64_t start, length;
+        int64_t start = 0, length = 0;
         if (a->m_dims[d].m_start == nullptr
                 || a->m_dims[d].m_length == nullptr
                 || !ASRUtils::extract_value(ASRUtils::expr_value(
