@@ -828,12 +828,88 @@ public:
             }
             src << "};\n";
         } else {
-            src << get_indent() << "const " << gpu_type(var->m_type)
+            src << get_indent() << "const "
+                << (is_struct_type(var->m_type) ? get_struct_name(var)
+                    : gpu_type(var->m_type))
                 << " " << sanitize_name(std::string(var->m_name))
                 << " = ";
             visit_expr(var->m_value);
             src << ";\n";
         }
+    }
+
+    // The brace initialiser of the device struct `st` from the values of a
+    // derived-type constant, starting at its value `next_arg`: those of the
+    // parent's components come first, as the parent member of the device
+    // struct does. False for a component the device cannot be given a
+    // value of this way.
+    bool struct_constant_initializer(ASR::Struct_t *st,
+            ASR::StructConstant_t *sc, size_t &next_arg, std::string &init) {
+        std::string out = "{";
+        bool first = true;
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            std::string parent_init;
+            if (!ASR::is_a<ASR::Struct_t>(*parent)
+                    || !struct_constant_initializer(
+                        ASR::down_cast<ASR::Struct_t>(parent), sc, next_arg,
+                        parent_init)) {
+                return false;
+            }
+            out += parent_init;
+            first = false;
+        }
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+            if (next_arg >= sc->n_args) return false;
+            ASR::expr_t *value = sc->m_args[next_arg++].m_value;
+            if (!value || ASRUtils::is_allocatable_or_pointer(mv->m_type)) {
+                return false;
+            }
+            if (!first) out += ", ";
+            first = false;
+            ASR::ttype_t *elem = ASRUtils::type_get_past_array(mv->m_type);
+            if (is_struct_type(mv->m_type)) {
+                if (is_array_type(mv->m_type) || !mv->m_type_declaration
+                        || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+                    return false;
+                }
+                ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                    mv->m_type_declaration);
+                if (!ASR::is_a<ASR::Struct_t>(*inner)) return false;
+                size_t inner_arg = 0;
+                std::string inner_init;
+                if (!struct_constant_initializer(
+                        ASR::down_cast<ASR::Struct_t>(inner),
+                        ASR::down_cast<ASR::StructConstant_t>(value),
+                        inner_arg, inner_init)) {
+                    return false;
+                }
+                out += inner_init;
+            } else if (is_array_type(mv->m_type)) {
+                if (!ASR::is_a<ASR::ArrayConstant_t>(*value)
+                        || (!ASR::is_a<ASR::Integer_t>(*elem)
+                            && !ASR::is_a<ASR::Real_t>(*elem))) {
+                    return false;
+                }
+                ASR::ArrayConstant_t *ac =
+                    ASR::down_cast<ASR::ArrayConstant_t>(value);
+                int64_t total = get_total_elements(mv->m_type);
+                out += "{";
+                for (int64_t k = 0; k < total; k++) {
+                    if (k > 0) out += ", ";
+                    out += ASRUtils::fetch_ArrayConstant_value(ac, k);
+                }
+                out += "}";
+            } else {
+                out += expr_str(value);
+            }
+        }
+        init = out + "}";
+        return true;
     }
 
     void emit_local_var_decl(ASR::Variable_t *var) {
@@ -3517,7 +3593,10 @@ public:
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                     item.second);
-                if (var->m_storage == ASR::storage_typeType::Parameter)
+                // A named constant whose value a pass moved into an
+                // assignment, as of a derived type, is declared here.
+                if (var->m_storage == ASR::storage_typeType::Parameter
+                        && var->m_value)
                     continue;
                 if (declared_by_signature.count(item.second)) continue;
                 declarations.push_back(variable_declaration(*var,
@@ -5639,6 +5718,27 @@ public:
             }
             case ASR::exprType::ArrayIsContiguous: {
                 src << "1";
+                break;
+            }
+            case ASR::exprType::StructConstant: {
+                // The value of a derived-type named constant, which a pass
+                // assigns to it, as the brace list of its device struct.
+                ASR::StructConstant_t *sc =
+                    ASR::down_cast<ASR::StructConstant_t>(expr);
+                ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
+                    sc->m_dt_sym);
+                std::string init;
+                size_t next_arg = 0;
+                if (ASR::is_a<ASR::Struct_t>(*st)
+                        && struct_constant_initializer(
+                            ASR::down_cast<ASR::Struct_t>(st), sc, next_arg,
+                            init)) {
+                    src << init;
+                } else {
+                    // Something that does not compile rather than a value
+                    // with members of whatever value.
+                    src << "/* unsupported derived-type constant */";
+                }
                 break;
             }
             default:
