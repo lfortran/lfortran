@@ -2,6 +2,7 @@
 
 #include <libasr/asr_text.h>
 #include <libasr/asr_verify.h>
+#include <libasr/codegen/asr_to_fortran.h>
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
 
@@ -203,4 +204,50 @@ TEST_CASE("ASR text rejects a negative ArrayConstant n_data") {
         LCompilers::diag::Stage::ASRParser);
     CHECK(diagnostics.diagnostics.back().message.find(
         "n_data must be non-negative") != std::string::npos);
+}
+
+// The Fortran printer lowers the ASR it is given: printing must leave the
+// ASR unchanged, so that printing it again gives the same Fortran.
+TEST_CASE("Fortran printer does not change the ASR of spread of a scalar") {
+    const std::string source = R"(
+program p
+    integer :: a, r(3)
+    a = 5
+    r = spread(a, 1, 3)
+    print *, spread(7, 1, 2)
+end program
+)";
+
+    LCompilers::CompilerOptions compiler_options;
+    FortranEvaluator evaluator(compiler_options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "spread_printer_test.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    Diagnostics diagnostics;
+
+    Result<LCompilers::ASR::TranslationUnit_t *> result =
+        evaluator.get_asr2(source, lm, diagnostics);
+    REQUIRE(result.ok);
+    REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+
+    LCompilers::ASRTextOptions options;
+    options.indent = false;
+    const std::string asr_before =
+        LCompilers::asr_to_text(*result.result, options);
+
+    Result<std::string> first = LCompilers::asr_to_fortran(*result.result,
+        diagnostics, false, 4);
+    REQUIRE(first.ok);
+    CHECK(first.result.find("Spread(a, 1, 3)") != std::string::npos);
+    CHECK(first.result.find("Spread(7, 1, 2)") != std::string::npos);
+
+    CHECK(LCompilers::asr_to_text(*result.result, options) == asr_before);
+    REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+
+    Result<std::string> second = LCompilers::asr_to_fortran(*result.result,
+        diagnostics, false, 4);
+    REQUIRE(second.ok);
+    CHECK(second.result == first.result);
 }
