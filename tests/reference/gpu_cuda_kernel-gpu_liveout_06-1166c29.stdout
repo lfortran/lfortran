@@ -1,0 +1,93 @@
+#include <stdint.h>
+
+struct pt {
+    int x;
+    int y;
+};
+
+__device__ inline void maybe_move_gpu_13(pt& p, int i) {
+    if ((i == 9)) {
+        p.y = 90;
+    }
+}
+
+__device__ inline void maybe_set_gpu_14(int& k, int i) {
+    if ((i == 7)) {
+        k = 70;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ __gpu_buf_k,
+    int* __restrict__ a,
+    pt& p,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int __gpu_before;
+    int __gpu_before1;
+    int __gpu_before2;
+    pt __gpu_private_p;
+    int i;
+    int k;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    k = __gpu_buf_k[((int)(1) - (1))];
+    __gpu_private_p = p;
+    a[((int)(i) - (__lb_a_0))] = i;
+    __gpu_before = k;
+    maybe_set_gpu_14(k, i);
+    if ((k != __gpu_before)) {
+        __gpu_buf_k[((int)(1) - (1))] = k;
+    }
+    __gpu_before1 = __gpu_private_p.x;
+    __gpu_before2 = __gpu_private_p.y;
+    maybe_move_gpu_13(__gpu_private_p, i);
+    if ((__gpu_private_p.x != __gpu_before1)) {
+        p.x = __gpu_private_p.x;
+    }
+    if ((__gpu_private_p.y != __gpu_before2)) {
+        p.y = __gpu_private_p.y;
+    }
+}
+
+__device__ inline void set_gpu_22(int& k, int i) {
+    k = (2 * i);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* __restrict__ __gpu_buf_m,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    int m;
+    const int n = 100000;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    m = __gpu_buf_m[((int)(1) - (1))];
+    if ((i == n)) {
+        set_gpu_22(m, i);
+        __gpu_buf_m[((int)(1) - (1))] = m;
+    }
+}
+

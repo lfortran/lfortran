@@ -2073,11 +2073,11 @@ public:
     }
 
     // Resolves the defined output procedure (`write(formatted)`) of each
-    // derived-type effective item of a formatted WRITE or PRINT with a
-    // format, once per pair of type and polymorphism. The effective items
-    // are the items, the elements of array items and the items of implied-do
-    // loops. The runtime formatter calls the procedure when such an item
-    // meets a DT edit descriptor.
+    // derived-type effective item of a formatted WRITE or PRINT, once per
+    // pair of type and polymorphism. The effective items are the items, the
+    // elements of array items and the items of implied-do loops. The runtime
+    // formatter calls the procedure when such an item meets a DT edit
+    // descriptor, or, for list-directed output, when it reaches the item.
     void build_dtio_write_bindings(const Vec<ASR::expr_t*> &items,
             Vec<ASR::dtio_binding_t> &bindings, const Location &loc) {
         for (size_t i = 0; i < items.size(); i++) {
@@ -3012,11 +3012,12 @@ public:
         }
         read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
-        // A formatted WRITE with a format transfers each derived-type item
-        // that has a defined output procedure through the runtime formatter,
-        // which calls the procedure when the item meets a DT edit descriptor.
+        // A formatted WRITE transfers each derived-type item that has a
+        // defined output procedure through the runtime formatter, which calls
+        // the procedure when the item meets a DT edit descriptor, or, for
+        // list-directed output, when it reaches the item.
         bool dtio_through_formatter = _type == AST::decl_stmtType::Write
-            && formatted && a_fmt != nullptr && a_nml == nullptr;
+            && formatted && a_nml == nullptr;
         Vec<ASR::dtio_binding_t> dtio_bindings;
         dtio_bindings.reserve(al, 1);
         if (dtio_through_formatter && n_values > 0) {
@@ -3387,11 +3388,10 @@ public:
             a_fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, a_fmt->base.loc, s2c(al, format_statements[label]), a_fmt_type));
         }
-        // A user-defined derived-type output procedure, or a single
-        // character item written directly, bypasses the StringFormat, so
-        // the leading blank is then written by a statement of its own.
-        bool separate_leading_blank = list_directed_leading_blank
-            && overloaded_stmt != nullptr;
+        // A single character item written directly bypasses the
+        // StringFormat, so the leading blank is then written by a statement
+        // of its own.
+        bool separate_leading_blank = false;
         // Don't use stringFormat with single character argument. An implied
         // do loop is a list of output items rather than a single character
         // value, even when all its items happen to be of character type, so
@@ -3412,8 +3412,7 @@ public:
                         al, loc, 1, nullptr,
                         ASR::string_length_kindType::DeferredLength,
                         ASR::string_physical_typeType::DescriptorString))));
-                ASR::string_format_kindType kind =
-                    list_directed_leading_blank && !separate_leading_blank
+                ASR::string_format_kindType kind = list_directed_leading_blank
                     ? ASR::string_format_kindType::FormatFortranLeadingBlank
                     : ASR::string_format_kindType::FormatFortran;
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
@@ -10061,19 +10060,17 @@ public:
             check_mixed_derived_type_output_implied_do(expr, false);
             body.push_back(al, expr);
         }
-        // With a format, each derived-type item that has a defined output
-        // procedure is written by it, to unit 6, when the item meets a DT edit
-        // descriptor.
+        // Each derived-type item that has a defined output procedure is
+        // written by it, to unit 6, when the item meets a DT edit descriptor,
+        // or, for list-directed output, when the formatter reaches the item.
         Vec<ASR::dtio_binding_t> dtio_bindings;
         dtio_bindings.reserve(al, 1);
         ASR::expr_t* dtio_unit = nullptr;
-        if (fmt) {
-            build_dtio_write_bindings(body, dtio_bindings, x.base.base.loc);
-            if (dtio_bindings.size() > 0) {
-                dtio_unit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-                    x.base.base.loc, 6, ASRUtils::TYPE(ASR::make_Integer_t(al,
-                        x.base.base.loc, 4))));
-            }
+        build_dtio_write_bindings(body, dtio_bindings, x.base.base.loc);
+        if (dtio_bindings.size() > 0) {
+            dtio_unit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                x.base.base.loc, 6, ASRUtils::TYPE(ASR::make_Integer_t(al,
+                    x.base.base.loc, 4))));
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
             ASR::IntegerConstant_t *f = ASR::down_cast<ASR::IntegerConstant_t>(fmt);

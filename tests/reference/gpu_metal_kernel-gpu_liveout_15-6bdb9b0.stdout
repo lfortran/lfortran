@@ -1,0 +1,45 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct acc_t {
+    float c;
+    int n;
+};
+
+inline void upd_gpu_9(int i, thread acc_t& self, thread float& y) {
+    y = (self.c * ((float)i));
+    if ((i == 3)) {
+        self.n = 7;
+    }
+}
+
+kernel void __lfortran_gpu_kernel_0(
+    device acc_t& m [[buffer(0)]],
+    device float* y [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    float __gpu_before;
+    int __gpu_before1;
+    acc_t __gpu_private_m;
+    float __gpu_scalar_argument;
+    int i;
+    if ((((0 * 0) + __thread_id) >= 100)) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    __gpu_private_m = m;
+    __gpu_before = __gpu_private_m.c;
+    __gpu_before1 = __gpu_private_m.n;
+    __gpu_scalar_argument = y[((int)(i) - (1))];
+    upd_gpu_9(i, __gpu_private_m, __gpu_scalar_argument);
+    y[((int)(i) - (1))] = __gpu_scalar_argument;
+    if (((int)((__gpu_private_m.c != __gpu_before) && ((int)((__gpu_private_m.c == __gpu_private_m.c) || (__gpu_before == __gpu_before)))))) {
+        m.c = __gpu_private_m.c;
+    }
+    if ((__gpu_private_m.n != __gpu_before1)) {
+        m.n = __gpu_private_m.n;
+    }
+}
+

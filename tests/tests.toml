@@ -4695,6 +4695,50 @@ filename = "../integration_tests/gpu_decline_21.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_28.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_29.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_30.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_31.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_40.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_41.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_42.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_43.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_44.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_45.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_46.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -5038,6 +5082,66 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_36.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_03.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_04.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_05.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_06.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_08.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_09.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_15.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
