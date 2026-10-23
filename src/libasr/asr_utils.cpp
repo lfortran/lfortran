@@ -11043,6 +11043,23 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
         m_side_effect_free, m_c_header, nullptr, m_start_name, m_end_name);
 }
 
+void cast_to_wider_kind(Allocator& al, ASR::expr_t*& a, ASR::expr_t*& b) {
+    ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(a));
+    ASR::ttype_t* b_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(b));
+    if( !ASRUtils::is_integer(*a_type) || !ASRUtils::is_integer(*b_type) ) {
+        return;
+    }
+    int a_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+    int b_kind = ASRUtils::extract_kind_from_ttype_t(b_type);
+    if( a_kind < b_kind ) {
+        a = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, a->base.loc, a,
+            ASR::cast_kindType::IntegerToInteger, b_type));
+    } else if( b_kind < a_kind ) {
+        b = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, b->base.loc, b,
+            ASR::cast_kindType::IntegerToInteger, a_type));
+    }
+}
+
 ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
@@ -11168,6 +11185,7 @@ ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, AS
                     nullptr));
     }
 
+    cast_to_wider_kind(al, start, end);
     ASR::expr_t* diff = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc, end,
                                        ASR::binopType::Sub, start, ASRUtils::expr_type(end),
                                        nullptr));

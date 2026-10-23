@@ -3287,6 +3287,9 @@ bool reads_valueless_parameter(ASR::expr_t* e);
 // value. Inquiries about a variable, e.g. `size(a)`, do not read its value.
 bool reads_variable_value(ASR::expr_t* e);
 
+// Casts the integer `a` or `b`, whichever has the smaller kind, to the kind of the other.
+void cast_to_wider_kind(Allocator& al, ASR::expr_t*& a, ASR::expr_t*& b);
+
 ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end);
 
 // Number of elements of the section `start:end:step`, that is
