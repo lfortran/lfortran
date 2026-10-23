@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -370,6 +371,49 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_type(ASR::symbol_t *orig_sym,
     // of orig_scope and would not contain these migrated symbols.
     return import_struct_def(down_cast<ASR::Struct_t>(struct_sym),
         orig_scope, kernel_scope, loc);
+}
+
+namespace {
+
+// Points every structure constant of an expression, nested ones included,
+// at the kernel's copy of the derived type it names.
+class GpuStructConstantRetargeter
+        : public ASR::BaseWalkVisitor<GpuStructConstantRetargeter> {
+public:
+    std::function<ASR::symbol_t*(ASR::Struct_t*)> kernel_struct;
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        ASR::symbol_t *type_sym = ASRUtils::symbol_get_past_external(
+            x.m_dt_sym);
+        if (type_sym && is_a<ASR::Struct_t>(*type_sym)) {
+            const_cast<ASR::StructConstant_t&>(x).m_dt_sym = kernel_struct(
+                down_cast<ASR::Struct_t>(type_sym));
+        }
+        ASR::BaseWalkVisitor<GpuStructConstantRetargeter>
+            ::visit_StructConstant(x);
+    }
+};
+
+} // namespace
+
+// The value of a named constant cloned into the kernel: a copy of `value`
+// whose structure constants name the kernel's copies of their derived
+// types, as the clone's type declaration does. The original value is
+// shared with the host's constant; left naming the host's definition, it
+// would not have the clone's type where it replaces a reference to the
+// clone, as it does under --fast.
+ASR::expr_t* GpuOffloadVisitor::import_constant_value(ASR::expr_t *value,
+        SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    if (!value) return nullptr;
+    ASRUtils::ExprStmtDuplicator dup(al);
+    ASR::expr_t *copy = dup.duplicate_expr(value);
+    GpuStructConstantRetargeter retarget;
+    retarget.kernel_struct = [&](ASR::Struct_t *orig_struct) {
+        return import_struct_def(orig_struct, orig_scope, kernel_scope, loc);
+    };
+    retarget.visit_expr(*copy);
+    return copy;
 }
 
 } // namespace LCompilers

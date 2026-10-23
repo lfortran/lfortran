@@ -645,14 +645,17 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     ASR::down_cast<ASR::Variable_t>(resolved);
                 if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
+                    ASR::expr_t *value = type_decl
+                        ? import_constant_value(orig_var->m_value,
+                            orig_scope, kernel_scope, loc)
+                        : orig_var->m_value;
                     ASR::symbol_t *cloned =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
                                 kernel_scope, s2c(al, sym_name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
-                                orig_var->m_value,
-                                orig_var->m_value,
+                                value, value,
                                 ASR::storage_typeType::Parameter,
                                 ASRUtils::duplicate_type(al,
                                     orig_var->m_type),
@@ -1852,20 +1855,26 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     // original scope.
                     std::string local_name =
                         func->m_symtab->get_unique_name(name, false);
+                    ASR::symbol_t *type_decl = import_struct_type(
+                        resolved_sym, orig_scope, kernel_scope, loc);
+                    ASR::expr_t *value = orig_var->m_value;
+                    if (type_decl) {
+                        value = import_constant_value(value, orig_scope,
+                            kernel_scope, loc);
+                    }
                     ASR::symbol_t *new_var =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
                                 func->m_symtab, s2c(al, local_name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
-                                orig_var->m_value ? orig_var->m_value
+                                value ? value
                                     : orig_var->m_symbolic_value,
-                                orig_var->m_value,
+                                value,
                                 ASR::storage_typeType::Parameter,
                                 ASRUtils::duplicate_type(al,
                                     orig_var->m_type),
-                                import_struct_type(resolved_sym,
-                                    orig_scope, kernel_scope, loc),
+                                type_decl,
                                 orig_var->m_abi,
                                 orig_var->m_access,
                                 ASR::presenceType::Required, false));
