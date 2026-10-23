@@ -294,10 +294,11 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     // would a variable an external procedure names, a scalar one a
     // procedure defines, one defined through a view of a block that
     // another view, which names a variable of it, lays out differently, or
-    // a scalar one the loop defines that another view names.
+    // a scalar one the loop defines that another view names. A procedure
+    // handed over as an actual argument is device code too.
     {
         std::vector<ASR::Function_t*> routines = reachable_routines(
-            work.body, work.n_body, implementations);
+            work.body, work.n_body, implementations, true);
         for (ASR::Function_t *fn : routines) {
             GpuDecline decline = gpu_common_block_decline(*fn);
             if (decline.declined()) {

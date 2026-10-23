@@ -1,9 +1,19 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'nn' of common block /gpu_decline_33_n/ in the declaration of dummy 'x' of 'last_of'
-  --> tests/../integration_tests/gpu_decline_33.f90:28:5 - 30:10
+  --> tests/../integration_tests/gpu_decline_33.f90:48:5 - 50:10
    |
-28 |        do concurrent (k = 1:4)
+48 |        do concurrent (k = 1:4)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-30 |        end do
+50 |        end do
    | ...^^^^^^^^^^ the gpu backend does not support variable 'nn' of common block /gpu_decline_33_n/ in the declaration of dummy 'x' of 'last_of'
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support character variable 'c' of common block /gpu_decline_33_c/, read in 'from_character'
+  --> tests/../integration_tests/gpu_decline_33.f90:54:5 - 56:10
+   |
+54 |        do concurrent (k = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+56 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support character variable 'c' of common block /gpu_decline_33_c/, read in 'from_character'
