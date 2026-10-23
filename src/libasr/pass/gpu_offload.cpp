@@ -1765,6 +1765,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 item.second);
             fixup_struct_refs_in_scope(dfunc->m_symtab,
                 kernel_scope, s2c(al, kernel_name));
+            if (copied_procedures.count(item.second)) {
+                import_folded_struct_constants(dfunc->m_body,
+                    dfunc->n_body, orig_scope, kernel_scope, loc);
+                import_folded_struct_constants(dfunc->m_symtab,
+                    orig_scope, kernel_scope, loc);
+            }
         }
     }
 
@@ -2173,6 +2179,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (size_t i = 0; i < body_copy.n; i++) {
         sym_replacer.visit_stmt(*body_copy.p[i]);
     }
+    import_folded_struct_constants(body_copy.p, body_copy.n, orig_scope,
+        kernel_scope, loc);
 
     // 4. Build kernel body
     Vec<ASR::stmt_t*> kernel_body;

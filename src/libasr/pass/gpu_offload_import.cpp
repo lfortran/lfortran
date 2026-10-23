@@ -445,4 +445,43 @@ ASR::expr_t* GpuOffloadVisitor::import_constant_value(ASR::expr_t *value,
         });
 }
 
+// Points the structure constants of `body`, a statement list the kernel
+// owns, at the kernel's copies of their derived types. They are the
+// compile-time values of designators such as a component of a named
+// constant, `c%inner`, which --fast puts in place of the designator, so
+// they have to have the type the kernel gives it.
+void GpuOffloadVisitor::import_folded_struct_constants(ASR::stmt_t **body,
+        size_t n_body, SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    GpuStructConstantRetargeter retarget;
+    retarget.kernel_struct = [&](ASR::Struct_t *orig_struct) {
+        return import_struct_def(orig_struct, orig_scope, kernel_scope, loc);
+    };
+    for (size_t i = 0; i < n_body; i++) {
+        retarget.visit_stmt(*body[i]);
+    }
+}
+
+// The same for the bodies of the procedures and blocks of `scope`, a scope
+// of a procedure copied into the kernel, and of the scopes they contain.
+void GpuOffloadVisitor::import_folded_struct_constants(SymbolTable *scope,
+        SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    for (auto &item : scope->get_scope()) {
+        if (is_a<ASR::Function_t>(*item.second)) {
+            ASR::Function_t *fn = down_cast<ASR::Function_t>(item.second);
+            import_folded_struct_constants(fn->m_body, fn->n_body,
+                orig_scope, kernel_scope, loc);
+            import_folded_struct_constants(fn->m_symtab, orig_scope,
+                kernel_scope, loc);
+        } else if (is_a<ASR::Block_t>(*item.second)) {
+            ASR::Block_t *block = down_cast<ASR::Block_t>(item.second);
+            import_folded_struct_constants(block->m_body, block->n_body,
+                orig_scope, kernel_scope, loc);
+            import_folded_struct_constants(block->m_symtab, orig_scope,
+                kernel_scope, loc);
+        }
+    }
+}
+
 } // namespace LCompilers
