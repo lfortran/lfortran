@@ -160,6 +160,10 @@ public:
     // an outer-block local is retargeted at the copy, not left pointing at
     // the original Block that the kernel path is about to move.
     bool resolve_through_parents = false;
+    // A procedure, by identity, to its copy in the kernel scope, which a
+    // call is retargeted to before a procedure is looked up by name.
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> *procedure_copies =
+        nullptr;
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
 
     ASR::symbol_t *lookup_symbol(const std::string &name) {
@@ -168,6 +172,17 @@ public:
     }
 
     void replace_Var(ASR::Var_t *x) {
+        // A procedure passed as an actual argument is retargeted like a
+        // call to it: by identity, since a same-named procedure of another
+        // scope may own the name in the kernel scope.
+        if (ASR::is_a<ASR::Function_t>(*x->m_v)
+                && skip_scopes.count(ASRUtils::symbol_parent_symtab(x->m_v))) {
+            return;
+        }
+        if (ASR::symbol_t *copy = procedure_copy(x->m_v)) {
+            x->m_v = copy;
+            return;
+        }
         std::string name = ASRUtils::symbol_name(x->m_v);
         for (auto *ss : skip_scopes) {
             if (ss->get_symbol(name)) return;
@@ -255,8 +270,26 @@ public:
         return new_sym;
     }
 
+    // The kernel's copy of the procedure `sym` names, by identity, or
+    // nullptr when it has none.
+    ASR::symbol_t *procedure_copy(ASR::symbol_t *sym) {
+        if (!procedure_copies) return nullptr;
+        auto it = procedure_copies->find(
+            ASRUtils::symbol_get_past_external(sym));
+        return it != procedure_copies->end() ? it->second : nullptr;
+    }
+
     void retarget_call(ASR::symbol_t *&name, ASR::symbol_t *&original_name) {
-        if (ASR::symbol_t *new_sym = kernel_procedure(name)) {
+        // A procedure contained in a routine of `skip_scopes` was copied
+        // with it, and is a different procedure than one of the kernel
+        // scope that has its name.
+        if (ASR::is_a<ASR::Function_t>(*name)
+                && skip_scopes.count(ASRUtils::symbol_parent_symtab(name))) {
+            return;
+        }
+        if (ASR::symbol_t *copy = procedure_copy(name)) {
+            name = copy;
+        } else if (ASR::symbol_t *new_sym = kernel_procedure(name)) {
             name = new_sym;
         }
         if (original_name) {

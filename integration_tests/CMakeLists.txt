@@ -6598,6 +6598,7 @@ RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_577 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_578 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_579 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices

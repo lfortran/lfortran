@@ -1056,6 +1056,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // into the kernel scope so FunctionCall/SubroutineCall nodes
     // can reference them after symbol remapping.
     // Collect transitively: if f() calls g(), both must be imported.
+    // A procedure, by identity, to its copy in the kernel scope: calls are
+    // retargeted by it, so that procedures of one name each reach their
+    // own copy.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> procedure_copies;
+    // The copies themselves, the values of `procedure_copies`.
+    std::set<ASR::symbol_t*> copied_procedures;
     {
         GpuFunctionCollector func_collector;
         for (size_t i = 0; i < work.n_body; i++) {
@@ -1106,11 +1112,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                 }
                 for (auto &[name, sym] : transitive_collector.functions) {
-                    if (func_collector.functions.find(name) ==
-                            func_collector.functions.end()) {
-                        func_collector.functions[name] = sym;
-                        added = true;
-                    }
+                    if (func_collector.add(name, sym)) added = true;
                 }
             }
         }
@@ -1156,7 +1158,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     && has_copied_host(resolved)) {
                 continue;
             }
-            if (kernel_scope->get_symbol(func_name)) {
+            // A copy of another procedure of this name, imported
+            // above, does not stand for this one.
+            ASR::symbol_t *existing = kernel_scope->get_symbol(func_name);
+            bool existing_is_other_copy =
+                copied_procedures.count(existing) > 0;
+            if (existing && !existing_is_other_copy) {
                 // ExternalSymbol already created (e.g., by
                 // import_struct_def). Still need to import the
                 // function body for StructMethodDeclaration calls
@@ -1325,15 +1332,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 // name (e.g., both have "my_construct"), the first
                 // gets added under real_name. For subsequent
                 // collisions, sanitize the ExternalSymbol name to
-                // a valid C identifier to disambiguate.
+                // a valid C identifier to disambiguate, and make it
+                // unique if that is taken too.
                 std::string dup_name = real_name;
                 if (kernel_scope->get_symbol(real_name)) {
                     dup_name = func_name;
                     for (char &c : dup_name) {
                         if (c == '~' || c == '@') c = '_';
                     }
+                    if (kernel_scope->get_symbol(dup_name)) {
+                        dup_name = kernel_scope->get_unique_name(
+                            dup_name, false);
+                    }
                 }
-                if (!kernel_scope->get_symbol(dup_name)) {
+                {
                     ASR::symbol_t *dup =
                         copy_procedure(
                             ASR::down_cast<ASR::Function_t>(
@@ -1343,6 +1355,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         ASR::down_cast<ASR::Function_t>(dup)
                             ->m_name = s2c(al, dup_name);
                         kernel_scope->add_symbol(dup_name, dup);
+                        procedure_copies[ASRUtils::symbol_get_past_external(
+                            func_sym)] = dup;
+                        procedure_copies[resolved] = dup;
+                        copied_procedures.insert(dup);
                         // The duplicated function still references
                         // the module's struct definitions. Remap
                         // ExternalSymbol targets and Variable
@@ -1386,12 +1402,25 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 // A separate module procedure a routine of its module
                 // calls is named by its interface, whose body is in a
                 // submodule.
-                ASR::symbol_t *dup = copy_procedure(
+                ASR::Function_t *implementation =
                     resolve_function_implementation(
-                        ASR::down_cast<ASR::Function_t>(resolved)),
+                        ASR::down_cast<ASR::Function_t>(resolved));
+                ASR::symbol_t *dup = copy_procedure(implementation,
                     kernel_scope);
                 if (dup) {
-                    kernel_scope->add_symbol(func_name, dup);
+                    // A procedure of another scope can have the name of
+                    // one imported already.
+                    std::string dup_name = func_name;
+                    if (kernel_scope->get_symbol(dup_name)) {
+                        dup_name = kernel_scope->get_unique_name(dup_name,
+                            false);
+                        ASR::down_cast<ASR::Function_t>(dup)->m_name =
+                            s2c(al, dup_name);
+                    }
+                    kernel_scope->add_symbol(dup_name, dup);
+                    procedure_copies[resolved] = dup;
+                    procedure_copies[&implementation->base] = dup;
+                    copied_procedures.insert(dup);
                 }
             } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
                            *resolved)) {
@@ -1916,6 +1945,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             host_scopes.insert(fn.m_symtab);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes = host_scopes;
+            fn_replacer.replacer.procedure_copies = &procedure_copies;
             for (size_t bi = 0; bi < fn.n_body; bi++) {
                 fn_replacer.visit_stmt(*fn.m_body[bi]);
             }
@@ -2120,6 +2150,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // 3. Replace Var references in copied body to point to kernel scope
     GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
+    sym_replacer.replacer.procedure_copies = &procedure_copies;
     for (size_t i = 0; i < body_copy.n; i++) {
         sym_replacer.visit_stmt(*body_copy.p[i]);
     }
@@ -2614,6 +2645,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
         // Remap Var references inside the block body
         GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
+        block_replacer.replacer.procedure_copies = &procedure_copies;
         for (size_t j = 0; j < block->n_body; j++) {
             block_replacer.visit_stmt(*block->m_body[j]);
         }
