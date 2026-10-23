@@ -28098,7 +28098,8 @@ public:
     // Import the generic procedure or operator `generic` of a module as
     // `local_name`: a node of this scope whose procedures are this scope's
     // imports of the generic's specifics. If the scope has that generic
-    // already, the specifics it lacks are added to it (F2018 C1515).
+    // already, the specifics it lacks are added to it (F2018 C1515). See
+    // doc/src/asr/asr_nodes/symbol_nodes/GenericProcedure.md.
     void import_generic(ASR::symbol_t *generic, const std::string &local_name) {
         bool is_gp = ASR::is_a<ASR::GenericProcedure_t>(*generic);
         Vec<ASR::symbol_t*> procs;
