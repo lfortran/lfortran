@@ -4675,6 +4675,7 @@ RUN(NAME dtio_write_04_fixed LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTR
 RUN(NAME dtio_write_05 LABELS gfortran llvm)
 RUN(NAME dtio_write_05_sc LABELS gfortran llvm llvm_single_invocation EXTRAFILES dtio_write_05_sc_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME dtio_write_06 LABELS gfortran llvm EXTRA_ARGS --std=f23)
+RUN(NAME dtio_write_07 LABELS gfortran llvm)
 RUN(NAME dtio_write_10 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_10_ma.f90 dtio_write_10_mb.f90 dtio_write_10_user.f90
     EXTRA_ARGS --separate-compilation)
