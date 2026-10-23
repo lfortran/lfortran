@@ -6603,6 +6603,7 @@ RUN(NAME gpu_metal_490 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_491 LABELS gfortran llvm cuda cuda_cpu) # metal declines integer(8) loop indices
 RUN(NAME gpu_tile_high_bounds_i4 LABELS gfortran llvm metal cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_tile_high_bounds_i8 LABELS gfortran llvm cuda cuda_cpu EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
+RUN(NAME gpu_pointer_bound_01 LABELS gfortran llvm metal cuda cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
