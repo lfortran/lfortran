@@ -93,10 +93,14 @@ ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
         ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
-ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
-        bool *not_passed) {
+namespace {
+
+// gpu_call_dummy for a call to `name` with `n_args` actual arguments and
+// the object `dt` of a type-bound call.
+ASR::Variable_t *gpu_call_dummy_of(ASR::symbol_t *name, size_t n_args,
+        ASR::expr_t *dt, size_t i, bool *not_passed) {
     if (not_passed != nullptr) *not_passed = false;
-    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
     // A type-bound call passes its object as the dummy argument the
     // binding names, the first one unless PASS names another.
     bool passes = false, nopass = false;
@@ -104,7 +108,7 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
         ASR::StructMethodDeclaration_t *m =
             ASR::down_cast<ASR::StructMethodDeclaration_t>(callee);
-        passes = x.m_dt != nullptr && !m->m_is_nopass;
+        passes = dt != nullptr && !m->m_is_nopass;
         nopass = m->m_is_nopass;
         self_name = m->m_self_argument;
         callee = ASRUtils::symbol_get_past_external(m->m_proc);
@@ -124,19 +128,19 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
         }
     }
     size_t k;
-    if (i == x.n_args) {
+    if (i == n_args) {
         if (!passes) {
             // The object of a NOPASS binding is not an argument.
-            if (not_passed != nullptr && nopass && x.m_dt != nullptr) {
+            if (not_passed != nullptr && nopass && dt != nullptr) {
                 *not_passed = true;
             }
             return nullptr;
         }
         k = self;
-    } else if (x.n_args == f->n_args) {
+    } else if (n_args == f->n_args) {
         // The actual arguments include the passed object.
         k = i;
-    } else if (passes && x.n_args + 1 == f->n_args) {
+    } else if (passes && n_args + 1 == f->n_args) {
         k = i < self ? i : i + 1;
     } else {
         return nullptr;
@@ -148,6 +152,18 @@ ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
         ASR::down_cast<ASR::Var_t>(f->m_args[k])->m_v);
     return ASR::is_a<ASR::Variable_t>(*dummy)
         ? ASR::down_cast<ASR::Variable_t>(dummy) : nullptr;
+}
+
+} // namespace
+
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
+        bool *not_passed) {
+    return gpu_call_dummy_of(x.m_name, x.n_args, x.m_dt, i, not_passed);
+}
+
+ASR::Variable_t *gpu_call_dummy(const ASR::FunctionCall_t &x, size_t i,
+        bool *not_passed) {
+    return gpu_call_dummy_of(x.m_name, x.n_args, x.m_dt, i, not_passed);
 }
 
 bool gpu_call_object_is_argument(const ASR::SubroutineCall_t &x) {

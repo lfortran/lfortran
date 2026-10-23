@@ -262,6 +262,8 @@ bool is_single_assignment_binding(ASR::symbol_t *sym,
 // a NOPASS binding is asked for, which is not passed (`not_passed`).
 ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
     bool *not_passed = nullptr);
+ASR::Variable_t *gpu_call_dummy(const ASR::FunctionCall_t &x, size_t i,
+    bool *not_passed = nullptr);
 
 // Whether the passed object of a type-bound call is also one of its actual
 // arguments, as it is once the call has been resolved: it is then not

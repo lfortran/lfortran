@@ -425,18 +425,8 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
-        if (callee && ASR::is_a<ASR::Function_t>(*callee)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
-            for (size_t i = 0; i < x.n_args && i < f->n_args; i++) {
-                if (!ASR::is_a<ASR::Var_t>(*f->m_args[i])) continue;
-                ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
-                if (ASR::is_a<ASR::Variable_t>(*d)) {
-                    check(x.m_args[i].m_value,
-                        ASR::down_cast<ASR::Variable_t>(d));
-                }
-            }
+        for (size_t i = 0; i < x.n_args; i++) {
+            check(x.m_args[i].m_value, gpu_call_dummy(x, i));
         }
         ASR::BaseWalkVisitor<GpuOptionalPassedOn>::visit_FunctionCall(x);
     }
