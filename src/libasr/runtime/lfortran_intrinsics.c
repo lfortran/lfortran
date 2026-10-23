@@ -15494,9 +15494,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
         return;
     }
     
-    // Don't actually close standard units (stdin=5, stdout=6, stderr=0)
-    // They are pre-connected and should remain open
-    if (unit_num != 0 && unit_num != 5 && unit_num != 6) {
+    // Don't close the process's standard streams, which the pre-connected
+    // units 0, 5 and 6 use. A unit opened on a named file, even one of those
+    // numbers, has its own stream that must be closed.
+    if (filep != stdin && filep != stdout && filep != stderr) {
         if (fclose(filep) != 0) {
             if (iostat) {
                 *iostat = 1;

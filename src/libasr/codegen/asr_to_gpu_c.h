@@ -114,6 +114,38 @@ inline bool is_gpu_intercepted_intrinsic(const std::string &name) {
     return false;
 }
 
+// Whether an exit or a cycle of the loop named `name` is in a loop of the
+// statements walked, so that it leaves that inner loop on its way out.
+class GpuLeavesThroughLoop
+        : public ASRUtils::BlockBodyWalkVisitor<GpuLeavesThroughLoop> {
+public:
+    const std::string name;
+    size_t depth = 0;
+    bool found = false;
+
+    explicit GpuLeavesThroughLoop(const char *name_) : name(name_) {}
+
+    void leave(const char *target) {
+        if (depth > 0 && target != nullptr && name == target) found = true;
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) { leave(x.m_stmt_name); }
+
+    void visit_Cycle(const ASR::Cycle_t &x) { leave(x.m_stmt_name); }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        depth++;
+        BlockBodyWalkVisitor::visit_DoLoop(x);
+        depth--;
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        depth++;
+        BlockBodyWalkVisitor::visit_WhileLoop(x);
+        depth--;
+    }
+};
+
 template <typename D>
 class ASRToGpuCVisitor
 {
@@ -441,6 +473,17 @@ public:
     // The layout of the kernel whose arguments are currently bound, the
     // one `emit_kernel_signature` wrote the parameter list from.
     const ASR::gpu_kernel_layout_t *current_kernel_layout = nullptr;
+
+    // A loop of the device code being written, innermost last. `leave`
+    // names the variable an exit (1) or a cycle (2) of the loop sets when
+    // it comes from a loop inside it, which breaks out of the loops in
+    // between first; it is empty when no such exit or cycle exists.
+    struct GpuLoopFrame {
+        const char *name;
+        std::string leave;
+    };
+    std::vector<GpuLoopFrame> loop_frames;
+    size_t leave_count = 0;
 
     // How the signature spelled a layout entry. The body asks the layout
     // for the name rather than rebuilding it, so the two halves cannot
@@ -3703,6 +3746,53 @@ public:
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
+    // Opens a loop: one that an exit or a cycle of its own leaves from a
+    // loop inside it gets the variable that says which one did.
+    GpuLoopFrame begin_loop(const char *name, ASR::stmt_t **body,
+            size_t n_body) {
+        GpuLoopFrame frame{name, ""};
+        if (name != nullptr) {
+            GpuLeavesThroughLoop leaves(name);
+            for (size_t i = 0; i < n_body; i++) {
+                leaves.visit_stmt(*body[i]);
+            }
+            if (leaves.found) {
+                frame.leave = "__lfortran_leave_"
+                    + std::to_string(leave_count++);
+                src << get_indent() << "int " << frame.leave << " = 0;\n";
+            }
+        }
+        return frame;
+    }
+
+    // Writes the body of a loop whose header is written, and closes it.
+    // An exit or a cycle of an enclosing loop that broke out of it goes
+    // on to that loop.
+    void emit_loop_body(const GpuLoopFrame &frame, ASR::stmt_t **body,
+            size_t n_body) {
+        indent_level++;
+        loop_frames.push_back(frame);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(body[i]);
+        }
+        loop_frames.pop_back();
+        indent_level--;
+        src << get_indent() << "}\n";
+        for (size_t f = 0; f < loop_frames.size(); f++) {
+            const std::string &leave = loop_frames[f].leave;
+            if (leave.empty()) continue;
+            if (f + 1 < loop_frames.size()) {
+                src << get_indent() << "if (" << leave << " != 0) break;\n";
+            } else {
+                src << get_indent() << "if (" << leave << " == 1) break;\n";
+                src << get_indent() << "if (" << leave << " == 2) {\n";
+                src << get_indent() << "    " << leave << " = 0;\n";
+                src << get_indent() << "    continue;\n";
+                src << get_indent() << "}\n";
+            }
+        }
+    }
+
     void visit_stmt(ASR::stmt_t *stmt) {
         switch (stmt->type) {
             case ASR::stmtType::Assignment: {
@@ -4391,19 +4481,18 @@ public:
             }
             case ASR::stmtType::WhileLoop: {
                 ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+                GpuLoopFrame frame = begin_loop(wl->m_name, wl->m_body,
+                    wl->n_body);
                 src << get_indent() << "while (";
                 visit_expr(wl->m_test);
                 src << ") {\n";
-                indent_level++;
-                for (size_t i = 0; i < wl->n_body; i++) {
-                    visit_stmt(wl->m_body[i]);
-                }
-                indent_level--;
-                src << get_indent() << "}\n";
+                emit_loop_body(frame, wl->m_body, wl->n_body);
                 break;
             }
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
+                    dl->n_body);
                 src << get_indent() << "for (";
                 visit_expr(dl->m_head.m_v);
                 src << " = ";
@@ -4421,12 +4510,41 @@ public:
                     src << "++";
                 }
                 src << ") {\n";
-                indent_level++;
-                for (size_t i = 0; i < dl->n_body; i++) {
-                    visit_stmt(dl->m_body[i]);
+                emit_loop_body(frame, dl->m_body, dl->n_body);
+                break;
+            }
+            case ASR::stmtType::Exit:
+            case ASR::stmtType::Cycle: {
+                bool is_exit = ASR::is_a<ASR::Exit_t>(*stmt);
+                const char *target = is_exit
+                    ? ASR::down_cast<ASR::Exit_t>(stmt)->m_stmt_name
+                    : ASR::down_cast<ASR::Cycle_t>(stmt)->m_stmt_name;
+                // The loop it belongs to is loop_frames[f - 1]. The
+                // offload pass turned a cycle of the offloaded loop into a
+                // return and reported the exits and cycles that have no
+                // lowering, so one of the loops being written is left.
+                size_t f = loop_frames.size();
+                if (target != nullptr && target[0] != '\0') {
+                    while (f > 0 && !(loop_frames[f - 1].name != nullptr
+                            && std::string(loop_frames[f - 1].name)
+                                == target)) {
+                        f--;
+                    }
                 }
-                indent_level--;
-                src << get_indent() << "}\n";
+                if (f == 0) {
+                    throw CodeGenError("gpu offload: an exit or a cycle "
+                        "that leaves no loop of the device code",
+                        stmt->base.loc);
+                } else if (f == loop_frames.size()) {
+                    src << get_indent()
+                        << (is_exit ? "break;\n" : "continue;\n");
+                } else {
+                    const std::string &leave = loop_frames[f - 1].leave;
+                    LCOMPILERS_ASSERT(!leave.empty());
+                    src << get_indent() << leave << " = "
+                        << (is_exit ? 1 : 2) << ";\n";
+                    src << get_indent() << "break;\n";
+                }
                 break;
             }
             case ASR::stmtType::BlockCall: {

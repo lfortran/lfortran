@@ -3662,6 +3662,7 @@ RUN(NAME file_70 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME file_71 LABELS gfortran llvm)
 RUN(NAME file_72 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME file_73 LABELS gfortran llvm)
+RUN(NAME file_74 LABELS gfortran llvm)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_close_02 LABELS gfortran llvm)
@@ -4277,6 +4278,11 @@ RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops47 LABELS gfortran llvm)
 RUN(NAME implied_do_loops48 LABELS gfortran llvm)
 RUN(NAME implied_do_loops49 LABELS gfortran llvm)
+RUN(NAME implied_do_loops50 LABELS gfortran llvm)
+RUN(NAME implied_do_loops51 LABELS llvm)
+RUN(NAME implied_do_loops52 LABELS gfortran llvm)
+RUN(NAME implied_do_loops53 LABELS gfortran llvm)
+RUN(NAME implied_do_loops54 LABELS gfortran llvm)
 RUN(NAME internal_write_trim_idl_01 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
@@ -6554,6 +6560,8 @@ RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_580 LABELS gfortran llvm_omp cuda EXTRA_ARGS --openmp --gpu-offload-omp-loops GFORTRAN_ARGS -fopenmp)
 # A nested `do concurrent` ending an IF/loop/SELECT body in a device procedure.
 RUN(NAME gpu_metal_564 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -6651,6 +6659,8 @@ RUN(NAME gpu_decline_16 LABELS gfortran llvm)
 RUN(NAME gpu_decline_17 LABELS llvm)
 RUN(NAME gpu_decline_18 LABELS llvm)
 RUN(NAME gpu_decline_19 LABELS llvm)
+RUN(NAME gpu_decline_20 LABELS gfortran llvm)
+RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
