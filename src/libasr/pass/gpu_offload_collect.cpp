@@ -414,7 +414,9 @@ namespace {
 // except that a NaN that stays a NaN is not a change, which every thread
 // would otherwise put back over the value the defining iteration gave.
 // A zero that changes sign compares equal and is not put back; the GPU
-// code has no way of comparing the bits of a real yet.
+// code has no way of comparing the bits of a real yet. Device code compiled
+// with fast math, as Metal compiles it by default, assumes there is no NaN,
+// and may then take a NaN left as it was for a change.
 ASR::expr_t *gpu_differs(Allocator &al, const Location &loc, ASR::expr_t *a,
         ASR::expr_t *b) {
     ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(

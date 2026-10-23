@@ -6726,7 +6726,7 @@ RUN(NAME gpu_liveout_06 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_07 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_08 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_09 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_liveout_10 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_liveout_10 LABELS gfortran llvm cuda) # Metal compiles kernels with fast math, which assumes no NaN
 RUN(NAME gpu_liveout_11 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_12 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_13 LABELS gfortran llvm metal cuda)
