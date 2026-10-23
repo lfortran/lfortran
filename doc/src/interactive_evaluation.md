@@ -39,10 +39,34 @@ module is built with or without Xeus. `execute()` does not capture
 stdout/stderr; that is up to the frontend. Jupyter messages must be UTF-8, so
 the kernel shows any other bytes of a cell's output as U+FFFD.
 
+## Runtime input
+
+`CellIO::input`, when set, supplies the records that READ from stdin consumes
+while the cell runs: it returns 0 with one record (without a newline), -1 at
+end of file, or a positive value when no input is available. An empty record
+is a blank line, not end of file. Unset, the cell reads the process's stdin as
+a compiled program does. An exception thrown by the hook becomes unavailable
+input. `execute()` installs the hook through the runtime's C API
+(`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
+it, so a later cell can read again after end of file and unread bytes are
+discarded.
+
+The runtime keeps the record's bytes, its cursor and delimiters, so one record
+can satisfy several list items and one READ can consume several records.
+Default stdin and units connected to it (normally unit 5) share this cursor
+for list-directed, formatted, nonadvancing and namelist reads of scalars,
+arrays and complex values, and PAUSE. End of file and unavailable input are
+latched for the rest of the cell: READs with IOSTAT see a negative or a
+positive value; READs without one stop the program, as they do outside the
+prompt. Named and internal files never consult the hook, and C code reading
+stdin directly is not affected.
+
 The `test_lfortran` cases `FortranEvaluator execute: *` (also run in the WASM
 build of the JupyterLite kernel), `test_repl` and, in Xeus builds,
-`test_kernel_evaluation` cover this; the `display_data_01` integration test
-covers compiled programs. The complex-result cases of `test_lfortran` also
+`test_kernel_evaluation` cover this, with `test_runtime_input` for the
+runtime's record handling; the `display_data_01` integration test covers
+compiled programs and `runtime_input_records` checks that ordinary named and
+internal file reads are unchanged. The complex-result cases of `test_lfortran` also
 exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
