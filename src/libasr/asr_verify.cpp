@@ -4125,6 +4125,11 @@ public:
     }
 
     void visit_FileWrite(const FileWrite_t& x) {
+        // Formatted output writes derived-type items with defined output
+        // through StringFormat::m_dtio_bindings; m_overloaded is only for
+        // unformatted output.
+        require(!x.m_is_formatted || x.m_overloaded == nullptr,
+            "FileWrite::m_overloaded must be nil for formatted output");
         if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
             verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, false);
         }
