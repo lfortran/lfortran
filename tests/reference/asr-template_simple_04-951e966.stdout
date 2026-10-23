@@ -2092,6 +2092,8 @@
                                             ()
                                             [(Var 13 s_i)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -2103,6 +2105,8 @@
                                             ()
                                             [(Var 13 s_r)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

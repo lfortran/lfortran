@@ -275,6 +275,8 @@
                             ()
                             [(Var 2 message)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

@@ -342,6 +342,8 @@
                                                                 }
                                                             ],
                                                             "kind": "FormatFortran",
+                                                            "dtio_bindings": [],
+                                                            "dtio_unit": [],
                                                             "type": {
                                                                 "node": "Allocatable",
                                                                 "fields": {

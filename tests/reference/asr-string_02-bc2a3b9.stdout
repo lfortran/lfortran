@@ -165,6 +165,8 @@
                             (Var 2 firstname)
                             (Var 2 surname)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
