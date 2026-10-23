@@ -2244,11 +2244,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::make_IntegerConstant_t(al, loc, 1, int_type,
             ASR::integerbozType::Decimal));
 
-    auto int_binop = [&](ASR::expr_t *left, ASR::binopType op,
-            ASR::expr_t *right) {
-        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-            left, op, right, int_type, nullptr));
-    };
     auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
             loc, target, value, nullptr, false, false, false)));
