@@ -241,6 +241,19 @@ static int discard_fill()
     return 0;
 }
 
+// A deferred free that fails stops the program with the CUDA error, here
+// for memory that is not a device allocation.
+static int failed_free()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    static int not_device_memory;
+    free_later(&not_device_memory);
+    lfortran_gpu_sync(ctx);
+    fprintf(stderr, "a failed cudaFree was ignored\n");
+    return 1;
+}
+
 int main(int argc, char **argv)
 {
     lfortran_cuda_cpu_set_synchronize_hook(on_synchronize);
@@ -276,6 +289,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "discard-fill") == 0) {
         return discard_fill();
+    }
+    if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
+        return failed_free();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);
