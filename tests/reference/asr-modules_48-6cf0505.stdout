@@ -197,24 +197,12 @@
                                     ()
                                 ),
                             fnv_1a:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     8
                                     fnv_1a
-                                    2 fnv_1a
-                                    modules_48_fpm_strings
-                                    []
-                                    fnv_1a
+                                    [8 fnv_1a_char@fnv_1a
+                                    8 fnv_1a_string_t@fnv_1a]
                                     Public
-                                ),
-                            fnv_1a@fnv_1a_char:
-                                (ExternalSymbol
-                                    8
-                                    fnv_1a@fnv_1a_char
-                                    2 fnv_1a_char
-                                    modules_48_fpm_strings
-                                    []
-                                    fnv_1a_char
-                                    Private
                                 ),
                             fnv_1a_char:
                                 (ExternalSymbol
@@ -226,6 +214,16 @@
                                     fnv_1a_char
                                     Public
                                 ),
+                            fnv_1a_char@fnv_1a:
+                                (ExternalSymbol
+                                    8
+                                    fnv_1a_char@fnv_1a
+                                    2 fnv_1a_char
+                                    modules_48_fpm_strings
+                                    []
+                                    fnv_1a_char
+                                    Private
+                                ),
                             fnv_1a_string_t:
                                 (ExternalSymbol
                                     8
@@ -235,6 +233,16 @@
                                     []
                                     fnv_1a_string_t
                                     Public
+                                ),
+                            fnv_1a_string_t@fnv_1a:
+                                (ExternalSymbol
+                                    8
+                                    fnv_1a_string_t@fnv_1a
+                                    2 fnv_1a_string_t
+                                    modules_48_fpm_strings
+                                    []
+                                    fnv_1a_string_t
+                                    Private
                                 ),
                             is_fortran_name:
                                 (ExternalSymbol
@@ -409,7 +417,7 @@
                     (Assignment
                         (Var 8 char_str_hash1)
                         (FunctionCall
-                            8 fnv_1a@fnv_1a_char
+                            8 fnv_1a_char@fnv_1a
                             8 fnv_1a
                             [((Var 8 char_str))
                             ((IntegerConstant 2166136261 (Integer 8) Decimal))]
@@ -426,7 +434,7 @@
                     (Assignment
                         (Var 8 char_str_hash2)
                         (FunctionCall
-                            8 fnv_1a@fnv_1a_char
+                            8 fnv_1a_char@fnv_1a
                             8 fnv_1a
                             [((Var 8 char_str))
                             (())]

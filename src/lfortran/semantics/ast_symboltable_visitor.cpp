@@ -1030,6 +1030,17 @@ public:
                     // USE statement, and is not exported.
                     es->m_access = dflt_access;
                 }
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                // A generic imported by a USE statement.
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
+                if (assgnd_access.count(item.first)) {
+                    gp->m_access = assgnd_access[item.first];
+                } else if (item.first.size() > 1 && item.first[0] == '~'
+                           && assgnd_access.count(item.first.substr(1))) {
+                    gp->m_access = assgnd_access[item.first.substr(1)];
+                } else {
+                    gp->m_access = dflt_access;
+                }
             } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *co = ASR::down_cast<ASR::CustomOperator_t>(item.second);
                 if (assgnd_access.count(item.first)) {

@@ -57,6 +57,16 @@
                                     custom_div
                                     Public
                                 ),
+                            custom_div@~div:
+                                (ExternalSymbol
+                                    5
+                                    custom_div@~div
+                                    2 custom_div
+                                    operator_overloading_08_mod1
+                                    []
+                                    custom_div
+                                    Private
+                                ),
                             custom_int:
                                 (ExternalSymbol
                                     5
@@ -68,13 +78,10 @@
                                     Public
                                 ),
                             ~div:
-                                (ExternalSymbol
+                                (CustomOperator
                                     5
                                     ~div
-                                    2 ~div
-                                    operator_overloading_08_mod1
-                                    []
-                                    ~div
+                                    [5 custom_div@~div]
                                     Public
                                 )
                         })
@@ -104,7 +111,7 @@
                                 (Integer 4)
                                 ()
                                 (FunctionCall
-                                    5 custom_div
+                                    5 custom_div@~div
                                     5 ~div
                                     [((Var 5 a))
                                     ((IntegerConstant 0 (Integer 4) Decimal))]

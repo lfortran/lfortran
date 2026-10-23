@@ -17,15 +17,15 @@
                                     add_t
                                     Public
                                 ),
-                            func_arg_real:
+                            func_arg_real@~add:
                                 (ExternalSymbol
                                     13
-                                    func_arg_real
+                                    func_arg_real@~add
                                     2 func_arg_real
                                     template_add_02_m
                                     []
                                     func_arg_real
-                                    Public
+                                    Private
                                 ),
                             r:
                                 (ExternalSymbol
@@ -48,13 +48,10 @@
                                     Public
                                 ),
                             ~add:
-                                (ExternalSymbol
+                                (CustomOperator
                                     13
                                     ~add
-                                    2 ~add
-                                    template_add_02_m
-                                    []
-                                    ~add
+                                    [13 func_arg_real@~add]
                                     Public
                                 )
                         })

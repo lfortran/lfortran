@@ -8,13 +8,10 @@
                         14
                         {
                             char:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     14
                                     char
-                                    2 char
-                                    string_19_stdlib_string_type
-                                    []
-                                    char
+                                    [14 char_string@char]
                                     Public
                                 ),
                             char_string:
@@ -26,6 +23,16 @@
                                     []
                                     char_string
                                     Public
+                                ),
+                            char_string@char:
+                                (ExternalSymbol
+                                    14
+                                    char_string@char
+                                    2 char_string
+                                    string_19_stdlib_string_type
+                                    []
+                                    char_string
+                                    Private
                                 ),
                             compute_lps:
                                 (ExternalSymbol
@@ -58,13 +65,10 @@
                                     Public
                                 ),
                             len:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     14
                                     len
-                                    2 len
-                                    string_19_stdlib_string_type
-                                    []
-                                    len
+                                    [14 len_string@len]
                                     Public
                                 ),
                             len_string:
@@ -77,14 +81,22 @@
                                     len_string
                                     Public
                                 ),
-                            padl:
+                            len_string@len:
                                 (ExternalSymbol
                                     14
-                                    padl
-                                    6 padl
-                                    string_19_stdlib_strings
+                                    len_string@len
+                                    2 len_string
+                                    string_19_stdlib_string_type
                                     []
+                                    len_string
+                                    Private
+                                ),
+                            padl:
+                                (GenericProcedure
+                                    14
                                     padl
+                                    [14 padl_char_default@padl
+                                    14 padl_char_pad_with@padl]
                                     Public
                                 ),
                             padl_char_default:
@@ -97,6 +109,16 @@
                                     padl_char_default
                                     Public
                                 ),
+                            padl_char_default@padl:
+                                (ExternalSymbol
+                                    14
+                                    padl_char_default@padl
+                                    6 padl_char_default
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_char_default
+                                    Private
+                                ),
                             padl_char_pad_with:
                                 (ExternalSymbol
                                     14
@@ -106,6 +128,16 @@
                                     []
                                     padl_char_pad_with
                                     Public
+                                ),
+                            padl_char_pad_with@padl:
+                                (ExternalSymbol
+                                    14
+                                    padl_char_pad_with@padl
+                                    6 padl_char_pad_with
+                                    string_19_stdlib_strings
+                                    []
+                                    padl_char_pad_with
+                                    Private
                                 ),
                             padl_string_default:
                                 (ExternalSymbol
@@ -449,13 +481,10 @@
                         6
                         {
                             char:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     6
                                     char
-                                    2 char
-                                    string_19_stdlib_string_type
-                                    []
-                                    char
+                                    [6 char_string@char]
                                     Public
                                 ),
                             char_string:
@@ -467,6 +496,16 @@
                                     []
                                     char_string
                                     Public
+                                ),
+                            char_string@char:
+                                (ExternalSymbol
+                                    6
+                                    char_string@char
+                                    2 char_string
+                                    string_19_stdlib_string_type
+                                    []
+                                    char_string
+                                    Private
                                 ),
                             compute_lps:
                                 (Function
@@ -688,16 +727,6 @@
                                     (SymbolTable
                                         9
                                         {
-                                            char@char_string:
-                                                (ExternalSymbol
-                                                    9
-                                                    char@char_string
-                                                    2 char_string
-                                                    string_19_stdlib_string_type
-                                                    []
-                                                    char_string
-                                                    Private
-                                                ),
                                             l:
                                                 (Variable
                                                     9
@@ -722,6 +751,16 @@
                                                     ()
                                                     []
                                                     ()
+                                                ),
+                                            len1:
+                                                (ExternalSymbol
+                                                    9
+                                                    len1
+                                                    2 len
+                                                    string_19_stdlib_string_type
+                                                    []
+                                                    len
+                                                    Private
                                                 ),
                                             string:
                                                 (Variable
@@ -783,12 +822,12 @@
                                     [(Var 9 string)]
                                     [(Print
                                         (FunctionCall
-                                            9 char@char_string
+                                            6 char_string@char
                                             6 char
                                             [((Var 9 string))]
                                             (String 1 (FunctionCall
                                                 6 len_string
-                                                6 len
+                                                9 len1
                                                 [((Var 9 string))]
                                                 (Integer 4)
                                                 ()
@@ -805,13 +844,10 @@
                                     ()
                                 ),
                             len:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     6
                                     len
-                                    2 len
-                                    string_19_stdlib_string_type
-                                    []
-                                    len
+                                    [6 len_string@len]
                                     Public
                                 ),
                             len_string:
@@ -823,6 +859,16 @@
                                     []
                                     len_string
                                     Public
+                                ),
+                            len_string@len:
+                                (ExternalSymbol
+                                    6
+                                    len_string@len
+                                    2 len_string
+                                    string_19_stdlib_string_type
+                                    []
+                                    len_string
+                                    Private
                                 ),
                             padl:
                                 (GenericProcedure
@@ -1179,14 +1225,14 @@
                                     (SymbolTable
                                         10
                                         {
-                                            char@char_string:
+                                            len1:
                                                 (ExternalSymbol
                                                     10
-                                                    char@char_string
-                                                    2 char_string
+                                                    len1
+                                                    2 len
                                                     string_19_stdlib_string_type
                                                     []
-                                                    char_string
+                                                    len
                                                     Private
                                                 ),
                                             output_length:
@@ -1321,12 +1367,12 @@
                                                 6 padl_char_pad_with
                                                 6 padl
                                                 [((FunctionCall
-                                                    10 char@char_string
+                                                    6 char_string@char
                                                     6 char
                                                     [((Var 10 string))]
                                                     (String 1 (FunctionCall
                                                         6 len_string
-                                                        6 len
+                                                        10 len1
                                                         [((Var 10 string))]
                                                         (Integer 4)
                                                         ()
@@ -1344,12 +1390,12 @@
                                                     Max
                                                     [(StringLen
                                                         (FunctionCall
-                                                            10 char@char_string
+                                                            6 char_string@char
                                                             6 char
                                                             [((Var 10 string))]
                                                             (String 1 (FunctionCall
                                                                 6 len_string
-                                                                6 len
+                                                                10 len1
                                                                 [((Var 10 string))]
                                                                 (Integer 4)
                                                                 ()
@@ -1396,14 +1442,14 @@
                                     (SymbolTable
                                         11
                                         {
-                                            char@char_string:
+                                            len1:
                                                 (ExternalSymbol
                                                     11
-                                                    char@char_string
-                                                    2 char_string
+                                                    len1
+                                                    2 len
                                                     string_19_stdlib_string_type
                                                     []
-                                                    char_string
+                                                    len
                                                     Private
                                                 ),
                                             output_length:
@@ -1565,12 +1611,12 @@
                                                 6 padl_char_pad_with
                                                 6 padl
                                                 [((FunctionCall
-                                                    11 char@char_string
+                                                    6 char_string@char
                                                     6 char
                                                     [((Var 11 string))]
                                                     (String 1 (FunctionCall
                                                         6 len_string
-                                                        6 len
+                                                        11 len1
                                                         [((Var 11 string))]
                                                         (Integer 4)
                                                         ()
@@ -1585,12 +1631,12 @@
                                                     Max
                                                     [(StringLen
                                                         (FunctionCall
-                                                            11 char@char_string
+                                                            6 char_string@char
                                                             6 char
                                                             [((Var 11 string))]
                                                             (String 1 (FunctionCall
                                                                 6 len_string
-                                                                6 len
+                                                                11 len1
                                                                 [((Var 11 string))]
                                                                 (Integer 4)
                                                                 ()

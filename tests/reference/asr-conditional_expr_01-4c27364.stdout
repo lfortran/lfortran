@@ -17,6 +17,16 @@
                                     dbl
                                     Public
                                 ),
+                            dbl@~~dbl:
+                                (ExternalSymbol
+                                    4
+                                    dbl@~~dbl
+                                    2 dbl
+                                    conditional_expr_01_mod
+                                    []
+                                    dbl
+                                    Private
+                                ),
                             i:
                                 (Variable
                                     4
@@ -99,13 +109,10 @@
                                     ()
                                 ),
                             ~~dbl:
-                                (ExternalSymbol
+                                (CustomOperator
                                     4
                                     ~~dbl
-                                    2 ~~dbl
-                                    conditional_expr_01_mod
-                                    []
-                                    ~~dbl
+                                    [4 dbl@~~dbl]
                                     Public
                                 )
                         })
@@ -556,7 +563,7 @@
                     (Assignment
                         (Var 4 x)
                         (FunctionCall
-                            4 dbl
+                            4 dbl@~~dbl
                             4 ~~dbl
                             [((IfExp
                                 (LogicalConstant
