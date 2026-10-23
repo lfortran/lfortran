@@ -117,6 +117,8 @@ public:
     bool check_string_length_arguments = false;
     // See ASRVerifyOptions::string_format_array_args.
     bool check_string_format_array_args = false;
+    // See ASRVerifyOptions::intrinsic_function.
+    bool check_intrinsic_function = false;
     // The StringFormats whose arguments are the items of a READ statement.
     std::set<const StringFormat_t*> input_formats;
 
@@ -3673,6 +3675,29 @@ public:
             std::string(to_fn->m_name) + "'");
     }
 
+    // A `storage_size` with a compile-time value is a TypeInquiry. Only that
+    // of a character whose length is not a compile-time constant stays an
+    // IntrinsicElementalFunction, which the intrinsic_function pass lowers
+    // to the length of the character in bits.
+    void verify_storage_size(const ASR::IntrinsicElementalFunction_t& x) {
+        require_id(x.n_args == 1,
+            "asr.verify.storage_size.one_argument",
+            "StorageSize must have exactly one argument");
+        if (x.n_args != 1) return;
+        ASR::ttype_t* arg_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_args[0]));
+        require_id(ASR::is_a<ASR::String_t>(*arg_type),
+            "asr.verify.storage_size.character_argument",
+            "StorageSize without a compile-time value must have a character "
+            "argument; any other storage_size is a TypeInquiry");
+        require_id(ASR::is_a<ASR::Integer_t>(*x.m_type),
+            "asr.verify.storage_size.scalar_integer_result",
+            "StorageSize must have a scalar integer type");
+        require_id(!check_intrinsic_function,
+            "asr.verify.storage_size.lowered",
+            "StorageSize must be lowered by the intrinsic_function pass");
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
@@ -3682,6 +3707,10 @@ public:
             ::get_verify_function(x.m_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
+        if (x.m_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::StorageSize)) {
+            verify_storage_size(x);
+        }
         bool _inside_call_copy = _inside_call;
         _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
@@ -4978,6 +5007,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
     ASR::VerifyVisitor v(options.check_external, diagnostics);
     v.check_string_length_arguments = options.string_length_arguments;
     v.check_string_format_array_args = options.string_format_array_args;
+    v.check_intrinsic_function = options.intrinsic_function;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

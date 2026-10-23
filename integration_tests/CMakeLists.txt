@@ -2085,6 +2085,7 @@ RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
+RUN(NAME storage_size_02 LABELS gfortran llvm) # storage_size of run-time length characters
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 
