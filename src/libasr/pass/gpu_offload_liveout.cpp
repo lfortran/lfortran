@@ -537,6 +537,9 @@ void GpuOffloadVisitor::declare_liveout_copies(const Location &loc,
             ASRUtils::duplicate_type(al, ls.scalar_type));
     }
     for (auto &c : plan.copies) {
+        // Two variables can have one name, a local and a module variable
+        // renamed on use, and so their copies.
+        c.copy = kernel_scope->get_unique_name(c.copy);
         ASR::symbol_t *type_decl = nullptr;
         if (c.path.empty()) {
             type_decl = import_struct_type(c.named, current_scope,
