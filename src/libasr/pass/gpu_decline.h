@@ -203,6 +203,11 @@ enum class GpuDeclineReason {
     // the buffer that carries the value back to the host cannot hold:
     // `type_name` says which ("complex(4)", "character", "allocatable").
     LiveoutScalar,
+    // An optional dummy argument the loop may define and whose value is
+    // kept after it, which the loop passes on to an optional dummy
+    // argument of a procedure: each thread passes its private copy, which
+    // is present whether or not the argument is.
+    LiveoutOptionalPassedOn,
     // A part of a derived-type variable the loop defines (`name`) that no
     // thread can keep a private copy of: an allocatable component, a part
     // of a polymorphic, allocatable or pointer variable, the whole of a

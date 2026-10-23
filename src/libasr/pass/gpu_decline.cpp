@@ -301,6 +301,10 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::LiveoutScalar:
             return unsupported + "the " + decline.type_name + " scalar '"
                 + decline.name + "', whose value is kept after the loop";
+        case GpuDeclineReason::LiveoutOptionalPassedOn:
+            return unsupported + "passing the optional argument '"
+                + decline.name + "', whose value is kept after the loop, on "
+                "to an optional argument of a procedure";
         case GpuDeclineReason::LiveoutDerivedType:
             return unsupported + "giving each gpu thread a private copy "
                 "of '" + decline.name + "', which the loop defines";

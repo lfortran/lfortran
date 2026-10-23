@@ -394,6 +394,54 @@ bool gpu_path_prefix(const std::vector<std::string> &a,
     return a.size() <= b.size() && std::equal(a.begin(), a.end(), b.begin());
 }
 
+// The first of `variables` the statements walked pass to an optional
+// dummy argument of a procedure, or nullptr.
+class GpuOptionalPassedOn
+        : public ASRUtils::BlockBodyWalkVisitor<GpuOptionalPassedOn> {
+public:
+    const std::set<ASR::symbol_t*> &variables;
+    ASR::symbol_t *found = nullptr;
+    GpuOptionalPassedOn(const std::set<ASR::symbol_t*> &v) : variables(v) {}
+
+    void check(ASR::expr_t *actual, ASR::Variable_t *dummy) {
+        if (actual == nullptr || dummy == nullptr || found != nullptr
+                || dummy->m_presence != ASR::presenceType::Optional) {
+            return;
+        }
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual)) {
+            actual = ASR::down_cast<ASR::ArrayPhysicalCast_t>(actual)->m_arg;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*actual)) return;
+        ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(actual)->m_v);
+        if (variables.count(v)) found = v;
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            check(x.m_args[i].m_value, gpu_call_dummy(x, i));
+        }
+        ASR::BaseWalkVisitor<GpuOptionalPassedOn>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if (callee && ASR::is_a<ASR::Function_t>(*callee)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
+            for (size_t i = 0; i < x.n_args && i < f->n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*f->m_args[i])) continue;
+                ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*d)) {
+                    check(x.m_args[i].m_value,
+                        ASR::down_cast<ASR::Variable_t>(d));
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<GpuOptionalPassedOn>::visit_FunctionCall(x);
+    }
+};
+
 // Replaces each part of a derived-type variable a thread keeps a private
 // copy of with that copy.
 class GpuPrivatePartReplacer
@@ -522,6 +570,34 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
             return false;
         }
         scalars.push_back(name);
+    }
+    // A thread's copy of an optional scalar is present whether or not the
+    // argument is, so it cannot be passed on to an optional dummy argument
+    // in its place.
+    {
+        std::set<ASR::symbol_t*> optionals;
+        for (auto &name : scalars) {
+            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+            ASR::symbol_t *v = sym ? ASRUtils::symbol_get_past_external(sym)
+                : nullptr;
+            if (v && ASR::is_a<ASR::Variable_t>(*v)
+                    && ASR::down_cast<ASR::Variable_t>(v)->m_presence
+                        == ASR::presenceType::Optional) {
+                optionals.insert(v);
+            }
+        }
+        if (!optionals.empty()) {
+            GpuOptionalPassedOn passed(optionals);
+            for (size_t i = 0; i < n_body && !passed.found; i++) {
+                passed.visit_stmt(*body[i]);
+            }
+            if (passed.found) {
+                report_not_offloaded(loc, GpuDecline(
+                    GpuDeclineReason::LiveoutOptionalPassedOn,
+                    ASRUtils::symbol_name(passed.found)));
+                return false;
+            }
+        }
     }
     // The parts of each derived-type variable a thread keeps a copy of:
     // each scalar it defines, or the part around it the loop also names,
