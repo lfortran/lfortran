@@ -6594,7 +6594,7 @@ RUN(NAME gpu_metal_571 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_572 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_573 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_574 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda) # not checked on metal: a module derived-type variable a device procedure reads is handed to it as a thread reference
+RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda) # not checked on metal: a module derived-type variable a device procedure reads is handed to it as a thread reference (#15933)
 RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda) # metal declines real(8)
 RUN(NAME gpu_metal_577 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_578 LABELS gfortran llvm metal cuda)
