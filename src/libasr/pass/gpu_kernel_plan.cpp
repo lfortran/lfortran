@@ -4,6 +4,7 @@
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_offload_preflight.h>
+#include <libasr/pass/replace_with_compile_time_values.h>
 
 namespace LCompilers {
 
@@ -11,14 +12,15 @@ namespace {
 
 class GpuLaunchSupport {
     GpuDecline &reason;
-    bool values_replaced;
+    const std::set<ASR::expr_t*> *replaceable;
     bool unsupported(const GpuDecline &failure) {
         reason = failure;
         return false;
     }
 public:
-    GpuLaunchSupport(GpuDecline &reason, bool values_replaced)
-            : reason(reason), values_replaced(values_replaced) {
+    GpuLaunchSupport(GpuDecline &reason,
+            const std::set<ASR::expr_t*> *replaceable)
+            : reason(reason), replaceable(replaceable) {
         reason = GpuDecline();
     }
     bool is_numeric_scalar(ASR::ttype_t *type) {
@@ -367,27 +369,23 @@ public:
             public ASRUtils::BlockBodyWalkVisitor<StructConstantFinder> {
     public:
         GpuDecline found;
-        // Whether designators with a compile-time value are replaced by
-        // it (--fast).
-        bool values_replaced = false;
+        // The expressions pass_replace_with_compile_time_values puts their
+        // compile-time values in place of (--fast), or nullptr: device
+        // code reads those values rather than the expressions.
+        const std::set<ASR::expr_t*> *replaceable = nullptr;
 
-        void visit_StructInstanceMember(
-                const ASR::StructInstanceMember_t &x) {
-            if (values_replaced && x.m_value) {
-                visit_expr(*x.m_value);
-                return;
+        void visit_expr(const ASR::expr_t &x) {
+            if (replaceable && replaceable->count(
+                    const_cast<ASR::expr_t*>(&x))) {
+                ASR::expr_t *value = ASRUtils::expr_value(
+                    const_cast<ASR::expr_t*>(&x));
+                if (value != &x) {
+                    if (value) visit_expr(*value);
+                    return;
+                }
             }
             ASRUtils::BlockBodyWalkVisitor<StructConstantFinder>
-                ::visit_StructInstanceMember(x);
-        }
-
-        void visit_ArrayItem(const ASR::ArrayItem_t &x) {
-            if (values_replaced && x.m_value) {
-                visit_expr(*x.m_value);
-                return;
-            }
-            ASRUtils::BlockBodyWalkVisitor<StructConstantFinder>
-                ::visit_ArrayItem(x);
+                ::visit_expr(x);
         }
 
         void visit_body(ASR::stmt_t **body, size_t n_body) {
@@ -480,7 +478,7 @@ public:
         }
         if (opaque.found.declined()) return unsupported(opaque.found);
         StructConstantFinder constants;
-        constants.values_replaced = values_replaced;
+        constants.replaceable = replaceable;
         constants.visit_body(kernel->m_body, kernel->n_body);
         for (size_t i = 0; i < device_functions.n; i++) {
             ASR::Function_t *function =
@@ -1188,7 +1186,19 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         return true;
     };
     if (!close_graph(&kernel)) return false;
-    GpuLaunchSupport support(decline, values_replaced);
+    // What device code reads once --fast has put compile-time values in
+    // place of the expressions that have them.
+    std::set<ASR::expr_t*> replaceable;
+    if (values_replaced) {
+        collect_compile_time_value_replacements(al, kernel, replaceable);
+        for (size_t i = 0; i < device_functions.n; i++) {
+            collect_compile_time_value_replacements(al,
+                *ASR::down_cast<ASR::Function_t>(device_functions[i]),
+                replaceable);
+        }
+    }
+    GpuLaunchSupport support(decline,
+        values_replaced ? &replaceable : nullptr);
     auto workspaces = collect_gpu_vla_workspaces(kernel, 0, true);
     if (!support.supported(&kernel.base, args, n_args, workspaces,
             device_functions)) {

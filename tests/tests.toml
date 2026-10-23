@@ -4747,6 +4747,21 @@ filename = "../integration_tests/gpu_decline_35.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_36.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_37.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_38.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
 filename = "../integration_tests/gpu_decline_40.f90"
 gpu_offload_cuda = true
 
