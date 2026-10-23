@@ -24,6 +24,7 @@ integer, parameter :: m = 256
 real :: x(3), xm(m), y(4, m)
 integer :: s(3), u(3), w(4, 3), t(4), v(4), p(4, 3), c(4), r(5)
 integer :: i, j, k, l, total
+integer :: q(10)
 
 x = [10.0, 20.0, 30.0]
 
@@ -108,12 +109,13 @@ end do
 print *, c
 if (any(c /= [1, -1, 3, -1])) error stop
 
-! A cycle of a do concurrent with a reduction.
-total = 0
-do concurrent (i = 1:10) reduce(+:total)
+! A cycle of a do concurrent that skips the store of the iteration.
+q = 0
+do concurrent (i = 1:10)
     if (mod(i, 3) == 0) cycle
-    total = total + i
+    q(i) = i
 end do
+total = sum(q)
 print *, total
 if (total /= 37) error stop
 
