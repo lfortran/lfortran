@@ -382,6 +382,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (size_t i = 0; i < work.n_body; i++) {
         lv_collector.visit_stmt(*work.body[i]);
     }
+    std::set<std::string> &may_define = lv_collector.may_define;
+    for (auto &name : assigned_vars) may_define.erase(name);
 
     // Separate into kernel params vs local vars
     // Params: arrays + scalars that are read but NOT assigned in loop body
@@ -416,15 +418,27 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
 
+    // Only what the loop is sure to define can be a kernel local, which
+    // starts undefined; a variable a procedure only may define keeps the
+    // value it had, as a kernel argument, unless its value is kept after
+    // the loop.
+    std::set<std::string> live_vars;
+    for (auto *names : {&assigned_vars, &may_define}) {
+        for (auto &name : *names) {
+            if (inner_loop_vars.count(name)) continue;
+            if (everything_live || post_loop_vars.count(name) > 0
+                    || gpu_visible_outside_procedure(
+                        current_scope->resolve_symbol(name), current_scope)) {
+                live_vars.insert(name);
+            }
+        }
+    }
     std::set<std::string> local_scalar_names;
     for (auto &name : assigned_vars) {
         if (loop_var_set.count(name)) continue;
         if (all_reduction_targets.count(name)) continue;
         if (reduction_names.count(name)) continue;
-        bool live = everything_live || post_loop_vars.count(name) > 0
-            || gpu_visible_outside_procedure(
-                current_scope->resolve_symbol(name), current_scope);
-        if (live && !inner_loop_vars.count(name)) continue;
+        if (live_vars.count(name)) continue;
         auto it = involved_syms.find(name);
         if (it != involved_syms.end()) {
             ASR::ttype_t *type = it->second.first;
@@ -437,6 +451,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 local_scalar_names.insert(name);
             }
         }
+    }
+    std::set<std::string> liveout_candidates = assigned_vars;
+    for (auto &name : may_define) {
+        if (live_vars.count(name)) liveout_candidates.insert(name);
     }
 
     // Remove local scalars from involved_syms (they become kernel locals)
@@ -465,7 +483,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // a private copy of it, and puts what it defines back where the value
     // is shared (gpu_offload_liveout.cpp).
     GpuLiveoutPlan liveouts;
-    if (!plan_liveouts(loc, work.body, work.n_body, assigned_vars,
+    if (!plan_liveouts(loc, work.body, work.n_body, liveout_candidates,
             loop_var_set, reduction_names,
             local_scalar_names, involved_syms, liveouts)) {
         return;

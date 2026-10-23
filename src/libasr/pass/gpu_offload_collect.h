@@ -255,10 +255,20 @@ public:
 bool is_single_assignment_binding(ASR::symbol_t *sym,
         ASR::stmt_t **body, size_t n_body);
 
-// Whether the procedure a call names may define its `i`-th actual argument:
-// the dummy argument it is associated with is not `intent(in)` and not
-// passed by value, or is not known.
+// The dummy argument the `i`-th actual argument of a call is associated
+// with, or, for `i` equal to the number of actual arguments, the passed
+// object of a type-bound call; for a type-bound call, of the procedure
+// the binding names. Nullptr when it is not known.
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i);
+
+// Whether the procedure a call names may define its `i`-th actual argument
+// (see gpu_call_dummy): the dummy argument it is associated with is not
+// `intent(in)` and not passed by value, or is not known.
 bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i);
+
+// Whether the procedure a call names defines its `i`-th actual argument
+// whole: the dummy argument it is associated with is `intent(out)`.
+bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i);
 
 // The scalar variable whose own storage a designator that is defined
 // defines: `k`, `y`, `y%k`, `y%a%x` or `y%c(i)` for a component `c` that is
@@ -272,21 +282,27 @@ ASR::symbol_t *gpu_defined_variable(ASR::expr_t *designator);
 class GpuLocalVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuLocalVarCollector> {
 public:
+    // What the body defines: by assignment, or by passing it to a
+    // procedure that defines it whole (`intent(out)`).
     std::set<std::string> &assigned_vars;
     std::set<std::string> &inner_loop_vars;
     std::set<SymbolTable*> enclosing_scopes;
+    // What the body passes to a procedure that may define it, or may
+    // leave it alone, and does not also define.
+    std::set<std::string> may_define;
 
     GpuLocalVarCollector(std::set<std::string> &av,
         std::set<std::string> &ilv,
         const std::set<SymbolTable*> &scopes = {})
         : assigned_vars(av), inner_loop_vars(ilv), enclosing_scopes(scopes) {}
 
-    // A variable the body defines, unless it is a local of a BLOCK or
-    // ASSOCIATE in the body.
-    void note(ASR::symbol_t *sym) {
+    // A variable the body defines (into `defined`), unless it is a local
+    // of a BLOCK or ASSOCIATE in the body.
+    void note(ASR::symbol_t *sym) { note(sym, assigned_vars); }
+    void note(ASR::symbol_t *sym, std::set<std::string> &defined) {
         if (sym == nullptr || ASR::is_a<ASR::Variable_t>(*sym) == false) {
             if (sym != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-                assigned_vars.insert(ASRUtils::symbol_name(sym));
+                defined.insert(ASRUtils::symbol_name(sym));
             }
             return;
         }
@@ -301,7 +317,7 @@ public:
                 return;
             }
         }
-        assigned_vars.insert(ASRUtils::symbol_name(sym));
+        defined.insert(ASRUtils::symbol_name(sym));
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -309,14 +325,17 @@ public:
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
     }
 
-    // An actual argument the procedure may define.
+    // An actual argument the procedure defines, or may define.
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
             if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
-                note(gpu_defined_variable(x.m_args[i].m_value));
+                note(gpu_defined_variable(x.m_args[i].m_value),
+                    gpu_call_defines(x, i) ? assigned_vars : may_define);
             }
         }
-        if (x.m_dt) note(gpu_defined_variable(x.m_dt));
+        if (x.m_dt && gpu_call_may_define(x, x.n_args)) {
+            note(gpu_defined_variable(x.m_dt), may_define);
+        }
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_SubroutineCall(x);
     }
 

@@ -93,19 +93,63 @@ ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
         ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
-bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
-    // Which dummy argument a type-bound call associates an actual
-    // argument with depends on the passed object; it is not worked out.
-    if (x.m_dt != nullptr) return true;
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i) {
     ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
-    if (!ASR::is_a<ASR::Function_t>(*callee)) return true;
+    // A type-bound call passes its object as the dummy argument the
+    // binding names, the first one unless PASS names another.
+    bool passes = false;
+    const char *self_name = nullptr;
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+        ASR::StructMethodDeclaration_t *m =
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(callee);
+        passes = x.m_dt != nullptr && !m->m_is_nopass;
+        self_name = m->m_self_argument;
+        callee = ASRUtils::symbol_get_past_external(m->m_proc);
+    }
+    if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee)) {
+        return nullptr;
+    }
     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
-    if (i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i])) return true;
+    size_t self = 0;
+    if (passes && self_name != nullptr) {
+        for (size_t j = 0; j < f->n_args; j++) {
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[j]) && std::string(
+                    ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
+                        f->m_args[j])->m_v)) == self_name) {
+                self = j;
+            }
+        }
+    }
+    size_t k;
+    if (i == x.n_args) {
+        if (!passes) return nullptr;
+        k = self;
+    } else if (x.n_args == f->n_args) {
+        // The actual arguments include the passed object.
+        k = i;
+    } else if (passes && x.n_args + 1 == f->n_args) {
+        k = i < self ? i : i + 1;
+    } else {
+        return nullptr;
+    }
+    if (k >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[k])) {
+        return nullptr;
+    }
     ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
-    if (!ASR::is_a<ASR::Variable_t>(*dummy)) return true;
-    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(dummy);
+        ASR::down_cast<ASR::Var_t>(f->m_args[k])->m_v);
+    return ASR::is_a<ASR::Variable_t>(*dummy)
+        ? ASR::down_cast<ASR::Variable_t>(dummy) : nullptr;
+}
+
+bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
+    ASR::Variable_t *v = gpu_call_dummy(x, i);
+    if (v == nullptr) return true;
     return v->m_intent != ASR::intentType::In && !v->m_value_attr;
+}
+
+bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i) {
+    ASR::Variable_t *v = gpu_call_dummy(x, i);
+    return v != nullptr && v->m_intent == ASR::intentType::Out;
 }
 
 ASR::symbol_t *gpu_defined_variable(ASR::expr_t *e) {
@@ -327,20 +371,6 @@ void GpuLiveoutWriteBack::visit_Assignment(const ASR::Assignment_t &x) {
 
 namespace {
 
-// Whether the procedure a call names defines its `i`-th actual argument
-// whole: the dummy argument it is associated with is `intent(out)`.
-bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i) {
-    if (x.m_dt != nullptr) return false;
-    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
-    if (!ASR::is_a<ASR::Function_t>(*callee)) return false;
-    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
-    if (i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i])) return false;
-    ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
-    return ASR::is_a<ASR::Variable_t>(*dummy) && ASR::down_cast<
-        ASR::Variable_t>(dummy)->m_intent == ASR::intentType::Out;
-}
-
 // Whether a call changed the scalar `a`, which was `b` before it: `a /= b`,
 // except that a NaN that stays a NaN is not a change, which every thread
 // would otherwise put back over the value the defining iteration gave.
@@ -463,7 +493,9 @@ void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             actual(x.m_args[i].m_value, gpu_call_defines(x, i));
         }
     }
-    if (x.m_dt != nullptr) actual(x.m_dt, false);
+    if (x.m_dt != nullptr && gpu_call_may_define(x, x.n_args)) {
+        actual(x.m_dt, false);
+    }
     if (after.empty()) return;
     for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
     pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
