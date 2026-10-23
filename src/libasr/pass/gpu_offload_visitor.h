@@ -484,6 +484,67 @@ public:
         ASR::ttype_t *scalar_type;
     };
 
+    // What a loop defines and the host reads after it (see
+    // gpu_offload_liveout.cpp).
+    struct GpuLiveoutPlan {
+        std::vector<LiveoutScalarInfo> scalars;
+        // A part of a derived-type variable that each thread keeps a
+        // private copy of, named `copy`: the whole variable when `path` is
+        // empty, otherwise the scalar component the names in `path`
+        // select, which the loop names through the components `members`.
+        // The variable itself is a kernel argument, which the device
+        // writes in place.
+        struct Copy {
+            // The variable past use association, and as the loop names it.
+            ASR::symbol_t *variable;
+            ASR::symbol_t *named;
+            std::vector<std::string> path;
+            std::vector<ASR::symbol_t*> members;
+            ASR::ttype_t *type;
+            std::string copy;
+            // Whether the value of the variable is kept after the loop:
+            // only then is what the thread defines of the copy put back.
+            bool live;
+        };
+        std::vector<Copy> copies;
+        // The assignments that give each private copy its value on entry
+        // to the kernel.
+        std::set<ASR::stmt_t*> entries;
+    };
+
+    // Decides how each variable the loop defines and the host reads after
+    // it reaches the kernel, and makes the kernel take what it needs for
+    // that in place of the variable in `involved_syms`; also how each
+    // thread keeps a copy of a derived-type variable that is not in
+    // `live_vars` but cannot be a kernel local. False when one cannot be
+    // offloaded; the error is then reported.
+    bool plan_liveouts(const Location &loc, ASR::stmt_t **body,
+        size_t n_body, const std::set<std::string> &assigned_vars,
+        const std::set<std::string> &live_vars,
+        const std::set<std::string> &loop_var_set,
+        const std::set<std::string> &reduction_names,
+        std::set<std::string> &local_scalar_names,
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>
+            &involved_syms,
+        GpuLiveoutPlan &plan);
+    // Declares the private copies in the kernel scope.
+    void declare_liveout_copies(const Location &loc,
+        SymbolTable *kernel_scope, GpuLiveoutPlan &plan);
+    // Makes the loop body, a copy of it still naming the host's symbols,
+    // and the body of a BLOCK of it, already naming the kernel's, work on
+    // the private copies of parts of derived-type variables, and gives
+    // those their values at the start of the loop body.
+    void privatize_liveout_body(const Location &loc,
+        SymbolTable *kernel_scope, Vec<ASR::stmt_t*> &body,
+        GpuLiveoutPlan &plan);
+    void privatize_liveout_block(SymbolTable *kernel_scope,
+        ASR::stmt_t **body, size_t n_body, GpuLiveoutPlan &plan);
+    // Gives the private copies their values, at the start of the body.
+    void enter_liveouts(const Location &loc, SymbolTable *kernel_scope,
+        Vec<ASR::stmt_t*> &kernel_body, GpuLiveoutPlan &plan);
+    // Puts what the kernel defines of a copy back where it is shared.
+    void write_back_liveouts(ASR::Function_t &kernel, GpuLiveoutPlan &plan);
+
     // One `reduce(op:var)` of an offloaded loop.
     //
     // Threads cannot all accumulate into one scalar without a race, and a

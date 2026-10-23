@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support the allocatable scalar 'k', whose value is kept after the loop
+  --> tests/../integration_tests/gpu_decline_28.f90:10:5 - 13:10
+   |
+10 |        do concurrent (i = 1:100)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support the allocatable scalar 'k', whose value is kept after the loop

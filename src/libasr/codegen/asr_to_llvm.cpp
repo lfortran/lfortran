@@ -23675,7 +23675,8 @@ public:
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         DeallocateStringsScope _scope(this);
         if( x.m_overloaded ) {
-            // DTIO: set child I/O mode to suppress record terminators in
+            // Unformatted DTIO (formatted output goes through the runtime
+            // formatter): set child I/O mode to suppress record terminators in
             // child writes, call the user-defined I/O subroutine, then
             // clear child mode and write the parent record terminator.
             llvm::Value *unit_val;
@@ -24177,6 +24178,24 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 llvm_utils->void_type, args_type, true);
         tmp = builder->CreateCall(fn, printf_args);
+        bool has_dtio_bindings = false;
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]) &&
+                    ASR::down_cast<ASR::StringFormat_t>(
+                        x.m_values[i])->n_dtio_bindings > 0) {
+                has_dtio_bindings = true;
+            }
+        }
+        if (x.m_iomsg && has_dtio_bindings) {
+            // The iomsg of a defined output procedure whose error the
+            // statement took.
+            llvm::Value *iomsg_data, *iomsg_len;
+            std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            llvm::Function *iomsg_fn = LLVM::get_or_declare_function(*module,
+                "_lfortran_io_take_iomsg", llvm::Type::getVoidTy(context),
+                {character_type, llvm::Type::getInt64Ty(context)});
+            builder->CreateCall(iomsg_fn, {iomsg_data, iomsg_len});
+        }
         llvm_utils->stringFormat_return.free();
 
         this->current_decimal_mode = nullptr;
@@ -28922,7 +28941,7 @@ public:
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                visit_expr_load_wrapper(m_dims[i].m_start, 2, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
@@ -28939,7 +28958,7 @@ public:
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                visit_expr_load_wrapper(m_dims[i].m_start, 2, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);

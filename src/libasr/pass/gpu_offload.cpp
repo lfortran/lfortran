@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -381,6 +382,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (size_t i = 0; i < work.n_body; i++) {
         lv_collector.visit_stmt(*work.body[i]);
     }
+    std::set<std::string> &may_define = lv_collector.may_define;
+    for (auto &name : assigned_vars) may_define.erase(name);
 
     // Separate into kernel params vs local vars
     // Params: arrays + scalars that are read but NOT assigned in loop body
@@ -396,58 +399,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Identify which symbols are local temporaries (assigned scalar, non-array)
     // vs kernel parameters (arrays or read-only scalars).
     // Assigned scalars are kernel-local unless they are reduction
-    // targets from inlined all(), or are referenced after the do
-    // concurrent loop (liveout) — those need to be communicated back
-    // to the host via 1-element array device buffers.
-
-    // Collect variables referenced in statements after this parallel loop
-    // in the parent body, to identify liveout scalars.
-    std::set<std::string> post_loop_vars;
-    {
-        ASR::stmt_t **parent_body = nullptr;
-        size_t parent_n_body = 0;
-        SymbolTable *scope = current_scope;
-        while (scope && scope->asr_owner) {
-            if (scope->asr_owner->type == ASR::asrType::symbol) {
-                ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(
-                    scope->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
-                    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
-                        owner_sym);
-                    parent_body = prog->m_body;
-                    parent_n_body = prog->n_body;
-                    break;
-                } else if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
-                    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                        owner_sym);
-                    parent_body = fn->m_body;
-                    parent_n_body = fn->n_body;
-                    break;
-                } else if (ASR::is_a<ASR::Block_t>(*owner_sym)) {
-                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(
-                        owner_sym);
-                    parent_body = blk->m_body;
-                    parent_n_body = blk->n_body;
-                    break;
-                }
-            }
-            scope = scope->parent;
-        }
-        if (parent_body) {
-            bool found_dc = false;
-            for (size_t si = 0; si < parent_n_body; si++) {
-                if (!found_dc) {
-                    if (parent_body[si]->base.loc.first == loc.first &&
-                            parent_body[si]->base.loc.last == loc.last) {
-                        found_dc = true;
-                    }
-                    continue;
-                }
-                PostLoopVarCollector plvc(post_loop_vars);
-                plvc.visit_stmt(*parent_body[si]);
-            }
-        }
-    }
+    // targets from inlined all(), or their value can be read once the
+    // loop has run (liveout): a statement that can run after the loop or a
+    // contained procedure references them, or they outlive the procedure
+    // holding the loop -- a dummy argument, the function result, a saved,
+    // module or host variable. A variable defined in only one iteration
+    // has that value after the loop (Fortran 2018, 11.1.7.5), so those
+    // have to be communicated back to the host (plan_liveouts).
+    bool everything_live = false;
+    std::set<std::string> post_loop_vars = gpu_names_referenced_after_loop(
+        region, current_scope, everything_live);
 
     // A `reduce` accumulator is live after the loop by definition, whether
     // or not anything the scan above found reads it: an intent(out) dummy
@@ -457,17 +418,42 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
 
-    std::set<std::string> local_scalar_names;
-    for (auto &name : assigned_vars) {
-        if (loop_var_set.count(name)) continue;
-        if (all_reduction_targets.count(name)) continue;
-        if (reduction_names.count(name)) continue;
-        if (post_loop_vars.count(name) && !inner_loop_vars.count(name)) continue;
-        auto it = involved_syms.find(name);
-        if (it != involved_syms.end()) {
-            ASR::ttype_t *type = it->second.first;
-            if (!ASRUtils::is_array(type)) {
-                local_scalar_names.insert(name);
+    std::set<std::string> live_vars;
+    for (auto *names : {&assigned_vars, &may_define}) {
+        for (auto &name : *names) {
+            if (inner_loop_vars.count(name)) continue;
+            if (everything_live || post_loop_vars.count(name) > 0
+                    || gpu_visible_outside_procedure(
+                        current_scope->resolve_symbol(name), current_scope)) {
+                live_vars.insert(name);
+            }
+        }
+    }
+    // Where the kernel keeps each variable the loop defines or may define
+    // (gpu_locality).
+    std::set<std::string> local_scalar_names, liveout_candidates;
+    for (auto *names : {&assigned_vars, &may_define}) {
+        for (auto &name : *names) {
+            if (loop_var_set.count(name)) continue;
+            if (reduction_names.count(name)) continue;
+            // The result of an inlined all() goes back to the host.
+            if (all_reduction_targets.count(name)) {
+                liveout_candidates.insert(name);
+                continue;
+            }
+            auto it = involved_syms.find(name);
+            if (it == involved_syms.end()) continue;
+            switch (gpu_locality(current_scope, name, it->second.first,
+                    live_vars.count(name) > 0, assigned_vars.count(name) > 0,
+                    work.body, work.n_body)) {
+                case GpuLocality::KernelLocal:
+                    local_scalar_names.insert(name);
+                    break;
+                case GpuLocality::PrivateCopies:
+                    liveout_candidates.insert(name);
+                    break;
+                case GpuLocality::KernelArgument:
+                    break;
             }
         }
     }
@@ -494,62 +480,24 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
-    // Wrap liveout scalars (assigned user variables still in
-    // involved_syms) in 1-element FixedSizeArrays so they can be
-    // passed as writable device buffers and read back after the kernel.
-    std::vector<LiveoutScalarInfo> liveout_scalars;
+    // What the loop defines and the host reads after it: each thread keeps
+    // a private copy of it, and puts what it defines back where the value
+    // is shared (gpu_offload_liveout.cpp).
+    GpuLiveoutPlan liveouts;
+    if (!plan_liveouts(loc, work.body, work.n_body, liveout_candidates,
+            live_vars, loop_var_set, reduction_names,
+            local_scalar_names, involved_syms, liveouts)) {
+        return;
+    }
+    // An optional scalar the loop may define reaches the kernel in a
+    // buffer of the launch's own, which is there whether or not the
+    // argument is present: the loop runs either way, and the launch copies
+    // the value in and out only when it is present.
+    for (auto &ls : liveouts.scalars) {
+        optional_syms.erase(std::remove(optional_syms.begin(),
+            optional_syms.end(), ls.orig_scalar_sym), optional_syms.end());
+    }
     {
-        ASR::ttype_t *int4_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
-        std::vector<std::string> liveout_names;
-        for (auto &name : assigned_vars) {
-            if (loop_var_set.count(name)) continue;
-            if (local_scalar_names.count(name)) continue;
-            // A reduction accumulator is written by every thread. One
-            // shared slot would be a race, so it gets a slot per thread
-            // below instead of the single liveout buffer.
-            if (reduction_names.count(name)) continue;
-            auto it = involved_syms.find(name);
-            if (it != involved_syms.end()) {
-                ASR::ttype_t *type = it->second.first;
-                if (!ASRUtils::is_array(type)) {
-                    liveout_names.push_back(name);
-                }
-            }
-        }
-        for (auto &name : liveout_names) {
-            auto it = involved_syms.find(name);
-            ASR::ttype_t *scalar_type = it->second.first;
-            ASR::symbol_t *orig_sym = current_scope->resolve_symbol(name);
-
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 1, int4_type,
-                    ASR::integerbozType::Decimal));
-            dim.m_length = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 1, int4_type,
-                    ASR::integerbozType::Decimal));
-            Vec<ASR::dimension_t> dims_vec;
-            dims_vec.reserve(al, 1);
-            dims_vec.push_back(al, dim);
-            ASR::ttype_t *arr_type = ASRUtils::TYPE(
-                ASR::make_Array_t(al, loc,
-                    ASRUtils::duplicate_type(al, scalar_type),
-                    dims_vec.p, 1,
-                    ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
-
-            std::string buf_name = current_scope->get_unique_name(
-                "__gpu_buf_" + name);
-            ASR::symbol_t *buf_sym = gpu_new_variable(al, loc,
-                current_scope, buf_name, ASRUtils::duplicate_type(al,
-                    arr_type));
-            it->second.first = arr_type;
-
-            liveout_scalars.push_back(
-                {name, buf_name, buf_sym, orig_sym, scalar_type});
-        }
-
         // One accumulator per iteration. The extent is only known when the
         // launch has worked out how many threads it is dispatching, so the
         // host array is deferred-shape and the launch allocates it.
@@ -741,17 +689,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
         ASR::call_arg_t carg;
         carg.loc = loc;
-        // For liveout scalars, use the host-side 1-element array
-        // buffer as the call arg so it's passed as a device buffer
         bool is_liveout = false;
-        for (auto &ls : liveout_scalars) {
-            if (ls.orig_name == sym_name) {
-                carg.m_value = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, ls.host_buf_sym));
-                is_liveout = true;
-                break;
-            }
-        }
         for (auto &r : pending_reductions) {
             if (r.host_buf_sym && r.orig_name == sym_name) {
                 carg.m_value = ASRUtils::EXPR(
@@ -1110,6 +1048,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASRUtils::duplicate_type(al, type),
             ASR::intentType::Local, type_decl);
     }
+
+    declare_liveout_copies(loc, kernel_scope, liveouts);
 
     // Import functions/subroutines called in the loop body
     // into the kernel scope so FunctionCall/SubroutineCall nodes
@@ -2043,6 +1983,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             decomp_visitor.visit_stmt(*body_copy.p[i]);
         }
     }
+    privatize_liveout_body(loc, kernel_scope, body_copy, liveouts);
 
     // The accumulator slot this thread owns. Created here because the
     // substitution below has to run before the body is remapped into
@@ -2590,6 +2531,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 block_replacer.visit_stmt(*ab->m_body[j]);
             }
         }
+        privatize_liveout_block(kernel_scope, block->m_body, block->n_body,
+            liveouts);
+        for (auto &item : block->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(item.second);
+                privatize_liveout_block(kernel_scope, ab->m_body,
+                    ab->n_body, liveouts);
+            }
+        }
         // Replace StructInstanceMember references to decomposed
         // allocatable members inside the block body.
         if (!decomp_map.empty()) {
@@ -2793,6 +2744,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         LCOMPILERS_ASSERT(leaves.reason == GpuDeclineReason::None);
     }
 
+    enter_liveouts(loc, kernel_scope, kernel_body, liveouts);
+
     // Add copied loop body (already remapped)
     for (size_t i = 0; i < body_copy.n; i++) {
         kernel_body.push_back(al, body_copy.p[i]);
@@ -2838,6 +2791,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.p, kernel_body.n,
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
+    write_back_liveouts(*ASR::down_cast2<ASR::Function_t>(kernel_func),
+        liveouts);
     gpu_lift_host_association(al,
         *ASR::down_cast2<ASR::Function_t>(kernel_func));
 
@@ -2851,7 +2806,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.private_shapes = private_shapes;
     plan.gather_stmts = gather_stmts;
     plan.scatter_stmts = scatter_stmts;
-    plan.liveout_scalars = liveout_scalars;
+    plan.liveout_scalars = liveouts.scalars;
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;

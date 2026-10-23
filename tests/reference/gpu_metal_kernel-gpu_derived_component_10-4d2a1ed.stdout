@@ -1,0 +1,28 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct big_t {
+    float arr[50000];
+    int k;
+};
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device big_t& p [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    p.arr[((int)(i) - (1))] = ((float)(2 * i));
+}
+
