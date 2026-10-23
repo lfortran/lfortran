@@ -78,87 +78,31 @@ bool read_frame(int fd, char &kind, std::string &payload) {
     return read_all(fd, &payload[0], payload.size());
 }
 
-// While a cell runs, its stdout and stderr go to temporary files rather than
-// pipes: a file never fills up, so nothing has to drain it concurrently, and
-// what the cell wrote so far is sent whenever the cell waits (for input) or
-// finishes.
-class Capture {
-    FILE *files[2];
-    int saved[2];
-public:
-    Capture() {
-        fflush(stdout);
-        fflush(stderr);
-        for (int i = 0; i < 2; i++) {
-            files[i] = tmpfile();
-            if (!files[i]) throw std::runtime_error("cannot create a temporary file");
-            saved[i] = dup(1 + i);
-            dup2(fileno(files[i]), 1 + i);
-        }
-    }
-    ~Capture() {
-        fflush(stdout);
-        fflush(stderr);
-        for (int i = 0; i < 2; i++) {
-            dup2(saved[i], 1 + i);
-            close(saved[i]);
-            fclose(files[i]);
-        }
-    }
-    // What the cell has written to stdout (0) or stderr (1) since last time.
-    std::string take(int i) {
-        fflush(i == 0 ? stdout : stderr);
-        int fd = fileno(files[i]);
-        std::string text;
-        char buffer[4096];
-        lseek(fd, 0, SEEK_SET);
-        ssize_t n;
-        while ((n = read(fd, buffer, sizeof(buffer))) > 0) text.append(buffer, n);
-        // The descriptors 1 or 2 share this file offset, so the cell's next
-        // write starts again at the beginning.
-        if (ftruncate(fd, 0) != 0) throw std::runtime_error("cannot truncate a temporary file");
-        lseek(fd, 0, SEEK_SET);
-        return text;
-    }
-};
-
 void run_cell(FortranEvaluator &e, int client, const std::string &code) {
     bool connected = true;
     auto send = [&](char kind, const std::string &payload) {
         if (connected && !send_frame(client, kind, payload)) connected = false;
     };
-    FortranEvaluator::CellResult cell;
-    {
-        Capture capture;
-        auto flush = [&]() {
-            std::string out = capture.take(0), err = capture.take(1);
-            if (!out.empty()) send('1', out);
-            if (!err.empty()) send('2', err);
-        };
-        FortranEvaluator::CellIO io;
-        io.display = [&](const std::string &mime, const std::string &data) {
-            flush();
-            send('d', mime + '\0' + data);
-        };
-        io.clear_output = [&]() {
-            flush();
-            send('c', "");
-        };
-        // A READ waits here for this client's answer; the other clients'
-        // requests wait in their sockets until the cell is done.
-        io.input = [&](std::string &record) {
-            flush();
-            send('?', "");
-            char kind;
-            if (!connected || !read_frame(client, kind, record)) {
-                connected = false;
-                return 1;
-            }
-            return kind == 'i' ? 0 : -1;
-        };
-        cell = e.execute(code, false, io);
-        flush();
-    }
+    FortranEvaluator::CellIO io;
+    io.output = [&](int stream, const std::string &text) {
+        send(stream == 1 ? '1' : '2', text);
+    };
+    io.display = [&](const std::string &mime, const std::string &data) {
+        send('d', mime + '\0' + data);
+    };
+    io.clear_output = [&]() { send('c', ""); };
+    // A READ waits here for this client's answer; the other clients'
+    // requests wait in their sockets until the cell is done.
+    io.input = [&](std::string &record) {
+        send('?', "");
+        char kind;
+        if (!connected || !read_frame(client, kind, record)) {
+            connected = false;
+            return 1;
+        }
+        return kind == 'i' ? 0 : -1;
+    };
+    FortranEvaluator::CellResult cell = e.execute(code, false, io);
     if (!cell.ok) {
         send('2', cell.error_text());
     } else {
