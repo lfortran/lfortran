@@ -9611,52 +9611,7 @@ public:
                 // Enforced by verify(), but we ensure anyway that
                 // ExternalSymbols are not chained:
                 LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*final_sym))
-                if (ASR::is_a<ASR::GenericProcedure_t>(*final_sym)) {
-                    ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(final_sym);
-                    int idx = ASRUtils::select_generic_procedure(args, *g, x.base.base.loc,
-                                [&](const std::string &msg, const Location &loc) {
-                                    diag.add(Diagnostic(
-                                        msg,
-                                        Level::Error, Stage::Semantic, {
-                                            Label("",{loc})
-                                        }));
-                                    throw SemanticAbort();
-                                    });
-                    // FIXME
-                    // Create ExternalSymbol for the final subroutine here
-                    final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
-                    if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
-                        diag.add(Diagnostic(
-                            "ExternalSymbol must point to a Subroutine",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                    f = ASR::down_cast<ASR::Function_t>(final_sym);
-                    // We mangle the new ExternalSymbol's local name as:
-                    //   generic_procedure_local_name @
-                    //     specific_procedure_remote_name
-                    std::string local_sym = std::string(to_lower(p->m_name)) + "@"
-                        + ASRUtils::symbol_name(final_sym);
-                    if (current_scope->get_symbol(local_sym) == nullptr) {
-                        Str name;
-                        name.from_str(al, local_sym);
-                        char *cname = name.c_str(al);
-                        ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                            al, p->base.base.loc,
-                            /* a_symtab */ current_scope,
-                            /* a_name */ cname,
-                            final_sym,
-                            ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
-                            nullptr, 0, ASRUtils::symbol_name(final_sym),
-                            ASR::accessType::Private);
-                        final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-                        current_scope->add_symbol(local_sym, final_sym);
-                    } else {
-                        final_sym = current_scope->get_symbol(local_sym);
-                    }
-                } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym);
                     nopass = class_proc->m_is_nopass;
                     final_sym = original_sym;

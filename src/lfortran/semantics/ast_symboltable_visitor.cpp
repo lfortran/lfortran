@@ -4424,7 +4424,7 @@ public:
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
         ASR::symbol_t *existing = current_scope->get_symbol(generic_name);
-        append_accessible_custom_operator_procs(existing, generic_name, symbols);
+        append_accessible_custom_operator_procs(existing, symbols);
         if (existing == nullptr && current_scope->parent != nullptr
                 && current_scope->asr_owner != nullptr
                 && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)
@@ -4455,31 +4455,13 @@ public:
     // If the operator `existing` is already accessible in the scope, include its procedures
     // into the `CustomOperator` symbol that we overwrite it with.
     void append_accessible_custom_operator_procs(ASR::symbol_t *existing,
-            const std::string &generic_name, Vec<ASR::symbol_t*> &symbols) {
-        if (existing == nullptr) {
+            Vec<ASR::symbol_t*> &symbols) {
+        if (existing == nullptr || !ASR::is_a<ASR::CustomOperator_t>(*existing)) {
             return;
         }
-        ASR::CustomOperator_t* cop = nullptr;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*existing)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(existing);
-            if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
-                cop = ASR::down_cast<ASR::CustomOperator_t>(sym);
-            }
-        } else if (ASR::is_a<ASR::CustomOperator_t>(*existing)) {
-            cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
-        }
-        if (cop != nullptr) {
-            for (size_t i = 0; i < cop->n_procs; i++) {
-                std::string proc_name = std::string(ASRUtils::symbol_name(cop->m_procs[i])) + "@" + generic_name;
-                ASR::symbol_t* proc_sym = current_scope->resolve_symbol(proc_name);
-                if (proc_sym == nullptr) {
-                    proc_sym = current_scope->resolve_symbol(
-                        ASRUtils::symbol_name(cop->m_procs[i]));
-                }
-                if (proc_sym != nullptr) {
-                    symbols.push_back(al, proc_sym);
-                }
-            }
+        ASR::CustomOperator_t* cop = ASR::down_cast<ASR::CustomOperator_t>(existing);
+        for (size_t i = 0; i < cop->n_procs; i++) {
+            symbols.push_back(al, cop->m_procs[i]);
         }
     }
 
@@ -7064,7 +7046,7 @@ public:
                 s2c(al, local_sym), procs.p, procs.size(), gp->m_access);
         } else {
             append_accessible_custom_operator_procs(
-                current_scope->resolve_symbol(local_sym), local_sym, procs);
+                current_scope->resolve_symbol(local_sym), procs);
             v = ASR::make_CustomOperator_t(al, loc, current_scope,
                 s2c(al, local_sym), procs.p, procs.size(),
                 ASR::down_cast<ASR::CustomOperator_t>(generic)->m_access);
