@@ -9250,7 +9250,7 @@ ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
 
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access,
-        const std::string &name_prefix) {
+        const std::string &name_prefix, const std::string &name_suffix) {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -9275,9 +9275,9 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
             !ASR::is_a<ASR::Struct_t>(*module_sym))) {
         return sym;
     }
-    std::string local_name = name_prefix + name;
+    std::string local_name = name_prefix + name + name_suffix;
     for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
-        local_name = name_prefix + name + std::to_string(i);
+        local_name = name_prefix + name + name_suffix + std::to_string(i);
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
         ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
@@ -13850,9 +13850,18 @@ void ReplaceArgVisitor::replace_FunctionCall(ASR::FunctionCall_t* x) {
             x->m_name = new_es;
             if( x->m_original_name ) {
                 // The original_name (e.g. a GenericProcedure) has to be
-                // visible for modfile serialisation to find its table.
+                // visible for modfile serialisation to find its table. A
+                // generic is imported as `<generic>@<specific>`: its own
+                // name would hide an entity the program names, such as the
+                // intrinsic `len` for `len` of a module.
+                ASR::symbol_t* original = ASRUtils::symbol_get_past_external(
+                    x->m_original_name);
+                std::string suffix = ASR::is_a<ASR::GenericProcedure_t>(*original) ||
+                    ASR::is_a<ASR::CustomOperator_t>(*original)
+                    ? "@" + std::string(ASRUtils::symbol_name(f)) : "";
                 x->m_original_name = import_symbol(al,
-                    x->m_original_name, current_scope);
+                    x->m_original_name, current_scope,
+                    ASR::accessType::Private, "", suffix);
                 ASRUtils::insert_module_dependency(x->m_original_name,
                     al, current_module_dependencies);
             }

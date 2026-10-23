@@ -2063,11 +2063,12 @@ static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
 // Returns a symbol that names the definition of `sym` from `scope`: `sym` or
 // its definition when named from there, an existing import of the definition,
 // or a new ExternalSymbol added to `scope` under a name that is free at this
-// point and starts with `name_prefix`. Returns `sym` unchanged when it cannot
-// be imported because no module or derived type owns its definition.
+// point and starts with `name_prefix` and ends with `name_suffix`. Returns
+// `sym` unchanged when it cannot be imported because no module or derived
+// type owns its definition.
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
-        const std::string &name_prefix="");
+        const std::string &name_prefix="", const std::string &name_suffix="");
 
 // The argument and result types of a procedure type can reference module
 // symbols named only where its interface is declared, for example the getter
