@@ -17237,131 +17237,6 @@ public:
         return nullptr;
     }
 
-    ASR::asr_t* symbol_resolve_external_generic_procedure_util(const Location &loc,
-        int idx, ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
-        ASR::GenericProcedure_t *g, ASR::ExternalSymbol_t *p) {
-        ASR::symbol_t *final_sym;
-        final_sym = ASRUtils::symbol_get_past_external(g->m_procs[idx]);
-        if (!ASR::is_a<ASR::Function_t>(*final_sym)) {
-            diag.add(Diagnostic("ExternalSymbol must point to a Function",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
-            throw SemanticAbort();
-        }
-        ASR::ttype_t *return_type = nullptr;
-        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-
-        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
-        if (first_array_arg) {
-            ASR::dimension_t* array_dims;
-            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(first_array_arg), array_dims
-            );
-            Vec<ASR::dimension_t> new_dims;
-            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-            return_type = ASRUtils::duplicate_type(
-                al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims
-            );
-        } else {
-            return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            return_type = handle_return_type(return_type, loc, args, func);
-        }
-        // Create ExternalSymbol for the final subroutine:
-        // We mangle the new ExternalSymbol's local name as:
-        //   generic_procedure_local_name @
-        //     specific_procedure_remote_name
-        std::string local_sym = std::string(p->m_name) + "@"
-            + ASRUtils::symbol_name(final_sym);
-        if (current_scope->get_symbol(local_sym) == nullptr) {
-            Str name;
-            name.from_str(al, local_sym);
-            char *cname = name.c_str(al);
-            ASR::asr_t *sub = ASR::make_ExternalSymbol_t(
-                al, g->base.base.loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ cname,
-                final_sym,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(final_sym)),
-                nullptr, 0, ASRUtils::symbol_name(final_sym),
-                ASR::accessType::Private
-                );
-            final_sym = ASR::down_cast<ASR::symbol_t>(sub);
-            current_scope->add_symbol(local_sym, final_sym);
-        } else {
-            final_sym = current_scope->get_symbol(local_sym);
-        }
-        ASR::expr_t *value = nullptr;
-        ASR::symbol_t* final_sym2 = ASRUtils::symbol_get_past_external(final_sym);
-        if (ASR::is_a<ASR::Function_t>(*final_sym2)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(final_sym2);
-            if (ASRUtils::is_intrinsic_procedure(f)) {
-                ASR::symbol_t* v2 = ASRUtils::symbol_get_past_external(v);
-                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(v2);
-
-                if (args.size() <= 2) {
-                    value = intrinsic_procedures.comptime_eval(gp->m_name, al, loc, args, compiler_options);
-                }
-            }
-        }
-        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
-        }
-        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-        validate_missing_required_arguments(loc, args, func);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-        cast_procedure_actuals(args, func);
-        return ASRUtils::make_FunctionCall_t_util(al, loc,
-            final_sym, v, args.p, args.size(), return_type,
-            value, nullptr, current_scope, current_function_dependencies,
-            compiler_options.implicit_argument_casting);
-    }
-
-    ASR::asr_t* symbol_resolve_external_generic_procedure(
-                const Location &loc,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
-        ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-        ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
-        ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
-        int idx = ASRUtils::select_generic_procedure(args, *g, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        });
-        return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
-    }
-
-    ASR::asr_t* symbol_resolve_external_generic_procedure_with_ast_node(
-                const AST::FuncCallOrArray_t &x,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args) {
-        const Location& loc = x.base.base.loc;
-        ASR::ExternalSymbol_t *p = ASR::down_cast<ASR::ExternalSymbol_t>(v);
-        ASR::symbol_t *f2 = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_external;
-        ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(f2);
-        int idx = ASRUtils::select_generic_procedure(args, *g, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    },
-                    false);
-        if( idx == -1 ) {
-            // if no GenericProcedure matches, we try matching it with
-            // StructConstructor first, we do this before trying an intrinsic
-            // procedure
-            ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
-            if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
-                return create_DerivedTypeConstructor(x, tmp_v);
-            }
-
-            bool is_function = true;
-            v = intrinsic_as_node(x, is_function, true);
-            if( !is_function ) {
-                return tmp;
-            }
-            return create_FunctionCall(loc, v, args);
-        } else {
-            return symbol_resolve_external_generic_procedure_util(loc, idx, v, args, g, p);
-        }
-    }
-
     ASR::asr_t* create_StructMethodDeclaration(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
                 AST::keyword_t* m_kwargs, size_t n_kwargs,
@@ -17435,49 +17310,173 @@ public:
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v) {
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-            return symbol_resolve_external_generic_procedure(loc, v,
-                    args);
-        } else {
-            ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-            int idx = ASRUtils::select_generic_procedure(args, *p, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        },
-                    false);
-            if( idx == -1 ) {
-                std::string v_name = ASRUtils::symbol_name(v);
-                v = resolve_intrinsic_function(loc, v_name);
-                if( !v ) {
-                    diag.add(Diagnostic("Couldn't find any function " + v_name + ".",
-                        Level::Error, Stage::Semantic, {Label("", {loc})}));
-                    throw SemanticAbort();
-                }
-                return create_FunctionCall(loc, v, args);
+        ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
+        int idx = ASRUtils::select_generic_procedure(args, *p, loc,
+                [&](const std::string &msg, const Location &loc) {
+                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    },
+                false);
+        if( idx == -1 ) {
+            std::string v_name = ASRUtils::symbol_name(v);
+            v = resolve_intrinsic_function(loc, v_name);
+            if( !v ) {
+                diag.add(Diagnostic("Couldn't find any function " + v_name + ".",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
             }
-            ASR::symbol_t *final_sym = p->m_procs[idx];
+            return create_FunctionCall(loc, v, args);
+        }
+        ASR::symbol_t *final_sym = p->m_procs[idx];
 
-            ASR::ttype_t *type = nullptr;
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(final_sym);
-            ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
-            if (first_array_arg) {
-                ASR::dimension_t* array_dims;
-                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                    ASRUtils::expr_type(first_array_arg), array_dims
-                );
-                Vec<ASR::dimension_t> new_dims;
-                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-                type = ASRUtils::duplicate_type(al,
-                                ASRUtils::get_FunctionType(func)->m_return_var_type,
-                                &new_dims);
-            } else {
-                type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-                type = handle_return_type(type, loc, args, func);
+        ASR::ttype_t *type = nullptr;
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(final_sym));
+        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
+        if (first_array_arg) {
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(first_array_arg), array_dims
+            );
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            type = ASRUtils::duplicate_type(al,
+                            ASRUtils::get_FunctionType(func)->m_return_var_type,
+                            &new_dims);
+        } else {
+            type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = handle_return_type(type, loc, args, func);
+        }
+        if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
+            ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
+        }
+        ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+        validate_missing_required_arguments(loc, args, func);
+        ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+        cast_procedure_actuals(args, func);
+        return ASRUtils::make_FunctionCall_t_util(al, loc,
+            final_sym, v, args.p, args.size(), type,
+            nullptr, nullptr, current_scope, current_function_dependencies,
+            compiler_options.implicit_argument_casting);
+    }
+
+    ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
+        const Location& loc = x.base.base.loc;
+        ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
+        int idx = ASRUtils::select_generic_procedure(args, *p, loc,
+                [&](const std::string &msg, const Location &loc) {
+                        diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    },
+                false, is_dt_present);
+        if( idx == -1 ) {
+            ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
+            if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
+                return create_DerivedTypeConstructor(x, tmp_v);
             }
+
+            bool is_function = true;
+            v = intrinsic_as_node(x, is_function, true);
+            if( !is_function ) {
+                return tmp;
+            }
+            return create_FunctionCall(loc, v, args);
+        }
+        ASR::symbol_t *final_sym = p->m_procs[idx];
+
+        ASR::ttype_t *type = nullptr;
+        ASR::symbol_t *cp_s = nullptr;
+        ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
+        // A generic binding inherited from a parent type names a specific
+        // binding, which an extended type may override. Resolve that
+        // binding name in the declared type of the passed object, so the
+        // call uses the overriding binding (and its interface).
+        if (is_dt_present && args.size() >= 1 &&
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    ASRUtils::expr_type(args[0].m_value)))) {
+            SymbolTable* scope = current_scope;
+            final_sym_past_ext = ASRUtils::symbol_get_past_external(
+                resolve_deriv_type_proc(loc,
+                    ASRUtils::symbol_name(final_sym_past_ext), "",
+                    args[0].m_value,
+                    ASRUtils::extract_type(ASRUtils::expr_type(args[0].m_value)),
+                    scope));
+        }
+        bool is_nopass_method = false;
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
+            is_nopass_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                final_sym_past_ext)->m_is_nopass;
+            cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
+                final_sym_past_ext, current_scope);
+            final_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc);
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
+        // For a `nopass` specific selected from a type-bound generic call,
+        // `args[0]` is the passed-object, which a nopass procedure does not
+        // accept as an argument. Drop it so the actual arguments line up
+        // with the procedure's dummy arguments.
+        ASR::expr_t* passed_object = nullptr;
+        if (is_nopass_method && is_dt_present && args.size() >= 1) {
+            passed_object = args[0].m_value;
+            Vec<ASR::call_arg_t> args_no_dt;
+            args_no_dt.reserve(al, args.size() - 1);
+            for (size_t i = 1; i < args.size(); i++) {
+                args_no_dt.push_back(al, args[i]);
+            }
+            args = args_no_dt;
+        }
+        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
+        if (first_array_arg) {
+            ASR::dimension_t* array_dims;
+            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(first_array_arg), array_dims);
+            Vec<ASR::dimension_t> new_dims;
+            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+            type = ASRUtils::duplicate_type(al,
+                    ASRUtils::get_FunctionType(func)->m_return_var_type,
+                    &new_dims);
+        } else {
+            type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+            type = handle_return_type(type, loc, args, func);
+        }
+        if (cp_s != nullptr) {
+            if (ASRUtils::symbol_parent_symtab(cp_s)->get_counter() != current_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES(current_scope, cp_s, current_function_dependencies);
+            }
+            ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
+            ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+            if (is_nopass_method) {
+                // The passed-object has already been dropped from `args`, so
+                // the call arguments map directly onto the procedure's args.
+                validate_missing_required_arguments(loc, args, func);
+                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+                return ASRUtils::make_FunctionCall_t_util(al, loc,
+                    cp_s, nullptr, args.p, args.size(), type,
+                    nullptr, passed_object, current_scope, current_function_dependencies,
+                    compiler_options.implicit_argument_casting);
+            }
+            Vec<ASR::call_arg_t> args_without_dt; args_without_dt.reserve(al, args.size() - 1);
+            for (size_t i = 1; i < args.size(); i++) {
+                args_without_dt.push_back(al, args[i]);
+            }
+            validate_missing_required_arguments(loc, args, func);
+            ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
+            ASR::call_arg_t* call_args = args_without_dt.p;
+            size_t n_call_args = args_without_dt.size();
+            ASRUtils::insert_self_arg(al, cp_s, call_args, n_call_args, args[0].m_value);
+            return ASRUtils::make_FunctionCall_t_util(al, loc,
+                cp_s, nullptr, call_args, n_call_args, type,
+                nullptr, args[0].m_value, current_scope, current_function_dependencies,
+                compiler_options.implicit_argument_casting);
+        } else {
             if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
                 ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
             }
+            ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
             validate_missing_required_arguments(loc, args, func);
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
@@ -17486,139 +17485,6 @@ public:
                 final_sym, v, args.p, args.size(), type,
                 nullptr, nullptr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
-        }
-    }
-
-    ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
-        const Location& loc = x.base.base.loc;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*v)) {
-            return symbol_resolve_external_generic_procedure_with_ast_node(x, v,
-                    args);
-        } else {
-            ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-            int idx = ASRUtils::select_generic_procedure(args, *p, loc,
-                    [&](const std::string &msg, const Location &loc) {
-                            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
-                            throw SemanticAbort();
-                        },
-                    false, is_dt_present);
-            if( idx == -1 ) {
-                ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
-                if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
-                    return create_DerivedTypeConstructor(x, tmp_v);
-                }
-
-                bool is_function = true;
-                v = intrinsic_as_node(x, is_function, true);
-                if( !is_function ) {
-                    return tmp;
-                }
-                return create_FunctionCall(loc, v, args);
-            }
-            ASR::symbol_t *final_sym = p->m_procs[idx];
-
-            ASR::ttype_t *type = nullptr;
-            ASR::symbol_t *cp_s = nullptr;
-            ASR::symbol_t *final_sym_past_ext = ASRUtils::symbol_get_past_external(final_sym);
-            // A generic binding inherited from a parent type names a specific
-            // binding, which an extended type may override. Resolve that
-            // binding name in the declared type of the passed object, so the
-            // call uses the overriding binding (and its interface).
-            if (is_dt_present && args.size() >= 1 &&
-                    ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext) &&
-                    ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
-                        ASRUtils::expr_type(args[0].m_value)))) {
-                SymbolTable* scope = current_scope;
-                final_sym_past_ext = ASRUtils::symbol_get_past_external(
-                    resolve_deriv_type_proc(loc,
-                        ASRUtils::symbol_name(final_sym_past_ext), "",
-                        args[0].m_value,
-                        ASRUtils::extract_type(ASRUtils::expr_type(args[0].m_value)),
-                        scope));
-            }
-            bool is_nopass_method = false;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
-                is_nopass_method = ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                    final_sym_past_ext)->m_is_nopass;
-                cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
-                    final_sym_past_ext, current_scope);
-                final_sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym_past_ext)->m_proc);
-            }
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
-            // For a `nopass` specific selected from a type-bound generic call,
-            // `args[0]` is the passed-object, which a nopass procedure does not
-            // accept as an argument. Drop it so the actual arguments line up
-            // with the procedure's dummy arguments.
-            ASR::expr_t* passed_object = nullptr;
-            if (is_nopass_method && is_dt_present && args.size() >= 1) {
-                passed_object = args[0].m_value;
-                Vec<ASR::call_arg_t> args_no_dt;
-                args_no_dt.reserve(al, args.size() - 1);
-                for (size_t i = 1; i < args.size(); i++) {
-                    args_no_dt.push_back(al, args[i]);
-                }
-                args = args_no_dt;
-            }
-            ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
-            if (first_array_arg) {
-                ASR::dimension_t* array_dims;
-                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                    ASRUtils::expr_type(first_array_arg), array_dims);
-                Vec<ASR::dimension_t> new_dims;
-                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-                type = ASRUtils::duplicate_type(al,
-                        ASRUtils::get_FunctionType(func)->m_return_var_type,
-                        &new_dims);
-            } else {
-                type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-                type = handle_return_type(type, loc, args, func);
-            }
-            if (cp_s != nullptr) {
-                if (ASRUtils::symbol_parent_symtab(cp_s)->get_counter() != current_scope->get_counter()) {
-                    ADD_ASR_DEPENDENCIES(current_scope, cp_s, current_function_dependencies);
-                }
-                ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
-                ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-                if (is_nopass_method) {
-                    // The passed-object has already been dropped from `args`, so
-                    // the call arguments map directly onto the procedure's args.
-                    validate_missing_required_arguments(loc, args, func);
-                    ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-                    return ASRUtils::make_FunctionCall_t_util(al, loc,
-                        cp_s, nullptr, args.p, args.size(), type,
-                        nullptr, passed_object, current_scope, current_function_dependencies,
-                        compiler_options.implicit_argument_casting);
-                }
-                Vec<ASR::call_arg_t> args_without_dt; args_without_dt.reserve(al, args.size() - 1);
-                for (size_t i = 1; i < args.size(); i++) {
-                    args_without_dt.push_back(al, args[i]);
-                }
-                validate_missing_required_arguments(loc, args, func);
-                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-                ASR::call_arg_t* call_args = args_without_dt.p;
-                size_t n_call_args = args_without_dt.size();
-                ASRUtils::insert_self_arg(al, cp_s, call_args, n_call_args, args[0].m_value);
-                return ASRUtils::make_FunctionCall_t_util(al, loc,
-                    cp_s, nullptr, call_args, n_call_args, type,
-                    nullptr, args[0].m_value, current_scope, current_function_dependencies,
-                    compiler_options.implicit_argument_casting);
-            } else {
-                if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
-                    ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
-                }
-                ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-                ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-                validate_missing_required_arguments(loc, args, func);
-                ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
-                cast_procedure_actuals(args, func);
-                return ASRUtils::make_FunctionCall_t_util(al, loc,
-                    final_sym, v, args.p, args.size(), type,
-                    nullptr, nullptr, current_scope, current_function_dependencies,
-                    compiler_options.implicit_argument_casting);
-            }
         }
     }
 
@@ -24418,6 +24284,11 @@ public:
             throw SemanticAbort();
         }
         char *fn_name = ASRUtils::symbol_name(t);
+        append_module_dependency(m->m_name);
+        if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
+            import_generic(t, fn_name);
+            return current_scope->get_symbol(fn_name);
+        }
         ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
             al, t->base.loc,
             /* a_symtab */ current_scope,
@@ -24429,9 +24300,7 @@ public:
         std::string sym = fn_name;
 
         current_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(fn));
-        ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(fn);
-        append_module_dependency(m->m_name);
-        return v;
+        return ASR::down_cast<ASR::symbol_t>(fn);
     }
 
     bool is_integer(ASR::ttype_t &t) {
@@ -25345,30 +25214,8 @@ public:
             }
 
             std::string func_name = to_lower(single_func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-
-            if (call_sym == nullptr) {
-                call_sym = current_scope->resolve_symbol(matched_func_name);
-            }
-            if (call_sym == nullptr && first_struct != nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter() == current_scope->get_counter())
-                    call_sym = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        call_sym = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        call_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, real_proc->base.loc, current_scope,
-                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
-                        current_scope->add_symbol(matched_func_name, call_sym);
-                    }
-                }
-            }
+            ASR::symbol_t* call_sym = ASRUtils::import_type_bound_specific(al,
+                current_scope, operator_sym, to_lower(new_op));
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
                 != current_scope->get_counter()) {
                 ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
@@ -25412,44 +25259,8 @@ public:
                     al, ASRUtils::expr_type(func->m_return_var));
             }
 
-            std::string func_name = to_lower(func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-            ASR::symbol_t* a_name = current_scope->resolve_symbol(func_name);
-            if(a_name == nullptr) {
-                a_name = current_scope->resolve_symbol(matched_func_name);
-            }
-            if (a_name == nullptr && first_struct != nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(operator_sym);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                        == current_scope->get_counter())
-                    a_name = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        a_name = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        a_name = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(
-                                al, real_proc->base.loc, current_scope,
-                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                            )
-                        );
-                        current_scope->add_symbol(matched_func_name, a_name);
-                    }
-                }
-            }
-
-            if (!a_name) {
-                diag.add(Diagnostic(
-                    "Unable to resolve matched function: " + func_name
-                    + " for defined binary operation",
-                    Level::Error,
-                    Stage::Semantic,
-                    { Label("", { loc }) }));
-                throw SemanticAbort();
-            }
+            ASR::symbol_t* a_name = ASRUtils::import_type_bound_specific(al,
+                current_scope, operator_sym, to_lower(new_op));
 
             tmp = ASRUtils::make_FunctionCall_t_util(
                 al, loc, a_name, nullptr,
@@ -25540,37 +25351,13 @@ public:
                 return_type = handle_return_type(return_type, loc, a_args, func);
             }
             std::string func_name = to_lower(func->m_name);
-            std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-            ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-            if (call_sym == nullptr) {
-                ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
-                ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                        == current_scope->get_counter())
-                    call_sym = real_proc;
-                else {
-                    if (current_scope->resolve_symbol(matched_func_name))
-                        call_sym = current_scope->resolve_symbol(matched_func_name);
-                    else {
-                        call_sym = ASR::down_cast<ASR::symbol_t>(
-                            ASR::make_ExternalSymbol_t(
-                                al, real_proc->base.loc, current_scope,
-                                s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                            )
-                        );
-                        current_scope->add_symbol(matched_func_name, call_sym);
-                    }
-                }
-            }
-
-            if (call_sym == nullptr) {
-                diag.add(Diagnostic(
-                    "Unable to resolve matched function: " + func_name + " for defined operator",
-                    Level::Error, Stage::Semantic, { Label("", { loc }) }
-                ));
-                throw SemanticAbort();
+            ASR::symbol_t* call_sym = nullptr;
+            if (op_sym != nullptr && !ASRUtils::is_type_bound_generic(operator_sym)
+                    && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
+                call_sym = gen_proc->m_procs[i];
+            } else {
+                call_sym = ASRUtils::import_type_bound_specific(al, current_scope,
+                    proc, to_lower(new_op));
             }
 
             if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
@@ -25638,31 +25425,8 @@ public:
                             al, ASRUtils::expr_type(func->m_return_var));
                     }
                     std::string func_name = to_lower(func->m_name);
-                    std::string matched_func_name = func_name + "@" + std::string(to_lower(new_op));
-                    ASR::symbol_t* call_sym = current_scope->resolve_symbol(func_name);
-                    if (call_sym == nullptr) {
-                        ASR::symbol_t* real_proc = ASRUtils::symbol_get_past_external(proc);
-                        ASR::symbol_t* owner = ASRUtils::get_asr_owner(real_proc);
-                        std::string module_name = owner ? ASRUtils::symbol_name(owner) : "";
-                        if (ASRUtils::symbol_parent_symtab(real_proc)->get_counter()
-                                == current_scope->get_counter())
-                            call_sym = real_proc;
-                        else {
-                            if (current_scope->resolve_symbol(matched_func_name))
-                                call_sym = current_scope->resolve_symbol(matched_func_name);
-                            else {
-                                call_sym = ASR::down_cast<ASR::symbol_t>(
-                                    ASR::make_ExternalSymbol_t(
-                                        al, real_proc->base.loc, current_scope,
-                                        s2c(al, matched_func_name), real_proc, s2c(al, module_name),
-                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public
-                                    )
-                                );
-                                current_scope->add_symbol(matched_func_name, call_sym);
-                            }
-                        }
-                    }
-                    if (call_sym == nullptr) continue;
+                    ASR::symbol_t* call_sym = ASRUtils::import_type_bound_specific(al,
+                        current_scope, proc, to_lower(new_op));
                     if (ASRUtils::symbol_parent_symtab(call_sym)->get_counter()
                             != current_scope->get_counter()) {
                         ADD_ASR_DEPENDENCIES_WITH_NAME(
@@ -25773,51 +25537,13 @@ public:
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = op_proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)) {
-                // Type-bound operator: resolve the underlying function
-                ASR::StructMethodDeclaration_t* sm = ASR::down_cast<ASR::StructMethodDeclaration_t>(v);
-                ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(sm->m_proc);
-                std::string func_name = ASRUtils::symbol_name(func_sym);
-                v = current_scope->resolve_symbol(func_name);
-                if (v == nullptr) {
-                    // Function is in another module, import it
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    v = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_name), func_sym,
-                            ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_name, v);
-                }
-            } else {
-                std::string func_name = ASRUtils::symbol_name(v);
-                ASR::symbol_t* resolved = current_scope->resolve_symbol(func_name);
-                if (resolved == nullptr) {
-                    resolved = current_scope->resolve_symbol(func_name + "@~concat");
-                }
-                if (resolved == nullptr) {
-                    // The specific procedure is not directly accessible in the
-                    // current scope. This happens when the operator interface is
-                    // re-exported through an intermediate module (only the
-                    // operator, not the specific procedures, is made public). The
-                    // procedure symbol `op_proc` is still valid, so import the
-                    // underlying function via an ExternalSymbol pointing to it.
-                    ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(op_proc);
-                    ASR::symbol_t* func_parent = ASRUtils::get_asr_owner(func_sym);
-                    resolved = ASR::down_cast<ASR::symbol_t>(
-                        ASR::make_ExternalSymbol_t(
-                            al, x.base.base.loc, current_scope,
-                            s2c(al, func_name), func_sym,
-                            ASRUtils::symbol_name(func_parent), nullptr, 0,
-                            s2c(al, func_name), ASR::accessType::Public
-                        )
-                    );
-                    current_scope->add_symbol(func_name, resolved);
-                }
-                v = resolved;
+            // An operator found through an operand's type is not imported.
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*v)
+                    || !ASRUtils::is_symbol_of_scope_chain(current_scope, v)) {
+                ASR::symbol_t* proc = ASR::is_a<ASR::StructMethodDeclaration_t>(*v)
+                    ? ASR::down_cast<ASR::StructMethodDeclaration_t>(v)->m_proc : op_proc;
+                v = ASRUtils::import_type_bound_specific(al, current_scope, proc,
+                    intrinsic_op_name);
             }
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
@@ -28337,98 +28063,98 @@ public:
         }
     }
 
-    void get_indirect_public_symbols(const ASR::Module_t* m,
-                                    std::set<std::string> &indirect_public_symbols) {
-        // Get all public symbols from the module
-        for (auto &item : m->m_symtab->get_scope()) {
-            // A private procedure bound to a public type is not imported: the
-            // type-bound procedure refers to it directly, and its name stays
-            // free for a procedure of the using scope.
-            if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
-                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
-                if (gp->m_access != ASR::accessType::Private) {
-                    for (size_t i = 0; i < gp->n_procs; i++ ) {
-                        indirect_public_symbols.insert(ASRUtils::symbol_name(gp->m_procs[i]));
-                    }
-                }
-            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
-                ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(item.second);
-                if (cop->m_access != ASR::accessType::Private) {
-                    for (size_t i = 0; i < cop->n_procs; i++ ) {
-                        indirect_public_symbols.insert(ASRUtils::symbol_name(cop->m_procs[i]));
-                    }
-                }
-            }
+    // This scope's import of `specific`, a specific procedure of the generic
+    // procedure or operator imported here as `generic_name`: a private
+    // ExternalSymbol named `<specific>@<generic>`, with a number added if a
+    // different procedure has that name.
+    ASR::symbol_t *import_generic_specific(ASR::symbol_t *specific,
+            const std::string &generic_name) {
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(specific);
+        if (!ASR::is_a<ASR::Function_t>(*target)) {
+            return specific;
         }
+        ASR::Module_t *owner = ASRUtils::get_sym_module(target);
+        if (owner == nullptr) {
+            return specific;
+        }
+        std::string name = std::string(ASRUtils::symbol_name(target)) + "@" + generic_name;
+        std::string local_name = name;
+        for (int i = 1; current_scope->get_symbol(local_name) != nullptr; i++) {
+            ASR::symbol_t *s = current_scope->get_symbol(local_name);
+            if (ASRUtils::symbol_get_past_external(s) == target) {
+                return s;
+            }
+            local_name = name + std::to_string(i);
+        }
+        ASR::symbol_t *s = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, target->base.loc, current_scope, s2c(al, local_name), target,
+            owner->m_name, nullptr, 0, ASRUtils::symbol_name(target),
+            ASR::accessType::Private));
+        current_scope->add_symbol(local_name, s);
+        append_module_dependency(owner->m_name);
+        return s;
     }
 
-    // Return true if every specific procedure of `incoming` resolves (past
-    // ExternalSymbol) to a specific already referenced by `existing`. Used to
-    // avoid re-merging a GenericProcedure/CustomOperator that reaches the
-    // current scope through multiple re-export chains with identical content.
-    bool generic_specifics_subset(ASR::symbol_t* existing,
-            ASR::symbol_t* incoming, bool is_gp) {
-        size_t e_n, i_n;
-        ASR::symbol_t** e_procs;
-        ASR::symbol_t** i_procs;
-        if (is_gp) {
-            ASR::GenericProcedure_t* e = ASR::down_cast<ASR::GenericProcedure_t>(existing);
-            ASR::GenericProcedure_t* i = ASR::down_cast<ASR::GenericProcedure_t>(incoming);
-            e_n = e->n_procs; i_n = i->n_procs;
-            e_procs = e->m_procs; i_procs = i->m_procs;
-        } else {
-            ASR::CustomOperator_t* e = ASR::down_cast<ASR::CustomOperator_t>(existing);
-            ASR::CustomOperator_t* i = ASR::down_cast<ASR::CustomOperator_t>(incoming);
-            e_n = e->n_procs; i_n = i->n_procs;
-            e_procs = e->m_procs; i_procs = i->m_procs;
-        }
-        for (size_t ii = 0; ii < i_n; ii++) {
-            ASR::symbol_t* ip = ASRUtils::symbol_get_past_external(i_procs[ii]);
-            bool found = false;
-            for (size_t ee = 0; ee < e_n; ee++) {
-                if (ASRUtils::symbol_get_past_external(e_procs[ee]) == ip) {
-                    found = true;
-                    break;
+    // Import the generic procedure or operator `generic` of a module as
+    // `local_name`: a node of this scope whose procedures are this scope's
+    // imports of the generic's specifics. If the scope has that generic
+    // already, the specifics it lacks are added to it (F2018 C1515). See
+    // doc/src/asr/asr_nodes/symbol_nodes/GenericProcedure.md.
+    void import_generic(ASR::symbol_t *generic, const std::string &local_name) {
+        bool is_gp = ASR::is_a<ASR::GenericProcedure_t>(*generic);
+        Vec<ASR::symbol_t*> procs;
+        procs.reserve(al, 1);
+        // `g` is this scope's node when `in_scope`, else a generic to import.
+        auto add_specifics = [&](ASR::symbol_t *g, bool in_scope) {
+            ASR::symbol_t **g_procs;
+            size_t n_g_procs;
+            if (is_gp) {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(g);
+                g_procs = gp->m_procs;
+                n_g_procs = gp->n_procs;
+            } else {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(g);
+                g_procs = op->m_procs;
+                n_g_procs = op->n_procs;
+            }
+            for (size_t i = 0; i < n_g_procs; i++) {
+                ASR::symbol_t *target = ASRUtils::symbol_get_past_external(g_procs[i]);
+                bool present = false;
+                for (size_t j = 0; j < procs.size() && !present; j++) {
+                    present = ASRUtils::symbol_get_past_external(procs[j]) == target;
+                }
+                if (!present) {
+                    procs.push_back(al, in_scope
+                        ? g_procs[i] : import_generic_specific(g_procs[i], local_name));
                 }
             }
-            if (!found) return false;
+        };
+        ASR::symbol_t *existing = current_scope->get_symbol(local_name);
+        if (existing != nullptr && existing->type != generic->type) {
+            existing = nullptr;
         }
-        return true;
-    }
-
-    // Import a GenericProcedure/CustomOperator from module `m` into the
-    // current scope, merging with an existing same-named generic in the
-    // current scope if one is present. Used by `import_all` so that `use a;
-    // use b` merges generics defined in both modules (F2018 C1515), matching
-    // the behaviour of the `use, only:` path.
-    template <typename T>
-    void import_or_merge_generic(const ASR::Module_t* m, T* gp,
-            std::string& sym,
-            ASR::asr_t* (*constructor)(Allocator&, const Location&,
-                SymbolTable*, char*, ASR::symbol_t**, size_t,
-                ASR::accessType)) {
-        ASR::Module_t* m_nc = const_cast<ASR::Module_t*>(m);
-        if (current_scope->get_symbol(sym) != nullptr) {
-            std::queue<std::pair<std::string, std::string>> tbi;
-            process_generic_proc_custom_op<T>(sym, (ASR::symbol_t*)gp, tbi,
-                gp->base.base.loc, m_nc, constructor, nullptr);
-            while (!tbi.empty()) {
-                std::string rs = tbi.front().first;
-                std::string ls = tbi.front().second;
-                tbi.pop();
-                if (current_scope->resolve_symbol(ls) == nullptr) {
-                    std::string msym_ = std::string(m->m_name);
-                    import_symbols_util(m_nc, msym_, rs, ls, tbi,
-                                        gp->base.base.loc);
-                }
+        if (existing != nullptr) {
+            add_specifics(existing, true);
+        }
+        add_specifics(generic, false);
+        if (existing != nullptr) {
+            if (is_gp) {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(existing);
+                gp->m_procs = procs.p;
+                gp->n_procs = procs.size();
+            } else {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(existing);
+                op->m_procs = procs.p;
+                op->n_procs = procs.size();
             }
             return;
         }
-        ASR::asr_t *ep = ASR::make_ExternalSymbol_t(
-            al, gp->base.base.loc, current_scope,
-            /* a_name */ gp->m_name, (ASR::symbol_t*)gp,
-            m->m_name, nullptr, 0, gp->m_name, dflt_access);
-        current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
+        ASR::asr_t *node = is_gp
+            ? ASR::make_GenericProcedure_t(al, generic->base.loc, current_scope,
+                s2c(al, local_name), procs.p, procs.size(), dflt_access)
+            : ASR::make_CustomOperator_t(al, generic->base.loc, current_scope,
+                s2c(al, local_name), procs.p, procs.size(), dflt_access);
+        current_scope->add_or_overwrite_symbol(local_name, ASR::down_cast<ASR::symbol_t>(node));
     }
 
     std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
@@ -28436,8 +28162,6 @@ public:
                            std::set<std::string> submodule_proc_names = {}) {
         // Import all symbols from the module, e.g.:
         //     use a
-        std::set<std::string> indirect_public_symbols;
-        get_indirect_public_symbols(m, indirect_public_symbols);
         for (auto &item : m->m_symtab->get_scope()) {
             if ( symbols_already_imported_with_renaming.size() > 0 &&
                  std::find(symbols_already_imported_with_renaming.begin(),
@@ -28470,22 +28194,13 @@ public:
                 if (!is_gp_merge && !is_co_merge) {
                     continue;
                 }
-                // Skip the merge if the incoming generic's specific procedures
-                // (compared by their past-external target) are all already
-                // referenced by the existing generic. This is the common case
-                // when the same underlying generic reaches the current scope
-                // through two re-export chains (each module constructs its own
-                // GenericProcedure node but the specifics are the same).
-                if (generic_specifics_subset(existing_past, incoming_past, is_gp_merge)) {
-                    continue;
-                }
             }
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if ((!to_submodule) &&
-                     mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
+                // A private specific of a generic comes with the generic,
+                // see import_generic.
+                if (!to_submodule && mfn->m_access == ASR::accessType::Private) {
                     continue;
                 }
                 if (to_submodule &&
@@ -28507,15 +28222,17 @@ public:
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
                     ASR::GenericProcedure_t>(item.second);
-                std::string sym = to_lower(gp->m_name);
-                import_or_merge_generic<ASR::GenericProcedure_t>(
-                    m, gp, sym, &ASR::make_GenericProcedure_t);
+                if (!to_submodule && gp->m_access == ASR::accessType::Private) {
+                    continue;
+                }
+                import_generic(item.second, to_lower(gp->m_name));
             }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
-                ASR::CustomOperator_t *gp = ASR::down_cast<
+                ASR::CustomOperator_t *op = ASR::down_cast<
                     ASR::CustomOperator_t>(item.second);
-                std::string sym = gp->m_name;
-                import_or_merge_generic<ASR::CustomOperator_t>(
-                    m, gp, sym, &ASR::make_CustomOperator_t);
+                if (!to_submodule && op->m_access == ASR::accessType::Private) {
+                    continue;
+                }
+                import_generic(item.second, op->m_name);
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
                 // check if m_access of mvar is public
@@ -28652,162 +28369,6 @@ public:
         return "";
     }
 
-    template <typename T>
-    void process_generic_proc_custom_op(std::string& local_sym, ASR::symbol_t *t,
-        std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
-        const Location& loc, ASR::Module_t *m,
-        ASR::asr_t* (*constructor) (Allocator&, const Location&, SymbolTable*,
-        char*, ASR::symbol_t**, size_t, ASR::accessType), T* /*ptr*/) {
-        if (current_scope->get_symbol(local_sym) != nullptr) {
-            ASR::symbol_t* gp_sym = current_scope->get_symbol(local_sym);
-            if( ASR::is_a<ASR::ExternalSymbol_t>(*gp_sym) ) {
-                gp_sym = ASRUtils::symbol_get_past_external(gp_sym);
-                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
-                T* gp = ASR::down_cast<T>(gp_sym);
-                T* gp_ext = ASR::down_cast<T>(t);
-                Vec<ASR::symbol_t*> gp_procs;
-                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                for( size_t i = 0; i < gp->n_procs; i++ ) {
-                    std::string gp_proc_name = ASRUtils::symbol_name(gp->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_proc_name);
-                    if (m_proc != nullptr) {
-                        // Verify the resolved symbol refers to the same function
-                        // as the one in the source generic procedure, not a
-                        // different function with the same name from another module
-                        ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(m_proc);
-                        ASR::symbol_t* expected = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
-                        if (resolved != expected) {
-                            m_proc = nullptr;
-                        }
-                    }
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = gp_proc_name + "@" + local_sym;
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_proc_name, local_sym_,
-                                                to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                }
-                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_ext_proc_name);
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = gp_ext_proc_name + "@" + local_sym;
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                local_sym_, to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                }
-                ASR::asr_t *ep = constructor(
-                    al, t->base.loc, current_scope, s2c(al, local_sym),
-                    gp_procs.p, gp_procs.size(), dflt_access);
-                current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-            } else {
-                LCOMPILERS_ASSERT(ASR::is_a<T>(*gp_sym));
-                T* gp = ASR::down_cast<T>(gp_sym);
-                T* gp_ext = ASR::down_cast<T>(t);
-                Vec<ASR::symbol_t*> gp_procs;
-                gp_procs.reserve(al, gp->n_procs + gp_ext->n_procs);
-                for( size_t i = 0; i < gp->n_procs; i++ ) {
-                    gp_procs.push_back(al, gp->m_procs[i]);
-                }
-                for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                    std::string gp_ext_proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                        gp_ext_proc_name);
-                    if( m_proc == nullptr ) {
-                        std::string local_sym_ = "@" + gp_ext_proc_name + "@";
-                        m_proc = current_scope->resolve_symbol(local_sym_);
-                        if( m_proc == nullptr ) {
-                            ASR::Module_t* m_ = ASRUtils::get_sym_module(gp_ext->m_procs[i]);
-                            std::string m__name = std::string(m_->m_name);
-                            import_symbols_util(m_, m__name, gp_ext_proc_name,
-                                                local_sym_, to_be_imported_later, loc);
-                            m_proc = current_scope->resolve_symbol(local_sym_);
-                        }
-                    }
-                    LCOMPILERS_ASSERT(m_proc != nullptr);
-                    if( !ASRUtils::present(gp_procs, m_proc) ) {
-                        gp_procs.push_back(al, m_proc);
-                    }
-                    gp_procs.push_back(al, m_proc);
-                }
-                gp->m_procs = gp_procs.p;
-                gp->n_procs = gp_procs.size();
-            }
-        } else {
-            T* gp_ext = ASR::down_cast<T>(t);
-            Vec<ASR::symbol_t*> gp_procs;
-            gp_procs.reserve(al, gp_ext->n_procs);
-            bool are_all_present = true;
-            for( size_t i = 0; i < gp_ext->n_procs; i++ ) {
-                ASR::symbol_t* m_proc = current_scope->resolve_symbol(
-                    ASRUtils::symbol_name(gp_ext->m_procs[i]));
-                if (m_proc != nullptr) {
-                    // Verify the resolved symbol refers to the same function
-                    // as the one in the source generic procedure, not a
-                    // different function with the same name from another module
-                    ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(m_proc);
-                    ASR::symbol_t* expected = ASRUtils::symbol_get_past_external(gp_ext->m_procs[i]);
-                    if (resolved != expected) {
-                        m_proc = nullptr;
-                    }
-                }
-                if( m_proc == nullptr ) {
-                    are_all_present = false;
-                    std::string proc_name = ASRUtils::symbol_name(gp_ext->m_procs[i]);
-                    std::string suffix = "@" + local_sym;
-                    std::string extern_name;
-                    if (proc_name.length() >= suffix.length()) {
-                        if (proc_name.compare(proc_name.length() - suffix.length(),
-                                            suffix.length(),
-                                            suffix) == 0) {
-                            // If already suffix is added (see custom_operator_11.f90),
-                            // don't add again
-                            extern_name = proc_name;
-                        } else {
-                            extern_name = proc_name + suffix;
-                        }
-                    } else {
-                        extern_name = proc_name + suffix;
-                    }
-                    to_be_imported_later.push(std::make_pair(proc_name, extern_name));
-                }
-                gp_procs.push_back(al, m_proc);
-            }
-            ASR::asr_t *ep = nullptr;
-            if( are_all_present ) {
-                ep = constructor(
-                    al, t->base.loc, current_scope, s2c(al, local_sym),
-                    gp_procs.p, gp_procs.size(), dflt_access);
-            } else {
-                ep = ASR::make_ExternalSymbol_t(al, t->base.loc,
-                    current_scope, s2c(al, local_sym), t,
-                    m->m_name, nullptr, 0, gp_ext->m_name, dflt_access);
-            }
-            current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(ep));
-        }
-    }
-
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
                              std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
@@ -28849,12 +28410,9 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(sub));
-        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
-            process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym, t,
-                to_be_imported_later, loc, m, &ASR::make_GenericProcedure_t, nullptr);
-        } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
-            process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym, t,
-                to_be_imported_later, loc, m, &ASR::make_CustomOperator_t, nullptr);
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*t) ||
+                ASR::is_a<ASR::CustomOperator_t>(*t)) {
+            import_generic(t, local_sym);
         } else if (ASR::is_a<ASR::Function_t>(*t)) {
             bool is_already_defined = false;
             ASR::symbol_t* imported_func_sym = current_scope->get_symbol(local_sym);
@@ -29028,15 +28586,6 @@ public:
                     to_be_imported_later.push(
                         std::make_pair("~" + remote_sym, "~" + local_sym));
                 }
-            }
-            if( ASR::is_a<ASR::GenericProcedure_t>(*ext_sym->m_external) ) {
-                process_generic_proc_custom_op<ASR::GenericProcedure_t>(local_sym,
-                    ext_sym->m_external, to_be_imported_later, loc, m,
-                    &ASR::make_GenericProcedure_t, nullptr);
-            } else if( ASR::is_a<ASR::CustomOperator_t>(*ext_sym->m_external) ) {
-                process_generic_proc_custom_op<ASR::CustomOperator_t>(local_sym,
-                    ext_sym->m_external, to_be_imported_later, loc, m,
-                    &ASR::make_CustomOperator_t, nullptr);
             }
         } else {
             throw LCompilersException("Only Subroutines, Functions, Variables and Derived supported in 'use', found: " +

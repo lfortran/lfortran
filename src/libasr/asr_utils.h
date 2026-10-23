@@ -812,6 +812,31 @@ static inline ASR::Module_t *get_sym_module(const ASR::symbol_t *sym) {
     return nullptr;
 }
 
+// Whether `sym` is a generic procedure or operator bound to a derived type.
+static inline bool is_type_bound_generic(ASR::symbol_t *sym) {
+    ASR::asr_t *owner = symbol_parent_symtab(symbol_get_past_external(sym))->asr_owner;
+    return owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)
+        && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+}
+
+// Whether `sym` is a symbol of `scope` or of a scope that contains it.
+static inline bool is_symbol_of_scope_chain(SymbolTable *scope, ASR::symbol_t *sym) {
+    SymbolTable *sym_scope = symbol_parent_symtab(sym);
+    for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+        if (s == sym_scope) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The symbol through which `scope` calls `proc`, a procedure bound to the
+// type-bound operator `generic`. A type and its bindings can be used
+// without `use`, so the procedure is imported here, at the call, as
+// `<proc>@<generic>`, unless `scope` already has it.
+ASR::symbol_t *import_type_bound_specific(Allocator &al, SymbolTable *scope,
+    ASR::symbol_t *proc, const std::string &generic);
+
 ASR::symbol_t *get_asr_owner(const ASR::expr_t *expr);
 
 // Returns the Module_t the symbol is in, or nullptr if not in a module
@@ -2025,11 +2050,12 @@ static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
 // Returns a symbol that names the definition of `sym` from `scope`: `sym` or
 // its definition when named from there, an existing import of the definition,
 // or a new ExternalSymbol added to `scope` under a name that is free at this
-// point and starts with `name_prefix`. Returns `sym` unchanged when it cannot
-// be imported because no module or derived type owns its definition.
+// point and starts with `name_prefix` and ends with `name_suffix`. Returns
+// `sym` unchanged when it cannot be imported because no module or derived
+// type owns its definition.
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
-        const std::string &name_prefix="");
+        const std::string &name_prefix="", const std::string &name_suffix="");
 
 // The argument and result types of a procedure type can reference module
 // symbols named only where its interface is declared, for example the getter

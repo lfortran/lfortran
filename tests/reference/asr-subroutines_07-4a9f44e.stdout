@@ -17,25 +17,22 @@
                                     f
                                     Public
                                 ),
-                            f_int:
+                            f@f_int:
                                 (ExternalSymbol
                                     4
-                                    f_int
-                                    2 f_int
-                                    subroutines_07_mod
-                                    []
-                                    f_int
-                                    Public
-                                ),
-                            f_int@f:
-                                (ExternalSymbol
-                                    4
-                                    f_int@f
+                                    f@f_int
                                     2 f
                                     subroutines_07_mod
                                     []
                                     f
                                     Private
+                                ),
+                            f_int:
+                                (GenericProcedure
+                                    4
+                                    f_int
+                                    [4 f@f_int]
+                                    Public
                                 ),
                             i:
                                 (Variable
@@ -173,7 +170,7 @@
                         .false.
                     )
                     (SubroutineCall
-                        4 f_int@f
+                        4 f@f_int
                         4 f_int
                         [((Var 4 i))
                         ((Var 4 j))

@@ -189,9 +189,8 @@
                                 (GenericProcedure
                                     2
                                     new
-                                    [2 new_array
-                                    2 new_keyval
-                                    2 new_keyval]
+                                    [2 new_array@new
+                                    2 new_keyval@new]
                                     Public
                                 ),
                             new_array:
@@ -204,6 +203,16 @@
                                     new_array
                                     Public
                                 ),
+                            new_array@new:
+                                (ExternalSymbol
+                                    2
+                                    new_array@new
+                                    4 new_array
+                                    tomlf_type_array
+                                    []
+                                    new_array
+                                    Private
+                                ),
                             new_keyval:
                                 (ExternalSymbol
                                     2
@@ -213,6 +222,16 @@
                                     []
                                     new_keyval
                                     Public
+                                ),
+                            new_keyval@new:
+                                (ExternalSymbol
+                                    2
+                                    new_keyval@new
+                                    20 new_keyval
+                                    tomlf_type_keyval
+                                    []
+                                    new_keyval
+                                    Private
                                 ),
                             toml_array:
                                 (ExternalSymbol
