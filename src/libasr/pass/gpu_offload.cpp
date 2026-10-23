@@ -494,62 +494,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
-    // Wrap liveout scalars (assigned user variables still in
-    // involved_syms) in 1-element FixedSizeArrays so they can be
-    // passed as writable device buffers and read back after the kernel.
-    std::vector<LiveoutScalarInfo> liveout_scalars;
+    // What the loop defines and the host reads after it: each thread keeps
+    // a private copy of it, and puts what it defines back where the value
+    // is shared (gpu_offload_liveout.cpp).
+    GpuLiveoutPlan liveouts;
+    if (!plan_liveouts(loc, assigned_vars, loop_var_set, reduction_names,
+            local_scalar_names, involved_syms, liveouts)) {
+        return;
+    }
     {
-        ASR::ttype_t *int4_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
-        std::vector<std::string> liveout_names;
-        for (auto &name : assigned_vars) {
-            if (loop_var_set.count(name)) continue;
-            if (local_scalar_names.count(name)) continue;
-            // A reduction accumulator is written by every thread. One
-            // shared slot would be a race, so it gets a slot per thread
-            // below instead of the single liveout buffer.
-            if (reduction_names.count(name)) continue;
-            auto it = involved_syms.find(name);
-            if (it != involved_syms.end()) {
-                ASR::ttype_t *type = it->second.first;
-                if (!ASRUtils::is_array(type)) {
-                    liveout_names.push_back(name);
-                }
-            }
-        }
-        for (auto &name : liveout_names) {
-            auto it = involved_syms.find(name);
-            ASR::ttype_t *scalar_type = it->second.first;
-            ASR::symbol_t *orig_sym = current_scope->resolve_symbol(name);
-
-            ASR::dimension_t dim;
-            dim.loc = loc;
-            dim.m_start = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 1, int4_type,
-                    ASR::integerbozType::Decimal));
-            dim.m_length = ASRUtils::EXPR(
-                ASR::make_IntegerConstant_t(al, loc, 1, int4_type,
-                    ASR::integerbozType::Decimal));
-            Vec<ASR::dimension_t> dims_vec;
-            dims_vec.reserve(al, 1);
-            dims_vec.push_back(al, dim);
-            ASR::ttype_t *arr_type = ASRUtils::TYPE(
-                ASR::make_Array_t(al, loc,
-                    ASRUtils::duplicate_type(al, scalar_type),
-                    dims_vec.p, 1,
-                    ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
-
-            std::string buf_name = current_scope->get_unique_name(
-                "__gpu_buf_" + name);
-            ASR::symbol_t *buf_sym = gpu_new_variable(al, loc,
-                current_scope, buf_name, ASRUtils::duplicate_type(al,
-                    arr_type));
-            it->second.first = arr_type;
-
-            liveout_scalars.push_back(
-                {name, buf_name, buf_sym, orig_sym, scalar_type});
-        }
-
         // One accumulator per iteration. The extent is only known when the
         // launch has worked out how many threads it is dispatching, so the
         // host array is deferred-shape and the launch allocates it.
@@ -741,17 +694,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
         ASR::call_arg_t carg;
         carg.loc = loc;
-        // For liveout scalars, use the host-side 1-element array
-        // buffer as the call arg so it's passed as a device buffer
         bool is_liveout = false;
-        for (auto &ls : liveout_scalars) {
-            if (ls.orig_name == sym_name) {
-                carg.m_value = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, ls.host_buf_sym));
-                is_liveout = true;
-                break;
-            }
-        }
         for (auto &r : pending_reductions) {
             if (r.host_buf_sym && r.orig_name == sym_name) {
                 carg.m_value = ASRUtils::EXPR(
@@ -1110,6 +1053,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASRUtils::duplicate_type(al, type),
             ASR::intentType::Local, type_decl);
     }
+
+    declare_liveout_copies(loc, kernel_scope, liveouts);
 
     // Import functions/subroutines called in the loop body
     // into the kernel scope so FunctionCall/SubroutineCall nodes
@@ -2793,6 +2738,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         LCOMPILERS_ASSERT(leaves.reason == GpuDeclineReason::None);
     }
 
+    enter_liveouts(loc, kernel_scope, kernel_body, liveouts);
+
     // Add copied loop body (already remapped)
     for (size_t i = 0; i < body_copy.n; i++) {
         kernel_body.push_back(al, body_copy.p[i]);
@@ -2838,6 +2785,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.p, kernel_body.n,
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
+    write_back_liveouts(*ASR::down_cast2<ASR::Function_t>(kernel_func),
+        liveouts);
     gpu_lift_host_association(al,
         *ASR::down_cast2<ASR::Function_t>(kernel_func));
 
@@ -2851,7 +2800,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.private_shapes = private_shapes;
     plan.gather_stmts = gather_stmts;
     plan.scatter_stmts = scatter_stmts;
-    plan.liveout_scalars = liveout_scalars;
+    plan.liveout_scalars = liveouts.scalars;
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;

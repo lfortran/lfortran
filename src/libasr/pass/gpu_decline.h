@@ -199,6 +199,13 @@ enum class GpuDeclineReason {
     // A procedure that can stop, which is given hidden arguments, but is
     // also passed as an actual argument or is not a copy the kernel owns.
     StoppingProcedureShared,
+    // A scalar the loop defines whose value is kept after it, of a type
+    // the buffer that carries the value back to the host cannot hold:
+    // `type_name` says which ("complex(4)", "character", "allocatable").
+    LiveoutScalar,
+    // A derived-type variable the loop defines whose value is kept after
+    // it.
+    LiveoutDerivedType,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,

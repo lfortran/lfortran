@@ -73,6 +73,124 @@ std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
     return order;
 }
 
+ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
+        ASR::symbol_t *buffer, ASR::ttype_t *scalar_type) {
+    ASR::array_index_t index;
+    index.loc = loc;
+    index.m_left = nullptr;
+    index.m_right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+        ASR::integerbozType::Decimal));
+    index.m_step = nullptr;
+    Vec<ASR::array_index_t> indices;
+    indices.reserve(al, 1);
+    indices.push_back(al, index);
+    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+        ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)), indices.p, 1,
+        ASRUtils::duplicate_type(al, scalar_type),
+        ASR::arraystorageType::ColMajor, nullptr, false));
+}
+
+bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i) {
+    // Which dummy argument a type-bound call associates an actual
+    // argument with depends on the passed object; it is not worked out.
+    if (x.m_dt != nullptr) return true;
+    ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+    if (!ASR::is_a<ASR::Function_t>(*callee)) return true;
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
+    if (i >= f->n_args || !ASR::is_a<ASR::Var_t>(*f->m_args[i])) return true;
+    ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*dummy)) return true;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(dummy);
+    return v->m_intent != ASR::intentType::In && !v->m_value_attr;
+}
+
+namespace {
+
+// Where the base of a designator is: the operand a component, an element
+// or a section is taken from.
+ASR::expr_t **gpu_designator_base_slot(ASR::expr_t *e) {
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+        return &ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+    } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+        return &ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+    } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+        return &ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+    }
+    return nullptr;
+}
+
+// An actual argument as the designator it is, past the change of
+// descriptor it may be passed through.
+ASR::expr_t *gpu_actual_designator(ASR::expr_t *e) {
+    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+        e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+    }
+    return e;
+}
+
+} // namespace
+
+GpuLiveoutWriteBack::GpuLiveoutWriteBack(Allocator &al_)
+        : PassUtils::PassVisitor<GpuLiveoutWriteBack>(al_, nullptr) {
+    pass_result.reserve(al, 4);
+}
+
+ASR::symbol_t *GpuLiveoutWriteBack::copy_of(ASR::expr_t *designator) {
+    ASR::expr_t *root = designator;
+    while (ASR::expr_t **base = gpu_designator_base_slot(root)) root = *base;
+    if (!ASR::is_a<ASR::Var_t>(*root)) return nullptr;
+    ASR::symbol_t *copy = ASR::down_cast<ASR::Var_t>(root)->m_v;
+    return shared.count(copy) ? copy : nullptr;
+}
+
+ASR::stmt_t *GpuLiveoutWriteBack::put_back(const Location &loc,
+        ASR::expr_t *designator, ASR::symbol_t *copy) {
+    ASRUtils::ExprStmtDuplicator dup(al);
+    ASR::expr_t *target = dup.duplicate_expr(designator);
+    ASR::expr_t **at = &target;
+    while (ASR::expr_t **base = gpu_designator_base_slot(*at)) at = base;
+    *at = dup.duplicate_expr(shared[copy]);
+    return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+        dup.duplicate_expr(designator), nullptr, false, false, false));
+}
+
+void GpuLiveoutWriteBack::visit_Assignment(const ASR::Assignment_t &x) {
+    if (entries.count(const_cast<ASR::stmt_t*>(&x.base))) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            shared[ASR::down_cast<ASR::Var_t>(x.m_target)->m_v] =
+                x.m_value;
+        }
+        return;
+    }
+    ASR::symbol_t *copy = copy_of(x.m_target);
+    if (copy == nullptr) return;
+    pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
+    pass_result.push_back(al, put_back(x.base.base.loc, x.m_target, copy));
+}
+
+void GpuLiveoutWriteBack::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+    std::vector<ASR::stmt_t*> after;
+    for (size_t i = 0; i < x.n_args; i++) {
+        ASR::expr_t *a = x.m_args[i].m_value;
+        if (a == nullptr || !gpu_call_may_define(x, i)) continue;
+        a = gpu_actual_designator(a);
+        if (ASR::symbol_t *copy = copy_of(a)) {
+            after.push_back(put_back(x.base.base.loc, a, copy));
+        }
+    }
+    if (x.m_dt != nullptr) {
+        ASR::expr_t *a = gpu_actual_designator(x.m_dt);
+        if (ASR::symbol_t *copy = copy_of(a)) {
+            after.push_back(put_back(x.base.base.loc, a, copy));
+        }
+    }
+    if (after.empty()) return;
+    pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
+    for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
+}
+
 std::set<ASR::Function_t*> gpu_parallel_loop_routines(Allocator &al,
         ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
     std::set<ASR::Function_t*> routines;

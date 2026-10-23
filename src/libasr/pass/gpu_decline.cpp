@@ -298,6 +298,13 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "procedure '" + decline.name + "', which "
                 "can stop, passed as an argument or shared with the host";
 
+        case GpuDeclineReason::LiveoutScalar:
+            return unsupported + "the " + decline.type_name + " scalar '"
+                + decline.name + "', whose value is kept after the loop";
+        case GpuDeclineReason::LiveoutDerivedType:
+            return unsupported + "keeping the value the loop gives the "
+                "derived-type variable '" + decline.name + "' after the loop";
+
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +
                 "a derived type whose declaration is not known";

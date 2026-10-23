@@ -12,6 +12,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
 
@@ -434,6 +435,44 @@ public:
         calls.push_back(&x);
         ASR::BaseWalkVisitor<GpuCallSiteCollector>::visit_FunctionCall(x);
     }
+};
+
+// The one element of the buffer a scalar whose value is kept after a
+// parallel loop is handed to the kernel in, and handed back in.
+ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
+    ASR::symbol_t *buffer, ASR::ttype_t *scalar_type);
+
+// Whether the procedure a call names may define its `i`-th actual argument:
+// the dummy argument it is associated with is not `intent(in)` and not
+// passed by value, or is not known.
+bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i);
+
+// Puts the value of the private copy each thread of a kernel keeps of a
+// variable whose value is kept after the loop back where it is shared,
+// after every statement that defines the copy or a part of it: only the
+// part an assignment or the actual argument of a call defines is put
+// back, so that what other iterations define of the variable is left
+// alone. `entries` are the assignments that give each copy its value on
+// entry, from where the value is shared, which is where it is put back.
+class GpuLiveoutWriteBack : public PassUtils::PassVisitor<GpuLiveoutWriteBack> {
+public:
+    std::set<ASR::stmt_t*> entries;
+
+    GpuLiveoutWriteBack(Allocator &al_);
+
+    void visit_Assignment(const ASR::Assignment_t &x);
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
+
+private:
+    // The private copy, and where its value is shared.
+    std::map<ASR::symbol_t*, ASR::expr_t*> shared;
+
+    // The private copy `designator` is a part of, if it is one.
+    ASR::symbol_t *copy_of(ASR::expr_t *designator);
+    // `designator = <the same part of the shared value>`, written the
+    // other way round.
+    ASR::stmt_t *put_back(const Location &loc, ASR::expr_t *designator,
+        ASR::symbol_t *copy);
 };
 
 // Collects StructInstanceMember references to allocatable array members

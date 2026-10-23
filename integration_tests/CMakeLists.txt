@@ -6654,6 +6654,8 @@ RUN(NAME gpu_decline_18 LABELS llvm)
 RUN(NAME gpu_decline_19 LABELS llvm)
 RUN(NAME gpu_decline_20 LABELS gfortran llvm)
 RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
+RUN(NAME gpu_decline_28 LABELS gfortran llvm)
+RUN(NAME gpu_decline_29 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
@@ -6696,6 +6698,8 @@ RUN(NAME gpu_kernel_source_24 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_kernel_source_25 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_kernel_source_19 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=32768 --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_36 LABELS gfortran llvm cuda)
+RUN(NAME gpu_liveout_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_liveout_03 LABELS gfortran llvm metal cuda)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

@@ -356,25 +356,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Copy liveout scalars into their 1-element array buffers
     // before the kernel launch so the buffer has the initial value
     for (auto &ls : plan.liveout_scalars) {
-        ASR::expr_t *buf_var = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, ls.host_buf_sym));
         ASR::expr_t *scalar_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
-        ASR::expr_t *idx_one = ASRUtils::EXPR(
-            ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-                ASR::integerbozType::Decimal));
-        Vec<ASR::array_index_t> ai_args;
-        ai_args.reserve(al, 1);
-        ASR::array_index_t ai;
-        ai.loc = loc;
-        ai.m_left = nullptr;
-        ai.m_right = idx_one;
-        ai.m_step = nullptr;
-        ai_args.push_back(al, ai);
-        ASR::expr_t *buf_item = ASRUtils::EXPR(
-            ASR::make_ArrayItem_t(al, loc, buf_var,
-                ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr, false));
+        ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
+            ls.scalar_type);
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
                 nullptr, false, false, false)));
@@ -436,25 +421,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Copy liveout scalar results back from the 1-element array
     // buffers after the kernel has completed
     for (auto &ls : plan.liveout_scalars) {
-        ASR::expr_t *buf_var = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, ls.host_buf_sym));
         ASR::expr_t *scalar_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
-        ASR::expr_t *idx_one = ASRUtils::EXPR(
-            ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-                ASR::integerbozType::Decimal));
-        Vec<ASR::array_index_t> ai_args;
-        ai_args.reserve(al, 1);
-        ASR::array_index_t ai;
-        ai.loc = loc;
-        ai.m_left = nullptr;
-        ai.m_right = idx_one;
-        ai.m_step = nullptr;
-        ai_args.push_back(al, ai);
-        ASR::expr_t *buf_item = ASRUtils::EXPR(
-            ASR::make_ArrayItem_t(al, loc, buf_var,
-                ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr, false));
+        ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
+            ls.scalar_type);
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
                 nullptr, false, false, false)));
