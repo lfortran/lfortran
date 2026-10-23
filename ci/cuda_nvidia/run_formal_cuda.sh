@@ -3,7 +3,7 @@
 # SC2054: --cells n,m is one argument. SC2329: functions are run by step.
 # shellcheck disable=SC2016,SC2054,SC2329
 # Validate and benchmark LFortran's native CUDA backend on an NVIDIA GPU with
-# Formal (https://github.com/BerkeleyLab/formal) and LFortran's own GPU tests.
+# Formal (https://github.com/BerkeleyLab/formal) and LFortran's own CUDA tests.
 # See ci/cuda_nvidia/README.md. Every step writes its own log under
 # WORK_DIR/logs; a summary is printed at the end and the exit code is nonzero
 # if a step failed. Nothing outside WORK_DIR is written except the Pixi
@@ -17,7 +17,8 @@
 #   JOBS          (default 16)
 #   BENCH_CELLS   (default 2048,2048)  BENCH_STEPS (default 1000)
 #   BENCH_RUNS    (default 5)
-#   SKIP_LFORTRAN_TESTS=1  skip `integration_tests -b cuda`
+#   SKIP_LFORTRAN_TESTS=1  skip `integration_tests -b cuda` and
+#                          src/tests/gpu_cuda_scratch_order.sh
 #   SKIP_PROFILE=1         skip nsys / compute-sanitizer
 #   SKIP_BENCHMARK=1       skip the timing runs
 set -euo pipefail
@@ -261,17 +262,23 @@ if [ "${SKIP_BENCHMARK:-0}" != 1 ]; then
     step "benchmark: workspace solver $BENCH_CELLS, $BENCH_STEPS steps" "$LOGS/65-benchmark.log" benchmark
 fi
 
-# 8. LFortran's GPU integration tests on the real GPU.
+unset CUDA_DISABLE_PTX_JIT
+
+# 8. LFortran's CUDA integration tests and the direct CUDA runtime API test
+# on the real GPU.
 if [ "${SKIP_LFORTRAN_TESTS:-0}" != 1 ]; then
     step "lfortran integration_tests -b cuda" "$LOGS/70-lfortran-cuda-tests.log" \
         lf integration_tests -b cuda -j"$JOBS"
+    step "lfortran gpu_cuda_scratch_order" "$LOGS/71-lfortran-scratch-order.log" \
+        lf env NVCC="$NVCC" CUDA_ARCH="$GPU_ARCH" \
+            "$LFORTRAN_ROOT/src/tests/gpu_cuda_scratch_order.sh" "$WORK/scratch-order"
 fi
-unset CUDA_DISABLE_PTX_JIT
 
 echo
 echo "Summary ($WORK):"
 for line in "${SUMMARY[@]}"; do echo "  $line"; done
 grep -a -h 'tests passed' "$LOGS"/10-*.log "$LOGS"/20-*.log "$LOGS"/70-*.log 2>/dev/null | sed 's/^/  /' || true
+grep -a -h 'all three sequences passed' "$LOGS"/71-*.log 2>/dev/null | sed 's/^/  /' || true
 grep -a -h 'median' "$LOGS"/65-*.log 2>/dev/null | sed 's/^/  /' || true
 grep -a -h 'sm_' "$LOGS/60-cuobjdump.log" 2>/dev/null \
     | sed -E 's/.*\.(sm_[0-9a-z]+)\.(cubin|ptx)/\1 \2/' | sort | uniq -c | sed 's/^/  /' || true

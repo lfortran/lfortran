@@ -1,11 +1,12 @@
 # Running LFortran's CUDA backend on NVIDIA GPUs
 
 This directory holds the recipe used to validate `--gpu=cuda` on a real NVIDIA
-GPU: LFortran's own GPU integration tests, and the BerkeleyLab
+GPU: LFortran's own CUDA integration tests, the direct CUDA API test of the
+GPU runtime, and the BerkeleyLab
 [Formal](https://github.com/BerkeleyLab/formal) library, its test suite and its
 2D advection-diffusion example, which is also benchmarked. CI has no NVIDIA
-GPU (it runs the same device code on the CPU with `--gpu=cuda_cpu`), so this
-validation is manual: run it on an NVIDIA machine after changing GPU code.
+GPU (it runs the same programs on the CPU with `--gpu=cuda_cpu`, see "GPU
+options" below), so this validation is manual: run it on an NVIDIA machine after changing GPU code.
 `run_formal_cuda.sh` performs every step below and prints a summary; the
 sections explain what it does and how to run the pieces by hand.
 
@@ -54,7 +55,7 @@ print *, "OK"
 end program
 EOF
 pixi run -e llvm11 lfortran --gpu=cuda saxpy.f90 -o saxpy_gpu
-CUDA_DISABLE_PTX_JIT=1 ./saxpy_gpu          # prints OK
+CUDA_DISABLE_PTX_JIT=1 ./saxpy_gpu          # prints OK; fails if no code for this GPU
 cuobjdump --list-elf --list-ptx saxpy_gpu   # cubins for the local GPU (sm_120 here), no PTX
 ```
 
@@ -65,10 +66,17 @@ Every `do concurrent` loop is offloaded when a GPU backend is selected; see
 [GPU loop optimization passes](../../doc/src/gpu_optimization_passes.md) for
 the loop transformations.
 
-- `--gpu=cuda` compiles the device code with nvcc and runs it on the GPU.
-  `--gpu=cuda_cpu` compiles the same device code as host C++ and runs it on
-  the CPU (no GPU needed; this is what CI runs). `--gpu=metal` targets Apple
-  GPUs.
+- `--gpu=cuda` compiles the device code with nvcc and runs it on the GPU,
+  through LFortran's CUDA runtime (`src/libasr/runtime/lfortran_gpu_cuda.c`,
+  plain C on the CUDA runtime API).
+- `--gpu=cuda_cpu` runs the same program on the CPU, with no GPU and no CUDA
+  toolkit (this is what CI runs): the same generated kernels and the same C
+  runtime are compiled by the host compiler against an emulation of the CUDA
+  runtime API (`src/libasr/runtime/cuda_cpu/`). The emulated device memory is
+  separate from host memory, so a missing or late copy shows as it would on a
+  GPU; kernels run block by block and thread by thread, so a kernel that
+  needs `__syncthreads()` stops the program.
+- `--gpu=metal` targets Apple GPUs.
 - `--gpu-arch=<arch>` selects the GPU architecture for `--gpu=cuda`, e.g.
   `sm_120`. The default is `native`, the GPUs of the compiling machine. On a
   machine without a GPU nvcc then falls back to its oldest default
@@ -96,18 +104,36 @@ the loop transformations.
 - `CUDA_DISABLE_PTX_JIT=1` at run time makes a binary built for the wrong
   architecture fail instead of being JIT compiled by the driver.
 
-## 3. LFortran GPU integration tests on the GPU
+## 3. LFortran CUDA integration tests on the GPU
 
 ```bash
-CUDA_DISABLE_PTX_JIT=1 pixi run -e llvm11 integration_tests -b cuda -j16 > cuda.log 2>&1
+pixi run -e llvm11 integration_tests -b cuda -j16 > cuda.log 2>&1
 grep 'tests passed' cuda.log
 ```
 
-This runs every integration test labeled `cuda` (the tests labeled `cuda_cpu`
-that also pass on a real GPU, plus native-only tests such as
-`gpu_cuda_scratch_order`). CI runs only `-b cuda_cpu`.
+There is a single `cuda` label for both CUDA modes, and every test labeled
+`cuda` must pass in both: `integration_tests -b cuda_cpu` runs them in the
+CPU emulation (what CI runs) and `integration_tests -b cuda` runs the same
+tests natively with `--gpu=cuda` (default `--gpu-arch=native`). A `cuda_cpu`
+label is a configure error. After a change to GPU code, run both.
 
-## 4. Formal
+## 4. CUDA runtime API test on the GPU
+
+```bash
+pixi run -e llvm11 src/tests/gpu_cuda_scratch_order.sh build/gpu_cuda_scratch_order \
+    > scratch_order.log 2>&1
+tail -1 scratch_order.log   # gpu_cuda_scratch_order: all three sequences passed
+```
+
+`gpu_cuda_scratch_order.cu` calls LFortran's CUDA runtime directly with
+kernels of its own and checks the scratch buffer order, discarded outputs
+and aliases on the GPU. It needs nvcc and a GPU, so it is not an integration
+test; its host counterpart, the `test_gpu_cuda_api_state` unit test, runs the
+same sequences against the CPU emulation in `ctest`. The script builds for
+the local GPU (`CUDA_ARCH`, default `native`; `NVCC` selects the compiler)
+and writes the executable to the given directory (default: a temporary one).
+
+## 5. Formal
 
 ```bash
 ci/cuda_nvidia/run_formal_cuda.sh /path/to/work-dir > formal.log 2>&1
@@ -146,11 +172,13 @@ logs in `<work-dir>/logs` and data in `<work-dir>/validation`:
    the two for 5 runs each, and reports the median `solve_seconds` (which
    excludes compilation, setup, the warm-up step and I/O, and includes copying
    the field to the device and back).
-8. Runs `integration_tests -b cuda` (section 3).
+8. Runs `integration_tests -b cuda` (section 3) and
+   `src/tests/gpu_cuda_scratch_order.sh` (section 4), without
+   `CUDA_DISABLE_PTX_JIT`.
 
 Environment overrides: `GPU_ARCH` (e.g. `sm_120`), `JOBS`, `FORMAL_REPO`,
 `FORMAL_REF`, `BENCH_CELLS`, `BENCH_STEPS`, `BENCH_RUNS`, `SKIP_PROFILE=1`,
-`SKIP_BENCHMARK=1`, `SKIP_LFORTRAN_TESTS=1`.
+`SKIP_BENCHMARK=1`, `SKIP_LFORTRAN_TESTS=1` (skips sections 3 and 4).
 
 Notes on the recipe:
 
@@ -172,33 +200,27 @@ Notes on the recipe:
 
 ## Results
 
-Measured with LFortran `main` at 8349ea3d00 and Formal at
+Measured with LFortran `main` at 162851d00c and Formal at
 `ef4fb6e1cfb6eed69c588e1e92fbf739ebcb09bf`, on the machine in "Validated on"
-above:
+above (nsys and compute-sanitizer rows from the previous run, at 8349ea3d00):
 
 | Check | Result |
 |---|---|
 | Formal tests, `cuda_cpu` | 32/32, 0 skipped |
 | Formal tests, native CUDA, PTX JIT disabled | 32/32, 0 skipped |
 | `do concurrent` in Formal offloaded | 65 of 65 (no loop reported as running on the CPU) |
-| Embedded device code | 14 `sm_120` cubins, no PTX |
+| Embedded device code | 11 `sm_120` cubins, no PTX |
 | Gaussian 17x13/9, native vs host LLVM | max abs 1.2e-10, relative L2 7.9e-11 |
 | Boundary 13x11/3, native vs GFortran 16 vs host LLVM | bitwise identical; boundaries fixed; field evolves |
 | compute-sanitizer (4 tools x 2 solvers) | 0 errors |
 | nsys, workspace solver (9 steps) | 52 kernel launches, 8 host-to-device and 14 device-to-host copies |
-| Benchmark, workspace solver 2048x2048, 1000 steps | median `solve_seconds` 0.12 s (`--gpu-loop-transforms=all`), 0.56 s (`none`): 4.5x |
-| `integration_tests -b cuda`, PTX JIT disabled | 102 of 105 pass; the 3 `gpu_cuda_scratch_order*` tests fail, see below |
+| Benchmark, workspace solver 2048x2048, 1000 steps | median `solve_seconds` 0.12 s (`--gpu-loop-transforms=all`), 0.55 s (`none`): 4.7x |
+| `integration_tests -b cuda` | 565 of 565 pass |
+| `gpu_cuda_scratch_order.sh` | all three sequences pass |
 
-Known issues:
-
-- The native-only `gpu_cuda_scratch_order*` tests are compiled by CMake for
-  nvcc's default `sm_75`, not for the local GPU, so on newer GPUs they only
-  run through the PTX JIT and fail with `CUDA_DISABLE_PTX_JIT=1`; they pass
-  without it
-  ([#15821](https://github.com/lfortran/lfortran/issues/15821)).
-- The operators solver runs every kernel on the GPU, but LFortran
-  synchronizes at each procedure exit and re-uploads data per launch (1185
-  host-to-device copies in a 2-step run), and part of its arithmetic is host
-  array expressions, so most of its time is host work and transfers. The workspace
-  solver is fully device resident. See
-  [#15581](https://github.com/lfortran/lfortran/issues/15581).
+Known issue: the operators solver runs every kernel on the GPU, but LFortran
+synchronizes at each procedure exit and re-uploads data per launch (1185
+host-to-device copies in a 2-step run), and part of its arithmetic is host
+array expressions, so most of its time is host work and transfers. The
+workspace solver is fully device resident. See
+[#15581](https://github.com/lfortran/lfortran/issues/15581).
