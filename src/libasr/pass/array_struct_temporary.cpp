@@ -1473,11 +1473,30 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     return scalar_var_temporary;
 }
 
+// A defined operation is evaluated as its function call `m_overloaded`.
+static ASR::expr_t* get_past_defined_operation(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::OverloadedBinOp:
+            return ASR::down_cast<ASR::OverloadedBinOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedBoolOp:
+            return ASR::down_cast<ASR::OverloadedBoolOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedCompare:
+            return ASR::down_cast<ASR::OverloadedCompare_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedStringConcat:
+            return ASR::down_cast<ASR::OverloadedStringConcat_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedUnaryMinus:
+            return ASR::down_cast<ASR::OverloadedUnaryMinus_t>(x)->m_overloaded;
+        default:
+            return x;
+    }
+}
+
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
     ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false) {
+    array_expr = get_past_defined_operation(array_expr);
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
         allocate_size_reference = array_expr;
