@@ -37,6 +37,11 @@ emits an ordinary call, wrapped in an
 [Assignment](../statement_nodes/Assignment.md), so that the original spelling
 is not lost.
 
+When `use` imports an operator, the using scope gets its own
+**CustomOperator**, whose procedures are its imports of the operator's
+specifics, named `<specific>@<operator>` (such as `plus_int@~~plus` for
+`operator(.plus.)`). See [GenericProcedure](GenericProcedure.md).
+
 ## Examples
 
 ```clojure
