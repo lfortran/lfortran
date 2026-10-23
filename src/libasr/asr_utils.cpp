@@ -6228,6 +6228,159 @@ std::string get_format_type_code(ASR::ttype_t* type) {
     }
 }
 
+namespace {
+
+// Replaces the variable `var` by the expression `value`.
+class ImpliedDoLoopVarSubstituter :
+        public ASR::BaseExprReplacer<ImpliedDoLoopVarSubstituter> {
+public:
+    ASR::symbol_t* var;
+    ASR::expr_t* value;
+
+    ImpliedDoLoopVarSubstituter(ASR::symbol_t* var, ASR::expr_t* value)
+        : var(var), value(value) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        if (x->m_v == var) {
+            *current_expr = value;
+        }
+    }
+};
+
+}
+
+// Whether the bounds and steps of `idl` and of the loops nested in it are
+// all integer literals.
+static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*idl->m_start) ||
+        !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_end) ||
+        (idl->m_increment &&
+         !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_increment))) {
+        return false;
+    }
+    for (size_t i = 0; i < idl->n_values; i++) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i]) &&
+            !implied_do_loop_has_literal_bounds(
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Collects in `types` the derived types of the values of `idl` and of the
+// loops nested in it.
+static void implied_do_loop_derived_types(ASR::ImpliedDoLoop_t* idl,
+        std::set<ASR::symbol_t*> &types) {
+    for (size_t i = 0; i < idl->n_values; i++) {
+        ASR::expr_t* value = idl->m_values[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+            implied_do_loop_derived_types(
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(value), types);
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(expr_type(value)))) {
+            if (ASR::symbol_t* type = get_struct_sym_from_struct_expr(value)) {
+                types.insert(symbol_get_past_external(type));
+            }
+        }
+    }
+}
+
+// Appends the values of `idl` to `result`; `iterations` and `values` are the
+// numbers of iterations and of values that may still be expanded.
+static ImpliedDoExpansion append_implied_do_loop_values(Allocator &al,
+        ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result,
+        uint64_t &iterations, uint64_t &values) {
+    // A nested loop that reuses an enclosing loop's variable had its own
+    // variable substituted by the enclosing loop's value.
+    if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+        return {ImpliedDoExpansionBlocker::ReusedVariable, &idl->base};
+    }
+    // The bounds only have to be integer compile-time constants,
+    // e.g. `size(a)` of a fixed size array or a named constant.
+    int64_t start_val = 0, end_val = 0, step_val = 1;
+    if (!is_value_constant(expr_value(idl->m_start), start_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_start};
+    }
+    if (!is_value_constant(expr_value(idl->m_end), end_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_end};
+    }
+    if (idl->m_increment &&
+        !is_value_constant(expr_value(idl->m_increment), step_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_increment};
+    }
+
+    if (step_val == 0 || (step_val > 0 && start_val > end_val) ||
+        (step_val < 0 && start_val < end_val)) {
+        return {ImpliedDoExpansionBlocker::None, nullptr};
+    }
+
+    // The trip count is (end - start) / step + 1. It is computed in
+    // unsigned arithmetic, which cannot overflow here, and the loop
+    // runs on a counter, so bounds near huge() are safe.
+    uint64_t distance = step_val > 0
+        ? uint64_t(end_val) - uint64_t(start_val)
+        : uint64_t(start_val) - uint64_t(end_val);
+    uint64_t abs_step = step_val > 0
+        ? uint64_t(step_val) : uint64_t(0) - uint64_t(step_val);
+    uint64_t last_trip = distance / abs_step;
+    if (last_trip >= iterations) {
+        return {ImpliedDoExpansionBlocker::TooManyIterations, nullptr};
+    }
+    iterations -= last_trip + 1;
+
+    ASR::symbol_t* loop_var_symbol = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+
+    for (uint64_t trip = 0; trip <= last_trip; trip++) {
+        // start + trip * step, which lies between start and end.
+        int64_t i = int64_t(uint64_t(start_val) + trip * uint64_t(step_val));
+        ASR::expr_t* loop_var_val = EXPR(ASR::make_IntegerConstant_t(
+            al, idl->base.base.loc, i, expr_type(idl->m_var)));
+
+        for (size_t j = 0; j < idl->n_values; j++) {
+            // A nested loop is expanded with this loop's variable
+            // substituted, both in its values and in its bounds.
+            ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* substituted = duplicator.duplicate_expr(idl->m_values[j]);
+            ImpliedDoLoopVarSubstituter substituter(loop_var_symbol, loop_var_val);
+            substituter.current_expr = &substituted;
+            substituter.replace_expr(substituted);
+
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
+                ImpliedDoExpansion nested = append_implied_do_loop_values(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
+                    result, iterations, values);
+                if (nested.blocker != ImpliedDoExpansionBlocker::None) {
+                    return nested;
+                }
+            } else {
+                if (values == 0) {
+                    return {ImpliedDoExpansionBlocker::TooManyValues, nullptr};
+                }
+                values--;
+                result.push_back(al, substituted);
+            }
+        }
+    }
+    return {ImpliedDoExpansionBlocker::None, nullptr};
+}
+
+ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
+        ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result) {
+    // Loops whose bounds are all integer literals are expanded in full.
+    uint64_t iterations = implied_do_loop_has_literal_bounds(idl)
+        ? std::numeric_limits<uint64_t>::max()
+        : implied_do_loop_folded_bounds_expansion_limit;
+    // Only a loop with values of two or more different derived types is
+    // limited. A loop with values of one derived type and of intrinsic types
+    // keeps the expansion that it had before loops over different derived
+    // types were expanded.
+    std::set<ASR::symbol_t*> derived_types;
+    implied_do_loop_derived_types(idl, derived_types);
+    uint64_t values = derived_types.size() > 1
+        ? implied_do_loop_expansion_limit : std::numeric_limits<uint64_t>::max();
+    return append_implied_do_loop_values(al, idl, result, iterations, values);
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 

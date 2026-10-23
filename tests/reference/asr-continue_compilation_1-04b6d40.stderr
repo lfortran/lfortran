@@ -4585,3 +4585,63 @@ semantic error: a bound in a pointer bounds specification or remapping list must
      |
 3612 |         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
      |           ^^^^ 
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3691:25
+     |
+3691 |     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^ 
+     |
+3691 |     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                          ~ not a constant expression
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3692:14
+     |
+3692 |     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+     |              ^^^^^^^^^^^^^^^^^^^^^ 
+     |
+3692 |     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                 ~ not a constant expression
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3693:31
+     |
+3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                               ^^^^^^^^^^^^^^^^^^^ 
+     |
+3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                                ~ not a constant expression
+
+semantic error: output of an implied-do loop with a nested loop that reuses an enclosing loop variable and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3694:25
+     |
+3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+     |
+3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+     |                          ~~~~~~~~~~~~~ reuses the variable of an enclosing loop
+
+semantic error: output of an implied-do loop with more than 256 iterations, bounds that are not all literals and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3695:25
+     |
+3695 |     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: unformatted output of an implied-do loop with values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3696:15
+     |
+3696 |     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+     |               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: output of an implied-do loop with more than 1000 values of different derived types is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3701:25
+     |
+3701 |     print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: output of an implied-do loop with more than 1000 values of different derived types is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3702:25
+     |
+3702 |     print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
