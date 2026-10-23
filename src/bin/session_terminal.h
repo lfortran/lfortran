@@ -29,6 +29,20 @@ public:
     }
 };
 #endif
+// The next byte of stdin that is not a console, or EOF. On Windows the
+// CRT's text-mode stdin waits for the byte after a CR, and keeps bytes in its
+// buffer where session_input_available() cannot see them, so read the handle.
+int read_byte() {
+#ifdef _WIN32
+    char c;
+    DWORD n = 0;
+    if (!ReadFile(GetStdHandle(STD_INPUT_HANDLE), &c, 1, &n, nullptr) || n != 1)
+        return EOF;
+    return static_cast<unsigned char>(c);
+#else
+    return std::getchar();
+#endif
+}
 class SafeTerminalText {
     enum class State { text, escape, csi, osc, osc_escape } state = State::text;
 public:
@@ -143,7 +157,7 @@ class TerminalSession {
 #endif
         for (;;) {
             if (session_input_available()) {
-                int c = std::getchar();
+                int c = read_byte();
                 if (c == EOF || c == 4) {
                     eof = record.empty();
                     clearerr(stdin);

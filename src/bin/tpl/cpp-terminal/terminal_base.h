@@ -176,6 +176,26 @@ public:
     bool read_raw(char* s) const
     {
         if (!keyboard_enabled) {
+#ifdef _WIN32
+            // Read a pipe or file directly. The CRT's text-mode stdin waits
+            // for the byte after a CR, and keeps bytes in its buffer where a
+            // readiness check of the handle cannot see them.
+            HANDLE in = GetStdHandle(STD_INPUT_HANDLE);
+            DWORD mode;
+            if (!GetConsoleMode(in, &mode)) {
+                char buf[1];
+                DWORD nread = 0;
+                if (!ReadFile(in, buf, 1, &nread, nullptr)) {
+                    DWORD error = GetLastError();
+                    if (error != ERROR_BROKEN_PIPE && error != ERROR_HANDLE_EOF) {
+                        throw std::runtime_error("ReadFile() failed");
+                    }
+                }
+                // End of input is the End of Transmission character (Ctrl-D).
+                *s = nread == 1 ? buf[0] : 0x04;
+                return true;
+            }
+#endif
             int c = getchar();
             if (c >= 0) {
                 *s = c;
