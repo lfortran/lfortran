@@ -113,9 +113,9 @@ __device__ inline float _lcompilers_aint_f321_gpu_30(float a) {
 __device__ inline float _lcompilers_anint_f32_gpu_28(float a) {
     float _lcompilers_anint_f32;
     if ((a >   0.00000000000000000e+00f)) {
-        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_30((a +   5.00000000000000000e-01f));
+        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_29((a +   5.00000000000000000e-01f));
     } else {
-        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_29((a -   5.00000000000000000e-01f));
+        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_30((a -   5.00000000000000000e-01f));
     }
     return _lcompilers_anint_f32;
 }
