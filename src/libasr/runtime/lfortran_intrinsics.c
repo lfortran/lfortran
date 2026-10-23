@@ -590,11 +590,16 @@ typedef struct {
     const char *file;
     int         line;
     size_t      size;
+    uint64_t    serial;
 } _internal_alloc_record;
 
 static _internal_alloc_record *_internal_alloc_table = NULL;
 static size_t _internal_alloc_count    = 0;
 static size_t _internal_alloc_capacity = 0;
+/* Serial number of the next allocation: records are numbered in the order
+   they are made, so a live record can be attributed to the statement that
+   was executing when it was made. */
+static uint64_t _internal_alloc_serial = 0;
 
 static void _internal_alloc_record_add(void *ptr, size_t size,
                                        const char *file, int line)
@@ -612,6 +617,7 @@ static void _internal_alloc_record_add(void *ptr, size_t size,
     r->file = file;
     r->line = line;
     r->size = size;
+    r->serial = _internal_alloc_serial++;
 }
 
 static int _internal_alloc_record_remove(void *ptr,
@@ -672,6 +678,17 @@ static void _lfortran_internal_free_tracked(void *ptr,
     free(ptr);
 }
 
+// Returns the serial number that the next internal allocation gets.
+static uint64_t internal_alloc_next_serial(void)
+{
+    ALLOC_LOCK();
+    uint64_t serial = _internal_alloc_serial;
+    ALLOC_UNLOCK();
+    return serial;
+}
+
+static uint64_t dtio_in_flight_alloc_serial(void);
+
 #define internal_malloc(size)           _lfortran_internal_malloc_tracked(size, __FILE__, __LINE__)
 #define internal_calloc(count, size)    _lfortran_internal_calloc_tracked(count, size, __FILE__, __LINE__)
 #define internal_realloc(ptr, size)     _lfortran_internal_realloc_tracked(ptr, size, __FILE__, __LINE__)
@@ -694,13 +711,23 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
 {
     _lfortran_close_all_units();
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
-    int has_leaks = (_internal_alloc_count > 0);
+    // A defined output procedure can end the program (STOP, ERROR STOP,
+    // EXIT) while its parent output statement is still executing. The
+    // allocations made since that statement began are its live state, not
+    // leaks; everything allocated before it is still checked.
+    uint64_t in_flight_serial = dtio_in_flight_alloc_serial();
+    size_t n_leaks = 0;
+    for (size_t i = 0; i < _internal_alloc_count; i++) {
+        if (_internal_alloc_table[i].serial < in_flight_serial) n_leaks++;
+    }
+    int has_leaks = (n_leaks > 0);
     if (has_leaks) {
         fprintf(stderr,
                 "INTERNAL ALLOC CHECK: %zu allocation(s) still live:\n",
-                _internal_alloc_count);
+                n_leaks);
         for (size_t i = 0; i < _internal_alloc_count; i++) {
             _internal_alloc_record *r = &_internal_alloc_table[i];
+            if (r->serial >= in_flight_serial) continue;
             fprintf(stderr,
                     "  LEAK: %zu bytes at %s:%d (ptr=%p)\n",
                     r->size, r->file, r->line, r->ptr);
@@ -3885,6 +3912,20 @@ static DTIO_Capture_Frame* dtio_capture_stack = NULL;
 static int32_t dtio_capture_depth = 0;
 static int32_t dtio_capture_capacity = 0;
 
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+// The serial number of the first internal allocation of the outermost
+// formatted output statement, set when that statement starts formatting.
+static uint64_t dtio_statement_alloc_serial = 0;
+
+// While a defined output procedure runs, returns the serial number from which
+// the internal allocations belong to the output statements in progress (the
+// outermost parent and its nested children), else UINT64_MAX. The allocation
+// check does not report them when the procedure ends the program.
+static uint64_t dtio_in_flight_alloc_serial(void) {
+    return dtio_capture_depth > 0 ? dtio_statement_alloc_serial : UINT64_MAX;
+}
+#endif
+
 /*
     Errors of defined output procedures.
 
@@ -4089,6 +4130,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank,
     int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs, ...)
 {
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+    if (dtio_capture_depth == 0) {
+        dtio_statement_alloc_serial = internal_alloc_next_serial();
+    }
+#endif
     va_list args;
     va_start(args, dtio_procs);
     char* result = (char*)ALLOCATOR_ALLOC(al, sizeof(char));
