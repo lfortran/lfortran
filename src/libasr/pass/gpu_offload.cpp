@@ -2838,6 +2838,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                     if (!is_copy) continue;
                     process_block_for_kernel(block, true);
+                    // The copy of the loop body names the block, whose
+                    // statements were not part of it above.
+                    import_folded_struct_constants(block->m_body,
+                        block->n_body, orig_scope, kernel_scope, loc);
+                    import_folded_struct_constants(block->m_symtab,
+                        orig_scope, kernel_scope, loc);
                     if (orig_scope->get_symbol(block_name) == bc->m_m) {
                         orig_scope->erase_symbol(block_name);
                     }
