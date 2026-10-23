@@ -600,7 +600,8 @@ namespace LCompilers {
 
             public:
 
-                bool asr_changed, retain_original_stmt, remove_original_stmt;
+                bool asr_changed, retain_original_stmt = false,
+                    remove_original_stmt = false;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
 
@@ -610,7 +611,16 @@ namespace LCompilers {
                     pass_result.n = 0;
                 }
 
+                // A statement list nested in a compound statement (the body
+                // of an IF or a loop) is transformed while that statement is
+                // being visited. What the last statement of the nested list
+                // asked for itself must not be taken for what the enclosing
+                // statement asks for, or removing that last statement would
+                // remove the whole enclosing statement as well, so the
+                // enclosing statement's requests are restored afterwards.
                 void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                    bool enclosing_retain = retain_original_stmt;
+                    bool enclosing_remove = remove_original_stmt;
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
                     if (pass_result.size() > 0) {
@@ -643,6 +653,8 @@ namespace LCompilers {
                     }
                     m_body = body.p;
                     n_body = body.size();
+                    retain_original_stmt = enclosing_retain;
+                    remove_original_stmt = enclosing_remove;
                 }
 
                 void visit_Program(const ASR::Program_t &x) {
