@@ -1,9 +1,9 @@
-! gpu decline reason: LiveoutDerivedType
-! A derived-type variable with an allocatable component of which the loop
-! defines a component of a component: a thread can keep a private copy of
-! a scalar component of the variable, but not of the whole value, whose
-! allocatable component designates storage all of them share.
-module gpu_decline_31_m
+! A derived-type variable with an allocatable component of which one
+! iteration of a `do concurrent` defines a component of a component, and
+! every iteration an element of the allocatable component: each thread
+! keeps a private copy of the scalar the iteration defines, and the host
+! sees both after the loop.
+module gpu_derived_component_07_m
     implicit none
     type :: v
         integer :: k
@@ -14,8 +14,8 @@ module gpu_decline_31_m
     end type
 end module
 
-program gpu_decline_31
-    use gpu_decline_31_m
+program gpu_derived_component_07
+    use gpu_derived_component_07_m
     implicit none
     type(u) :: y
     integer :: i

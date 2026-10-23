@@ -1,10 +1,8 @@
-! gpu decline reason: LiveoutDerivedType
 ! A local of a derived type with an allocatable component and a component
-! of a derived type, of which the loop defines a component of a component
-! in every iteration. The kernel cannot hold such a value as a local of its
-! own yet, and a thread can keep a private copy of a scalar component of
-! it, but not of a component of a component.
-module gpu_decline_32_m
+! of a derived type, of which every iteration of a `do concurrent` defines
+! and then reads a component of a component: a temporary of the iteration
+! (Fortran 2018, 11.1.7.5), which each thread keeps a private copy of.
+module gpu_derived_component_08_m
     implicit none
     type :: v
         integer :: k
@@ -15,8 +13,8 @@ module gpu_decline_32_m
     end type
 end module
 
-program gpu_decline_32
-    use gpu_decline_32_m
+program gpu_derived_component_08
+    use gpu_derived_component_08_m
     implicit none
     type(u) :: y
     integer :: i, a(100)

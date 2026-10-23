@@ -504,76 +504,14 @@ private:
         ASR::symbol_t *copy, std::vector<ASR::stmt_t*> &after);
 };
 
-// For derived-type variables of a type with allocatable or pointer parts,
-// which a thread cannot keep a private copy of whole: the scalar
-// components the loop body defines, which each thread can keep a private
-// copy of instead -- a number or a logical, neither allocatable nor a
-// pointer, that is assigned or passed to a procedure that may define it.
-// A variable the body names whole, or of whose own storage it defines
-// anything else (a component of a component, an element of a component
-// array that is not allocatable), is `unsafe`: no thread can keep a copy
-// of it. What the body defines of an allocatable or pointer array
-// component is not stored in the variable, and is shared.
-class GpuPrivateComponentCollector :
-        public ASRUtils::BlockBodyWalkVisitor<GpuPrivateComponentCollector> {
-public:
-    const std::set<ASR::symbol_t*> &variables;
-    // (variable, component name) -> the component and its type.
-    std::map<std::pair<ASR::symbol_t*, std::string>,
-        std::pair<ASR::symbol_t*, ASR::ttype_t*>> defined;
-    std::set<ASR::symbol_t*> unsafe;
-
-    GpuPrivateComponentCollector(const std::set<ASR::symbol_t*> &v)
-        : variables(v) {}
-
-    void visit_Assignment(const ASR::Assignment_t &x);
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x);
-    void visit_Var(const ASR::Var_t &x);
-
-private:
-    void note_definition(ASR::expr_t *designator);
-};
-
-// Whether `name`, of type `type`, is a derived-type variable of a type with
-// allocatable or pointer parts that a thread cannot keep a copy of whole,
-// only of some components (GpuPrivateComponentCollector).
-bool gpu_partially_private_struct(SymbolTable *scope,
-    const std::string &name, ASR::ttype_t *type);
-
 // Whether `name`, of type `type`, is a derived-type variable of a type with
 // allocatable or pointer parts and a derived-type component, which the
 // kernel cannot hold as a local of its own (the lowering of such a local
-// is not done yet). Each thread keeps a private copy of its scalar
-// components instead (GpuPrivateComponentCollector), whether or not its
-// value is kept after the loop.
+// is not done yet). Each thread keeps private copies of the scalar parts
+// of it the loop defines instead (gpu_offload_liveout.cpp), whether or not
+// its value is kept after the loop.
 bool gpu_no_kernel_local_struct(SymbolTable *scope,
     const std::string &name, ASR::ttype_t *type);
-
-// Replaces each component `v%c` the map names with the private copy the
-// thread keeps of it.
-class GpuPrivateComponentReplacer :
-        public ASR::BaseExprReplacer<GpuPrivateComponentReplacer> {
-public:
-    Allocator &al;
-    // (variable, component name) -> the private copy.
-    std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*> copies;
-
-    GpuPrivateComponentReplacer(Allocator &al_) : al(al_) {}
-
-    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x);
-};
-
-class GpuPrivateComponentVisitor : public ASR::CallReplacerOnExpressionsVisitor<
-        GpuPrivateComponentVisitor> {
-public:
-    GpuPrivateComponentReplacer replacer;
-    GpuPrivateComponentVisitor(Allocator &al) : replacer(al) {}
-    void call_replacer() {
-        replacer.current_expr = current_expr;
-        replacer.replace_expr(*current_expr);
-    }
-};
 
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel

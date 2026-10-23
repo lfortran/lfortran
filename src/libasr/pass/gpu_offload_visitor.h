@@ -488,26 +488,22 @@ public:
     // gpu_offload_liveout.cpp).
     struct GpuLiveoutPlan {
         std::vector<LiveoutScalarInfo> scalars;
-        // A derived-type variable of a type with nothing allocatable or a
-        // pointer in it, which each thread keeps a private copy of whole:
-        // the kernel takes the variable as `shared`, and the copy is a
-        // local under the variable's own name, which the body names.
-        struct Whole {
-            std::string name;
-            std::string shared;
-        };
-        std::vector<Whole> wholes;
-        // A scalar component of a derived-type variable of another type,
-        // which each thread keeps a private copy of, named `copy`.
-        struct Component {
+        // A part of a derived-type variable that each thread keeps a
+        // private copy of, named `copy`: the whole variable when `path` is
+        // empty, otherwise the scalar component the names in `path`
+        // select, which the loop names through the components `members`.
+        // The variable itself is a kernel argument, which the device
+        // writes in place.
+        struct Copy {
             // The variable past use association, and as the loop names it.
             ASR::symbol_t *variable;
             ASR::symbol_t *named;
-            ASR::symbol_t *member;
+            std::vector<std::string> path;
+            std::vector<ASR::symbol_t*> members;
             ASR::ttype_t *type;
             std::string copy;
         };
-        std::vector<Component> components;
+        std::vector<Copy> copies;
         // The assignments that give each private copy its value on entry
         // to the kernel.
         std::set<ASR::stmt_t*> entries;
@@ -530,8 +526,8 @@ public:
         SymbolTable *kernel_scope, GpuLiveoutPlan &plan);
     // Makes the loop body, a copy of it still naming the host's symbols,
     // and the body of a BLOCK of it, already naming the kernel's, work on
-    // the private copies of components, and gives those their values at
-    // the start of the loop body.
+    // the private copies of parts of derived-type variables, and gives
+    // those their values at the start of the loop body.
     void privatize_liveout_body(const Location &loc,
         SymbolTable *kernel_scope, Vec<ASR::stmt_t*> &body,
         GpuLiveoutPlan &plan);

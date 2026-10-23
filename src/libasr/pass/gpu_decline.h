@@ -203,10 +203,12 @@ enum class GpuDeclineReason {
     // the buffer that carries the value back to the host cannot hold:
     // `type_name` says which ("complex(4)", "character", "allocatable").
     LiveoutScalar,
-    // A derived-type variable the loop defines in a way no thread can keep
-    // a private copy of: a polymorphic, allocatable or pointer variable,
-    // or one with allocatable or pointer parts that the loop names whole
-    // or defines more of than its scalar components.
+    // A part of a derived-type variable the loop defines (`name`) that no
+    // thread can keep a private copy of: an allocatable component, a part
+    // of a polymorphic, allocatable or pointer variable, the whole of a
+    // value with allocatable or pointer parts or too large for a thread,
+    // or a value a procedure defines in place that the loop also keeps a
+    // copy of a part of, or names a scalar part of.
     LiveoutDerivedType,
 
     // --- the layout of a kernel argument: derived types ---

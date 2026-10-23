@@ -1,8 +1,8 @@
 ! gpu decline reason: LiveoutDerivedType
 ! A derived-type variable with an allocatable component that the loop
-! passes whole to a procedure that defines it: a thread cannot keep a
-! private copy of the whole value, whose allocatable component designates
-! storage all of them share, and the procedure may define any part of it.
+! passes whole to a procedure that defines it, and whose scalar component
+! the loop reads: the procedure defines the variable in place, where every
+! thread would read the component another one defined.
 module gpu_decline_30_m
     implicit none
     type :: u

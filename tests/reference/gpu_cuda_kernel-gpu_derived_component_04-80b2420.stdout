@@ -21,8 +21,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    point& __gpu_shared_last,
-    point& __gpu_shared_q,
+    point& last,
+    point& q,
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ y,
@@ -33,24 +33,24 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __lb_y_0 = __scalar_args.__lb_y_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
+    point __gpu_private_last;
+    point __gpu_private_q;
     int i;
-    point last;
     const int n = 100000;
-    point q;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    last = __gpu_shared_last;
-    q = __gpu_shared_q;
-    q.x = y[((int)(i) - (__lb_y_0))];
-    q.y = x[((int)(i) - (__lb_x_0))];
-    __gpu_shared_q = q;
-    r[((int)(i) - (__lb_r_0))] = (q.x - q.y);
+    __gpu_private_q = q;
+    __gpu_private_last = last;
+    __gpu_private_q.x = y[((int)(i) - (__lb_y_0))];
+    __gpu_private_q.y = x[((int)(i) - (__lb_x_0))];
+    q = __gpu_private_q;
+    r[((int)(i) - (__lb_r_0))] = (__gpu_private_q.x - __gpu_private_q.y);
     if ((i == n)) {
-        last = q;
-        __gpu_shared_last = last;
+        __gpu_private_last = __gpu_private_q;
+        last = __gpu_private_last;
     }
 }
 
@@ -65,7 +65,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    point& __gpu_shared_p,
+    point& p,
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ y,
@@ -76,18 +76,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __lb_y_0 = __scalar_args.__lb_y_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
+    point __gpu_private_p;
     int i;
-    point p;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    p = __gpu_shared_p;
-    p.x = x[((int)(i) - (__lb_x_0))];
-    p.y = y[((int)(i) - (__lb_y_0))];
-    __gpu_shared_p = p;
-    r[((int)(i) - (__lb_r_0))] = (p.x + p.y);
+    __gpu_private_p = p;
+    __gpu_private_p.x = x[((int)(i) - (__lb_x_0))];
+    __gpu_private_p.y = y[((int)(i) - (__lb_y_0))];
+    p = __gpu_private_p;
+    r[((int)(i) - (__lb_r_0))] = (__gpu_private_p.x + __gpu_private_p.y);
 }
 
 __device__ inline float _lcompilers_aint_f32_gpu_29(float a) {
@@ -127,31 +127,35 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    outer& __gpu_shared_o,
     int* __restrict__ a,
+    outer& o,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
     int __lb_a_0 = __scalar_args.__lb_a_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
+    float __gpu_private_o_a_x;
+    float __gpu_private_o_a_y;
+    int __gpu_private_o_k;
     int i;
-    outer o;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    o = __gpu_shared_o;
-    o.a.x = ((float)i);
-    __gpu_shared_o.a.x = o.a.x;
-    a[((int)(i) - (__lb_a_0))] = ((int)o.a.x);
+    __gpu_private_o_a_x = o.a.x;
+    __gpu_private_o_a_y = o.a.y;
+    __gpu_private_o_k = o.k;
+    __gpu_private_o_a_x = ((float)i);
+    o.a.x = __gpu_private_o_a_x;
+    a[((int)(i) - (__lb_a_0))] = ((int)__gpu_private_o_a_x);
     if ((i == 3)) {
-        o.k = 7;
-        __gpu_shared_o.k = o.k;
+        __gpu_private_o_k = 7;
+        o.k = __gpu_private_o_k;
     }
     if ((i == 5)) {
-        o.a.y = ((float)50);
-        __gpu_shared_o.a.y = o.a.y;
+        __gpu_private_o_a_y = ((float)50);
+        o.a.y = __gpu_private_o_a_y;
     }
 }
 

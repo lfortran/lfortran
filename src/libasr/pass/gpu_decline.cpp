@@ -302,9 +302,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "the " + decline.type_name + " scalar '"
                 + decline.name + "', whose value is kept after the loop";
         case GpuDeclineReason::LiveoutDerivedType:
-            return unsupported + "the derived-type variable '"
-                + decline.name + "', which the loop defines in a way no gpu "
-                "thread can keep a private copy of";
+            return unsupported + "giving each gpu thread a private copy "
+                "of '" + decline.name + "', which the loop defines";
 
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +

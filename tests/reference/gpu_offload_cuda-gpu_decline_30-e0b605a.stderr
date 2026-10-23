@@ -1,9 +1,5 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support the derived-type variable 'p', which the loop defines in a way no gpu thread can keep a private copy of
-  --> tests/../integration_tests/gpu_decline_30.f90:28:5 - 32:10
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support giving each gpu thread a private copy of 'p', which the loop defines
+  --> tests/../integration_tests/gpu_decline_30.f90:29:9
    |
-28 |        do concurrent (i = 1:1000)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-32 |        end do
-   | ...^^^^^^^^^^ the gpu backend does not support the derived-type variable 'p', which the loop defines in a way no gpu thread can keep a private copy of
+29 |         call set(p, i)
+   |         ^^^^^^^^^^^^^^ the gpu backend does not support giving each gpu thread a private copy of 'p', which the loop defines
