@@ -2,6 +2,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
@@ -281,6 +282,34 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         if (leaves.reason != GpuDeclineReason::None) {
             report_not_offloaded(leaves.loc,
                 GpuDecline(leaves.reason, in_routine));
+            return false;
+        }
+    }
+
+    // A variable of a common block that a procedure the loop calls reads
+    // is handed to the kernel as the storage of the block, which only a
+    // numeric or logical variable placed as a member of it can be (see
+    // gpu_pass_common_blocks). Any other would be a local of the device
+    // copy of the procedure, which is a wrong value and no diagnostic. So
+    // would a variable an external procedure names, a scalar one a
+    // procedure defines, one defined through a view of a block that
+    // another view, which names a variable of it, lays out differently, or
+    // a scalar one the loop defines that another view names. A procedure
+    // handed over as an actual argument is device code too.
+    {
+        std::vector<ASR::Function_t*> routines = reachable_routines(
+            work.body, work.n_body, implementations, true);
+        for (ASR::Function_t *fn : routines) {
+            GpuDecline decline = gpu_common_block_decline(*fn);
+            if (decline.declined()) {
+                report_not_offloaded(loc, decline);
+                return false;
+            }
+        }
+        GpuDecline decline = gpu_common_block_access_decline(work.body,
+            work.n_body, routines);
+        if (decline.declined()) {
+            report_not_offloaded(loc, decline);
             return false;
         }
     }

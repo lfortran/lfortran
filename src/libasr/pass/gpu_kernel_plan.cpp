@@ -981,6 +981,33 @@ private:
 
 } // namespace
 
+// The indices of the DO loops of a statement list, the bodies of the BLOCK
+// and ASSOCIATE constructs it runs included.
+class DoLoopIndices : public ASRUtils::BlockBodyWalkVisitor<DoLoopIndices> {
+public:
+    std::set<ASR::symbol_t*> &indices;
+    explicit DoLoopIndices(std::set<ASR::symbol_t*> &indices_)
+        : indices(indices_) {}
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (x.m_head.m_v != nullptr && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
+            indices.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v));
+        }
+        ASRUtils::BlockBodyWalkVisitor<DoLoopIndices>::visit_DoLoop(x);
+    }
+};
+
+std::set<ASR::symbol_t*> gpu_written_variables(ASR::stmt_t **body,
+        size_t n_body) {
+    KernelWrites writes;
+    DoLoopIndices indices(writes.written);
+    for (size_t i = 0; i < n_body; i++) {
+        writes.visit_stmt(*body[i]);
+        indices.visit_stmt(*body[i]);
+    }
+    return writes.written;
+}
+
 // The host calls every function a workspace extent calls, as well as the
 // device.
 class HostCalledFunctions : public ASR::BaseWalkVisitor<HostCalledFunctions> {

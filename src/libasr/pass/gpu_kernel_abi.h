@@ -2,6 +2,7 @@
 #define LIBASR_PASS_GPU_KERNEL_ABI_H
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include <libasr/asr.h>
@@ -22,6 +23,15 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
 
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     ASR::call_arg_t *args, size_t n_args, GpuDecline &decline);
+
+// The variables a statement list may define: the target of an assignment,
+// what an `allocate` or `deallocate` names, an actual argument of a dummy
+// that may be defined, everything a statement not known to be harmless
+// names, and the index of a DO loop, in the bodies of the BLOCK and
+// ASSOCIATE constructs it runs as well. The procedures it calls are not
+// looked into.
+std::set<ASR::symbol_t*> gpu_written_variables(ASR::stmt_t **body,
+    size_t n_body);
 
 // The extent `dim` of a workspace of `kernel` has, written as the host
 // evaluates it before the launch, or nullptr when the host cannot work it

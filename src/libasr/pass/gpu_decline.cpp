@@ -294,6 +294,63 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StopCodeNotConstant:
             return unsupported + "a character stop code that is not a "
                 "constant" + in_routine(decline);
+        case GpuDeclineReason::CommonVariableEquivalence:
+            return unsupported + "variable '" + decline.name + "', which "
+                "equivalence associates with common block "
+                + decline.common_block + ", read in '" + decline.routine
+                + "'";
+        case GpuDeclineReason::CommonVariablePointer:
+            return unsupported + "pointer '" + decline.name + "' of common "
+                "block " + decline.common_block + ", read in '"
+                + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableCharacter:
+            return unsupported + "character variable '" + decline.name
+                + "' of common block " + decline.common_block
+                + ", read in '" + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableDerivedType:
+            if (decline.other_variable.empty()) {
+                return unsupported + "derived-type variable '"
+                    + decline.name + "' of common block "
+                    + decline.common_block + ", read in '"
+                    + decline.routine + "'";
+            }
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + ", read in '"
+                + decline.routine + "', which the block places after "
+                "derived-type variable '" + decline.other_variable + "'";
+        case GpuDeclineReason::CommonVariableDummyDeclaration:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + " in the declaration of "
+                "dummy '" + decline.other_variable + "' of '"
+                + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableDefined:
+            return unsupported + "scalar variable '" + decline.name
+                + "' of common block " + decline.common_block
+                + ", defined in '" + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableExternalProcedure:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + " in external procedure '"
+                + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableEquivalenceDefined:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + ", defined in '"
+                + decline.routine + "', and variable '"
+                + decline.other_variable + "' of the block, named in '"
+                + decline.other_routine + "', one of which equivalence "
+                "associates with the block";
+        case GpuDeclineReason::CommonVariableDefinedInLoop:
+            return unsupported + "scalar variable '" + decline.name
+                + "' of common block " + decline.common_block
+                + ", defined in the loop in '" + decline.routine
+                + "' and named as variable '" + decline.other_variable
+                + "' in '" + decline.other_routine + "'";
+        case GpuDeclineReason::CommonBlockLayouts:
+            return unsupported + "common block " + decline.common_block
+                + " laid out differently in '" + decline.routine
+                + "', which defines variable '" + decline.name
+                + "', and in '" + decline.other_routine
+                + "', which names variable '" + decline.other_variable
+                + "'";
         case GpuDeclineReason::StoppingProcedureShared:
             return unsupported + "procedure '" + decline.name + "', which "
                 "can stop, passed as an argument or shared with the host";

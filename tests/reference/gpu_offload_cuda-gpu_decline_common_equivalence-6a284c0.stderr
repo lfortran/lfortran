@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'e', which equivalence associates with common block /gpu_decline_common_e/, read in 'from_equivalence'
+  --> tests/gpu_decline_common_equivalence.f90:22:5
+   |
+22 |     !$omp parallel do
+   |     ^^^^^^^^^^^^^^^^^ the gpu backend does not support variable 'e', which equivalence associates with common block /gpu_decline_common_e/, read in 'from_equivalence'

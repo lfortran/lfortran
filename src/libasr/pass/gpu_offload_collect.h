@@ -373,9 +373,10 @@ public:
 
 // Every routine a loop body reaches, however deep: the implementation of
 // a separate module procedure, which `implementations` finds, in place of
-// the interface the call names.
+// the interface the call names. `procedure_values` is as for gpu_callees.
 std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
-        size_t n_body, GpuProcedureImplementations &implementations);
+        size_t n_body, GpuProcedureImplementations &implementations,
+        bool procedure_values = false);
 
 // Collects every parallel region reached from the statements walked,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is
