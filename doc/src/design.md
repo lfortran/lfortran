@@ -1,7 +1,7 @@
 # LFortran Design
 
 The native prompt and optional Xeus kernel share an
-[interactive evaluation API](interactive_evaluation.md).
+[interactive evaluation and runtime input API](interactive_evaluation.md).
 
 ## High Level Overview
 

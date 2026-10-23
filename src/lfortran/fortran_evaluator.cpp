@@ -17,6 +17,7 @@
 #include <lfortran/ast_to_src.h>
 #include <libasr/exception.h>
 #include <libasr/stacktrace.h>
+#include <libasr/runtime/lfortran_stdin.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -63,6 +64,14 @@ struct DisplayContext {
     std::string error; // why a hook failed; empty if none has
 };
 
+// The context of the runtime's stdin provider while execute() runs a cell
+// whose CellIO has an input hook. The runtime copies `record` before it
+// asks for the next one.
+struct InputContext {
+    const LCompilers::FortranEvaluator::CellIO &io;
+    std::string record;
+};
+
 // A hook is called from generated code, so its exception must not unwind
 // through it.
 template <typename Call>
@@ -87,6 +96,21 @@ static void display_data_hook(void *context, const char *mime_type,
 static void clear_output_hook(void *context) {
     DisplayContext &c = *static_cast<DisplayContext *>(context);
     run_hook(c, [&]() { if (c.io.clear_output) c.io.clear_output(); });
+}
+
+static int read_input(void *context, const char **record, size_t *length) {
+    InputContext &c = *static_cast<InputContext *>(context);
+    try {
+        c.record.clear();
+        int status = c.io.input(c.record);
+        *record = c.record.data();
+        *length = c.record.size();
+        return status;
+    } catch (...) {
+        // An exception must not unwind through generated code or the C
+        // runtime; the cell sees unavailable input instead.
+        return 1;
+    }
 }
 }
 
@@ -497,14 +521,19 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     LCOMPILERS_ASSERT(compiler_options.interactive);
     CellResult out;
     DisplayContext display{io, ""};
+    InputContext input{io, ""};
     struct Hooks {
-        explicit Hooks(DisplayContext &display) {
+        Hooks(DisplayContext &display, InputContext &input) {
             [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
                 clear_output_hook, &display);
             LCOMPILERS_ASSERT(previous == nullptr);
+            _lfortran_stdin_install(input.io.input ? read_input : nullptr, &input);
         }
-        ~Hooks() { _lfortran_set_display_hooks(nullptr, nullptr, nullptr); }
-    } hooks(display);
+        ~Hooks() {
+            _lfortran_stdin_reset();
+            _lfortran_set_display_hooks(nullptr, nullptr, nullptr);
+        }
+    } hooks(display, input);
     LocationManager lm;
     diag::Diagnostics diagnostics;
     PassManager passes;
