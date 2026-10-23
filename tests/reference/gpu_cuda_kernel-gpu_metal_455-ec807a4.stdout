@@ -31,7 +31,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __do_loop_end7;
     int __do_loop_end8;
     int __do_loop_end9;
-    int __flat_idx;
+    long __flat_idx;
     float __gpu_mm_acc;
     float __gpu_mm_acc1;
     float __gpu_mm_acc2;
@@ -54,11 +54,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     const int m = 4;
     const int n = 3;
     int p;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    p = (__flat_idx + 1);
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    p = ((int)(__flat_idx + ((long)1)));
     __do_loop_end = n;
     __gpu_mm_i = (1 - 1);
     while (((__gpu_mm_i + 1) <= __do_loop_end)) {

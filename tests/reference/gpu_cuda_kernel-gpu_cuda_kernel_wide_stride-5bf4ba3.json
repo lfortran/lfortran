@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_cuda_kernel_wide_stride-5bf4ba3",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/gpu_cuda_kernel_wide_stride.f90",
+    "infile_hash": "7754752a083b833af957df889b96aa3ee4c9e1e10c1fa0ff82dc82c0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_cuda_kernel_wide_stride-5bf4ba3.stdout",
+    "stdout_hash": "f9efc251bd78c62101ff690d08f418002c2d789c14f511b1c552539f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

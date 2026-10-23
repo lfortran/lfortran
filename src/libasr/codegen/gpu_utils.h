@@ -422,6 +422,47 @@ inline std::string gpu_referenced_declarations(
     return result;
 }
 
+// The device C type of the integer kind `offset_kind` a dialect computes
+// element offsets in (GpuDeviceCapabilities::offset_kind).
+inline std::string gpu_offset_type(int offset_kind) {
+    LCOMPILERS_ASSERT(offset_kind == 4 || offset_kind == 8);
+    return offset_kind == 8 ? "long" : "int";
+}
+
+// The offset `sub - lb` of a subscript of integer kind `subscript_kind`
+// within its dimension, as device source in the integer of kind
+// `offset_kind`, the dialect's kind for element offsets. A subscript wider
+// than that is narrowed only once its lower bound is subtracted: the
+// difference fits where the subscript itself need not, as in an integer(8)
+// subscript of an array whose lower bound is 3000000000.
+//
+// The source before and after the subscript is the pair this returns, for
+// a caller that emits the subscript itself in between.
+inline std::pair<std::string, std::string> gpu_offset_term_parts(
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    std::string type = gpu_offset_type(offset_kind);
+    if (subscript_kind > offset_kind) {
+        return {"((" + type + ")((", ") - (" + lb + ")))"};
+    }
+    return {"((" + type + ")(", ") - (" + lb + "))"};
+}
+
+inline std::string gpu_offset_term(const std::string &sub,
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    auto parts = gpu_offset_term_parts(lb, subscript_kind, offset_kind);
+    return parts.first + sub + parts.second;
+}
+
+// The product `a * b` of two extents, as device source, computed in the
+// integer of kind `offset_kind`: two extents of a large array multiply past
+// huge(0). A dialect whose offsets are 32-bit already multiplies in them.
+inline std::string gpu_index_product(const std::string &a,
+        const std::string &b, int offset_kind) {
+    if (offset_kind == 4) return "(" + a + " * " + b + ")";
+    return "(((" + gpu_offset_type(offset_kind) + ")(" + a + ")) * " + b
+        + ")";
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -449,22 +490,31 @@ inline std::string gpu_referenced_declarations(
 // component's extents travel in. The last dimension is never counted past,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
+//
+// The position is counted in the integer of kind `offset_kind`, the
+// dialect's kind for element offsets: each subscript's offset
+// (gpu_offset_term, given the subscript's integer kind in
+// `subscript_kinds`) and each product of extents is converted to it before
+// it is multiplied, so with 64-bit offsets an array of more than huge(0)
+// elements is addressed without wrapping.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
+        const std::vector<int> &subscript_kinds,
         const std::function<std::string(size_t)> &lower,
-        const std::function<std::string(size_t)> &extent) {
+        const std::function<std::string(size_t)> &extent,
+        int offset_kind) {
     std::string out, stride;
     for (size_t d = 0; d < subscripts.size(); d++) {
         if (subscripts[d].empty()) continue;
-        std::string term = "((int)(" + subscripts[d] + ") - ("
-            + lower(d) + "))";
+        std::string term = gpu_offset_term(subscripts[d], lower(d),
+            subscript_kinds[d], offset_kind);
         if (!stride.empty()) term = "(" + stride + " * " + term + ")";
         out += out.empty() ? term : (" + " + term);
         if (d + 1 < subscripts.size()) {
             std::string ext = extent(d);
             if (ext.empty()) continue;
             stride = stride.empty() ? ext
-                : ("(" + stride + " * " + ext + ")");
+                : gpu_index_product(stride, ext, offset_kind);
         }
     }
     return out;

@@ -4985,6 +4985,51 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_526.f90"
 gpu_cuda_kernel = true
 
+# The kernel numbers the 2**31 + 1 iterations in integer(8).
+[[test]]
+filename = "../integration_tests/gpu_metal_565.f90"
+gpu_cuda_kernel = true
+
+# The same nest with literal bounds: the kernel's iteration count is a product
+# of integer(8) constants, which must be emitted as 64-bit values.
+[[test]]
+filename = "../integration_tests/gpu_metal_566.f90"
+gpu_cuda_kernel = true
+
+# One dimension has more than huge(0) iterations: its extent and indices are
+# computed in integer(8). Compile-only: a run executes more than 2**32
+# iterations, and GFortran counts them in integer(4) and runs none.
+[[test]]
+filename = "gpu_cuda_kernel_wide_extent.f90"
+gpu_cuda_kernel = true
+
+# With --descriptor-index-64 element offsets, extents and lower bounds are
+# 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
+[[test]]
+filename = "../integration_tests/gpu_metal_567.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# The same flag with an array whose first extent alone exceeds huge(0): the
+# stride of its second dimension is 64-bit. Compile-only: the array takes
+# 4 GB, which a run copies to the device and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_stride.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# An integer(8) subscript of an array whose lower bound is beyond huge(0):
+# the lower bound is subtracted before the offset is narrowed to `int`.
+[[test]]
+filename = "../integration_tests/gpu_metal_595.f90"
+gpu_cuda_kernel = true
+
+# integer(8) loop indices: the kernel widens the device's 32-bit thread and
+# block built-ins before it numbers the iterations, flat and in tiles.
+[[test]]
+filename = "../integration_tests/gpu_metal_599.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true
