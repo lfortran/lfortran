@@ -1,99 +1,99 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support pointer 'p' of common block /gpu_decline_24_p/, read in 'from_pointer'
-  --> tests/../integration_tests/gpu_decline_24.f90:95:5 - 97:10
+  --> tests/../integration_tests/gpu_decline_24.f90:96:5 - 98:10
    |
-95 |        do concurrent (k = 1:4)
+96 |        do concurrent (k = 1:4)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-97 |        end do
+98 |        end do
    | ...^^^^^^^^^^ the gpu backend does not support pointer 'p' of common block /gpu_decline_24_p/, read in 'from_pointer'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support character variable 'c' of common block /gpu_decline_24_c/, read in 'from_character'
-   --> tests/../integration_tests/gpu_decline_24.f90:101:5 - 103:10
+   --> tests/../integration_tests/gpu_decline_24.f90:102:5 - 104:10
     |
-101 |        do concurrent (k = 1:4)
+102 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-103 |        end do
+104 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support character variable 'c' of common block /gpu_decline_24_c/, read in 'from_character'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'x' of common block /gpu_decline_24_s/, read in 'after_derived_type', which the block places after derived-type variable 's'
-   --> tests/../integration_tests/gpu_decline_24.f90:108:5 - 110:10
+   --> tests/../integration_tests/gpu_decline_24.f90:109:5 - 111:10
     |
-108 |        do concurrent (k = 1:4)
+109 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-110 |        end do
+111 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support variable 'x' of common block /gpu_decline_24_s/, read in 'after_derived_type', which the block places after derived-type variable 's'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support common block /gpu_decline_24_w/ laid out differently in 'gpu_decline_24', which defines variable 'a', and in 'laid_out_apart', which names variable 'w'
-   --> tests/../integration_tests/gpu_decline_24.f90:114:5 - 117:10
+   --> tests/../integration_tests/gpu_decline_24.f90:115:5 - 118:10
     |
-114 |        do concurrent (k = 1:4)
+115 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-117 |        end do
+118 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support common block /gpu_decline_24_w/ laid out differently in 'gpu_decline_24', which defines variable 'a', and in 'laid_out_apart', which names variable 'w'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'
-   --> tests/../integration_tests/gpu_decline_24.f90:121:5 - 124:10
+   --> tests/../integration_tests/gpu_decline_24.f90:125:5 - 130:10
     |
-121 |        do concurrent (k = 1:4)
+125 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-124 |        end do
+130 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'i' of common block /gpu_decline_24_i/, defined in the loop in 'gpu_decline_24' and named as variable 'i' in 'index_by_loop'
-   --> tests/../integration_tests/gpu_decline_24.f90:128:5 - 133:10
+   --> tests/../integration_tests/gpu_decline_24.f90:135:5 - 142:10
     |
-128 |        do concurrent (k = 1:4)
+135 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-133 |        end do
+142 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support scalar variable 'i' of common block /gpu_decline_24_i/, defined in the loop in 'gpu_decline_24' and named as variable 'i' in 'index_by_loop'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'e' of common block /gpu_decline_24_e/, defined in 'gpu_decline_24', and variable 'v' of the block, named in 'aliased_by_loop', one of which equivalence associates with the block
-   --> tests/../integration_tests/gpu_decline_24.f90:137:5 - 140:10
+   --> tests/../integration_tests/gpu_decline_24.f90:147:5 - 152:10
     |
-137 |        do concurrent (k = 1:4)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-140 |        end do
-    | ...^^^^^^^^^^ the gpu backend does not support variable 'e' of common block /gpu_decline_24_e/, defined in 'gpu_decline_24', and variable 'v' of the block, named in 'aliased_by_loop', one of which equivalence associates with the block
-
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'i' of common block /gpu_decline_24_i/, defined in the loop in 'gpu_decline_24' and named as variable 'i' in 'index_by_loop'
-   --> tests/../integration_tests/gpu_decline_24.f90:145:5 - 152:10
-    |
-145 |        do concurrent (k = 1:4)
+147 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 152 |        end do
+    | ...^^^^^^^^^^ the gpu backend does not support variable 'e' of common block /gpu_decline_24_e/, defined in 'gpu_decline_24', and variable 'v' of the block, named in 'aliased_by_loop', one of which equivalence associates with the block
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'i' of common block /gpu_decline_24_i/, defined in the loop in 'gpu_decline_24' and named as variable 'i' in 'index_by_loop'
+   --> tests/../integration_tests/gpu_decline_24.f90:158:5 - 167:10
+    |
+158 |        do concurrent (k = 1:4)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+167 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support scalar variable 'i' of common block /gpu_decline_24_i/, defined in the loop in 'gpu_decline_24' and named as variable 'i' in 'index_by_loop'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'
-   --> tests/../integration_tests/gpu_decline_24.f90:156:5 - 161:10
+   --> tests/../integration_tests/gpu_decline_24.f90:172:5 - 179:10
     |
-156 |        do concurrent (k = 1:4)
+172 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-161 |        end do
+179 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'
-   --> tests/../integration_tests/gpu_decline_24.f90:165:5 - 170:10
+   --> tests/../integration_tests/gpu_decline_24.f90:184:5 - 191:10
     |
-165 |        do concurrent (k = 1:4)
+184 |        do concurrent (k = 1:4)
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-170 |        end do
+191 |        end do
     | ...^^^^^^^^^^ the gpu backend does not support scalar variable 'y' of common block /gpu_decline_24_y/, defined in the loop in 'gpu_decline_24' and named as variable 'y' in 'defined_by_loop'

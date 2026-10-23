@@ -44,8 +44,7 @@ contains
         laid_out_apart = w(k)
     end function
 
-    ! Reads the scalar the loop defines in each iteration, through a view
-    ! of its own.
+    ! Reads the scalar the loop defines, through a view of its own.
     pure real function defined_by_loop()
         real :: y
         common /gpu_decline_24_y/ y
@@ -89,7 +88,9 @@ program gpu_decline_24
     common /gpu_decline_24_e/ v
     equivalence (e, v)
     integer :: k
+    logical :: once(4)
 
+    once = [.false., .true., .false., .false.]
     t = 10
     p => t
     do concurrent (k = 1:4)
@@ -117,57 +118,77 @@ program gpu_decline_24
     end do
     if (any(u /= [1, 2, 3, 4])) error stop 4
 
+    ! Only one iteration defines the scalar of the block, which is the one
+    ! that reads it through the procedure: the guard does not test the index.
     y = -1
+    u = 0
     do concurrent (k = 1:4)
-        y = 10 * k
-        u(k) = defined_by_loop()
+        if (once(k)) then
+            y = 10 * k
+            u(k) = defined_by_loop()
+        end if
     end do
-    if (any(u /= [10, 20, 30, 40])) error stop 5
+    if (any(u /= [0, 20, 0, 0])) error stop 5
 
     i = -1
+    n = 0
     do concurrent (k = 1:4)
-        do i = 10 * k, 100
-            exit
-        end do
-        n(k) = index_by_loop()
+        if (once(k)) then
+            do i = 10 * k, 100
+                exit
+            end do
+            n(k) = index_by_loop()
+        end if
     end do
-    if (any(n /= [10, 20, 30, 40])) error stop 6
+    if (any(n /= [0, 20, 0, 0])) error stop 6
 
     v = -1
+    n = 0
     do concurrent (k = 1:4)
-        e = 10 * k
-        n(k) = aliased_by_loop()
+        if (once(k)) then
+            e = 10 * k
+            n(k) = aliased_by_loop()
+        end if
     end do
-    if (any(n /= [10, 20, 30, 40])) error stop 7
+    if (any(n /= [0, 20, 0, 0])) error stop 7
 
     ! The same, inside ASSOCIATE constructs.
     i = -1
+    n = 0
     do concurrent (k = 1:4)
-        associate (z => k)
-            do i = 10 * z, 100
-                exit
-            end do
-        end associate
-        n(k) = index_by_loop()
+        if (once(k)) then
+            associate (z => k)
+                do i = 10 * z, 100
+                    exit
+                end do
+            end associate
+            n(k) = index_by_loop()
+        end if
     end do
-    if (any(n /= [10, 20, 30, 40])) error stop 8
+    if (any(n /= [0, 20, 0, 0])) error stop 8
 
     y = -1
+    u = 0
     do concurrent (k = 1:4)
-        associate (z => k)
-            y = 10 * z
-        end associate
-        u(k) = defined_by_loop()
+        if (once(k)) then
+            associate (z => k)
+                y = 10 * z
+            end associate
+            u(k) = defined_by_loop()
+        end if
     end do
-    if (any(u /= [10, 20, 30, 40])) error stop 9
+    if (any(u /= [0, 20, 0, 0])) error stop 9
 
     y = -1
+    u = 0
     do concurrent (k = 1:4)
-        associate (z => y)
-            z = 10 * k
-        end associate
-        u(k) = defined_by_loop()
+        if (once(k)) then
+            associate (z => y)
+                z = 10 * k
+            end associate
+            u(k) = defined_by_loop()
+        end if
     end do
-    if (any(u /= [10, 20, 30, 40])) error stop 10
+    if (any(u /= [0, 20, 0, 0])) error stop 10
     print *, u
 end program
