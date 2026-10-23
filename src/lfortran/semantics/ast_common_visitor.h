@@ -17148,16 +17148,6 @@ public:
         }
     }
 
-    // A function reference is not a whole array, so its lower bounds are 1.
-    void set_function_result_lbounds_to_one(Vec<ASR::dimension_t>& dims) {
-        for (size_t i = 0; i < dims.size(); i++) {
-            if (dims[i].m_start && dims[i].m_length) {
-                dims.p[i].m_start = ASRUtils::get_constant_one_with_given_type(
-                    al, ASRUtils::expr_type(dims[i].m_start));
-            }
-        }
-    }
-
     ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
                                      Vec<ASR::call_arg_t>& args,
                                      ASR::Function_t* f=nullptr) {
@@ -17185,7 +17175,7 @@ public:
                 fix_exprs_ttype_t(func_calls, args, f);
                 Vec<ASR::dimension_t> new_dims;
                 fill_new_dims(t, func_calls, new_dims);
-                set_function_result_lbounds_to_one(new_dims);
+                ASRUtils::set_function_result_lbounds_to_one(al, new_dims.p, new_dims.size());
                 bool for_type = true;
                 for( size_t k = 0; k < new_dims.size(); k++ ) {
                     if( new_dims[k].m_length &&
@@ -18476,7 +18466,7 @@ public:
                 dim.m_length = m_dims[i].m_length ? r.replace_FunctionParam_with_arg(m_dims[i].m_length) : nullptr;
                 new_dims.push_back(al, dim);
             }
-            set_function_result_lbounds_to_one(new_dims);
+            ASRUtils::set_function_result_lbounds_to_one(al, new_dims.p, new_dims.size());
             return_type = ASRUtils::duplicate_type(al, return_type, &new_dims);
         }
         // TODO: Uncomment later
