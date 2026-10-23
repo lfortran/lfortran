@@ -310,16 +310,23 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
-            # Sessions use Unix sockets, which are not supported on Windows yet.
+            # The prompt is a client of the shared kernel.
+            if (WITH_XEUS)
+                set(LFORTRAN_KERNEL_KIND)
+            else()
+                set(LFORTRAN_KERNEL_KIND --builtin)
+            endif()
             add_test(
                 NAME test_session
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran>
+                    --lfortran $<TARGET_FILE:lfortran> ${LFORTRAN_KERNEL_KIND}
             )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180)
+            set_tests_properties(test_session PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
         endif()
-        if (WITH_XEUS)
+        # The Xeus kernel, or else the built-in one
+        if (NOT EMSCRIPTEN)
             add_test(
                 NAME test_kernel_evaluation
                 COMMAND ${LFORTRAN_TEST_PYTHON}

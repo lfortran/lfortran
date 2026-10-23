@@ -59,8 +59,8 @@ namespace LCompilers::CommandLineInterface {
         std::string skip_pass;
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
-        std::string session_serve;
-        std::string session_connect;
+        bool arg_kernel_managed = false;
+        std::string connect;
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;

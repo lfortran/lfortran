@@ -153,6 +153,10 @@ public:
     }
 };
 
+// What the cell running with CellIO::output has written but not yet passed
+// on, for when it ends the process.
+std::function<void()> *flush_at_exit = nullptr;
+
 // A hook is called from generated code, so its exception must not unwind
 // through it.
 template <typename Call>
@@ -604,9 +608,23 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     // What the cell writes goes to io.output before anything it displays,
     // clears or reads.
     std::optional<OutputCapture> capture;
-    auto flush_output = [&]() { if (capture) capture->flush(io.output); };
+    std::function<void()> flush_output = [&]() { if (capture) capture->flush(io.output); };
+    // A cell that ends the process (STOP, a fatal error) still passes on
+    // what it wrote.
+    struct FlushAtExit {
+        FlushAtExit(std::function<void()> *flush) {
+            static const int registered = std::atexit([]() {
+                if (flush_at_exit) (*flush_at_exit)();
+            });
+            (void)registered;
+            flush_at_exit = flush;
+        }
+        ~FlushAtExit() { flush_at_exit = nullptr; }
+    };
+    std::optional<FlushAtExit> flush_at_exit_guard;
     CellIO hooks_io = io;
     if (io.output) {
+        flush_at_exit_guard.emplace(&flush_output);
         if (io.display) {
             hooks_io.display = [&](const std::string &mime, const std::string &data) {
                 flush_output();

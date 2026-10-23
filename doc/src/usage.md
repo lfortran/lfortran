@@ -134,25 +134,41 @@ to start it.
 
 ### Sharing a session
 
-Several prompts can share one session, with its variables, procedures and
-modules. Start a session server on a Unix socket, then connect prompts to it
-from other terminals:
+The prompt is a Jupyter client. It runs its cells in a Jupyter kernel that it
+starts, and it tells where the kernel's connection file is, so that other
+clients can join the session, with its variables, procedures and modules:
+another prompt, `jupyter console --existing FILE` or any Jupyter client.
 
 ```console
-$ lfortran --serve /tmp/fortran-session.sock
-$ lfortran --connect /tmp/fortran-session.sock
+$ lfortran
+...
+  * Others can join with `lfortran --connect /tmp/lfortran-0123abcd.json`
+>>>
+$ lfortran --connect /tmp/lfortran-0123abcd.json
 ```
 
-The server runs one cell at a time, in the order the cells arrive, on a single
-thread. A cell's output, result and errors go to the prompt that ran it, and
-so does a READ's request for input; the other prompts' cells wait until it is
-done. The output is shown when the cell finishes or asks for input. The
-socket is accessible to its owner only; whoever can connect can run code as
-that user. Ctrl-C or SIGTERM stops the server, which removes the socket.
-Sessions are not supported on Windows yet.
+A kernel can also be started on its own; it writes the connection file if it
+does not exist and runs until a client shuts it down, or until Ctrl-C or
+SIGTERM:
 
-The protocol is a sequence of frames (a 4-byte big-endian length, a kind byte
-and a payload), described in `src/bin/session.cpp`.
+```console
+$ lfortran kernel -f session.json
+$ lfortran --connect session.json
+```
+
+The kernel runs one cell at a time, in the order the cells arrive. Every
+client sees every cell's output, as in Jupyter: the prompt shows another
+client's cell, marked `[other client]`, when it runs its next cell. A READ
+asks the client that ran the cell. A cell's output is shown when the cell
+finishes or reads input. The kernel a prompt starts stops when its last client
+disconnects. Whoever can read the connection file can run code as its owner,
+so the kernel writes it readable by its owner only. A running cell cannot be
+interrupted yet.
+
+The kernel is LFortran's own implementation of the Jupyter messaging protocol
+(ZeroMQ over TCP with HMAC-SHA256 signatures), which needs no third-party
+library, or the Xeus kernel in a build with `WITH_XEUS=yes`; the client is
+always LFortran's own. See `src/lfortran/jupyter.cpp`.
 
 ## Invoking LFortran
 

@@ -39,6 +39,12 @@ set(CWRAPPER_SRC
       fortran_kernel.cpp
     )
   endif()
+  # The Jupyter client and, without Xeus, the built-in Jupyter kernel
+  if (WITH_LLVM)
+    set(SRC ${SRC}
+      jupyter.cpp
+    )
+  endif()
   # For WASM build, fortran_kernel.cpp is compiled directly into the xlfortran
   # executable (not into lfortran_lib) to avoid duplicate symbols and to prevent
   # xeus/embind undefined refs from bleeding into other WASM targets.
@@ -91,6 +97,9 @@ if (WITH_LIBUNWIND)
 endif()
 if (WITH_XEUS)
     target_link_libraries(lfortran_lib xeus xeus-zmq)
+endif()
+if (WITH_LLVM AND WIN32)
+    target_link_libraries(lfortran_lib ws2_32)
 endif()
 if (XEUS_LFORTRAN_WASM_BUILD)
     target_link_libraries(lfortran_lib xeus-static)

@@ -375,7 +375,9 @@ if (WITH_XEUS)
     find_package(xeus 5.0.0 REQUIRED)
     find_package(xeus-zmq 3.0.0 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
-
+endif()
+# The Xeus kernel, or else the built-in one, which needs only LLVM
+if (WITH_XEUS OR (WITH_LLVM AND NOT EMSCRIPTEN))
     configure_lfortran_kernel()
 
     # Configuration and data directories for Jupyter and LFortran
