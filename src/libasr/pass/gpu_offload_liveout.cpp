@@ -179,6 +179,9 @@ public:
         // which may be just the part the iteration owns.
         enum class Kind { Private, InPlace, InPlaceByCall, Unsupported } kind;
         Location loc;
+        // For InPlaceByCall: whether the procedure may define a scalar
+        // part of what it is passed, not only elements of arrays.
+        bool defines_scalars;
     };
     std::vector<Definition> definitions;
 
@@ -214,8 +217,14 @@ public:
         }
         using Kind = Definition::Kind;
         Kind kind;
+        bool defines_scalars = false;
         ASR::ttype_t *t = ASRUtils::expr_type(e);
-        if (part_of_array || ASRUtils::is_array(t) || ASRUtils::is_pointer(t)) {
+        if (by_call && ASRUtils::is_array(ASRUtils::expr_type(designator))) {
+            // A procedure may define any element of an array it is passed,
+            // or just the one the iteration owns, in place.
+            kind = Kind::InPlaceByCall;
+        } else if (part_of_array || ASRUtils::is_array(t)
+                || ASRUtils::is_pointer(t)) {
             // An element or section of an array, or what a pointer points
             // to, is not stored in the variable as a scalar is.
             kind = Kind::InPlace;
@@ -226,6 +235,7 @@ public:
                     || gpu_struct_has_array_component(
                         ASRUtils::get_struct_sym_from_struct_expr(e)))) {
                 kind = Kind::InPlaceByCall;
+                defines_scalars = true;
             } else {
                 kind = ASRUtils::is_class_type(t) ? Kind::Unsupported
                     : Kind::Private;
@@ -234,7 +244,7 @@ public:
             kind = gpu_private_scalar_type(t) ? Kind::Private
                 : Kind::Unsupported;
         }
-        definitions.push_back({v, path, kind, loc});
+        definitions.push_back({v, path, kind, loc, defines_scalars});
         uses.push_back({v, path, members, t});
     }
 
@@ -413,22 +423,9 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                     if (changed) break;
                 }
             }
-            // A thread keeps a copy of a derived-type component only as
-            // part of a copy of the whole variable.
-            bool component_struct = false;
-            for (auto &p : privatized) {
-                if (p.empty()) continue;
-                for (auto &u : parts.uses) {
-                    if (u.variable == v && u.path == p
-                            && ASR::is_a<ASR::StructType_t>(*u.type)) {
-                        component_struct = true;
-                    }
-                }
-            }
-            if (component_struct) privatized = {{}};
             // What a procedure defines in place, other threads may read in
             // place: the loop cannot also keep a private copy of a part of
-            // it, or name a scalar part of it, which the procedure may
+            // it, or name a scalar part of it that the procedure may
             // define as a temporary of the iteration.
             for (auto &d : parts.definitions) {
                 if (d.variable != v || d.kind != Kind::InPlaceByCall) continue;
@@ -440,6 +437,7 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                     }
                 }
                 for (auto &u : parts.uses) {
+                    if (!d.defines_scalars) break;
                     if (u.variable == v && u.path.size() > d.path.size()
                             && gpu_path_prefix(d.path, u.path)
                             && !ASRUtils::is_array(u.type)) {
@@ -472,14 +470,22 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                 }
                 LCOMPILERS_ASSERT(use != nullptr);
                 ASR::ttype_t *t = use->type;
-                if (p.empty()) {
-                    if (gpu_struct_has_allocatable_parts(
-                                var->m_type_declaration)
-                            || gpu_struct_bytes(var->m_type_declaration)
+                if (ASR::is_a<ASR::StructType_t>(*t)) {
+                    // The whole variable, or a derived-type component of
+                    // it, which the thread keeps a copy of whole.
+                    ASR::symbol_t *struct_sym = p.empty()
+                        ? var->m_type_declaration
+                        : ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(
+                                use->members.back()))->m_type_declaration;
+                    if ((!p.empty() && (ASRUtils::is_class_type(t)
+                                || ASRUtils::is_allocatable_or_pointer(t)))
+                            || gpu_struct_has_allocatable_parts(struct_sym)
+                            || gpu_struct_bytes(struct_sym)
                                 > gpu_private_struct_limit) {
                         report_not_offloaded(first, GpuDecline(
                             GpuDeclineReason::LiveoutDerivedType,
-                            ASRUtils::symbol_name(v)));
+                            gpu_designator_text(v, p)));
                         return false;
                     }
                 } else if (!gpu_private_scalar_type(t)) {
@@ -544,6 +550,9 @@ void GpuOffloadVisitor::declare_liveout_copies(const Location &loc,
         if (c.path.empty()) {
             type_decl = import_struct_type(c.named, current_scope,
                 kernel_scope, loc);
+        } else if (ASR::is_a<ASR::StructType_t>(*c.type)) {
+            type_decl = import_struct_type(ASRUtils::symbol_get_past_external(
+                c.members.back()), current_scope, kernel_scope, loc);
         }
         gpu_new_variable(al, loc, kernel_scope, c.copy,
             ASRUtils::duplicate_type(al, c.type), ASR::intentType::Local,
