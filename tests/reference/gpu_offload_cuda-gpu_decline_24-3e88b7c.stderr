@@ -1,29 +1,39 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support pointer 'p' of common block /gpu_decline_24_p/, read in 'from_pointer'
-  --> tests/../integration_tests/gpu_decline_24.f90:51:5 - 53:10
+  --> tests/../integration_tests/gpu_decline_24.f90:62:5 - 64:10
    |
-51 |        do concurrent (k = 1:4)
+62 |        do concurrent (k = 1:4)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-53 |        end do
+64 |        end do
    | ...^^^^^^^^^^ the gpu backend does not support pointer 'p' of common block /gpu_decline_24_p/, read in 'from_pointer'
 
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support character variable 'c' of common block /gpu_decline_24_c/, read in 'from_character'
-  --> tests/../integration_tests/gpu_decline_24.f90:57:5 - 59:10
+  --> tests/../integration_tests/gpu_decline_24.f90:68:5 - 70:10
    |
-57 |        do concurrent (k = 1:4)
+68 |        do concurrent (k = 1:4)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-59 |        end do
+70 |        end do
    | ...^^^^^^^^^^ the gpu backend does not support character variable 'c' of common block /gpu_decline_24_c/, read in 'from_character'
 
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support common block /gpu_decline_24_s/ with derived-type variable 's', read in 'after_derived_type'
-  --> tests/../integration_tests/gpu_decline_24.f90:64:5 - 66:10
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support variable 'x' of common block /gpu_decline_24_s/, read in 'after_derived_type', which the block places after derived-type variable 's'
+  --> tests/../integration_tests/gpu_decline_24.f90:75:5 - 77:10
    |
-64 |        do concurrent (k = 1:4)
+75 |        do concurrent (k = 1:4)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-66 |        end do
-   | ...^^^^^^^^^^ the gpu backend does not support common block /gpu_decline_24_s/ with derived-type variable 's', read in 'after_derived_type'
+77 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support variable 'x' of common block /gpu_decline_24_s/, read in 'after_derived_type', which the block places after derived-type variable 's'
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support common block /gpu_decline_24_w/ laid out differently in 'gpu_decline_24', which defines variable 'a', and in 'laid_out_apart', which names variable 'w'
+  --> tests/../integration_tests/gpu_decline_24.f90:81:5 - 84:10
+   |
+81 |        do concurrent (k = 1:4)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+84 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support common block /gpu_decline_24_w/ laid out differently in 'gpu_decline_24', which defines variable 'a', and in 'laid_out_apart', which names variable 'w'

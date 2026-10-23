@@ -45,6 +45,18 @@ that place it.
 */
 GpuDecline gpu_common_block_decline(ASR::Function_t &fn);
 
+/*
+Why the variables of common blocks that the loop `body` and the procedures
+`routines` it calls name cannot be handed to the kernel together, if they
+cannot: an external procedure names one (the kernel calls the procedure, not
+a copy of it); a procedure defines a scalar one (the kernel is handed its
+value); or a variable is defined through one view of a block and another view
+places a variable it names differently (each reaches the kernel as memory of
+its own).
+*/
+GpuDecline gpu_common_block_access_decline(ASR::stmt_t **body, size_t n_body,
+    const std::vector<ASR::Function_t*> &routines);
+
 void gpu_pass_common_blocks(Allocator &al, const Location &loc,
     const std::vector<ASR::Function_t*> &procedures,
     SymbolTable *kernel_scope, SymbolTable *host_scope,

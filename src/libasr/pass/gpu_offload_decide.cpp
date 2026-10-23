@@ -290,10 +290,22 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     // is handed to the kernel as the storage of the block, which only a
     // numeric or logical variable placed as a member of it can be (see
     // gpu_pass_common_blocks). Any other would be a local of the device
-    // copy of the procedure, which is a wrong value and no diagnostic.
-    for (ASR::Function_t *fn : reachable_routines(work.body, work.n_body,
-            implementations)) {
-        GpuDecline decline = gpu_common_block_decline(*fn);
+    // copy of the procedure, which is a wrong value and no diagnostic. So
+    // would a variable an external procedure names, a scalar one a
+    // procedure defines, or one defined through a view of a block that
+    // another view, which names a variable of it, lays out differently.
+    {
+        std::vector<ASR::Function_t*> routines = reachable_routines(
+            work.body, work.n_body, implementations);
+        for (ASR::Function_t *fn : routines) {
+            GpuDecline decline = gpu_common_block_decline(*fn);
+            if (decline.declined()) {
+                report_not_offloaded(loc, decline);
+                return false;
+            }
+        }
+        GpuDecline decline = gpu_common_block_access_decline(work.body,
+            work.n_body, routines);
         if (decline.declined()) {
             report_not_offloaded(loc, decline);
             return false;

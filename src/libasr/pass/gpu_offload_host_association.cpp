@@ -6,6 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 
@@ -267,7 +268,180 @@ SymbolTable* common_block_scope(SymbolTable *scope) {
     return nullptr;
 }
 
+// The variables of common blocks an ASR subtree names, in the order it
+// first names them, the bodies of the BLOCKs it runs included.
+class CommonVariableNames : public ASR::BaseWalkVisitor<CommonVariableNames> {
+public:
+    std::vector<ASR::symbol_t*> variables;
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Variable_t>(*v)
+                && ASR::down_cast<ASR::Variable_t>(v)->m_common_block
+                    != nullptr
+                && seen.insert(v).second) {
+            variables.push_back(v);
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+
+private:
+    std::set<ASR::symbol_t*> seen;
+    std::set<ASR::symbol_t*> blocks;
+};
+
+// Whether `fn` is an external procedure, or one an external procedure
+// contains: the kernel calls such a procedure itself instead of a copy.
+bool in_external_procedure(ASR::Function_t &fn) {
+    SymbolTable *scope = fn.m_symtab->parent;
+    while (scope != nullptr && scope->asr_owner != nullptr
+            && scope->asr_owner->type == ASR::asrType::symbol
+            && ASR::is_a<ASR::Function_t>(
+                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+        scope = scope->parent;
+    }
+    return scope != nullptr && (scope->asr_owner == nullptr
+        || scope->asr_owner->type != ASR::asrType::symbol);
+}
+
+// The view of a common block a variable of it belongs to, and where.
+struct CommonPlace {
+    ASR::CommonBlock_t *view;
+    // The member it is, or -1 for a variable EQUIVALENCE associates with
+    // the block.
+    int64_t member;
+};
+
+CommonPlace common_place(ASR::symbol_t *variable) {
+    ASR::CommonBlock_t *view = ASR::down_cast<ASR::CommonBlock_t>(
+        ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Variable_t>(variable)->m_common_block));
+    for (size_t i = 0; i < view->n_members; i++) {
+        if (view->m_members[i] == variable) {
+            return {view, static_cast<int64_t>(i)};
+        }
+    }
+    return {view, -1};
+}
+
+// Whether two variables of a common block are the same storage or none of
+// it: their views place them as members, and agree on the types of the
+// members up to the later of the two.
+bool same_or_apart(const CommonPlace &a, const CommonPlace &b) {
+    if (a.view == b.view) return true;
+    if (a.member < 0 || b.member < 0) return false;
+    size_t n = static_cast<size_t>(std::max(a.member, b.member)) + 1;
+    if (n > a.view->n_members || n > b.view->n_members) return false;
+    for (size_t i = 0; i < n; i++) {
+        ASR::ttype_t *ta = ASRUtils::symbol_type(a.view->m_members[i]);
+        ASR::ttype_t *tb = ASRUtils::symbol_type(b.view->m_members[i]);
+        if (!ASRUtils::check_equal_type(ta, tb, nullptr, nullptr, true)) {
+            return false;
+        }
+        std::pair<int64_t, int64_t> sa =
+            ASRUtils::compute_struct_member_size_align(ta);
+        if (sa.first < 0
+                || sa != ASRUtils::compute_struct_member_size_align(tb)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string block_name(ASR::CommonBlock_t *view) {
+    return "/" + std::string(view->m_block_name ? view->m_block_name : "")
+        + "/";
+}
+
+// The name of the program or procedure a view of a common block is in.
+std::string routine_name(ASR::CommonBlock_t *view) {
+    SymbolTable *scope = common_block_scope(view->m_parent_symtab);
+    if (scope == nullptr) return "";
+    return ASRUtils::symbol_name(
+        ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+}
+
 } // namespace
+
+GpuDecline gpu_common_block_access_decline(ASR::stmt_t **body, size_t n_body,
+        const std::vector<ASR::Function_t*> &routines) {
+    struct Access {
+        ASR::symbol_t *variable;
+        CommonPlace place;
+        bool defined;
+    };
+    std::vector<Access> accesses;
+    auto add = [&](const CommonVariableNames &names,
+            const std::set<ASR::symbol_t*> &defined) {
+        for (ASR::symbol_t *v : names.variables) {
+            accesses.push_back({v, common_place(v), defined.count(v) > 0});
+        }
+    };
+    {
+        CommonVariableNames names;
+        for (size_t i = 0; i < n_body; i++) {
+            names.visit_stmt(*body[i]);
+        }
+        add(names, gpu_written_variables(body, n_body));
+    }
+    for (ASR::Function_t *fn : routines) {
+        CommonVariableNames names;
+        names.visit_Function(*fn);
+        if (names.variables.empty()) continue;
+        if (in_external_procedure(*fn)) {
+            ASR::symbol_t *v = names.variables[0];
+            GpuDecline d(GpuDeclineReason::CommonVariableExternalProcedure,
+                ASRUtils::symbol_name(v));
+            d.common_block = block_name(common_place(v).view);
+            d.routine = fn->m_name;
+            return d;
+        }
+        std::set<ASR::symbol_t*> defined = gpu_written_variables(
+            fn->m_body, fn->n_body);
+        // The kernel is handed the value of a scalar, which a definition
+        // on the device does not reach the host with; the loop's own
+        // definitions of one do.
+        for (ASR::symbol_t *v : names.variables) {
+            if (defined.count(v) > 0
+                    && !ASRUtils::is_array(ASRUtils::symbol_type(v))) {
+                GpuDecline d(GpuDeclineReason::CommonVariableDefined,
+                    ASRUtils::symbol_name(v));
+                d.common_block = block_name(common_place(v).view);
+                d.routine = fn->m_name;
+                return d;
+            }
+        }
+        add(names, defined);
+    }
+    // Each view of a block reaches the kernel as memory of its own, so a
+    // definition through one view is seen through another only where the
+    // two place the variable alike.
+    for (const Access &d : accesses) {
+        if (!d.defined) continue;
+        for (const Access &o : accesses) {
+            if (block_name(o.place.view) != block_name(d.place.view)
+                    || same_or_apart(d.place, o.place)) {
+                continue;
+            }
+            GpuDecline decline(GpuDeclineReason::CommonBlockLayouts,
+                ASRUtils::symbol_name(d.variable));
+            decline.common_block = block_name(d.place.view);
+            decline.routine = routine_name(d.place.view);
+            decline.other_variable = ASRUtils::symbol_name(o.variable);
+            decline.other_routine = routine_name(o.place.view);
+            return decline;
+        }
+    }
+    return GpuDecline();
+}
 
 GpuDecline gpu_common_block_decline(ASR::Function_t &fn) {
     std::set<ASR::symbol_t*> named;
@@ -298,8 +472,18 @@ GpuDecline gpu_common_block_decline(ASR::Function_t &fn) {
             ASR::symbol_t *v = view->m_members[i];
             ASR::ttype_t *type = ASRUtils::symbol_type(v);
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
-                return decline(GpuDeclineReason::CommonVariableDerivedType,
-                    v);
+                if (named.count(v) > 0) {
+                    return decline(
+                        GpuDeclineReason::CommonVariableDerivedType, v);
+                }
+                // The first variable named that it places.
+                size_t j = i + 1;
+                while (named.count(view->m_members[j]) == 0) j++;
+                GpuDecline d = decline(
+                    GpuDeclineReason::CommonVariableDerivedType,
+                    view->m_members[j]);
+                d.other_variable = ASRUtils::symbol_name(v);
+                return d;
             }
             if (named.count(v) == 0) continue;
             if (ASRUtils::is_pointer(type)) {
@@ -318,14 +502,16 @@ void gpu_pass_common_blocks(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, SymbolTable *host_scope,
         Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
     SymbolTable *host = common_block_scope(host_scope);
-    if (host == nullptr) return;
     for (ASR::Function_t *fn : procedures) {
         std::vector<ASR::CommonBlock_t*> views = common_block_views(*fn);
-        // A procedure whose common blocks cannot be handed to the kernel
-        // has had the loop declined already.
+        // The loop has been declined if a procedure it calls names a
+        // variable of a common block that cannot be handed to the kernel
+        // (see offloadable_before_rewrites). A copy of a procedure that
+        // it does not call, but the kernel has, keeps its views.
         if (views.empty() || gpu_common_block_decline(*fn).declined()) {
             continue;
         }
+        LCOMPILERS_ASSERT(host != nullptr);
         std::set<ASR::symbol_t*> named = named_variables(*fn);
         std::map<ASR::symbol_t*, ASR::symbol_t*> own;
         for (ASR::CommonBlock_t *view : views) {

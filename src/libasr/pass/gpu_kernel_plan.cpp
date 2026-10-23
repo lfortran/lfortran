@@ -981,6 +981,15 @@ private:
 
 } // namespace
 
+std::set<ASR::symbol_t*> gpu_written_variables(ASR::stmt_t **body,
+        size_t n_body) {
+    KernelWrites writes;
+    for (size_t i = 0; i < n_body; i++) {
+        writes.visit_stmt(*body[i]);
+    }
+    return writes.written;
+}
+
 // The host calls every function a workspace extent calls, as well as the
 // device.
 class HostCalledFunctions : public ASR::BaseWalkVisitor<HostCalledFunctions> {

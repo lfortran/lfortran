@@ -4699,6 +4699,11 @@ filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_22.f90"
+gpu_offload_cuda = true
+options = "--openmp --gpu-offload-omp-loops"
+
+[[test]]
 filename = "../integration_tests/gpu_decline_24.f90"
 gpu_offload_cuda = true
 

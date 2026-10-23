@@ -308,9 +308,31 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 + "' of common block " + decline.common_block
                 + ", read in '" + decline.routine + "'";
         case GpuDeclineReason::CommonVariableDerivedType:
+            if (decline.other_variable.empty()) {
+                return unsupported + "derived-type variable '"
+                    + decline.name + "' of common block "
+                    + decline.common_block + ", read in '"
+                    + decline.routine + "'";
+            }
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + ", read in '"
+                + decline.routine + "', which the block places after "
+                "derived-type variable '" + decline.other_variable + "'";
+        case GpuDeclineReason::CommonVariableDefined:
+            return unsupported + "scalar variable '" + decline.name
+                + "' of common block " + decline.common_block
+                + ", defined in '" + decline.routine + "'";
+        case GpuDeclineReason::CommonVariableExternalProcedure:
+            return unsupported + "variable '" + decline.name + "' of common "
+                "block " + decline.common_block + " in external procedure '"
+                + decline.routine + "'";
+        case GpuDeclineReason::CommonBlockLayouts:
             return unsupported + "common block " + decline.common_block
-                + " with derived-type variable '" + decline.name
-                + "', read in '" + decline.routine + "'";
+                + " laid out differently in '" + decline.routine
+                + "', which defines variable '" + decline.name
+                + "', and in '" + decline.other_routine
+                + "', which names variable '" + decline.other_variable
+                + "'";
         case GpuDeclineReason::StoppingProcedureShared:
             return unsupported + "procedure '" + decline.name + "', which "
                 "can stop, passed as an argument or shared with the host";

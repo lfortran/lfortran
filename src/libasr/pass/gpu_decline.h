@@ -206,7 +206,23 @@ enum class GpuDeclineReason {
     CommonVariableEquivalence,
     CommonVariablePointer,
     CommonVariableCharacter,
+    // `other_variable` is the derived-type variable that `name` is placed
+    // after, or empty when `name` is that variable.
     CommonVariableDerivedType,
+    // A scalar variable of a common block that a procedure the loop calls
+    // may define: the kernel is handed its value, and the host would never
+    // see the definition.
+    CommonVariableDefined,
+    // A variable of a common block that an external procedure the loop
+    // calls names: the kernel calls the procedure itself, not a copy of it
+    // that can be handed the variable.
+    CommonVariableExternalProcedure,
+    // A common block the loop or a procedure it calls defines a variable
+    // `name` of, in `routine`, while `other_routine` lays the block out
+    // differently and names `other_variable` of it: each is handed to the
+    // kernel as memory of its own, so one need not see the other's
+    // definitions.
+    CommonBlockLayouts,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,
@@ -287,8 +303,9 @@ struct GpuSectionPlace {
 // A decline, with the little the message quotes alongside it.
 struct GpuDecline {
     GpuDeclineReason reason = GpuDeclineReason::None;
-    // The name the message names: a local, a workspace, a component, or the
-    // routine an unsupported statement was found in.
+    // The name the message names: a local, a workspace, a component, the
+    // routine an unsupported statement was found in, or the variable of a
+    // common block (whose procedure is then `routine`).
     std::string name;
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
@@ -301,9 +318,13 @@ struct GpuDecline {
     GpuSectionSite site = GpuSectionSite::Statement;
     GpuSectionConflict conflict = GpuSectionConflict::NoPlace;
     // The common block, as `/name/`, and the procedure that names its
-    // variable, when the reason is about a variable of a common block.
+    // variable `name`, when the reason is about a variable of a common
+    // block; for some reasons, another variable of the block, and the
+    // procedure that names it.
     std::string common_block;
     std::string routine;
+    std::string other_variable;
+    std::string other_routine;
 
     GpuDecline() = default;
     explicit GpuDecline(GpuDeclineReason reason_) : reason(reason_) {}

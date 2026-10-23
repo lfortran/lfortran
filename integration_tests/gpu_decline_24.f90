@@ -1,7 +1,8 @@
 ! Variables of common blocks that a procedure called in a do concurrent loop
 ! reads, which the gpu kernel cannot be handed: a pointer, a character
-! variable, and a block that places the variable read after a derived-type
-! variable. The gpu offload reports each loop as an error (see
+! variable, a block that places the variable read after a derived-type
+! variable, and a block the loop defines that the procedure lays out
+! differently. The gpu offload reports each loop as an error (see
 ! tests/tests.toml); without it the program runs on the host.
 module gpu_decline_24_mod
     implicit none
@@ -31,6 +32,14 @@ contains
         common /gpu_decline_24_s/ s, x
         after_derived_type = x + k
     end function
+
+    ! Lays out the block differently from the loop that defines it.
+    pure real function laid_out_apart(k)
+        integer, intent(in) :: k
+        real :: pad(3), w(4)
+        common /gpu_decline_24_w/ pad, w
+        laid_out_apart = w(k)
+    end function
 end module
 
 program gpu_decline_24
@@ -44,6 +53,8 @@ program gpu_decline_24
     common /gpu_decline_24_p/ p
     common /gpu_decline_24_c/ c
     common /gpu_decline_24_s/ s, x
+    real :: a(7)
+    common /gpu_decline_24_w/ a
     integer :: k
 
     t = 10
@@ -65,5 +76,12 @@ program gpu_decline_24
         u(k) = after_derived_type(k)
     end do
     if (any(u /= [21, 22, 23, 24])) error stop 3
+
+    a = 0
+    do concurrent (k = 1:4)
+        a(k + 3) = k
+        u(k) = laid_out_apart(k)
+    end do
+    if (any(u /= [1, 2, 3, 4])) error stop 4
     print *, u
 end program
