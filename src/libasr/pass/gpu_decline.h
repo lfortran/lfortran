@@ -176,6 +176,12 @@ enum class GpuDeclineReason {
     // An array on the device heap (see gpu_device_heap.cpp) used in a way
     // the heap does not lower yet; the name says which array and how.
     HeapArrayUse,
+    // An exit of a construct that is not a loop, such as a BLOCK.
+    ExitOfConstruct,
+    // A named cycle inside a do concurrent nested in the body, which may
+    // be of that loop or of the offloaded one: ASR does not keep the name
+    // of a do concurrent.
+    NamedCycleInNestedConcurrent,
 
     // --- what the device has no type for ---
     LocalTypeWidth,

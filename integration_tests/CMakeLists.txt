@@ -6553,6 +6553,8 @@ RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_580 LABELS gfortran llvm_omp cuda EXTRA_ARGS --openmp --gpu-offload-omp-loops GFORTRAN_ARGS -fopenmp)
 # A nested `do concurrent` ending an IF/loop/SELECT body in a device procedure.
 RUN(NAME gpu_metal_564 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -6650,6 +6652,8 @@ RUN(NAME gpu_decline_16 LABELS gfortran llvm)
 RUN(NAME gpu_decline_17 LABELS llvm)
 RUN(NAME gpu_decline_18 LABELS llvm)
 RUN(NAME gpu_decline_19 LABELS llvm)
+RUN(NAME gpu_decline_20 LABELS gfortran llvm)
+RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error

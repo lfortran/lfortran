@@ -7,6 +7,7 @@
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -768,32 +769,34 @@ public:
     }
 };
 
-// Whether a loop leaves itself by `exit` or `cycle` of its own, rather than
-// of a loop inside it.
-class OwnExitOrCycle : public ASR::BaseWalkVisitor<OwnExitOrCycle> {
+// Whether the statements walked leave the loop they belong to: an unnamed
+// `exit` or `cycle` outside every loop inside them, or a named one whose
+// target is no loop inside them (the loop itself, or a loop around it).
+class LeavesLoop : public ASR::BaseWalkVisitor<LeavesLoop> {
 public:
-    const char *name;
-    int depth = 0;
+    // The names of the loops being walked inside, outermost first; "" for
+    // an unnamed one.
+    std::vector<std::string> nested;
     bool found = false;
-    explicit OwnExitOrCycle(const char *name_) : name(name_) {}
-    void own(const char *target) {
+    void leave(const char *target) {
         if (target == nullptr) {
-            if (depth == 0) found = true;
-        } else if (name != nullptr && std::string(target) == name) {
+            if (nested.empty()) found = true;
+        } else if (std::find(nested.begin(), nested.end(),
+                std::string(target)) == nested.end()) {
             found = true;
         }
     }
-    void visit_Exit(const ASR::Exit_t &x) { own(x.m_stmt_name); }
-    void visit_Cycle(const ASR::Cycle_t &x) { own(x.m_stmt_name); }
+    void visit_Exit(const ASR::Exit_t &x) { leave(x.m_stmt_name); }
+    void visit_Cycle(const ASR::Cycle_t &x) { leave(x.m_stmt_name); }
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        depth++;
+        nested.push_back(x.m_name ? x.m_name : "");
         BaseWalkVisitor::visit_DoLoop(x);
-        depth--;
+        nested.pop_back();
     }
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        depth++;
+        nested.push_back(x.m_name ? x.m_name : "");
         BaseWalkVisitor::visit_WhileLoop(x);
-        depth--;
+        nested.pop_back();
     }
 };
 
@@ -1597,7 +1600,7 @@ private:
             failed = true;
             return Role::Single;
         }
-        OwnExitOrCycle leaves(nullptr);
+        LeavesLoop leaves;
         leaves.visit_stmt(*s);
         if (leaves.found) failed = true;
         if (writes_shared_temporary(k, *s)) failed = true;
@@ -1654,9 +1657,11 @@ private:
             if (impure.found) return false;
         }
         if (e.returns && e.statuses.empty()) return false;
-        OwnExitOrCycle own(d->m_name);
-        for (size_t i = 0; i < d->n_body; i++) own.visit_stmt(*d->m_body[i]);
-        if (own.found) return false;
+        LeavesLoop leaves;
+        for (size_t i = 0; i < d->n_body; i++) {
+            leaves.visit_stmt(*d->m_body[i]);
+        }
+        if (leaves.found) return false;
         for (size_t i = 0; i < d->n_body; i++) {
             if (writes_shared_temporary(k, *d->m_body[i])) {
                 failed = true;

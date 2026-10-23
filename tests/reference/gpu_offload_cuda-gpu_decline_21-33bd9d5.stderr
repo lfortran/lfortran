@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: a named cycle inside a nested do concurrent has no gpu lowering yet
+  --> tests/../integration_tests/gpu_decline_21.f90:13:25
+   |
+13 |             if (j == 2) cycle inner
+   |                         ^^^^^^^^^^^ a named cycle inside a nested do concurrent has no gpu lowering yet
