@@ -165,6 +165,11 @@ enum class GpuDeclineReason {
     SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
+    // A call in device code hands a dummy procedure no routine the device
+    // can call in its place: a dummy procedure of the loop's host, a
+    // procedure pointer, or nothing, for an absent optional one (see
+    // gpu_specialize_dummy_procedures).
+    DummyProcedureUnbound,
     RecursiveDeviceFunction,
     FunctionResultAllocation,
     NestedArraySection,

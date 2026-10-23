@@ -243,6 +243,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "a device function cannot be inlined";
         case GpuDeclineReason::DeviceFunctionImplementation:
             return "procedure '" + decline.name + "' has no device implementation";
+        case GpuDeclineReason::DummyProcedureUnbound:
+            return "dummy procedure '" + decline.name +
+                "' is not associated with a routine known at compile time";
         case GpuDeclineReason::RecursiveDeviceFunction:
             return "recursive device procedure '" + decline.name +
                 "' has no gpu lowering yet";

@@ -3,6 +3,8 @@
 
 #include <libasr/asr.h>
 
+#include <string>
+
 namespace LCompilers {
 
 /*
@@ -33,6 +35,21 @@ left out. A constant bound is kept, so a "FixedSizeArray" keeps the constant
 dimensions its physical type requires.
 */
 ASR::ttype_t* gpu_signature_type(Allocator &al, ASR::ttype_t *type);
+
+/*
+A procedure device code calls with a routine as an actual argument for a
+dummy procedure is cloned for that routine, and the call calls the clone,
+which calls the routine directly: device code has no procedure pointers.
+Every procedure in the scope of `kernel` is a copy the kernel owns, so the
+procedures with a dummy procedure, which only such calls and each other
+name, are removed.
+
+Returns the name of a dummy procedure a call does not hand a routine the
+clone can call -- a procedure pointer, a dummy procedure of the host, an
+absent optional one -- or the empty string when there is none.
+*/
+std::string gpu_specialize_dummy_procedures(Allocator &al,
+    ASR::Function_t &kernel);
 
 } // namespace LCompilers
 

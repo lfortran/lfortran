@@ -4711,6 +4711,14 @@ filename = "../integration_tests/gpu_decline_21.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_25.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_26.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "../integration_tests/gpu_decline_28.f90"
 gpu_offload_cuda = true
 

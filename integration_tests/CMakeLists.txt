@@ -6596,6 +6596,7 @@ RUN(NAME gpu_metal_573 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_574 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_575 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_576 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_577 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -6695,6 +6696,8 @@ RUN(NAME gpu_decline_18 LABELS llvm)
 RUN(NAME gpu_decline_19 LABELS llvm)
 RUN(NAME gpu_decline_20 LABELS gfortran llvm)
 RUN(NAME gpu_decline_21 LABELS gfortran) # plain LLVM cannot find a do concurrent by name
+RUN(NAME gpu_decline_25 LABELS gfortran llvm)
+RUN(NAME gpu_decline_26 LABELS gfortran llvm)
 RUN(NAME gpu_decline_28 LABELS gfortran llvm)
 RUN(NAME gpu_decline_29 LABELS gfortran llvm)
 RUN(NAME gpu_decline_30 LABELS gfortran llvm)
