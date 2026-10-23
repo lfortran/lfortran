@@ -146,10 +146,81 @@ int64_t gpu_struct_bytes(ASR::symbol_t *struct_sym) {
     return bytes;
 }
 
-// A thread keeps a copy of a whole derived-type value only up to this
-// size: the copy is a local of the thread and is read from the variable on
-// entry.
-constexpr int64_t gpu_private_struct_limit = 1024;
+// A thread keeps a copy of a whole derived-type value, a derived-type
+// component or an array component only up to this size: the copy is a
+// local of every thread and is read from the variable on entry. A kernel
+// local of a derived type, which a temporary of the iteration used to be,
+// costs as much.
+constexpr int64_t gpu_private_struct_limit = 4096;
+
+// The type of a thread's private copy of an array component of type `t`:
+// the same array, with its bounds as constants, which the kernel can
+// declare. Nullptr when the component is allocatable or a pointer, its
+// bounds are not known at compile time, its elements are not numbers or
+// logicals, or it is larger than a thread keeps a copy of.
+ASR::ttype_t *gpu_private_array_type(Allocator &al, const Location &loc,
+        ASR::ttype_t *t) {
+    if (!ASR::is_a<ASR::Array_t>(*t)) return nullptr;
+    ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+    ASR::ttype_t *e = a->m_type;
+    if (!(ASR::is_a<ASR::Integer_t>(*e) || ASR::is_a<ASR::Real_t>(*e)
+            || ASR::is_a<ASR::Logical_t>(*e))) {
+        return nullptr;
+    }
+    int64_t count = 1;
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, a->n_dims);
+    ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    for (size_t d = 0; d < a->n_dims; d++) {
+        int64_t start, length;
+        if (a->m_dims[d].m_start == nullptr
+                || a->m_dims[d].m_length == nullptr
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    a->m_dims[d].m_start), start)
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    a->m_dims[d].m_length), length)) {
+            return nullptr;
+        }
+        count *= length;
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            start, int4, ASR::integerbozType::Decimal));
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            length, int4, ASR::integerbozType::Decimal));
+        dims.push_back(al, dim);
+    }
+    if (count * ASRUtils::extract_kind_from_ttype_t(e)
+            > gpu_private_struct_limit) {
+        return nullptr;
+    }
+    return ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+        ASRUtils::duplicate_type(al, e), dims.p, dims.n,
+        ASR::array_physical_typeType::FixedSizeArray, a->m_memory_space));
+}
+
+// Whether an expression names one of `names`.
+class GpuNamesFinder : public ASR::BaseWalkVisitor<GpuNamesFinder> {
+public:
+    const std::set<std::string> &names;
+    bool found = false;
+    GpuNamesFinder(const std::set<std::string> &n) : names(n) {}
+    void visit_Var(const ASR::Var_t &x) {
+        if (names.count(ASRUtils::symbol_name(x.m_v))) found = true;
+    }
+};
+
+// Whether a subscript of an element or section names one of `names`.
+bool gpu_subscript_names(const ASR::array_index_t *args, size_t n,
+        const std::set<std::string> &names) {
+    GpuNamesFinder finder(names);
+    for (size_t i = 0; i < n; i++) {
+        if (args[i].m_left) finder.visit_expr(*args[i].m_left);
+        if (args[i].m_right) finder.visit_expr(*args[i].m_right);
+        if (args[i].m_step) finder.visit_expr(*args[i].m_step);
+    }
+    return finder.found;
+}
 
 bool gpu_private_scalar_type(ASR::ttype_t *t) {
     return !ASRUtils::is_array(t) && !ASRUtils::is_allocatable_or_pointer(t)
@@ -182,10 +253,19 @@ public:
         // For InPlaceByCall: whether the procedure may define a scalar
         // part of what it is passed, not only elements of arrays.
         bool defines_scalars;
+        // The type of the part of the variable the path selects, and
+        // whether only single elements of it are defined.
+        ASR::ttype_t *type;
+        bool element_only;
     };
     std::vector<Definition> definitions;
 
-    GpuStructParts(const std::set<ASR::symbol_t*> &v) : variables(v) {}
+    // The index variables of the parallel loop.
+    const std::set<std::string> &indices;
+
+    GpuStructParts(const std::set<ASR::symbol_t*> &v,
+        const std::set<std::string> &indices_) : variables(v),
+        indices(indices_) {}
 
     void note_definition(ASR::expr_t *designator, const Location &loc,
             bool by_call) {
@@ -197,6 +277,10 @@ public:
         // from, under any element or section taken of it.
         ASR::expr_t *e = designator;
         bool part_of_array = false;
+        // Whether an element or section it is selects by an index of the
+        // parallel loop, which makes it the part one iteration owns.
+        bool indexed = false;
+        bool element_only = true;
         std::vector<std::string> path;
         std::vector<ASR::symbol_t*> members;
         ASR::symbol_t *v = nullptr;
@@ -206,11 +290,19 @@ public:
             if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
                 e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(e);
                 part_of_array = true;
-                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                indexed = indexed || gpu_subscript_names(item->m_args,
+                    item->n_args, indices);
+                e = item->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                ASR::ArraySection_t *section =
+                    ASR::down_cast<ASR::ArraySection_t>(e);
                 part_of_array = true;
-                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                element_only = false;
+                indexed = indexed || gpu_subscript_names(section->m_args,
+                    section->n_args, indices);
+                e = section->m_v;
             } else {
                 return;
             }
@@ -223,10 +315,19 @@ public:
             // A procedure may define any element of an array it is passed,
             // or just the one the iteration owns, in place.
             kind = Kind::InPlaceByCall;
+        } else if ((part_of_array || ASRUtils::is_array(t)) && !indexed
+                && !path.empty() && ASRUtils::is_array(t)
+                && !ASRUtils::is_allocatable_or_pointer(t)) {
+            // An array component that is not defined by the index of the
+            // parallel loop, whole or in parts every iteration can name,
+            // is a temporary of the iteration that each thread keeps a
+            // copy of (see gpu_private_array_type).
+            kind = Kind::Private;
         } else if (part_of_array || ASRUtils::is_array(t)
                 || ASRUtils::is_pointer(t)) {
-            // An element or section of an array, or what a pointer points
-            // to, is not stored in the variable as a scalar is.
+            // An element or section of an array the iteration owns, or
+            // what an allocatable or a pointer designates, is not stored
+            // in the variable as a scalar is, and is defined in place.
             kind = Kind::InPlace;
         } else if (ASRUtils::is_allocatable(t)) {
             kind = Kind::Unsupported;
@@ -244,7 +345,8 @@ public:
             kind = gpu_private_scalar_type(t) ? Kind::Private
                 : Kind::Unsupported;
         }
-        definitions.push_back({v, path, kind, loc, defines_scalars});
+        definitions.push_back({v, path, kind, loc, defines_scalars, t,
+            part_of_array && element_only});
         uses.push_back({v, path, members, t});
     }
 
@@ -385,7 +487,7 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
     // which a copy of the scalar alone would leave stale.
     std::vector<GpuLiveoutPlan::Copy> copies;
     if (!structs.empty()) {
-        GpuStructParts parts(structs);
+        GpuStructParts parts(structs, loop_var_set);
         for (size_t i = 0; i < n_body; i++) parts.visit_stmt(*body[i]);
         using Kind = GpuStructParts::Definition::Kind;
         for (ASR::symbol_t *v : structs) {
@@ -403,6 +505,24 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                 if (d.kind != Kind::Private) continue;
                 if (privatized.empty()) first = d.loc;
                 privatized.insert(d.path);
+            }
+            // An array component no thread can keep a copy of, of which
+            // the loop defines only single elements, is defined in place,
+            // as an element one iteration alone defines has to be.
+            for (auto &d : parts.definitions) {
+                if (d.variable != v || d.kind != Kind::Private
+                        || !ASRUtils::is_array(d.type)
+                        || gpu_private_array_type(al, loc, d.type)) {
+                    continue;
+                }
+                bool elements = true;
+                for (auto &e : parts.definitions) {
+                    if (e.variable == v && e.kind == Kind::Private
+                            && e.path == d.path && !e.element_only) {
+                        elements = false;
+                    }
+                }
+                if (elements) privatized.erase(d.path);
             }
             // A copy of a part the loop also names a part around is
             // replaced by a copy of that part.
@@ -483,6 +603,14 @@ bool GpuOffloadVisitor::plan_liveouts(const Location &loc,
                             || gpu_struct_has_allocatable_parts(struct_sym)
                             || gpu_struct_bytes(struct_sym)
                                 > gpu_private_struct_limit) {
+                        report_not_offloaded(first, GpuDecline(
+                            GpuDeclineReason::LiveoutDerivedType,
+                            gpu_designator_text(v, p)));
+                        return false;
+                    }
+                } else if (ASRUtils::is_array(t)) {
+                    t = gpu_private_array_type(al, loc, t);
+                    if (t == nullptr) {
                         report_not_offloaded(first, GpuDecline(
                             GpuDeclineReason::LiveoutDerivedType,
                             gpu_designator_text(v, p)));
