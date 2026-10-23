@@ -6688,6 +6688,17 @@ ASR::abiType symbol_abi(const ASR::symbol_t *f)
     return ASR::abiType::Source;
 }
 
+// Helper function to convert intentType to Fortran intent string
+static std::string intent_to_str(ASR::intentType intent) {
+    switch (intent) {
+        case ASR::intentType::In: return "in";
+        case ASR::intentType::Out: return "out";
+        case ASR::intentType::InOut: return "inout";
+        case ASR::intentType::ReturnVar: return "return";
+        default: return "";
+    }
+}
+
 std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers) {
     switch (s.type) {
         case ASR::symbolType::Variable: {
