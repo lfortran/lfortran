@@ -54,7 +54,11 @@ symbol
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
-    | ReAlloc(alloc_arg* args)
+    -- Reallocation on assignment of the one object in `args`: it is
+    -- allocated with the shape of `args` when it is not allocated, or when
+    -- `shape_differs`, a scalar logical evaluated only while the object is
+    -- allocated, is true (F2018 10.2.1.3)
+    | ReAlloc(alloc_arg* args, expr shape_differs)
     | Assign(int label, identifier variable)
     -- new_target is true when the target is a new object that the assignment
     -- only defines, such as an element of an array allocated with SOURCE=

@@ -1943,7 +1943,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_args.push_back(al, alloc_arg);
         if (mold == nullptr) {
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
-                al, loc, alloc_args.p, alloc_args.size())));
+                al, loc, alloc_args.p, alloc_args.size(),
+                make_shape_differs(alloc_arg, loc))));
             return;
         }
         ASRUtils::ASRBuilder b(al, loc);
@@ -1951,6 +1952,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             alloc_args.p, alloc_args.size(), nullptr, nullptr, mold));
         pass_result.push_back(al, b.If(b.Not(make_allocated(alloc_arg.m_a,
             loc)), {allocate}, {}));
+    }
+
+    // Whether the allocated object of `alloc_arg` has a shape other than
+    // the one `alloc_arg` gives it (F2018 10.2.1.3), also when both have the
+    // same number of elements, e.g. `a = transpose(a)`. It reads the
+    // descriptor, so it is evaluated only while the object is allocated.
+    // An object of rank 0 never differs.
+    ASR::expr_t* make_shape_differs(const ASR::alloc_arg_t& alloc_arg,
+            const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        ASR::expr_t* shape_differs = nullptr;
+        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
+            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
+                    != get_index_kind()) {
+                length = b.i2i_t(length, idx_type);
+            }
+            ASR::expr_t* dim_differs = b.NotEq(b.ArraySize(
+                d.duplicate_expr(alloc_arg.m_a), b.i_t(i + 1, idx_type),
+                idx_type), length);
+            shape_differs = shape_differs == nullptr ? dim_differs
+                : b.Or(shape_differs, dim_differs);
+        }
+        if (shape_differs == nullptr) {
+            shape_differs = b.bool_t(false, ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4)));
+        }
+        return shape_differs;
     }
 
     // The variable whose dynamic type a polymorphic array `value` has, for
@@ -2037,7 +2068,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     // ReAlloc of `alloc_arg`, which then allocates it with the dynamic type
     // set by set_dynamic_type_of_polymorphic_target, or the ALLOCATE with
     // `mold`, which then allocates it with the dynamic type of the mold.
-    // The ReAlloc itself only compares the size. The value is read after
+    // The ReAlloc itself only compares the shape. The value is read after
     // the deallocation: a function result is already in a temporary here,
     // and a value that can refer to the variable is evaluated into one by
     // array_struct_temporary.
@@ -2050,7 +2081,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::expr_t* target = alloc_arg.m_a;
         ASRUtils::ASRBuilder b(al, loc);
         ASRUtils::ExprStmtDuplicator d(al);
-        ASR::ttype_t* idx_type = get_index_type(loc);
         ASR::ttype_t* logical_type = ASRUtils::TYPE(
             ASR::make_Logical_t(al, loc, 4));
         auto make_deallocate = [&]() {
@@ -2060,18 +2090,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, vars.p, vars.size()));
         };
-        ASR::expr_t* shape_differs = nullptr;
-        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
-            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
-            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
-                    != get_index_kind()) {
-                length = b.i2i_t(length, idx_type);
-            }
-            ASR::expr_t* dim_differs = b.NotEq(
-                b.ArraySize(target, b.i_t(i + 1, idx_type), idx_type), length);
-            shape_differs = shape_differs == nullptr ? dim_differs
-                : b.Or(shape_differs, dim_differs);
-        }
+        ASR::expr_t* shape_differs = alloc_arg.n_dims > 0
+            ? make_shape_differs(alloc_arg, loc) : nullptr;
         // The guard naming the type of the expression keeps a variable of
         // that type. A character expression has no guard, as its length is
         // part of its dynamic type but not of a guard. A variable of the
