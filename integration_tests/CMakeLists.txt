@@ -4687,6 +4687,7 @@ RUN(NAME dtio_write_10 LABELS gfortran llvm llvm_single_invocation
 RUN(NAME dtio_write_11 LABELS gfortran llvm)
 RUN(NAME dtio_write_12 LABELS gfortran llvm)
 RUN(NAME dtio_write_13 LABELS gfortran llvm)
+RUN(NAME dtio_write_14 LABELS gfortran llvm)
 RUN(NAME dtio_write_15 LABELS gfortran llvm)
 RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
