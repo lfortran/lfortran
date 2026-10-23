@@ -2243,11 +2243,9 @@ int link_executable(const std::vector<std::string> &infiles,
                     // Compile the kernel .cu with the device compiler. When
                     // emulating, the device code is ordinary host C++, and
                     // the language has to be named explicitly because no host
-                    // compiler knows the .cu suffix. The emulation is built
-                    // without OpenMP, so the threads of a block run one after
-                    // another and a __syncthreads() reports that it cannot be
-                    // honoured; the device code and the runtime below have to
-                    // agree on that, so neither is given -fopenmp.
+                    // compiler knows the .cu suffix. The emulation runs the
+                    // threads of a block one after another, so a
+                    // __syncthreads() reports that it cannot be honoured.
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
                         + (emulate_cpu ? runtime_include + " -x c++" : "")
                         + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
