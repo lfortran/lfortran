@@ -1780,6 +1780,7 @@ bool reads_elementwise_operands_in_place(ASR::exprType op) {
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerCompare:
         case ASR::exprType::RealCompare:
+        case ASR::exprType::ComplexCompare:
         case ASR::exprType::StringCompare:
             return true;
         default:
@@ -2790,8 +2791,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t& x) {
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_ComplexCompare(x);
-        rebind_BinOp_shape(const_cast<ASR::ComplexCompare_t&>(x));
+        ASR::ComplexCompare_t& xx = const_cast<ASR::ComplexCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "complex_compare", binop, ASR::exprType::ComplexCompare) ) {
+            return ;
+        }
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_ComplexCompare(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t& x) {
