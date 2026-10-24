@@ -52,6 +52,9 @@ end function diag_rsp_mat
         array_struct_temporary + subroutine_from_function
 */
 
+static void remap_helper_array_types(Allocator &al, SymbolTable *scope,
+        std::map<ASR::symbol_t*, ASR::symbol_t*> &remap);
+
 class ReplaceFunctionCall : public ASR::BaseExprReplacer<ReplaceFunctionCall>
 {
 private :
@@ -261,6 +264,16 @@ public:
             ArgInfo info = {-1, ASRUtils::expr_type(&xx->base), &xx->base , &xx->base};
             indices.push_back(info);
         }
+        // A bound of an array type may name a variable (e.g. the cast of an
+        // automatic array carries its type), so that variable is an argument
+        // of the helper as well.
+        void visit_Array(const ASR::Array_t &x) {
+            for (size_t i = 0; i < x.n_dims; i++) {
+                if (x.m_dims[i].m_start) visit_expr(*x.m_dims[i].m_start);
+                if (x.m_dims[i].m_length) visit_expr(*x.m_dims[i].m_length);
+            }
+            ASR::BaseWalkVisitor<get_arg_indices_used>::visit_Array(x);
+        }
         // 
         static std::vector<ArgInfo> get(const ASR::expr_t* arg, SymbolTable* current_scope){
             get_arg_indices_used instance {};
@@ -318,6 +331,7 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
+        remap_helper_array_types(al, new_scope, helper_arguments);
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
         collect_and_create_new_externalSymbols(assignment_value_copy);
@@ -423,6 +437,7 @@ public:
             args_for_return_var.push_back(al, arg_for_return_var);
         }
 
+        remap_helper_array_types(al, new_scope, helper_arguments);
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* assignment_value_copy = duplicator.duplicate_expr(assignment_value);
         replace_FunctionParam_with_FunctionArgs(assignment_value_copy, new_args);
@@ -516,6 +531,35 @@ public:
         replace_expr(expr);
     }
 };
+
+// A helper argument that is an array copies the type of the original
+// variable, and the bounds in that type still name variables of the helped
+// scope. Point them to the arguments of the helper instead.
+class RemapTypeVars : public ASR::BaseExprReplacer<RemapTypeVars> {
+public:
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &remap;
+    Allocator &al;
+    RemapTypeVars(Allocator &al_, std::map<ASR::symbol_t*, ASR::symbol_t*> &m)
+        : remap(m), al(al_) {}
+    void replace_Var(ASR::Var_t* x) {
+        auto it = remap.find(x->m_v);
+        if (it != remap.end()) {
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, it->second));
+        }
+    }
+};
+
+static void remap_helper_array_types(Allocator &al, SymbolTable *scope,
+        std::map<ASR::symbol_t*, ASR::symbol_t*> &remap) {
+    RemapTypeVars r(al, remap);
+    for (auto &item : scope->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (v->m_type && ASRUtils::is_array(v->m_type)) {
+            r.replace_ttype(v->m_type);
+        }
+    }
+}
 
 struct CapturedArrayBounds {
     // Bounds as declared, and as captured (a Var of the new local for each
@@ -673,6 +717,14 @@ static bool bound_may_change(ASR::expr_t* e) {
         case ASR::exprType::IntrinsicArrayFunction: {
             ASR::IntrinsicArrayFunction_t* x =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
+            if (x->m_arr_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape) &&
+                    x->n_args >= 1) {
+                // An inquiry about the shape does not read the values of
+                // the array, and the shape of a variable that is neither
+                // allocatable nor a pointer cannot change.
+                return !has_invariant_shape(x->m_args[0]);
+            }
             for (size_t i = 0; i < x->n_args; i++) {
                 if (bound_may_change(x->m_args[i])) return true;
             }
