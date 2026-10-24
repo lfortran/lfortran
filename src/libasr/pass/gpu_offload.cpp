@@ -1974,23 +1974,30 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             for (size_t bi = 0; bi < fn.n_body; bi++) {
                 fn_replacer.visit_stmt(*fn.m_body[bi]);
             }
-            for (auto &fn_item : fn.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::AssociateBlock_t>(
-                        *fn_item.second)) {
+            // A construct nested in another one has its scope in that
+            // construct's, not in the routine's.
+            std::vector<SymbolTable*> construct_scopes;
+            gpu_routine_scopes(fn.m_symtab, construct_scopes);
+            for (SymbolTable *scope : construct_scopes) {
+                if (scope == fn.m_symtab) continue;
+                ASR::symbol_t *construct =
+                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                if (ASR::is_a<ASR::AssociateBlock_t>(*construct)) {
                     ASR::AssociateBlock_t *ab =
-                        ASR::down_cast<ASR::AssociateBlock_t>(
-                            fn_item.second);
+                        ASR::down_cast<ASR::AssociateBlock_t>(construct);
                     for (size_t bi = 0; bi < ab->n_body; bi++) {
                         fn_replacer.visit_stmt(*ab->m_body[bi]);
                     }
-                } else if (ASR::is_a<ASR::Block_t>(
-                               *fn_item.second)) {
+                } else if (ASR::is_a<ASR::Block_t>(*construct)) {
                     ASR::Block_t *block =
-                        ASR::down_cast<ASR::Block_t>(fn_item.second);
+                        ASR::down_cast<ASR::Block_t>(construct);
                     for (size_t bi = 0; bi < block->n_body; bi++) {
                         fn_replacer.visit_stmt(*block->m_body[bi]);
                     }
-                } else if (ASR::is_a<ASR::Function_t>(*fn_item.second)) {
+                }
+            }
+            for (auto &fn_item : fn.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*fn_item.second)) {
                     remap_routine_calls(
                         *ASR::down_cast<ASR::Function_t>(fn_item.second),
                         host_scopes);
