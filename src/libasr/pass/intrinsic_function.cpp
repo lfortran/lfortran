@@ -69,7 +69,10 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         }
         // If inside DebugCheckArrayBounds and not inside a type
         // Then keep the IntrinsicElementalFunction because its arguments are used to find ArraySize
-        if (in_debugcheck && !in_ttype) return;
+        // `storage_size` is a scalar, so it is lowered there too: the
+        // backend cannot evaluate it.
+        if (in_debugcheck && !in_ttype && x->m_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::StorageSize)) return;
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:
@@ -376,7 +379,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
 
         if (is_param) {
             ASR::stmt_t* param_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false));
+                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false, false, false));
             pass_result.push_back(al, param_assign);
         }
     }
@@ -466,6 +469,10 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
+    ASRVerifyOptions verify_options;
+    verify_options.intrinsic_function = true;
+    PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
+        "intrinsic_function");
 }
 
 

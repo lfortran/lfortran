@@ -3397,6 +3397,10 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
+        if (x.n_dtio_bindings > 0) {
+            throw CodeGenError("user-defined derived-type output is not "
+                "supported by the WASM backend yet", x.base.base.loc);
+        }
         if(x.m_fmt){
            //TODO :: respect fmt.
         }

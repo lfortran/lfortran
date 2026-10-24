@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <cctype>
 #include <functional>
 #include <set>
 #include <string>
@@ -361,6 +362,66 @@ struct GpuKernelParam {
     GpuKernelParamKind kind;
 };
 
+// A declaration a kernel, a device function or a block makes ahead of its
+// body: a scalar unpacked from the scalar argument struct, a buffer unpacked
+// from the packed arrays, or a local variable. It declares the names in
+// `names`; one that declares none is always written.
+struct GpuDeclaration {
+    std::vector<std::string> names;
+    std::string text;
+};
+
+// Adds the identifiers the generated source `code` refers to to `result`.
+// A member name, which follows `.` or `->`, refers to no variable.
+inline void gpu_referenced_identifiers(const std::string &code,
+        std::set<std::string> &result) {
+    auto is_word = [](char c) {
+        return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+    };
+    size_t i = 0;
+    while (i < code.size()) {
+        if (!is_word(code[i])) {
+            i++;
+            continue;
+        }
+        size_t start = i;
+        while (i < code.size() && is_word(code[i])) i++;
+        if (std::isdigit(static_cast<unsigned char>(code[start]))) continue;
+        bool member = (start >= 1 && code[start - 1] == '.') ||
+            (start >= 2 && code[start - 2] == '-' && code[start - 1] == '>');
+        if (!member) result.insert(code.substr(start, i - start));
+    }
+}
+
+// The declarations of `declarations` that `body`, or another declaration
+// written, refers to, in order. The device compilers warn about a variable
+// that is declared and never referred to, so a scope does not unpack the
+// scalars or declare the locals it has no use for. Dropping one changes no
+// behavior: none has side effects, and the scalar argument struct the host
+// fills keeps every field, so the launch is laid out as before.
+inline std::string gpu_referenced_declarations(
+        const std::vector<GpuDeclaration> &declarations,
+        const std::string &body) {
+    std::set<std::string> referenced;
+    gpu_referenced_identifiers(body, referenced);
+    // A declaration refers only to names declared ahead of it, so walking
+    // them backwards sees every use of a name before its declaration.
+    std::vector<bool> keep(declarations.size());
+    for (size_t i = declarations.size(); i-- > 0;) {
+        const GpuDeclaration &declaration = declarations[i];
+        keep[i] = declaration.names.empty();
+        for (const std::string &name : declaration.names) {
+            keep[i] = keep[i] || referenced.count(name) > 0;
+        }
+        if (keep[i]) gpu_referenced_identifiers(declaration.text, referenced);
+    }
+    std::string result;
+    for (size_t i = 0; i < declarations.size(); i++) {
+        if (keep[i]) result += declarations[i].text;
+    }
+    return result;
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -470,6 +531,63 @@ inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
         default:
             return false;
     }
+}
+
+// The first component of the derived-type constant `sc`, from its value
+// `next_arg` on, that the device cannot be given a value of in the brace
+// list of its device struct (see struct_constant_initializer in
+// asr_to_gpu_c.h): integer, real and logical scalars, integer and real
+// arrays, and derived-type scalars made of these can be. The parent's
+// components come first, as in the device struct. Empty when there is none.
+inline std::string gpu_struct_constant_unsupported_component(
+        ASR::Struct_t *st, ASR::StructConstant_t *sc, size_t &next_arg) {
+    if (st->m_parent) {
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) return st->m_name;
+        std::string bad = gpu_struct_constant_unsupported_component(
+            ASR::down_cast<ASR::Struct_t>(parent), sc, next_arg);
+        if (!bad.empty()) return bad;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+        ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+        std::string name = mv->m_name;
+        if (next_arg >= sc->n_args) return name;
+        ASR::expr_t *value = sc->m_args[next_arg++].m_value;
+        if (!value || ASRUtils::is_allocatable_or_pointer(mv->m_type)) {
+            return name;
+        }
+        ASR::ttype_t *elem = ASRUtils::type_get_past_array(mv->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            if (ASRUtils::is_array(mv->m_type) || !mv->m_type_declaration
+                    || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+                return name;
+            }
+            ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                mv->m_type_declaration);
+            if (!ASR::is_a<ASR::Struct_t>(*inner)) return name;
+            size_t inner_arg = 0;
+            std::string bad = gpu_struct_constant_unsupported_component(
+                ASR::down_cast<ASR::Struct_t>(inner),
+                ASR::down_cast<ASR::StructConstant_t>(value), inner_arg);
+            if (!bad.empty()) return bad;
+        } else if (ASRUtils::is_array(mv->m_type)) {
+            if (!ASR::is_a<ASR::ArrayConstant_t>(*value)
+                    || !(ASR::is_a<ASR::Integer_t>(*elem)
+                        || ASR::is_a<ASR::Real_t>(*elem))
+                    || !gpu_scalar_width_supported(elem)) {
+                return name;
+            }
+        } else if (!(ASR::is_a<ASR::Integer_t>(*elem)
+                    || ASR::is_a<ASR::Real_t>(*elem)
+                    || ASR::is_a<ASR::Logical_t>(*elem))
+                || !gpu_scalar_width_supported(elem)) {
+            return name;
+        }
+    }
+    return "";
 }
 
 // The type as a user would write it, for a diagnostic that has to name the

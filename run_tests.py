@@ -105,6 +105,24 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     extrafiles = test.get("extrafiles", "").split(",")
     run = test.get("run")
     run_with_dbg = test.get("run_with_dbg")
+
+    def compile_extrafiles(step):
+        """Compile the modules listed in `extrafiles`, so that the test can
+        read their modfiles. Compiling them needs LLVM, so without it log the
+        step as skipped and return False."""
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.strip()
+            if len(extrafile_) == 0:
+                continue
+            if no_llvm:
+                log.info(f"{filename} * {step}   SKIPPED because LLVM is not enabled")
+                return False
+            extrafile_ = os.path.join("tests", extrafile_)
+            modfile = extrafile_[:-4] + ".mod"
+            if not os.path.exists(modfile):
+                run_cmd("lfortran -c {}".format(extrafile_))
+        return True
+
     optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
                            "inline_function_calls", "loop_unroll",
                            "dead_code_removal"]
@@ -116,7 +134,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             _pass = _pass.rstrip(" ").lstrip(" ")
             if (_pass not in ["do_loops", "global_stmts",
                         "transform_optional_argument_functions",
-                        "array_op", "select_case",
+                        "array_op", "allocate_on_assignment", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "global_init",
                         "global_init_wire",
@@ -372,22 +390,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
-            skip_test = False
-            for extrafile in extrafiles:
-                extrafile_ = extrafile.rstrip().lstrip()
-
-                if no_llvm and len(extrafile_) > 0:
-                    log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
-                    skip_test = True
-                    break
-
-                if len(extrafile_) > 0:
-                    extrafile_ = os.path.join("tests", extrafile_)
-                    modfile = extrafile_[:-4] + ".mod"
-                    if not os.path.exists(modfile):
-                        run_cmd("lfortran -c {}".format(extrafile_))
-
-            if not skip_test:
+            if compile_extrafiles("asr"):
                 run_test(
                     filename,
                     "asr",
@@ -474,21 +477,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
 
     if document_symbols:
-        skip_test = False
-        for extrafile in extrafiles:
-            extrafile_ = extrafile.rstrip().lstrip()
-
-            if no_llvm and len(extrafile_) > 0:
-                log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
-                skip_test = True
-                break
-
-            if len(extrafile_) > 0:
-                extrafile_ = os.path.join("tests", extrafile_)
-                modfile = extrafile_[:-4] + ".mod"
-                if not os.path.exists(modfile):
-                    run_cmd("lfortran -c {}".format(extrafile_))
-        if not skip_test:
+        if compile_extrafiles("document_symbols"):
             run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
                 filename,
                 update_reference,
@@ -598,7 +587,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
-    if asr_json:
+    if asr_json and compile_extrafiles("asr_json"):
         run_test(
             filename,
             "asr_json",
@@ -671,21 +660,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         # A pass can need the modfiles of the modules the test uses, the same
         # way an `asr` test does: `--separate-compilation` only reads a module
         # from a modfile if one is there to read.
-        skip_test = False
-        for extrafile in extrafiles:
-            extrafile_ = extrafile.rstrip().lstrip()
-            if len(extrafile_) == 0:
-                continue
-            if no_llvm:
-                log.info(f"{filename} * pass  SKIPPED because LLVM is not enabled")
-                skip_test = True
-                break
-            extrafile_ = os.path.join("tests", extrafile_)
-            modfile = extrafile_[:-4] + ".mod"
-            if not os.path.exists(modfile):
-                run_cmd("lfortran -c {}".format(extrafile_))
-
-        if not skip_test:
+        if compile_extrafiles("pass"):
             cmd = "lfortran "
             if is_cumulative_pass:
                 cmd += "--cumulative "

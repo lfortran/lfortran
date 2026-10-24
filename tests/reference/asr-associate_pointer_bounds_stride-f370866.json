@@ -1,0 +1,13 @@
+{
+    "basename": "asr-associate_pointer_bounds_stride-f370866",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/associate_pointer_bounds_stride.asr",
+    "infile_hash": "0223dbdebbb778d84dd8c3c0d6883d6ac8e2f8a15dfeaf26821683f7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-associate_pointer_bounds_stride-f370866.stderr",
+    "stderr_hash": "3116ab7578ac436ccec75e59515638fdbce72196d2da811798057e34",
+    "returncode": 2
+}

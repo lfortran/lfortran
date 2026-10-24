@@ -130,6 +130,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 4 self)
                                     Public
@@ -231,6 +233,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -357,6 +361,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -380,6 +386,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

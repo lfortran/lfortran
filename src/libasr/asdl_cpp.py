@@ -1389,6 +1389,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "call_arg" or
             field.type == "do_loop_head" or
             field.type == "array_index" or
+            field.type == "array_extent_check" or
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
             field.type == "type_stmt" or
@@ -1401,6 +1402,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 pointer_char = ''
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
+                    field.type != "array_extent_check" and
                     field.type != "alloc_arg" and
                     field.type != "dimension" and
                     field.type != "do_loop_head"):
@@ -1453,6 +1455,11 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    array_index_copy.m_right = duplicate_expr(x->m_%s[i].m_right);"%(field.name), level)
                     self.emit("    array_index_copy.m_step = duplicate_expr(x->m_%s[i].m_step);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, array_index_copy);"%(field.name), level)
+                elif field.type == "array_extent_check":
+                    self.emit("    ASR::array_extent_check_t check_copy = x->m_%s[i];"%(field.name), level)
+                    self.emit("    check_copy.m_left_extent = self().duplicate_expr(x->m_%s[i].m_left_extent);"%(field.name), level)
+                    self.emit("    check_copy.m_right_extent = self().duplicate_expr(x->m_%s[i].m_right_extent);"%(field.name), level)
+                    self.emit("    m_%s.push_back(al, check_copy);"%(field.name), level)
                 elif field.type == "dimension":
                     self.emit("    ASR::dimension_t dim_copy;", level)
                     self.emit("    dim_copy.loc = x->m_%s[i].loc;"%(field.name), level)
@@ -2154,8 +2161,8 @@ class JsonVisitorVisitor(ASDLVisitor):
         self.emit(      'uint32_t last_line = 0, last_col = 0;', 2)
         self.emit(      'std::string last_filename;', 2)
         self.emit(      '')
-        self.emit(      'lm.pos_to_linecol(first, first_line, first_col, first_filename);', 2)
-        self.emit(      'lm.pos_to_linecol(last, last_line, last_col, last_filename);', 2)
+        self.emit(      'lm.output_pos_to_linecol(first, false, first_line, first_col, first_filename);', 2)
+        self.emit(      'lm.output_pos_to_linecol(last, true, last_line, last_col, last_filename);', 2)
         self.emit(      '')
         self.emit(      's.append(",\\n" + indtd);', 2)
         self.emit(      's.append("\\"first_filename\\": \\"" + first_filename + "\\"");', 2)
@@ -3131,6 +3138,9 @@ class SerializationVisitorVisitor(ASDLVisitor):
             self.emit(    'self().write_int8(x.base.type);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.first);', 2)
             self.emit(    'self().write_int64(x.base.base.loc.last);', 2)
+        else:
+            self.emit(    'self().write_int64(x.loc.first);', 2)
+            self.emit(    'self().write_int64(x.loc.last);', 2)
         self.used = False
         for n, field in enumerate(serialization_fields(name, fields)):
             self.visitField(field, cons, name)
@@ -3375,6 +3385,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
     def visitProduct(self, prod, name):
         self.emit("%s_t deserialize_%s() {" % (name, name), 1)
         self.emit(  '%s_t x;' % (name), 2)
+        self.emit(  'x.loc.first = read_location_position(offset);', 2)
+        self.emit(  'x.loc.last = read_location_position(offset);', 2)
         for field in serialization_fields(name, prod.fields):
             if field.seq:
                 assert not field.opt

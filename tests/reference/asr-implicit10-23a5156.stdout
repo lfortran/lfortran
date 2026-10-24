@@ -588,6 +588,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -619,6 +621,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -626,11 +630,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -649,6 +657,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 f)
@@ -663,6 +673,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -681,6 +693,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i)
@@ -695,6 +709,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -714,6 +730,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 m)
@@ -729,6 +747,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -747,6 +767,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 p)
@@ -761,6 +783,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

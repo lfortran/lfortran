@@ -471,6 +471,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 sub1~fpcast_ptr
@@ -521,6 +522,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 sub2~fpcast_ptr
@@ -530,14 +532,12 @@
                             (Var 2 r_t)
                             DescriptorArray
                             PointerArray
-                            (Pointer
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
                             )
                             ()
                         ))]

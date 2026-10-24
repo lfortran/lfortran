@@ -75,11 +75,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* x,
-    float* y,
-    float* __gpu_heap_r4,
-    int* __gpu_heap_state,
-    int* __gpu_stop_status,
+    float* __restrict__ x,
+    float* __restrict__ y,
+    float* __restrict__ __gpu_heap_r4,
+    int* __restrict__ __gpu_heap_state,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -88,7 +88,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_stop_code;
     int __gpu_stop_site;
     int i;
-    const int n = 64;
     __gpu_stop_site = 0;
     __gpu_stop_code = 0;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {

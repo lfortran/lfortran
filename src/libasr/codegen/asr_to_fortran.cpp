@@ -1492,8 +1492,22 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
-        visit_expr(*x.m_target);
-        std::string t = std::move(src);
+        std::string t;
+        if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
+            // The upper bounds follow from the data target: `p(lb:) => a`
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            visit_expr(*section->m_v);
+            t = std::move(src) + "(";
+            for (size_t i = 0; i < section->n_args; i++) {
+                visit_expr(*section->m_args[i].m_left);
+                t += src + ":";
+                if (i < section->n_args - 1) t += ", ";
+            }
+            t += ")";
+        } else {
+            visit_expr(*x.m_target);
+            t = std::move(src);
+        }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
         src = t + " => " + v + "\n";
@@ -2717,10 +2731,38 @@ public:
         visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
-    void visit_IntrinsicArrayFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
-        out += func_name;
-        visit_expr(*x.m_args[0]);
-        out += "(" + src;
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
+        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
+        std::string out = intrinsic_func_name + "(";
+        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
+            // A scalar `source` is stored as a one element array (verified
+            // by `Spread::verify_args`): `[source]`, or a temporary holding
+            // it once a pass moved the array constructor out. Print its
+            // element, `spread([source], ...)` would have rank 2.
+            ASR::expr_t* source = x.m_args[0];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*source)) {
+                source = ASR::down_cast<ASR::ArrayPhysicalCast_t>(source)->m_arg;
+            }
+            if (ASR::is_a<ASR::ArrayConstant_t>(*source)) {
+                out += array_constant_element(
+                    *ASR::down_cast<ASR::ArrayConstant_t>(source), 0);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*source)) {
+                visit_expr(*ASR::down_cast<ASR::ArrayConstructor_t>(source)->m_args[0]);
+                out += src;
+            } else if (ASR::is_a<ASR::Var_t>(*source)) {
+                visit_expr(*source);
+                out += src + "(1)";
+            } else {
+                throw CodeGenError("`spread` of a scalar `source` held in "
+                    "this kind of expression is not supported yet",
+                    x.base.base.loc);
+            }
+        } else {
+            visit_expr(*x.m_args[0]);
+            out += src;
+        }
         for (size_t i = 1; i < x.n_args; i++) {
             out += ", ";
             visit_expr(*x.m_args[i]);
@@ -2728,24 +2770,6 @@ public:
         }
         out += ")";
         src = out;
-    }
-
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
-        std::string out;
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
-        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
-        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
-        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
-            ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
-            if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstant_t *arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_physical->m_arg);
-                x.m_args[0] = ASRUtils::fetch_ArrayConstant_value(al, arr_const, 0);
-            } else if(ASR::is_a<ASR::ArrayConstructor_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstructor_t *arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(arr_physical->m_arg);
-                x.m_args[0] = arr_const->m_args[0];
-            }
-        }
-        visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
     void visit_IntrinsicImpureFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicImpureFunction_t &x) {

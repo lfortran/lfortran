@@ -1,0 +1,5 @@
+tokenizer error: unterminated character literal
+ --> tests/errors/include_location_02.f:3:16
+  |
+3 |       print *, 'x
+  |                ^ not closed before the end of the line

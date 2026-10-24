@@ -10,9 +10,25 @@
 
 #include <libasr/asr_builder.h>
 
+#include <set>
+#include <unordered_set>
 #include <vector>
 
 namespace LCompilers {
+
+// True if the actual argument `arg` is an array element designator or an
+// array element substring designator. Such an actual argument may represent
+// the element sequence that starts at that element (F2018 15.5.2.11 p2), so
+// it is not replaced by the value of the element. Keeping it is always
+// correct, and folding it would gain nothing for a dummy passed by reference.
+static bool is_array_element_designator(ASR::expr_t* arg) {
+    if (ASR::is_a<ASR::StringSection_t>(*arg)) {
+        arg = ASR::down_cast<ASR::StringSection_t>(arg)->m_arg;
+    } else if (ASR::is_a<ASR::StringItem_t>(*arg)) {
+        arg = ASR::down_cast<ASR::StringItem_t>(arg)->m_arg;
+    }
+    return ASR::is_a<ASR::ArrayItem_t>(*arg);
+}
 
 class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueReplacer> {
 
@@ -24,13 +40,34 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
 
     bool inside_prohibited_expression;
 
+    // Actual arguments of procedure calls that are array element
+    // designators. They are kept as they are.
+    std::unordered_set<ASR::expr_t*> element_sequence_args;
+
+    // When set, the expressions that would be replaced are collected here
+    // and nothing is replaced.
+    std::set<ASR::expr_t*> *replaceable = nullptr;
 
     CompileTimeValueReplacer(Allocator& al_):
         al(al_), inside_prohibited_expression(false) {}
 
+    void mark_element_sequence_args(ASR::call_arg_t* args, size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t* arg = args[i].m_value;
+            if (arg && is_array_element_designator(arg)) {
+                element_sequence_args.insert(arg);
+            }
+        }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        mark_element_sequence_args(x->m_args, x->n_args);
+        ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_FunctionCall(x);
+    }
+
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayReshape(x);
-        if( ASRUtils::is_fixed_size_array(
+        if( !replaceable && ASRUtils::is_fixed_size_array(
                 ASRUtils::expr_type(x->m_array)) ) {
             x->m_type = ASRUtils::duplicate_type(al, x->m_type, nullptr,
                     ASR::array_physical_typeType::FixedSizeArray, true);
@@ -59,7 +96,8 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
     }
 
     void replace_expr(ASR::expr_t* x) {
-        if( x == nullptr || inside_prohibited_expression ) {
+        if( x == nullptr || inside_prohibited_expression ||
+                element_sequence_args.count(x) ) {
             return ;
         }
 
@@ -83,6 +121,12 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
             return ;
         }
 
+        if( replaceable ) {
+            if( compile_time_value != x ) {
+                replaceable->insert(x);
+            }
+            return ;
+        }
         *current_expr = compile_time_value;
     }
 };
@@ -103,6 +147,10 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
     ExprVisitor(Allocator& al_): replacer(al_)
     {}
 
+    void collect_replaceable(std::set<ASR::expr_t*> &replaceable) {
+        replacer.replaceable = &replaceable;
+    }
+
     template <typename ExprType>
     void visit_ExprMethod(const ExprType& x,
             void (ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::*visitor_function)(const ExprType&) ) {
@@ -122,6 +170,16 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
 
     void visit_StringItem(const ASR::StringItem_t& x) {
         visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        replacer.mark_element_sequence_args(x.m_args, x.n_args);
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        replacer.mark_element_sequence_args(x.m_args, x.n_args);
+        ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_FunctionCall(x);
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
@@ -254,6 +312,13 @@ void pass_replace_with_compile_time_values(
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
+}
+
+void collect_compile_time_value_replacements(Allocator &al,
+        ASR::Function_t &function, std::set<ASR::expr_t*> &replaceable) {
+    ExprVisitor v(al);
+    v.collect_replaceable(replaceable);
+    v.visit_Function(function);
 }
 
 

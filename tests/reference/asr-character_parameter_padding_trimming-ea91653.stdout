@@ -375,6 +375,8 @@
                             ()
                             [(Var 2 p_pad)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -395,6 +397,8 @@
                             ()
                             [(Var 2 p_trim)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

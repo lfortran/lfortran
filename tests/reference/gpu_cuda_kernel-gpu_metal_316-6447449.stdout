@@ -14,18 +14,17 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    t* p,
-    float* __data_p_v,
-    int* __offsets_p_v,
-    int* __sizes_p_v,
-    float* r,
+    t* __restrict__ p,
+    float* __restrict__ __data_p_v,
+    int* __restrict__ __offsets_p_v,
+    int* __restrict__ __sizes_p_v,
+    float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __dim_p_0 = __scalar_args.__dim_p_0;
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;
@@ -57,7 +56,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;

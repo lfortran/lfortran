@@ -42,6 +42,12 @@ struct MetalDialect {
         return " [[buffer(" + std::to_string(index) + ")]]";
     }
 
+    // The Metal Shading Language has no way to say that a buffer is not
+    // aliased.
+    std::string noalias_qualifier() const {
+        return "";
+    }
+
     // The grid position is a parameter of the kernel rather than a built-in.
     void emit_thread_id_param(std::stringstream &src, bool has_prev) const {
         if (has_prev) src << ",\n";

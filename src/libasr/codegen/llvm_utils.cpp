@@ -16,23 +16,24 @@ namespace LCompilers {
 
         llvm::MaybeAlign known_underalignment(llvm::Type *type,
                 llvm::Value *address, const llvm::DataLayout &data_layout) {
-#if LLVM_VERSION_MAJOR >= 11
             if (!type->isSized()) {
                 return llvm::MaybeAlign();
             }
             // Also for the address of a variable allocated here: it has the
             // alignment of the variable's type, which need not be that of
             // the type accessed through it.
+#if LLVM_VERSION_MAJOR >= 11
             llvm::Align known = llvm::getKnownAlignment(address, data_layout);
             if (known >= data_layout.getABITypeAlign(type)) {
                 return llvm::MaybeAlign();
             }
             return known;
 #else
-            (void)type;
-            (void)address;
-            (void)data_layout;
-            return llvm::MaybeAlign();
+            unsigned known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlignment(type)) {
+                return llvm::MaybeAlign();
+            }
+            return llvm::MaybeAlign(known);
 #endif
         }
 
@@ -315,7 +316,8 @@ namespace LCompilers {
         return allocator_instance;
     }
 
-    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank)
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank,
+        llvm::Value* dtio_unit, llvm::Value* n_dtio, llvm::Value* dtio_procs)
     {
         llvm::Function *fn_printf = LLVM::get_or_declare_function(
             *module, "_lcompilers_string_format_fortran",
@@ -329,7 +331,10 @@ namespace LCompilers {
             i32,
             i32,
             i32,
-            i32}, true);
+            i32,
+            i32, // dtio_unit
+            i32, // n_dtio
+            i8_ptr->getPointerTo()}, true); // dtio_procs
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
@@ -353,6 +358,12 @@ namespace LCompilers {
             full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         }
         full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), leading_blank));
+        full_args.push_back(dtio_unit ? dtio_unit :
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+        full_args.push_back(n_dtio ? n_dtio :
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+        full_args.push_back(dtio_procs ? dtio_procs : llvm::ConstantPointerNull::get(
+            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo()));
         for (size_t i = 6; i < args.size(); i++) {
             full_args.push_back(args[i]);
         }
@@ -11135,7 +11146,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Value* dest_member_ptr = dest_member;
                         // The member is finalized with `dest`, unless it is
                         // an unallocated allocatable component, which the
-                        // copy allocates.
+                        // copy allocates. An allocated `class` component is
+                        // an exception: the VTable allocate call below
+                        // replaces it with a new, zeroed object without
+                        // freeing or finalizing the old one, so the old
+                        // object leaks and the copy function finalizes the
+                        // new one instead (#15431).
                         llvm::Value* finalize_member = finalize_dest;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);

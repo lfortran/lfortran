@@ -17,6 +17,10 @@ endmacro(ADDTESTC)
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
+    if (NOT EMSCRIPTEN)
+        ADDTESTC(test_runtime_input lfortran_runtime_static)
+        ADDTESTC(test_runtime_dtio lfortran_runtime_static)
+    endif()
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
     endif()
@@ -26,6 +30,18 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     endif()
     ADDTEST(test_stacktrace)
 endif()
+
+add_library(cuda_link_helper_plain_fixture STATIC plain.c)
+set_target_properties(cuda_link_helper_plain_fixture PROPERTIES OUTPUT_NAME plain)
+set(cuda_link_helpers_fixture_header_content [=[
+#pragma once
+namespace cuda_link_helpers_fixture {
+inline constexpr const char plain_archive[] = R"PATH($<TARGET_FILE:cuda_link_helper_plain_fixture>)PATH";
+inline constexpr const char plain_member[] = "plain.c@CMAKE_C_OUTPUT_EXTENSION@";
+}
+]=])
+string(CONFIGURE "${cuda_link_helpers_fixture_header_content}" cuda_link_helpers_fixture_header_content @ONLY)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/test_cuda_link_helpers_fixture.hpp" CONTENT "${cuda_link_helpers_fixture_header_content}")
 
 set(SRC
     test_parse.cpp
@@ -38,6 +54,8 @@ set(SRC
     test_asr_text.cpp
     test_asr_text_parser.cpp
     test_gpu.cpp
+    ../../bin/cuda_link_helpers.cpp
+    ../../tests/test_cuda_link_helpers.cpp
 )
 
 if (WITH_JSON)
@@ -68,6 +86,8 @@ endif()
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_include_directories(test_lfortran PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+add_dependencies(test_lfortran cuda_link_helper_plain_fixture)
 # The test binary never calls set_exec_path_and_mode(), so it cannot work out
 # where the runtime modfiles are; a test that uses an intrinsic module would
 # fail with "modfile was not found". Under Emscripten they are preloaded into
@@ -154,10 +174,43 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 -o ${PROJECT_BINARY_DIR}/${fixture_name}.o
         )
     endforeach()
+    # `--show-asm` must lower the ASR after the same passes as `-S`. Assembly
+    # differs between targets, so only success is checked. The program lives
+    # here because CI builds from the source tarball, which ships `src` but not
+    # `integration_tests`.
+    add_test(
+        NAME test_show_asm_01
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_CURRENT_SOURCE_DIR}/show_asm_01.f90
+            --show-asm
+            --no-color
+    )
     # The format claims to be an EDN data subset; enforce that with a reader
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (NOT WIN32 AND NOT EMSCRIPTEN)
+            add_test(
+                NAME test_gpu_launch_geometry_cpu
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                    --backend cpu --cc ${CMAKE_C_COMPILER}
+                    "--sysroot=${CMAKE_OSX_SYSROOT}"
+                    --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-cpu
+            )
+            set_tests_properties(test_gpu_launch_geometry_cpu PROPERTIES TIMEOUT 180)
+            if (APPLE)
+                add_test(
+                    NAME test_gpu_launch_geometry_metal
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                        --backend metal --cc ${CMAKE_C_COMPILER}
+                        "--sysroot=${CMAKE_OSX_SYSROOT}"
+                        --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-metal
+                )
+                set_tests_properties(test_gpu_launch_geometry_metal PROPERTIES TIMEOUT 300)
+            endif()
+        endif()
         add_test(
             NAME test_dwarf_convert
             COMMAND ${LFORTRAN_TEST_PYTHON}
@@ -258,6 +311,16 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --lfortran $<TARGET_FILE:lfortran>
             )
         endif()
+        if (WITH_XEUS)
+            add_test(
+                NAME test_kernel_evaluation
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
@@ -276,4 +339,10 @@ if (WITH_LSP)
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
         target_link_options(test_asr PRIVATE "LINKER:--export-dynamic")
     endif()
+endif()
+
+if (APPLE)
+    add_test(NAME test_gpu_metal_runtime
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_metal_runtime.sh)
+    set_tests_properties(test_gpu_metal_runtime PROPERTIES TIMEOUT 180)
 endif()

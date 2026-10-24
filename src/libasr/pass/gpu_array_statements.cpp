@@ -619,7 +619,7 @@ private:
         }
         ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al,
             loc, b.ArrayItem_01(target, subscripts), value, nullptr, false,
-            false));
+            false, false, false));
         Vec<ASR::stmt_t*> nest;
         nest.reserve(al, 1);
         nest.push_back(al, assignment);

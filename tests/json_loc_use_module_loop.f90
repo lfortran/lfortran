@@ -1,0 +1,3 @@
+program json_loc_use_module_loop
+use json_loc_module_loop_m
+end program

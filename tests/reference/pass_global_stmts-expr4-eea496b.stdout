@@ -185,6 +185,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f2)
@@ -205,6 +207,8 @@
                             )
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -241,6 +245,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f4)
@@ -275,6 +281,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f5)
@@ -297,6 +305,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f6)
@@ -317,6 +327,8 @@
                             )
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

@@ -265,6 +265,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -398,11 +400,14 @@
                                                             (Integer 4)
                                                             ()
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Assignment
                                                         (Var 8 target)
                                                         (Var 5 i)
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -670,6 +675,7 @@
                                                             ()
                                                             .false.
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -712,6 +718,8 @@
                                                         )
                                                         (IntegerConstant 345 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]

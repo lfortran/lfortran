@@ -295,6 +295,7 @@
                     [(Associate
                         (Var 2 u_ptr)
                         (Var 2 u)
+                        NoPointerBounds
                     )
                     (DoLoop
                         ()
@@ -330,6 +331,8 @@
                                 ()
                             )
                             ()
+                            .false.
+                            .false.
                             .false.
                             .false.
                         )
@@ -408,6 +411,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         []
                     )
@@ -422,6 +427,7 @@
                             "replace"
                             (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -476,6 +482,8 @@
                                     .false.
                                 )]
                                 FormatFortran
+                                []
+                                ()
                                 (Allocatable
                                     (String 1 () DeferredLength DescriptorString)
                                 )
@@ -516,6 +524,7 @@
                             "old"
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -620,6 +629,8 @@
                                     .false.
                                 )]
                                 FormatFortran
+                                []
+                                ()
                                 (Allocatable
                                     (String 1 () DeferredLength DescriptorString)
                                 )

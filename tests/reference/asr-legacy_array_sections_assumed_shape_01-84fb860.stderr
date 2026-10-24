@@ -1,0 +1,116 @@
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:45:20
+   |
+45 |     call int_shape(c(2))  ! {Error} element of a fixed-size array, use-associated procedure
+   |                    ^^^^ scalar argument
+   |
+ 7 |        subroutine int_shape(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+ 9 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:46:20
+   |
+46 |     call int_shape(ca(2))  ! {Error} element of an allocatable array, use-associated procedure
+   |                    ^^^^^ scalar argument
+   |
+ 7 |        subroutine int_shape(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+ 9 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:47:21
+   |
+47 |     call char_shape(d(2))  ! {Error} element of a character array, use-associated procedure
+   |                     ^^^^ scalar argument
+   |
+11 |        subroutine char_shape(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:48:21
+   |
+48 |     n = int_shape_f(c(2))  ! {Error} function reference
+   |                     ^^^^ scalar argument
+   |
+15 |        integer function int_shape_f(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end function
+   | ...^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:49:20
+   |
+49 |     call int_alloc(ca(2))  ! {Error} allocatable dummy
+   |                    ^^^^^ scalar argument
+   |
+20 |        subroutine int_alloc(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ allocatable array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:50:18
+   |
+50 |     call int_ptr(cp(2))  ! {Error} pointer dummy
+   |                  ^^^^^ scalar argument
+   |
+24 |        subroutine int_ptr(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+26 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ pointer array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:51:22
+   |
+51 |     call local_shape(c(2))  ! {Error} element of a fixed-size array, internal procedure
+   |                      ^^^^ scalar argument
+   |
+59 |        subroutine local_shape(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+61 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:52:22
+   |
+52 |     call local_shape(ca(2))  ! {Error} element of an allocatable array, internal procedure
+   |                      ^^^^^ scalar argument
+   |
+59 |        subroutine local_shape(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+61 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_assumed_shape_01.f90:53:21
+   |
+53 |     call local_char(d(2))  ! {Error} element of a character array, internal procedure
+   |                     ^^^^ scalar argument
+   |
+63 |        subroutine local_char(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+65 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument

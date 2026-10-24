@@ -887,7 +887,7 @@ public:
                     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_var_temporary));
                     if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims, len_expr) ) {
                         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                            al, loc, array_var_temporary, arg_expr_past_cast)));
+                            al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds)));
                         return;
                     }
                     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -933,7 +933,7 @@ public:
                                 create_do_loop(al, loc, do_loop_variables, array_var_temporary, arg_expr_past_cast, array_rank, integer_kind)
                         }, {
                             ASRUtils::STMT(ASR::make_Associate_t(
-                                al, loc, array_var_temporary, arg_expr_past_cast))
+                                al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds))
                         })
                     );
                     if ( is_arg_intent_out.size() > 0 && is_arg_intent_out[i] ) {

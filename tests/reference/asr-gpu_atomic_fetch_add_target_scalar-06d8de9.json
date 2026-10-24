@@ -2,12 +2,12 @@
     "basename": "asr-gpu_atomic_fetch_add_target_scalar-06d8de9",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_atomic_fetch_add_target_scalar.asr",
-    "infile_hash": "021f813542ac2f3f9404046877e3423a8bfda0bbad83f5f0db86282f",
+    "infile_hash": "7c1822c471ed70fc45a64293f4cda717288c1156f05c016f212b91d0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-gpu_atomic_fetch_add_target_scalar-06d8de9.stderr",
-    "stderr_hash": "9e4b159f1a6dc96b40dcb91a42b44be833d84757361aa291edd867f0",
+    "stderr_hash": "0b1eae8f6776b0569ddfb44930642bad37931225a13a1c66ed49569e",
     "returncode": 2
 }

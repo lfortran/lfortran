@@ -7,6 +7,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/casting_utils.h>
 
+#include <iostream>
+
 namespace LCompilers {
 
     namespace PassUtils {
@@ -38,6 +40,25 @@ namespace LCompilers {
         void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit) {
             NormalizeStringPhysicalCasts casts(al);
             casts.visit_TranslationUnit(unit);
+        }
+
+        void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+                const PassOptions &pass_options,
+                const ASRVerifyOptions &verify_options,
+                const std::string &pass_name) {
+            bool verify = pass_options.verify_all_passes;
+#if defined(WITH_LFORTRAN_ASSERT)
+            verify = true;
+#endif
+            if (!verify) return;
+            diag::Diagnostics local_diagnostics;
+            diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
+                ? *pass_options.diagnostics : local_diagnostics;
+            if (!asr_verify(unit, verify_options, diagnostics)) {
+                std::cerr << diagnostics.render2();
+                throw LCompilersException("pass=" + pass_name,
+                    LFORTRAN_ASR_PASS_VERIFY_FAILED);
+            }
         }
 
         void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
@@ -730,7 +751,7 @@ namespace LCompilers {
             }
             a_realloc_lhs = a_realloc_lhs && is_allocatable;
             return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-                a_overloaded, a_realloc_lhs, false);
+                a_overloaded, a_realloc_lhs, false, false, false);
         }
 
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx) {
@@ -890,6 +911,76 @@ namespace LCompilers {
             }
             ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
             return b.Mul(b.ArraySize(array, dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))), create_array_size_pack(al, loc, array, n_dims-1));
+        }
+
+        // The integer(4) extent of `array` in dimension `dim` (0-based). A
+        // constructor is not evaluated for it: its type has its size.
+        static ASR::expr_t* array_extent(Allocator &al, ASR::expr_t* array,
+                ASR::dimension_t* dims, size_t dim) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            if (ASR::is_a<ASR::ArrayConstructor_t>(*array)) {
+                return duplicator.duplicate_expr(dims[dim].m_length);
+            }
+            const Location &loc = array->base.loc;
+            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            return ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                duplicator.duplicate_expr(array),
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, dim + 1, int32_type)),
+                int32_type, nullptr));
+        }
+
+        // Adds to `checks` the comparison of the extents of arrays `left`
+        // and `right` (numbered as in array_extent_check) in every dimension
+        // that both have, except where their extents are compile-time
+        // constants and equal, so that the comparison cannot fail.
+        static void add_extent_checks(Allocator &al, Vec<ASR::array_extent_check_t>& checks,
+                int64_t left, ASR::expr_t* left_array,
+                int64_t right, ASR::expr_t* right_array) {
+            ASR::dimension_t* left_dims = nullptr;
+            size_t left_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(left_array), left_dims);
+            ASR::dimension_t* right_dims = nullptr;
+            size_t right_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(right_array), right_dims);
+            for (size_t dim = 0; dim < std::min(left_rank, right_rank); dim++) {
+                int64_t left_length = 0, right_length = 0;
+                if (left_dims[dim].m_length != nullptr &&
+                        right_dims[dim].m_length != nullptr &&
+                        ASRUtils::extract_value(left_dims[dim].m_length, left_length) &&
+                        ASRUtils::extract_value(right_dims[dim].m_length, right_length) &&
+                        left_length == right_length) {
+                    continue;
+                }
+                ASR::array_extent_check_t check;
+                check.loc = left_array->base.loc;
+                check.m_left = left;
+                check.m_right = right;
+                check.m_dim = dim + 1;
+                check.m_left_extent = array_extent(al, left_array, left_dims, dim);
+                check.m_right_extent = array_extent(al, right_array, right_dims, dim);
+                checks.push_back(al, check);
+            }
+        }
+
+        ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
+                ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation) {
+            LCOMPILERS_ASSERT(components.size() > 0);
+            Vec<ASR::array_extent_check_t> checks;
+            checks.reserve(al, components.size());
+            // Each operand has the shape of the next one in every dimension,
+            // when they have the same rank
+            for (size_t i = 0; i + 1 < components.size(); i++) {
+                if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(components[i])) ==
+                        ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(components[i + 1]))) {
+                    add_extent_checks(al, checks, i + 1, components[i],
+                        i + 2, components[i + 1]);
+                }
+            }
+            // and the first operand has the shape of the target
+            add_extent_checks(al, checks, 0, target, 1, components[0]);
+            return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
+                target, components.p, components.size(), checks.p, checks.size(),
+                move_allocation));
         }
 
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
@@ -2043,8 +2134,7 @@ namespace LCompilers {
                              ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                             dimension.m_length = nullptr;
                         } else {
-                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, true);
-                            dimension.m_length = curr_init_array_size_for_type;
+                            dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                         dims.push_back(al, dimension);

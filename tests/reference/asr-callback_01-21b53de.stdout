@@ -243,6 +243,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 3 cb)
                                     Public
@@ -400,6 +402,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     (Var 6 f)
                                                     Public
@@ -442,6 +446,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

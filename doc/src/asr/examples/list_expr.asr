@@ -156,6 +156,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -173,6 +175,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -195,6 +199,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -221,6 +227,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -242,6 +250,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -266,6 +276,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -290,6 +302,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -314,6 +328,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (Assignment
             :target (Var
@@ -356,6 +372,8 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
+            :new_allocation false
           )
           (ListAppend
             :a (Var

@@ -213,6 +213,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     (Var 7 z)
                                                     Public
@@ -453,6 +455,8 @@
                                                             )
                                                         )
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -751,6 +755,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -1059,6 +1065,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     (Var 11 z)
                                                     Public
@@ -1245,6 +1253,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     (Var 12 s)
                                                     Private
@@ -1335,6 +1345,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 10 n2)
@@ -1351,6 +1363,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -1361,6 +1375,8 @@
                                             )
                                             (Var 10 n1)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -1376,6 +1392,8 @@
                                             )
                                             (Var 10 n2)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

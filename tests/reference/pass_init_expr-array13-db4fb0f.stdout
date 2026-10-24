@@ -72,6 +72,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -88,11 +90,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __1_k)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -109,6 +115,8 @@
                         )
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -118,6 +126,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -134,11 +144,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __1_k)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -157,11 +171,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __1_k)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -178,6 +196,8 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

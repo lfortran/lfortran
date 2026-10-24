@@ -138,6 +138,7 @@
                                                             )
                                                             ()
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -157,6 +158,8 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )
@@ -184,6 +187,8 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]

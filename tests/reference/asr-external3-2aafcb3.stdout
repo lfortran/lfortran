@@ -355,6 +355,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 brcmp1)
@@ -378,6 +379,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

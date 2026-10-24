@@ -673,6 +673,15 @@ an `intent(in)` dummy -- and *written* otherwise.
   host (the entry is not *dirty*), the host bytes are copied in; after the
   launch the entry is dirty. A later launch handed the same range -- to read
   or to write -- uses the same device buffer, without copying anything.
+* A written buffer whose launch records a whole-array overwrite before read
+  can use `LFORTRAN_GPU_WRITE_DISCARD` when its host coverage condition holds.
+  CUDA and Metal skip copying it in unless another buffer argument overlaps
+  it, in which case it remains an ordinary write. This does not establish
+  `gpu_kernel_argument.noalias`; that proof is independent.
+  Strict integer guards are narrowed without overflowing their endpoints,
+  including dynamic `integer(8)` bounds. A strict guard requiring a value
+  below the smallest integer or above the largest cannot establish an
+  overwrite and retains ordinary write access.
 * `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
   to the host, and marks it clean.
 * `lfortran_gpu_discard` forgets the dirty entries of a host range that is
@@ -685,10 +694,35 @@ an `intent(in)` dummy -- and *written* otherwise.
   have completed. A scratch buffer -- a run-time sized local of the kernel
   (a workspace), an arena of the device heap -- is only on the device.
 
-On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
-host's memory before it returns, so there is never anything to copy or wait
-for. The CUDA runtime keeps the same table and orders copies and launches
-on one stream.
+The CPU emulation (`--gpu=cuda_cpu`) runs this same CUDA runtime
+(`lfortran_gpu_cuda.c`), on an emulation of the CUDA runtime API that it uses
+(`src/libasr/runtime/cuda_cpu/`), so it needs no GPU and no CUDA toolkit; the
+host compiler builds everything. The emulated device memory is separate from
+host memory: `cudaMalloc` makes an allocation of its own, filled with 0xff
+bytes, and only the copies move data, so a missing or late copy shows as it
+does on a device. In the emulation the runtime also refills every unaliased
+discard buffer with 0xff bytes (`cudaMemsetAsync`) before each launch, so a
+wrong overwrite proof cannot pass on what an earlier launch left in a reused
+buffer; natively the buffer keeps those bytes.
+The stream runs every copy and launch to completion before the call that
+issues it returns, in the order they are issued, which a program that waits
+for its results before reading them cannot tell apart from a device. A kernel
+is reached through a thunk that the CUDA code generator emits for it in
+emulation and registers in its place; the emulated `cudaLaunchKernel` runs the
+blocks one after another, and the threads of a block one after another, so a
+`__syncthreads()` cannot be honoured and stops the program. The emulated
+device reports a 64 MiB L2 cache.
+The CUDA runtime keeps the same table and orders copies and launches
+on one stream. It keeps scratch and read-only upload buffers per kernel and
+argument slot, reusing their capacity and deferring replaced allocations until
+a synchronization. Preparing arguments can itself synchronize when the deferred
+queue or residency table fills. After such a synchronization, CUDA prepares all
+bindings again before dispatch: writable residents must still be present and
+dirty for the new launch, and reads must use their current bindings. This does
+not add a synchronization to each launch. Discard buffers participate in this
+same retry and writable-residency preparation. Same-address writable aliases,
+including discards downgraded by overlap, use one covering extent so that
+preparation cannot alternate between their different byte counts.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
@@ -865,11 +899,57 @@ with a `stop` before that.
 * Every entry of the unsupported list has a test for the error, and a test that
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
-  backends (`metal`, `cuda_cpu` labels) and checks the results.
+  backends (`metal`, `cuda` labels) and checks the results.
+* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
+  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
+  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
+  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). There is no
+  `cuda_cpu` label.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
   with `--gpu=metal` in CI.
+
+The `test_gpu_cuda_api_state*` unit tests compile the production CUDA runtime
+against the CPU emulation of the CUDA runtime API that `--gpu=cuda_cpu` uses,
+with kernels of their own, and check how the runtime uses the API through the
+statistics the emulation keeps (`cuda_cpu/cuda_cpu_emulator.h`). They exercise
+deferred-queue saturation for scratch and read-only buffers, and
+residency-table eviction, and check readback, allocation lifetime, and that no
+memory is freed while a copy or launch issued since the last synchronization
+may still use it. Discard variants exercise both flush paths without uploading
+the output. Alias cases also check that a discard shares the covering writable
+resident, falls back to one upload, and preserves values read before an
+overlapping write. These are API-state tests, not native GPU execution or
+performance evidence:
+
+```bash
+pixi run -e llvm11 ctest -R '^test_gpu_cuda_api_state' -V > cuda-api-state.log 2>&1
+```
+
+The same sequences also run against the real CUDA runtime in
+`src/tests/gpu_cuda_scratch_order.cu`, which calls the CUDA API directly and is
+therefore not an integration test. It needs NVCC and an NVIDIA device:
+64 kernel caches with 30 small scratch buffers reach the 4096-entry deferred
+queue boundary before dispatch 201, whose output and scratch readback must both
+be 201. The script builds it and runs the scratch sequence, its variant with a
+discarded output, and the mixed write/discard alias cases. Run it on a GPU
+machine even when the host API-state tests pass:
+
+```bash
+src/tests/gpu_cuda_scratch_order.sh > cuda-scratch-order.log 2>&1
+```
+
+`gpu_metal_507` checks a full overwrite through a target array that reads its
+old elements through a pointer alias, on the ordinary, CPU-emulated, Metal and
+native CUDA paths. The CUDA API-state tests do not replace any of these
+backend tests.
+
+`gpu_discard_guard_extremes` checks strict and inclusive guards at both
+`integer(8)` extrema, constant and dynamic bounds, reversed comparisons,
+conjoined guards, and narrower `integer(4)` bounds. Its CUDA_CPU checks reject
+poisoned NaNs as well as finite wrong values; it also runs with LLVM,
+GFortran, and native CUDA.
 
 ## Open questions
 

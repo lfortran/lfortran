@@ -273,6 +273,41 @@ static inline bool contains_function_call(ASR::expr_t* expr) {
     }
 }
 
+// The name of the C runtime function computing `name` (e.g. "sin") for a
+// real argument of type `type`: `_lfortran_s<name>` for real(4),
+// `_lfortran_d<name>` for real(8) and `lf_<name>q` for real(16), the
+// binary128 routines of lfortran_float128.c. A function without a binary128
+// implementation keeps the `_lfortran_d<name>` name for real(16).
+static inline std::string real_c_func_name(const std::string &name,
+        ASR::ttype_t *type) {
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+    if (kind == 4) {
+        return "_lfortran_s" + name;
+    }
+    if (kind == 16) {
+        static const char *const quad_functions[] = {
+            "exp", "log", "log10", "sin", "cos", "tan", "asin", "acos",
+            "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh",
+            "atanh", "sind", "cosd", "tand", "asind", "acosd", "atand"};
+        for (const char *f : quad_functions) {
+            if (name == f) return "lf_" + name + "q";
+        }
+    }
+    return "_lfortran_d" + name;
+}
+
+// pi as a constant of the real type `type`, correctly rounded for every kind.
+static inline ASR::expr_t* make_pi_constant(Allocator &al, const Location &loc,
+        ASR::ttype_t *type) {
+    if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+        return ASRUtils::make_RealConstant_r16(al, loc,
+            lf_float128_from_str("3.14159265358979323846264338327950288"),
+            type);
+    }
+    return ASRUtils::make_RealConstant_util(al, loc, 3.14159265358979323846,
+        type);
+}
+
 namespace UnaryIntrinsicFunction {
 
 static inline ASR::expr_t* instantiate_functions(Allocator &al,
@@ -290,11 +325,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         default : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                c_func_name = "_lfortran_s" + new_name;
-            } else {
-                c_func_name = "_lfortran_d" + new_name;
-            }
+            c_func_name = real_c_func_name(new_name, arg_type);
         }
     }
     new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
@@ -712,12 +743,7 @@ namespace MathIntrinsicFunction{
     static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
             SymbolTable *scope, std::string lcompiler_name, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_s" + lcompiler_name;
-        } else {
-            c_func_name = "_lfortran_d" + lcompiler_name;
-        }
+        std::string c_func_name = real_c_func_name(lcompiler_name, arg_types[0]);
         std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python_expr(arg_types[0], new_args[0].m_value);
 
         declare_basic_variables(new_name);
@@ -852,12 +878,7 @@ namespace math_func {                                                           
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/)  {             \
         ASR::ttype_t* arg_type = arg_types[0];                                                          \
-        std::string c_func_name;                                                                        \
-        if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {                                        \
-            c_func_name = "_lfortran_s" + std::string(c_name);                                          \
-        } else {                                                                                        \
-            c_func_name = "_lfortran_d" + std::string(c_name);                                          \
-        }                                                                                               \
+        std::string c_func_name = real_c_func_name(c_name, arg_type);                                   \
         std::string new_name = "_lcompilers_" + std::string(lcompilers_name) + "_" +                    \
             type_to_str_python_expr(arg_type, new_args[0].m_value);                                     \
         declare_basic_variables(new_name);                                                              \
@@ -874,8 +895,7 @@ namespace math_func {                                                           
             fn_symtab->add_symbol(c_func_name, s);                                                      \
             dep.push_back(al, s2c(al, c_func_name));                                                    \
             auto PI = declare("_lcompiler_pi", arg_type, Local);                                        \
-            body.push_back(al, b.Assignment(PI, ASRUtils::make_RealConstant_util(al, loc, \
-                3.14159265358979323846, arg_type)));                                               \
+            body.push_back(al, b.Assignment(PI, make_pi_constant(al, loc, arg_type)));                  \
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);                                      \
             call_args.push_back(al, b.Mul(args[0], PI));                                                 \
             body.push_back(al, b.Assignment(result, b.Call(s, call_args, return_type)));                \
@@ -906,12 +926,7 @@ namespace math_func {                                                           
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/)  {             \
         ASR::ttype_t* arg_type = arg_types[0];                                                          \
-        std::string c_func_name;                                                                        \
-        if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {                                        \
-            c_func_name = "_lfortran_s" + std::string(c_name);                                          \
-        } else {                                                                                        \
-            c_func_name = "_lfortran_d" + std::string(c_name);                                          \
-        }                                                                                               \
+        std::string c_func_name = real_c_func_name(c_name, arg_type);                                   \
         std::string new_name = "_lcompilers_" + std::string(lcompilers_name) + "_" +                    \
             type_to_str_python_expr(arg_type, new_args[0].m_value);                                     \
         declare_basic_variables(new_name);                                                              \
@@ -928,8 +943,7 @@ namespace math_func {                                                           
             fn_symtab->add_symbol(c_func_name, s);                                                      \
             dep.push_back(al, s2c(al, c_func_name));                                                    \
             auto PI = declare("_lcompiler_pi", arg_type, Local);                                        \
-            body.push_back(al, b.Assignment(PI, ASRUtils::make_RealConstant_util(al, loc, \
-                3.14159265358979323846, arg_type)));                                               \
+            body.push_back(al, b.Assignment(PI, make_pi_constant(al, loc, arg_type)));                  \
             body.push_back(al, b.Assignment(result, b.Div(b.Call(s, args, return_type), PI)));          \
         }                                                                                               \
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,                  \
@@ -1005,11 +1019,7 @@ namespace Atan2 {
                 break;
             }
             default : {
-                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                    c_func_name = "_lfortran_s" + new_name;
-                } else {
-                    c_func_name = "_lfortran_d" + new_name;
-                }
+                c_func_name = real_c_func_name(new_name, arg_type);
             }
         }
         new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
@@ -1067,11 +1077,7 @@ namespace Atan2d {
                 break;
             }
             default : {
-                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                    c_func_name = "_lfortran_s" + new_name;
-                } else {
-                    c_func_name = "_lfortran_d" + new_name;
-                }
+                c_func_name = real_c_func_name(new_name, arg_type);
             }
         }
         new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value) + "_degrees";
@@ -1090,7 +1096,7 @@ namespace Atan2d {
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             auto PI = declare("_lcompiler_pi", arg_type, Local);
-            body.push_back(al, b.Assignment(PI, ASRUtils::make_RealConstant_util(al, loc, 3.14159265358979323846, arg_type)));
+            body.push_back(al, b.Assignment(PI, make_pi_constant(al, loc, arg_type)));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
             body.push_back(al, b.Assignment(result, b.Mul(result, b.Div(ASRUtils::make_RealConstant_util(al, loc, 180.0, arg_type), PI))));
         }
@@ -1133,11 +1139,7 @@ namespace Atan2pi {
                 break;
             }
             default : {
-                if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
-                    c_func_name = "_lfortran_s" + new_name;
-                } else {
-                    c_func_name = "_lfortran_d" + new_name;
-                }
+                c_func_name = real_c_func_name(new_name, arg_type);
             }
         }
         new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value) + "_pi";
@@ -1156,7 +1158,7 @@ namespace Atan2pi {
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             auto PI = declare("_lcompiler_pi", arg_type, Local);
-            body.push_back(al, b.Assignment(PI, ASRUtils::make_RealConstant_util(al, loc, 3.14159265358979323846, arg_type)));
+            body.push_back(al, b.Assignment(PI, make_pi_constant(al, loc, arg_type)));
             body.push_back(al, b.Assignment(result, b.Div(b.Call(s, args, return_type), PI)));
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1387,6 +1389,25 @@ namespace StorageSize {
             else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
         }
+    }
+
+    // `storage_size` of a character whose length is not a compile-time
+    // constant (deferred or assumed length) is its length in bits, which is
+    // read from the string at run time. Every other `storage_size` has a
+    // compile-time value, see eval_StorageSize.
+    static inline ASR::expr_t* instantiate_StorageSize(Allocator &al,
+            const Location &loc, SymbolTable* /*scope*/,
+            Vec<ASR::ttype_t*>& /*arg_types*/, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/,
+            int /*index_kind*/) {
+        ASR::expr_t* arg = new_args[0].m_value;
+        LCOMPILERS_ASSERT(is_character(*ASRUtils::extract_type(expr_type(arg))));
+        ASR::expr_t* len = EXPR(ASR::make_StringLen_t(al, loc, arg,
+            return_type, nullptr));
+        ASR::expr_t* bits_per_char = EXPR(ASR::make_IntegerConstant_t(al, loc,
+            8, return_type, ASR::integerbozType::Decimal));
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, len, ASR::binopType::Mul,
+            bits_per_char, return_type, nullptr));
     }
 
 }  // namespace StorageSize
@@ -3279,12 +3300,15 @@ namespace Anint {
         *     r = aint(x-0.5)
         * end if
         */
+        // Make the calls one by one, so the helpers get the same names with every C++ compiler.
+        ASR::expr_t *aint_up = b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
+                                    return_type, 0, Aint::instantiate_Aint);
+        ASR::expr_t *aint_down = b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
+                                    return_type, 0, Aint::instantiate_Aint);
         body.push_back(al, b.If(b.Gt(args[0], b.f_t(0, arg_types[0])), {
-            b.Assignment(result, b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
-                                        return_type, 0, Aint::instantiate_Aint))
+            b.Assignment(result, aint_up)
         }, {
-            b.Assignment(result, b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
-                                        return_type, 0, Aint::instantiate_Aint))
+            b.Assignment(result, aint_down)
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

@@ -223,6 +223,8 @@
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -242,6 +244,8 @@
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -266,12 +270,16 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
                                             ()
                                             [(Var 3 res)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -436,6 +444,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -530,6 +540,8 @@
                                         (Var 5 foo)
                                         (Var 5 res)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -632,6 +644,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

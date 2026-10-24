@@ -232,7 +232,7 @@ public:
                 ASR::make_Assignment_t(al, loc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, flag)),
                     dup.duplicate_expr(ASRUtils::EXPR((ASR::asr_t*)x)),
-                    nullptr, false, false)));
+                    nullptr, false, false, false, false)));
             it = hoisted.emplace(dummy, flag).first;
         }
         *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,

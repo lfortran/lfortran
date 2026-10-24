@@ -267,6 +267,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 10 i)
@@ -279,6 +280,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]
@@ -504,6 +507,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         8 g~fpcast_ptr
@@ -897,6 +901,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Associate
                         (Var 5 apply_sub~fpcast_ptr)
@@ -935,6 +941,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_sub~fpcast_ptr
@@ -995,6 +1002,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_sub~fpcast_ptr
@@ -1055,6 +1063,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         5 apply_fun~fpcast_ptr
@@ -1083,6 +1092,8 @@
                             ()
                             [(Var 5 i)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -1155,6 +1166,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -1248,6 +1261,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

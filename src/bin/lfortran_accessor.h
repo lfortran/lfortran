@@ -65,14 +65,16 @@ namespace LCompilers::LLanguageServer {
                 loc.parent_index = parent_index;
                 loc.symbol_name = a.first;
                 loc.symbol_type = a.second->type;
-                lm.pos_to_linecol(
+                lm.output_pos_to_linecol(
                     a.second->base.loc.first,
+                    false,
                     loc.first_line,
                     loc.first_column,
                     loc.filename
                 );
-                lm.pos_to_linecol(
+                lm.output_pos_to_linecol(
                     a.second->base.loc.last,
+                    true,
                     loc.last_line,
                     loc.last_column,
                     loc.filename

@@ -7,9 +7,12 @@ Use Pixi for development on Linux, macOS and Windows.
 Use [Pixi](https://pixi.sh/) to install the repository's build dependencies and
 build LFortran. Install Pixi following its platform instructions, and install
 Git. On macOS, install Xcode Command Line Tools (`xcode-select --install`).
-On Windows, install Visual Studio's C++ build tools and Git Bash, and run Pixi
+On Windows, install Visual Studio's C++ build tools and run Pixi
 from an initialized MSVC developer environment (the x64 Native Tools Command
-Prompt). Use Pixi inside WSL for the Unix-only integration runner.
+Prompt). Bash is not required: Pixi installs the cross-platform
+[`shell`](https://github.com/prefix-dev/shell), which runs the build scripts
+natively on every platform. Use Pixi inside WSL for the Unix-only integration
+runner.
 Pixi supplies the Linux C/C++ compilers, Clang for native LLVM executable
 linking, and LLVM's OpenMP runtime (`libomp`), so host Clang is not required.
 On macOS, the environment selects the Xcode C/C++ compilers; the C backend
@@ -30,6 +33,13 @@ test suite. Its executable is `build/llvm11/src/bin/lfortran`; run it through
 `pixi run start`, or use `pixi shell -e llvm11` to put it on your `PATH`.
 On Windows the executable has the `.exe` extension. The native Windows task
 uses Release mode with compiler and runtime stacktraces disabled.
+
+Arguments after `build` are passed to CMake and override the task's defaults.
+For example, on Linux or macOS, build Debug with `-O2`:
+
+```bash
+pixi run -e llvm11 build -DCMAKE_BUILD_TYPE=Debug '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2' > build.log 2>&1
+```
 
 After editing sources, rebuild incrementally:
 
@@ -206,7 +216,11 @@ Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
 the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
-LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained.
+LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained;
+its native phase is Quick's Linux GCC Release build, so it uses `-Werror`
+with the LSP and runtime-stacktrace options of Exhaustive's `Check Release
+build`. This catches warnings that only appear with `NDEBUG`, such as a
+variable used only in an assertion, before they break main.
 
 Exhaustive runs the full compatibility suites on every LLVM version except
 11 and 19, which run the application catalog instead, as does macOS LLVM 22;

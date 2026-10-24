@@ -1,0 +1,66 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            continue_compilation_ff_3:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            block:
+                                (Block
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    block
+                                    []
+                                ),
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    continue_compilation_ff_3
+                    []
+                    [(Assignment
+                        (Var 2 k)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (BlockCall
+                        -1
+                        2 block
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

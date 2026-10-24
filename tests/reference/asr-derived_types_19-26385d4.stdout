@@ -132,6 +132,7 @@
                                                                 ()
                                                                 (Var 4 child_value)
                                                             )
+                                                            NoPointerBounds
                                                         )]
                                                         [(SubroutineCall
                                                             4 not_ok

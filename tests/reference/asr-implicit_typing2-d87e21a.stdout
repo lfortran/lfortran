@@ -185,6 +185,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 r)
@@ -199,6 +201,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]
@@ -416,6 +420,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 r)
@@ -430,6 +436,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

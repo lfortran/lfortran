@@ -257,6 +257,8 @@
                                                             ()
                                                             .false.
                                                             .false.
+                                                            .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             4 swap
@@ -427,6 +429,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 x)
@@ -434,11 +438,15 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 5 y)
                                                         (Var 5 tmp)
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -597,6 +605,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 x)
@@ -604,11 +614,15 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 y)
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -800,6 +814,8 @@
                                                             ()
                                                             .false.
                                                             .false.
+                                                            .false.
+                                                            .false.
                                                         )
                                                         (SubroutineCall
                                                             7 __asr_swap
@@ -871,6 +887,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (SubroutineCall
                                         7 ireverse
@@ -896,6 +914,8 @@
                                             ()
                                             [(Var 7 a)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

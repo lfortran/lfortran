@@ -99,6 +99,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -141,12 +143,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 4 b)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -405,6 +411,8 @@
                                         (Var 3 yy)
                                         (Var 3 xx)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

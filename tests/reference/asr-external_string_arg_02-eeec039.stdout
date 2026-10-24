@@ -216,6 +216,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -233,6 +235,8 @@
                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -272,6 +276,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -359,6 +365,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 check~fpcast_ptr

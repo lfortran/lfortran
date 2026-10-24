@@ -311,6 +311,70 @@ class RunnerTests(unittest.TestCase):
                             with self.assertRaises(SystemExit):
                                 tester.check_llvm_version("lfortran", 11)
 
+    def test_reference_update_removes_only_unwritten_references(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        backends = ("asr", "tokens")
+        written = {f"{b}-{t}.{ext}" for b in backends for t in ("a", "b")
+                   for ext in ("json", "stdout")}
+        fail = []
+
+        def single_test(test, update_reference, specific_backends,
+                        excluded_backends, **kwargs):
+            self.assertTrue(update_reference)
+            if fail:
+                raise tester.RunException("failed")
+            for b in backends:
+                if (specific_backends and b not in specific_backends) or \
+                        (excluded_backends and b in excluded_backends):
+                    continue
+                name = f"{b}-{test['filename']}"
+                jo = output / f"{name}.json"
+                jo.write_text("{}")
+                (output / f"{name}.stdout").write_text("")
+                tester.do_update_reference(
+                    str(jo), str(reference / jo.name),
+                    {"outfile": None, "stdout": f"{name}.stdout",
+                     "stderr": None})
+
+        cases = (([], written, False),
+                 (["-s"], written, False),
+                 ([], written | {"orphan.json"}, True),
+                 (["-t", "a"], written | {"orphan.json"}, False),
+                 (["-b", "tokens"], written | {"orphan.json"}, False),
+                 (["--exclude-test", "b"], written | {"orphan.json"}, False),
+                 (["--exclude-backend", "asr"], written | {"orphan.json"},
+                  False),
+                 (["--no-llvm"], written | {"orphan.json"}, False),
+                 (["--skip-run-with-dbg"], written | {"orphan.json"}, False))
+        for args, expected, failing in cases:
+            with self.subTest(args=args, failing=failing), \
+                    tempfile.TemporaryDirectory() as root:
+                root = Path(root)
+                reference = root / "tests/reference"
+                output = root / "output"
+                reference.mkdir(parents=True)
+                output.mkdir()
+                (root / "tests/tests.toml").write_text(
+                    '[[test]]\nfilename = "a"\nasr = true\ntokens = true\n\n'
+                    '[[test]]\nfilename = "b"\nasr = true\ntokens = true\n')
+                for name in written | {"orphan.json"}:
+                    (reference / name).write_text("old")
+                fail[:] = [True] if failing else []
+                with patch.object(tester, "ROOT_DIR", str(root)), \
+                        patch.object(tester, "REFERENCE_DIR", str(reference)), \
+                        patch.object(sys, "argv", ["run_tests.py", "-u"] + args):
+                    if failing:
+                        with self.assertRaises(tester.RunException):
+                            tester.tester_main("LFortran", single_test, True)
+                    else:
+                        tester.tester_main("LFortran", single_test, True)
+                self.assertEqual({p.name for p in reference.iterdir()},
+                                 expected)
+
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
         self.assertNotIn("--quick", source)
@@ -326,6 +390,60 @@ class RunnerTests(unittest.TestCase):
             if line.startswith("##[group] ") and line != "##[group] Setup"
         ]
         self.assertEqual(selected, sections)
+
+
+class MPITransportTests(unittest.TestCase):
+    def test_linux_transports_are_shared_by_coarrays_and_applications(self):
+        workflows = ROOT / ".github/workflows"
+        source = (workflows / "Compiler-Compatibility-CI.yml").read_text()
+        job = source.split("\n  test_llvm:\n", 1)[1]
+        marker = "      - name: Configure Linux MPI transports\n"
+        self.assertTrue(marker in job, "Linux MPI transport setup is missing")
+        setup = job.split(marker, 1)[1].split("\n      - ", 1)[0]
+        condition = re.search(r"^\s*if: (.+)$", setup, re.MULTILINE).group(1)
+        self.assertEqual(condition, "runner.os == 'Linux'")
+        self.assertEqual(source.count("UCX_TLS="), 1)
+        for command in ("ci/test_caffeine.sh", "ci/test_third_party_codes.sh"):
+            self.assertLess(job.index(marker), job.index(command))
+        for scope, caller in (("quick", "Quick-Checks-CI.yml"),
+                              ("exhaustive", "Exhaustive-Checks-CI.yml")):
+            with self.subTest(scope=scope):
+                caller_source = (workflows / caller).read_text()
+                call = caller_source.split(
+                    "uses: ./.github/workflows/Compiler-Compatibility-CI.yml", 1
+                )[1].split("\n\n", 1)[0]
+                self.assertIn(f"scope: {scope}", call)
+                with tempfile.TemporaryDirectory() as workspace:
+                    github_env = Path(workspace) / "github-env"
+                    script = setup.split("        run: ", 1)[1]
+                    if script.startswith("|\n"):
+                        script = script[2:]
+                    result = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail"],
+                        input=script,
+                        env=dict(os.environ, GITHUB_ENV=str(github_env),
+                                 LFORTRAN_CI_SCOPE=scope, UCX_TLS="all",
+                                 OMPI_MCA_pml="cm", OMPI_MCA_btl="ofi,uct"),
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    configured = dict(
+                        line.split("=", 1) for line in github_env.read_text().splitlines()
+                    )
+                    self.assertEqual(configured.get("UCX_TLS"), "tcp,sm,self")
+                    for parameter, value in (("OMPI_MCA_pml", "ob1"),
+                                             ("OMPI_MCA_btl", "tcp,sm,self")):
+                        with self.subTest(parameter=parameter):
+                            self.assertEqual(configured.get(parameter), value)
+
+    def test_fortran_mpi_uses_linux_loopback(self):
+        source = (ROOT / "ci/test_third_party_codes.sh").read_text()
+        linux = source.split('if [[ "$(uname)" != "Darwin" ]]; then', 1)[1]
+        mpi = linux.split("git clone https://github.com/lfortran/fortran_mpi.git", 1)[1]
+        mpi = mpi.split("FC=\"$FC --cpp\" ./run_tests.sh", 1)[0]
+        self.assertEqual(re.findall(
+            r"(?m)^\s*export OMPI_MCA_btl_tcp_if_include=(\S+)$", mpi
+        ), ["lo"])
 
 
 class WorkflowPolicyTests(unittest.TestCase):

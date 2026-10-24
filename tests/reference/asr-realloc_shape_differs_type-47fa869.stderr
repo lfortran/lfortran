@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.realloc.shape_differs_type]: ReAlloc::m_shape_differs must be a scalar logical
+  --> tests/asr/verify/realloc_shape_differs_type.asr:52:12
+   |
+52 |           (ReAlloc
+   |            ^^^^^^^ failed here

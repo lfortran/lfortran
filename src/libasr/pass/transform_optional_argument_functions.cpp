@@ -384,7 +384,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
-        func_sym = class_proc->m_proc;
+        func_sym = ASRUtils::symbol_get_past_external(class_proc->m_proc);
     }
 
     if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
@@ -697,7 +697,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
-                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
+                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
                 if (ASRUtils::is_array(dummy_variable_type) &&
                         ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
                     // A local non-allocatable polymorphic array has no dynamic
@@ -713,7 +713,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                         x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
-                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable, ASR::pointer_bounds_formType::NoPointerBounds)));
                 }
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));

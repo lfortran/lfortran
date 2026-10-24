@@ -395,6 +395,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 b)
@@ -405,11 +407,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 e)
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -652,6 +658,8 @@
                             (Var 2 b)
                             (Var 2 e)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

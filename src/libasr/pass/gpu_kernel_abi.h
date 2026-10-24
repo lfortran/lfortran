@@ -20,8 +20,11 @@ void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
 void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &options);
 
+// `values_replaced` says that a later pass puts compile-time values in
+// place of the designators that have them (--fast).
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
-    ASR::call_arg_t *args, size_t n_args, GpuDecline &decline);
+    ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
+    bool values_replaced);
 
 // The extent `dim` of a workspace of `kernel` has, written as the host
 // evaluates it before the launch, or nullptr when the host cannot work it

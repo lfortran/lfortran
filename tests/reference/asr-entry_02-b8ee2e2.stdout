@@ -44,6 +44,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (SubroutineCall
                         1 x
@@ -59,6 +61,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -253,6 +257,8 @@
                             )
                             (Var 4 dummy)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -300,6 +306,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -310,6 +318,8 @@
                             )
                             (Var 4 dummy)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -362,6 +372,8 @@
                             )
                             (Var 4 dummy)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

@@ -631,6 +631,33 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al,
     return imported;
 }
 
+// The loops that a `collapse(collapse_levels)` construct partitions as one
+// iteration space, from the outermost one, `stmt`. The partitioning flattens
+// the loops into a rectangular space, so only its rectangular prefix
+// (`ASRUtils::rectangular_loop_nest_depth`) is collapsed. A loop whose bounds
+// depend on the index of an enclosing collapsed loop, and the loops inside
+// it, stay sequential loops in the body of the partitioned ones, which is
+// the same set of iterations.
+static std::vector<ASR::DoLoop_t*> collapsed_loop_nest(ASR::stmt_t* stmt,
+        int collapse_levels) {
+    std::vector<ASR::DoLoop_t*> loops;
+    for (int i = 0; i < collapse_levels; i++) {
+        if (!ASR::is_a<ASR::DoLoop_t>(*stmt)) {
+            throw LCompilersException("Expected nested DoLoop for collapse level " + std::to_string(i + 1));
+        }
+        ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(stmt);
+        loops.push_back(do_loop);
+        if (i < collapse_levels - 1) {
+            if (do_loop->n_body == 0) {
+                throw LCompilersException("Expected nested DoLoop for collapse level " + std::to_string(i + 2));
+            }
+            stmt = do_loop->m_body[0];
+        }
+    }
+    loops.resize(ASRUtils::rectangular_loop_nest_depth(loops));
+    return loops;
+}
+
 class InvolvedSymbolsCollector:
     public ASR::BaseWalkVisitor<InvolvedSymbolsCollector>
 {
@@ -932,7 +959,7 @@ class ParallelRegionVisitor :
             if (ASRUtils::is_pointer(target_type) && ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(target_type))) {
                 return ASRUtils::STMT(ASR::make_Associate_t(al, target->base.loc,
-                    target, value));
+                    target, value, ASR::pointer_bounds_formType::NoPointerBounds));
             }
             return ASRUtils::ASRBuilder(al, target->base.loc).Assignment(target, value);
         }
@@ -1944,7 +1971,7 @@ class ParallelRegionVisitor :
                     if (private_array == c->private_arrays.end()) {
                         // <sym> => tdata%<sym>
                         body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-                            b.Var(current_scope->get_symbol(it.first)), descriptor)));
+                            b.Var(current_scope->get_symbol(it.first)), descriptor, ASR::pointer_bounds_formType::NoPointerBounds)));
                         continue;
                     }
                     // A private copy exists only if the original is associated, which an
@@ -1958,7 +1985,7 @@ class ParallelRegionVisitor :
                     ASR::expr_t* original = b.Variable(current_scope,
                         current_scope->get_unique_name("original_" + it.first), ASRUtils::expr_type(descriptor),
                         ASR::intentType::Local, nullptr, ASR::abiType::BindC);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor)));
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc, original, descriptor, ASR::pointer_bounds_formType::NoPointerBounds)));
                     ASR::expr_t* copy = b.Var(current_scope->get_symbol(it.first));
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(sym_type);
                     Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
@@ -2183,7 +2210,7 @@ class ParallelRegionVisitor :
                         // tdata%<sym> => <sym>
                         nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, loc,
                             ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
-                            sym, ASRUtils::symbol_type(sym), nullptr)), array_ref)));
+                            sym, ASRUtils::symbol_type(sym), nullptr)), array_ref, ASR::pointer_bounds_formType::NoPointerBounds)));
                         continue;
                     }
                     ASR::expr_t* array_var = array_ref;
@@ -2793,20 +2820,13 @@ class ParallelRegionVisitor :
 
             // Step 3: Extract loop heads from nested DoLoop statements
             std::vector<ASR::do_loop_head_t> heads;
-            heads.reserve(collapse_levels);
-            ASR::stmt_t* current_stmt = x.m_body[0];
-            ASR::DoLoop_t* innermost_loop = nullptr;
-            for (int i = 0; i < collapse_levels; i++) {
-                if (!ASR::is_a<ASR::DoLoop_t>(*current_stmt)) {
-                    throw LCompilersException("Expected nested DoLoop for collapse level " + std::to_string(i + 1));
-                }
-                ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(current_stmt);
+            std::vector<ASR::DoLoop_t*> loops = collapsed_loop_nest(
+                x.m_body[0], collapse_levels);
+            heads.reserve(loops.size());
+            for (ASR::DoLoop_t* do_loop : loops) {
                 heads.push_back(do_loop->m_head);
-                innermost_loop = do_loop;
-                if (i < collapse_levels - 1 && do_loop->n_body > 0) {
-                    current_stmt = do_loop->m_body[0]; // Move to the next nested loop
-                }
             }
+            ASR::DoLoop_t* innermost_loop = loops.back();
             ASR::stmt_t* bounds_block = evaluate_result_bounds_once(heads, loc);
             if (!private_copies.empty()) {
                 AssociateVarResolverVisitor private_copy_replacer(al, private_copies);
@@ -2925,7 +2945,7 @@ class ParallelRegionVisitor :
                 nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc, while_condition, 
                     ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                         current_scope->get_symbol(gomp_start_func), nullptr, start_args.p, start_args.n,
-                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr,  nullptr)), nullptr, 0, false)));
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 1)), nullptr,  nullptr)), nullptr, 0, false, false, false)));
                 
                 // Create the scheduled loop using GOMP_loop_*_next
                 Vec<ASR::stmt_t*> while_body;
@@ -4066,27 +4086,18 @@ class ParallelRegionVisitor :
             
             // Extract loop heads
             std::vector<ASR::do_loop_head_t> heads;
-            heads.reserve(collapse_levels);
-            ASR::stmt_t* current_stmt = x.m_body[0];
-            ASR::DoLoop_t* innermost_loop = nullptr;
-            
-            for (int i = 0; i < collapse_levels; i++) {
-                if (!ASR::is_a<ASR::DoLoop_t>(*current_stmt)) {
-                    throw LCompilersException("Expected nested DoLoop for collapse level " + 
-                        std::to_string(i + 1));
-                }
-                ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(current_stmt);
+            std::vector<ASR::DoLoop_t*> loops = collapsed_loop_nest(
+                x.m_body[0], collapse_levels);
+            heads.reserve(loops.size());
+            for (ASR::DoLoop_t* do_loop : loops) {
                 if (!lower_body) {
                     // Only the bounds are used in this scope. The body is
                     // rebound by the construct that lowers it.
                     stmt_visitor.visit_do_loop_head(do_loop->m_head);
                 }
                 heads.push_back(do_loop->m_head);
-                innermost_loop = do_loop;
-                if (i < collapse_levels - 1 && do_loop->n_body > 0) {
-                    current_stmt = do_loop->m_body[0];
-                }
             }
+            ASR::DoLoop_t* innermost_loop = loops.back();
             bounds_block = evaluate_result_bounds_once(heads, loc);
             
             // Calculate total iterations
@@ -4304,7 +4315,7 @@ class RepointCallArguments: public PassUtils::PassVisitor<RepointCallArguments> 
                     ASRUtils::duplicate_type(al, formal),
                     ASR::intentType::Local);
                 pass_result.push_back(al, ASRUtils::STMT(
-                    ASR::make_Associate_t(al, loc, ptr, args[i].m_value)));
+                    ASR::make_Associate_t(al, loc, ptr, args[i].m_value, ASR::pointer_bounds_formType::NoPointerBounds)));
                 args[i].m_value = ptr;
             }
         }

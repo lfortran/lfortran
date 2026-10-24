@@ -82,6 +82,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 5 f)
                     Public
@@ -367,6 +369,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 4 hinit853)
@@ -382,6 +385,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]
@@ -594,6 +599,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

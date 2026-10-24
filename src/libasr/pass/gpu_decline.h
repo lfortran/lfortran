@@ -73,6 +73,15 @@ struct GpuDeviceCapabilities {
     int lanes_per_iteration = 1;
 
     int threads_per_block = 256;
+
+    // The number of iterations the threads of one block of a loop nest
+    // of two or more dimensions cover along the dimension its stores are
+    // contiguous in; the block's other threads cover a second dimension.
+    // A block then reads a two-dimensional neighbourhood of an array
+    // instead of a single run of one of its columns, so a stencil reuses
+    // what its neighbours in the other dimension loaded. Zero numbers the
+    // iterations of a nest in one flat range.
+    int tile_width = 0;
     int sequential_loop_unroll_factor = 1;
 
     // How many bytes of stack a thread of a kernel has. Late kernel storage
@@ -131,6 +140,14 @@ enum class GpuDeclineReason {
     // --- what the pass's own lowering cannot yet do to the body ---
     StructElementGather,
     UnsizedLocalArray,
+    // An array of LOCAL locality that a thread cannot hold a copy of its
+    // own of: its type is not one a thread holds as a local, it is a
+    // coarray, an ASSOCIATE around the loop names it, or the body has an
+    // ASSOCIATE the kernel cannot inline.
+    LocalityElementType,
+    LocalityCoarray,
+    LocalityNamedByAssociate,
+    LocalityAssociateNotInlined,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
     // A section passed to a procedure has to be copied into a contiguous
@@ -148,6 +165,11 @@ enum class GpuDeclineReason {
     SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
+    // A call in device code hands a dummy procedure no routine the device
+    // can call in its place: a dummy procedure of the loop's host, a
+    // procedure pointer, or nothing, for an absent optional one (see
+    // gpu_specialize_dummy_procedures).
+    DummyProcedureUnbound,
     RecursiveDeviceFunction,
     FunctionResultAllocation,
     NestedArraySection,
@@ -159,6 +181,12 @@ enum class GpuDeclineReason {
     // An array on the device heap (see gpu_device_heap.cpp) used in a way
     // the heap does not lower yet; the name says which array and how.
     HeapArrayUse,
+    // An exit of a construct that is not a loop, such as a BLOCK.
+    ExitOfConstruct,
+    // A named cycle inside a do concurrent nested in the body, which may
+    // be of that loop or of the offloaded one: ASR does not keep the name
+    // of a do concurrent.
+    NamedCycleInNestedConcurrent,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -176,6 +204,22 @@ enum class GpuDeclineReason {
     // A procedure that can stop, which is given hidden arguments, but is
     // also passed as an actual argument or is not a copy the kernel owns.
     StoppingProcedureShared,
+    // A scalar the loop defines whose value is kept after it, of a type
+    // the buffer that carries the value back to the host cannot hold:
+    // `type_name` says which ("complex(4)", "character", "allocatable").
+    LiveoutScalar,
+    // An optional dummy argument the loop may define and whose value is
+    // kept after it, which the loop passes on to an optional dummy
+    // argument of a procedure: each thread passes its private copy, which
+    // is present whether or not the argument is.
+    LiveoutOptionalPassedOn,
+    // A part of a derived-type variable the loop defines (`name`) that no
+    // thread can keep a private copy of: an allocatable component, a part
+    // of a polymorphic, allocatable or pointer variable, the whole of a
+    // value with allocatable or pointer parts or too large for a thread,
+    // or a value a procedure defines in place that the loop also keeps a
+    // copy of a part of, or names a scalar part of.
+    LiveoutDerivedType,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,
@@ -185,6 +229,14 @@ enum class GpuDeclineReason {
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
+    // A derived-type constant device code reads, such as a named constant,
+    // with a component the device struct cannot be given a value of (see
+    // gpu_struct_constant_unsupported_component); the name is the component.
+    StructConstantComponent,
+    // An array of derived-type values given by a constant, such as a named
+    // constant array of a derived type, which device code has no value
+    // representation for.
+    StructArrayConstant,
 
     // --- the layout of a kernel argument: polymorphic arguments ---
     ClassComponentArrayRank,
@@ -262,6 +314,9 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // The declared type of the variable as the source spells it, for a
+    // type `type` cannot name by itself (a derived type).
+    std::string type_name;
     // Where the section is evaluated, when the reason is about a section,
     // and why no copy placed before the statement serves it.
     GpuSectionSite site = GpuSectionSite::Statement;
