@@ -1810,9 +1810,6 @@ bool is_temporary_needed(ASR::expr_t* value) {
     if(!value) { return false; }
     bool is_expr_with_no_type = (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
         value->type) == exprs_with_no_type.end()) && ASRUtils::is_array(ASRUtils::expr_type(value));
-    bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
-        (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
-        ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
     // A null pointer value carries no array data, so copying it into an array
     // temporary is meaningless: the temporary would be read as a descriptor and
     // dereferenced. Leave it as is so that the null value reaches its
@@ -1822,8 +1819,7 @@ bool is_temporary_needed(ASR::expr_t* value) {
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
         && !is_directly_addressable_expr(value)
-        && !is_null_pointer
-        && is_non_empty_fixed_size_array;
+        && !is_null_pointer;
 }
 
 class ContainsFunctionReference:
