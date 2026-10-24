@@ -2360,6 +2360,24 @@ static bool operand_matches_dummy(ASR::expr_t* operand, ASR::expr_t* dummy,
     return check_equal_type(operand_type, dummy_type, operand, dummy);
 }
 
+// The operand that gives the shape of an elemental defined binary operation,
+// or nullptr if both operands are scalars. Both operands are checked because
+// either one can be passed as the object of a type-bound operator, which is
+// not among the call's regular arguments.
+static ASR::expr_t* elemental_operation_shape_operand(ASR::Function_t* func,
+        ASR::expr_t* left, ASR::expr_t* right) {
+    if (!ASRUtils::get_FunctionType(func)->m_elemental) {
+        return nullptr;
+    }
+    if (ASRUtils::is_array(ASRUtils::expr_type(left))) {
+        return left;
+    }
+    if (ASRUtils::is_array(ASRUtils::expr_type(right))) {
+        return right;
+    }
+    return nullptr;
+}
+
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::binopType op, std::string& intrinsic_op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr,
@@ -2524,7 +2542,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             ASR::ttype_t *return_type = nullptr;
                             ASR::expr_t* first_array_arg =
-                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                                elemental_operation_shape_operand(func, left, right);
                             if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -3640,12 +3658,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 }
                             }
                             ASR::ttype_t *return_type = nullptr;
-                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args >= 1 &&
-                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            ASR::expr_t* shape_operand =
+                                elemental_operation_shape_operand(func, left, right);
+                            if( shape_operand != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                ASRUtils::expr_type(shape_operand), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(al,
