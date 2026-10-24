@@ -125,6 +125,31 @@
                                     []
                                     ()
                                 ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             nsize:
                                 (Variable
                                     2
@@ -298,6 +323,31 @@
                                                     []
                                                     ()
                                                 ),
+                                            i__dc1:
+                                                (Variable
+                                                    3
+                                                    i__dc1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             n:
                                                 (Variable
                                                     3
@@ -406,7 +456,7 @@
                                         .false.
                                     )
                                     (DoConcurrentLoop
-                                        [((Var 3 i)
+                                        [((Var 3 i__dc1)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n)
                                         ())]
@@ -417,7 +467,7 @@
                                             (ArrayItem
                                                 (Var 3 c)
                                                 [(()
-                                                (Var 3 i)
+                                                (Var 3 i__dc1)
                                                 ())]
                                                 (Real 4)
                                                 ColMajor
@@ -428,7 +478,7 @@
                                                 (ArrayItem
                                                     (Var 3 a)
                                                     [(()
-                                                    (Var 3 i)
+                                                    (Var 3 i__dc1)
                                                     ())]
                                                     (Real 4)
                                                     ColMajor
@@ -442,7 +492,7 @@
                                                     (ArrayItem
                                                         (Var 3 b)
                                                         [(()
-                                                        (Var 3 i)
+                                                        (Var 3 i__dc1)
                                                         ())]
                                                         (Real 4)
                                                         ColMajor
@@ -504,7 +554,7 @@
                         .false.
                     )
                     (DoConcurrentLoop
-                        [((Var 2 i)
+                        [((Var 2 i__dc)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 nsize)
                         ())]
@@ -515,7 +565,7 @@
                             (ArrayItem
                                 (Var 2 a)
                                 [(()
-                                (Var 2 i)
+                                (Var 2 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -542,7 +592,7 @@
                             (ArrayItem
                                 (Var 2 b)
                                 [(()
-                                (Var 2 i)
+                                (Var 2 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor

@@ -65,13 +65,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_10(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 3);
-    q[((int)(i) - (__lb_q_0))] = __gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))];
+    i__dc1 = (__flat_idx + 3);
+    q[((int)(i__dc1) - (__lb_q_0))] = __gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))];
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_11 {
@@ -91,15 +91,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_11(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     const int n = 20;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 1);
-    if ((i < n)) {
-        flux[((int)(i) - (__lb_flux_0))] = (q[((int)((i + 1)) - (__lb_q_0))] - q[((int)(i) - (__lb_q_0))]);
+    i__dc = (__flat_idx + 1);
+    if ((i__dc < n)) {
+        flux[((int)(i__dc) - (__lb_flux_0))] = (q[((int)((i__dc + 1)) - (__lb_q_0))] - q[((int)(i__dc) - (__lb_q_0))]);
     }
 }
 
@@ -126,13 +126,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_12(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 3);
-    q[((int)(i) - (__lb_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_55(flux, __dim_flux_0, i)));
+    i__dc1 = (__flat_idx + 3);
+    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_55(flux, __dim_flux_0, i__dc1)));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_2 {
@@ -184,16 +184,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
+    i__dc1 = (__flat_idx + __loop_start_0);
     {
         float __dflux_r;
-        __dflux_r = ((__gpu_next_q[((int)(((i + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)((i + (1 - 1))) - (__lb___gpu_next_q_0))]) - (__gpu_next_q[((int)((((i - 1) + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)(((i - 1) + (1 - 1))) - (__lb___gpu_next_q_0))]));
-        q[((int)(i) - (__lb_q_0))] = (__gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
+        __dflux_r = ((__gpu_next_q[((int)(((i__dc1 + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)((i__dc1 + (1 - 1))) - (__lb___gpu_next_q_0))]) - (__gpu_next_q[((int)((((i__dc1 - 1) + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)(((i__dc1 - 1) + (1 - 1))) - (__lb___gpu_next_q_0))]));
+        q[((int)(i__dc1) - (__lb_q_0))] = (__gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
     }
 }
 
@@ -218,16 +218,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
+    i__dc1 = (__flat_idx + __loop_start_0);
     {
         float __dflux_r;
-        __dflux_r = ((q[((int)(((i + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)((i + (1 - 1))) - (__lb_q_0))]) - (q[((int)((((i - 1) + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)(((i - 1) + (1 - 1))) - (__lb_q_0))]));
-        __gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
+        __dflux_r = ((q[((int)(((i__dc1 + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)((i__dc1 + (1 - 1))) - (__lb_q_0))]) - (q[((int)((((i__dc1 - 1) + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)(((i__dc1 - 1) + (1 - 1))) - (__lb_q_0))]));
+        __gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
     }
 }
 
@@ -252,13 +252,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
-    q[((int)(i) - (__lb_q_0))] = __gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))];
+    i__dc1 = (__flat_idx + __loop_start_0);
+    q[((int)(i__dc1) - (__lb_q_0))] = __gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))];
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_6 {
@@ -282,15 +282,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_6(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     const int n = 20;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
-    if ((i < n)) {
-        flux[((int)(i) - (__lb_flux_0))] = (q[((int)((i + 1)) - (__lb_q_0))] - q[((int)(i) - (__lb_q_0))]);
+    i__dc = (__flat_idx + __loop_start_0);
+    if ((i__dc < n)) {
+        flux[((int)(i__dc) - (__lb_flux_0))] = (q[((int)((i__dc + 1)) - (__lb_q_0))] - q[((int)(i__dc) - (__lb_q_0))]);
     }
 }
 
@@ -321,13 +321,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_7(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
-    q[((int)(i) - (__lb_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_36(flux, __dim_flux_0, i)));
+    i__dc1 = (__flat_idx + __loop_start_0);
+    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_36(flux, __dim_flux_0, i__dc1)));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_8 {
@@ -347,16 +347,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_8(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 3);
+    i__dc1 = (__flat_idx + 3);
     {
         float __dflux_r;
-        __dflux_r = ((__gpu_next_q[((int)(((i + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)((i + (1 - 1))) - (__lb___gpu_next_q_0))]) - (__gpu_next_q[((int)((((i - 1) + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)(((i - 1) + (1 - 1))) - (__lb___gpu_next_q_0))]));
-        q[((int)(i) - (__lb_q_0))] = (__gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
+        __dflux_r = ((__gpu_next_q[((int)(((i__dc1 + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)((i__dc1 + (1 - 1))) - (__lb___gpu_next_q_0))]) - (__gpu_next_q[((int)((((i__dc1 - 1) + (1 - 1)) + 1)) - (__lb___gpu_next_q_0))] - __gpu_next_q[((int)(((i__dc1 - 1) + (1 - 1))) - (__lb___gpu_next_q_0))]));
+        q[((int)(i__dc1) - (__lb_q_0))] = (__gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
     }
 }
 
@@ -377,16 +377,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_9(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 3);
+    i__dc1 = (__flat_idx + 3);
     {
         float __dflux_r;
-        __dflux_r = ((q[((int)(((i + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)((i + (1 - 1))) - (__lb_q_0))]) - (q[((int)((((i - 1) + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)(((i - 1) + (1 - 1))) - (__lb_q_0))]));
-        __gpu_next_q[((int)(i) - (__lb___gpu_next_q_0))] = (q[((int)(i) - (__lb_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
+        __dflux_r = ((q[((int)(((i__dc1 + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)((i__dc1 + (1 - 1))) - (__lb_q_0))]) - (q[((int)((((i__dc1 - 1) + (1 - 1)) + 1)) - (__lb_q_0))] - q[((int)(((i__dc1 - 1) + (1 - 1))) - (__lb_q_0))]));
+        __gpu_next_q[((int)(i__dc1) - (__lb___gpu_next_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * __dflux_r));
     }
 }
 

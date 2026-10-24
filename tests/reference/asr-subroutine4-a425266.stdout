@@ -125,6 +125,31 @@
                                     []
                                     ()
                                 ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             n:
                                 (Variable
                                     2
@@ -233,7 +258,7 @@
                         .false.
                     )
                     (DoConcurrentLoop
-                        [((Var 2 i)
+                        [((Var 2 i__dc)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
                         ())]
@@ -244,7 +269,7 @@
                             (ArrayItem
                                 (Var 2 c)
                                 [(()
-                                (Var 2 i)
+                                (Var 2 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -255,7 +280,7 @@
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 i)
+                                    (Var 2 i__dc)
                                     ())]
                                     (Real 4)
                                     ColMajor
@@ -269,7 +294,7 @@
                                     (ArrayItem
                                         (Var 2 b)
                                         [(()
-                                        (Var 2 i)
+                                        (Var 2 i__dc)
                                         ())]
                                         (Real 4)
                                         ColMajor

@@ -23,18 +23,18 @@ kernel void __lfortran_gpu_kernel_0(
     int __gpu_before1;
     acc_t __gpu_private_m;
     float __gpu_scalar_argument;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= 100)) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     __gpu_private_m = m;
     __gpu_before = __gpu_private_m.c;
     __gpu_before1 = __gpu_private_m.n;
-    __gpu_scalar_argument = y[((int)(i) - (1))];
-    upd_gpu_9(i, __gpu_private_m, __gpu_scalar_argument);
-    y[((int)(i) - (1))] = __gpu_scalar_argument;
+    __gpu_scalar_argument = y[((int)(i__dc) - (1))];
+    upd_gpu_9(i__dc, __gpu_private_m, __gpu_scalar_argument);
+    y[((int)(i__dc) - (1))] = __gpu_scalar_argument;
     if (((int)((__gpu_private_m.c != __gpu_before) && ((int)((__gpu_private_m.c == __gpu_private_m.c) || (__gpu_before == __gpu_before)))))) {
         m.c = __gpu_private_m.c;
     }

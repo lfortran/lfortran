@@ -63,10 +63,10 @@
                                     []
                                     ()
                                 ),
-                            i:
+                            i__dc:
                                 (Variable
                                     4
-                                    i
+                                    i__dc
                                     []
                                     Local
                                     ()
@@ -183,7 +183,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 4 i)
+                        (Var 4 i__dc)
                         (IntegerBinOp
                             (Var 4 __flat_idx)
                             Add
@@ -201,14 +201,14 @@
                         (ArrayItem
                             (Var 4 a)
                             [(()
-                            (Var 4 i)
+                            (Var 4 i__dc)
                             ())]
                             (Integer 4)
                             ColMajor
                             ()
                             .false.
                         )
-                        (Var 4 i)
+                        (Var 4 i__dc)
                         ()
                         .false.
                         .false.
@@ -286,6 +286,31 @@
                                 (Variable
                                     2
                                     i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
                                     []
                                     Local
                                     ()

@@ -40,22 +40,22 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
     int __flat_idx;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     {
         float t;
-        t = (a * x[((int)(i) - (__lb_x_0))]);
+        t = (a * x[((int)(i__dc) - (__lb_x_0))]);
         if ((__gpu_lane == 0)) {
-            y[((int)(i) - (__lb_y_0))] = (t + y[((int)(i) - (__lb_y_0))]);
+            y[((int)(i__dc) - (__lb_y_0))] = (t + y[((int)(i__dc) - (__lb_y_0))]);
         }
         if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
     if ((__gpu_lane == 0)) {
-        z[((int)(i) - (__lb_z_0)) + (__dim_z_0 * ((int)(2) - (__lb_z_1)))] = twice_gpu_11(y[((int)(i) - (__lb_y_0))]);
+        z[((int)(i__dc) - (__lb_z_0)) + (__dim_z_0 * ((int)(2) - (__lb_z_1)))] = twice_gpu_11(y[((int)(i__dc) - (__lb_y_0))]);
     }
     if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
 }

@@ -9,7 +9,7 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id [[thread_position_in_grid]])
 {
     int __flat_idx;
-    int i;
+    int i__dc;
     int j;
     int k;
     int m;
@@ -18,14 +18,14 @@ kernel void __lfortran_gpu_kernel_0(
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     k = __gpu_buf_k[((int)(1) - (1))];
     m = __gpu_buf_m[((int)(1) - (1))];
     s = __gpu_buf_s[((int)(1) - (1))];
-    a[((int)(i) - (1))] = i;
+    a[((int)(i__dc) - (1))] = i__dc;
     {
         int t;
-        t = i;
+        t = i__dc;
         if ((t == 7)) {
             k = 70;
             __gpu_buf_k[((int)(1) - (1))] = k;

@@ -51,12 +51,12 @@ kernel void __lfortran_gpu_kernel_1(
     int __libasr_index_0_2;
     int __libasr_index_0_3;
     int __libasr_index_0_4;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= 100)) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     __libasr_index_0_1 = 1;
     __do_loop_end = (1 + 3 - 1);
     __libasr_index_0_ = (1 - 1);
@@ -69,7 +69,7 @@ kernel void __lfortran_gpu_kernel_1(
     __libasr_index_0_2 = (1 - 1);
     while (((__libasr_index_0_2 + 1) <= __do_loop_end1)) {
         __libasr_index_0_2 = (__libasr_index_0_2 + 1);
-        __gpu_private_w_t[((int)(__libasr_index_0_2) - (1))] = ((float)i);
+        __gpu_private_w_t[((int)(__libasr_index_0_2) - (1))] = ((float)i__dc);
     }
     __libasr_index_0_4 = 1;
     __gpu_loop_end = ((3 - 1) + 1);
@@ -130,7 +130,7 @@ kernel void __lfortran_gpu_kernel_1(
             __libasr_index_0_4 = (__libasr_index_0_4 + 1);
         }
     }
-    c[((int)(i) - (1))] = (__gpu_private_w_t[((int)(1) - (1))] + ((float)step));
+    c[((int)(i__dc) - (1))] = (__gpu_private_w_t[((int)(1) - (1))] + ((float)step));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_2 {
@@ -144,16 +144,16 @@ kernel void __lfortran_gpu_kernel_2(
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
-    if ((i == 1)) {
+    i__dc = (__flat_idx + 1);
+    if ((i__dc == 1)) {
         f.u[((int)(1) - (1))] = ((float)(-(1)));
     } else {
-        f.u[((int)(i) - (1))] = ((float)i);
+        f.u[((int)(i__dc) - (1))] = ((float)i__dc);
     }
 }
 
@@ -180,12 +180,12 @@ kernel void __lfortran_gpu_kernel_3(
     float __gpu_private_w_t[3];
     int __libasr_index_0_;
     int __libasr_index_0_1;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     __libasr_index_0_1 = 1;
     __do_loop_end = (1 + 3 - 1);
     __libasr_index_0_ = (1 - 1);
@@ -194,11 +194,11 @@ kernel void __lfortran_gpu_kernel_3(
         __gpu_private_w_t[((int)(__libasr_index_0_) - (1))] = w.t[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
-    __gpu_private_w_t[((int)(1) - (1))] = x[((int)(i) - (__lb_x_0))];
+    __gpu_private_w_t[((int)(1) - (1))] = x[((int)(i__dc) - (__lb_x_0))];
     w.t[((int)(1) - (1))] = __gpu_private_w_t[((int)(1) - (1))];
-    __gpu_private_w_t[((int)(2) - (1))] = (((float)2) * x[((int)(i) - (__lb_x_0))]);
+    __gpu_private_w_t[((int)(2) - (1))] = (((float)2) * x[((int)(i__dc) - (__lb_x_0))]);
     w.t[((int)(2) - (1))] = __gpu_private_w_t[((int)(2) - (1))];
-    b[((int)(i) - (__lb_b_0))] = (__gpu_private_w_t[((int)(1) - (1))] + __gpu_private_w_t[((int)(2) - (1))]);
+    b[((int)(i__dc) - (__lb_b_0))] = (__gpu_private_w_t[((int)(1) - (1))] + __gpu_private_w_t[((int)(2) - (1))]);
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_4 {
@@ -230,12 +230,12 @@ kernel void __lfortran_gpu_kernel_4(
     int __libasr_index_0_2;
     int __libasr_index_0_3;
     int __libasr_index_0_4;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     __libasr_index_0_1 = 1;
     __do_loop_end = (1 + 3 - 1);
     __libasr_index_0_ = (1 - 1);
@@ -248,7 +248,7 @@ kernel void __lfortran_gpu_kernel_4(
     __libasr_index_0_2 = (1 - 1);
     while (((__libasr_index_0_2 + 1) <= __do_loop_end1)) {
         __libasr_index_0_2 = (__libasr_index_0_2 + 1);
-        __gpu_private_w_t[((int)(__libasr_index_0_2) - (1))] = x[((int)(i) - (__lb_x_0))];
+        __gpu_private_w_t[((int)(__libasr_index_0_2) - (1))] = x[((int)(i__dc) - (__lb_x_0))];
     }
     __libasr_index_0_4 = 1;
     __gpu_loop_end = ((3 - 1) + 1);
@@ -309,6 +309,6 @@ kernel void __lfortran_gpu_kernel_4(
             __libasr_index_0_4 = (__libasr_index_0_4 + 1);
         }
     }
-    b[((int)(i) - (__lb_b_0))] = (__gpu_private_w_t[((int)(1) - (1))] + (((float)2) * __gpu_private_w_t[((int)(2) - (1))]));
+    b[((int)(i__dc) - (__lb_b_0))] = (__gpu_private_w_t[((int)(1) - (1))] + (((float)2) * __gpu_private_w_t[((int)(2) - (1))]));
 }
 

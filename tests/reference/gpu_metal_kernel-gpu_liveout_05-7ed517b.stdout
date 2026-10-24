@@ -18,14 +18,14 @@ kernel void __lfortran_gpu_kernel_0(
     int __gpu_defined;
     int __gpu_loop_end;
     int __gpu_loop_group;
-    int i;
+    int i__dc;
     int j;
     float tmp;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     tmp = __gpu_buf_tmp[((int)(1) - (1))];
     tmp = ((float)0);
     __gpu_buf_tmp[((int)(1) - (1))] = tmp;
@@ -35,62 +35,62 @@ kernel void __lfortran_gpu_kernel_0(
     if ((__gpu_loop_end >= 1)) {
         for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
             j = __gpu_loop_group;
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 1);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 2);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 3);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 4);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 5);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 6);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 7);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 8);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 9);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 10);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 11);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 12);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 13);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 14);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
             j = (__gpu_loop_group + 15);
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
         }
         for (j = __gpu_loop_group; j <= __gpu_loop_end; j++) {
-            tmp = (tmp + (a[((int)(i) - (1))] * ((float)j)));
+            tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
             __gpu_defined = 1;
         }
     }
     if (__gpu_defined) {
         __gpu_buf_tmp[((int)(1) - (1))] = tmp;
     }
-    a[((int)(i) - (1))] = tmp;
+    a[((int)(i__dc) - (1))] = tmp;
 }
 
