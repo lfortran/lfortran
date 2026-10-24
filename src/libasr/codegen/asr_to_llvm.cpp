@@ -14173,18 +14173,9 @@ public:
             return ;
         } else if ((is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {
-            // Whether the variable is allocated by the assignment, which
-            // then defines it rather than finalizing it first: an
-            // unallocated allocatable variable is not finalized
-            // (F2018 7.5.6.3 p1). A nonpolymorphic variable has been
-            // allocated by the allocate_on_assignment pass, which marks the
-            // assignment to it with new_allocation.
-            llvm::Value* target_is_new = nullptr;
-            if (ASRUtils::is_allocatable(asr_target_type) &&
-                    is_target_class && !is_value_class) {
-                target_is_new = check_and_allocate_scalar(
-                    x.m_target, x.m_value, asr_value_type, true);
-            }
+            // A variable that the assignment allocates has been allocated
+            // by the allocate_on_assignment pass, which marks the
+            // assignment with new_allocation.
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_value);
@@ -14416,12 +14407,11 @@ public:
                     deepcopy_var = x.m_value;
                 }
 
+                // An unallocated allocatable variable is not finalized
+                // (F2018 7.5.6.3 p1), nor is a new target.
                 llvm::Value* finalize_target = nullptr;
                 if (x.m_new_target || x.m_new_allocation) {
                     finalize_target = llvm::ConstantInt::getFalse(context);
-                } else if (target_is_new != nullptr && ASRUtils::struct_needs_finalization(
-                        ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var))) {
-                    finalize_target = builder->CreateNot(target_is_new);
                 }
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
                     deepcopy_type, deepcopy_type, module.get(), !x.m_new_target,
@@ -14443,9 +14433,8 @@ public:
             return;
         } else if ((is_value_unlimited_polymorphic || is_target_unlimited_polymorphic)
                    && !ASRUtils::is_array(asr_target_type)) {
-            if (ASRUtils::is_allocatable(asr_target_type)) {
-                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
-            }
+            // An allocatable variable has been allocated with the type of
+            // the value by the allocate_on_assignment pass.
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = LLVM::is_llvm_pointer(*asr_value_type);
             this->visit_expr(*x.m_value);
@@ -15351,7 +15340,7 @@ public:
     // Allocates the scalar `target_expr` unless it is allocated, and returns
     // whether it allocated it.
     llvm::Value* check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr,
-            ASR::ttype_t *value_struct_type = nullptr, bool is_assignment = false) {
+            ASR::ttype_t *value_struct_type = nullptr) {
         ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(asr_ttype));
@@ -15379,17 +15368,6 @@ public:
             llvm::Value* null_cond = builder->CreateICmpEQ(
                         target_struct_ptr,
                         llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(target_llvm_type)));
-            
-            if (is_assignment && 
-                    !ASRUtils::is_class_type(ASRUtils::extract_type(value_struct_type))) {
-                // If lhs is class(), rhs is type() then we must reallocate always
-                Vec<ASR::expr_t*> del_args; del_args.reserve(al, 1);
-                del_args.push_back(al, target_expr);
-                ASR::stmt_t* delete_stmt = ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
-                    al, target_expr->base.loc, del_args.p, del_args.n));
-                this->visit_stmt(*delete_stmt);
-                null_cond = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
-            }
 
             // Reallocate when target struct ptr is null
             llvm_cond = null_cond;
