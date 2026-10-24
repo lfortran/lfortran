@@ -47,8 +47,12 @@ pass allocated has `new_allocation`, as that target is not finalized
 assigned a value that is not polymorphic takes the type of the value: the
 pass deallocates it with an [ImplicitDeallocate](ImplicitDeallocate.md),
 which finalizes it when it is allocated, allocates it with that type, and
-gives the assignment `new_allocation`. A backend then only lowers the
-allocation and the assignment it is given.
+gives the assignment `new_allocation`. A polymorphic value gives it its
+dynamic type: an allocated variable of another dynamic type is deallocated,
+and an unallocated one is allocated with `MOLD=` the value and assigned with
+`new_allocation`, while one of the same dynamic type, as for `a = a`, is
+assigned as it is. A backend then only lowers the allocation and the
+assignment it is given.
 
 ## Examples
 
