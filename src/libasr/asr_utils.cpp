@@ -3748,8 +3748,18 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     if (is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-        if (left_struct != nullptr && orig_sym == nullptr) {
-            orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        
+        ASR::Struct_t* current_struct = left_struct;
+        while (current_struct != nullptr && orig_sym == nullptr) {
+            orig_sym = current_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+            
+            if (orig_sym == nullptr && current_struct->m_parent != nullptr) {
+                current_struct = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(current_struct->m_parent)
+                );
+            } else if (orig_sym == nullptr) {
+                current_struct = nullptr;
+            }
         }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
