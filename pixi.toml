@@ -15,12 +15,14 @@ integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR
 platforms = ["win-64", "linux-64"]
 [feature.llvm7.target.linux-64.dependencies]
 llvmdev = "==7.0.1"
+clangdev = "==7.0.1"
 [feature.llvm7.target.win-64.dependencies]
 llvmdev = "==7.0.1"
 [feature.llvm8]
 platforms = ["win-64", "linux-64"]
 [feature.llvm8.target.linux-64.dependencies]
 llvmdev = "==8.0.1"
+clangdev = "==8.0.1"
 [feature.llvm8.target.win-64.dependencies]
 llvmdev = "==8.0.1"
 [feature.llvm9]
@@ -61,30 +63,48 @@ llvmdev = "==21.1.2"
 llvmdev = "==22.1.0"
 [feature.llvm23.dependencies]
 llvmdev = "==23.1.0"
+[feature.llvm9.target.linux.dependencies]
+clangdev = "==9.0.1"
+[feature.llvm10.target.linux.dependencies]
+clangdev = "==10.0.1"
+[feature.llvm11.target.linux.dependencies]
+clangdev = "==11.1.0"
 [feature.llvm12.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==12.0.1"
 [feature.llvm13.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==13.0.1"
 [feature.llvm14.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==14.0.6"
 [feature.llvm15.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==15.0.7"
 [feature.llvm16.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==16.0.6"
 [feature.llvm17.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==17.0.6"
 [feature.llvm18.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==18.1.8"
 [feature.llvm19.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==19.1.4"
 [feature.llvm20.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==20.1.8"
 [feature.llvm21.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==21.1.2"
 [feature.llvm22.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==22.1.0"
 [feature.llvm23.target.linux.dependencies]
 libunwind = "==1.7.2"
+clangdev = "==23.1.0"
 
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
@@ -94,12 +114,17 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 [feature.build.dependencies]
 pytest = "==8.1.1"
 jupyter = "==1.0.0"
-xeus = ">=6.0.0"
-xeus-zmq = ">=4.0.0"
-nlohmann_json = ">=3.12.0"
+xeus = "==6.0.6"
+xeus-zmq = "==4.0.2"
+nlohmann_json = "==3.12.0"
 jupyter_kernel_test = "==0.7.0"
+# ci/source_tarball.sh generates the man page; ci/check_build.sh runs the
+# demo notebooks.
+nbconvert = "==7.17.2"
+pandoc = "==3.12.1"
 numpy = "==1.26.4"
 rapidjson = "==1.1.0"
+# Different LLVM versions require different zlib and zstd versions.
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
 python = "==3.12"
@@ -111,12 +136,14 @@ re2c = "==3.1"
 shell = "==0.3.0"
 
 [feature.build.target.linux.dependencies]
-c-compiler = "*"
-cxx-compiler = "*"
-# clangdev also supplies the Clang executable for LLVM 7, which predates the
-# separate Linux clang package. Native LLVM OpenMP uses LLVM's runtime.
-clangdev = "*"
-llvm-openmp = "*"
+c-compiler = "==2.0.0"
+cxx-compiler = "==2.0.0"
+gcc = "==15.3.0"
+gxx = "==15.3.0"
+# Each LLVM feature pins clangdev, which also supplies the Clang executable for
+# LLVM 7 (it predates the separate Linux clang package). Native LLVM OpenMP
+# uses LLVM's runtime.
+llvm-openmp = "==23.1.4"
 
 [feature.build.activation.env]
 LFORTRAN_BUILD_DIR = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME"
@@ -155,14 +182,29 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 [feature.test.dependencies]
 python = "==3.12"
 toml = "==0.10.2"
-tomli = ">=2,<3"
+tomli = "==2.5.0"
 edn_format = "==0.8.0"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
+# The LSP tests install their test packages with pip.
+pip = "==26.2.2"
 
-[feature.test.target.unix.dependencies]
-gfortran = "*"
-make = "*"
+# The direct WASM backend runs its integration tests with Node. No Node build
+# works with the older zlib that LLVM <= 10 and 12 require, so only the LLVM 11
+# environments, which run these tests in CI, include it.
+[feature.node]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
+[feature.node.dependencies]
+nodejs = "==18.20.4"
+
+[feature.test.target.linux.dependencies]
+gfortran = "==15.3.0"
+make = "==4.4.1"
+
+[feature.test.target.osx.dependencies]
+gfortran = "==16.2.0"
+make = "==4.4.1"
 
 [feature.build.target.unix.dependencies]
 bison = "==3.4"
@@ -197,11 +239,12 @@ channels = [
 ]
 
 [feature.wasm-build.dependencies]
-cmake = "*"
+cmake = "==4.4.4"
 ninja = "==1.11.1"
 emscripten_emscripten-wasm32 = "==4.0.9"
-# python (for build0.sh) is unpinned: the emscripten toolchain requires >=3.13
-python = "*"
+# python (for build0.sh) differs from the native environments: the emscripten
+# toolchain requires >=3.13
+python = "==3.15.1"
 re2c = "==3.1"
 # CMake runs build0.sh with it when LFORTRAN_BUILD_ALL=yes.
 shell = "==0.3.0"
@@ -227,8 +270,8 @@ platforms = ["osx-arm64", "linux-64"]
 
 [feature.lite.dependencies]
 python = "==3.12"
-jupyter_server = "*"
-jupyterlite-xeus = "*"
+jupyter_server = "==2.21.1"
+jupyterlite-xeus = "==5.1.0"
 
 # The wasm-host environment targets emscripten-wasm32, which this machine
 # cannot run, so pixi only installs it when asked for that platform explicitly.
@@ -301,7 +344,7 @@ llvm7 = {features = ["llvm7", "build", "test"]}
 llvm8 = {features = ["llvm8", "build", "test"]}
 llvm9 = {features = ["llvm9", "build", "test"]}
 llvm10 = {features = ["llvm10", "build", "test"]}
-llvm11 = {features = ["llvm11", "build", "test"]}
+llvm11 = {features = ["llvm11", "build", "test", "node"]}
 llvm12 = {features = ["llvm12", "build", "test"]}
 llvm13 = {features = ["llvm13", "build", "test"]}
 llvm14 = {features = ["llvm14", "build", "test"]}
@@ -314,7 +357,7 @@ llvm20 = {features = ["llvm20", "build", "test"]}
 llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}
 llvm23 = {features = ["llvm23", "build", "test"]}
-test = {features = ["llvm11", "build", "test"]}
+test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
 lite = {features = ["lite"], no-default-feature = true}

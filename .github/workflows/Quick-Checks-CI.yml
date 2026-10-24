@@ -56,14 +56,14 @@ jobs:
 
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           echo "Concurrency Group: quick-${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main' || github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Test (Linux / macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
@@ -72,46 +72,39 @@ jobs:
             shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             ./test_lfortran_cmdline
 
       - name: Test full descriptor modes
         if: matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh --options
 
       - name: Test Metal GPU backend (macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'macos')
         run: |
-            cd ./integration_tests
-            ./run_tests.py -b metal -j3
+            pixi run --frozen -e llvm${{ matrix.llvm-version }} integration_tests -b metal -j3
 
       # The CUDA device code is compiled and run on the CPU, so this exercises
       # the whole CUDA path on a runner that has no GPU.
       - name: Test CUDA GPU backend on the CPU (Linux / macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            cd ./integration_tests
-            ./run_tests.py -b cuda_cpu -j3
+            pixi run --frozen -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd
         run: |
-            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-            call micromamba activate lf
-            set LFORTRAN_CMAKE_GENERATOR=Ninja
             set WIN=1
             set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
             for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
                 call "%%i\VC\Auxiliary\Build\vcvars64.bat"
             )
@@ -121,20 +114,12 @@ jobs:
             shell ci\test.sh
 
       - name: Install Timeout (macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'macos')
         run: brew install coreutils
 
-      # ~/.bash_logout wanted to run `/usr/bin/clear_console -q` while exiting
-      # login shells which frequently erred on ubuntu-latest since the shell was
-      # not run interactively.
-      - name: Disable ~/.bash_logout (Linux)
-        shell: bash -e {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        run: mv -v ~/.bash_logout ~/.bash_logout.bak
-
       - name: LSP Test (Linux / macOS)
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: (contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')) && contains(matrix.llvm-version, '11')
         timeout-minutes: 5
         env:
@@ -173,29 +158,26 @@ jobs:
             exit $EXIT_CODE
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
+            pixi run --frozen -e llvm11 integration_tests -b gfortran
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            cd integration_tests
-            ./run_tests.py -b llvm_omp
+            pixi run --frozen -e llvm11 integration_tests -b llvm_omp
       
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
+            pixi run --frozen -e llvm11 integration_tests -b fortran -j1
+            pixi run --frozen -e llvm11 integration_tests -b fortran -f -j1
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             mkdir build-kokkos
@@ -211,12 +193,11 @@ jobs:
             make install
             cd ../../..
 
-            cd integration_tests
-            ./run_tests.py -b cpp c c_nopragma
-            ./run_tests.py -b cpp c c_nopragma -f
+            pixi run --frozen -e llvm11 integration_tests -b cpp c c_nopragma
+            pixi run --frozen -e llvm11 integration_tests -b cpp c c_nopragma -f
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Show Node Info
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
           set -ex
@@ -224,27 +205,26 @@ jobs:
           node --version
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test WASM backend
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-            ./run_tests.py -b wasm -f
+            pixi run --frozen -e llvm11 integration_tests -b wasm
+            pixi run --frozen -e llvm11 integration_tests -b wasm -f
 
       - name: Test CI smoke selection
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: python ci/test_ci.py
 
       - name: Check Bison Grammar for Essential Conflicts
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
           ./ci/grammar_conflicts.sh
 
       # Run last among history checks. Binary script checks out commits in PR history.
       - name: Check for Added Binary Files
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           python3 check_binary_file_in_git_history.py
@@ -252,7 +232,7 @@ jobs:
       # Human-only commit authorship: no AI author/committer/Co-Authored-By stamps.
       # Does not rewrite the working tree; safe after the binary-file history check.
       - name: Check for AI Commit Authorship
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           python3 check_ai_commit_authorship.py

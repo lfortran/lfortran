@@ -60,7 +60,7 @@ jobs:
           save-cache: 'false'
 
       - name: Test full platform coverage
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"

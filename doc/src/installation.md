@@ -104,6 +104,13 @@ Set `CMAKE_BUILD_PARALLEL_LEVEL` to limit build parallelism. Keep the same Pixi
 entry points as dependencies/build details evolve in `pixi.toml` and the scripts,
 rather than maintaining a separate list of packages or CMake flags.
 
+`pixi.toml` pins every package to an exact version, except zlib and zstd,
+whose versions differ between LLVM versions, and the committed `pixi.lock`
+records the solved environments for every platform, so local builds and CI use
+the same packages. When you change a dependency, pin it to an exact version,
+run `pixi lock` and commit both files. CI builds the platform compilers with
+the same environments and `build` task (see [Compiler caches](#compiler-caches)).
+
 Use the Pixi workflow for builds and tests; it supplies the declared
 project dependencies without separate system/global package installation.
 AI contributors must follow the
@@ -282,8 +289,24 @@ caches when it closes.
 
 Keep compiler inputs identical between commits. The version comes from
 `git describe` and changes with every commit, so it must not appear in build
-paths: `ci/build.sh` unpacks the versioned source tarball into the fixed
-`lfortran-src/` directory before building.
+paths: `ci/source_tarball.sh` unpacks the versioned source tarball into the
+fixed `lfortran-src/` directory, which the platform builds compile into the
+fixed `build/<environment>/` directory.
+
+The platform builds use the same Pixi environments and `build` task as local
+development. `.github/actions/build-platform` installs and activates
+`llvm<version>` from the committed `pixi.lock` (`prefix-dev/setup-pixi`, which
+fails if the lock file does not match `pixi.toml`), creates the source tarball,
+and builds it with
+`LFORTRAN_SOURCE_DIR=lfortran-src pixi run -e llvm<version> build
+-DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes`, so the release tarball
+itself is tested. `ci/check_build.sh` then installs it and runs the unit,
+Jupyter kernel and notebook checks. The Pixi environments are not cached:
+each one is about 0.7 GB compressed and would evict compiler caches. Pixi keeps
+the package files' modification times, so ccache's default compiler check
+still hits after every fresh installation. `pixi.toml` pins the compilers, so
+they change only with a deliberate `pixi.toml` and `pixi.lock` update, which
+invalidates the compiler caches once.
 
 The action appends a timestamp to every saved key, so each save on `main` adds
 a new copy. After every Quick or Exhaustive run on `main`,
@@ -792,9 +815,11 @@ The build steps are the same as when building from git:
 ./build1.sh
 ```
 
-As of 2025-11-10, the environment passes the CI tests, provided you tell it where to install the Jupyter kernel:
+To run the CI platform build checks, tell it where to install the Jupyter kernel:
 ```bash
-LFORTRAN_CMAKE_GENERATOR=Ninja CONDA_PREFIX=$(pwd) JUPYTER_PATH=$(pwd)/share/jupyter bash ci/build.sh
+shell ci/source_tarball.sh
+LFORTRAN_SOURCE_DIR=lfortran-src ./build1.sh build -DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX=$(pwd)
+JUPYTER_PATH=$(pwd)/share/jupyter WIN=0 shell ci/check_build.sh build
 ```
 (take note that the Nix shell does not use conda)
 
