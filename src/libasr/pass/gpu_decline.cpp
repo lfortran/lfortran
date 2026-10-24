@@ -243,6 +243,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "a device function cannot be inlined";
         case GpuDeclineReason::DeviceFunctionImplementation:
             return "procedure '" + decline.name + "' has no device implementation";
+        case GpuDeclineReason::DummyProcedureUnbound:
+            return "dummy procedure '" + decline.name +
+                "' is not associated with a routine known at compile time";
         case GpuDeclineReason::RecursiveDeviceFunction:
             return "recursive device procedure '" + decline.name +
                 "' has no gpu lowering yet";
@@ -329,6 +332,13 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructMemberNotNumeric:
             return unsupported +
                 "a derived type with a member that is not a number";
+        case GpuDeclineReason::StructConstantComponent:
+            return unsupported + "a derived-type constant with component '" +
+                decline.name + "', which is not an integer, real or logical "
+                "scalar, an integer or real array, or a derived-type scalar "
+                "of these";
+        case GpuDeclineReason::StructArrayConstant:
+            return unsupported + "a constant array of derived-type values";
 
         case GpuDeclineReason::ClassComponentArrayRank:
             return unsupported + "a polymorphic argument with a component "

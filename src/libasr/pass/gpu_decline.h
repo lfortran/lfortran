@@ -165,6 +165,11 @@ enum class GpuDeclineReason {
     SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
+    // A call in device code hands a dummy procedure no routine the device
+    // can call in its place: a dummy procedure of the loop's host, a
+    // procedure pointer, or nothing, for an absent optional one (see
+    // gpu_specialize_dummy_procedures).
+    DummyProcedureUnbound,
     RecursiveDeviceFunction,
     FunctionResultAllocation,
     NestedArraySection,
@@ -224,6 +229,14 @@ enum class GpuDeclineReason {
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
+    // A derived-type constant device code reads, such as a named constant,
+    // with a component the device struct cannot be given a value of (see
+    // gpu_struct_constant_unsupported_component); the name is the component.
+    StructConstantComponent,
+    // An array of derived-type values given by a constant, such as a named
+    // constant array of a derived type, which device code has no value
+    // representation for.
+    StructArrayConstant,
 
     // --- the layout of a kernel argument: polymorphic arguments ---
     ClassComponentArrayRank,

@@ -1222,6 +1222,19 @@ static inline bool is_dummy_argument(const ASR::Function_t &fn, const ASR::symbo
     return false;
 }
 
+// True if `fn` is a dummy procedure: a dummy argument of the procedure
+// whose scope declares it.
+static inline bool is_dummy_procedure(const ASR::Function_t &fn) {
+    SymbolTable *scope = fn.m_symtab->parent;
+    if (scope == nullptr || scope->asr_owner == nullptr ||
+            !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        return false;
+    }
+    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+    return ASR::is_a<ASR::Function_t>(*owner) &&
+        is_dummy_argument(*ASR::down_cast<ASR::Function_t>(owner), &fn.base);
+}
+
 static inline bool is_arg_dummy(int intent) {
     return intent == intent_in || intent == intent_out
         || intent == intent_inout || intent == intent_unspecified;

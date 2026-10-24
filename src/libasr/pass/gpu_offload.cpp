@@ -629,7 +629,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             orig_sym = ASR::down_cast<ASR::Var_t>(sym_info.second)->m_v;
         }
         if (orig_sym) {
-            type_decl = import_struct_type(orig_sym,
+            type_decl = import_struct_type(
+                ASRUtils::symbol_get_past_external(orig_sym),
                 orig_scope, kernel_scope, loc);
         }
 
@@ -644,18 +645,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     ASR::down_cast<ASR::Variable_t>(resolved);
                 if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
+                    ASR::expr_t *value = type_decl
+                        ? import_constant_value(orig_var->m_value,
+                            orig_scope, kernel_scope, loc)
+                        : orig_var->m_value;
                     ASR::symbol_t *cloned =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
                                 kernel_scope, s2c(al, sym_name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
-                                orig_var->m_value,
-                                orig_var->m_value,
+                                value, value,
                                 ASR::storage_typeType::Parameter,
                                 ASRUtils::duplicate_type(al,
                                     orig_var->m_type),
-                                nullptr, orig_var->m_abi,
+                                type_decl, orig_var->m_abi,
                                 orig_var->m_access,
                                 ASR::presenceType::Required, false));
                     kernel_scope->add_symbol(sym_name, cloned);
@@ -1055,6 +1059,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // into the kernel scope so FunctionCall/SubroutineCall nodes
     // can reference them after symbol remapping.
     // Collect transitively: if f() calls g(), both must be imported.
+    // A procedure, by identity, to its copy in the kernel scope: calls are
+    // retargeted by it, so that procedures of one name each reach their
+    // own copy.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> procedure_copies;
+    // The copies themselves, the values of `procedure_copies`.
+    std::set<ASR::symbol_t*> copied_procedures;
     {
         GpuFunctionCollector func_collector;
         for (size_t i = 0; i < work.n_body; i++) {
@@ -1105,19 +1115,58 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                 }
                 for (auto &[name, sym] : transitive_collector.functions) {
-                    if (func_collector.functions.find(name) ==
-                            func_collector.functions.end()) {
-                        func_collector.functions[name] = sym;
-                        added = true;
-                    }
+                    if (func_collector.add(name, sym)) added = true;
                 }
             }
         }
         ASRUtils::SymbolDuplicator sym_dup(al);
+        auto copy_procedure = [&](ASR::Function_t *orig,
+                SymbolTable *dest) -> ASR::symbol_t* {
+            ASR::symbol_t *dup = sym_dup.duplicate_Function(orig, dest);
+            if (dup) {
+                gpu_rebind_host_association(orig,
+                    ASR::down_cast<ASR::Function_t>(dup));
+            }
+            return dup;
+        };
+        // A procedure contained in a procedure copied here comes with the
+        // copy of its host, which its host's calls name; a copy of it on
+        // its own would reference the original host's entities.
+        std::set<ASR::symbol_t*> copied_hosts;
+        for (auto &item : func_collector.functions) {
+            ASR::symbol_t *resolved =
+                ASRUtils::symbol_get_past_external(item.second);
+            copied_hosts.insert(resolved);
+            if (ASR::is_a<ASR::Function_t>(*resolved)) {
+                copied_hosts.insert(&resolve_function_implementation(
+                    ASR::down_cast<ASR::Function_t>(resolved))->base);
+            }
+        }
+        auto has_copied_host = [&](ASR::symbol_t *sym) {
+            for (SymbolTable *s = ASRUtils::symbol_parent_symtab(sym);
+                    s != nullptr; s = s->parent) {
+                if (s->asr_owner
+                        && s->asr_owner->type == ASR::asrType::symbol
+                        && copied_hosts.count(
+                            ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+                    return true;
+                }
+            }
+            return false;
+        };
         for (auto &[func_name, func_sym] : func_collector.functions) {
             ASR::symbol_t *resolved =
                 ASRUtils::symbol_get_past_external(func_sym);
-            if (kernel_scope->get_symbol(func_name)) {
+            if (ASR::is_a<ASR::Function_t>(*resolved)
+                    && has_copied_host(resolved)) {
+                continue;
+            }
+            // A copy of another procedure of this name, imported
+            // above, does not stand for this one.
+            ASR::symbol_t *existing = kernel_scope->get_symbol(func_name);
+            bool existing_is_other_copy =
+                copied_procedures.count(existing) > 0;
+            if (existing && !existing_is_other_copy) {
                 // ExternalSymbol already created (e.g., by
                 // import_struct_def). Still need to import the
                 // function body for StructMethodDeclaration calls
@@ -1286,17 +1335,22 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 // name (e.g., both have "my_construct"), the first
                 // gets added under real_name. For subsequent
                 // collisions, sanitize the ExternalSymbol name to
-                // a valid C identifier to disambiguate.
+                // a valid C identifier to disambiguate, and make it
+                // unique if that is taken too.
                 std::string dup_name = real_name;
                 if (kernel_scope->get_symbol(real_name)) {
                     dup_name = func_name;
                     for (char &c : dup_name) {
                         if (c == '~' || c == '@') c = '_';
                     }
+                    if (kernel_scope->get_symbol(dup_name)) {
+                        dup_name = kernel_scope->get_unique_name(
+                            dup_name, false);
+                    }
                 }
-                if (!kernel_scope->get_symbol(dup_name)) {
+                {
                     ASR::symbol_t *dup =
-                        sym_dup.duplicate_Function(
+                        copy_procedure(
                             ASR::down_cast<ASR::Function_t>(
                                 resolved),
                             kernel_scope);
@@ -1304,6 +1358,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         ASR::down_cast<ASR::Function_t>(dup)
                             ->m_name = s2c(al, dup_name);
                         kernel_scope->add_symbol(dup_name, dup);
+                        procedure_copies[ASRUtils::symbol_get_past_external(
+                            func_sym)] = dup;
+                        procedure_copies[resolved] = dup;
+                        copied_procedures.insert(dup);
                         // The duplicated function still references
                         // the module's struct definitions. Remap
                         // ExternalSymbol targets and Variable
@@ -1347,12 +1405,25 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 // A separate module procedure a routine of its module
                 // calls is named by its interface, whose body is in a
                 // submodule.
-                ASR::symbol_t *dup = sym_dup.duplicate_Function(
+                ASR::Function_t *implementation =
                     resolve_function_implementation(
-                        ASR::down_cast<ASR::Function_t>(resolved)),
+                        ASR::down_cast<ASR::Function_t>(resolved));
+                ASR::symbol_t *dup = copy_procedure(implementation,
                     kernel_scope);
                 if (dup) {
-                    kernel_scope->add_symbol(func_name, dup);
+                    // A procedure of another scope can have the name of
+                    // one imported already.
+                    std::string dup_name = func_name;
+                    if (kernel_scope->get_symbol(dup_name)) {
+                        dup_name = kernel_scope->get_unique_name(dup_name,
+                            false);
+                        ASR::down_cast<ASR::Function_t>(dup)->m_name =
+                            s2c(al, dup_name);
+                    }
+                    kernel_scope->add_symbol(dup_name, dup);
+                    procedure_copies[resolved] = dup;
+                    procedure_copies[&implementation->base] = dup;
+                    copied_procedures.insert(dup);
                 }
             } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
                            *resolved)) {
@@ -1422,10 +1493,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         ASR::down_cast<ASR::Function_t>(proc_sym);
                     std::string pname =
                         ASRUtils::symbol_name(proc_sym);
+                    // The kernel's copy of the procedure, found by
+                    // identity: a procedure bound to a type of another
+                    // module can have its name.
+                    ASR::symbol_t *kernel_func = nullptr;
+                    auto known = procedure_copies.find(proc_sym);
+                    if (known != procedure_copies.end()) {
+                        kernel_func = known->second;
+                    }
                     ASR::symbol_t *existing =
                         kernel_scope->get_symbol(pname);
-                    bool already_has_body = false;
-                    if (existing &&
+                    bool already_has_body = kernel_func != nullptr;
+                    if (!kernel_func && existing &&
+                            !copied_procedures.count(existing) &&
                             ASR::is_a<ASR::Function_t>(*existing)) {
                         ASR::FunctionType_t *eft =
                             ASR::down_cast<ASR::FunctionType_t>(
@@ -1435,10 +1515,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         if (eft->m_deftype ==
                                 ASR::deftypeType::Implementation) {
                             already_has_body = true;
+                            kernel_func = existing;
                         }
                     }
+                    // The copy is added under the procedure's name,
+                    // unless that names the copy of another procedure.
+                    std::string copy_name = pname;
+                    auto add_copy = [&](ASR::Function_t *impl) {
+                        ASR::symbol_t *dup =
+                            copy_procedure(impl, kernel_scope);
+                        if (!dup) return;
+                        ASR::down_cast<ASR::Function_t>(dup)->m_name =
+                            s2c(al, copy_name);
+                        kernel_scope->add_symbol(copy_name, dup);
+                        procedure_copies[proc_sym] = dup;
+                        procedure_copies[&impl->base] = dup;
+                        copied_procedures.insert(dup);
+                        kernel_func = dup;
+                    };
                     if (!already_has_body) {
-                        if (existing) {
+                        if (existing && copied_procedures.count(existing)) {
+                            copy_name = kernel_scope->get_unique_name(
+                                pname, false);
+                        } else if (existing) {
                             kernel_scope->erase_symbol(pname);
                         }
                         ASR::FunctionType_t *ftype =
@@ -1473,13 +1572,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                 if (impl_ft->m_deftype !=
                                         ASR::deftypeType::Implementation)
                                     continue;
-                                ASR::symbol_t *dup =
-                                    sym_dup.duplicate_Function(
-                                        impl_func, kernel_scope);
-                                if (dup) {
-                                    kernel_scope->add_symbol(
-                                        pname, dup);
-                                }
+                                add_copy(impl_func);
                                 found = true;
                                 break;
                             }
@@ -1590,16 +1683,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                                     deftypeType::
                                                     Implementation)
                                                 continue;
-                                            ASR::symbol_t *dup =
-                                                sym_dup
-                                                    .duplicate_Function(
-                                                    impl_func,
-                                                    kernel_scope);
-                                            if (dup) {
-                                                kernel_scope
-                                                    ->add_symbol(
-                                                        pname, dup);
-                                            }
+                                            add_copy(impl_func);
                                             found = true;
                                             break;
                                         }
@@ -1617,20 +1701,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                             }
                         } else {
                             // Non-submodule: function has a body.
-                            ASR::symbol_t *dup =
-                                sym_dup.duplicate_Function(
-                                    proc_func, kernel_scope);
-                            if (dup) {
-                                kernel_scope->add_symbol(pname, dup);
-                            }
+                            add_copy(proc_func);
                         }
                     }
                     // Update the StructMethodDeclaration in the
                     // kernel's struct to point to the kernel-scope
                     // function copy instead of the original module
                     // interface (which may have no body).
-                    ASR::symbol_t *kernel_func =
-                        kernel_scope->get_symbol(pname);
+                    if (!kernel_func && copy_name == pname) {
+                        kernel_func = kernel_scope->get_symbol(pname);
+                    }
                     if (kernel_func) {
                         SymbolTable *method_st =
                             ASRUtils::symbol_parent_symtab(resolved);
@@ -1685,6 +1765,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 item.second);
             fixup_struct_refs_in_scope(dfunc->m_symtab,
                 kernel_scope, s2c(al, kernel_name));
+            if (copied_procedures.count(item.second)) {
+                import_folded_struct_constants(dfunc->m_body,
+                    dfunc->n_body, orig_scope, kernel_scope, loc);
+                import_folded_struct_constants(dfunc->m_symtab,
+                    orig_scope, kernel_scope, loc);
+            }
         }
     }
 
@@ -1718,94 +1804,148 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Fix dangling variable references in duplicated kernel functions.
-    // When a contained function references variables from the original
-    // enclosing scope (e.g., a program-scope Parameter used by a
-    // contained function), the duplicated function body retains the
-    // original Var references which are unreachable from the kernel.
-    // For Parameter variables, clone them into the function's scope.
-    // For other variables, add them as extra kernel parameters.
+    // When a copied procedure references entities of the scope its
+    // original was defined in (e.g., a variable of its module, or a
+    // program-scope Parameter used by a contained function), the
+    // duplicated function body retains the original Var references
+    // which are unreachable from the kernel. An entity the kernel
+    // already receives is read through its kernel parameter. Otherwise,
+    // Parameter variables are cloned into the function's scope and other
+    // variables are added as extra kernel parameters, whose actual
+    // argument names the entity itself from the caller, imported there
+    // if the caller cannot name it.
     {
+        // The entity of the caller that the kernel symbol `name` stands
+        // for, if any.
+        auto host_entity = [&](const std::string &name) -> ASR::symbol_t* {
+            ASR::symbol_t *host_sym = orig_scope->resolve_symbol(name);
+            return host_sym ? ASRUtils::symbol_get_past_external(host_sym)
+                : nullptr;
+        };
+        std::map<ASR::symbol_t*, ASR::symbol_t*> entity_params;
+        auto kernel_symbol_of = [&](ASR::symbol_t *entity)
+                -> ASR::symbol_t* {
+            auto it = entity_params.find(entity);
+            if (it != entity_params.end()) return it->second;
+            for (auto &item : kernel_scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)
+                        && host_entity(item.first) == entity) {
+                    return item.second;
+                }
+            }
+            return nullptr;
+        };
         for (ASR::Function_t *func : kernel_funcs) {
+            // The declarations of its variables, such as the expression
+            // a named constant is declared with or an array bound, can
+            // name such entities as well as its body.
+            std::vector<ASR::symbol_t*> local_vars;
+            for (auto &item : func->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    local_vars.push_back(item.second);
+                }
+            }
             DanglingVarCollector dvc(func->m_symtab);
             for (size_t bi = 0; bi < func->n_body; bi++) {
                 dvc.visit_stmt(*func->m_body[bi]);
             }
+            for (ASR::symbol_t *v : local_vars) {
+                dvc.visit_symbol(*v);
+            }
             if (dvc.dangling.empty()) continue;
 
-            std::set<std::string> fixed_names;
-            for (auto &[name, orig_sym] : dvc.dangling) {
+            std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
+            for (ASR::symbol_t *orig_sym : dvc.dangling) {
                 ASR::symbol_t *resolved_sym =
                     ASRUtils::symbol_get_past_external(orig_sym);
                 if (!ASR::is_a<ASR::Variable_t>(*resolved_sym)) continue;
                 ASR::Variable_t *orig_var =
                     ASR::down_cast<ASR::Variable_t>(resolved_sym);
-                if (orig_var->m_storage ==
+                std::string name = ASRUtils::symbol_name(orig_sym);
+                if (ASR::symbol_t *ksym = kernel_symbol_of(resolved_sym)) {
+                    replacements[orig_sym] = ksym;
+                } else if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
                     // Its value, rather than the expression it was
                     // declared with, which names other constants of the
                     // original scope.
+                    std::string local_name =
+                        func->m_symtab->get_unique_name(name, false);
+                    ASR::symbol_t *type_decl = import_struct_type(
+                        resolved_sym, orig_scope, kernel_scope, loc);
+                    ASR::expr_t *value = orig_var->m_value;
+                    if (type_decl) {
+                        value = import_constant_value(value, orig_scope,
+                            kernel_scope, loc);
+                    }
                     ASR::symbol_t *new_var =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
-                                func->m_symtab, s2c(al, name),
+                                func->m_symtab, s2c(al, local_name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
-                                orig_var->m_value ? orig_var->m_value
+                                value ? value
                                     : orig_var->m_symbolic_value,
-                                orig_var->m_value,
+                                value,
                                 ASR::storage_typeType::Parameter,
                                 ASRUtils::duplicate_type(al,
                                     orig_var->m_type),
-                                nullptr, orig_var->m_abi,
+                                type_decl,
+                                orig_var->m_abi,
                                 orig_var->m_access,
                                 ASR::presenceType::Required, false));
-                    func->m_symtab->add_symbol(name, new_var);
-                    fixed_names.insert(name);
+                    func->m_symtab->add_symbol(local_name, new_var);
+                    replacements[orig_sym] = new_var;
                 } else {
-                    if (!kernel_scope->get_symbol(name)) {
-                        ASR::ttype_t *dup_type =
-                            ASRUtils::duplicate_type(al,
-                                ASRUtils::type_get_past_allocatable(
-                                    orig_var->m_type));
-                        SetChar deps_vec;
-                        deps_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(
-                            al, deps_vec, dup_type, nullptr,
-                            nullptr, name);
-                        ASR::symbol_t *param =
-                            ASR::down_cast<ASR::symbol_t>(
-                                ASRUtils::make_Variable_t_util(al,
-                                    loc, kernel_scope,
-                                    s2c(al, name),
-                                    deps_vec.p, deps_vec.size(),
-                                    ASR::intentType::InOut,
-                                    nullptr, nullptr,
-                                    ASR::storage_typeType::Default,
-                                    dup_type, nullptr,
-                                    ASR::abiType::Source,
-                                    ASR::accessType::Public,
-                                    ASR::presenceType::Required,
-                                    false));
-                        kernel_scope->add_symbol(name, param);
-                        kernel_args.push_back(al,
-                            ASRUtils::EXPR(ASR::make_Var_t(
-                                al, loc, param)));
-                        ASR::symbol_t *host_sym =
-                            orig_scope->resolve_symbol(name);
-                        ASR::call_arg_t carg;
-                        carg.loc = loc;
-                        carg.m_value = ASRUtils::EXPR(
-                            ASR::make_Var_t(al, loc,
-                                host_sym ? host_sym : orig_sym));
-                        call_args.push_back(al, carg);
-                    }
-                    fixed_names.insert(name);
+                    std::string param_name =
+                        kernel_scope->get_unique_name(name, false);
+                    ASR::ttype_t *dup_type =
+                        ASRUtils::duplicate_type(al,
+                            ASRUtils::type_get_past_allocatable(
+                                orig_var->m_type));
+                    SetChar deps_vec;
+                    deps_vec.reserve(al, 1);
+                    ASRUtils::collect_variable_dependencies(
+                        al, deps_vec, dup_type, nullptr,
+                        nullptr, param_name);
+                    ASR::symbol_t *param =
+                        ASR::down_cast<ASR::symbol_t>(
+                            ASRUtils::make_Variable_t_util(al,
+                                loc, kernel_scope,
+                                s2c(al, param_name),
+                                deps_vec.p, deps_vec.size(),
+                                ASR::intentType::InOut,
+                                nullptr, nullptr,
+                                ASR::storage_typeType::Default,
+                                dup_type,
+                                import_struct_type(resolved_sym,
+                                    orig_scope, kernel_scope, loc),
+                                ASR::abiType::Source,
+                                ASR::accessType::Public,
+                                ASR::presenceType::Required,
+                                false));
+                    kernel_scope->add_symbol(param_name, param);
+                    kernel_args.push_back(al,
+                        ASRUtils::EXPR(ASR::make_Var_t(
+                            al, loc, param)));
+                    ASR::call_arg_t carg;
+                    carg.loc = loc;
+                    carg.m_value = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc,
+                            ASRUtils::import_symbol(al, orig_sym,
+                                orig_scope)));
+                    call_args.push_back(al, carg);
+                    entity_params[resolved_sym] = param;
+                    replacements[orig_sym] = param;
                 }
             }
-            if (!fixed_names.empty()) {
-                DanglingVarFixer fixer(func->m_symtab, fixed_names);
+            if (!replacements.empty()) {
+                DanglingVarFixer fixer(replacements);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
                     fixer.visit_stmt(*func->m_body[bi]);
+                }
+                for (ASR::symbol_t *v : local_vars) {
+                    fixer.visit_symbol(*v);
                 }
             }
         }
@@ -1821,6 +1961,42 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // them (e.g., type-bound procedure calls in associate blocks)
     // still point to the original scope after duplication.
     {
+        // The procedures a routine contains were copied with it and call
+        // the kernel's copies as well. The entities of the routine and of
+        // its hosts are named through their own scopes already.
+        std::function<void(ASR::Function_t&, std::set<SymbolTable*>)>
+        remap_routine_calls = [&](ASR::Function_t &fn,
+                std::set<SymbolTable*> host_scopes) {
+            host_scopes.insert(fn.m_symtab);
+            GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
+            fn_replacer.replacer.skip_scopes = host_scopes;
+            fn_replacer.replacer.procedure_copies = &procedure_copies;
+            for (size_t bi = 0; bi < fn.n_body; bi++) {
+                fn_replacer.visit_stmt(*fn.m_body[bi]);
+            }
+            for (auto &fn_item : fn.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::AssociateBlock_t>(
+                        *fn_item.second)) {
+                    ASR::AssociateBlock_t *ab =
+                        ASR::down_cast<ASR::AssociateBlock_t>(
+                            fn_item.second);
+                    for (size_t bi = 0; bi < ab->n_body; bi++) {
+                        fn_replacer.visit_stmt(*ab->m_body[bi]);
+                    }
+                } else if (ASR::is_a<ASR::Block_t>(
+                               *fn_item.second)) {
+                    ASR::Block_t *block =
+                        ASR::down_cast<ASR::Block_t>(fn_item.second);
+                    for (size_t bi = 0; bi < block->n_body; bi++) {
+                        fn_replacer.visit_stmt(*block->m_body[bi]);
+                    }
+                } else if (ASR::is_a<ASR::Function_t>(*fn_item.second)) {
+                    remap_routine_calls(
+                        *ASR::down_cast<ASR::Function_t>(fn_item.second),
+                        host_scopes);
+                }
+            }
+        };
         for (auto &item : kernel_scope->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
@@ -1837,29 +2013,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // routine is the kernel's own copy: the host's is left as it is.
             inline_sum_in_stmts(func->m_body, func->n_body, func->m_symtab);
             gather_strided_sections_in_routine(*func);
-            GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
-            fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
-            for (size_t bi = 0; bi < func->n_body; bi++) {
-                fn_replacer.visit_stmt(*func->m_body[bi]);
-            }
-            for (auto &fn_item : func->m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::AssociateBlock_t>(
-                        *fn_item.second)) {
-                    ASR::AssociateBlock_t *ab =
-                        ASR::down_cast<ASR::AssociateBlock_t>(
-                            fn_item.second);
-                    for (size_t bi = 0; bi < ab->n_body; bi++) {
-                        fn_replacer.visit_stmt(*ab->m_body[bi]);
-                    }
-                } else if (ASR::is_a<ASR::Block_t>(
-                               *fn_item.second)) {
-                    ASR::Block_t *block =
-                        ASR::down_cast<ASR::Block_t>(fn_item.second);
-                    for (size_t bi = 0; bi < block->n_body; bi++) {
-                        fn_replacer.visit_stmt(*block->m_body[bi]);
-                    }
-                }
-            }
+            remap_routine_calls(*func, {});
         }
     }
 
@@ -2021,9 +2175,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // 3. Replace Var references in copied body to point to kernel scope
     GpuReplaceSymbolsVisitor sym_replacer(*kernel_scope);
+    sym_replacer.replacer.procedure_copies = &procedure_copies;
     for (size_t i = 0; i < body_copy.n; i++) {
         sym_replacer.visit_stmt(*body_copy.p[i]);
     }
+    import_folded_struct_constants(body_copy.p, body_copy.n, orig_scope,
+        kernel_scope, loc);
 
     // 4. Build kernel body
     Vec<ASR::stmt_t*> kernel_body;
@@ -2515,6 +2672,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
         // Remap Var references inside the block body
         GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
+        block_replacer.replacer.procedure_copies = &procedure_copies;
         for (size_t j = 0; j < block->n_body; j++) {
             block_replacer.visit_stmt(*block->m_body[j]);
         }
@@ -2680,6 +2838,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                     if (!is_copy) continue;
                     process_block_for_kernel(block, true);
+                    // The copy of the loop body names the block, whose
+                    // statements were not part of it above.
+                    import_folded_struct_constants(block->m_body,
+                        block->n_body, orig_scope, kernel_scope, loc);
+                    import_folded_struct_constants(block->m_symtab,
+                        orig_scope, kernel_scope, loc);
                     if (orig_scope->get_symbol(block_name) == bc->m_m) {
                         orig_scope->erase_symbol(block_name);
                     }
@@ -2778,6 +2942,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.p, kernel_body.n,
         nullptr, ASR::accessType::Public, false, false,
         nullptr, nullptr, nullptr, nullptr);
+    {
+        std::string unresolved = gpu_specialize_dummy_procedures(al,
+            *ASR::down_cast2<ASR::Function_t>(kernel_func));
+        if (!unresolved.empty()) {
+            report_not_offloaded(loc, GpuDecline(
+                GpuDeclineReason::DummyProcedureUnbound, unresolved));
+            return;
+        }
+    }
     write_back_liveouts(*ASR::down_cast2<ASR::Function_t>(kernel_func),
         liveouts);
     gpu_lift_host_association(al,
