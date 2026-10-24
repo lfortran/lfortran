@@ -55,6 +55,8 @@ struct PassOptions {
     // read back from a `.mod` file is defined elsewhere and this translation
     // unit only refers to it.
     bool separate_compilation = false;
+    // Array elements passed to array dummies are sequence associated
+    bool legacy_array_sections = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
     bool intrinsic_module_name_mangling = false;
