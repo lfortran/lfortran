@@ -3075,7 +3075,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
                     dealloc_vars.p, dealloc_vars.size())));
             } 
-            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation, x.m_new_target));
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation, x.m_new_target, x.m_new_allocation));
             pass_result.push_back(al, stmt);
             debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
             return;
@@ -3095,7 +3095,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::stmt_t* stmt = ASRUtils::STMT(
                     ASRUtils::make_Assignment_t_util(al, loc,
                         x.m_target, x.m_value, x.m_overloaded,
-                        x.m_realloc_lhs, x.m_move_allocation, x.m_new_target));
+                        x.m_realloc_lhs, x.m_move_allocation, x.m_new_target, x.m_new_allocation));
                 pass_result.push_back(al, stmt);
                 return;
             }
@@ -3226,5 +3226,123 @@ void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
     u.visit_TranslationUnit(unit);
 }
 
+
+/*
+An intrinsic assignment to an unallocated allocatable variable allocates it
+(F2018 10.2.1.3 p3). This pass makes that allocation explicit for a
+nonpolymorphic scalar of derived type:
+
+    type(t), allocatable :: a
+    a = b
+
+becomes
+
+    if (.not. allocated(a)) allocate(a)
+    a = b
+
+An unallocated allocatable variable is not finalized by the assignment
+(F2018 7.5.6.3 p1), so when `t` is finalizable the assignment goes into both
+branches, and the one to the variable allocated here has `new_allocation`:
+
+    if (allocated(a)) then
+        a = b                       ! finalizes a
+    else
+        allocate(a)
+        a = b    [new_allocation]   ! does not finalize a
+    end if
+
+The value is evaluated after the allocation, as it was by the backend.
+
+It is a pass of its own, which runs once, after subroutine_from_function,
+which can turn the assignment of a function result into a call, and after
+the second run of array_op.
+*/
+class AllocateOnAssignmentVisitor :
+    public PassUtils::PassVisitor<AllocateOnAssignmentVisitor> {
+public:
+
+    AllocateOnAssignmentVisitor(Allocator &al) : PassVisitor(al, nullptr) {}
+
+    // Whether the target of `x` is a nonpolymorphic allocatable scalar of
+    // derived type that the intrinsic assignment allocates when it is
+    // unallocated.
+    static bool allocates_target(const ASR::Assignment_t &x) {
+        if (x.m_overloaded != nullptr || x.m_move_allocation ||
+                x.m_new_target || x.m_new_allocation) {
+            return false;
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+        if (!ASRUtils::is_allocatable(target_type) ||
+                ASRUtils::is_array(target_type) ||
+                ASRUtils::is_array(value_type)) {
+            return false;
+        }
+        ASR::ttype_t* target_el_type = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(value_type);
+        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
+            !ASRUtils::is_class_type(target_el_type) &&
+            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+            !ASRUtils::is_unlimited_polymorphic_type(x.m_value);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!allocates_target(x)) {
+            return;
+        }
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::expr_t* target = x.m_target;
+
+        Vec<ASR::alloc_arg_t> alloc_args;
+        alloc_args.reserve(al, 1);
+        ASR::alloc_arg_t alloc_arg;
+        alloc_arg.loc = loc;
+        alloc_arg.m_a = d.duplicate_expr(target);
+        alloc_arg.m_dims = nullptr;
+        alloc_arg.n_dims = 0;
+        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_type = nullptr;
+        alloc_arg.m_sym_subclass = nullptr;
+        alloc_arg.m_codims = nullptr;
+        alloc_arg.n_codims = 0;
+        alloc_args.push_back(al, alloc_arg);
+        ASR::stmt_t* allocate = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+            alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+
+        Vec<ASR::expr_t*> allocated_args;
+        allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, d.duplicate_expr(target));
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        ASR::expr_t* is_allocated = ASRUtils::EXPR(
+            ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.size(), 0, logical_type,
+                nullptr));
+
+        ASR::stmt_t* assignment = const_cast<ASR::stmt_t*>(&x.base);
+        pass_result.reserve(al, 2);
+        if (!ASRUtils::struct_needs_finalization(
+                ASRUtils::get_struct_sym_from_struct_expr(target))) {
+            pass_result.push_back(al, b.If(b.Not(is_allocated), {allocate},
+                {}));
+            pass_result.push_back(al, assignment);
+            return;
+        }
+        ASR::stmt_t* new_allocation_assignment = d.duplicate_stmt(assignment);
+        ASR::down_cast<ASR::Assignment_t>(new_allocation_assignment)
+            ->m_new_allocation = true;
+        pass_result.push_back(al, b.If(is_allocated, {assignment},
+            {allocate, new_allocation_assignment}));
+    }
+};
+
+void pass_allocate_on_assignment(Allocator &al, ASR::TranslationUnit_t &unit,
+        const LCompilers::PassOptions &/*pass_options*/) {
+    AllocateOnAssignmentVisitor v(al);
+    v.visit_TranslationUnit(unit);
+}
 
 } // namespace LCompilers

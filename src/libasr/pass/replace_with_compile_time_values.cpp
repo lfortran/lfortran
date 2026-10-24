@@ -10,6 +10,7 @@
 
 #include <libasr/asr_builder.h>
 
+#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -43,6 +44,10 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
     // designators. They are kept as they are.
     std::unordered_set<ASR::expr_t*> element_sequence_args;
 
+    // When set, the expressions that would be replaced are collected here
+    // and nothing is replaced.
+    std::set<ASR::expr_t*> *replaceable = nullptr;
+
     CompileTimeValueReplacer(Allocator& al_):
         al(al_), inside_prohibited_expression(false) {}
 
@@ -62,7 +67,7 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayReshape(x);
-        if( ASRUtils::is_fixed_size_array(
+        if( !replaceable && ASRUtils::is_fixed_size_array(
                 ASRUtils::expr_type(x->m_array)) ) {
             x->m_type = ASRUtils::duplicate_type(al, x->m_type, nullptr,
                     ASR::array_physical_typeType::FixedSizeArray, true);
@@ -116,6 +121,12 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
             return ;
         }
 
+        if( replaceable ) {
+            if( compile_time_value != x ) {
+                replaceable->insert(x);
+            }
+            return ;
+        }
         *current_expr = compile_time_value;
     }
 };
@@ -135,6 +146,10 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
 
     ExprVisitor(Allocator& al_): replacer(al_)
     {}
+
+    void collect_replaceable(std::set<ASR::expr_t*> &replaceable) {
+        replacer.replaceable = &replaceable;
+    }
 
     template <typename ExprType>
     void visit_ExprMethod(const ExprType& x,
@@ -297,6 +312,13 @@ void pass_replace_with_compile_time_values(
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
+}
+
+void collect_compile_time_value_replacements(Allocator &al,
+        ASR::Function_t &function, std::set<ASR::expr_t*> &replaceable) {
+    ExprVisitor v(al);
+    v.collect_replaceable(replaceable);
+    v.visit_Function(function);
 }
 
 

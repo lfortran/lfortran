@@ -214,6 +214,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -330,6 +331,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -343,6 +345,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

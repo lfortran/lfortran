@@ -1696,6 +1696,10 @@ pass = "intent_out_deallocate"
 llvm = true
 
 [[test]]
+filename = "allocate_on_assignment_01.f90"
+pass = "allocate_on_assignment"
+
+[[test]]
 filename = "finalize_02.f90"
 llvm = true
 
@@ -4711,6 +4715,18 @@ filename = "../integration_tests/gpu_decline_21.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_25.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_26.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_27.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "../integration_tests/gpu_decline_28.f90"
 gpu_offload_cuda = true
 
@@ -4725,6 +4741,29 @@ gpu_offload_cuda = true
 [[test]]
 filename = "../integration_tests/gpu_decline_31.f90"
 gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_34.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_35.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_36.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_37.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_38.f90"
+gpu_offload_cuda = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_decline_40.f90"
@@ -6612,6 +6651,14 @@ asr = true
 
 [[test]]
 filename = "asr/verify/assignment_move_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_nonallocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_new_target.asr"
 asr = true
 
 [[test]]

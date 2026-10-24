@@ -533,6 +533,63 @@ inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
     }
 }
 
+// The first component of the derived-type constant `sc`, from its value
+// `next_arg` on, that the device cannot be given a value of in the brace
+// list of its device struct (see struct_constant_initializer in
+// asr_to_gpu_c.h): integer, real and logical scalars, integer and real
+// arrays, and derived-type scalars made of these can be. The parent's
+// components come first, as in the device struct. Empty when there is none.
+inline std::string gpu_struct_constant_unsupported_component(
+        ASR::Struct_t *st, ASR::StructConstant_t *sc, size_t &next_arg) {
+    if (st->m_parent) {
+        ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+            st->m_parent);
+        if (!ASR::is_a<ASR::Struct_t>(*parent)) return st->m_name;
+        std::string bad = gpu_struct_constant_unsupported_component(
+            ASR::down_cast<ASR::Struct_t>(parent), sc, next_arg);
+        if (!bad.empty()) return bad;
+    }
+    for (size_t i = 0; i < st->n_members; i++) {
+        ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+        ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+        std::string name = mv->m_name;
+        if (next_arg >= sc->n_args) return name;
+        ASR::expr_t *value = sc->m_args[next_arg++].m_value;
+        if (!value || ASRUtils::is_allocatable_or_pointer(mv->m_type)) {
+            return name;
+        }
+        ASR::ttype_t *elem = ASRUtils::type_get_past_array(mv->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            if (ASRUtils::is_array(mv->m_type) || !mv->m_type_declaration
+                    || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+                return name;
+            }
+            ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                mv->m_type_declaration);
+            if (!ASR::is_a<ASR::Struct_t>(*inner)) return name;
+            size_t inner_arg = 0;
+            std::string bad = gpu_struct_constant_unsupported_component(
+                ASR::down_cast<ASR::Struct_t>(inner),
+                ASR::down_cast<ASR::StructConstant_t>(value), inner_arg);
+            if (!bad.empty()) return bad;
+        } else if (ASRUtils::is_array(mv->m_type)) {
+            if (!ASR::is_a<ASR::ArrayConstant_t>(*value)
+                    || !(ASR::is_a<ASR::Integer_t>(*elem)
+                        || ASR::is_a<ASR::Real_t>(*elem))
+                    || !gpu_scalar_width_supported(elem)) {
+                return name;
+            }
+        } else if (!(ASR::is_a<ASR::Integer_t>(*elem)
+                    || ASR::is_a<ASR::Real_t>(*elem)
+                    || ASR::is_a<ASR::Logical_t>(*elem))
+                || !gpu_scalar_width_supported(elem)) {
+            return name;
+        }
+    }
+    return "";
+}
+
 // The type as a user would write it, for a diagnostic that has to name the
 // kind it is turning down: `logical(8)`, `real(16)`.
 inline std::string gpu_scalar_type_name(ASR::ttype_t *t) {

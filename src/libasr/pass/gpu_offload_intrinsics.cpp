@@ -330,7 +330,7 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         ASR::make_Assignment_t(al, loc, res_var,
             ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
                 true, logical_type)),
-            nullptr, false, false, false)));
+            nullptr, false, false, false, false)));
 
     ASR::expr_t *elem_mask = elementize_array_expr(mask, loop_vars, loc);
 
@@ -341,7 +341,7 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         ASR::make_Assignment_t(al, loc, res_var,
             ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
                 false, logical_type)),
-            nullptr, false, false, false)));
+            nullptr, false, false, false, false)));
     Vec<ASR::stmt_t*> if_else;
     if_else.reserve(al, 0);
     ASR::expr_t *not_mask = ASRUtils::EXPR(
@@ -475,7 +475,7 @@ void GpuOffloadVisitor::inline_intrinsic_all(ParallelLoopNest &nest) {
             }
             new_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, asgn->m_target,
-                    new_value, nullptr, false, false, false)));
+                    new_value, nullptr, false, false, false, false)));
             // Track non-array scalar targets as reduction liveouts
             if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
                 ASR::ttype_t *tgt_type =
@@ -613,11 +613,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 two.reserve(al, 2);
                 two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, stmt->base.loc, tmp, asgn->m_value, nullptr,
-                    false, false, false)));
+                    false, false, false, false)));
                 two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, stmt->base.loc, asgn->m_target,
                     matmul_temp_section(tmp, asgn->m_target), nullptr,
-                    false, false, false)));
+                    false, false, false, false)));
                 ASR::stmt_t **two_body = two.p;
                 size_t two_n = two.n;
                 inline_matmul_stmts(two_body, two_n);
@@ -928,7 +928,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         auto assign = [&](ASR::expr_t *target,
                 ASR::expr_t *value) -> ASR::stmt_t* {
             return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
-                value, nullptr, false, false, false));
+                value, nullptr, false, false, false, false));
         };
         // acc = 0; do k ...: acc = acc + a*b; c = acc [OP other]
         auto accumulate_element = [&](Vec<ASR::stmt_t*> &out,
@@ -1182,7 +1182,7 @@ void GpuOffloadVisitor::hoist_matmuls_from_assignment(ASR::Assignment_t *asgn,
             var_scope, scope_has_workspaces);
         if (!tmp_var) break;
         ASR::stmt_t *tmp_asgn = ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false, false));
+            al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false, false, false));
         if (!replace_array_intrinsic_in_expr(asgn->m_value, mm,
                 tmp_var)) {
             break;
@@ -1706,7 +1706,7 @@ void GpuOffloadVisitor::extract_nested_sums(
         ASR::expr_t *sum_expr = (ASR::expr_t*)sum_node;
         expanded.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, tmp_var, sum_expr,
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
 
         // Replace sum node in original expression with tmp_var
         replace_array_intrinsic_in_expr(asgn->m_value, sum_node,
@@ -1857,7 +1857,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         // __gpu_sum_res = 0
         new_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, res_var, zero,
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
 
         std::vector<ASR::expr_t*> loop_vars;
         std::vector<ASR::expr_t*> loop_starts;
@@ -2267,7 +2267,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         }
         ASR::stmt_t *accum_stmt = ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, res_var, add_expr,
-                nullptr, false, false, false));
+                nullptr, false, false, false, false));
 
         // Build nested loops from innermost to outermost
         int n_loops = (int)loop_vars.size();
@@ -2301,7 +2301,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         // target = __gpu_sum_res
         new_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, asgn->m_target, res_var,
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
 
         changed = true;
     }
@@ -2430,7 +2430,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         inner_body.reserve(al, 1);
         inner_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, b_ij, a_ji,
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
 
         // i loops over rows of b = columns of a (dim 1 of result)
         // j loops over columns of b = rows of a (dim 0 of result)

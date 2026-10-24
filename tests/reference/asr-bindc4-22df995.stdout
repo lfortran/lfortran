@@ -398,6 +398,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -412,6 +413,7 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -476,6 +478,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1016,6 +1019,7 @@
                             (Var 2 c_null_ptr)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

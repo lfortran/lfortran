@@ -318,7 +318,7 @@ bool GpuOffloadVisitor::hoist_struct_element_gathers(
         gather_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, gloc,
                 ASRUtils::EXPR(ASR::make_Var_t(al, gloc, temp)),
-                rhs, nullptr, false, false, false)));
+                rhs, nullptr, false, false, false, false)));
         if (!g.scatter) continue;
         ASRUtils::ExprStmtDuplicator back(al);
         back.success = true;
@@ -327,7 +327,7 @@ bool GpuOffloadVisitor::hoist_struct_element_gathers(
         scatter_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, gloc, lhs,
                 ASRUtils::EXPR(ASR::make_Var_t(al, gloc, temp)),
-                nullptr, false, false, false)));
+                nullptr, false, false, false, false)));
     }
 
     GpuStructElementGatherVisitor sub(al, gathers);

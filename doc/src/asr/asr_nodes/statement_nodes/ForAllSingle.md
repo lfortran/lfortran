@@ -89,6 +89,7 @@ because each statement completes for all indices before the next begins.
     :realloc_lhs false
     :move_allocation false
     :new_target false
+    :new_allocation false
   )
 )
 ```

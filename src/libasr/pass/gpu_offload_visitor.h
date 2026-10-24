@@ -85,6 +85,18 @@ public:
             SymbolTable *orig_scope, SymbolTable *kernel_scope,
             const Location &loc);
 
+    ASR::expr_t* import_constant_value(ASR::expr_t *value,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const Location &loc);
+
+    void import_folded_struct_constants(ASR::stmt_t **body, size_t n_body,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const Location &loc);
+
+    void import_folded_struct_constants(SymbolTable *scope,
+            SymbolTable *orig_scope, SymbolTable *kernel_scope,
+            const Location &loc);
+
     void find_array_section_all_bounds(ASR::expr_t *e,
             std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds);
 

@@ -392,6 +392,60 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(selected, sections)
 
 
+class MPITransportTests(unittest.TestCase):
+    def test_linux_transports_are_shared_by_coarrays_and_applications(self):
+        workflows = ROOT / ".github/workflows"
+        source = (workflows / "Compiler-Compatibility-CI.yml").read_text()
+        job = source.split("\n  test_llvm:\n", 1)[1]
+        marker = "      - name: Configure Linux MPI transports\n"
+        self.assertTrue(marker in job, "Linux MPI transport setup is missing")
+        setup = job.split(marker, 1)[1].split("\n      - ", 1)[0]
+        condition = re.search(r"^\s*if: (.+)$", setup, re.MULTILINE).group(1)
+        self.assertEqual(condition, "runner.os == 'Linux'")
+        self.assertEqual(source.count("UCX_TLS="), 1)
+        for command in ("ci/test_caffeine.sh", "ci/test_third_party_codes.sh"):
+            self.assertLess(job.index(marker), job.index(command))
+        for scope, caller in (("quick", "Quick-Checks-CI.yml"),
+                              ("exhaustive", "Exhaustive-Checks-CI.yml")):
+            with self.subTest(scope=scope):
+                caller_source = (workflows / caller).read_text()
+                call = caller_source.split(
+                    "uses: ./.github/workflows/Compiler-Compatibility-CI.yml", 1
+                )[1].split("\n\n", 1)[0]
+                self.assertIn(f"scope: {scope}", call)
+                with tempfile.TemporaryDirectory() as workspace:
+                    github_env = Path(workspace) / "github-env"
+                    script = setup.split("        run: ", 1)[1]
+                    if script.startswith("|\n"):
+                        script = script[2:]
+                    result = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail"],
+                        input=script,
+                        env=dict(os.environ, GITHUB_ENV=str(github_env),
+                                 LFORTRAN_CI_SCOPE=scope, UCX_TLS="all",
+                                 OMPI_MCA_pml="cm", OMPI_MCA_btl="ofi,uct"),
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    configured = dict(
+                        line.split("=", 1) for line in github_env.read_text().splitlines()
+                    )
+                    self.assertEqual(configured.get("UCX_TLS"), "tcp,sm,self")
+                    for parameter, value in (("OMPI_MCA_pml", "ob1"),
+                                             ("OMPI_MCA_btl", "tcp,sm,self")):
+                        with self.subTest(parameter=parameter):
+                            self.assertEqual(configured.get(parameter), value)
+
+    def test_fortran_mpi_uses_linux_loopback(self):
+        source = (ROOT / "ci/test_third_party_codes.sh").read_text()
+        linux = source.split('if [[ "$(uname)" != "Darwin" ]]; then', 1)[1]
+        mpi = linux.split("git clone https://github.com/lfortran/fortran_mpi.git", 1)[1]
+        mpi = mpi.split("FC=\"$FC --cpp\" ./run_tests.sh", 1)[0]
+        self.assertEqual(re.findall(
+            r"(?m)^\s*export OMPI_MCA_btl_tcp_if_include=(\S+)$", mpi
+        ), ["lo"])
+
+
 class WorkflowPolicyTests(unittest.TestCase):
     def test_application_catalog_runs_in_every_exhaustive_run_except_tags(self):
         workflows = ROOT / ".github/workflows"

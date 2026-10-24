@@ -92,6 +92,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         100
@@ -120,6 +121,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 m)
@@ -128,11 +130,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 n)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

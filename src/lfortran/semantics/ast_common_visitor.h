@@ -3009,7 +3009,7 @@ public:
                         body.reserve(al, 1);
                         if (intrinsic_call) {
                             body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                                to_return, intrinsic_call, nullptr, false, false, false)));
+                                to_return, intrinsic_call, nullptr, false, false, false, false)));
                         }
                         
                         tmp = ASRUtils::make_Function_t_util(
@@ -18615,7 +18615,7 @@ public:
                                 ASRUtils::EXPR(
                                     ASR::make_Var_t(al, val->base.loc, tmp_sym)
                                 ),
-                                val, nullptr, false, false, false)
+                                val, nullptr, false, false, false, false)
                         )
                     );
                     arg.m_value =

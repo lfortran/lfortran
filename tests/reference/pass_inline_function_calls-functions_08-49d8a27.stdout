@@ -212,6 +212,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 b)
@@ -233,6 +234,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -339,6 +341,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 b)
@@ -360,6 +363,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.
@@ -512,6 +516,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -537,6 +542,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

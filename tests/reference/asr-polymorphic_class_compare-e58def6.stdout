@@ -161,6 +161,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 eq)
                                     Public
@@ -311,6 +312,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 ne)
@@ -320,6 +322,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -544,6 +547,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -554,6 +558,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
