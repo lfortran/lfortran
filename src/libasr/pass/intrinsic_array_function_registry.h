@@ -5324,10 +5324,48 @@ namespace MatMul {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_MatMul(Allocator &,
-        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&, diag::Diagnostics&) {
-        // TODO
-        return nullptr;
+    static inline ASR::expr_t *eval_MatMul(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics&) {
+        ASR::expr_t *ea = ASRUtils::expr_value(args[0]);
+        ASR::expr_t *eb = ASRUtils::expr_value(args[1]);
+        if (!ea || !eb) return nullptr;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*ea))
+            ea = ASR::down_cast<ASR::ArrayPhysicalCast_t>(ea)->m_arg;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*eb))
+            eb = ASR::down_cast<ASR::ArrayPhysicalCast_t>(eb)->m_arg;
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*ea) ||
+            !ASR::is_a<ASR::ArrayConstant_t>(*eb)) return nullptr;
+
+        ASR::ArrayConstant_t *A = ASR::down_cast<ASR::ArrayConstant_t>(ea);
+        ASR::ArrayConstant_t *B = ASR::down_cast<ASR::ArrayConstant_t>(eb);
+        ASR::dimension_t *da = nullptr, *db = nullptr;
+        if (extract_dimensions_from_ttype(A->m_type, da) != 2) return nullptr;
+        if (extract_dimensions_from_ttype(B->m_type, db) != 1) return nullptr;
+        if (!da[0].m_length || !da[1].m_length || !db[0].m_length) return nullptr;
+        int64_t n = 0, k = 0, n2 = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(da[0].m_length), n)) return nullptr;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(da[1].m_length), k)) return nullptr;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(db[0].m_length), n2)) return nullptr;
+        if (k != n2) return nullptr;
+
+        ASR::ttype_t *elem = ASRUtils::extract_type(return_type);
+        if (!ASRUtils::is_real(*elem)) return nullptr;
+        std::vector<ASR::expr_t*> y(n);
+        for (int64_t i = 0; i < n; i++) {
+            double acc = 0;
+            for (int64_t j = 0; j < k; j++) {
+                ASR::expr_t *aij = ASRUtils::fetch_ArrayConstant_value(al, A, i + j * n);
+                ASR::expr_t *bj  = ASRUtils::fetch_ArrayConstant_value(al, B, j);
+                if (!aij || !bj || !ASR::is_a<ASR::RealConstant_t>(*aij)
+                                || !ASR::is_a<ASR::RealConstant_t>(*bj))
+                    return nullptr;
+                acc += ASR::down_cast<ASR::RealConstant_t>(aij)->m_r
+                     * ASR::down_cast<ASR::RealConstant_t>(bj)->m_r;
+            }
+            y[i] = ASRUtils::make_RealConstant_util(al, loc, acc, elem);
+        }
+        return ASRBuilder(al, loc).ArrayConstant(y, elem, false, return_type);
     }
 
     static inline ASR::asr_t* create_MatMul(Allocator& al, const Location& loc,
