@@ -416,11 +416,104 @@ T find_maxval(size_t size, T* data, bool* mask = nullptr) {
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id);
+
+// With `dim` and an array of rank > 1 the result is an array: each element
+// is the reduction of the rank 1 slice of `array` along `dim`, so fold
+// every slice on its own and collect the results in column-major order.
+static inline ASR::expr_t *eval_ArrIntrinsic_along_dim(Allocator & al,
+    const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    if (args.size() < 2 || !ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
+            !args[1] || !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
+    ASR::ArrayConstant_t *mask = nullptr;
+    ASR::expr_t *scalar_mask = nullptr;
+    if (args.size() > 2 && args[2]) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*args[2])) {
+            mask = ASR::down_cast<ASR::ArrayConstant_t>(args[2]);
+        } else if (ASR::is_a<ASR::LogicalConstant_t>(*args[2])) {
+            scalar_mask = args[2];
+        } else {
+            return nullptr;
+        }
+    }
+    ASR::dimension_t *dims = nullptr;
+    int rank = checked_integer_cast<int>(
+        ASRUtils::extract_dimensions_from_ttype(a->m_type, dims));
+    int64_t dim = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n - 1;
+    if (dim < 0 || dim >= rank) return nullptr;
+    std::vector<int64_t> extents(rank), strides(rank);
+    int64_t stride = 1;
+    for (int i = 0; i < rank; i++) {
+        if (!dims[i].m_length || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[i].m_length), extents[i])) {
+            return nullptr;
+        }
+        strides[i] = stride;
+        stride *= extents[i];
+    }
+    std::vector<int64_t> result_extents;
+    int64_t result_size = 1;
+    for (int i = 0; i < rank; i++) {
+        if (i != dim) {
+            result_extents.push_back(extents[i]);
+            result_size *= extents[i];
+        }
+    }
+
+    ASRBuilder b(al, loc);
+    ASR::ttype_t *element_type = ASRUtils::type_get_past_array(a->m_type);
+    ASR::ttype_t *mask_type = mask ? ASRUtils::type_get_past_array(mask->m_type) : nullptr;
+    ASR::ttype_t *result_type = ASRUtils::type_get_past_array(
+        ASRUtils::type_get_past_allocatable_pointer(t));
+    std::vector<ASR::expr_t*> results;
+    for (int64_t r = 0; r < result_size; r++) {
+        // Offset of the first element of this slice, from the indices of
+        // the dimensions other than `dim`
+        int64_t offset = 0, rest = r;
+        for (int i = 0; i < rank; i++) {
+            if (i == dim) continue;
+            offset += (rest % extents[i]) * strides[i];
+            rest /= extents[i];
+        }
+        std::vector<ASR::expr_t*> slice, mask_slice;
+        for (int64_t k = 0; k < extents[dim]; k++) {
+            int64_t idx = offset + k * strides[dim];
+            slice.push_back(ASRUtils::fetch_ArrayConstant_value(al, a, idx));
+            if (mask) {
+                mask_slice.push_back(ASRUtils::fetch_ArrayConstant_value(al, mask, idx));
+            }
+        }
+        Vec<ASR::expr_t*> slice_args; slice_args.reserve(al, 3);
+        slice_args.push_back(al, b.ArrayConstant(slice, element_type, false));
+        slice_args.push_back(al, b.i32(1));
+        if (mask) {
+            slice_args.push_back(al, b.ArrayConstant(mask_slice, mask_type, false));
+        } else if (scalar_mask) {
+            slice_args.push_back(al, scalar_mask);
+        }
+        ASR::expr_t *value = eval_ArrIntrinsic(al, loc, result_type, slice_args,
+            diag, intrinsic_func_id);
+        if (!value) return nullptr;
+        results.push_back(value);
+    }
+    return b.ArrayConstant(results, result_type, false,
+        b.Array(result_extents, result_type));
+}
+
+static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
+    const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
     if (args.size() < 1) return nullptr;
     ASR::expr_t* array = args[0];
     if (!array) return nullptr;
+    if (ASRUtils::is_array(t)) {
+        return eval_ArrIntrinsic_along_dim(al, loc, t, args, diag, intrinsic_func_id);
+    }
     ASR::expr_t* value = nullptr, *args_value0 = nullptr;
     ASR::ArrayConstant_t *a = nullptr;
     size_t size = 0;
@@ -654,7 +747,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return value;
         }
         case ASRUtils::IntrinsicArrayFunctions::Iany: {
-            if (ASRUtils::is_array(t)) return nullptr;
             if (mask) mask_data = (bool*)(mask->m_data);
             int64_t result = 0;
             switch (kind) {
@@ -667,7 +759,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, result, t));
         }
         case ASRUtils::IntrinsicArrayFunctions::Iall: {
-            if (ASRUtils::is_array(t)) return nullptr;
             if (mask) mask_data = (bool*)(mask->m_data);
             int64_t result = -1;
             switch (kind) {
