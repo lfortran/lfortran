@@ -132,6 +132,44 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+### Sharing a session
+
+The prompt is a Jupyter client. It runs its cells in a Jupyter kernel that it
+starts, and it tells where the kernel's connection file is, so that other
+clients can join the session, with its variables, procedures and modules:
+another prompt, `jupyter console --existing FILE` or any Jupyter client.
+
+```console
+$ lfortran
+...
+  * Others can join with `lfortran --connect /tmp/lfortran-0123abcd.json`
+>>>
+$ lfortran --connect /tmp/lfortran-0123abcd.json
+```
+
+A kernel can also be started on its own; it writes the connection file if it
+does not exist and runs until a client shuts it down, or until Ctrl-C or
+SIGTERM:
+
+```console
+$ lfortran kernel -f session.json
+$ lfortran --connect session.json
+```
+
+The kernel runs one cell at a time, in the order the cells arrive. Every
+client sees every cell's output, as in Jupyter: the prompt shows another
+client's cell, marked `[other client]`, when it runs its next cell. A READ
+asks the client that ran the cell. A cell's output is shown when the cell
+finishes or reads input. The kernel a prompt starts stops when its last client
+disconnects. Whoever can read the connection file can run code as its owner,
+so the kernel writes it readable by its owner only. A running cell cannot be
+interrupted yet.
+
+The kernel is LFortran's own implementation of the Jupyter messaging protocol
+(ZeroMQ over TCP with HMAC-SHA256 signatures), which needs no third-party
+library, or the Xeus kernel in a build with `WITH_XEUS=yes`; the client is
+always LFortran's own. See `src/lfortran/jupyter.cpp`.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
