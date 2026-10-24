@@ -5760,6 +5760,7 @@ RUN(NAME separate_compilation_65 LABELS llvm EXTRAFILES separate_compilation_65a
 RUN(NAME separate_compilation_66 LABELS llvm EXTRAFILES separate_compilation_66a.f90 EXTRA_ARGS --separate-compilation) # procedure-local procedure pointer and saved derived-type initializers targeting an imported procedure (#14793) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
 RUN(NAME separate_compilation_69 LABELS gfortran llvm EXTRAFILES separate_compilation_69a.f90)
 RUN(NAME separate_compilation_70 LABELS gfortran llvm EXTRAFILES separate_compilation_70a.f90)
+RUN(NAME separate_compilation_multiple_files_01 LABELS gfortran llvm EXTRAFILES separate_compilation_multiple_files_01a.f90 separate_compilation_multiple_files_01b.f90 separate_compilation_multiple_files_01c.f EXTRA_ARGS --fixed-form-infer)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
