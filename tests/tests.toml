@@ -509,6 +509,18 @@ filename = "errors/cpp_err7.f90"
 asr_preprocess = true
 
 [[test]]
+filename = "errors/cpp_err8.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err9.f90"
+asr_preprocess = true
+
+[[test]]
+filename = "errors/cpp_err10.f90"
+asr_preprocess = true
+
+[[test]]
 filename = "warnings/cpp_warn1.f90"
 asr_preprocess = true
 
