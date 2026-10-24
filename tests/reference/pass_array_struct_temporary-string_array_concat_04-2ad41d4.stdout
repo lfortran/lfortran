@@ -517,6 +517,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 __libasr_created__result_metadata_)
@@ -532,6 +533,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -597,6 +599,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Associate
                                         (Var 5 __libasr_created__function_call_fm)
@@ -648,6 +651,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -713,6 +717,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -911,6 +916,7 @@
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

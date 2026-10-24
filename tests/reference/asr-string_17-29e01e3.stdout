@@ -146,11 +146,13 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 length)
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.
@@ -316,6 +318,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 maybe_string)
@@ -324,6 +327,7 @@
                                                 (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.

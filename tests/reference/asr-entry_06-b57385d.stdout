@@ -518,6 +518,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -535,6 +536,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -646,6 +648,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -674,6 +677,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -691,6 +695,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -802,6 +807,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

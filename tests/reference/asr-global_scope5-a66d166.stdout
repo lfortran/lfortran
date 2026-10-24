@@ -35,6 +35,7 @@
         .false.
         .false.
         .false.
+        .false.
     )
     (IntegerBinOp
         (IntegerConstant 2 (Integer 4) Decimal)
@@ -53,6 +54,7 @@
             ()
         )
         ()
+        .false.
         .false.
         .false.
         .false.

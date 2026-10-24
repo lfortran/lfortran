@@ -67,11 +67,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -125,6 +127,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         1
@@ -140,6 +143,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -161,6 +165,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         3
@@ -176,6 +181,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -243,6 +249,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         4
@@ -258,6 +265,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -279,6 +287,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         6
@@ -294,6 +303,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -361,6 +371,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         7
@@ -376,6 +387,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -397,6 +409,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (GoToTarget
                         9
@@ -412,6 +425,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

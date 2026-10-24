@@ -112,6 +112,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"allocate_on_assignment", &pass_allocate_on_assignment},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -382,6 +383,9 @@ namespace LCompilers {
                 // device routine's result needs the shape of that argument.
                 "gpu_device_allocatable",
                 "array_op",
+                // An intrinsic assignment allocates its unallocated
+                // allocatable variable, explicitly from here on.
+                "allocate_on_assignment",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
                 "print_struct_type",

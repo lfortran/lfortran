@@ -150,6 +150,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
@@ -198,6 +199,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -316,6 +318,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -324,6 +327,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -338,6 +342,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -349,6 +354,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -357,6 +363,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

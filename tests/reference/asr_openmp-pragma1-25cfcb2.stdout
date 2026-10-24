@@ -232,6 +232,7 @@
                                 .false.
                                 .false.
                                 .false.
+                                .false.
                             )]
                             []
                         )]
@@ -413,11 +414,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 total_sum)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -458,6 +461,7 @@
                                         ()
                                     )
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     .false.

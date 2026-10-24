@@ -961,6 +961,17 @@ public:
             "asr.verify.assignment.new_target_is_copied",
             "An assignment that defines a new target copies the value: it "
             "is neither a move assignment nor a defined assignment");
+        require_id(!x.m_new_allocation || (!x.m_new_target &&
+                !x.m_move_allocation && x.m_overloaded == nullptr),
+            "asr.verify.assignment.new_allocation_is_intrinsic",
+            "An assignment to a target allocated for it is an intrinsic "
+            "assignment: it is neither a move, a defined assignment, nor "
+            "the definition of a new target");
+        require_id(!x.m_new_allocation ||
+                ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)),
+            "asr.verify.assignment.new_allocation_is_allocatable",
+            "An assignment to a target allocated for it requires an "
+            "allocatable target");
         if (x.m_move_allocation) {
             require_id(ASRUtils::is_move_allocation_pair(x.m_target, x.m_value),
                 "asr.verify.assignment.move_allocatable_operands",

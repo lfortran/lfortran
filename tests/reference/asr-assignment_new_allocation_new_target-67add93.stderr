@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.assignment.new_allocation_is_intrinsic]: An assignment to a target allocated for it is an intrinsic assignment: it is neither a move, a defined assignment, nor the definition of a new target
+  --> tests/asr/verify/assignment_new_allocation_new_target.asr:42:12
+   |
+42 |           (Assignment
+   |            ^^^^^^^^^^ failed here

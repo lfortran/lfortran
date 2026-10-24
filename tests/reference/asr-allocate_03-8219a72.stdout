@@ -155,6 +155,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -403,11 +404,13 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -591,6 +594,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -658,6 +662,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Allocate
                         [((Var 2 c)
@@ -711,6 +716,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         2 h
@@ -730,6 +736,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

@@ -2,7 +2,7 @@
     "basename": "asr-omp_overwrite_host_region-ad96227",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/omp_overwrite_host_region.asr",
-    "infile_hash": "80041dbbffbe0da7070bf0194ee8c6f6646ee628a5e3c76c5ea67354",
+    "infile_hash": "6517245b5111e5aa1377e919f90434544c09b772bcf11a99e83c0c64",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

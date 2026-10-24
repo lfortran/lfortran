@@ -1,0 +1,13 @@
+{
+    "basename": "asr-assignment_new_allocation_new_target-67add93",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/assignment_new_allocation_new_target.asr",
+    "infile_hash": "72d7bb7713f0cce5ad7e724ec5b090cb4789c44c1833900616dd40d3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-assignment_new_allocation_new_target-67add93.stderr",
+    "stderr_hash": "11e1965da2f10a24b14b012bb7f3ad0966b4a4a956fbc5f5d2084ec9",
+    "returncode": 2
+}

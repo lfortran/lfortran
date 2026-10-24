@@ -2,7 +2,7 @@
     "basename": "asr-array_item_element_kind_mismatch-787860b",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_item_element_kind_mismatch.asr",
-    "infile_hash": "96908e47c55ca00d09752bc04e8ceb153b8ec957076ff7a9d0d5b250",
+    "infile_hash": "9615c34008b5ab62d125f2e22f85fc78c61852faf5fec3b68e84dca7",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

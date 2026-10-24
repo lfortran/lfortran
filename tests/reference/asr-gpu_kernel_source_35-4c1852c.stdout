@@ -407,6 +407,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 5 i)
@@ -418,6 +419,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -459,6 +461,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -497,6 +500,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -854,6 +858,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Allocate
                         [((Var 2 a)
@@ -915,11 +920,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __gpu_loop_end)
                         (Var 2 n)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -952,6 +959,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1084,11 +1092,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr__created__var__0__idl_save_)
                         (Var 2 i)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1136,6 +1146,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __1__libasr_index_)
@@ -1150,6 +1161,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -1157,6 +1169,7 @@
                         (Var 2 i)
                         (Var 2 __libasr__created__var__0__idl_save_)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1221,11 +1234,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr__created__var__1__idl_save_)
                         (Var 2 i)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1288,6 +1303,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __1__libasr_index_1)
@@ -1302,6 +1318,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -1309,6 +1326,7 @@
                         (Var 2 i)
                         (Var 2 __libasr__created__var__1__idl_save_)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
