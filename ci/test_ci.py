@@ -415,15 +415,26 @@ class MPITransportTests(unittest.TestCase):
                 self.assertIn(f"scope: {scope}", call)
                 with tempfile.TemporaryDirectory() as workspace:
                     github_env = Path(workspace) / "github-env"
+                    script = setup.split("        run: ", 1)[1]
+                    if script.startswith("|\n"):
+                        script = script[2:]
                     result = subprocess.run(
                         ["bash", "-e", "-o", "pipefail"],
-                        input=setup.split("        run: ", 1)[1],
+                        input=script,
                         env=dict(os.environ, GITHUB_ENV=str(github_env),
-                                 LFORTRAN_CI_SCOPE=scope, UCX_TLS="all"),
+                                 LFORTRAN_CI_SCOPE=scope, UCX_TLS="all",
+                                 OMPI_MCA_pml="cm", OMPI_MCA_btl="ofi,uct"),
                         capture_output=True, text=True,
                     )
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertEqual(github_env.read_text(), "UCX_TLS=tcp,sm,self\n")
+                    configured = dict(
+                        line.split("=", 1) for line in github_env.read_text().splitlines()
+                    )
+                    self.assertEqual(configured.get("UCX_TLS"), "tcp,sm,self")
+                    for parameter, value in (("OMPI_MCA_pml", "ob1"),
+                                             ("OMPI_MCA_btl", "tcp,sm,self")):
+                        with self.subTest(parameter=parameter):
+                            self.assertEqual(configured.get(parameter), value)
 
     def test_fortran_mpi_uses_linux_loopback(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()

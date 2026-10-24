@@ -282,8 +282,14 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         # Hosted runners can expose RDMA devices with unsupported verbs.
-        # Share portable transports across MPI applications and coarray checks.
-        run: echo "UCX_TLS=tcp,sm,self" >> "$GITHUB_ENV"
+        # Select Open MPI's portable path too: UCX_TLS does not constrain OFI.
+        # Share this policy across MPI applications and coarray checks.
+        run: |
+            {
+                echo "UCX_TLS=tcp,sm,self"
+                echo "OMPI_MCA_pml=ob1"
+                echo "OMPI_MCA_btl=tcp,sm,self"
+            } >> "$GITHUB_ENV"
 
       - name: Test third party codes
         shell: bash -e -l {0}
