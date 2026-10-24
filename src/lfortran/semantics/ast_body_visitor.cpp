@@ -10780,6 +10780,7 @@ public:
         }
 
         // Build the innermost assignment statement
+        size_t body_size_before = current_body ? current_body->size() : 0;
         this->visit_decl_stmt(*x.m_assign);
         LCOMPILERS_ASSERT(tmp) // TODO Handle constant array
         ASR::stmt_t* inner_stmt = ASRUtils::STMT(tmp);
@@ -10788,6 +10789,14 @@ public:
         if (x.m_mask) {
             inner_stmt = mask_to_if(*x.m_mask, inner_stmt);
         }
+        // Temporaries that hold a nested call's value are emitted before
+        // the FORALL, so they have to be checked as well.
+        if (current_body) {
+            for (size_t k = body_size_before; k < current_body->size(); k++) {
+                check_forall_pure_calls(current_body->p[k]);
+            }
+        }
+        check_forall_pure_calls(inner_stmt);
 
         // Nest ForAllSingle nodes from innermost to outermost
         for (size_t i = x.n_control; i-- > 0;) {
@@ -10879,6 +10888,7 @@ public:
             if (x.m_mask) {
                 stmt = mask_to_if(*x.m_mask, stmt);
             }
+            check_forall_pure_calls(stmt);
             for (size_t i = heads.size(); i-- > 0;) {
                 tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
                 stmt = ASRUtils::STMT(tmp);
@@ -10889,6 +10899,9 @@ public:
             transform_stmts(body, x.n_body, x.m_body);
             if (x.m_mask) {
                 apply_mask(*x.m_mask, body);
+            }
+            for (size_t i = 0; i < body.size(); i++) {
+                check_forall_pure_calls(body.p[i]);
             }
             tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
                 nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
