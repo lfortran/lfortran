@@ -18,6 +18,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers::LFortran {
 
@@ -195,9 +196,30 @@ public:
         }
     }
 
+    void update_dc_index_dependencies(SymbolTable *scope,
+            const std::set<std::string> &renamed_names) {
+        PassUtils::UpdateDependenciesVisitor update(al);
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                auto *variable = ASR::down_cast<ASR::Variable_t>(item.second);
+                for (size_t i = 0; i < variable->n_dependencies; i++) {
+                    if (renamed_names.count(variable->m_dependencies[i])) {
+                        update.visit_Variable(*variable);
+                        break;
+                    }
+                }
+            }
+            SymbolTable *child = ASRUtils::symbol_symtab(item.second);
+            if (child) {
+                update_dc_index_dependencies(child, renamed_names);
+            }
+        }
+    }
+
     void finalize_dc_index_names(SymbolTable *scope) {
         if (dc_indices.empty()) return;
         std::set<std::string> names;
+        std::set<std::string> renamed_names;
         collect_dc_index_names(scope, names);
         // Implicit declarations and descendant BLOCK declarations are only
         // known after visiting all bodies. Avoid their names as well as the
@@ -216,10 +238,14 @@ public:
                     break;
                 }
             }
+            renamed_names.insert(index->m_name);
             parent->erase_symbol(index->m_name);
             index->m_name = s2c(al, name);
             parent->add_symbol(name, sym);
         }
+        // Resolved expressions still point to the indices, but declaration
+        // dependencies copied their old names. Refresh after every rename.
+        update_dc_index_dependencies(scope, renamed_names);
     }
 
     // True when the innermost enclosing loop is a DO CONCURRENT construct
