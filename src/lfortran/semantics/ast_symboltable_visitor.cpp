@@ -731,12 +731,11 @@ public:
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
             AST::DeclStmtKind::Implicit);
-        if (implicit_stack.size() > 0 && n_implicit == 0) {
-            // We are inside a module and visiting a function / subroutine with no implicit statement
-            if (!is_interface) {
-                implicit_dictionary = implicit_stack.back();
-                return;
-            }
+        if (implicit_stack.size() > 0 && !is_interface) {
+            // A module or internal procedure starts from the mapping of its
+            // host, which its own implicit statements override letter by letter
+            implicit_dictionary = implicit_stack.back();
+            if (n_implicit == 0) return;
         }
         //iterate over all implicit statements
         for (size_t i=0; i<x.n_items; i++) {
@@ -842,6 +841,22 @@ public:
         }
     }
 
+
+    // The mapping of a host stays on top of `implicit_stack` while its
+    // contained procedures are visited. Each of them overwrites
+    // `implicit_dictionary`, so the host's mapping is restored afterwards.
+    void push_host_implicit_dictionary() {
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
+    }
+
+    void pop_host_implicit_dictionary() {
+        if (compiler_options.implicit_typing) {
+            implicit_dictionary = implicit_stack.back();
+            implicit_stack.pop_back();
+        }
+    }
 
     void print_implicit_dictionary(std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         std::cout << "Implicit Dictionary: " << std::endl;
@@ -1375,6 +1390,7 @@ public:
         // The assignment(=) blocks of the internal procedures are not the program's.
         std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
             = assgn_proc_names_locations;
+        push_host_implicit_dictionary();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1389,6 +1405,7 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        pop_host_implicit_dictionary();
         assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
             try {
@@ -2373,6 +2390,7 @@ public:
             is_Function = false;
         }
         process_simd_variables();
+        push_host_implicit_dictionary();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2392,6 +2410,7 @@ public:
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
+        pop_host_implicit_dictionary();
         visit_later_interface_decls(later_interface_decls);
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -3361,6 +3380,7 @@ public:
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
+        push_host_implicit_dictionary();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -3378,6 +3398,7 @@ public:
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
         }
+        pop_host_implicit_dictionary();
 
         // Create and register the function
         if (assgnd_access.count(sym_name)) {
