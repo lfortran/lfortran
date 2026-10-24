@@ -27296,6 +27296,43 @@ public:
         }
     };
 
+    // Collects every reference to a procedure that is not pure. F2018 10.2.4
+    // (C1037 / C1038): every procedure referenced in a FORALL statement or
+    // construct must be pure.
+    class ImpureCallFinder : public ASR::BaseWalkVisitor<ImpureCallFinder> {
+        public:
+        std::vector<std::pair<std::string, Location>> impure_calls;
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            // Arguments first, so a nested reference is reported before the
+            // call that contains it.
+            ASR::BaseWalkVisitor<ImpureCallFinder>::visit_FunctionCall(x);
+            ASR::symbol_t* fn_sym = ASRUtils::symbol_get_past_external(x.m_name);
+            if( ASR::is_a<ASR::Function_t>(*fn_sym) &&
+                !ASRUtils::get_FunctionType(fn_sym)->m_pure ) {
+                impure_calls.push_back({ASRUtils::symbol_name(fn_sym), x.base.base.loc});
+            }
+        }
+    };
+
+    // Reports an error for each reference to an impure procedure in `s`.
+    void check_forall_pure_calls(ASR::stmt_t* s) {
+        ImpureCallFinder finder;
+        finder.visit_stmt(*s);
+        for( auto& call : finder.impure_calls ) {
+            diag.add(Diagnostic(
+                "Reference to impure function '" + call.first
+                + "' inside a FORALL block",
+                Level::Error, Stage::Semantic, {
+                    Label("", {call.second})
+                }));
+        }
+        if( !finder.impure_calls.empty() &&
+            !compiler_options.continue_compilation ) {
+            throw SemanticAbort();
+        }
+    }
+
     // True if reading `e` several times reads the same storage every time and
     // runs nothing on the way, so that taking each of its components
     // separately evaluates nothing twice. A subscript or a base that calls a
