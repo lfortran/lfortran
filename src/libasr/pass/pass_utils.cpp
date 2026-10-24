@@ -983,6 +983,31 @@ namespace LCompilers {
                 move_allocation));
         }
 
+        ASR::expr_t* make_shape_differs(Allocator &al, const Location &loc,
+                const ASR::alloc_arg_t& alloc_arg, ASR::ttype_t* idx_type) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASRUtils::ExprStmtDuplicator d(al);
+            int idx_kind = ASRUtils::extract_kind_from_ttype_t(idx_type);
+            ASR::expr_t* shape_differs = nullptr;
+            for (size_t i = 0; i < alloc_arg.n_dims; i++) {
+                ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
+                        != idx_kind) {
+                    length = b.i2i_t(length, idx_type);
+                }
+                ASR::expr_t* dim_differs = b.NotEq(b.ArraySize(
+                    d.duplicate_expr(alloc_arg.m_a), b.i_t(i + 1, idx_type),
+                    idx_type), length);
+                shape_differs = shape_differs == nullptr ? dim_differs
+                    : b.Or(shape_differs, dim_differs);
+            }
+            if (shape_differs == nullptr) {
+                shape_differs = b.bool_t(false, ASRUtils::TYPE(
+                    ASR::make_Logical_t(al, loc, 4)));
+            }
+            return shape_differs;
+        }
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
             ASRUtils::ASRBuilder b(al, loc);
             if (curr_idx == 1) {
