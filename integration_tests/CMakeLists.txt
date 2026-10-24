@@ -3260,9 +3260,10 @@ RUN(NAME realloc_lhs_29 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_30 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
-# DISABLED: #15956 - fails at random: `m = d + 1` reallocates m even when its shape is the same
-# RUN(NAME realloc_lhs_31 LABELS gfortran llvm
-#     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_31 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_32 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # same shape is not reallocated (#15956)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
