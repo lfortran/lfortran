@@ -372,7 +372,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
 
     if (ASR::is_a<ASR::IntegerCompare_t>(*value)) {
         ASR::IntegerCompare_t* integer_compare = ASR::down_cast<ASR::IntegerCompare_t>(value);
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, value->base.loc, 4));
+        ASR::ttype_t* logical_type = ASRUtils::extract_type(value_type);
 
         ASR::ttype_t* left_type = ASRUtils::expr_type(integer_compare->m_left);
         ASR::ttype_t* right_type = ASRUtils::expr_type(integer_compare->m_right);
