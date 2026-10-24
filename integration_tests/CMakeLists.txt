@@ -5334,6 +5334,9 @@ RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accep
 RUN(NAME do_concurrent_18 LABELS gfortran llvm)
 RUN(NAME do_concurrent_19 LABELS gfortran llvm fortran cuda)
 RUN(NAME do_concurrent_20 LABELS llvm cuda) # type-spec in concurrent-header is not yet implemented by gfortran.
+RUN(NAME do_concurrent_21 LABELS gfortran llvm fortran EXTRA_ARGS --implicit-typing)
+RUN(NAME do_concurrent_22 LABELS gfortran llvm fortran)
+RUN(NAME do_concurrent_23 LABELS gfortran llvm fortran)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

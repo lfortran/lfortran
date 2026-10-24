@@ -181,17 +181,45 @@ public:
     // Source spelling of each compiler-generated DO CONCURRENT index
     // variable, so that diagnostics name the index-name the user wrote.
     std::map<ASR::symbol_t*, std::string> dc_index_source_names;
+    std::vector<ASR::Variable_t*> dc_indices;
 
-    // Returns `name`, or `name` followed by a counter, that is not visible
-    // from the current scope, so that a new local symbol with this name does
-    // not shadow an entity of an enclosing, host or use-associated scope.
-    std::string get_unique_name_in_scope_chain(const std::string &name) {
-        std::string unique_name = name;
-        for (int counter = 1; current_scope->resolve_symbol(unique_name) != nullptr;
-                counter++) {
-            unique_name = name + std::to_string(counter);
+    void collect_dc_index_names(SymbolTable *scope, std::set<std::string> &names) {
+        for (auto &item : scope->get_scope()) {
+            names.insert(to_lower(item.first));
         }
-        return unique_name;
+        for (auto &item : scope->get_scope()) {
+            SymbolTable *child = ASRUtils::symbol_symtab(item.second);
+            if (child) {
+                collect_dc_index_names(child, names);
+            }
+        }
+    }
+
+    void finalize_dc_index_names(SymbolTable *scope) {
+        if (dc_indices.empty()) return;
+        std::set<std::string> names;
+        collect_dc_index_names(scope, names);
+        // Implicit declarations and descendant BLOCK declarations are only
+        // known after visiting all bodies. Avoid their names as well as the
+        // host/use-associated names when choosing printable identifiers.
+        // Creation order also keeps an index distinct from enclosing indices.
+        for (auto *index : dc_indices) {
+            ASR::symbol_t *sym = &index->base;
+            const std::string &source_name = dc_index_source_names.at(sym);
+            SymbolTable *parent = index->m_parent_symtab;
+            std::string name;
+            for (size_t counter = 0;; counter++) {
+                std::string suffix = "__dc";
+                if (counter > 0) suffix += std::to_string(counter);
+                name = source_name.substr(0, 63 - suffix.size()) + suffix;
+                if (names.find(name) == names.end() && !parent->resolve_symbol(name)) {
+                    break;
+                }
+            }
+            parent->erase_symbol(index->m_name);
+            index->m_name = s2c(al, name);
+            parent->add_symbol(name, sym);
+        }
     }
 
     // True when the innermost enclosing loop is a DO CONCURRENT construct
@@ -694,6 +722,7 @@ public:
         }
         unit->m_items = items.p;
         unit->n_items = items.size();
+        finalize_dc_index_names(unit->m_symtab);
         instantiate_pending_bodies();
     }
 
@@ -10689,10 +10718,10 @@ public:
                 index_type = ASRUtils::duplicate_type(al,
                     ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(outer_var)));
             }
-            // A valid Fortran name (the Fortran backend prints it), unique
-            // against every scope visible from here so that it cannot hide a
-            // host or use-associated entity of the same spelling.
-            std::string index_name = get_unique_name_in_scope_chain(var_name + "__dc");
+            // Keep the internal binding outside the source identifier
+            // namespace: even an undeclared, implicitly typed name must not
+            // resolve to it. Assign a printable name after all bodies.
+            std::string index_name = current_scope->get_unique_name("~" + var_name + "__dc", false);
             ASR::symbol_t *index_sym = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, index_name),
                     nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
@@ -10700,6 +10729,7 @@ public:
             current_scope->add_symbol(index_name, index_sym);
             index_bindings.push_back({var_name, index_sym});
             dc_index_source_names[index_sym] = var_name;
+            dc_indices.push_back(ASR::down_cast<ASR::Variable_t>(index_sym));
             ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, index_sym));
             visit_expr(*h.m_start);
             ASR::expr_t *start = ASRUtils::EXPR(tmp);
