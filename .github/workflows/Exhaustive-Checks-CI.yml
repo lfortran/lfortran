@@ -230,6 +230,67 @@ jobs:
               --source-dir . --build-dir . --install-prefix inst \
               --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
+  benchmarks:
+    name: Check performance against main
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # Builds this commit and its base on main in the same job, so both are
+    # timed on the same runner, and fails if a benchmark in benchmarks/ got
+    # slower.
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build base and PR
+        shell: bash -e -l {0}
+        run: |
+            build() {
+                ./build0.sh
+                cmake . -GNinja \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DWITH_LLVM=yes \
+                  -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+                  -DCMAKE_INSTALL_PREFIX="$1" \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+                cmake --build . -j16 --target install
+            }
+            # The base is where this branch left main; on main itself it is
+            # the previous main commit.
+            pr=$(git rev-parse HEAD)
+            git fetch -q https://github.com/lfortran/lfortran main
+            base=$(git merge-base HEAD FETCH_HEAD)
+            if [[ "$base" == "$pr" ]]; then
+                base=$(git rev-parse HEAD^1)
+            fi
+            git checkout -q "$base"
+            build "$HOME/inst_base"
+            git checkout -q "$pr"
+            build "$HOME/inst_pr"
+
+      - name: Compare
+        shell: bash -e -l {0}
+        run: |
+            cd benchmarks
+            ./run_benchmarks.py --no-gfortran -r 5 \
+              --lfortran "$HOME/inst_base/bin/lfortran" --json base.json
+            ./run_benchmarks.py --no-gfortran -r 5 \
+              --lfortran "$HOME/inst_pr/bin/lfortran" --compare base.json
+
 
 # Commented out to save CI runners:
 #  test-pixi:
