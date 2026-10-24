@@ -278,6 +278,13 @@ jobs:
             echo "$actual"
             test "${actual//[[:space:]]/}" = 25
 
+      - name: Configure Linux MPI transports
+        if: runner.os == 'Linux'
+        shell: bash
+        # Hosted runners can expose RDMA devices with unsupported verbs.
+        # Share portable transports across MPI applications and coarray checks.
+        run: echo "UCX_TLS=tcp,sm,self" >> "$GITHUB_ENV"
+
       - name: Test third party codes
         shell: bash -e -l {0}
         if: ${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
