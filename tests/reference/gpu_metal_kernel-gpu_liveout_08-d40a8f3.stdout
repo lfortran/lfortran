@@ -31,7 +31,7 @@ kernel void __lfortran_gpu_kernel_0(
     int __gpu_loop_group;
     int __gpu_loop_group1;
     int e;
-    int i;
+    int i__dc;
     int j;
     int m;
     int s;
@@ -39,11 +39,11 @@ kernel void __lfortran_gpu_kernel_0(
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     e = __gpu_buf_e[((int)(1) - (1))];
     m = __gpu_buf_m[((int)(1) - (1))];
     s = __gpu_buf_s[((int)(1) - (1))];
-    if ((i == 3)) {
+    if ((i__dc == 3)) {
         j = (1 - 1);
         while (((j + 1) <= 10)) {
             j = (j + 1);
@@ -54,49 +54,49 @@ kernel void __lfortran_gpu_kernel_0(
             }
         }
     }
-    a[((int)(i) - (1))] = i;
+    a[((int)(i__dc) - (1))] = i__dc;
     __gpu_loop_end = 3;
     j = 1;
     if ((__gpu_loop_end >= 1)) {
         for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
             j = __gpu_loop_group;
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 1);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 2);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 3);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 4);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 5);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 6);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 7);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 8);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 9);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 10);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 11);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 12);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 13);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 14);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
             j = (__gpu_loop_group + 15);
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
         }
         for (j = __gpu_loop_group; j <= __gpu_loop_end; j++) {
-            g.c[((int)(((3 * (i - 1)) + j)) - (1))] = ((10 * i) + j);
+            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
         }
     }
-    if ((i == 5)) {
+    if ((i__dc == 5)) {
         __gpu_loop_end1 = 3;
         j = 1;
         if ((__gpu_loop_end1 >= 1)) {
@@ -157,8 +157,8 @@ kernel void __lfortran_gpu_kernel_0(
         }
         return;
     }
-    a[((int)(i) - (1))] = (a[((int)(i) - (1))] + 1);
-    if ((i == 9)) {
+    a[((int)(i__dc) - (1))] = (a[((int)(i__dc) - (1))] + 1);
+    if ((i__dc == 9)) {
         j = (1 - 1);
         while (((j + 1) <= 2)) {
             j = (j + 1);
