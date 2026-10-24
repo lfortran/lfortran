@@ -466,7 +466,11 @@ namespace LCompilers {
                 // Only the LLVM backend formats and transfers arrays
                 // through their contiguous data; the C backend expands or
                 // rejects them itself.
-                "string_format_array_args"
+                "string_format_array_args",
+                // The C backend allocates a derived-type scalar on
+                // assignment itself and cannot lower the allocation status
+                // check that the pass emits (#15949).
+                "allocate_on_assignment"
             };
             _user_defined_passes.clear();
         }
