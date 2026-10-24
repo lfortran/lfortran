@@ -1319,6 +1319,7 @@ RUN(NAME namelist_37 LABELS gfortran llvm)
 RUN(NAME namelist_38 LABELS gfortran llvm)
 RUN(NAME namelist_39 LABELS llvm) # Test in not compatible with gfortran 13.0 used at CI
 RUN(NAME namelist_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME namelist_41 LABELS gfortran llvm)
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 RUN(NAME nested_namelist_02 LABELS gfortran llvm)
 

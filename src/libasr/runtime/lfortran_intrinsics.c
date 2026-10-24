@@ -16574,6 +16574,8 @@ typedef struct {
     int64_t elem_idx;
     int64_t pos;
     bool is_file;
+    bool single_record;
+    bool overflow;
     int delim;  
 } nml_writer_t;
 
@@ -16586,6 +16588,18 @@ static void write_char(nml_writer_t *w, char c) {
     if (w->elem_idx >= w->n_elems) return;
 
     char *dest = w->data + w->elem_idx * w->elem_len;
+
+    if (w->single_record) {
+        // A scalar internal file has one record; items stay separated by
+        // the blanks that start each item and the closing " /".
+        if (c == '\n') return;
+        if (w->pos < w->elem_len) {
+            dest[w->pos++] = c;
+        } else {
+            w->overflow = true;
+        }
+        return;
+    }
 
     if (c == '\n') {
         while (w->pos < w->elem_len) {
@@ -16829,6 +16843,44 @@ LFORTRAN_API void _lfortran_namelist_write(
     w.delim = delim; 
 
     namelist_write_impl(&w, group);
+
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_namelist_write_str(
+    char *data,
+    int64_t data_len,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group)
+{
+    nml_writer_t w;
+    memset(&w, 0, sizeof(w));
+
+    w.data = data;
+    w.elem_len = data_len;
+    w.n_elems = 1;
+    w.elem_idx = 0;
+    w.pos = 0;
+
+    w.is_file = false;
+    w.single_record = true;
+    w.delim = 0;
+
+    namelist_write_impl(&w, group);
+
+    while (w.pos < w.elem_len) {
+        w.data[w.pos++] = ' ';
+    }
+
+    if (w.overflow) {
+        if (iostat) {
+            *iostat = -2;
+            return;
+        } else {
+            fprintf(stderr, "Runtime Error: End of record in namelist write to internal file\n");
+            exit(1);
+        }
+    }
 
     if (iostat) *iostat = 0;
 }
