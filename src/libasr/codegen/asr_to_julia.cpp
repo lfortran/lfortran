@@ -251,7 +251,7 @@ public:
                              std::string& type_name,
                              std::string& dims,
                              ASR::dimension_t* m_dims,
-                             int n_dims,
+                             size_t n_dims,
                              bool init_default = false,
                              bool is_allocate = false)
     {
@@ -262,7 +262,7 @@ public:
             if (is_allocate)
                 return;
         }
-        for (int i = 0; i < n_dims; i++) {
+        for (size_t i = 0; i < n_dims; i++) {
             if (m_dims[i].m_length) {
                 visit_expr(*m_dims[i].m_length);
                 if (init_default)
@@ -439,7 +439,7 @@ public:
         if (x.m_return_var) {
             ASR::Variable_t* return_var = ASRUtils::EXPR2VAR(x.m_return_var);
             if (ASRUtils::is_integer(*return_var->m_type)) {
-                int kind = ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(return_var->m_type)->m_kind);
                 switch (kind) {
                     case (1):
                         ret_type = "Int8";
@@ -1215,10 +1215,10 @@ public:
             increment = 1;
         } else {
             if (c->type == ASR::exprType::IntegerConstant) {
-                increment = ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n;
+                increment = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n);
             } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
                 ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
-                increment = -ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n;
+                increment = static_cast<int>(-ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n);
             } else {
                 throw CodeGenError("Do loop increment type not supported");
             }
@@ -1859,6 +1859,10 @@ public:
         size_t n_values = 0;
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the Julia backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             visit_expr(*x.m_text);

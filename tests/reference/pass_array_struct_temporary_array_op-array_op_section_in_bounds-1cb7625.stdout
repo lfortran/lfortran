@@ -441,6 +441,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr_section_first_element_)
@@ -466,6 +468,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr_index_0_1)
@@ -477,6 +481,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -525,6 +531,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_0_1)
@@ -538,6 +546,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         []
                     )
@@ -547,11 +557,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr_created__array_section_subscript_2)
                         (Var 2 i)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -582,6 +596,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         []
                     )
@@ -589,6 +605,8 @@
                         (Var 2 __libasr_created__array_section_subscript_3)
                         (Var 2 i)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -611,6 +629,37 @@
                             ()
                         )
                         [(Var 2 b)]
+                        [(0
+                        1
+                        1
+                        (ArraySize
+                            (ArraySection
+                                (Var 2 a)
+                                [((IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                (()
+                                (Var 2 __libasr_created__array_section_subscript_3)
+                                ())]
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
                         .false.
                     )
                     (Assignment
@@ -631,6 +680,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr_index_0_4)
@@ -642,6 +693,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -678,6 +731,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_0_4)
@@ -689,6 +744,8 @@
                                 ()
                             )
                             ()
+                            .false.
+                            .false.
                             .false.
                             .false.
                         )]

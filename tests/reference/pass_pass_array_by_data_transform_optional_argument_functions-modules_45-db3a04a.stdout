@@ -1287,10 +1287,12 @@
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_)
                                             (Var 6 flags)
+                                            NoPointerBounds
                                         )]
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_)
                                             (Var 6 __libasr_created_dummy_variable_)
+                                            NoPointerBounds
                                         )]
                                     )
                                     (If
@@ -1305,10 +1307,12 @@
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_1)
                                             (Var 6 c_flags)
+                                            NoPointerBounds
                                         )]
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_1)
                                             (Var 6 __libasr_created_dummy_variable_1)
+                                            NoPointerBounds
                                         )]
                                     )
                                     (If
@@ -1323,10 +1327,12 @@
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_2)
                                             (Var 6 cxx_flags)
+                                            NoPointerBounds
                                         )]
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_2)
                                             (Var 6 __libasr_created_dummy_variable_2)
+                                            NoPointerBounds
                                         )]
                                     )
                                     (If
@@ -1341,10 +1347,12 @@
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_3)
                                             (Var 6 link_time_flags)
+                                            NoPointerBounds
                                         )]
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_3)
                                             (Var 6 __libasr_created_dummy_variable_3)
+                                            NoPointerBounds
                                         )]
                                     )
                                     (If
@@ -1359,10 +1367,12 @@
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_4)
                                             (Var 6 file_scope_flags)
+                                            NoPointerBounds
                                         )]
                                         [(Associate
                                             (Var 6 __libasr_created_variable_pointer_4)
                                             (Var 6 __libasr_created_dummy_variable_4)
+                                            NoPointerBounds
                                         )]
                                     )
                                     (Assignment
@@ -1555,6 +1565,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 6 profindex)
@@ -1566,6 +1578,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

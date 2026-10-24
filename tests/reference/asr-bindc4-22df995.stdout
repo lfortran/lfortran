@@ -397,6 +397,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -411,6 +413,8 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -431,6 +435,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 y)
@@ -449,6 +454,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 queries)
@@ -472,6 +478,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -548,6 +556,8 @@
                                         ()
                                     )]
                                     FormatFortran
+                                    []
+                                    ()
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
                                     )
@@ -624,6 +634,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -703,6 +715,8 @@
                                         ()
                                     )]
                                     FormatFortran
+                                    []
+                                    ()
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
                                     )
@@ -790,6 +804,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -869,6 +885,8 @@
                                         ()
                                     )]
                                     FormatFortran
+                                    []
+                                    ()
                                     (Allocatable
                                         (String 1 () DeferredLength DescriptorString)
                                     )
@@ -1001,6 +1019,8 @@
                             (Var 2 c_null_ptr)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

@@ -57,7 +57,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-wat`: Show WAT (WebAssembly Text Format) and exit
 - `--show-julia`: Show Julia translation source for the given file and exit
 - `--show-gpu-kernel-source`: Show the GPU kernel source for the backend selected by `--gpu` and exit
-- `--gpu-allow-cpu-fallback`: Run a parallel loop that uses a construct the selected GPU does not support (`real(8)` on Metal, `real(10)` or `real(16)`, input/output, or `stop` and `error stop` on Metal) on the CPU with a warning, instead of failing compilation. A loop the GPU offloading pipeline cannot lower is still an error
+- `--gpu-allow-cpu-fallback`: Run a parallel loop that uses a construct the selected GPU does not support (`real(8)` on Metal, `real(10)` or `real(16)`, or input/output) on the CPU with a warning, instead of failing compilation. A loop the GPU offloading pipeline cannot lower is still an error
 - `--show-fortran`: Show Fortran translation source for the given file and exit
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
@@ -99,7 +99,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--bindc-mangling`: Mangles functions with ABI bind(c)
 - `--apply-fortran-mangling`: Mangle symbols with Fortran supported syntax
 - `--mangle-underscore`: Mangles with underscore
-- `--legacy-array-sections`: Enables passing array items as sections if required
+- `--legacy-array-sections`: Enables passing array items as sections if required, and lets the elements of a dummy array whose last dimension is `1`, as in `a(lda, 1)`, be referenced past that dimension, as for an assumed-size `a(lda, *)`
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate memory for arrays on stack
 

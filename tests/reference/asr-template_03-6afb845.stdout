@@ -98,35 +98,6 @@
                                                                     []
                                                                     ()
                                                                 ),
-                                                            lfortran_tmp:
-                                                                (Variable
-                                                                    8
-                                                                    lfortran_tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (TypeParameter
-                                                                        w
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                    ()
-                                                                ),
                                                             x:
                                                                 (Variable
                                                                     8
@@ -257,38 +228,6 @@
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 8 lfortran_tmp)
-                                                            (FunctionCall
-                                                                5 times
-                                                                ()
-                                                                [((Var 8 a))
-                                                                ((ArrayItem
-                                                                    (Var 8 x)
-                                                                    [(()
-                                                                    (Var 8 i)
-                                                                    ())]
-                                                                    (TypeParameter
-                                                                        u
-                                                                        NonExtensible
-                                                                        .false.
-                                                                    )
-                                                                    ColMajor
-                                                                    ()
-                                                                    .false.
-                                                                ))]
-                                                                (TypeParameter
-                                                                    w
-                                                                    NonExtensible
-                                                                    .false.
-                                                                )
-                                                                ()
-                                                                ()
-                                                            )
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                        )
-                                                        (Assignment
                                                             (ArrayItem
                                                                 (Var 8 y)
                                                                 [(()
@@ -320,7 +259,32 @@
                                                                     ()
                                                                     .false.
                                                                 ))
-                                                                ((Var 8 lfortran_tmp))]
+                                                                ((FunctionCall
+                                                                    5 times
+                                                                    ()
+                                                                    [((Var 8 a))
+                                                                    ((ArrayItem
+                                                                        (Var 8 x)
+                                                                        [(()
+                                                                        (Var 8 i)
+                                                                        ())]
+                                                                        (TypeParameter
+                                                                            u
+                                                                            NonExtensible
+                                                                            .false.
+                                                                        )
+                                                                        ColMajor
+                                                                        ()
+                                                                        .false.
+                                                                    ))]
+                                                                    (TypeParameter
+                                                                        w
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    ()
+                                                                ))]
                                                                 (TypeParameter
                                                                     v
                                                                     NonExtensible
@@ -330,6 +294,8 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -455,7 +421,7 @@
                                                         Implementation
                                                         ()
                                                         .true.
-                                                        .false.
+                                                        .true.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -616,7 +582,7 @@
                                                         Implementation
                                                         ()
                                                         .true.
-                                                        .false.
+                                                        .true.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -828,31 +794,6 @@
                                                                     []
                                                                     ()
                                                                 ),
-                                                            lfortran_tmp:
-                                                                (Variable
-                                                                    12
-                                                                    lfortran_tmp
-                                                                    []
-                                                                    Local
-                                                                    ()
-                                                                    ()
-                                                                    Default
-                                                                    (Real 4)
-                                                                    ()
-                                                                    Source
-                                                                    Private
-                                                                    Required
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    NotMethod
-                                                                    ()
-                                                                    []
-                                                                    ()
-                                                                ),
                                                             x:
                                                                 (Variable
                                                                     12
@@ -963,30 +904,6 @@
                                                         )
                                                         ())
                                                         [(Assignment
-                                                            (Var 12 lfortran_tmp)
-                                                            (FunctionCall
-                                                                9 ~mul_intrinsic
-                                                                ()
-                                                                [((Var 12 a))
-                                                                ((ArrayItem
-                                                                    (Var 12 x)
-                                                                    [(()
-                                                                    (Var 12 i)
-                                                                    ())]
-                                                                    (Integer 4)
-                                                                    ColMajor
-                                                                    ()
-                                                                    .false.
-                                                                ))]
-                                                                (Real 4)
-                                                                ()
-                                                                ()
-                                                            )
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                        )
-                                                        (Assignment
                                                             (ArrayItem
                                                                 (Var 12 y)
                                                                 [(()
@@ -1010,12 +927,31 @@
                                                                     ()
                                                                     .false.
                                                                 ))
-                                                                ((Var 12 lfortran_tmp))]
+                                                                ((FunctionCall
+                                                                    9 ~mul_intrinsic
+                                                                    ()
+                                                                    [((Var 12 a))
+                                                                    ((ArrayItem
+                                                                        (Var 12 x)
+                                                                        [(()
+                                                                        (Var 12 i)
+                                                                        ())]
+                                                                        (Integer 4)
+                                                                        ColMajor
+                                                                        ()
+                                                                        .false.
+                                                                    ))]
+                                                                    (Real 4)
+                                                                    ()
+                                                                    ()
+                                                                ))]
                                                                 (Real 4)
                                                                 ()
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]
@@ -1247,7 +1183,7 @@
                                                         Implementation
                                                         ()
                                                         .true.
-                                                        .false.
+                                                        .true.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -1268,6 +1204,8 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -1367,7 +1305,7 @@
                                                         Implementation
                                                         ()
                                                         .true.
-                                                        .false.
+                                                        .true.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -1394,6 +1332,8 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -1429,6 +1369,8 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1469,6 +1411,8 @@
                                             )
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1520,6 +1464,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (SubroutineCall
                                         9 axpy
@@ -1559,6 +1505,8 @@
                                             ()
                                             [(Var 9 y)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -1690,7 +1638,7 @@
                                                         Implementation
                                                         ()
                                                         .true.
-                                                        .false.
+                                                        .true.
                                                         .false.
                                                         .false.
                                                         .false.

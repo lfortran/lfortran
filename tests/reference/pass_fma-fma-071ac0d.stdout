@@ -148,6 +148,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 3 _lcompilers_optimization_fma_f32)
                     Public
@@ -299,6 +301,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]
@@ -454,6 +458,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 6 _lcompilers_optimization_fma_f322)
                     Public
@@ -607,6 +613,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 7 _lcompilers_optimization_fma_f323)
                     Public
@@ -758,6 +766,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]
@@ -1069,6 +1079,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -1083,6 +1095,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -1207,6 +1221,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 r)
@@ -1221,6 +1237,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -1264,6 +1282,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -1279,6 +1299,8 @@
                                 .true.
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -1342,6 +1364,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -1357,6 +1381,8 @@
                                 .true.
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

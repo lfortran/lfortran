@@ -517,6 +517,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -534,6 +536,8 @@
                             (Real 8)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -646,7 +650,10 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
+                    (Return)
                     (GoToTarget
                         2
                         2
@@ -669,6 +676,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -686,6 +695,8 @@
                             (Real 8)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -798,7 +809,10 @@
                         ()
                         .false.
                         .false.
-                    )]
+                        .false.
+                        .false.
+                    )
+                    (Return)]
                     ()
                     Public
                     .true.
@@ -922,14 +936,12 @@
                             (Var 3 w)
                             DescriptorArray
                             UnboundedPointerArray
-                            (Pointer
-                                (Array
-                                    (Real 8)
-                                    [(()
-                                    ())]
-                                    UnboundedPointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 8)
+                                [(()
+                                ())]
+                                UnboundedPointerArray
+                                Global
                             )
                             ()
                         ))]

@@ -273,6 +273,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -286,10 +288,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_)
                             (Var 5 i)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_)
                             (Var 5 __libasr_created_dummy_variable_)
+                            NoPointerBounds
                         )]
                     )
                     (Assignment
@@ -323,6 +327,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -336,10 +342,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
                             (Var 5 lfortran_tmp)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_1)
                             (Var 5 __libasr_created_dummy_variable_1)
+                            NoPointerBounds
                         )]
                     )
                     (Assignment
@@ -373,6 +381,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -386,10 +396,12 @@
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_2)
                             (Var 5 lfortran_tmp1)
+                            NoPointerBounds
                         )]
                         [(Associate
                             (Var 5 __libasr_created_variable_pointer_2)
                             (Var 5 __libasr_created_dummy_variable_2)
+                            NoPointerBounds
                         )]
                     )
                     (SubroutineCall
@@ -542,6 +554,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 4 r)
                                     Public
@@ -607,6 +621,8 @@
                                             )
                                             (Var 3 a)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

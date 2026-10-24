@@ -1,4 +1,5 @@
 #include <libasr/exception.h>
+#include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/string_utils.h>
 
 #include <algorithm>
@@ -350,8 +351,12 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu-arch", compiler_options.gpu_arch, "GPU architecture to compile device code for with --gpu=cuda (e.g. sm_120); defaults to the GPUs of the compiling machine")->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
-        app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), input/output, or stop on Metal) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
+        app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), or input/output) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
+        app.add_option("--gpu-loop-transforms", compiler_options.po.gpu_loop_transforms, "Loop transformations applied to device loops before offloading: all, none, or a comma separated list of fuse, swap, split, jam, skew")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu-cache-bytes", compiler_options.po.gpu_cache_bytes, "The size in bytes of the device's last-level cache that the device loop transformations assume (default: the size the device reports at run time)")->group(group_backend_codegen_options);
+        app.add_option("--gpu-split-min-iterations", compiler_options.po.gpu_split_min_iterations, "The fewest iterations of a device loop that index-set splitting splits when the loop runs; smaller loops run as written (0: split every loop that has an interior)")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -454,6 +459,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
             compiler_options.po.realloc_lhs_arrays = true;
+            compiler_options.std_f23_conformance = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
             compiler_options.show_style_suggestions = false;
@@ -527,6 +533,13 @@ namespace LCompilers::CommandLineInterface {
                 "The GPU backend `" + compiler_options.gpu_backend
                 + "` is not supported; supported values: metal, cuda, cuda_cpu"
             );
+        }
+        {
+            std::string message;
+            if (!lc::gpu_loop_transforms_valid(
+                    compiler_options.po.gpu_loop_transforms, message)) {
+                throw lc::LCompilersException(message);
+            }
         }
 
         for (auto &f_flag : opts.f_flags) {

@@ -193,14 +193,12 @@
                             (Var 3 r)
                             DescriptorArray
                             PointerArray
-                            (Pointer
-                                (Array
-                                    (Real 4)
-                                    [(()
-                                    ())]
-                                    PointerArray
-                                    Global
-                                )
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
                             )
                             ()
                         ))]
@@ -583,6 +581,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 6 ftol_return_var_name)
                                     Public
@@ -802,6 +802,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Return)
                     (GoToTarget
@@ -960,6 +962,8 @@
                             ()
                             [(Var 5 r)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

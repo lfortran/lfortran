@@ -28,6 +28,12 @@ The value of the expression.
 `size(a)` and `size(a, d)`. For an array whose shape is known at compile time
 the frontend folds the result into `value`.
 
+The `array_dim_intrinsics_update` pass replaces `ArraySize` of an array
+section (`v` an `ArraySection`, or an elemental expression whose shape is
+that of one) without a `value` by the size computed from the section's
+subscripts, so the backends only read the size of an array they store. A
+`dim` that is not a compile time constant selects the extent with `merge`.
+
 ## Examples
 
 ```clojure

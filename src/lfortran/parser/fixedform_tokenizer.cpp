@@ -219,6 +219,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"out", KW_OUT},
     {"parameter", KW_PARAMETER},
     {"pass", KW_PASS},
+    {"pause", KW_PAUSE},
     {"pointer", KW_POINTER},
     {"post", KW_POST},
     {"precision", KW_PRECISION},
@@ -296,7 +297,19 @@ const std::vector<std::string> declarators{
             "type",
             "class",
             "public",
-            "private"
+            "private",
+            "allocatable",
+            "asynchronous",
+            "bind",
+            "codimension",
+            "contiguous",
+            "intent",
+            "optional",
+            "pointer",
+            "protected",
+            "target",
+            "value",
+            "volatile"
         };
 
 std::vector<std::string> lines{};
@@ -343,7 +356,7 @@ struct FixedFormRecursiveDescent {
     // Auxiliary functions:
 
     void error(unsigned char *cur, const std::string &text) {
-        uint32_t loc_first = cur-string_start;
+        uint32_t loc_first = source_offset(cur-string_start);
         Location loc;
         loc.first = loc_first;
         loc.last = loc_first;
@@ -407,8 +420,8 @@ struct FixedFormRecursiveDescent {
             tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(y);
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + label.size();
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start + label.size());
             locations.push_back(loc);
             cur+=reserved_cols;
             return y.int_suffix.int_n.n;
@@ -442,8 +455,8 @@ struct FixedFormRecursiveDescent {
             tokens.push_back(yytokentype::TK_INTEGER);
             stypes.push_back(yy);
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + label.size();
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start + label.size());
             locations.push_back(loc);
             cur+=count+1; // TODO revisit
             return yy.int_suffix.int_n.n;
@@ -463,17 +476,27 @@ struct FixedFormRecursiveDescent {
     }
 
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
+    // The token covers `len` characters of the source starting at `cur`
+    // (`loc.last` is the offset of its last character).
     // (Does not modify `cur`.)
     void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
-            yytokentype const token_type) {
+            yytokentype const token_type, size_t len) {
+        LCOMPILERS_ASSERT(len > 0)
         YYSTYPE yy;
         yy.string.from_str(m_a, token_str);
         stypes.push_back(yy);
         tokens.push_back(token_type);
         Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + token_str.size();
+        loc.first = source_offset(cur - string_start);
+        loc.last = source_offset(cur - string_start + len - 1);
         locations.push_back(loc);
+    }
+
+    // The token covers token_str.size() characters of the source
+    void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
+            yytokentype const token_type) {
+        push_token_no_advance_token(cur, token_str, token_type,
+            token_str.size());
     }
 
     // token_type automatically determined
@@ -491,8 +514,8 @@ struct FixedFormRecursiveDescent {
         stypes.push_back(yy);
         tokens.push_back(TK_INTEGER);
         Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start;
+        loc.first = source_offset(cur - string_start);
+        loc.last = source_offset(cur - string_start);
         locations.push_back(loc);
     }
 
@@ -523,8 +546,8 @@ struct FixedFormRecursiveDescent {
     // Return the current token's location
     void token_loc(unsigned char *tok, unsigned char *cur, Location &loc) const
     {
-        loc.first = tok-string_start;
-        loc.last = cur-string_start-1;
+        loc.first = source_offset(tok-string_start);
+        loc.last = source_offset(cur-string_start-1);
     }
 
     /*
@@ -818,8 +841,8 @@ struct FixedFormRecursiveDescent {
                 // stray `)`) is a tokenization error.
                 if (!is_char(*end) && !is_digit(*end)) {
                     Location loc;
-                    loc.first = end - string_start;
-                    loc.last = end - string_start;
+                    loc.first = source_offset(end - string_start);
+                    loc.last = source_offset(end - string_start);
                     diag.add(diag::Diagnostic(
                         "Unexpected token after the condition of the if statement",
                         diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -841,8 +864,8 @@ struct FixedFormRecursiveDescent {
                 }
             } else {
                 Location loc;
-                loc.first = end - string_start;
-                loc.last = end - string_start;
+                loc.first = source_offset(end - string_start);
+                loc.last = source_offset(end - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected `)` here to end the condition expression of the if statement ",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -850,8 +873,8 @@ struct FixedFormRecursiveDescent {
             }
         } else {
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start;
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start);
             diag.add(diag::Diagnostic(
                 "Expected expression after `if`",
                 diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1004,8 +1027,8 @@ struct FixedFormRecursiveDescent {
                     Location fmt_content_loc;
                     lex_format(cur, fmt_content_loc, start, diag, false, this->string_start);
                     Location loc;
-                    loc.first = format_start - string_start;
-                    loc.last = cur - string_start - 1;
+                    loc.first = source_offset(format_start - string_start);
+                    loc.last = source_offset(cur - string_start - 1);
                     locations.push_back(loc);
                     YYSTYPE yylval;
                     yylval.string.p = (char*) start;
@@ -1183,6 +1206,14 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
+        unsigned char *construct_pos = nullptr;
+        if (is_named_construct(cur, construct_pos)) {
+            // Tokenize the construct name and `:`, then lex the construct
+            // itself below
+            t.cur = cur;
+            tokenize_until(construct_pos);
+            cur = construct_pos;
+        }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
         // `type, <attr-spec-list> :: name` (e.g. `type, extends(p) :: c`)
@@ -1253,6 +1284,11 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "selectcase(")) {
             lex_selectcase(cur);
+            return true;
+        }
+
+        if (is_block_construct(cur)) {
+            lex_block(cur, continue_compilation);
             return true;
         }
 
@@ -1392,6 +1428,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "pause")) {
+            push_token_advance(cur, "pause");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "errorstop")) {
             push_token_advance(cur, "error");
             push_token_advance(cur, "stop");
@@ -1407,6 +1449,7 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "cycle")){
             push_token_advance(cur, "cycle");
             tokenize_line(cur);
+            return true;
         }
 
         if (l != -1) {
@@ -1433,8 +1476,8 @@ struct FixedFormRecursiveDescent {
                 tokenize_line(cur);
             } else {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected 'to' here",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1442,8 +1485,8 @@ struct FixedFormRecursiveDescent {
             }
         } else {
             Location loc;
-            loc.first = cur-string_start;
-            loc.last = cur-string_start;
+            loc.first = source_offset(cur-string_start);
+            loc.last = source_offset(cur-string_start);
             diag.add(diag::Diagnostic(
                 "Expected integer after `assign`",
                 diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1480,6 +1523,26 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    // Push an `end_do` token that ends a labeled do loop at its terminal
+    // statement, which starts at `term_first` and was consumed up to `cur`
+    // (the end of its line or its `;` separator). The token covers the
+    // terminal statement, so that the loop ends there and not at the
+    // statement after it. If nothing was consumed (an empty or invalid
+    // terminal statement, such as `10 end`), the token covers the single
+    // character at `term_first`.
+    void push_end_do_terminal(unsigned char *term_first, unsigned char *cur) {
+        size_t len = 1;
+        if (cur > term_first) {
+            unsigned char *term_last = cur - 1;
+            while (term_last > term_first && (*term_last == '\n'
+                    || *term_last == '\r' || *term_last == ';')) {
+                term_last--;
+            }
+            len = term_last - term_first + 1;
+        }
+        push_token_no_advance_token(term_first, "end_do", KW_END_DO, len);
+    }
+
     // Returns true if this is "end do" or equivalent, otherwise false
     // It will always consume the label.
     // If true, it will consume the terminal statement, up to and including
@@ -1510,6 +1573,7 @@ struct FixedFormRecursiveDescent {
         } else if (all_labels_match(label)) {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
                 // by eat_label() above already precedes the `end_do` we
@@ -1526,7 +1590,7 @@ struct FixedFormRecursiveDescent {
             }
             size_t n_match = do_labels.size();
             for (size_t i=0; i<n_match; i++) {
-                push_token_no_advance(cur, "end_do");
+                push_end_do_terminal(term_first, cur);
                 push_token_no_advance(cur, "\n");
                 LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
@@ -1536,6 +1600,7 @@ struct FixedFormRecursiveDescent {
             int64_t n_match = last_labels_match(label);
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // See note above; label attaches to innermost end_do.
                 skip_continue(cur);
@@ -1545,7 +1610,7 @@ struct FixedFormRecursiveDescent {
                 lex_body_statement(cur);
             }
             for (int i=0;i<n_match;++i) {
-                push_token_no_advance(cur, "end_do");
+                push_end_do_terminal(term_first, cur);
                 push_token_no_advance(cur, "\n");
                 LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
@@ -1553,6 +1618,7 @@ struct FixedFormRecursiveDescent {
             return true;
         } else {
             // end one nesting of loop
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // See note above; label attaches to end_do.
                 skip_continue(cur);
@@ -1561,7 +1627,7 @@ struct FixedFormRecursiveDescent {
                 // TODO: add a continue label
                 lex_body_statement(cur);
             }
-            push_token_no_advance(cur, "end_do");
+            push_end_do_terminal(term_first, cur);
             push_token_no_advance(cur, "\n");
             LCOMPILERS_ASSERT(label_last(do_label))
             do_labels.pop_back();
@@ -1633,6 +1699,38 @@ struct FixedFormRecursiveDescent {
         return true;
     }
 
+    // `block` that opens a BLOCK construct
+    bool is_block_construct(unsigned char *cur) {
+        return next_is(cur, "block") && next_is_eos(cur+5);
+    }
+
+    /*
+    If the statement starts with `name:` followed by an IF, SELECT CASE,
+    SELECT RANK, WHERE, DO CONCURRENT or BLOCK construct, returns true and
+    sets `construct_pos` to the position after the `:`. Named DO loops are
+    handled by is_named_do_loop() and is_named_do_while().
+    */
+    bool is_named_construct(unsigned char *cur, unsigned char *&construct_pos) {
+        unsigned char *tmp = cur;
+        if (!try_name(tmp)) return false;
+        if (!try_next(tmp, ":")) return false;
+        if (next_is(tmp, "if(") || next_is(tmp, "selectcase(")
+                || next_is(tmp, "selectrank(") || next_is(tmp, "where(")
+                || next_is(tmp, "doconcurrent(") || is_block_construct(tmp)) {
+            construct_pos = tmp;
+            return true;
+        }
+        return false;
+    }
+
+    // Is this the statement `keyword [construct-name]`, e.g. `endselect`,
+    // `endselect sel` or `else mode0`?
+    bool is_construct_stmt(unsigned char *cur, const std::string &keyword) {
+        if (!try_next(cur, keyword)) return false;
+        try_name(cur);
+        return next_is_eos(cur);
+    }
+
     bool label_last(int64_t label) {
         if (do_labels.size() > 0) {
             if (do_labels[do_labels.size()-1] == label) {
@@ -1653,8 +1751,8 @@ struct FixedFormRecursiveDescent {
                 break;
             } else if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur - string_start;
-                loc.last = cur - string_start;
+                loc.first = source_offset(cur - string_start);
+                loc.last = source_offset(cur - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside do concurrent loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1697,7 +1795,8 @@ struct FixedFormRecursiveDescent {
 
     void lex_enddo_line(unsigned char *&cur) {
         LCOMPILERS_ASSERT(next_is(cur, "enddo"))
-        push_token_no_advance(cur, "end_do");
+        // The `end_do` token covers the 5 characters of `enddo`
+        push_token_no_advance_token(cur, "end_do", KW_END_DO, 5);
         cur += 5;
         t.cur = cur;
         unsigned char *name_start = cur;
@@ -1726,8 +1825,8 @@ struct FixedFormRecursiveDescent {
             }
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a do loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1744,8 +1843,8 @@ struct FixedFormRecursiveDescent {
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a labeled do loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1773,8 +1872,8 @@ struct FixedFormRecursiveDescent {
             // stray `end`/`contains`/`subroutine`/`function`.
             if (!lex_body_statement(cur, continue_compilation)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a do while loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1790,8 +1889,12 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "select");
         push_token_advance(cur, "rank");
         tokenize_line(cur); // tokenize rest of line where `select rank` starts
-        while (!(next_is(cur, "endselect") && next_is_eos(cur+9))) {
-            if (next_is(cur, "rank")) {
+        while (!is_construct_stmt(cur, "endselect")) {
+            if (next_is(cur, "rankdefault")) {
+                push_token_advance(cur, "rank");
+                push_token_advance(cur, "default");
+                tokenize_line(cur);
+            } else if (next_is(cur, "rank")) {
                 push_token_advance(cur, "rank");
                 tokenize_line(cur);
             } else {
@@ -1807,7 +1910,7 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "select");
         push_token_advance(cur, "case");
         tokenize_line(cur);
-        while (!(next_is(cur, "endselect") && next_is_eos(cur+9))) {
+        while (!is_construct_stmt(cur, "endselect")) {
             if (next_is(cur, "casedefault")) {
                 push_token_advance(cur, "case");
                 push_token_advance(cur, "default");
@@ -1820,6 +1923,24 @@ struct FixedFormRecursiveDescent {
             }
         }
         push_token_advance(cur, "endselect");
+        tokenize_line(cur);
+    }
+
+    void lex_block(unsigned char *&cur, bool continue_compilation = false) {
+        push_token_advance(cur, "block");
+        tokenize_line(cur);
+        while (!is_construct_stmt(cur, "endblock")) {
+            if (!lex_body_statement(cur, continue_compilation)) {
+                Location loc;
+                loc.first = source_offset(cur - string_start);
+                loc.last = source_offset(cur - string_start);
+                diag.add(diag::Diagnostic(
+                    "Expected a statement inside block construct",
+                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
+                throw parser_local::TokenizerAbort();
+            }
+        }
+        push_token_advance(cur, "endblock");
         tokenize_line(cur);
     }
 
@@ -1860,8 +1981,8 @@ struct FixedFormRecursiveDescent {
             }
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur - string_start;
-                loc.last = cur - string_start;
+                loc.first = source_offset(cur - string_start);
+                loc.last = source_offset(cur - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside where block",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1872,12 +1993,21 @@ struct FixedFormRecursiveDescent {
 
     bool if_advance_or_terminate(unsigned char *&cur) {
         int64_t l = eat_label(cur);
-        if (next_is(cur, "elseif")) {
+        if (next_is(cur, "elseif(")) {
             push_token_advance(cur, "elseif");
+            unsigned char *end = cur + 1;
+            if (try_expr(end, false) && *end == ')'
+                    && is_construct_stmt(end + 1, "then")) {
+                // `else if (...) then [construct-name]`: push `then`
+                // separately so that it does not merge with the name
+                tokenize_until(end + 1);
+                cur = end + 1;
+                push_token_advance(cur, "then");
+            }
             tokenize_line(cur);
             return true;
         }
-        if (next_is(cur, "else") && next_is_eos(cur+4)) {
+        if (is_construct_stmt(cur, "else")) {
             push_token_advance(cur, "else");
             tokenize_line(cur);
             return true;

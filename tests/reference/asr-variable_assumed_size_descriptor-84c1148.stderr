@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.assumed_size_descriptor]: assumed-size dummy argument 'a' must not have physical type "DescriptorArray"
+ --> tests/asr/verify/variable_assumed_size_descriptor.asr:9:18
+  |
+9 |             "a" (Variable
+  |                  ^^^^^^^^ failed here

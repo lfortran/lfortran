@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a constant array of derived-type values
+  --> tests/../integration_tests/gpu_decline_38.f90:27:5 - 29:10
+   |
+27 |        do concurrent (i = 1:size(y))
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+29 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a constant array of derived-type values

@@ -429,14 +429,14 @@ module lfortran_intrinsic_ieee_arithmetic
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
         logical :: r
-        r = x /= 0.0_real32 .and. abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
+        r = x == 0.0_real32 .or. (abs(x) >= tiny(x) .and. abs(x) <= huge(x))
     end function
 
     elemental function dpieee_is_normal(x) result(r)
         use iso_fortran_env, only: real64
         real(real64), intent(in) :: x
         logical :: r
-        r = x /= 0.0_real64 .and. abs(x) >= tiny(x) .and. abs(x) <= huge(x) .and. x == x
+        r = x == 0.0_real64 .or. (abs(x) >= tiny(x) .and. abs(x) <= huge(x))
     end function
 
     elemental function spieee_unordered(x, y) result(r)

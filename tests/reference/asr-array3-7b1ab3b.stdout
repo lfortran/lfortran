@@ -89,6 +89,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -105,6 +107,8 @@
                             ColMajor
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

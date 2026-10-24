@@ -44,7 +44,6 @@
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
 #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
 #endif
-#include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/ExecutionEngine/ObjectCache.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
@@ -534,9 +533,8 @@ bool is_wasm_triple(const llvm::Triple &triple)
 }
 
 // Machine code generation follows clang and flang: the default mode is -O0,
-// which selects the -O0 instruction selector (FastISel or GlobalISel) and the
-// fast register allocator, and `--fast` is -O3. The default mode runs no IR
-// optimizations.
+// which selects the -O0 instruction selector and the fast register allocator,
+// and `--fast` is -O3. The default mode runs no IR optimizations.
 CodeGenOptLevel codegen_opt_level(const LLVMTargetConfig &config)
 {
     if (config.fast) {
@@ -578,6 +576,15 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
     if (!machine) {
         throw LCompilersException("could not create target machine for '"
             + config.triple + "'");
+    }
+    // At -O0 the AArch64 backend selects GlobalISel (clang uses it too), whose
+    // localizer scans a basic block linearly for each value it moves, so code
+    // generation time is quadratic in the size of large blocks. Select
+    // FastISel instead, as on x86-64; it falls back to SelectionDAG for what
+    // it does not handle.
+    if (machine->getOptLevel() == CodeGenOptLevel::None
+            && triple.isAArch64()) {
+        machine->setGlobalISel(false);
     }
     return std::unique_ptr<llvm::TargetMachine>(machine);
 }

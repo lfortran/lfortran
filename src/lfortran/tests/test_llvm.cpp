@@ -4,9 +4,11 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
@@ -185,6 +187,19 @@ TEST_CASE("LLVM code generation optimization level") {
     LCompilers::LLVMEvaluator wasm_evaluator("wasm32-unknown-wasi");
     CHECK(wasm_evaluator.get_target_machine().getOptLevel()
         == CodeGenOptLevel::Default);
+#endif
+
+#ifdef HAVE_TARGET_AARCH64
+    // At -O0 LLVM selects GlobalISel on AArch64, whose compile time is
+    // quadratic in the size of a basic block; the default mode uses FastISel
+    // as on x86-64.
+    for (const std::string triple: {"aarch64-unknown-linux-gnu",
+            "arm64-apple-macosx11.0.0"}) {
+        LCompilers::LLVMEvaluator aarch64_evaluator(triple);
+        const llvm::TargetMachine &tm = aarch64_evaluator.get_target_machine();
+        CHECK(tm.getOptLevel() == CodeGenOptLevel::None);
+        CHECK(!tm.Options.EnableGlobalISel);
+    }
 #endif
 }
 
@@ -546,7 +561,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -588,7 +603,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -1167,12 +1182,13 @@ TEST_CASE("FortranEvaluator 9 single complex") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-    if (cu.platform == LCompilers::Platform::Linux) {
+    if (cu.platform == LCompilers::Platform::Linux ||
+            cu.platform == LCompilers::Platform::Windows) {
         FortranEvaluator e(cu);
         LCompilers::Result<FortranEvaluator::EvalResult>
         r = e.evaluate2("(2.5_4, 3.5_4)");
-        CHECK(r.ok);
-        CHECK(r.result.type == FortranEvaluator::EvalResult::complex4);
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex4);
         CHECK(r.result.c32.re == 2.5);
         CHECK(r.result.c32.im == 3.5);
     }
@@ -1182,16 +1198,42 @@ TEST_CASE("FortranEvaluator 9 double complex") {
     CompilerOptions cu;
     cu.interactive = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
-    if (cu.platform != LCompilers::Platform::Windows) {
-        FortranEvaluator e(cu);
-        LCompilers::Result<FortranEvaluator::EvalResult>
-        r = e.evaluate2("(2.5_8, 3.5_8)");
-        CHECK(r.ok);
-        CHECK(r.result.type == FortranEvaluator::EvalResult::complex8);
-        CHECK(r.result.c64.re == 2.5);
-        CHECK(r.result.c64.im == 3.5);
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("(2.5_8, 3.5_8)");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex8);
+    CHECK(r.result.c64.re == 2.5);
+    CHECK(r.result.c64.im == 3.5);
+}
+
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator Windows complex result ABI") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // Exercise Windows' i64 and output-pointer entry points on native JITs.
+    // These primitive signatures also use the host's scalar/pointer ABI.
+    cu.platform = LCompilers::Platform::Windows;
+    FortranEvaluator e(cu);
+    for (bool swapped : {false, true}) {
+        CAPTURE(swapped);
+        auto r = e.evaluate2(swapped ? "(-2.5_4, 1.25_4)" : "(1.25_4, -2.5_4)");
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex4);
+        CHECK(r.result.c32.re == (swapped ? -2.5f : 1.25f));
+        CHECK(r.result.c32.im == (swapped ? 1.25f : -2.5f));
+    }
+    for (bool swapped : {false, true}) {
+        CAPTURE(swapped);
+        auto r = e.evaluate2(swapped ? "(-2.5_8, 1.25_8)" : "(1.25_8, -2.5_8)");
+        REQUIRE(r.ok);
+        REQUIRE(r.result.type == FortranEvaluator::EvalResult::complex8);
+        CHECK(r.result.c64.re == (swapped ? -2.5 : 1.25));
+        CHECK(r.result.c64.im == (swapped ? 1.25 : -2.5));
     }
 }
+#endif
 
 TEST_CASE("FortranEvaluator logical 1") {
     CompilerOptions cu;
@@ -1209,6 +1251,32 @@ TEST_CASE("FortranEvaluator logical 1") {
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
     CHECK(r.result.b);
+}
+
+TEST_CASE("FortranEvaluator character comparison") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Comparing character dummy arguments calls the runtime's str_compare,
+    // which the JIT must resolve from the runtime library on every platform.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module str_order\n"
+        "contains\n"
+        "logical function before(x, y)\n"
+        "character(len=*), intent(in) :: x, y\n"
+        "before = x < y\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+    r = e.evaluate2("use str_order\nbefore('abc', 'abd')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+    r = e.evaluate2("before('abd', 'abc')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
 }
 
 TEST_CASE("FortranEvaluator logical 2") {
@@ -2348,7 +2416,7 @@ end module
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "mcellmod.f90";
         lm.files.push_back(fl);
-        lm.file_ends.push_back(std::strlen(modsrc));
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(std::strlen(modsrc)));
         LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
             LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
         LCompilers::ASR::TranslationUnit_t* asr = TRY(
@@ -2847,5 +2915,359 @@ end subroutine
     r = e.evaluate2("new_get()");
     CHECK(r.ok);
     CHECK(r.result.i32 == 2);
+}
+#endif
+
+extern "C" void lfortran_display_data(const char *mime_type, const char *data);
+extern "C" void lfortran_clear_output();
+
+static CompilerOptions execute_options() {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.use_colors = false;
+    // Cells that use runtime modules need their modfiles.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    return cu;
+}
+
+TEST_CASE("FortranEvaluator execute: results and cells") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    const std::vector<std::pair<std::string, std::string>> examples = {
+        {"42", "42"}, {"42_8", "42"}, {"1.25", "1.25"},
+        {"1.2345678901234567_8", "1.2345678901234567"},
+        {"(1.25, -2.5)", "(1.25, -2.5)"},
+        {"(1.25_8, -2.5_8)", "(1.25, -2.5)"},
+        // A real always has a decimal point or an exponent.
+        {"1.0", "1.0"}, {"-3.0_8", "-3.0"}, {"(1.0, -2.0)", "(1.0, -2.0)"},
+        {"(0.0_8, 4.0_8)", "(0.0, 4.0)"}, {"1.0e20", "1e+20"},
+        // The shortest text that reads back as the same value.
+        {"3.14159", "3.14159"}, {"0.1_8", "0.1"}, {"1e-5", "1e-05"},
+        {"1.0/3.0", "0.33333334"}, {"tiny(1.0)", "1.1754944e-38"},
+        {".true.", "True"}, {".false.", "False"}, {"'hello'", "hello"}
+    };
+    for (auto &example : examples) {
+        CAPTURE(example.first);
+        auto cell = e.execute(example.first);
+        REQUIRE(cell.ok);
+        CHECK(!cell.inspection);
+        CHECK(cell.value.has_value());
+        CHECK(cell.value.text() == example.second);
+    }
+    auto cell = e.execute("integer :: n\nn = 41");
+    REQUIRE(cell.ok);
+    CHECK(cell.diagnostics.empty());
+    CHECK(!cell.value.has_value());
+    CHECK(e.execute("n+1").value.text() == "42");
+    cell = e.execute("");
+    REQUIRE(cell.ok);
+    CHECK(!cell.value.has_value());
+    cell = e.execute("integer :: broken(");
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "CompilerError");
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("<cell ") != std::string::npos);
+    CHECK(cell.error_text() == cell.error_value);
+    CHECK(e.execute("n").value.text() == "41");
+    // An internal compiler error keeps its message apart from the stack trace.
+    // Array results are not supported yet (#13456).
+    cell = e.execute("[1, 2, 3]");
+    CHECK(!cell.ok);
+    CHECK(cell.internal_error);
+    CHECK(cell.error_value == "Return type not supported in interactive mode");
+    CHECK(cell.error_text().rfind("Internal Compiler Error: Unhandled exception\n", 0)
+        == 0);
+    CHECK(e.execute("n").value.text() == "41");
+    // An inspection cell sees the session.
+    cell = e.execute("%%showasr\nn + 1");
+    CHECK(cell.ok);
+    // A successful cell keeps its warnings.
+    cell = e.execute("max0(1, 2_8)");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "2");
+    CHECK(cell.diagnostics.find("warning: Different kinds of args in max0")
+        != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator execute: inspection cells") {
+    for (const std::string magic : {"ast", "asr", "llvm", "asm", "cpp", "fmt"}) {
+#ifdef __EMSCRIPTEN__
+        // In the WASM test build, the compilation after get_asm() traps (#15853).
+        if (magic == "asm") continue;
+#endif
+        CAPTURE(magic);
+        CompilerOptions cu = execute_options();
+        FortranEvaluator e(cu);
+        auto cell = e.execute("%%show" + magic + "\ninteger :: x");
+        REQUIRE(cell.ok);
+        CHECK(cell.inspection);
+        CHECK(!cell.output.empty());
+        CHECK(!cell.value.has_value());
+        // Trailing blanks and a CRLF line ending after the magic.
+        cell = e.execute("%%show" + magic + " \t\r\ninteger :: y");
+        REQUIRE(cell.ok);
+        CHECK(cell.inspection);
+        CHECK(!cell.output.empty());
+        // An inspection cell does not run, so its declarations are not part
+        // of the session.
+        cell = e.execute("x");
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "CompilerError");
+    }
+    FortranEvaluator::CellResult defaults;
+    CHECK(!defaults.value.has_value());
+}
+
+TEST_CASE("FortranEvaluator execute: display hooks") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string mime, data;
+    int clears = 0;
+    FortranEvaluator::CellIO io;
+    io.display = [&](const std::string &m, const std::string &d) { mime = m; data = d; };
+    io.clear_output = [&]() { clears++; };
+    auto cell = e.execute("use lfortran_display, only: display_data, clear_output\n"
+        "call display_data('text/html', '<b>hello</b>')\n"
+        "call clear_output()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(mime == "text/html");
+    CHECK(data == "<b>hello</b>");
+    CHECK(clears == 1);
+    // The hooks only receive calls made while their cell runs.
+    lfortran_display_data("text/plain", "outside execution");
+    lfortran_clear_output();
+    CHECK(mime == "text/html");
+    CHECK(data == "<b>hello</b>");
+    CHECK(clears == 1);
+    // A hook's exception must not unwind through generated code.
+    io.clear_output = []() { throw std::runtime_error("display failure"); };
+    cell = e.execute("call clear_output()", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "DisplayError");
+    CHECK(cell.error_value == "display failed: display failure");
+    // The session goes on, with the hooks of the next cell.
+    cell = e.execute("call display_data('text/plain', 'again')", false, io);
+    REQUIRE(cell.ok);
+    CHECK(data == "again");
+}
+
+// Like test_runtime_input, the stdin cases run natively only; the WASM test
+// build also cannot read the integration test sources.
+#ifndef __EMSCRIPTEN__
+struct InputRecords {
+    std::vector<std::string> records;
+    size_t next = 0;
+    int calls = 0;
+    int end = -1;
+    FortranEvaluator::CellIO io() {
+        FortranEvaluator::CellIO io;
+        io.input = [this](std::string &record) {
+            calls++;
+            if (next == records.size()) return end;
+            record = records[next++];
+            return 0;
+        };
+        return io;
+    }
+};
+
+static void run_cell(FortranEvaluator &e, const std::string &code,
+        const FortranEvaluator::CellIO &io = {}) {
+    auto cell = e.execute(code, false, io);
+    CAPTURE(code);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+}
+
+static void check_input(const std::string &code,
+        std::vector<std::string> records, int expected_calls = -1) {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    InputRecords input{std::move(records)};
+    run_cell(e, code, input.io());
+    CHECK(input.calls ==
+        (expected_calls < 0 ? (int)input.records.size() : expected_calls));
+}
+
+TEST_CASE("FortranEvaluator execute: stdin records") {
+    check_input(R"(
+integer :: a, b, c, u, ios
+u = 5
+read(*,*,iostat=ios) a,b
+if (ios /= 0 .or. a /= 11 .or. b /= 12) error stop
+read(u,*,iostat=ios) c
+if (ios /= 0 .or. c /= 13) error stop
+read(*,*)
+read(5,*,iostat=ios) a
+if (ios /= 0 .or. a /= 14) error stop
+)", {"11 12 ignored", "13", "", "14"});
+    check_input(R"(
+integer :: a(3), ios
+real :: r(2)
+complex :: c(2), z
+complex(8) :: d(2)
+read(*,*,iostat=ios) a
+if (ios /= 0 .or. any(a /= [1,2,3])) error stop
+read(5,*,iostat=ios) r
+if (ios /= 0 .or. any(abs(r-[1.5,2.5]) > 1e-6)) error stop
+read(*,*,iostat=ios) c
+if (ios /= 0 .or. any(abs(c-[(1.,2.),(3.,4.)]) > 1e-6)) error stop
+read(5,*,iostat=ios) d
+if (ios /= 0 .or. any(abs(d-[(5.,6.),(7.,8.)]) > 1e-6)) error stop
+read(*,*,iostat=ios) z
+if (ios /= 0 .or. abs(z-(9.,10.)) > 1e-6) error stop
+)", {"1,2", "3", "1.5 2.5", "(1,2), ( 3, 4 )", "(5,6) (7,8)", "(9,10)"});
+    check_input(R"(
+character(4) :: a
+character(2) :: b
+integer :: i,j,k,ios
+read(*,'(a4)',iostat=ios) a
+if (ios /= 0 .or. a /= '    ') error stop
+read(5,'(a4)',iostat=ios) a
+if (ios /= 0 .or. a /= 'text') error stop
+read(*,'(i2,/,i2)',iostat=ios) i,j
+if (ios /= 0 .or. i /= 21 .or. j /= 22) error stop
+read(5,'(i2)',iostat=ios) i,j,k
+if (ios /= 0 .or. i /= 31 .or. j /= 32 .or. k /= 33) error stop
+read(5,'(a2)',advance='no',iostat=ios) b
+if (ios /= 0 .or. b /= 'ab') error stop
+read(*,'(a2)',iostat=ios) b
+if (ios /= 0 .or. b /= 'cd') error stop
+)", {"", "text", "21", "22", "31", "32", "33", "abcd"});
+    check_input(R"(
+program input_namelist
+integer :: a,ios
+namelist /values/ a
+read(5,nml=values,iostat=ios)
+if (ios /= 0 .or. a /= 57) error stop
+read(*,nml=values,iostat=ios)
+if (ios /= 0 .or. a /= 58) error stop
+end program
+)", {"&values", "a=57 /", "&values a=58 /"});
+    check_input(R"(
+integer(1) :: a(2)
+integer(2) :: b(2)
+integer(8) :: c(2)
+real :: r(2)
+real(8) :: d(2)
+logical :: l(2)
+character(3) :: t(2)
+integer :: ios
+read(*,*,iostat=ios) a
+if (ios /= 0 .or. any(a /= [1,2])) error stop
+read(5,*,iostat=ios) b
+if (ios /= 0 .or. any(b /= [3,4])) error stop
+read(*,*,iostat=ios) c
+if (ios /= 0 .or. any(c /= [5,6])) error stop
+read(*,*,iostat=ios) r
+if (ios /= 0 .or. any(abs(r-[1.5,2.5]) > 1e-6)) error stop
+read(*,*,iostat=ios) d
+if (ios /= 0 .or. any(abs(d-[3.5,4.5]) > 1e-6)) error stop
+read(*,*,iostat=ios) l
+if (ios /= 0 .or. .not. l(1) .or. l(2)) error stop
+read(*,*,iostat=ios) t
+if (ios /= 0 .or. t(1) /= 'abc' .or. t(2) /= 'def') error stop
+)", {"1 2", "3 4", "5 6", "1.5,2.5", "3.5,4.5", "T F", "'abc' 'def'"});
+    check_input(R"(
+character(2000) :: text
+integer :: ios
+read(5,'(a2000)',advance='no',iostat=ios) text
+if (ios /= 0 .or. text /= repeat('x',2000)) error stop
+read(*,'(a2000)',iostat=ios) text
+if (ios /= 0 .or. text /= repeat('x',2000)) error stop
+)", {std::string(4000, 'x')});
+    check_input(R"(
+character(2) :: a,b,c
+integer :: ios
+read(5,'(a2,t1,a2,tl1,a2)',iostat=ios) a,b,c
+if (ios /= 0 .or. a /= 'ab' .or. b /= 'ab' .or. c /= 'bc') error stop
+read(*,'(t2,a2)',iostat=ios) a
+if (ios /= 0 .or. a /= 'bc') error stop
+read(5,'(tl1,a2)',iostat=ios) a
+if (ios /= 0 .or. a /= 'ab') error stop
+)", {"abcd", "abcd", "abcd"});
+}
+
+TEST_CASE("FortranEvaluator execute: stdin EOF and reset") {
+    check_input(R"(
+program input_eof
+integer :: a(2),ios
+complex :: z
+character(3) :: text
+namelist /values/ a
+read(*,'(a3)',iostat=ios) text
+if (ios /= -1) error stop 'formatted EOF'
+read(5,*,iostat=ios) a
+if (ios /= -1) error stop 'array EOF'
+read(*,*,iostat=ios) z
+if (ios /= -1) error stop 'complex EOF'
+read(5,nml=values,iostat=ios)
+if (ios /= -1) error stop 'namelist EOF'
+read(*,*,iostat=ios)
+if (ios /= -1) error stop 'empty read EOF'
+end program
+)", {}, 1);
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    // EOF stays latched for the rest of the cell.
+    InputRecords eof;
+    run_cell(e, R"(
+integer :: a,ios
+read(*,*,iostat=ios) a
+if (ios /= -1) error stop
+read(5,*,iostat=ios) a
+if (ios /= -1) error stop
+)", eof.io());
+    CHECK(eof.calls == 1);
+    // A later cell can read again.
+    InputRecords fresh{{"42"}};
+    run_cell(e, "read(5,*,iostat=ios) a\nif (ios /= 0 .or. a /= 42) error stop",
+        fresh.io());
+    // Unavailable input is a positive IOSTAT, also latched.
+    InputRecords disconnected;
+    disconnected.end = 1;
+    run_cell(e, R"(
+read(*,*,iostat=ios) a
+if (ios <= 0) error stop
+read(5,'(i2)',iostat=ios) a
+if (ios <= 0) error stop
+)", disconnected.io());
+    CHECK(disconnected.calls == 1);
+    // A hook's exception must not unwind through generated code.
+    FortranEvaluator::CellIO throwing;
+    throwing.input = [](std::string &) -> int {
+        throw std::runtime_error("input callback failure");
+    };
+    run_cell(e, "read(*,*,iostat=ios) a\nif (ios <= 0) error stop", throwing);
+    run_cell(e, "a+1");
+}
+
+TEST_CASE("FortranEvaluator execute: files never read stdin records") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    InputRecords forbidden;
+    forbidden.end = 1;
+    std::ifstream file(std::string(LFORTRAN_PROJECT_SOURCE_DIR) +
+        "/integration_tests/runtime_input_records.f90");
+    REQUIRE(file.good());
+    std::ostringstream source;
+    source << file.rdbuf();
+    run_cell(e, source.str(), forbidden.io());
+    run_cell(e, R"(
+program unit5_named_file
+integer :: u,i,ios
+character(3) :: r
+u=5
+open(unit=u,file='test_execute_unit5.dat',status='replace')
+write(u,'(a)') '123'
+rewind(u)
+read(u,*,iostat=ios) i
+if (ios /= 0 .or. i /= 123) error stop
+close(u,status='delete')
+r='456'
+read(r,*,iostat=ios) i
+if (ios /= 0 .or. i /= 456) error stop
+end program
+)", forbidden.io());
+    CHECK(forbidden.calls == 0);
 }
 #endif

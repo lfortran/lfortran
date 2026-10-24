@@ -2091,7 +2091,7 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+    allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
 end subroutine allocate_func_target_01
 
 function func_alloc_target_01() result(res) bind(c)
@@ -2451,7 +2451,7 @@ module cc1_proc_component_forward_mismatch_mod
     type :: cc1_pcfm_t
         procedure(cc1_pcfm_iface), pointer, nopass :: pf => null()
     end type
-    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pcfm_f()
         cc1_pcfm_f = 3
@@ -2617,8 +2617,8 @@ module cc1_proc_component_later_interface_mismatch_mod
     type :: cc1_pclim_sub_t
         procedure(cc1_pclim_sub), pointer, nopass :: pf => null()
     end type
-    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
-    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pclim_func()
         cc1_pclim_func = 0
@@ -2638,7 +2638,7 @@ module cc1_proc_component_later_interface_template_mod
     type :: cc1_pclt_sub_t
         procedure(cc1_pclt_sub), pointer, nopass :: pf => null()
     end type
-    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     template cc1_pclt_unused {t}
         deferred type :: t
     contains
@@ -2646,7 +2646,7 @@ module cc1_proc_component_later_interface_template_mod
             type(t), intent(in) :: x
         end subroutine cc1_pclt_noop
     end template
-    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pclt_func()
         cc1_pclt_func = 0
@@ -2672,8 +2672,8 @@ module cc1_proc_component_template_host_interface_mod
         type :: cc1_pcth_never_t
             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
         end type
-        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     contains
         subroutine cc1_pcth_noop(x)
             type(t), intent(in) :: x
@@ -2709,7 +2709,7 @@ module cc1_proc_component_local_type_mod
             type :: cc1_pcll_tmpl_t
                 procedure(cc1_pcll_sub), pointer, nopass :: pf => null()
             end type
-            type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+            type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
         end subroutine cc1_pcll_tmpl_noop
     end template
 contains
@@ -2722,14 +2722,14 @@ contains
             type :: cc1_pcll_never_t
                 procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
             end type
-            type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+            type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
         end subroutine cc1_pcll_inner
     end subroutine cc1_pcll_outer
     subroutine cc1_pcll_shadow()
         type :: cc1_pcll_t
             procedure(cc1_pcll_func), pointer, nopass :: pf => null()
         end type
-        type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     contains
         subroutine cc1_pcll_func()
         end subroutine cc1_pcll_func
@@ -2740,3 +2740,997 @@ contains
         cc1_pcll_func = 0
     end function cc1_pcll_func
 end module cc1_proc_component_local_type_mod
+
+! GNU GETCWD needs a definable scalar default character output and a definable
+! scalar integer STATUS, and is impure. A user procedure named getcwd shadows it.
+subroutine cc1_getcwd_subroutine_errors(cc1_gc_in)
+    character(*), intent(in) :: cc1_gc_in
+    character(100) :: cc1_gc_c, cc1_gc_arr(2)
+    integer :: cc1_gc_i
+    real :: cc1_gc_r
+    call getcwd(cc1_gc_i)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_arr)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd('xxx')  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_in)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_c, cc1_gc_r)  ! {Error} getcwd status must be a scalar integer output variable
+    call getcwd(cc1_gc_c, 0)  ! {Error} getcwd status must be a scalar integer output variable
+end subroutine cc1_getcwd_subroutine_errors
+
+subroutine cc1_getcwd_function_errors(cc1_gc_in)
+    character(*), intent(in) :: cc1_gc_in
+    character(100) :: cc1_gc_arr(2)
+    integer :: getcwd, cc1_gc_s
+    intrinsic :: getcwd
+    cc1_gc_s = getcwd(cc1_gc_s)  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd(cc1_gc_arr)  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd('xxx')  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd(cc1_gc_in)  ! {Error} getcwd requires one scalar default-kind character output variable
+end subroutine cc1_getcwd_function_errors
+
+pure subroutine cc1_getcwd_pure_subroutine(cc1_gc_c)
+    character(*), intent(out) :: cc1_gc_c
+    call getcwd(cc1_gc_c)  ! {Error} Call to impure intrinsic subroutine is not allowed inside a PURE procedure
+end subroutine cc1_getcwd_pure_subroutine
+
+pure subroutine cc1_getcwd_pure_function(cc1_gc_c, cc1_gc_s)
+    character(*), intent(out) :: cc1_gc_c
+    integer, intent(out) :: cc1_gc_s
+    integer :: getcwd
+    intrinsic :: getcwd
+    cc1_gc_s = getcwd(cc1_gc_c)  ! {Error} call to impure intrinsic getcwd is not allowed inside a PURE procedure
+end subroutine cc1_getcwd_pure_function
+
+subroutine cc1_getcwd_user_shadow()
+    character(4) :: cc1_gc_c
+    call getcwd(cc1_gc_c)
+contains
+    subroutine getcwd(c)
+        character(*), intent(out) :: c
+        c = 'okay'
+    end subroutine getcwd
+end subroutine cc1_getcwd_user_shadow
+
+! GETCWD's argument keywords are C and STATUS; the function form takes only C.
+subroutine cc1_getcwd_keyword_errors()
+    character(100) :: cc1_gk_c
+    integer :: getcwd, cc1_gk_s
+    intrinsic :: getcwd
+    call getcwd(cwd=cc1_gk_c)  ! {Error} Unrecognized keyword argument cwd passed to getcwd intrinsic.
+    cc1_gk_s = getcwd(cwd=cc1_gk_c)  ! {Error} Unrecognized keyword argument cwd passed to getcwd intrinsic.
+    cc1_gk_s = getcwd(cc1_gk_c, cc1_gk_s)  ! {Error} Incorrect number of arguments passed to the 'getcwd' intrinsic.
+end subroutine cc1_getcwd_keyword_errors
+
+! An elemental procedure without the IMPURE prefix is pure (Fortran 2018
+! 15.8.1), so it cannot do output; an impure elemental one can.
+elemental integer function cc1_elemental_print_error(n)
+    implicit none
+    integer, intent(in) :: n
+    print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
+    cc1_elemental_print_error = n
+end function cc1_elemental_print_error
+
+impure elemental integer function cc1_impure_elemental_print(n)
+    implicit none
+    integer, intent(in) :: n
+    print *, n
+    cc1_impure_elemental_print = n
+end function cc1_impure_elemental_print
+
+! An array passed to a scalar dummy argument.
+subroutine cc1_array_to_scalar_dummy()
+    implicit none
+    integer :: a(3)
+    a = 1
+    call cc1_scalar_dummy(a)  ! {Error} rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+contains
+    subroutine cc1_scalar_dummy(n)
+        integer, intent(in) :: n
+        print *, n
+    end subroutine
+end subroutine
+
+module cc1_procptr_later_init_a
+contains
+    integer function cc1_plia_int()
+        cc1_plia_int = 42
+    end function cc1_plia_int
+    real function cc1_plia_real()
+        cc1_plia_real = 0
+    end function cc1_plia_real
+end module cc1_procptr_later_init_a
+module cc1_procptr_later_init_m
+    use cc1_procptr_later_init_a
+    procedure(cc1_plim_real), pointer :: cc1_plim_p1 => cc1_plia_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+contains
+    real function cc1_plim_real()
+        cc1_plim_real = 0
+    end function cc1_plim_real
+    integer function cc1_plim_int()
+        cc1_plim_int = 42
+    end function cc1_plim_int
+end module cc1_procptr_later_init_m
+module cc1_procptr_undefined_iface_m
+    procedure(cc1_puim_nosuch), pointer :: cc1_puim_q => cc1_puim_g  ! {Error} Interface 'cc1_puim_nosuch' is referenced but not defined
+contains
+    integer function cc1_puim_g()
+        cc1_puim_g = 1
+    end function cc1_puim_g
+end module cc1_procptr_undefined_iface_m
+module cc1_procptr_undefined_target_m
+    procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
+    procedure(cc1_putm_f), pointer :: cc1_putm_q => cc1_putm_nosuch
+    type :: cc1_putm_t
+        procedure(cc1_putm_f), pointer, nopass :: c => cc1_putm_nosuch
+    end type cc1_putm_t
+contains
+    integer function cc1_putm_f()
+        cc1_putm_f = 0
+    end function cc1_putm_f
+end module cc1_procptr_undefined_target_m
+module cc1_procptr_later_nonproc_a
+    interface cc1_plna_gen
+        module procedure cc1_plna_g
+    end interface cc1_plna_gen
+contains
+    real function cc1_plna_g()
+        cc1_plna_g = 0
+    end function cc1_plna_g
+end module cc1_procptr_later_nonproc_a
+module cc1_procptr_later_nonproc_m
+    use cc1_procptr_later_nonproc_a
+    integer :: cc1_plnm_x = 3
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p1 => cc1_plnm_x  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType() pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p2 => cc1_plnm_y  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType(return_type: integer) pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p3 => cc1_plnm_gen  ! {Error} Symbol 'cc1_plnm_gen' must be a variable or a procedure
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p4 => cc1_plna_gen  ! {Error} Symbol 'cc1_plna_gen' must be a variable or a procedure
+    integer :: cc1_plnm_y = 4
+    interface cc1_plnm_gen
+        module procedure cc1_plnm_f
+    end interface cc1_plnm_gen
+contains
+    integer function cc1_plnm_f()
+        cc1_plnm_f = 0
+    end function cc1_plnm_f
+end module cc1_procptr_later_nonproc_m
+
+! The elements that a DATA statement initializes must be inside the array and
+! match the number of values.
+subroutine cc1_data_section_errors(n)
+    implicit none
+    integer :: n, i
+    integer :: cc1_ds_a(4), cc1_ds_b(4), cc1_ds_c(4), cc1_ds_d(4), cc1_ds_e(3)
+    integer :: cc1_ds_s, cc1_ds_f(5)
+    data cc1_ds_a(1) /1/
+    data cc1_ds_a(3:5) /3, 4, 5/  ! {Error} Array index 5 is out of bounds (1 to 4) in dimension 1
+    data cc1_ds_b(1:3) /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_c(1:2) /1, 2, 3/  ! {Error} DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
+    data cc1_ds_d(2:3), cc1_ds_s /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_e(1:3), (cc1_ds_f(i), i=1,n) /1, 2/  ! {Error} DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
+end subroutine cc1_data_section_errors
+
+! A procedure pointer component of a named constant, or of a subobject of a
+! named constant, is not a procedure component reference, whose base is a
+! variable (C901, R1040): it can be neither a procedure pointer target nor an
+! actual argument.
+module cc1_proc_component_of_constant_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    implicit none
+    type :: cc1_pcoc_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+    end type
+    type :: cc1_pcoc_outer_t
+        type(cc1_pcoc_t) :: inner
+    end type
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_c = cc1_pcoc_t(cc1_pclim_known_func)
+    type(cc1_pcoc_outer_t), parameter :: cc1_pcoc_o = &
+        cc1_pcoc_outer_t(cc1_pcoc_t(cc1_pclim_known_func))
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_cs(2) = cc1_pcoc_t(cc1_pclim_known_func)
+contains
+    subroutine cc1_pcoc_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer :: r
+        q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_o%inner%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_cs(2)%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        r = cc1_pcoc_call(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+        call cc1_pcoc_take_pointer(cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc_use
+    integer function cc1_pcoc_call(g)
+        procedure(cc1_pclim_known_func) :: g
+        cc1_pcoc_call = g()
+    end function cc1_pcoc_call
+    subroutine cc1_pcoc_take_pointer(g)
+        procedure(cc1_pclim_known_func), pointer, intent(in) :: g
+    end subroutine cc1_pcoc_take_pointer
+end module cc1_proc_component_of_constant_mod
+
+! Nor can it be an argument of `associated` or a procedure pointer component
+! value in a structure constructor (R758, C7109).
+module cc1_proc_component_of_constant_2_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_t, cc1_pcoc_c, &
+        cc1_pcoc_o, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc2_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => null()
+    end type
+contains
+    subroutine cc1_pcoc2_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        type(cc1_pcoc_t) :: v
+        type(cc1_pcoc2_t) :: w
+        logical :: l
+        q => cc1_pclim_known_func
+        l = associated(q, cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(q, cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(cc1_pcoc_cs(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        v = cc1_pcoc_t(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        v = cc1_pcoc_t(f=cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        w = cc1_pcoc2_t(g=cc1_pcoc_cs(2)%f, &  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+            f=cc1_pclim_known_func)
+    end subroutine cc1_pcoc2_use
+end module cc1_proc_component_of_constant_2_mod
+
+! A pointer component of a named constant cannot be a pointer object
+! either: a named constant is not a variable (C901).
+module cc1_proc_component_of_constant_3_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc3_t
+        integer, pointer :: p => null()
+    end type
+    type(cc1_pcoc3_t), parameter :: cc1_pcoc3_c = cc1_pcoc3_t(null())
+contains
+    subroutine cc1_pcoc3_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer, target :: x
+        q => cc1_pclim_known_func
+        cc1_pcoc_c%f => q  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc_cs(1)%f => null()  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc_c%f)  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc3_c%p => x  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc3_c%p)  ! {Error} Cannot assign to a constant variable
+    end subroutine cc1_pcoc3_use
+end module cc1_proc_component_of_constant_3_mod
+
+module cc1_proc_component_of_constant_4_procs_mod
+    implicit none
+contains
+    integer function cc1_pcoc4_twice(x)
+        integer, intent(in) :: x
+        cc1_pcoc4_twice = 2*x
+    end function cc1_pcoc4_twice
+end module cc1_proc_component_of_constant_4_procs_mod
+
+! Nor can it be called (R1520, R1521, R1522), or be an initial procedure
+! target, which is a procedure name (R1518).
+module cc1_proc_component_of_constant_4_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    use cc1_proc_component_of_constant_4_procs_mod, only: cc1_pcoc4_twice
+    implicit none
+    type :: cc1_pcoc4_t
+        procedure(cc1_pclim_known_sub), pointer, nopass :: sp => null()
+        procedure(cc1_pcoc4_twice), pointer, nopass :: f => null()
+        integer :: n = 0
+    end type
+    type :: cc1_pcoc4_outer_t
+        type(cc1_pcoc4_t) :: inner
+    end type
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_c = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 3)
+    type(cc1_pcoc4_outer_t), parameter :: cc1_pcoc4_o = &
+        cc1_pcoc4_outer_t(cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 4))
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_table(2) = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 1)
+    type :: cc1_pcoc4_holder_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => cc1_pcoc_cs(1)%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+    end type
+    procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+contains
+    subroutine cc1_pcoc4_use()
+        integer :: r
+        call cc1_pcoc4_c%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_o%inner%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_table(2)%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(1)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(cc1_pcoc4_c%n)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = 1 + cc1_pcoc4_o%inner%f(cc1_pcoc4_table(1)%f(2))  ! {Error} a procedure pointer component of a named constant cannot be called (twice)
+        r = cc1_pcoc4_take_pointer(cc1_pcoc4_table(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc4_use
+    integer function cc1_pcoc4_take_pointer(g)
+        procedure(cc1_pcoc4_twice), pointer, intent(in) :: g
+        cc1_pcoc4_take_pointer = 0
+    end function cc1_pcoc4_take_pointer
+end module cc1_proc_component_of_constant_4_mod
+
+! The interface of a dummy procedure or procedure pointer result shall not
+! depend on its own characteristics (Fortran 2023 15.4.3.6), directly or
+! through the interfaces of other dummy procedures or results.
+module cc1_cyclic_procedure_interfaces
+implicit none
+contains
+    subroutine cc1_cpi_a(g)
+        procedure(cc1_cpi_b) :: g
+    end subroutine cc1_cpi_a
+
+    subroutine cc1_cpi_b(k)
+        procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpi_b
+
+    subroutine cc1_cpi_self(g)
+        procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cpi_self
+
+    function cc1_cpi_result_a() result(r)
+        procedure(cc1_cpi_result_b), pointer :: r
+        r => null()
+    end function cc1_cpi_result_a
+
+    function cc1_cpi_result_b() result(r)
+        procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_b
+
+    function cc1_cpi_result_self() result(r)
+        procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_self
+end module cc1_cyclic_procedure_interfaces
+
+! Later uses of procedures with an interface that depends on its own
+! characteristics are checked after the interface is reported.
+module cc1_cyclic_procedure_interface_uses
+use cc1_cyclic_procedure_interfaces, only: cc1_cpi_a, cc1_cpi_result_a
+implicit none
+type :: cc1_cpu_holder
+    procedure(cc1_cpu_f), pointer, nopass :: pf => null()
+end type cc1_cpu_holder
+interface cc1_cpu_generic
+    procedure cc1_cpu_f
+end interface cc1_cpu_generic
+contains
+    subroutine cc1_cpu_f(g)
+        procedure(cc1_cpu_h) :: g
+        procedure(cc1_cpu_h), pointer :: q
+        q => g
+    end subroutine cc1_cpu_f
+
+    subroutine cc1_cpu_h(k)
+        procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpu_h
+
+    integer function cc1_cpu_fn_f(g)
+        procedure(cc1_cpu_fn_h) :: g
+        cc1_cpu_fn_f = 1
+    end function cc1_cpu_fn_f
+
+    integer function cc1_cpu_fn_h(k)
+        procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        cc1_cpu_fn_h = k() + 1
+    end function cc1_cpu_fn_h
+
+    subroutine cc1_cpu_uses()
+        procedure(cc1_cpu_f), pointer :: pp
+        procedure(cc1_cpi_a), pointer :: pa
+        procedure(cc1_cpi_result_a), pointer :: pr
+        type(cc1_cpu_holder) :: p
+        integer :: i
+        pp => cc1_cpu_f
+        p%pf => cc1_cpu_f
+        pa => cc1_cpi_a
+        pr => cc1_cpi_result_a
+        call cc1_cpu_generic(cc1_cpu_h)
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cpu_uses
+end module cc1_cyclic_procedure_interface_uses
+
+! A function whose interface depends on its own characteristics keeps its
+! result after the error: a result with argument-dependent array bounds or
+! character length becomes allocatable with deferred bounds and length.
+module cc1_cyclic_interface_results
+implicit none
+type :: cc1_cir_t
+    integer :: i
+end type cc1_cir_t
+contains
+    function cc1_cir_chr_f(g, n) result(r)
+        procedure(cc1_cir_chr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = "x"
+    end function cc1_cir_chr_f
+
+    function cc1_cir_chr_h(k, n) result(r)
+        procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = k()
+    end function cc1_cir_chr_h
+
+    function cc1_cir_chr_arr_f(g, n) result(r)
+        procedure(cc1_cir_chr_arr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = "x"
+    end function cc1_cir_chr_arr_f
+
+    function cc1_cir_chr_arr_h(k, n) result(r)
+        procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = k()
+    end function cc1_cir_chr_arr_h
+
+    function cc1_cir_arr_f(g, n) result(r)
+        procedure(cc1_cir_arr_h) :: g
+        integer, intent(in) :: n
+        integer :: r(n)
+        r = 1
+    end function cc1_cir_arr_f
+
+    integer function cc1_cir_arr_h(k, n) result(r)
+        procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        r = sum(k())
+    end function cc1_cir_arr_h
+
+    function cc1_cir_dt_f(g) result(r)
+        procedure(cc1_cir_dt_h) :: g
+        type(cc1_cir_t) :: r
+        r%i = 1
+    end function cc1_cir_dt_f
+
+    function cc1_cir_dt_h(k) result(r)
+        procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        type(cc1_cir_t) :: r
+        r = k()
+    end function cc1_cir_dt_h
+
+    subroutine cc1_cir_Case(g)
+        procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cir_Case
+
+    subroutine cc1_cir_later()
+        integer :: i
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cir_later
+end module cc1_cyclic_interface_results
+
+! A procedure whose interface has no result is not a function, even when the
+! interface is unknown after an error.
+module cc1_resultless_interface_references
+implicit none
+contains
+    subroutine cc1_rir_sub()
+    end subroutine cc1_rir_sub
+
+    integer function cc1_rir_call(k)
+        procedure(cc1_rir_sub) :: k
+        cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+    end function cc1_rir_call
+
+    function cc1_rir_local_f(g) result(r)
+        procedure(cc1_rir_local_h) :: g
+        type :: cc1_rir_local_t
+            integer :: i
+        end type cc1_rir_local_t
+        type(cc1_rir_local_t) :: r
+        r%i = 1
+    end function cc1_rir_local_f
+
+    integer function cc1_rir_local_h(k)
+        procedure(cc1_rir_local_f) :: k  ! {Error} interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+        cc1_rir_local_h = 1
+    end function cc1_rir_local_h
+end module cc1_resultless_interface_references
+
+! Procedure pointers and procedure pointer components with a subroutine
+! interface are reported by their source names.
+module cc1_resultless_pointer_references
+implicit none
+type :: cc1_rpr_t
+    procedure(cc1_rpr_sub), pointer, nopass :: pf => null()
+end type cc1_rpr_t
+contains
+    subroutine cc1_rpr_sub()
+    end subroutine cc1_rpr_sub
+
+    subroutine cc1_rpr_use()
+        procedure(cc1_rpr_sub), pointer :: p
+        type(cc1_rpr_t) :: o
+        real :: x
+        p => cc1_rpr_sub
+        o%pf => cc1_rpr_sub
+        x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+        x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+    end subroutine cc1_rpr_use
+end module cc1_resultless_pointer_references
+
+! A required dummy procedure must not be omitted in a call.
+module missing_proc_arg_mod
+    implicit none
+contains
+    subroutine take_proc(x, get_ptr)
+        integer, intent(out) :: x
+        interface
+            subroutine get_ptr(ptr)
+                integer, intent(out) :: ptr
+            end subroutine get_ptr
+        end interface
+        call get_ptr(x)
+    end subroutine
+end module
+
+subroutine missing_proc_arg_caller()
+    use missing_proc_arg_mod
+    implicit none
+    integer :: x
+    call take_proc(x)
+end subroutine
+
+! A procedure given to a procedure pointer component in a structure
+! constructor must have the characteristics of the component's explicit
+! interface (Fortran 2018 7.5.10, 10.2.2.4), also a module procedure defined
+! later.
+module cc1_proc_component_interface_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pci_sub_iface(i)
+            integer, intent(in) :: i
+        end subroutine cc1_pci_sub_iface
+        integer function cc1_pci_func_iface(i)
+            integer, intent(in) :: i
+        end function cc1_pci_func_iface
+    end interface
+    type :: cc1_pci_t
+        procedure(cc1_pci_sub_iface), pointer, nopass :: p => null()
+        procedure(cc1_pci_func_iface), pointer, nopass :: f => null()
+    end type
+    type(cc1_pci_t), parameter :: cc1_pci_c = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+    type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+contains
+    subroutine cc1_pci_noarg()
+    end subroutine cc1_pci_noarg
+    subroutine cc1_pci_real_arg(r)
+        real, intent(in) :: r
+    end subroutine cc1_pci_real_arg
+    subroutine cc1_pci_int8_arg(i)
+        integer(8), intent(in) :: i
+    end subroutine cc1_pci_int8_arg
+    integer function cc1_pci_int_func(i)
+        integer, intent(in) :: i
+        cc1_pci_int_func = i
+    end function cc1_pci_int_func
+    real function cc1_pci_real_func(i)
+        integer, intent(in) :: i
+        cc1_pci_real_func = i
+    end function cc1_pci_real_func
+    subroutine cc1_pci_use()
+        type(cc1_pci_t) :: x
+        type(cc1_pci_t) :: y = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        procedure(cc1_pci_func_iface), pointer :: q
+        x = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(cc1_pci_real_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(cc1_pci_int8_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(p=cc1_pci_int_func)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        q => cc1_pci_int_func
+        x = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+        x = cc1_pci_t(q)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(f=q)
+    end subroutine cc1_pci_use
+end module cc1_proc_component_interface_mod
+
+! Derived types with identical components are still distinct types, so a
+! procedure taking one does not match an interface taking the other.
+module cc1_proc_component_dt_dummy_mod
+    implicit none
+    type :: cc1_pcd_a_t
+        integer :: i
+    end type
+    type :: cc1_pcd_b_t
+        integer :: i
+    end type
+    abstract interface
+        subroutine cc1_pcd_iface(x)
+            import :: cc1_pcd_a_t
+            type(cc1_pcd_a_t), intent(in) :: x
+        end subroutine cc1_pcd_iface
+    end interface
+    type :: cc1_pcd_t
+        procedure(cc1_pcd_iface), pointer, nopass :: p => null()
+    end type
+contains
+    subroutine cc1_pcd_b_arg(x)
+        type(cc1_pcd_b_t), intent(in) :: x
+    end subroutine cc1_pcd_b_arg
+    subroutine cc1_pcd_use()
+        type(cc1_pcd_t) :: x
+        x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+    end subroutine cc1_pcd_use
+end module cc1_proc_component_dt_dummy_mod
+
+! The legacy PAUSE stop code must be a scalar integer or default character.
+module cc1_pause_codes
+implicit none
+contains
+    subroutine cc1_pause_use()
+        integer :: codes(2)
+        codes = 1
+        pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+        pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+    end subroutine cc1_pause_use
+end module cc1_pause_codes
+
+module cc1_bindc_character_length
+    implicit none
+    character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+    character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+end module cc1_bindc_character_length
+
+function cc1_bindc_implicit_result() bind(c)
+    character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+end function
+
+function cc1_bindc_explicit_result() result(c) bind(c)
+    character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
+end function
+
+! Unsupported complex*N and logical*N kinds get no style suggestion,
+! only the semantic error.
+module cc1_complex_star
+implicit none
+    complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+    logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+end module cc1_complex_star
+
+! FILE= is required when STATUS is NEW or REPLACE. Omitted STATUS, OLD,
+! UNKNOWN, and SCRATCH do not require it; SCRATCH forbids FILE=.
+subroutine cc1_open_status_new_replace_no_file()
+    character(len=7) :: cc1_open_status
+    open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+    open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+    open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+    open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+    open(5, file='cc1_open_new.dat', status='new')
+    open(6, file='cc1_open_replace.dat', status='replace')
+    open(7, status='scratch')
+    open(8, status='old')
+    open(9, status='unknown')
+    open(10)
+    cc1_open_status = 'new'
+    open(11, status=cc1_open_status)
+end subroutine cc1_open_status_new_replace_no_file
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array
+
+! An external procedure is not accessible by host association, so a name used
+! as a variable in another scoping unit is not the external procedure.
+subroutine cc1_external_name_sub()
+end subroutine cc1_external_name_sub
+
+real function cc1_external_name_fn()
+    cc1_external_name_fn = 1.0
+end function cc1_external_name_fn
+
+subroutine cc1_external_name_user()
+    cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+    print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+end subroutine cc1_external_name_user
+
+! Reading into the real or imaginary part of a complex variable is not
+! supported yet.
+module cc1_read_complex_part
+implicit none
+contains
+    subroutine cc1_rcp_use()
+        complex :: z, w(3)
+        character(len=20) :: s
+        s = '1 2 3'
+        read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+        read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+    end subroutine cc1_rcp_use
+end module cc1_read_complex_part
+
+! A subobject of a named constant is a constant, not a variable, so it cannot
+! be an actual argument for an INTENT(OUT) or INTENT(INOUT) dummy.
+module cc1_named_constant_subobject
+implicit none
+type :: cc1_ncs_t
+    integer :: k
+    integer :: a(2)
+end type cc1_ncs_t
+type(cc1_ncs_t), parameter :: cc1_ncs_s = cc1_ncs_t(7, [8, 9])
+type(cc1_ncs_t), parameter :: cc1_ncs_p(2) = &
+    [cc1_ncs_t(5, [1, 2]), cc1_ncs_t(6, [3, 4])]
+character(len=4), parameter :: cc1_ncs_c(2) = ["abcd", "efgh"]
+contains
+    subroutine cc1_ncs_int(n)
+        integer, intent(inout) :: n
+        n = 1
+    end subroutine cc1_ncs_int
+    subroutine cc1_ncs_arr(n)
+        integer, intent(out) :: n(:)
+        n = 1
+    end subroutine cc1_ncs_arr
+    subroutine cc1_ncs_chr(n)
+        character(len=*), intent(inout) :: n
+        n = "z"
+    end subroutine cc1_ncs_chr
+    subroutine cc1_ncs_use(i)
+        integer, intent(in) :: i
+        call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+    end subroutine cc1_ncs_use
+end module cc1_named_constant_subobject
+
+! A parenthesized null() is not allowed in an initializer either.
+subroutine cc1_paren_null_initializer_integer()
+    implicit none
+    integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_integer
+
+subroutine cc1_paren_null_initializer_type()
+    implicit none
+    type :: cc1_pni_t
+        integer :: v = 1
+    end type
+    type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_type
+
+! A parenthesized equivalence object is an expression, not a variable.
+subroutine cc1_paren_equivalence_element()
+    implicit none
+    real :: a(3), b
+    equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_element
+
+subroutine cc1_paren_equivalence_name()
+    implicit none
+    real :: a(3), b
+    equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_name
+
+module cc1_pointer_bounds
+contains
+    subroutine cc1_pointer_bounds_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+        q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+        q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+    end subroutine cc1_pointer_bounds_use
+end module cc1_pointer_bounds
+module cc1_pointer_bounds_null
+contains
+    subroutine cc1_pointer_bounds_null_use()
+        real, pointer :: arr(:)
+        arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
+    end subroutine cc1_pointer_bounds_null_use
+end module cc1_pointer_bounds_null
+module cc1_pointer_remapping_target
+contains
+    subroutine cc1_pointer_remapping_target_use(x)
+        integer, target :: x(:, :)
+        integer, target :: a(4, 5), s
+        integer, pointer :: p(:), q(:, :)
+        q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    end subroutine cc1_pointer_remapping_target_use
+end module cc1_pointer_remapping_target
+module cc1_pointer_bounds_stride
+contains
+    subroutine cc1_pointer_bounds_stride_use()
+        integer, target :: a(10)
+        integer, pointer :: p(:)
+        p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+        p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+    end subroutine cc1_pointer_bounds_stride_use
+end module cc1_pointer_bounds_stride
+module cc1_pointer_bounds_type
+contains
+    subroutine cc1_pointer_bounds_type_use()
+        real, target :: a(6)
+        real, pointer :: p(:)
+        real :: r
+        integer :: v(1)
+        integer(2) :: v2(1)
+        character(len=1) :: ch
+        logical(1) :: l1
+        p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+        p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
+    end subroutine cc1_pointer_bounds_type_use
+end module cc1_pointer_bounds_type
+module cc1_subscript_type
+contains
+    subroutine cc1_subscript_type_use()
+        integer :: a(5), b(2, 3), v(1)
+        real :: r
+        character(len=1) :: ch
+        logical :: l
+        print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+        print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+        print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+    end subroutine cc1_subscript_type_use
+end module cc1_subscript_type
+module cc1_pointer_bounds_boz
+contains
+    subroutine cc1_pointer_bounds_boz_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+        q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    end subroutine cc1_pointer_bounds_boz_use
+end module cc1_pointer_bounds_boz
+
+! C1588: an intent(out) dummy argument of a pure procedure shall not be
+! polymorphic or have a polymorphic allocatable ultimate component.
+module cc1_pure_poly_intent_out
+    implicit none
+    type :: cc1_ppo_t
+        integer :: i
+    end type
+    type :: cc1_ppo_w
+        class(cc1_ppo_t), allocatable :: c
+    end type
+    type :: cc1_ppo_w2
+        type(cc1_ppo_w) :: inner
+    end type
+    abstract interface
+        pure subroutine cc1_ppo_iface(a)
+            import :: cc1_ppo_t
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+        end subroutine
+    end interface
+contains
+    pure subroutine cc1_ppo_class(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure subroutine cc1_ppo_class_alloc(a)
+        class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+    end subroutine
+    pure subroutine cc1_ppo_star(a)
+        class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+    end subroutine
+    elemental subroutine cc1_ppo_elemental(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure integer function cc1_ppo_func(a)
+        class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+        cc1_ppo_func = 1
+    end function
+    pure subroutine cc1_ppo_comp(a)
+        type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    pure subroutine cc1_ppo_nested_comp(a)
+        type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    subroutine cc1_ppo_host()
+        type(cc1_ppo_t) :: x
+        call cc1_ppo_internal(x)
+    contains
+        pure subroutine cc1_ppo_internal(a)
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+            a%i = 1
+        end subroutine
+    end subroutine
+end module cc1_pure_poly_intent_out
+
+! An output implied-do loop with values of different types, some of them of
+! derived type, is not supported yet with run-time bounds or step, with a
+! nested loop that reuses the variable of an enclosing loop, with more than
+! 256 iterations of bounds that are not all literals, with more than 1000
+! values of different derived types, or in an unformatted transfer.
+subroutine implied_do_mixed_derived_types_error(n)
+    implicit none
+    type :: cc1_idl_a
+        integer :: i = 1
+    end type
+    type :: cc1_idl_b
+        integer :: j = 2
+    end type
+    integer, intent(in) :: n
+    integer, parameter :: m = 300
+    type(cc1_idl_a) :: x(3)
+    type(cc1_idl_b) :: y(3)
+    integer :: i, j, k(3)
+    character(80) :: line
+    k = 3
+    print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+    write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+    write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+    print '(*(i0,1x))', (x(i), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,2), i=1,3)
+    print '(*(i0,1x))', ((x(i), j=1,1), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,i), i=1,3)
+    print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,500)
+    print '(*(i0,1x))', (x(1), k(1), i=1,501)
+    print *, (x(i), (y(j), j=1,n), i=1,0)
+end subroutine implied_do_mixed_derived_types_error
+
+! Defined output of the elements of a polymorphic array, as an array item or
+! as the items of an implied-do loop, is not supported yet.
+module cc1_dtio_poly_array_1
+    implicit none
+    type :: cc1_dtio_t
+        integer :: v = 3
+    contains
+        procedure :: cc1_dtio_wf
+        generic :: write(formatted) => cc1_dtio_wf
+    end type
+contains
+    subroutine cc1_dtio_wf(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(cc1_dtio_t), intent(in) :: dtv
+        integer, intent(in) :: unit
+        character(*), intent(in) :: iotype
+        integer, intent(in) :: v_list(:)
+        integer, intent(out) :: iostat
+        character(*), intent(inout) :: iomsg
+        write(unit, '(a,i0)', iostat=iostat) 'T', dtv%v
+    end subroutine
+
+    subroutine cc1_dtio_poly_array_error()
+        class(cc1_dtio_t), allocatable :: c(:)
+        integer :: i
+        allocate(c(2))
+        print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+        print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+    end subroutine
+end module

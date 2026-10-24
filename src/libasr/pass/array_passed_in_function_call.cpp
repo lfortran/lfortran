@@ -327,7 +327,7 @@ public:
             var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
         }
     
-        std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+        std::string var_name = PassUtils::temporary_name(scope, name_hint);
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
             nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
@@ -887,7 +887,7 @@ public:
                     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_var_temporary));
                     if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims, len_expr) ) {
                         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                            al, loc, array_var_temporary, arg_expr_past_cast)));
+                            al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds)));
                         return;
                     }
                     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -911,7 +911,7 @@ public:
                     ASR::expr_t* not_is_contiguous = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, is_contiguous,
                         ASRUtils::expr_type(is_contiguous), nullptr));
                     ASR::dimension_t* array_dims = nullptr;
-                    int array_rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims);
+                    int array_rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims));
                     std::vector<ASR::expr_t*> do_loop_variables;
                     #define declare(var_name, type, intent)                                     \
                     b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
@@ -933,7 +933,7 @@ public:
                                 create_do_loop(al, loc, do_loop_variables, array_var_temporary, arg_expr_past_cast, array_rank, integer_kind)
                         }, {
                             ASRUtils::STMT(ASR::make_Associate_t(
-                                al, loc, array_var_temporary, arg_expr_past_cast))
+                                al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds))
                         })
                     );
                     if ( is_arg_intent_out.size() > 0 && is_arg_intent_out[i] ) {

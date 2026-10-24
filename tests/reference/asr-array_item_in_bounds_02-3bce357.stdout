@@ -380,6 +380,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )
                         (Assignment
                             (StructInstanceMember
@@ -503,6 +505,8 @@
                                 ()
                             )
                             ()
+                            .false.
+                            .false.
                             .false.
                             .false.
                         )]
@@ -765,6 +769,8 @@
                                 .true.
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

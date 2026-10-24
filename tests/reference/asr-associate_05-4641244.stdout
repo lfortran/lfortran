@@ -67,7 +67,7 @@
                                                     Required
                                                     .false.
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                     .false.
                                                     .false.
@@ -257,10 +257,13 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
                                         (Var 2 myreal)
+                                        NoPointerBounds
                                     )
                                     (Assignment
                                         (Var 3 v)
@@ -278,6 +281,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -312,6 +317,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -370,6 +377,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -454,6 +463,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -641,6 +652,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -684,6 +697,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 myreal)
@@ -717,6 +732,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -762,6 +779,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -805,6 +824,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block
@@ -814,6 +835,8 @@
                             ()
                             [(Var 2 myreal)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

@@ -5,13 +5,154 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
+#include <libasr/asr_verify.h>
 
+#include <cctype>
 #include <deque>
 #include <functional>
 
 namespace LCompilers {
 
     namespace PassUtils {
+
+    // Restore casts after replacements change the physical types of shared operands.
+    void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
+    // Verifies the invariant that `verify_options` selects, which the pass
+    // `pass_name` has just established, whenever the passes are verified.
+    // The verification after each pass does not know which passes have run,
+    // so a pass that establishes an invariant checks it itself.
+    void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
+        const std::string &pass_name);
+
+    // The name of a temporary a pass creates, `__libasr_created_` followed
+    // by `hint`, made unique in `scope`. The hint is often the name of the
+    // symbol a call is made through, which can be an alias that is not an
+    // identifier, such as `~tensor_t@construct` for a generic procedure
+    // named like a derived type; every character that cannot appear in an
+    // identifier is replaced by an underscore, so the temporary has a name
+    // every backend can declare.
+    static inline std::string temporary_name(SymbolTable *scope,
+            const std::string &hint) {
+        std::string name = "__libasr_created_" + hint;
+        for (char &c : name) {
+            if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_')) {
+                c = '_';
+            }
+        }
+        return scope->get_unique_name(name);
+    }
+
+    // Whether two integer expressions are the same expression, node for
+    // node: the same operations on the same variables, components and
+    // constants, a name reached through any external symbol standing for
+    // what it names. Anything not compared here compares unequal, so a
+    // `true` can be relied on (unlike ASRUtils::expr_equal, which lets an
+    // unknown node pass).
+    static inline bool same_expression(ASR::expr_t* a, ASR::expr_t* b) {
+        if( a == nullptr || b == nullptr ) return a == b;
+        if( a == b ) return true;
+        // Two constants are the same when they have the same value,
+        // however they are spelled: `1` and `int(1, kind=4)`.
+        int64_t a_value = 0, b_value = 0;
+        bool a_constant = ASRUtils::extract_value(ASRUtils::expr_value(a),
+            a_value);
+        bool b_constant = ASRUtils::extract_value(ASRUtils::expr_value(b),
+            b_value);
+        if( a_constant || b_constant ) {
+            return a_constant && b_constant && a_value == b_value;
+        }
+        if( a->type != b->type ) return false;
+        switch( a->type ) {
+            case ASR::exprType::Var:
+                return ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(a)->m_v) ==
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(b)->m_v);
+            case ASR::exprType::IntegerConstant:
+                return ASR::down_cast<ASR::IntegerConstant_t>(a)->m_n ==
+                    ASR::down_cast<ASR::IntegerConstant_t>(b)->m_n;
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+                ASR::IntegerBinOp_t* y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+                return x->m_op == y->m_op &&
+                    same_expression(x->m_left, y->m_left) &&
+                    same_expression(x->m_right, y->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus:
+                return same_expression(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)->m_arg,
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)->m_arg);
+            case ASR::exprType::IntegerCompare: {
+                ASR::IntegerCompare_t* x = ASR::down_cast<ASR::IntegerCompare_t>(a);
+                ASR::IntegerCompare_t* y = ASR::down_cast<ASR::IntegerCompare_t>(b);
+                return x->m_op == y->m_op &&
+                    same_expression(x->m_left, y->m_left) &&
+                    same_expression(x->m_right, y->m_right);
+            }
+            case ASR::exprType::IfExp: {
+                ASR::IfExp_t* x = ASR::down_cast<ASR::IfExp_t>(a);
+                ASR::IfExp_t* y = ASR::down_cast<ASR::IfExp_t>(b);
+                return same_expression(x->m_test, y->m_test) &&
+                    same_expression(x->m_body, y->m_body) &&
+                    same_expression(x->m_orelse, y->m_orelse);
+            }
+            case ASR::exprType::Cast: {
+                ASR::Cast_t* x = ASR::down_cast<ASR::Cast_t>(a);
+                ASR::Cast_t* y = ASR::down_cast<ASR::Cast_t>(b);
+                return x->m_kind == y->m_kind &&
+                    x->m_type->type == y->m_type->type &&
+                    ASRUtils::extract_kind_from_ttype_t(x->m_type) ==
+                        ASRUtils::extract_kind_from_ttype_t(y->m_type) &&
+                    same_expression(x->m_arg, y->m_arg);
+            }
+            case ASR::exprType::ArrayPhysicalCast:
+                return same_expression(
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg,
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(b)->m_arg);
+            case ASR::exprType::ArraySize: {
+                ASR::ArraySize_t* x = ASR::down_cast<ASR::ArraySize_t>(a);
+                ASR::ArraySize_t* y = ASR::down_cast<ASR::ArraySize_t>(b);
+                return same_expression(x->m_v, y->m_v) &&
+                    same_expression(x->m_dim, y->m_dim);
+            }
+            case ASR::exprType::ArrayBound: {
+                ASR::ArrayBound_t* x = ASR::down_cast<ASR::ArrayBound_t>(a);
+                ASR::ArrayBound_t* y = ASR::down_cast<ASR::ArrayBound_t>(b);
+                return x->m_bound == y->m_bound &&
+                    same_expression(x->m_v, y->m_v) &&
+                    same_expression(x->m_dim, y->m_dim);
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* x =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(a);
+                ASR::StructInstanceMember_t* y =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(b);
+                return ASRUtils::symbol_get_past_external(x->m_m) ==
+                        ASRUtils::symbol_get_past_external(y->m_m) &&
+                    same_expression(x->m_v, y->m_v);
+            }
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t* x = ASR::down_cast<ASR::ArrayItem_t>(a);
+                ASR::ArrayItem_t* y = ASR::down_cast<ASR::ArrayItem_t>(b);
+                if( x->n_args != y->n_args ||
+                    !same_expression(x->m_v, y->m_v) ) {
+                    return false;
+                }
+                for( size_t i = 0; i < x->n_args; i++ ) {
+                    if( !same_expression(x->m_args[i].m_left, y->m_args[i].m_left) ||
+                        !same_expression(x->m_args[i].m_right, y->m_args[i].m_right) ||
+                        !same_expression(x->m_args[i].m_step, y->m_args[i].m_step) ) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
 
     // True when `sym` is a derived type or procedure that only a scope
     // inside a program or a procedure can name.
@@ -52,6 +193,26 @@ namespace LCompilers {
                 }
             }
     };
+
+    class FunctionCallFinder: public ASR::BaseWalkVisitor<FunctionCallFinder> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+                found = true;
+            }
+    };
+
+    // The extent of an array constructor element, for the type of the array
+    // section it is assigned to. A type is an annotation, not an evaluation,
+    // so an extent that needs a function call (e.g. `size(f(x > 0))`) is
+    // left deferred; the section's bounds already give it.
+    static inline ASR::expr_t* get_constructor_section_extent_for_type(
+            ASR::expr_t* curr_init, Allocator& al) {
+        ASR::expr_t* size = ASRUtils::get_size(curr_init, al, true);
+        FunctionCallFinder finder;
+        finder.visit_expr(*size);
+        return finder.found ? nullptr : size;
+    }
 
     static inline SymbolTable* instantiation_scope_for_expr(
             SymbolTable* global_scope, SymbolTable* caller_scope,
@@ -167,10 +328,10 @@ namespace LCompilers {
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var = nullptr);
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
@@ -201,7 +362,7 @@ namespace LCompilers {
         ASR::expr_t* create_binop_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                             ASR::binopType op);
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound,
                                 Allocator& al, int integer_kind = 4);
 
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
@@ -244,6 +405,11 @@ namespace LCompilers {
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
         ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
+
+        // The run-time shape check of the assignment to `target` of an
+        // expression whose array operands are `components`, which it takes.
+        ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
+            ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
 
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
@@ -328,9 +494,21 @@ namespace LCompilers {
                     || ASR::is_a<ASR::SymbolicExpression_t>(*type));
         }
 
-        static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
-            return  is_aggregate_or_array_type(var) ||
-                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+        // Whether a function result of type `type` is returned through a
+        // dummy argument, the subroutine_from_function pass making the
+        // function a subroutine: array, derived type, polymorphic, string
+        // and every allocatable result, including an allocatable scalar of
+        // an intrinsic type. The caller gets an allocatable result in an
+        // allocatable variable, whose value it can reference or assign like
+        // that of any other variable, and which it deallocates.
+        static inline bool is_result_returned_through_argument(ASR::ttype_t* type) {
+            return is_non_primitive_return_type(type) ||
+                is_aggregate_or_array_type(type) ||
+                ASRUtils::is_allocatable(type);
+        }
+
+        static inline bool is_result_returned_through_argument(ASR::expr_t* result) {
+            return is_result_returned_through_argument(ASRUtils::expr_type(result));
         }
 
 
@@ -427,7 +605,8 @@ namespace LCompilers {
 
             public:
 
-                bool asr_changed, retain_original_stmt, remove_original_stmt;
+                bool asr_changed, retain_original_stmt = false,
+                    remove_original_stmt = false;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
 
@@ -437,7 +616,16 @@ namespace LCompilers {
                     pass_result.n = 0;
                 }
 
+                // A statement list nested in a compound statement (the body
+                // of an IF or a loop) is transformed while that statement is
+                // being visited. What the last statement of the nested list
+                // asked for itself must not be taken for what the enclosing
+                // statement asks for, or removing that last statement would
+                // remove the whole enclosing statement as well, so the
+                // enclosing statement's requests are restored afterwards.
                 void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                    bool enclosing_retain = retain_original_stmt;
+                    bool enclosing_remove = remove_original_stmt;
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
                     if (pass_result.size() > 0) {
@@ -470,6 +658,8 @@ namespace LCompilers {
                     }
                     m_body = body.p;
                     n_body = body.size();
+                    retain_original_stmt = enclosing_retain;
+                    remove_original_stmt = enclosing_remove;
                 }
 
                 void visit_Program(const ASR::Program_t &x) {
@@ -695,7 +885,9 @@ namespace LCompilers {
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
                 }
 
-                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                // Records the function and module dependencies that a call to
+                // `name` as a subroutine introduces in the current scope.
+                void add_subroutine_call_dependencies(ASR::symbol_t* name) {
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -705,8 +897,8 @@ namespace LCompilers {
                         SymbolTable* temp_scope = current_scope;
 
                         if (asr_owner_sym &&
-                            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
-                            !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+                            !ASR::is_a<ASR::ExternalSymbol_t>(*name) &&
+                            !ASR::is_a<ASR::Variable_t>(*name)) {
                             while (temp_scope->parent && temp_scope->asr_owner &&
                                    ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
                                 ASR::symbol_t* temp_owner_sym =
@@ -717,21 +909,32 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(name),
                                     current_scope, temp_scope)) {
-                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                                function_dependencies.push_back(al, ASRUtils::symbol_name(name));
                             }
                         }
                     }
 
-                    if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                    if( ASR::is_a<ASR::ExternalSymbol_t>(*name) &&
                         fill_module_dependencies ) {
-                        ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
-                            module_dependencies.push_back(al, x_m_name->m_module_name);
+                        ASR::ExternalSymbol_t* ext_name = ASR::down_cast<ASR::ExternalSymbol_t>(name);
+                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(ext_name->m_external)) ) {
+                            module_dependencies.push_back(al, ext_name->m_module_name);
                         }
                     }
+                }
+
+                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                    add_subroutine_call_dependencies(x.m_name);
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
+                }
+
+                void visit_StringFormat(const ASR::StringFormat_t& x) {
+                    for (size_t i = 0; i < x.n_dtio_bindings; i++) {
+                        add_subroutine_call_dependencies(x.m_dtio_bindings[i].m_procedure);
+                    }
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_StringFormat(x);
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -1121,7 +1324,7 @@ namespace LCompilers {
                          ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                         dimension.m_length = nullptr;
                     } else {
-                        dimension.m_length = ASRUtils::get_size(curr_init, al, true);
+                        dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                     }
                     Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                     dims.push_back(al, dimension);
@@ -1218,7 +1421,7 @@ namespace LCompilers {
             ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
-            int value_rank = array_item->n_args;
+            int value_rank = checked_integer_cast<int>(array_item->n_args);
             PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
             temp_idx_vars.reserve(al, array_item->n_args);
@@ -1260,7 +1463,7 @@ namespace LCompilers {
             ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
-            PassUtils::create_idx_vars(idx_vars, array_section->n_args, loc, al, current_scope, "_t");
+            PassUtils::create_idx_vars(idx_vars, checked_integer_cast<int>(array_section->n_args), loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(array_section->n_args == idx_vars.size())
             temp_idx_vars.reserve(al, array_section->n_args);
             for( size_t i = 0; i < array_section->n_args; i++ ) {
@@ -1529,7 +1732,8 @@ namespace LCompilers {
             ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
             LCOMPILERS_ASSERT(result_var != nullptr);
             const Location& loc = x->base.base.loc;
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*result_var));
             [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
             LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
                                 "Initialisation using ArrayConstructor is "

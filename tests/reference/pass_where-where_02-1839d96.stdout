@@ -90,6 +90,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -107,6 +109,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -128,6 +132,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -145,6 +151,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -205,6 +213,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         []
                     )
@@ -213,6 +223,8 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

@@ -1,15 +1,46 @@
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include <libasr/asr.h>
+#include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_overwrite.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
 namespace LCompilers {
+
+namespace {
+
+// `stmt`, or `if (present(sym)) stmt` for an optional dummy argument `sym`.
+ASR::stmt_t *gpu_if_present(Allocator &al, const Location &loc,
+        ASR::symbol_t *sym, ASR::stmt_t *stmt) {
+    ASR::symbol_t *v = ASRUtils::symbol_get_past_external(sym);
+    if (!ASR::is_a<ASR::Variable_t>(*v) || ASR::down_cast<ASR::Variable_t>(
+            v)->m_presence != ASR::presenceType::Optional) {
+        return stmt;
+    }
+    Vec<ASR::expr_t*> args;
+    args.reserve(al, 1);
+    args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+    ASR::expr_t *present = ASRUtils::EXPR(
+        ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::Present),
+            args.p, args.n, 0,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+    Vec<ASR::stmt_t*> then;
+    then.reserve(al, 1);
+    then.push_back(al, stmt);
+    return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, present, then.p,
+        then.n, nullptr, 0));
+}
+
+} // namespace
 
 // Replaces the region with the launch of the kernel the draft above built:
 // the copies the host makes on either side of the dispatch and the dispatch
@@ -19,6 +50,7 @@ namespace LCompilers {
 void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         const ParallelLoopNest &work, const Location &loc,
         GpuLaunchPlan &plan) {
+    ASRUtils::ASRBuilder b(al, loc);
     // The kernel is built, so this is where a clause the launch cannot
     // honour is reported: a loop that is an error is not also warned about.
     for (size_t i = 0; i < region.n_clauses; i++) {
@@ -29,26 +61,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         }
     }
 
-    // A `stop` the kernel runs as a trap is reported for the same reason:
-    // the launch does halt where the program said to halt, but the stop
-    // code and the kind of termination do not survive the crossing. A
-    // device with no trap never gets here: such a loop is an error before
-    // this.
-    {
-        GpuStopStatementFinder stops;
-        for (size_t i = 0; i < work.n_body; i++) {
-            stops.visit_stmt(*work.body[i]);
-        }
-        for (ASR::Function_t *fn : reachable_routines(work.body,
-                work.n_body)) {
-            for (size_t i = 0; i < fn->n_body; i++) {
-                stops.visit_stmt(*fn->m_body[i]);
-            }
-        }
-        for (auto &stop : stops.stops) {
-            report_stop_degraded(stop.second, stop.first);
-        }
-    }
+    pass_plain_dummy_lower_bounds(*ASR::down_cast<ASR::Function_t>(
+        ASR::down_cast<ASR::symbol_t>(plan.kernel_func)));
 
     plan.tu_symtab->add_symbol(plan.kernel_name,
         ASR::down_cast<ASR::symbol_t>(plan.kernel_func));
@@ -64,6 +78,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // Unwrap BlockCall to inspect block body statements
         ASR::stmt_t **stmts_to_scan = &stmt;
         size_t n_stmts_to_scan = 1;
+        SymbolTable *block_symtab = nullptr;
         if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
             ASR::BlockCall_t *bc =
                 ASR::down_cast<ASR::BlockCall_t>(stmt);
@@ -72,6 +87,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     ASR::down_cast<ASR::Block_t>(bc->m_m);
                 stmts_to_scan = blk->m_body;
                 n_stmts_to_scan = blk->n_body;
+                block_symtab = blk->m_symtab;
             }
         }
         for (size_t sj = 0; sj < n_stmts_to_scan; sj++) {
@@ -91,6 +107,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::Variable_t *var =
                 ASR::down_cast<ASR::Variable_t>(orig_sym);
             if (!ASRUtils::is_allocatable(var->m_type)) continue;
+            // A local of a BLOCK of the loop body is the kernel's own,
+            // which the host has no storage for.
+            if (block_symtab && var->m_parent_symtab == block_symtab) {
+                continue;
+            }
 
             ASR::FunctionCall_t *fc =
                 ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value);
@@ -173,14 +194,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         }
     }
 
-    // 7. Replace the region with GpuKernelLaunch + GpuSync
+    // 7. Replace the region with its GpuKernelLaunch
     // Collect all launch-related statements into a temporary Vec.
     // If any involved variable is optional, wrap them in a
     // present() guard so the host never reads a null descriptor.
     Vec<ASR::stmt_t*> launch_stmts;
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
-        + plan.liveout_scalars.size());
+        + plan.liveout_scalars.size() + plan.private_shapes.n);
+    Vec<ASR::stmt_t*> prelude;
+    prelude.reserve(al, 2 * plan.n_dims + 2);
     // The limits of the loops are evaluated once, as the loop evaluates
     // them before its first iteration, into host variables that everything
     // below reads: the component fit, the kernel's arguments and the grid.
@@ -191,11 +214,13 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             if (ASR::is_a<ASR::IntegerConstant_t>(*limit)) return;
             ASR::symbol_t *sym = gpu_new_variable(al, loc, current_scope,
                 current_scope->get_unique_name(name),
-                ASRUtils::duplicate_type(al, ASRUtils::expr_type(limit)));
-            launch_stmts.push_back(al, ASRUtils::STMT(
+                ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(limit))));
+            prelude.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc,
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), limit,
-                    nullptr, false, false)));
+                    nullptr, false, false, false, false)));
             for (size_t i = 0; i < plan.call_args.n; i++) {
                 if (plan.call_args.p[i].m_value == limit) {
                     plan.call_args.p[i].m_value =
@@ -211,16 +236,142 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ends.push_back(plan.dim_info[d].host_end);
         }
     }
+    // The number of threads the launch runs, evaluated once into the
+    // variable that guards the launch below. Bounds are still evaluated for
+    // a zero-trip loop, but gathers, allocations and readbacks belong only
+    // to actual offload work.
+    ASR::expr_t *thread_count = nullptr;
+    if (plan.tiled_arg >= 0) {
+        // A launch that can run in tiles (gpu_offload.cpp) runs whole tiles
+        // of the device's tile width by the rest of a block, unless that
+        // pads the nest by more than a quarter, as a short dimension does:
+        // then it runs one thread per iteration, numbered flat. Padding can
+        // take the count past the kind of the loop indices, so it is
+        // computed in integer(8). It is positive exactly when every
+        // dimension is non-empty. A tiled nest has no reduction (that keeps
+        // the flat numbering), so nothing below needs the iteration count.
+        ASR::ttype_t *count_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 8));
+        auto widen = [&](ASR::expr_t *limit) {
+            ASRUtils::ExprStmtDuplicator copy(al);
+            copy.success = true;
+            ASR::expr_t *value = copy.duplicate_expr(limit);
+            LCOMPILERS_ASSERT(copy.success && value);
+            return ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(value)) == 8
+                ? value : b.i2i_t(value, count_type);
+        };
+        auto extent = [&](size_t d) {
+            return gpu_loop_extent(al, loc, widen(starts[d]),
+                widen(ends[d]), count_type);
+        };
+        auto count = [&](int64_t value) {
+            return b.i_t(value, count_type);
+        };
+        auto ceil_div = [&](ASR::expr_t *n, int64_t size) {
+            return b.Div(b.Add(n, count(size - 1)), count(size));
+        };
+        size_t across = plan.tile_dims[0], down = plan.tile_dims[1];
+        int64_t width = device_caps.tile_width;
+        int64_t height = device_caps.threads_per_block / width;
+        ASR::expr_t *tile_count = b.Mul(b.Mul(
+            ceil_div(extent(across), width), ceil_div(extent(down), height)),
+            count(device_caps.threads_per_block));
+        ASR::expr_t *iterations = extent(0);
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            if (d > 0) iterations = b.Mul(iterations, extent(d));
+            if (d != across && d != down) {
+                tile_count = b.Mul(tile_count, extent(d));
+            }
+        }
+        LCOMPILERS_ASSERT(std::none_of(plan.reductions.begin(),
+            plan.reductions.end(), [](const auto &r) {
+                return r.host_buf_sym != nullptr; }));
+        ASR::expr_t *tile_threads = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_tile_threads"),
+            count_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(tile_threads, tile_count));
+        ASR::expr_t *iteration_count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_iteration_count"),
+            count_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(iteration_count, iterations));
+        ASR::expr_t *tiled = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_tiled"),
+            ASRUtils::duplicate_type(al, plan.int_type),
+            ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(tiled,
+            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                b.Gt(b.Mul(count(4), b.Sub(tile_threads, iteration_count)),
+                    iteration_count),
+                b.i_t(0, plan.int_type), b.i_t(1, plan.int_type),
+                plan.int_type, nullptr))));
+        plan.call_args.p[plan.tiled_arg].m_value = tiled;
+        thread_count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_launch_threads"),
+            count_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(thread_count,
+            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                b.Eq(tiled, b.i_t(0, plan.int_type)), iteration_count,
+                tile_threads, count_type, nullptr))));
+    } else {
+        // One thread per iteration: normalize each range before taking
+        // the product.
+        ASR::expr_t *host_total = nullptr;
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+                plan.dim_info[d].host_start, plan.dim_info[d].host_end,
+                plan.int_type);
+            host_total = host_total ? b.Mul(host_total, dim_range)
+                : dim_range;
+        }
+        thread_count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_iteration_count"),
+            plan.int_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(thread_count, host_total));
+    }
+    for (size_t i = 0; i < plan.private_shapes.n; i++) {
+        launch_stmts.push_back(al, plan.private_shapes[i]);
+    }
     // The components the kernel writes are made ready from the loop as the
     // source wrote it, which the rewrites above left untouched, and before
     // any element is gathered into a copy.
+    // The launch names the block that does it, which the device heap
+    // later reads and changes.
+    ASR::symbol_t *component_fit = nullptr;
+    // The arrays the kernel assigns whole before it reads them, and when it
+    // does: what the host holds in them then need not reach the device.
+    Vec<ASR::expr_t*> overwritten, overwritten_if;
+    overwritten.reserve(al, 0);
+    overwritten_if.reserve(al, 0);
     {
         ParallelLoopNest source;
-        if (parallel_loop_nest(region, source)) {
-            for (ASR::stmt_t *stmt : build_component_fit(source, starts, ends,
-                    loc)) {
-                launch_stmts.push_back(al, stmt);
+        bool have_source = parallel_loop_nest(region, source);
+        if (have_source) {
+            component_fit = build_component_fit(source, starts, ends, loc);
+            if (component_fit != nullptr) {
+                launch_stmts.push_back(al, ASRUtils::STMT(
+                    ASR::make_BlockCall_t(al, loc, -1, component_fit)));
             }
+        }
+        for (size_t i = 0; i < plan.call_args.n; i++) {
+            ASR::expr_t *arg = plan.call_args.p[i].m_value;
+            if (arg == nullptr) continue;
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.success = true;
+            ASR::expr_t *condition = have_source
+                ? gpu_overwrite_condition(al, loc, source, starts, ends, arg)
+                : nullptr;
+            // Otherwise what a loop transformation recorded from the loop
+            // it rewrote, which runs the same iterations.
+            if (condition == nullptr) {
+                condition = gpu_recorded_overwrite(region, arg);
+                if (condition != nullptr) {
+                    condition = dup.duplicate_expr(condition);
+                }
+            }
+            if (condition == nullptr) continue;
+            overwritten.push_back(al, dup.duplicate_expr(arg));
+            overwritten_if.push_back(al, condition);
         }
     }
     for (size_t gi = 0; gi < plan.gather_stmts.n; gi++) {
@@ -233,65 +384,19 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Copy liveout scalars into their 1-element array buffers
     // before the kernel launch so the buffer has the initial value
     for (auto &ls : plan.liveout_scalars) {
-        ASR::expr_t *buf_var = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, ls.host_buf_sym));
         ASR::expr_t *scalar_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
-        ASR::expr_t *idx_one = ASRUtils::EXPR(
-            ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-                ASR::integerbozType::Decimal));
-        Vec<ASR::array_index_t> ai_args;
-        ai_args.reserve(al, 1);
-        ASR::array_index_t ai;
-        ai.loc = loc;
-        ai.m_left = nullptr;
-        ai.m_right = idx_one;
-        ai.m_step = nullptr;
-        ai_args.push_back(al, ai);
-        ASR::expr_t *buf_item = ASRUtils::EXPR(
-            ASR::make_ArrayItem_t(al, loc, buf_var,
-                ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr, false));
-        launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
-                nullptr, false, false)));
+        ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
+            ls.scalar_type);
+        launch_stmts.push_back(al, gpu_if_present(al, loc,
+            ls.orig_scalar_sym, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
+                    nullptr, false, false, false, false))));
     }
 
     ASR::expr_t *block_size_const = ASRUtils::EXPR(
-        ASR::make_IntegerConstant_t(al, loc, 256, plan.int_type,
+        ASR::make_IntegerConstant_t(al, loc, device_caps.threads_per_block, plan.int_type,
             ASR::integerbozType::Decimal));
-
-    // Compute host-side total_elements = product of (end_d - start_d + 1)
-    ASR::expr_t *host_one = ASRUtils::EXPR(
-        ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-            ASR::integerbozType::Decimal));
-    ASR::expr_t *host_total = nullptr;
-    for (size_t d = 0; d < plan.n_dims; d++) {
-        ASR::expr_t *dim_range = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc,
-                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                    plan.dim_info[d].host_end, ASR::binopType::Sub,
-                    plan.dim_info[d].host_start, plan.int_type, nullptr)),
-                ASR::binopType::Add, host_one, plan.int_type, nullptr));
-        if (host_total == nullptr) {
-            host_total = dim_range;
-        } else {
-            host_total = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    host_total, ASR::binopType::Mul,
-                    dim_range, plan.int_type, nullptr));
-        }
-    }
-
-    // grid_size = (total + 255) / 256
-    ASR::expr_t *grid_padded = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc, host_total, ASR::binopType::Add,
-            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 255, plan.int_type,
-                ASR::integerbozType::Decimal)),
-            plan.int_type, nullptr));
-    ASR::expr_t *grid_size = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc, grid_padded, ASR::binopType::Div,
-            block_size_const, plan.int_type, nullptr));
 
     // One accumulator per iteration, sized now that the iteration count
     // is known. The kernel sets each to the identity, so nothing is
@@ -309,7 +414,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         dim.loc = loc;
         dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
             plan.int_type, ASR::integerbozType::Decimal));
-        dim.m_length = host_total;
+        dim.m_length = thread_count;
         alloc_dims.push_back(al, dim);
         arg.m_dims = alloc_dims.p;
         arg.n_dims = alloc_dims.n;
@@ -327,11 +432,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
-            grid_size, block_size_const,
-            plan.call_args.p, plan.call_args.n)));
+            thread_count, block_size_const,
+            plan.call_args.p, plan.call_args.n, component_fit, nullptr,
+            0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
+            overwritten_if.p, overwritten_if.n)));
 
-    launch_stmts.push_back(al, ASRUtils::STMT(
-        ASR::make_GpuSync_t(al, loc)));
+    // The launch does not wait for the kernel. What follows reads what the
+    // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that
+    // waits for it in front of it.
 
     // Put every gathered element the kernel wrote into back over the
     // original, before anything on the host can read it again.
@@ -342,28 +450,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // Copy liveout scalar results back from the 1-element array
     // buffers after the kernel has completed
     for (auto &ls : plan.liveout_scalars) {
-        ASR::expr_t *buf_var = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, ls.host_buf_sym));
         ASR::expr_t *scalar_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, ls.orig_scalar_sym));
-        ASR::expr_t *idx_one = ASRUtils::EXPR(
-            ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-                ASR::integerbozType::Decimal));
-        Vec<ASR::array_index_t> ai_args;
-        ai_args.reserve(al, 1);
-        ASR::array_index_t ai;
-        ai.loc = loc;
-        ai.m_left = nullptr;
-        ai.m_right = idx_one;
-        ai.m_step = nullptr;
-        ai_args.push_back(al, ai);
-        ASR::expr_t *buf_item = ASRUtils::EXPR(
-            ASR::make_ArrayItem_t(al, loc, buf_var,
-                ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr, false));
-        launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
-                nullptr, false, false)));
+        ASR::expr_t *buf_item = gpu_liveout_slot(al, loc, ls.host_buf_sym,
+            ls.scalar_type);
+        launch_stmts.push_back(al, gpu_if_present(al, loc,
+            ls.orig_scalar_sym, ASRUtils::STMT(
+                ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
+                    nullptr, false, false, false, false))));
     }
 
     // Fold the accumulators into the scalar the source named. It still
@@ -396,7 +490,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             keep_body.reserve(al, 1);
             keep_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, scalar_var, slot,
-                    nullptr, false, false)));
+                    nullptr, false, false, false, false)));
             Vec<ASR::stmt_t*> keep_else;
             keep_else.reserve(al, 0);
             fold_body.push_back(al, ASRUtils::STMT(
@@ -408,7 +502,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
                         gpu_reduction_fold_binop(r.op), scalar_var, slot,
                         ASRUtils::duplicate_type(al, r.scalar_type))),
-                    nullptr, false, false)));
+                    nullptr, false, false, false, false)));
         }
 
         ASR::do_loop_head_t head;
@@ -416,7 +510,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         head.m_v = index_var;
         head.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
             plan.int_type, ASR::integerbozType::Decimal));
-        head.m_end = host_total;
+        head.m_end = thread_count;
         head.m_increment = nullptr;
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_DoLoop_t(al, loc, nullptr, head,
@@ -430,6 +524,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::make_ExplicitDeallocate_t(al, loc,
                 dealloc_args.p, dealloc_args.n)));
     }
+
+    prelude.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+        b.Gt(thread_count, b.i_t(0, ASRUtils::expr_type(thread_count))),
+        launch_stmts.p, launch_stmts.n, nullptr, 0)));
 
     // If any involved variable is optional, wrap the whole kernel
     // launch block in if(present(v1) .and. present(v2) ...) so
@@ -464,12 +562,12 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         pass_result.reserve(al, 1);
         pass_result.push_back(al, ASRUtils::STMT(
             ASR::make_If_t(al, loc, nullptr, guard,
-                launch_stmts.p, launch_stmts.n,
+                prelude.p, prelude.n,
                 empty_else.p, empty_else.n)));
     } else {
-        pass_result.reserve(al, launch_stmts.n);
-        for (size_t i = 0; i < launch_stmts.n; i++) {
-            pass_result.push_back(al, launch_stmts.p[i]);
+        pass_result.reserve(al, prelude.n);
+        for (size_t i = 0; i < prelude.n; i++) {
+            pass_result.push_back(al, prelude.p[i]);
         }
     }
 }

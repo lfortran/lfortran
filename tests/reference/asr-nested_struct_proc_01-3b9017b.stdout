@@ -555,11 +555,14 @@
                                             (Complex 4)
                                             ()
                                         )
+                                        NoPointerBounds
                                     )
                                     (Assignment
                                         (Var 12 rc)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -871,6 +874,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Associate
                                         (Var 13 tmp)
@@ -918,6 +923,7 @@
                                                 ()
                                             )
                                         )
+                                        NoPointerBounds
                                     )
                                     (If
                                         ()
@@ -1883,6 +1889,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 14 value)
@@ -1903,6 +1911,8 @@
                             )
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

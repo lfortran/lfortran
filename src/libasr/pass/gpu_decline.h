@@ -57,18 +57,37 @@ struct GpuDeviceCapabilities {
     int max_integer_kind = 8;
     int max_real_kind = 8;
 
-    // Whether a kernel can bring the program to a halt from a thread. There
-    // is no exit code to deliver either way -- a grid has no status to
-    // return -- but stopping is the part of a Fortran `stop` a device can
-    // honour, and a device that cannot stop can honour none of it.
-    bool device_abort = true;
-
     // Whether a device function may declare a local array whose extent is
-    // only known once the kernel runs. Where it may not, the pass splices
-    // such a callee into the kernel body instead, so that the local becomes
-    // a kernel-level one and the per-thread workspace machinery can bind it
-    // to a slice of a device buffer.
+    // only known once the kernel runs. Where it may not, such a local
+    // becomes an argument that every caller gives the function, up to the
+    // kernel, where the per-thread workspace machinery binds it to a slice
+    // of a device buffer (gpu_device_workspace.cpp). A callee that is the
+    // whole value of an assignment is spliced into the kernel body instead,
+    // which turns its locals into kernel-level ones directly.
     bool device_function_runtime_sized_locals = true;
+
+    // How many threads may run one iteration of a kernel together, its
+    // lanes: the threads of one SIMD-group, which wait for each other
+    // cheaply and see each other's writes after such a wait. One means an
+    // iteration runs on one thread (see gpu_vector_lanes.cpp).
+    int lanes_per_iteration = 1;
+
+    int threads_per_block = 256;
+
+    // The number of iterations the threads of one block of a loop nest
+    // of two or more dimensions cover along the dimension its stores are
+    // contiguous in; the block's other threads cover a second dimension.
+    // A block then reads a two-dimensional neighbourhood of an array
+    // instead of a single run of one of its columns, so a stencil reuses
+    // what its neighbours in the other dimension loaded. Zero numbers the
+    // iterations of a nest in one flat range.
+    int tile_width = 0;
+    int sequential_loop_unroll_factor = 1;
+
+    // How many bytes of stack a thread of a kernel has. Late kernel storage
+    // placement spills private arrays that do not fit to per-thread slices
+    // of global workspace buffers; it never changes their locality.
+    int64_t thread_stack_bytes = 0;
 
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in
@@ -121,6 +140,14 @@ enum class GpuDeclineReason {
     // --- what the pass's own lowering cannot yet do to the body ---
     StructElementGather,
     UnsizedLocalArray,
+    // An array of LOCAL locality that a thread cannot hold a copy of its
+    // own of: its type is not one a thread holds as a local, it is a
+    // coarray, an ASSOCIATE around the loop names it, or the body has an
+    // ASSOCIATE the kernel cannot inline.
+    LocalityElementType,
+    LocalityCoarray,
+    LocalityNamedByAssociate,
+    LocalityAssociateNotInlined,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
     // A section passed to a procedure has to be copied into a contiguous
@@ -138,10 +165,28 @@ enum class GpuDeclineReason {
     SectionCopyNotPlaceable,
     DeviceFunctionInlining,
     DeviceFunctionImplementation,
+    // A call in device code hands a dummy procedure no routine the device
+    // can call in its place: a dummy procedure of the loop's host, a
+    // procedure pointer, or nothing, for an absent optional one (see
+    // gpu_specialize_dummy_procedures).
+    DummyProcedureUnbound,
     RecursiveDeviceFunction,
     FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
+    // An allocatable array component of a derived-type local of device
+    // code, which has no heap to allocate it from, whose shape cannot be
+    // told on entry to the routine (see gpu_device_struct_storage.cpp).
+    StructComponentNotSizeable,
+    // An array on the device heap (see gpu_device_heap.cpp) used in a way
+    // the heap does not lower yet; the name says which array and how.
+    HeapArrayUse,
+    // An exit of a construct that is not a loop, such as a BLOCK.
+    ExitOfConstruct,
+    // A named cycle inside a do concurrent nested in the body, which may
+    // be of that loop or of the offloaded one: ASR does not keep the name
+    // of a do concurrent.
+    NamedCycleInNestedConcurrent,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -152,17 +197,46 @@ enum class GpuDeclineReason {
     // These, and every reason below them, name a thing rather than state a
     // fact, and so read as "the gpu backend does not support <thing>".
     StatementIo,
-    StatementStop,
+    // A `stop` or `error stop` whose stop code is a character value
+    // computed at run time, which the host cannot repeat after the launch
+    // (see gpu_offload_stop.h).
+    StopCodeNotConstant,
+    // A procedure that can stop, which is given hidden arguments, but is
+    // also passed as an actual argument or is not a copy the kernel owns.
+    StoppingProcedureShared,
+    // A scalar the loop defines whose value is kept after it, of a type
+    // the buffer that carries the value back to the host cannot hold:
+    // `type_name` says which ("complex(4)", "character", "allocatable").
+    LiveoutScalar,
+    // An optional dummy argument the loop may define and whose value is
+    // kept after it, which the loop passes on to an optional dummy
+    // argument of a procedure: each thread passes its private copy, which
+    // is present whether or not the argument is.
+    LiveoutOptionalPassedOn,
+    // A part of a derived-type variable the loop defines (`name`) that no
+    // thread can keep a private copy of: an allocatable component, a part
+    // of a polymorphic, allocatable or pointer variable, the whole of a
+    // value with allocatable or pointer parts or too large for a thread,
+    // or a value a procedure defines in place that the loop also keeps a
+    // copy of a part of, or names a scalar part of.
+    LiveoutDerivedType,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,
     StructNonDataMember,
     StructPointerMember,
     StructAllocatableArrayMember,
-    StructAllocatableScalarMember,
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
+    // A derived-type constant device code reads, such as a named constant,
+    // with a component the device struct cannot be given a value of (see
+    // gpu_struct_constant_unsupported_component); the name is the component.
+    StructConstantComponent,
+    // An array of derived-type values given by a constant, such as a named
+    // constant array of a derived type, which device code has no value
+    // representation for.
+    StructArrayConstant,
 
     // --- the layout of a kernel argument: polymorphic arguments ---
     ClassComponentArrayRank,
@@ -176,7 +250,6 @@ enum class GpuDeclineReason {
     // --- the layout of a kernel argument: everything else ---
     ArrayElementTypeWidth,
     ArrayElementNotNumeric,
-    WorkspaceStructElementShape,
     // A per-thread workspace the launch layout cannot size, found when the
     // launch is expanded. The host pre-flight in gpu_offload asks the same
     // question of the loop, but of the loop as it stands before the passes
@@ -184,6 +257,12 @@ enum class GpuDeclineReason {
     LaunchVlaExtentNotRebuildable,
     KernelArgumentCountMismatch,
     NestedAllocatableComponent,
+    // The kernel names an allocatable scalar component, which reaches the
+    // device only as the host's bytes (see `gpu_component_is_opaque`).
+    AllocatableScalarComponentUse,
+    // The kernel assigns a whole value of a derived type holding an
+    // allocatable scalar component, which would have to be allocated.
+    AllocatableScalarComponentCopy,
     MissingArgument,
     ScalarTypeWidth,
     ScalarNotNumeric,
@@ -235,6 +314,9 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // The declared type of the variable as the source spells it, for a
+    // type `type` cannot name by itself (a derived type).
+    std::string type_name;
     // Where the section is evaluated, when the reason is about a section,
     // and why no copy placed before the statement serves it.
     GpuSectionSite site = GpuSectionSite::Statement;
@@ -262,6 +344,11 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 // anything.
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+bool gpu_source_name(const std::string &name);
 
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.

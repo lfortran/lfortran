@@ -59,19 +59,22 @@ namespace LCompilers::LLanguageServer {
                 if (LCompilers::LFortran::is_generated_symbol_name(a.first)) {
                     continue;
                 }
-                std::size_t index = symbol_lists.size();
+                // document_symbols::parent_index is an int, with -1 for no parent
+                int index = static_cast<int>(symbol_lists.size());
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;
                 loc.symbol_name = a.first;
                 loc.symbol_type = a.second->type;
-                lm.pos_to_linecol(
+                lm.output_pos_to_linecol(
                     a.second->base.loc.first,
+                    false,
                     loc.first_line,
                     loc.first_column,
                     loc.filename
                 );
-                lm.pos_to_linecol(
+                lm.output_pos_to_linecol(
                     a.second->base.loc.last,
+                    true,
                     loc.last_line,
                     loc.last_column,
                     loc.filename

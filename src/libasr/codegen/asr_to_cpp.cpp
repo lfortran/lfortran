@@ -146,7 +146,7 @@ public:
     void generate_array_decl(std::string& sub, std::string v_m_name,
                              std::string& type_name, std::string& dims,
                              std::string& encoded_type_name,
-                             ASR::dimension_t* m_dims, int n_dims, size_t size,
+                             ASR::dimension_t* m_dims, size_t n_dims, size_t size,
                              bool use_ref, bool dummy,
                              bool declare_value, bool /*is_fixed_size*/,
                              bool is_pointer=false) {
@@ -172,7 +172,7 @@ public:
             sub += indent + format_type("", type_name, v_m_name, use_ref, dummy, false);
             sub += " = &" + variable_name + ";\n";
             if( !is_pointer ) {
-                for (int i = 0; i < n_dims; i++) {
+                for (size_t i = 0; i < n_dims; i++) {
                     if( m_dims[i].m_start ) {
                         this->visit_expr(*m_dims[i].m_start);
                         sub += indent + std::string(v_m_name) +
@@ -626,6 +626,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         sep = "\" \"";
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the C++ backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         } else if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
@@ -655,6 +659,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         size_t n_values = x.n_values;
         if(x.m_values[0] && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the C++ backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         }
         for (size_t i=0; i<n_values; i++) {

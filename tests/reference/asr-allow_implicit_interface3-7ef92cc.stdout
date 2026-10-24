@@ -288,6 +288,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Associate
                         (Var 2 lsame~fpcast_ptr)
@@ -312,6 +314,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 lsame~fpcast_ptr)
@@ -336,6 +339,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (If
                         ()
@@ -382,11 +386,15 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 info)
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ()
+                            .false.
+                            .false.
                             .false.
                             .false.
                         )]

@@ -100,6 +100,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -233,11 +235,15 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 neg_int)
                                             (Var 3 int)
                                             ()
+                                            .false.
+                                            .false.
                                             .false.
                                             .false.
                                         )]

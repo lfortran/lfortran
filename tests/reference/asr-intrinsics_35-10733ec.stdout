@@ -161,6 +161,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -201,6 +203,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -218,6 +222,8 @@
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -267,6 +273,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -319,6 +327,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -340,7 +350,7 @@
                             Any
                             [(ArrayPhysicalCast
                                 (ArrayConstant
-                                    12
+                                    3
                                     [.true., .true., .true.]
                                     (Array
                                         (Logical 4)
@@ -372,12 +382,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 l)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

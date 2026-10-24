@@ -197,8 +197,9 @@ MCP tools; see "Git Remotes & Issues"), not a compiler build.
 ## Prerequisites
 - **Required:** Git and [Pixi](https://pixi.sh/). The repository manifest
   supplies build/test dependencies and Linux C/C++ compilers. On macOS, install
-  Xcode Command Line Tools; on Windows, use an initialized MSVC developer shell
-  with Git Bash available. Use Pixi inside WSL for Unix-only test runners.
+  Xcode Command Line Tools; on Windows, use an initialized MSVC developer
+  shell. Pixi supplies the cross-platform `shell` that runs the build scripts,
+  so Bash is not required. Use Pixi inside WSL for Unix-only test runners.
   If a prerequisite is missing, report it; do not provision an alternate toolchain.
 
 ## Build, Test, and Development Commands
@@ -374,6 +375,9 @@ only once, redirect to a log file and then examine the log file.
   Both full-suite compilers also use the platform C/C++ diagnostic/hardening
   flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.
+  The native phase of `Build LFortran to WASM` is Quick's GCC Release
+  (`NDEBUG`) build and also uses `-Werror`, matching Exhaustive's
+  `Check Release build`.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its

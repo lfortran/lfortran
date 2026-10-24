@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -14,6 +15,7 @@
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
 
@@ -258,8 +260,9 @@ ASR::expr_t* constructor_value(ASR::StructConstructor_t *x,
 
 // Whether a statement gives the component `component` of `r` a shape: an
 // allocate of it, or an assignment of an array to it or of a structure
-// constructor to `r`. `extents` are the extents it gives, empty when they
-// cannot be told.
+// constructor to `r`, or of any other value to `r`, which gives the
+// component the one the value has (`r = g(x)`). `extents` are the extents
+// it gives, empty when they cannot be told.
 bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
         const std::string &component, std::vector<ASR::expr_t*> &extents) {
     extents.clear();
@@ -287,6 +290,8 @@ bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
                 ASR::down_cast<ASR::StructConstructor_t>(x->m_value),
                 component);
             if (!value) return false;
+        } else if (names_variable(x->m_target, r)) {
+            return true;
         } else {
             return false;
         }
@@ -404,9 +409,41 @@ public:
 
 // Whether every way through `body` that runs to its end gives the
 // component a shape.
-bool shaped_on_every_path(Allocator &al, ASR::stmt_t **body, size_t n_body,
-        ASR::symbol_t *r, const std::string &component) {
+// The statements of `body` that run each time it does, one after the
+// other: its own, with those of a `block` or `associate` construct in it in
+// place of the construct.
+std::vector<ASR::stmt_t*> sequential_statements(ASR::stmt_t **body,
+        size_t n_body) {
+    std::vector<ASR::stmt_t*> out;
     for (size_t i = 0; i < n_body; i++) {
+        ASR::symbol_t *construct = nullptr;
+        if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+            construct = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
+        } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*body[i])) {
+            construct = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(body[i])->m_m);
+        }
+        std::vector<ASR::stmt_t*> inner;
+        if (construct && ASR::is_a<ASR::Block_t>(*construct)) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(construct);
+            inner = sequential_statements(b->m_body, b->n_body);
+        } else if (construct && ASR::is_a<ASR::AssociateBlock_t>(*construct)) {
+            ASR::AssociateBlock_t *b =
+                ASR::down_cast<ASR::AssociateBlock_t>(construct);
+            inner = sequential_statements(b->m_body, b->n_body);
+        } else {
+            inner.push_back(body[i]);
+        }
+        out.insert(out.end(), inner.begin(), inner.end());
+    }
+    return out;
+}
+
+bool shaped_on_every_path(Allocator &al, ASR::stmt_t **body_, size_t n_body_,
+        ASR::symbol_t *r, const std::string &component) {
+    std::vector<ASR::stmt_t*> body = sequential_statements(body_, n_body_);
+    for (size_t i = 0; i < body.size(); i++) {
         std::vector<ASR::expr_t*> extents;
         if (gives_shape(al, body[i], r, component, extents)) return true;
         if (ASR::is_a<ASR::If_t>(*body[i])) {
@@ -852,9 +889,9 @@ ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
 
     size_t top_level = 0;
     std::vector<ASR::expr_t*> last;
-    for (size_t i = 0; i < fn.n_body; i++) {
+    for (ASR::stmt_t *stmt : sequential_statements(fn.m_body, fn.n_body)) {
         std::vector<ASR::expr_t*> extents;
-        if (gives_shape(al, fn.m_body[i], r, component, extents)) {
+        if (gives_shape(al, stmt, r, component, extents)) {
             top_level++;
             last = extents;
         }
@@ -958,6 +995,9 @@ struct ComponentWrite {
 class GpuComponentFit {
     Allocator &al;
     SymbolTable *scope;
+    // The procedure with the body of a separate module procedure the loop
+    // calls, which its interface does not have.
+    std::function<ASR::Function_t*(ASR::Function_t*)> implementation;
     bool realloc;
     bool checks;
     const ParallelLoopNest &loop;
@@ -1286,19 +1326,49 @@ class GpuComponentFit {
                     ASR::down_cast<ASR::FunctionCall_t>(value);
                 ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(
                     call->m_name);
-                if (call->m_dt || !callee ||
-                        !ASR::is_a<ASR::Function_t>(*callee)) {
+                if (callee && ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *callee)) {
+                    callee = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                            callee)->m_proc);
+                }
+                // A polymorphic object may have a type that binds another
+                // procedure.
+                if (!callee || !ASR::is_a<ASR::Function_t>(*callee) ||
+                        (call->m_dt && ASRUtils::is_class_type(
+                            ASRUtils::expr_type(call->m_dt)))) {
                     continue;
                 }
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+                // A separate module procedure shapes the component in its
+                // body, which its interface does not have.
+                ASR::Function_t *fn = implementation(
+                    ASR::down_cast<ASR::Function_t>(callee));
                 if (!fn->m_return_var ||
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
                 }
+                // The object of a type-bound call is the actual argument
+                // of its passed-object dummy argument, when the call does
+                // not list it among its arguments already.
+                bool passes_object = call->m_dt &&
+                    call->n_args + 1 == fn->n_args;
+                size_t object_index = passes_object
+                    ? ASRUtils::get_pass_arg_index(call->m_name) : 0;
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, call->n_args + 1);
+                for (size_t a = 0; a <= call->n_args; a++) {
+                    if (passes_object && a == object_index) {
+                        ASR::call_arg_t object;
+                        object.loc = call->m_dt->base.loc;
+                        object.m_value = call->m_dt;
+                        args.push_back(al, object);
+                    }
+                    if (a < call->n_args) args.push_back(al, call->m_args[a]);
+                }
                 write.shape = call_component_shape(al, *fn,
                     ASRUtils::symbol_get_past_external(ASR::down_cast<
                         ASR::Var_t>(fn->m_return_var)->m_v), name,
-                    call->m_args, call->n_args);
+                    args.p, args.n);
             } else if (ASR::is_a<ASR::StructConstructor_t>(*value)) {
                 // `t(i) = tt(...)`
                 ASR::expr_t *given = constructor_value(
@@ -1590,15 +1660,16 @@ class GpuComponentFit {
             } else if (checks) {
                 fit = check_fits(write.loc, component, extents);
             }
-        } else if (checks && write.shape.always) {
-            if (realloc) {
-                fit.push_back(require_allocated(write.loc, component,
-                    designator_name(&write.element->base) + "%" +
-                        ASRUtils::symbol_name(write.component)));
-            } else {
-                fit.push_back(debug_check(write.loc, component,
-                    duplicate(al, component)));
-            }
+        } else if (write.shape.always && realloc) {
+            // Not a check bounds checking makes: the size cannot be told
+            // here whatever the options, and gpu_device_heap reads this
+            // requirement to store the value from the device heap instead.
+            fit.push_back(require_allocated(write.loc, component,
+                designator_name(&write.element->base) + "%" +
+                    ASRUtils::symbol_name(write.component)));
+        } else if (write.shape.always && checks) {
+            fit.push_back(debug_check(write.loc, component,
+                duplicate(al, component)));
         }
         if (fit.empty()) return;
         fits++;
@@ -1710,8 +1781,8 @@ class GpuComponentFit {
         Vec<ASR::expr_t*> components;
         components.reserve(al, 1);
         components.push_back(al, value);
-        return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
-            target, components.p, components.n, false));
+        return PassUtils::make_DebugCheckArrayBounds(al, loc, target,
+            components, false);
     }
 
     // Gives every element of the array `w` names whose component is not
@@ -1751,20 +1822,23 @@ class GpuComponentFit {
     }
 
 public:
-    GpuComponentFit(Allocator &al, SymbolTable *scope, bool realloc,
+    GpuComponentFit(Allocator &al, SymbolTable *scope,
+            std::function<ASR::Function_t*(ASR::Function_t*)>
+                implementation, bool realloc,
             bool checks, const ParallelLoopNest &loop,
             const std::vector<ASR::expr_t*> &starts,
             const std::vector<ASR::expr_t*> &ends)
-        : al(al), scope(scope), realloc(realloc), checks(checks),
+        : al(al), scope(scope), implementation(std::move(implementation)),
+          realloc(realloc), checks(checks),
           loop(loop), starts(starts), ends(ends) {}
 
-    std::vector<ASR::stmt_t*> build(const Location &loc) {
-        if (!realloc && !checks) return {};
+    ASR::symbol_t* build(const Location &loc) {
+        if (!realloc && !checks) return nullptr;
         LCOMPILERS_ASSERT(starts.size() == loop.n_heads() &&
             ends.size() == loop.n_heads());
         analyse();
         slice(loop.body, loop.n_body, true, true);
-        if (written.empty()) return {};
+        if (written.empty()) return nullptr;
 
         block_scope = al.make_new<SymbolTable>(scope);
         std::vector<ASR::stmt_t*> stmts;
@@ -1793,7 +1867,7 @@ public:
             }
             stmts.insert(stmts.end(), body.begin(), body.end());
         }
-        if (stmts.empty()) return {};
+        if (stmts.empty()) return nullptr;
 
         Vec<ASR::stmt_t*> block_body;
         block_body.from_pointer_n_copy(al, stmts.data(), stmts.size());
@@ -1803,7 +1877,7 @@ public:
         block_scope->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         scope->add_symbol(name, block_sym);
-        return {ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym))};
+        return block_sym;
     }
 };
 
@@ -1817,11 +1891,17 @@ public:
 // allocates the component to the size the write gives it (with
 // --realloc-lhs-arrays) or, with bounds checking, checks that it has that
 // size. What the replay cannot evaluate before the loop runs it does not
-// guess; see doc/src/gpu_offloading.md.
-std::vector<ASR::stmt_t*> GpuOffloadVisitor::build_component_fit(
+// guess; see doc/src/gpu_offloading.md. Returns the block that does it, which
+// the launch names, or nullptr when there is nothing to do.
+ASR::symbol_t* GpuOffloadVisitor::build_component_fit(
         const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
         const std::vector<ASR::expr_t*> &ends, const Location &loc) {
-    GpuComponentFit fit(al, current_scope, pass_options.realloc_lhs_arrays,
+    GpuComponentFit fit(al, current_scope,
+        [this](ASR::Function_t *fn) {
+            ASR::Function_t *impl = resolve_function_implementation(fn);
+            return impl != nullptr ? impl : fn;
+        },
+        pass_options.realloc_lhs_arrays,
         pass_options.bounds_checking, loop, starts, ends);
     return fit.build(loc);
 }

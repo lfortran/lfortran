@@ -6,8 +6,8 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 if (LFORTRAN_BUILD_ALL)
     find_program(RE2C re2c REQUIRED)
     find_program(BISON bison REQUIRED)
-    find_program(BASH_BIN bash REQUIRED)
-    execute_process(COMMAND "env" "RE2C=${RE2C}" "BISON=${BISON}" "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
+    find_program(LFORTRAN_SHELL shell REQUIRED)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "RE2C=${RE2C}" "BISON=${BISON}" "${LFORTRAN_SHELL}" "--norc" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
     if (NOT _BUILD0_EXIT EQUAL 0)
         message(FATAL_ERROR "Running build0.sh failed (see error above)")
     endif ()
@@ -37,12 +37,25 @@ if (NOT WITH_XEUS AND NOT XEUS_LFORTRAN_WASM_BUILD)
         set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
+        # CMake's MSVC default flags contain /GR, which /GR- would override
+        # with warning D9025. RTTI is the MSVC default anyway, so dropping /GR
+        # keeps it enabled for targets that do not use the no-RTTI flag.
+        string(REGEX REPLACE "(^| )[/-]GR( |$)" " " CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS}")
     endif ()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
+endif ()
+
+if (MSVC)
+    # The MSVC CRT deprecates portable standard C functions such as getenv
+    # and strcpy (C4996) in favor of non-portable *_s variants. Keep using the
+    # standard functions, as LLVM does. POSIX-name deprecations
+    # (_CRT_NONSTDC_NO_WARNINGS) remain enabled.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif ()
 
 # For CMAKE_INSTALL_BINDIR:
@@ -320,6 +333,13 @@ if (WITH_LLVM)
     set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
         ${llvm_libs})
     if (MSVC)
+        # LLVM 11 headers derive iterators from std::iterator, which the MSVC
+        # STL deprecates in C++17 (STL4015). The warning is reported inside the
+        # STL headers, so marking LLVM's include directory as external does
+        # not suppress it.
+        set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_DEFINITIONS
+            _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+
         # LLVM on Windows appends zlib shared library and we must provide
         # a path to find it:
         get_filename_component(mypath ${ZLIB_LIBRARY} DIRECTORY)
@@ -561,7 +581,6 @@ if (WITH_RUNTIME_LIBRARY)
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
     "-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
-    "-DWITH_XEUS=${WITH_XEUS}"
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"

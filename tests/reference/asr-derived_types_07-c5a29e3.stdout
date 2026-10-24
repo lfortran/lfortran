@@ -542,6 +542,7 @@
                                                         )
                                                         ()
                                                     )
+                                                    NoPointerBounds
                                                 )
                                                 (Exit
                                                     ()
@@ -719,6 +720,8 @@
                                         )
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1465,6 +1468,8 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 match)
@@ -1473,6 +1478,8 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
+                                            .false.
                                             .false.
                                             .false.
                                         )]

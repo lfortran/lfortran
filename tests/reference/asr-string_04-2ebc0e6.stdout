@@ -133,6 +133,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -152,6 +154,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -169,6 +173,8 @@
                             (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -202,6 +208,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -219,6 +227,8 @@
                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -240,6 +250,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -259,6 +271,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -276,6 +290,8 @@
                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -317,6 +333,8 @@
                                 .false.
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -328,6 +346,8 @@
                             ()
                             [(Var 2 greetings)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -352,6 +372,8 @@
                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

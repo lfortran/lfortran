@@ -1,0 +1,26 @@
+#include <stdint.h>
+
+struct label_t {
+    long name[2];
+    float scale;
+};
+
+struct model_t {
+    label_t label;
+    int offset;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ a,
+    model_t& m)
+{
+    int __flat_idx;
+    int i;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i = (__flat_idx + 1);
+    a[((int)(i) - (1))] = (((float)(i + m.offset)) * m.label.scale);
+}
+

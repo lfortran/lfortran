@@ -355,7 +355,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -488,7 +488,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -652,7 +652,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -810,7 +810,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1040,7 +1040,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1198,7 +1198,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1364,7 +1364,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1497,7 +1497,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1661,7 +1661,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -1819,7 +1819,7 @@
                                                     Default
                                                     (Logical 1)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -2737,7 +2737,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -2849,7 +2849,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -2905,7 +2905,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -2961,7 +2961,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -3042,7 +3042,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -3098,7 +3098,7 @@
                                                     Default
                                                     (Integer 4)
                                                     ()
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -3823,6 +3823,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nx)
@@ -3830,11 +3832,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nk)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -3881,6 +3887,8 @@
                                                 )
                                                 (Var 2 ix)]
                                                 FormatFortran
+                                                []
+                                                ()
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -3922,6 +3930,8 @@
                                                 )
                                                 (Var 2 ix)]
                                                 FormatFortran
+                                                []
+                                                ()
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )

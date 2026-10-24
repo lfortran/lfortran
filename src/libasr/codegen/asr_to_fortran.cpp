@@ -417,6 +417,30 @@ public:
         }
     }
 
+    // The initializer `value_src` of a variable of type `var_type`. An array
+    // constant initial value holds the elements in array element order with
+    // rank one, while the initializer of a multidimensional array must have
+    // its shape.
+    std::string reshape_to_variable_shape(ASR::ttype_t *var_type,
+            ASR::expr_t *value, const std::string &value_src) {
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(var_type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return value_src;
+        ASR::Array_t *arr = down_cast<ASR::Array_t>(type);
+        ASR::ttype_t *value_type = ASRUtils::expr_type(value);
+        if (arr->n_dims < 2 || !ASRUtils::is_array(value_type)
+                || static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(value_type)) == arr->n_dims) {
+            return value_src;
+        }
+        std::string r = "reshape(" + value_src + ", [";
+        for (size_t i = 0; i < arr->n_dims; i++) {
+            LCOMPILERS_ASSERT(arr->m_dims[i].m_length);
+            if (i > 0) r += ", ";
+            visit_expr(*arr->m_dims[i].m_length);
+            r += src;
+        }
+        return r + "])";
+    }
+
     // The value list of a DATA statement that gives a variable the initial
     // value `value`: the elements of an array in array element order.
     std::string data_values(ASR::expr_t *value) {
@@ -775,7 +799,10 @@ public:
                 }
             }
         }
-        if (type->m_pure) {
+        // An elemental procedure is pure unless it is declared impure.
+        if (type->m_elemental && !type->m_pure) {
+            r += "impure ";
+        } else if (type->m_pure && !type->m_elemental) {
             r += "pure ";
         }
         if (type->m_elemental) {
@@ -1247,7 +1274,7 @@ public:
                 }
             }
             visit_expr(*x.m_value);
-            r += src;
+            r += reshape_to_variable_shape(x.m_type, x.m_value, src);
         } else if (x.m_symbolic_value) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
@@ -1425,7 +1452,8 @@ public:
         std::string r;
         r += "assign";
         r += " ";
-        r += x.m_label;
+        // Preserves the existing character append of the label value.
+        r += static_cast<char>(x.m_label);
         r += " ";
         r += "to";
         r += " ";
@@ -1464,8 +1492,22 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
-        visit_expr(*x.m_target);
-        std::string t = std::move(src);
+        std::string t;
+        if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
+            // The upper bounds follow from the data target: `p(lb:) => a`
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            visit_expr(*section->m_v);
+            t = std::move(src) + "(";
+            for (size_t i = 0; i < section->n_args; i++) {
+                visit_expr(*section->m_args[i].m_left);
+                t += src + ":";
+                if (i < section->n_args - 1) t += ", ";
+            }
+            t += ")";
+        } else {
+            visit_expr(*x.m_target);
+            t = std::move(src);
+        }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
         src = t + " => " + v + "\n";
@@ -2075,13 +2117,13 @@ public:
         std::string r = indent;
         r += "call ";
         r += ASRUtils::symbol_name(x.m_kernel);
-        r += "<<<";
-        visit_expr(*x.m_grid_size);
-        r += src;
-        r += ", ";
+        // The execution configuration as CUDA writes it: whole blocks.
+        visit_expr(*x.m_thread_count);
+        std::string thread_count = src;
         visit_expr(*x.m_block_size);
-        r += src;
-        r += ">>>(";
+        std::string block_size = src;
+        r += "<<<(" + thread_count + " + " + block_size + " - 1)/"
+            + block_size + ", " + block_size + ">>>(";
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
@@ -2096,6 +2138,28 @@ public:
     void visit_GpuSync(const ASR::GpuSync_t &/*x*/) {
         std::string r = indent;
         r += "gpu sync";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu lane barrier";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
+        std::string r = indent;
+        r += "gpu discard(";
+        for (size_t i = 0; i < x.n_vars; i++) {
+            visit_expr(*x.m_vars[i]);
+            r += src;
+            if (i < x.n_vars - 1) r += ", ";
+        }
+        r += ")";
         handle_line_truncation(r, 2);
         r += "\n";
         src = r;
@@ -2478,6 +2542,16 @@ public:
 
     void visit_IntrinsicImpureSubroutine( const ASR::IntrinsicImpureSubroutine_t &x ) {
         std::string out;
+        if (x.m_sub_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureSubroutines::Pause)) {
+            out = indent + "pause";
+            if (x.n_args == 1) {
+                visit_expr(*x.m_args[0]);
+                out += " " + src;
+            }
+            src = out + "\n";
+            return;
+        }
         out = "call ";
         switch ( x.m_sub_intrinsic_id ) {
             SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
@@ -2657,10 +2731,38 @@ public:
         visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
-    void visit_IntrinsicArrayFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
-        out += func_name;
-        visit_expr(*x.m_args[0]);
-        out += "(" + src;
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
+        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
+        std::string out = intrinsic_func_name + "(";
+        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
+            // A scalar `source` is stored as a one element array (verified
+            // by `Spread::verify_args`): `[source]`, or a temporary holding
+            // it once a pass moved the array constructor out. Print its
+            // element, `spread([source], ...)` would have rank 2.
+            ASR::expr_t* source = x.m_args[0];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*source)) {
+                source = ASR::down_cast<ASR::ArrayPhysicalCast_t>(source)->m_arg;
+            }
+            if (ASR::is_a<ASR::ArrayConstant_t>(*source)) {
+                out += array_constant_element(
+                    *ASR::down_cast<ASR::ArrayConstant_t>(source), 0);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*source)) {
+                visit_expr(*ASR::down_cast<ASR::ArrayConstructor_t>(source)->m_args[0]);
+                out += src;
+            } else if (ASR::is_a<ASR::Var_t>(*source)) {
+                visit_expr(*source);
+                out += src + "(1)";
+            } else {
+                throw CodeGenError("`spread` of a scalar `source` held in "
+                    "this kind of expression is not supported yet",
+                    x.base.base.loc);
+            }
+        } else {
+            visit_expr(*x.m_args[0]);
+            out += src;
+        }
         for (size_t i = 1; i < x.n_args; i++) {
             out += ", ";
             visit_expr(*x.m_args[i]);
@@ -2668,24 +2770,6 @@ public:
         }
         out += ")";
         src = out;
-    }
-
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
-        std::string out;
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
-        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
-        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
-        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
-            ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
-            if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstant_t *arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_physical->m_arg);
-                x.m_args[0] = ASRUtils::fetch_ArrayConstant_value(al, arr_const, 0);
-            } else if(ASR::is_a<ASR::ArrayConstructor_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstructor_t *arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(arr_physical->m_arg);
-                x.m_args[0] = arr_const->m_args[0];
-            }
-        }
-        visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
     void visit_IntrinsicImpureFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicImpureFunction_t &x) {
@@ -3436,6 +3520,22 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &/*x*/) {
+        src = "gpu_lane_index()";
+    }
+
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t &x) {
+        visit_expr(*x.m_arg);
+        src = "gpu_lane_broadcast(" + src + ")";
+    }
+
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        visit_expr(*x.m_target);
+        std::string target = src;
+        visit_expr(*x.m_increment);
+        src = "gpu_atomic_fetch_add(" + target + ", " + src + ")";
     }
 
     /******************************* Case Stmt ********************************/

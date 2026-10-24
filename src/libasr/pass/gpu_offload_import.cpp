@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -19,102 +20,49 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
-// Load any module dependencies of a loaded submodule TU into
-// the main TU's symbol table so that fix_external_symbols can
-// resolve them.  This handles transitive dependencies: if the
-// submodule uses module A which in turn uses module B, both A
-// and B are loaded.  After loading, fix_external_symbols is
-// called on the main TU to resolve any null m_external pointers
-// in the newly loaded modules.
-void GpuOffloadVisitor::load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
-    std::vector<std::string> pending =
-        ASRUtils::determine_module_dependencies(sub_tu);
-    std::set<std::string> seen;
-    bool loaded_any = false;
+namespace {
 
-    while (!pending.empty()) {
-        std::string dep_name = pending.back();
-        pending.pop_back();
-        if (seen.count(dep_name)) continue;
-        seen.insert(dep_name);
-        if (tu.m_symtab->get_symbol(dep_name) != nullptr)
-            continue;
-        if (sub_tu.m_symtab->get_symbol(dep_name) != nullptr)
-            continue;
-        bool is_intrinsic =
-            startswith(dep_name, "lfortran_intrinsic");
-        LocationManager lm_dep;
-        auto dep_res = ASRUtils::find_and_load_module(
-            al, dep_name, *tu.m_symtab, is_intrinsic,
-            pass_options, lm_dep);
-        if (!dep_res.ok && !is_intrinsic) {
-            if (dep_name == "iso_c_binding" ||
-                    dep_name == "iso_fortran_env") {
-                LocationManager lm_dep2;
-                auto dep_res2 =
-                    ASRUtils::find_and_load_module(
-                        al,
-                        "lfortran_intrinsic_" + dep_name,
-                        *tu.m_symtab, true, pass_options,
-                        lm_dep2);
-                if (dep_res2.ok) {
-                    ASR::Module_t *dep_mod =
-                        ASRUtils::extract_module(
-                            *dep_res2.result);
-                    tu.m_symtab->add_symbol(dep_name,
-                        (ASR::symbol_t*)dep_mod);
-                    dep_mod->m_symtab->parent =
-                        tu.m_symtab;
-                    dep_mod->m_loaded_from_mod = true;
-                    loaded_any = true;
-                    for (size_t i = 0;
-                            i < dep_mod->n_dependencies; i++) {
-                        pending.push_back(
-                            dep_mod->m_dependencies[i]);
-                    }
-                }
-                continue;
-            }
-        }
-        if (!dep_res.ok) continue;
-        ASR::Module_t *dep_mod =
-            ASRUtils::extract_module(*dep_res.result);
-        tu.m_symtab->add_symbol(dep_name,
-            (ASR::symbol_t*)dep_mod);
-        dep_mod->m_symtab->parent = tu.m_symtab;
-        dep_mod->m_loaded_from_mod = true;
-        // As `load_module` does: with separate compilation the module's own
-        // object file defines its procedures and variables, so this
-        // translation unit must only declare them.
-        if (pass_options.separate_compilation &&
-                !startswith(dep_mod->m_name, "lfortran_intrinsic")) {
-            dep_mod->m_symtab->mark_all_variables_external(al);
-        }
-        loaded_any = true;
-        for (size_t i = 0; i < dep_mod->n_dependencies; i++) {
-            pending.push_back(dep_mod->m_dependencies[i]);
-        }
-    }
+// Points every structure constant of an expression, nested ones included,
+// at the kernel's copy of the derived type it names.
+class GpuStructConstantRetargeter
+        : public ASR::BaseWalkVisitor<GpuStructConstantRetargeter> {
+public:
+    std::function<ASR::symbol_t*(ASR::Struct_t*)> kernel_struct;
 
-    if (loaded_any) {
-        fix_external_symbols(tu, *tu.m_symtab);
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        ASR::symbol_t *type_sym = ASRUtils::symbol_get_past_external(
+            x.m_dt_sym);
+        if (type_sym && is_a<ASR::Struct_t>(*type_sym)) {
+            const_cast<ASR::StructConstant_t&>(x).m_dt_sym = kernel_struct(
+                down_cast<ASR::Struct_t>(type_sym));
+        }
+        ASR::BaseWalkVisitor<GpuStructConstantRetargeter>
+            ::visit_StructConstant(x);
     }
+};
+
+// A copy of `value` whose structure constants, nested ones included, name
+// the derived types `kernel_struct` gives for the ones they name.
+ASR::expr_t *gpu_retarget_struct_constants(Allocator &al, ASR::expr_t *value,
+        const std::function<ASR::symbol_t*(ASR::Struct_t*)> &kernel_struct) {
+    if (!value) return nullptr;
+    ASRUtils::ExprStmtDuplicator dup(al);
+    ASR::expr_t *copy = dup.duplicate_expr(value);
+    GpuStructConstantRetargeter retarget;
+    retarget.kernel_struct = kernel_struct;
+    retarget.visit_expr(*copy);
+    return copy;
 }
 
-// A submodule read back from its `.smod` file carries the array
-// constructors it was written with: the implied-do lowering ran over
-// this translation unit before this pass, so it never saw this body.
-// Splicing it into a kernel as it stands would carry an implied-do
-// into everything downstream -- the temporary extraction that runs
-// after this pass hoists a loop-variant element out of one, which
-// evaluates it once instead of once per iteration, and the Metal code
-// generator has no rendering for what is left. Lower them here, so a
-// body loaded from disk is in the same shape as one compiled
-// alongside its caller. Run only once the external symbols of the
-// loaded unit are resolved, since the lowering reads their types.
+} // namespace
+
+void GpuOffloadVisitor::load_submodule_deps(ASR::TranslationUnit_t &sub_tu) {
+    implementations.load_submodule_deps(sub_tu);
+}
+
 void GpuOffloadVisitor::lower_loaded_implied_do_loops(
         ASR::TranslationUnit_t &sub_tu) {
-    pass_replace_implied_do_loops(al, sub_tu, pass_options);
+    implementations.lower_loaded_implied_do_loops(sub_tu);
 }
 
 // Duplicate an expression, remapping all Var references to point to the
@@ -140,6 +88,38 @@ ASR::expr_t* GpuOffloadVisitor::dup_expr_to_scope(
 void GpuOffloadVisitor::fixup_struct_refs_in_scope(SymbolTable *scope,
         SymbolTable *kernel_scope,
         char *kernel_fn_name) {
+    // Every derived type the scope declares a value of, or names a
+    // component of, is given its copy in the kernel first, so the
+    // references below have a copy to point to however late the kernel
+    // comes to import the type itself -- a BLOCK of the loop that
+    // declares a value of it is only looked at after the routines are
+    // copied, and the value it passes to one of them has to have the type
+    // the routine's dummy has.
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *type_sym = nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+            ASR::Variable_t *var =
+                ASR::down_cast<ASR::Variable_t>(item.second);
+            if (var->m_type_declaration) {
+                type_sym = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+            }
+        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+                item.second);
+            SymbolTable *tp = target
+                ? ASRUtils::symbol_parent_symtab(target) : nullptr;
+            if (tp && tp->asr_owner &&
+                    tp->asr_owner->type == ASR::asrType::symbol) {
+                type_sym = ASR::down_cast<ASR::symbol_t>(tp->asr_owner);
+            }
+        }
+        if (type_sym && ASR::is_a<ASR::Struct_t>(*type_sym) &&
+                !kernel_scope->get_symbol(ASRUtils::symbol_name(type_sym))) {
+            import_struct_def(ASR::down_cast<ASR::Struct_t>(type_sym),
+                nullptr, kernel_scope, item.second->base.loc);
+        }
+    }
     for (auto &item : scope->get_scope()) {
         if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
             ASR::ExternalSymbol_t *es =
@@ -207,6 +187,23 @@ void GpuOffloadVisitor::fixup_struct_refs_in_scope(SymbolTable *scope,
                 ASR::symbol_t *ks =
                     kernel_scope->get_symbol(sn);
                 if (ks) var->m_type_declaration = ks;
+            }
+            // A named constant's value names the type as well, which a
+            // compile-time value put in place of a reference to it has to
+            // agree with (see import_constant_value).
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    && tdecl_resolved
+                    && ASR::is_a<ASR::Struct_t>(*tdecl_resolved)) {
+                auto kernel_struct = [&](ASR::Struct_t *st)
+                        -> ASR::symbol_t* {
+                    ASR::symbol_t *ks = kernel_scope->get_symbol(st->m_name);
+                    return ks && ASR::is_a<ASR::Struct_t>(*ks)
+                        ? ks : &st->base;
+                };
+                var->m_value = gpu_retarget_struct_constants(al,
+                    var->m_value, kernel_struct);
+                var->m_symbolic_value = gpu_retarget_struct_constants(al,
+                    var->m_symbolic_value, kernel_struct);
             }
         }
         // Recurse into nested scopes
@@ -339,7 +336,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
     kernel_scope->add_symbol(struct_name, kernel_struct);
 
     // Create ExternalSymbol entries in kernel scope for each member,
-    // so that StructInstanceMember can reference them.
+    // so that StructInstanceMember can reference them. A type imported
+    // for a routine's copy alone has no `orig_scope` to take them from.
     // Search orig_scope and walk up through AssociateBlock/Block
     // parent scopes, because when the loop is inside an
     // AssociateBlock the ExternalSymbol entries for struct members
@@ -355,7 +353,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
             // For PDT instantiations (e.g., network_t_4), also match
             // ExternalSymbols pointing to the PDT template struct
             // (e.g., network_t) when the instantiated struct has a
-            // member with the same original name.
+            // member with the same original name. A member of another
+            // derived type with that name is not one of ours.
             SymbolTable *es_parent_st =
                 ASRUtils::symbol_parent_symtab(es_external);
             bool is_member = (es_parent_st == orig_struct->m_symtab);
@@ -364,6 +363,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
                 ASR::symbol_t *es_struct_owner =
                     down_cast<ASR::symbol_t>(es_parent_st->asr_owner);
                 if (is_a<ASR::Struct_t>(*es_struct_owner) &&
+                        down_cast<ASR::Struct_t>(es_struct_owner)
+                            ->n_kind_params > 0 &&
                         gpu_struct_lookup_member(kernel_struct,
                             es->m_original_name)) {
                     is_member = true;
@@ -426,6 +427,61 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_type(ASR::symbol_t *orig_sym,
     // of orig_scope and would not contain these migrated symbols.
     return import_struct_def(down_cast<ASR::Struct_t>(struct_sym),
         orig_scope, kernel_scope, loc);
+}
+
+// The value of a named constant cloned into the kernel: a copy of `value`
+// whose structure constants name the kernel's copies of their derived
+// types, as the clone's type declaration does. The original value is
+// shared with the host's constant; left naming the host's definition, it
+// would not have the clone's type where it replaces a reference to the
+// clone, as it does under --fast.
+ASR::expr_t* GpuOffloadVisitor::import_constant_value(ASR::expr_t *value,
+        SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    return gpu_retarget_struct_constants(al, value,
+        [&](ASR::Struct_t *orig_struct) {
+            return import_struct_def(orig_struct, orig_scope, kernel_scope,
+                loc);
+        });
+}
+
+// Points the structure constants of `body`, a statement list the kernel
+// owns, at the kernel's copies of their derived types. They are the
+// compile-time values of designators such as a component of a named
+// constant, `c%inner`, which --fast puts in place of the designator, so
+// they have to have the type the kernel gives it.
+void GpuOffloadVisitor::import_folded_struct_constants(ASR::stmt_t **body,
+        size_t n_body, SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    GpuStructConstantRetargeter retarget;
+    retarget.kernel_struct = [&](ASR::Struct_t *orig_struct) {
+        return import_struct_def(orig_struct, orig_scope, kernel_scope, loc);
+    };
+    for (size_t i = 0; i < n_body; i++) {
+        retarget.visit_stmt(*body[i]);
+    }
+}
+
+// The same for the bodies of the procedures and blocks of `scope`, a scope
+// of a procedure copied into the kernel, and of the scopes they contain.
+void GpuOffloadVisitor::import_folded_struct_constants(SymbolTable *scope,
+        SymbolTable *orig_scope, SymbolTable *kernel_scope,
+        const Location &loc) {
+    for (auto &item : scope->get_scope()) {
+        if (is_a<ASR::Function_t>(*item.second)) {
+            ASR::Function_t *fn = down_cast<ASR::Function_t>(item.second);
+            import_folded_struct_constants(fn->m_body, fn->n_body,
+                orig_scope, kernel_scope, loc);
+            import_folded_struct_constants(fn->m_symtab, orig_scope,
+                kernel_scope, loc);
+        } else if (is_a<ASR::Block_t>(*item.second)) {
+            ASR::Block_t *block = down_cast<ASR::Block_t>(item.second);
+            import_folded_struct_constants(block->m_body, block->n_body,
+                orig_scope, kernel_scope, loc);
+            import_folded_struct_constants(block->m_symtab, orig_scope,
+                kernel_scope, loc);
+        }
+    }
 }
 
 } // namespace LCompilers

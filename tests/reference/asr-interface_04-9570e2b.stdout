@@ -59,6 +59,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (SubroutineCall
                         5 a1@a
@@ -154,6 +156,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

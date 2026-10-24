@@ -5,12 +5,12 @@ struct point_t {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    point_t* p,
-    float* r)
+    point_t* __restrict__ p,
+    float* __restrict__ r)
 {
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((2 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -19,11 +19,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    point_t* p)
+    point_t* __restrict__ p)
 {
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((2 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

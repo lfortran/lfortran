@@ -15,7 +15,7 @@
 namespace LCompilers::LFortran {
     class LookupNameVisitor : public ASR::DefaultLookupNameVisitor<LookupNameVisitor> {
         public:
-            LookupNameVisitor(uint16_t pos) {
+            LookupNameVisitor(uint32_t pos) {
                 this->pos = pos;
             }
             void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
@@ -66,9 +66,9 @@ namespace LCompilers::LFortran {
                 uint32_t first_column;
                 uint32_t last_column;
                 std::string filename;
-                lm.pos_to_linecol(loc.first, first_line,
+                lm.output_pos_to_linecol(loc.first, false, first_line,
                     first_column, filename);
-                lm.pos_to_linecol(loc.last, last_line,
+                lm.output_pos_to_linecol(loc.last, true, last_line,
                     last_column, filename);
                 loc_.first_column = first_column;
                 loc_.last_column = last_column + 1;

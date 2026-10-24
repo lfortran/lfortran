@@ -82,11 +82,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 string)
                         (Var 2 num)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -138,6 +142,8 @@
                         )
                         (Var 2 num)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

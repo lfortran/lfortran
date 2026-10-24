@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -41,9 +43,18 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
-            // A Metal shader has no way to halt the program: the shading
-            // language has no trap.
-            caps.device_abort = false;
+            // Every Apple GPU runs SIMD-groups of 32 threads.
+            caps.lanes_per_iteration = 32;
+            caps.threads_per_block = 64;
+            caps.sequential_loop_unroll_factor = 16;
+            // A kernel is compiled for the GPU that runs it, so this is the
+            // smallest stack of a device Metal runs on. An Apple silicon Mac
+            // gives a thread 256 KiB (a local array of 65,500 `float`s is
+            // rejected with "Compute function exceeds available stack
+            // space", one of 65,400 is not), the Apple Paravirtual device of
+            // a macOS virtual machine 64 KiB (65,472 bytes build, 65,520 are
+            // rejected with "Compilation failed").
+            caps.thread_stack_bytes = 64 * 1024;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -55,8 +66,13 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
-            // A CUDA kernel has a trap it can raise, so it keeps that
-            // default.
+            // A CUDA thread has at most 512 KiB of local memory, where its
+            // stack lives (CUDA C++ Programming Guide, "Features and
+            // Technical Specifications", compute capability 2.0 and up).
+            caps.thread_stack_bytes = 512 * 1024;
+            // A warp: one warp loads one contiguous 128-byte line of a
+            // `float` array, and a block of 256 threads covers 8 of them.
+            caps.tile_width = 32;
             break;
         case GpuDevice::None:
             break;
@@ -110,6 +126,11 @@ static std::string article(const std::string &word) {
     }
 }
 
+bool gpu_source_name(const std::string &name) {
+    return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
+        && !ASRUtils::is_compiler_generated_name(name);
+}
+
 // The routine an unsupported statement was found in, when it was reached
 // through a call rather than written in the loop body.
 static std::string in_routine(const GpuDecline &decline) {
@@ -149,6 +170,20 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::UnsizedLocalArray:
             return "local array '" + decline.name +
                 "' has no extent the gpu can use";
+        case GpuDeclineReason::LocalityElementType:
+            return "array '" + decline.name + "' of local locality is of "
+                "type " + decline.type_name + ", which a gpu thread cannot "
+                "hold a copy of";
+        case GpuDeclineReason::LocalityCoarray:
+            return "array '" + decline.name + "' of local locality is a "
+                "coarray, which a gpu thread cannot hold a copy of";
+        case GpuDeclineReason::LocalityNamedByAssociate:
+            return "array '" + decline.name + "' of local locality is "
+                "named by an associate construct around the loop";
+        case GpuDeclineReason::LocalityAssociateNotInlined:
+            return "array '" + decline.name + "' of local locality cannot "
+                "be given a copy per gpu thread: the loop body has an "
+                "associate construct the gpu kernel cannot inline";
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
             return "an aliased assignment needs a run-time sized temporary";
         case GpuDeclineReason::UngatherableStridedSection:
@@ -208,6 +243,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "a device function cannot be inlined";
         case GpuDeclineReason::DeviceFunctionImplementation:
             return "procedure '" + decline.name + "' has no device implementation";
+        case GpuDeclineReason::DummyProcedureUnbound:
+            return "dummy procedure '" + decline.name +
+                "' is not associated with a routine known at compile time";
         case GpuDeclineReason::RecursiveDeviceFunction:
             return "recursive device procedure '" + decline.name +
                 "' has no gpu lowering yet";
@@ -217,8 +255,32 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::NestedArraySection:
             return "a nested array section cannot be addressed on the gpu";
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
+            if (!gpu_source_name(decline.name)) {
+                return "a temporary array cannot be sized on the host";
+            }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::HeapArrayUse:
+            return "the array " + decline.name + " on the device heap is not "
+                "supported yet";
+        case GpuDeclineReason::ExitOfConstruct:
+            return "an exit" + in_routine(decline) + " of a block or of "
+                "another construct that is not a loop has no gpu lowering yet";
+        case GpuDeclineReason::NamedCycleInNestedConcurrent:
+            return "a named cycle inside a nested do concurrent"
+                + in_routine(decline) + " has no gpu lowering yet";
+        case GpuDeclineReason::StructComponentNotSizeable: {
+            // `value%component`: a temporary value is not named.
+            std::string component = decline.name;
+            size_t at = component.find('%');
+            if (at != std::string::npos &&
+                    !gpu_source_name(component.substr(0, at))) {
+                component = component.substr(at + 1);
+            }
+            return "the allocatable component '" + component +
+                "' of a derived-type value of device code cannot be sized "
+                "on the host";
+        }
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +
@@ -232,8 +294,23 @@ std::string gpu_decline_message(const GpuDecline &decline) {
 
         case GpuDeclineReason::StatementIo:
             return unsupported + "input or output" + in_routine(decline);
-        case GpuDeclineReason::StatementStop:
-            return unsupported + "stop" + in_routine(decline);
+        case GpuDeclineReason::StopCodeNotConstant:
+            return unsupported + "a character stop code that is not a "
+                "constant" + in_routine(decline);
+        case GpuDeclineReason::StoppingProcedureShared:
+            return unsupported + "procedure '" + decline.name + "', which "
+                "can stop, passed as an argument or shared with the host";
+
+        case GpuDeclineReason::LiveoutScalar:
+            return unsupported + "the " + decline.type_name + " scalar '"
+                + decline.name + "', whose value is kept after the loop";
+        case GpuDeclineReason::LiveoutOptionalPassedOn:
+            return unsupported + "passing the optional argument '"
+                + decline.name + "', whose value is kept after the loop, on "
+                "to an optional argument of a procedure";
+        case GpuDeclineReason::LiveoutDerivedType:
+            return unsupported + "giving each gpu thread a private copy "
+                "of '" + decline.name + "', which the loop defines";
 
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +
@@ -245,9 +322,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructAllocatableArrayMember:
             return unsupported + "a derived type with an allocatable array "
                 "member the gpu backend cannot decompose";
-        case GpuDeclineReason::StructAllocatableScalarMember:
-            return unsupported +
-                "a derived type with an allocatable scalar member";
         case GpuDeclineReason::StructAssumedShapeArrayMember:
             return unsupported +
                 "a derived type with an assumed shape array member";
@@ -258,6 +332,13 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructMemberNotNumeric:
             return unsupported +
                 "a derived type with a member that is not a number";
+        case GpuDeclineReason::StructConstantComponent:
+            return unsupported + "a derived-type constant with component '" +
+                decline.name + "', which is not an integer, real or logical "
+                "scalar, an integer or real array, or a derived-type scalar "
+                "of these";
+        case GpuDeclineReason::StructArrayConstant:
+            return unsupported + "a constant array of derived-type values";
 
         case GpuDeclineReason::ClassComponentArrayRank:
             return unsupported + "a polymorphic argument with a component "
@@ -284,11 +365,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 ", which has no gpu type of the same width";
         case GpuDeclineReason::ArrayElementNotNumeric:
             return unsupported + "an array whose elements are not numbers";
-        case GpuDeclineReason::WorkspaceStructElementShape:
-            return unsupported + "a workspace sized from a struct element "
-                "whose shape may differ per thread";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
-            if (!decline.name.empty()) {
+            if (gpu_source_name(decline.name)) {
                 return unsupported + "the per-thread workspace for `" +
                     decline.name + "`, whose extent cannot be rebuilt on "
                     "the host";
@@ -302,6 +380,14 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "an allocatable component `" + decline.name +
                 "` reached through another component, which has no buffer "
                 "of its own";
+        case GpuDeclineReason::AllocatableScalarComponentUse:
+            return unsupported + "the allocatable scalar component `" +
+                decline.name + "` on the device, which has no buffer of "
+                "its own";
+        case GpuDeclineReason::AllocatableScalarComponentCopy:
+            return unsupported + "assigning a whole value of a derived type "
+                "with the allocatable scalar component `" + decline.name +
+                "` on the device, which cannot allocate it";
         case GpuDeclineReason::MissingArgument:
             return unsupported + "a missing argument";
         case GpuDeclineReason::ScalarTypeWidth:

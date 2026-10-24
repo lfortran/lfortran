@@ -238,6 +238,27 @@ public:
         }
     }
 
+    // Marks a procedure and the external symbol naming it as used.
+    void mark_procedure_used(ASR::symbol_t *sym) {
+        if (sym == nullptr) return;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            fn_used[get_hash((ASR::asr_t*)sym)] =
+                ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_name;
+            sym = ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_external;
+        }
+        if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym)) {
+            fn_used[get_hash((ASR::asr_t*)sym)] =
+                ASR::down_cast<ASR::Function_t>(sym)->m_name;
+        }
+    }
+
+    // Formatted output that dispatches to a defined output procedure uses
+    // that procedure and its callback, although nothing calls them there.
+    void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+        mark_procedure_used(x.m_procedure);
+        mark_procedure_used(x.m_callback);
+    }
+
     void visit_Struct(const ASR::Struct_t &x) {
         // Mark final procedures (stored in member_functions) as used
         for (size_t i = 0; i < x.n_member_functions; i++) {

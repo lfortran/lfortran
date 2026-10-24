@@ -82,7 +82,7 @@ public:
     void generate_array_decl(std::string& sub, std::string v_m_name,
                              std::string& type_name, std::string& dims,
                              std::string& encoded_type_name,
-                             ASR::dimension_t* m_dims, int n_dims,
+                             ASR::dimension_t* m_dims, size_t n_dims,
                              bool use_ref, bool dummy,
                              bool declare_value, bool is_fixed_size,
                              bool is_pointer,
@@ -122,7 +122,7 @@ public:
                 sub += indent + std::string(v_m_name) + "->n_dims = " + std::to_string(n_dims) + ";\n";
                 sub += indent + std::string(v_m_name) + "->offset = " + std::to_string(0) + ";\n";
                 std::string stride = "1";
-                for (int i = n_dims - 1; i >= 0; i--) {
+                for (size_t i = n_dims; i-- > 0;) {
                     std::string start = "1", length = "0";
                     if( m_dims[i].m_start ) {
                         this->visit_expr(*m_dims[i].m_start);
@@ -1178,7 +1178,7 @@ R"(    // Initialise Numpy
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_ptr)) ) {
             std::string dim_set_code = "";
             ASR::dimension_t* m_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_ptr), m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_ptr), m_dims));
             dim_set_code = indent + dest_src + "->n_dims = " + std::to_string(n_dims) + ";\n";
             dim_set_code = indent + dest_src + "->offset = 0;\n";
             std::string stride = "1";
@@ -1238,6 +1238,10 @@ R"(    // Initialise Numpy
                 && x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank) {
             throw CodeGenError("only Fortran formatting is supported by the C backend",
                 x.base.base.loc);
+        }
+        if (x.n_dtio_bindings > 0) {
+            throw CodeGenError("user-defined derived-type output is not supported "
+                "by the C backend yet", x.base.base.loc);
         }
         std::string leading_blank =
             x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank ? "1" : "0";
@@ -1307,7 +1311,8 @@ R"(    // Initialise Numpy
         out += indent + "char *" + result_data + " = _lcompilers_string_format_fortran("
             "_lfortran_get_default_allocator(), " + fmt_data + ", " + fmt_len + ", \""
             + serialization + "\", &" + result_len + ", 0, 0, " + decimal_mode + ", "
-            + sign_mode + ", " + round_mode + ", " + leading_blank + item_ptrs + ");\n";
+            + sign_mode + ", " + round_mode + ", " + leading_blank + ", 0, 0, NULL"
+            + item_ptrs + ");\n";
         return out;
     }
 
@@ -1564,7 +1569,7 @@ R"(    // Initialise Numpy
                 v.push_back("cimag(" + src + ")");
             }
             if (i+1!=n_values) {
-                tmp_gen += "\%s";
+                tmp_gen += "%s";
                 v.push_back(separator);
             }
         }
@@ -1608,7 +1613,7 @@ R"(    // Initialise Numpy
         if (x.m_dim == nullptr) {
             std::string array_size_func = c_utils_functions->get_array_size();
             ASR::dimension_t* m_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims));
             src = "((" + result_type + ") " + array_size_func + "(" + var_name + "->dims, " + std::to_string(n_dims) + "))";
         } else {
             visit_expr(*x.m_dim);
@@ -1723,7 +1728,7 @@ R"(    // Initialise Numpy
         std::string array = src;
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         ASR::dimension_t* m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+        int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims));
         bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) &&
                                   ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(x.m_v));
         if( is_data_only_array || ASRUtils::is_simd_array(x.m_v)) {
@@ -1789,13 +1794,13 @@ R"(    // Initialise Numpy
 
         LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
         if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-            src = arr_get_single_element(array, indices, x.n_args,
+            src = arr_get_single_element(array, indices, checked_integer_cast<int>(x.n_args),
                                                 true,
                                                 false,
                                                 diminfo,
                                                 true);
         } else {
-            src = arr_get_single_element(array, indices, x.n_args,
+            src = arr_get_single_element(array, indices, checked_integer_cast<int>(x.n_args),
                                                 array_t->m_physical_type == ASR::array_physical_typeType::PointerArray,
                                                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray,
                                                 diminfo, false);

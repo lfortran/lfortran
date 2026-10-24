@@ -232,6 +232,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f2)
@@ -243,6 +245,8 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -264,6 +268,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f4)
@@ -283,6 +289,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f5)
@@ -294,6 +302,8 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -309,6 +319,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f7)
@@ -322,6 +334,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 3 f8)
@@ -333,6 +347,8 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

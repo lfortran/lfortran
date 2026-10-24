@@ -194,19 +194,24 @@
                     [(Associate
                         (Var 2 p1)
                         (Var 2 t1)
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 p2)
                         (Var 2 t2)
+                        NoPointerBounds
                     )
                     (Associate
                         (Var 2 p3)
                         (Var 2 t3)
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 p1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -228,12 +233,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 p1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -245,6 +254,8 @@
                             ()
                             [(Var 2 t1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -277,12 +288,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 p1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -294,6 +309,8 @@
                             ()
                             [(Var 2 t1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -306,12 +323,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 p1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -323,6 +344,8 @@
                             ()
                             [(Var 2 t1)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -353,12 +376,16 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 p3)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -370,6 +397,8 @@
                             ()
                             [(Var 2 t3)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

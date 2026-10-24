@@ -113,6 +113,26 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         return false;
     }
 
+    // Whether every lower bound of the array type `type` is one: stated
+    // as one, or not stated by an array that is neither allocatable nor a
+    // pointer.
+    static bool lower_bounds_are_one(ASR::ttype_t* type) {
+        if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
+            return false;
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for( size_t d = 0; d < n_dims; d++ ) {
+            int64_t start = 1;
+            if( dims[d].m_start != nullptr &&
+                !(ASRUtils::extract_value(ASRUtils::expr_value(dims[d].m_start),
+                    start) && start == 1) ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool check_inline_possibility(ASR::symbol_t* func, ASR::FunctionCall_t* func_call) {
         if( current_body == nullptr ) {
             // Inlining not possible because the function call is not
@@ -190,9 +210,24 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         for( size_t i = 0; i < func_call->n_args; i++ ) {
+            // A raw pointer to an array element is sequence associated with
+            // the dummy, which a pointer association cannot express.
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[i].m_value) ||
+                ASR::is_a<ASR::GetPointer_t>(*func_call->m_args[i].m_value) ||
                 ASRUtils::is_pointer(ASRUtils::expr_type(func_call->m_args[i].m_value)) ||
                 ASRUtils::is_allocatable(ASRUtils::expr_type(func_call->m_args[i].m_value)) ) {
+                return false;
+            }
+            // An array dummy is bound to its actual by pointer association,
+            // which gives it the bounds of the actual, while a dummy that
+            // is neither allocatable nor a pointer has the lower bounds it
+            // declares. The two agree when both are one.
+            ASR::ttype_t* dummy_type = ASRUtils::expr_type(function->m_args[i]);
+            if( ASRUtils::is_array(dummy_type) &&
+                !(lower_bounds_are_one(dummy_type) &&
+                  (ASR::is_a<ASR::ArraySection_t>(*func_call->m_args[i].m_value) ||
+                   lower_bounds_are_one(ASRUtils::expr_type(
+                        func_call->m_args[i].m_value)))) ) {
                 return false;
             }
         }

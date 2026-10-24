@@ -462,6 +462,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 dqk15w~fpcast_ptr
@@ -492,6 +493,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Print
                         (StringFormat
@@ -511,6 +513,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -534,6 +538,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

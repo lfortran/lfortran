@@ -58,6 +58,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     ()
                 ),
@@ -157,6 +159,8 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
+                                                        .false.
                                                     )]
                                                     (Var 4 d)
                                                     Public
@@ -227,11 +231,15 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

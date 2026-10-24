@@ -57,6 +57,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 2 f)
                     Public
@@ -119,6 +121,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )]
                     (Var 3 g)
                     Public
@@ -179,6 +183,8 @@
                         (Var 4 h)
                         (IntegerConstant 42 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )]

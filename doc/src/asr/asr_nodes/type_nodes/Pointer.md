@@ -28,6 +28,12 @@ it is disassociated. It is associated by
 [PointerAssociated](../expression_nodes/PointerAssociated.md) and cleared by
 [Nullify](../statement_nodes/Nullify.md).
 
+A pointer array is a **Pointer** of an [Array](Array.md) whose extents are
+`nil`. Pointer association sets the bounds and the strides at run time, so
+that array always has physical type `DescriptorArray` (`AssumedRankArray` when
+its rank is assumed); the verifier reports any other as
+`asr.verify.pointer.array_descriptor`.
+
 ## Examples
 
 ```clojure

@@ -120,6 +120,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 sum)
@@ -127,11 +129,15 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -200,6 +206,8 @@
                             ()
                             [(IntegerConstant 50 (Integer 4) Decimal)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -212,6 +220,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (GoToTarget
                         70
@@ -222,6 +232,8 @@
                             ()
                             [(IntegerConstant 70 (Integer 4) Decimal)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

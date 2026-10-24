@@ -54,11 +54,33 @@ symbol
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
-    | ReAlloc(alloc_arg* args)
+    -- Reallocation on assignment of the one object in `args`: it is
+    -- allocated with the shape of `args` when it is not allocated, or when
+    -- `shape_differs`, a scalar logical evaluated only while the object is
+    -- allocated, is true (F2018 10.2.1.3)
+    | ReAlloc(alloc_arg* args, expr shape_differs)
     | Assign(int label, identifier variable)
-    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation)
-    | DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
-    | Associate(expr target, expr value)
+    -- new_target is true when the target is a new object that the assignment
+    -- only defines, such as an element of an array allocated with SOURCE=
+    -- (F2018 9.7.1.2). The value is copied into it: unlike the variable of
+    -- an intrinsic assignment, it is not finalized first (F2018 7.5.6.3)
+    -- and its components are not assigned by defined assignment (10.2.1.3).
+    -- new_allocation is true when the target is an allocatable variable
+    -- that was unallocated and has just been allocated for this intrinsic
+    -- assignment (F2018 10.2.1.3 p3). Being an unallocated allocatable
+    -- variable, it is not finalized (F2018 7.5.6.3), but it is otherwise
+    -- assigned as the variable of an intrinsic assignment.
+    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation, bool new_target, bool new_allocation)
+    -- The run-time shape check of an array assignment: `checks` are the
+    -- extents it compares, in that order (see array_extent_check)
+    | DebugCheckArrayBounds(expr target, expr* components, array_extent_check* checks, bool move_allocation)
+    -- Pointer assignment `target => value`. A target that is an array
+    -- section of a pointer gives the bounds of the pointer: `form` is
+    -- PointerBoundsSpec for a bounds-spec-list (`p(lb:) => a`: only the
+    -- lower bounds are present, the extents are those of the value) and
+    -- PointerBoundsRemapping for a bounds-remapping-list (`p(lb:ub) => a`,
+    -- F2018 10.2.2.3). Every other association has NoPointerBounds.
+    | Associate(expr target, expr value, pointer_bounds_form form)
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
@@ -74,7 +96,7 @@ stmt
     | If(identifier? name, expr test, stmt* body, stmt* orelse)
     | IfArithmetic(expr test, int lt_label, int eq_label, int gt_label)
     | Print(expr text)
-    | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg, expr? action, expr? delim, expr? recl, expr? position, expr? blank, expr? encoding, expr? sign, expr? decimal, expr? round, expr? pad, expr? asynchronous)
+    | FileOpen(int label, expr? newunit, expr? filename, expr? status, expr? form, expr? access, expr? iostat, expr? iomsg, expr? action, expr? delim, expr? recl, expr? position, expr? blank, expr? encoding, expr? sign, expr? decimal, expr? round, expr? pad, expr? asynchronous, expr? convert)
     | FileClose(int label, expr? unit, expr? iostat, expr? iomsg, expr? err, expr? status)
     | FileRead(int label, expr? unit, expr? fmt, expr? iomsg, expr? iostat, expr? advance, expr? size, expr? id, expr? pos, expr* values, stmt? overloaded, bool is_formatted, symbol? nml, expr? rec, expr? pad, expr? decimal)
     | FileBackspace(int label, expr? unit, expr? iostat, expr? iomsg, expr? err)
@@ -113,8 +135,14 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
-    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
+    -- When overwritten_if[i] is true at the launch, the kernel assigns every
+    -- element of the array overwritten[i], an actual argument of the launch,
+    -- before it reads any of them: what the host holds there need not reach
+    -- the device.
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if)
     | GpuSync()
+    | GpuLaneBarrier()
+    | GpuDiscard(expr* vars)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -177,7 +205,7 @@ expr
     | StringContains(expr substr, expr str, ttype type, expr? value)
     | StringOrd(expr arg, ttype type, expr? value)
     | StringChr(expr arg, ttype type, expr? value)
-    | StringFormat(expr? fmt, expr* args, string_format_kind kind, ttype type, expr? value)
+    | StringFormat(expr? fmt, expr* args, string_format_kind kind, dtio_binding* dtio_bindings, expr? dtio_unit, ttype type, expr? value)
     | StringPhysicalCast(expr arg, string_physical_type old, string_physical_type new, ttype type, expr? value)
     | CPtrCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | SymbolicCompare(expr left, cmpop op, expr right, ttype type, expr? value)
@@ -237,6 +265,9 @@ expr
     | GpuThreadIndex(int dim, ttype type, expr? value)
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
+    | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
+    | GpuLaneIndex(ttype type, expr? value)
+    | GpuLaneBroadcast(expr arg, ttype type, expr? value)
 
 ttype
     = Integer(int kind)
@@ -294,13 +325,25 @@ alloc_arg = (expr a, dimension* dims, codimension* codims, expr? len_expr, symbo
 attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
 call_arg = (expr? value)
+-- The defined output procedure `procedure` formats the items of declared type
+-- `type_declaration` (class(T) if `polymorphic`) of a StringFormat; the
+-- runtime formatter calls it through `callback`.
+dtio_binding = (symbol type_declaration, bool polymorphic, symbol procedure, symbol? callback)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
-gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension)
+-- `noalias`: no other buffer of any launch of the kernel shares storage with
+-- this buffer where either of them is written (gpu_kernel_abi.cpp).
+gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written, bool noalias)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
-gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions)
+gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
+gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
+-- A comparison, by DebugCheckArrayBounds, of the extents of two of its
+-- arrays in dimension `dim`. An array is numbered 0 for `target` and i for
+-- the i-th element of `components`; `left_extent` and `right_extent` are the
+-- integer(4) extents of arrays `left` and `right`.
+array_extent_check = (int left, int right, int dim, expr left_extent, expr right_extent)
 array_index = (expr? left, expr? right, expr? step)
 coarray_index = (expr? index, codimension_type star)
 do_loop_head = (expr? v, expr? start, expr? end, expr? increment)
@@ -309,7 +352,8 @@ type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* b
 rank_stmt = RankExpr(expr rank, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
-array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray | AssumedRankArray
+pointer_bounds_form = NoPointerBounds | PointerBoundsSpec | PointerBoundsRemapping
+array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | SIMDArray | AssumedRankArray
 string_physical_type = DescriptorString | CChar
 string_length_kind = AssumedLength | DeferredLength | ExpressionLength | ImplicitLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
@@ -340,6 +384,13 @@ omp_clause
   | OMPIndependent()
   | OMPTargetRequested()
   | OMPCriticalName(identifier name)
+  -- When `condition` holds on entry to a parallel region assigned to the
+  -- device, its iterations together assign every element of `array` before
+  -- any of them reads it: what the host holds there need not reach the
+  -- device. A pass that rewrites the loop into a form the offload cannot
+  -- read this from records it from the loop as it was; a pass that changes
+  -- which iterations the region runs, or takes it off the device, drops it.
+  | OMPOverwrite(expr array, expr condition)
 
 map_type 
     = To | From | ToFrom | Alloc | Release | Delete

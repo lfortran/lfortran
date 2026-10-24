@@ -91,6 +91,7 @@ public:
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
                     format->m_fmt, print_args.p, print_args.size(), format->m_kind,
+                    format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);
@@ -122,7 +123,7 @@ public:
         ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al_, loc, index_kind));
         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al_, loc, 1, index_type));
 
-        int m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims[dim_index].m_length)->m_n;
+        int64_t m_dim_length = ASR::down_cast<ASR::IntegerConstant_t>(m_dims[dim_index].m_length)->m_n;
 
         for (int i = 0; i < m_dim_length; i++) {
             if (dim_index == 0) {
@@ -147,7 +148,7 @@ public:
 
     void print_fixed_sized_array(ASR::expr_t *arr_expr, std::vector<ASR::expr_t*> &print_body, const Location &loc) {
         ASR::dimension_t* m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims);
+        int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_expr), m_dims));
         int index_kind = get_index_kind();
 
         std::vector<ASR::expr_t*> current_indices(n_dims);
@@ -167,6 +168,7 @@ public:
         }
         ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
         format->m_fmt, body.p, body.size(), format->m_kind,
+        format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
         format->m_type, nullptr));
         Vec<ASR::expr_t*> print_args;
         print_args.reserve(al, 1);
@@ -347,6 +349,7 @@ public:
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
                     format->m_fmt, print_args.p, print_args.size(), format->m_kind,
+                    format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);

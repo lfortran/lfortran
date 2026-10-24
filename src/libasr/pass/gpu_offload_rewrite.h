@@ -1,6 +1,8 @@
 #ifndef LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 #define LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 
+#include <algorithm>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -31,6 +33,35 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
 bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
     ASR::symbol_t *s);
 
+// What the statements of an ASSOCIATE scope from `from` on can change, as
+// it bears on a selector bound before them: a selector designates the
+// object it designates where it is bound, so a subscript of it that reads
+// something the statements may change has to be read once, there. A
+// variable bound to an associate name of the scope, at any depth, that
+// they write is changed too.
+class GpuAssociateScopeWrites {
+public:
+    GpuAssociateScopeWrites(ASR::stmt_t **body, size_t n_body, size_t from);
+    bool may_change(ASR::expr_t *e) const;
+private:
+    std::shared_ptr<GpuIterationVaryingSymbols> changed;
+    std::set<ASR::symbol_t*> aliased;
+};
+
+// The selector of an associate name, with every subscript that `writes`
+// may change replaced by a new variable of `scope`, assigned that
+// subscript by a statement appended to `inits`. The selector then stands
+// for the associate name wherever the name is used.
+ASR::expr_t* gpu_fix_selector_subscripts(Allocator &al,
+    ASR::expr_t *selector, const GpuAssociateScopeWrites &writes,
+    SymbolTable *scope, Vec<ASR::stmt_t*> &inits);
+
+// Makes every scalar associate name of a device routine bound to a
+// variable an alias of it: the selector replaces the name. The code
+// generators declare a scalar as a value, so the name would otherwise be
+// a copy, and what is written through it would be lost.
+void gpu_alias_scalar_associate_names(Allocator &al, ASR::Function_t &fn);
+
 // A new variable named `name` in `scope`, added to it.
 //
 // This pass creates a great many variables: loop indices, temporaries for
@@ -43,6 +74,29 @@ ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
         SymbolTable *scope, const std::string &name, ASR::ttype_t *type,
         ASR::intentType intent = ASR::intentType::Local,
         ASR::symbol_t *type_decl = nullptr);
+
+// The kernel parameters through which the allocatable array components of
+// a scalar derived-type kernel parameter `name` of type `st` reach the
+// device, and the actual arguments of the launch, read from the host value
+// `host_member` gives each component. The extents come first: the total
+// size of each component, the lower bound of each of its dimensions, and,
+// for a component of rank more than one, the extent of each dimension.
+// The data follows, one array per component. The parameters are named as
+// the device code generators look them up (see GpuNames), so they find the
+// component's buffers by the name of the parameter and the component.
+void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
+        SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
+        const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
+        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
+
+// `element_declaration` gives the kernel's declaration of the derived type
+// of the elements of a component that has elements of one.
+void gpu_struct_member_data_arguments(Allocator &al, const Location &loc,
+        SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
+        const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
+        const std::function<ASR::symbol_t*(ASR::Struct_t*)>
+            &element_declaration,
+        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
 
 // Fill in the `start`/`end` bounds of a synthesized `do` loop head for
 // dimension `d` of `arr_expr`. Descriptor arrays (allocatables, pointers,
@@ -106,6 +160,10 @@ public:
     // an outer-block local is retargeted at the copy, not left pointing at
     // the original Block that the kernel path is about to move.
     bool resolve_through_parents = false;
+    // A procedure, by identity, to its copy in the kernel scope, which a
+    // call is retargeted to before a procedure is looked up by name.
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> *procedure_copies =
+        nullptr;
     GpuReplaceSymbols(SymbolTable &scope) : kernel_scope(scope) {}
 
     ASR::symbol_t *lookup_symbol(const std::string &name) {
@@ -114,6 +172,17 @@ public:
     }
 
     void replace_Var(ASR::Var_t *x) {
+        // A procedure passed as an actual argument is retargeted like a
+        // call to it: by identity, since a same-named procedure of another
+        // scope may own the name in the kernel scope.
+        if (ASR::is_a<ASR::Function_t>(*x->m_v)
+                && skip_scopes.count(ASRUtils::symbol_parent_symtab(x->m_v))) {
+            return;
+        }
+        if (ASR::symbol_t *copy = procedure_copy(x->m_v)) {
+            x->m_v = copy;
+            return;
+        }
         std::string name = ASRUtils::symbol_name(x->m_v);
         for (auto *ss : skip_scopes) {
             if (ss->get_symbol(name)) return;
@@ -180,37 +249,60 @@ public:
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_StructConstructor(x);
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t *x) {
-        // Remap m_name to kernel scope symbol
-        std::string name = ASRUtils::symbol_name(x->m_name);
+    // The kernel's copy of the procedure a call names. A procedure
+    // reached through use association can be imported under its own
+    // name, or under a C-identifier version of the name of the
+    // ExternalSymbol when two modules define procedures of one name.
+    ASR::symbol_t *kernel_procedure(ASR::symbol_t *name_sym) {
+        std::string name = ASRUtils::symbol_name(name_sym);
         ASR::symbol_t *new_sym = lookup_symbol(name);
-        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name)) {
-            // Try sanitized ExternalSymbol name (handles disambiguated
-            // functions where different modules define same-named functions)
+        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*name_sym)) {
             std::string sanitized = name;
             for (char &c : sanitized) {
                 if (c == '~' || c == '@') c = '_';
             }
             new_sym = lookup_symbol(sanitized);
             if (!new_sym) {
-                // ExternalSymbol name differs from resolved function name;
-                // try the underlying function's name (e.g., "construct"
-                // instead of "~mytype_t@construct").
-                std::string resolved_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(x->m_name));
-                new_sym = lookup_symbol(resolved_name);
+                new_sym = lookup_symbol(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(name_sym)));
             }
         }
-        if (new_sym) {
-            x->m_name = new_sym;
+        return new_sym;
+    }
+
+    // The kernel's copy of the procedure `sym` names, by identity, or
+    // nullptr when it has none.
+    ASR::symbol_t *procedure_copy(ASR::symbol_t *sym) {
+        if (!procedure_copies) return nullptr;
+        auto it = procedure_copies->find(
+            ASRUtils::symbol_get_past_external(sym));
+        return it != procedure_copies->end() ? it->second : nullptr;
+    }
+
+    void retarget_call(ASR::symbol_t *&name, ASR::symbol_t *&original_name) {
+        // A procedure contained in a routine of `skip_scopes` was copied
+        // with it, and is a different procedure than one of the kernel
+        // scope that has its name.
+        if (ASR::is_a<ASR::Function_t>(*name)
+                && skip_scopes.count(ASRUtils::symbol_parent_symtab(name))) {
+            return;
         }
-        if (x->m_original_name) {
-            std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
-            ASR::symbol_t *new_orig = lookup_symbol(orig_name);
+        if (ASR::symbol_t *copy = procedure_copy(name)) {
+            name = copy;
+        } else if (ASR::symbol_t *new_sym = kernel_procedure(name)) {
+            name = new_sym;
+        }
+        if (original_name) {
+            ASR::symbol_t *new_orig = lookup_symbol(
+                ASRUtils::symbol_name(original_name));
             if (new_orig) {
-                x->m_original_name = new_orig;
+                original_name = new_orig;
             }
         }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        retarget_call(x->m_name, x->m_original_name);
         // Call base to handle arguments, type, value, dt
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_FunctionCall(x);
     }
@@ -225,6 +317,14 @@ public:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    // A call statement names its procedure as a function reference does.
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        replacer.retarget_call(xx.m_name, xx.m_original_name);
+        ASR::CallReplacerOnExpressionsVisitor<GpuReplaceSymbolsVisitor>
+            ::visit_SubroutineCall(x);
     }
 };
 
@@ -389,24 +489,29 @@ public:
     }
 };
 
-// Collects Var references in function bodies that point to symbols
-// not reachable through the function's scope chain. This happens when
-// a contained function references host-scope variables (e.g., Parameters)
-// that are not present in the kernel scope hierarchy.
+// Collects the symbols that Var references in a function body of the
+// kernel, or in the declarations of its variables, name but that are not
+// reachable through the function's scope chain. This happens when a copied
+// procedure references entities of the scope the original was defined in
+// (e.g., variables or parameters of its module, or of the host of a
+// contained procedure), which are not present in the kernel scope
+// hierarchy. The decision is made by symbol identity: an entity of the same
+// name that the kernel scope happens to hold, such as a variable of the
+// caller passed to the kernel, is a different entity.
 class DanglingVarCollector : public ASR::BaseWalkVisitor<DanglingVarCollector> {
 public:
     SymbolTable *func_scope;
-    std::map<std::string, ASR::symbol_t*> dangling;
+    // In the order they are first referenced.
+    std::vector<ASR::symbol_t*> dangling;
     std::set<SymbolTable*> inner_scopes;
     DanglingVarCollector(SymbolTable *fs) : func_scope(fs) {}
+
     void visit_Var(const ASR::Var_t &x) {
-        std::string name = ASRUtils::symbol_name(x.m_v);
-        for (auto *scope : inner_scopes) {
-            if (scope->get_symbol(name)) return;
-        }
-        if (!func_scope->resolve_symbol(name) &&
-                dangling.find(name) == dangling.end()) {
-            dangling[name] = x.m_v;
+        if (inner_scopes.count(ASRUtils::symbol_parent_symtab(x.m_v))) return;
+        if (ASRUtils::is_visible_from(x.m_v, func_scope)) return;
+        if (std::find(dangling.begin(), dangling.end(), x.m_v)
+                == dangling.end()) {
+            dangling.push_back(x.m_v);
         }
     }
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
@@ -428,25 +533,92 @@ public:
     }
 };
 
-// Fixes dangling Var references in function bodies by resolving symbol
-// names through the function's scope chain and replacing the Var target.
+// Rebinds the Var references to the symbols DanglingVarCollector found to
+// the symbols that stand for them in the kernel.
 class DanglingVarFixer :
         public ASRUtils::BlockBodyWalkVisitor<DanglingVarFixer> {
 public:
-    SymbolTable *func_scope;
-    std::set<std::string> &target_names;
-    DanglingVarFixer(SymbolTable *fs, std::set<std::string> &names)
-        : func_scope(fs), target_names(names) {}
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements;
+    DanglingVarFixer(
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements_)
+        : replacements(replacements_) {}
     void visit_Var(const ASR::Var_t &x) {
-        std::string name = ASRUtils::symbol_name(x.m_v);
-        if (target_names.count(name)) {
-            ASR::symbol_t *new_sym = func_scope->resolve_symbol(name);
-            if (new_sym) {
-                const_cast<ASR::Var_t&>(x).m_v = new_sym;
-            }
+        auto it = replacements.find(x.m_v);
+        if (it != replacements.end()) {
+            const_cast<ASR::Var_t&>(x).m_v = it->second;
         }
     }
 };
+
+// Rebinds the variables and the procedures that the references in a
+// subtree name to the symbols that stand for them.
+class HostSymbolRebinder :
+        public ASRUtils::BlockBodyWalkVisitor<HostSymbolRebinder> {
+public:
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements;
+    explicit HostSymbolRebinder(
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &replacements_)
+        : replacements(replacements_) {}
+    void rebind(ASR::symbol_t *&sym) {
+        auto it = replacements.find(sym);
+        if (it != replacements.end()) sym = it->second;
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        rebind(const_cast<ASR::Var_t&>(x).m_v);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        rebind(const_cast<ASR::FunctionCall_t&>(x).m_name);
+        ASR::BaseWalkVisitor<HostSymbolRebinder>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        rebind(const_cast<ASR::SubroutineCall_t&>(x).m_name);
+        ASR::BaseWalkVisitor<HostSymbolRebinder>::visit_SubroutineCall(x);
+    }
+};
+
+// SymbolDuplicator copies a procedure together with the procedures it
+// contains, but the copy of a contained procedure still references the
+// entities of the original host that it accesses by host association,
+// such as a named constant, a local variable or another contained
+// procedure of the host. Rebinds them to the entities of `copy` that
+// `orig`'s scopes map to by identity.
+inline void gpu_rebind_host_association(ASR::Function_t *orig,
+        ASR::Function_t *copy) {
+    std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
+    std::function<void(SymbolTable*, SymbolTable*)> map_scope =
+            [&](SymbolTable *orig_scope, SymbolTable *copy_scope) {
+        for (auto &item : orig_scope->get_scope()) {
+            ASR::symbol_t *copy_sym = copy_scope->get_symbol(item.first);
+            if (copy_sym == nullptr || copy_sym == item.second
+                    || copy_sym->type != item.second->type) {
+                continue;
+            }
+            replacements[item.second] = copy_sym;
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::Function_t>(item.second)->m_symtab,
+                    ASR::down_cast<ASR::Function_t>(copy_sym)->m_symtab);
+            } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::Block_t>(item.second)->m_symtab,
+                    ASR::down_cast<ASR::Block_t>(copy_sym)->m_symtab);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                map_scope(
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        item.second)->m_symtab,
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        copy_sym)->m_symtab);
+            }
+        }
+    };
+    map_scope(orig->m_symtab, copy->m_symtab);
+    HostSymbolRebinder rebinder(replacements);
+    for (auto &item : copy->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            rebinder.visit_symbol(*item.second);
+        }
+    }
+}
 
 // Replaces StructInstanceMember(Var(x), a) with Var(x__a) for
 // allocatable array members that have been decomposed into separate
@@ -615,6 +787,17 @@ public:
         this->visit_symbol(*x.m_m);
     }
 };
+
+// `present(x)` of an optional dummy argument of the procedure a loop is in
+// is the same in every iteration, and only the host can tell it: whether
+// an absent argument is passed is a fact about the call, not about any
+// storage the kernel is handed. Each such test in `body` becomes a logical
+// local of `host_scope`, set by a statement appended to `before_launch`,
+// which the kernel reads like any other scalar of the host. The argument
+// itself is then no longer named by the loop just for the test, so a loop
+// that names it only in such tests runs when it is absent too.
+void gpu_hoist_present_tests(Allocator &al, SymbolTable *host_scope,
+    ASR::stmt_t **body, size_t n_body, Vec<ASR::stmt_t*> &before_launch);
 
 } // namespace LCompilers
 

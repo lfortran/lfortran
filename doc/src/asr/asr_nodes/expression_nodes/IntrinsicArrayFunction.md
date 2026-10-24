@@ -32,6 +32,16 @@ whole rather than element by element. They have a node of their own because
 their lowering is different: an array intrinsic becomes a loop nest, and the
 `intrinsic_array_function` pass is what writes it.
 
+`spread` with a scalar `source` is stored as `spread` of the one element
+array `[source]`, with `overload_id` -1 marking that the source was a scalar.
+Its first argument is then a rank 1 array with one element, whose extent, when
+it is a constant, is 1 (`asr.verify.spread.scalar_source`): the
+`ArrayConstructor` or `ArrayConstant` `[source]` as created, or a temporary
+array, possibly of deferred shape, once a pass such as `implied_do_loops`
+moved the constructor out. The result is a rank 1 array
+(`asr.verify.spread.scalar_source_rank`). The Fortran printer prints that
+element as the scalar `source`.
+
 ## Examples
 
 ```clojure

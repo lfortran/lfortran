@@ -7,8 +7,11 @@ Launches a GPU kernel.
 ### Syntax
 
 ```text
-GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
-    call_arg* args)
+GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
+    call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
+    expr? stop_status, stmt* stop_replay, expr* overwritten,
+    expr* overwritten_if)
+gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
 ### Arguments
@@ -16,9 +19,15 @@ GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
 | Argument | Description |
 |----------|-------------|
 | `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
-| `grid_size` | the number of blocks to launch. |
+| `thread_count` | the number of threads the launch numbers: one per iteration of the loop, or, when the nest is launched in tiles, one per place in whole tiles; a count below one runs none. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
+| `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
+| `scratch` | the arguments that are buffers only the device holds (below). |
+| `stop_status` | the host array passed as the status buffer of a kernel that can `stop`, or `nil`. |
+| `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
+| `overwritten` | array arguments the kernel may assign whole before it reads them (below). |
+| `overwritten_if` | for each of `overwritten`, the host condition under which it does. |
 
 ### Return values
 
@@ -26,9 +35,29 @@ None.
 
 ## Description
 
-A launch is not a call: it starts `grid_size * block_size` threads and, unless
-the backend says otherwise, returns without waiting for them.
-[GpuSync](GpuSync.md) is what waits.
+A launch is not a call: it starts `thread_count` threads, rounded up to whole
+blocks of `block_size`, and returns without waiting for them. The threads are
+numbered from zero, block after block; the kernel sends every thread numbered
+`thread_count` or higher back before its body, so the host sizes what the
+launch holds per thread -- a workspace slice -- by `thread_count`, not by the
+threads it starts.
+
+On a device that asks for tiles (CUDA), a nest of two or more dimensions
+without a reduction can be launched in tiles: a block covers a tile of 32
+iterations of the dimension its stores are contiguous in by the rest of the
+block along a second dimension, the one the stores step through next in
+memory (or, if they do not agree on one, the next one in loop order). The
+block index numbers the tiles, and `thread_count` counts whole tiles. Where
+whole tiles would pad the nest by more than a quarter, as a short dimension
+does, the host tells the kernel to number the iterations flat instead, and
+`thread_count` counts iterations. Padding to whole tiles can take
+`thread_count` past the kind of the loop indices, so it is an `integer(8)`.
+The kernel checks the zero-based tile coordinates against the extents before
+adding the loop lower bounds. A padded thread returns before constructing a
+source index that could overflow even when every valid index is representable.
+[GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+pass places it where the host next needs what a kernel wrote (see
+[GPU offloading](../../../gpu_offloading.md)).
 
 The execution configuration is part of the node rather than of the kernel,
 because the same kernel is normally launched with different sizes.
@@ -59,12 +88,53 @@ A loop reaches GPU offload only after the unsupported-construct check in the
 lower is a compile-time error, whatever its reason, whether or not
 `--gpu-allow-cpu-fallback` is given, and also with `--show-gpu-kernel-source`.
 
+A `scratch` entry makes the argument `argument_index` a buffer of `size`
+elements of the kernel argument's element type that only the device holds,
+such as an arena of the device heap: the host allocates nothing for it and
+copies nothing in or out. The actual argument is an allocatable array of the
+launching procedure, not allocated before the launch. When `read_back` is
+present, the host allocates the actual with `read_back` elements after the
+launch, at most `size`, and copies the leading elements of the buffer into
+it; otherwise the actual stays unallocated.
+
+A kernel that can `stop` records the statement a thread reached in the
+status buffer `stop_status`. The statements of `stop_replay` read it and run
+that statement on the host. They run after the first GpuSync that follows
+the launch, which the `gpu_launch_sync` pass places, copies of them after
+each GpuSync the launch may still be pending at; that pass also clears the
+first element of `stop_status` once, on entry to the procedure.
+
+When `overwritten_if[i]`, a scalar logical the host evaluates at the launch,
+is true, the kernel assigns every element of the array `overwritten[i]`, an
+actual argument of the launch, before it reads any of them. What the host
+holds there then does not reach the kernel, so `device_launch_expand` hands
+the buffer to the runtime as `LFORTRAN_GPU_WRITE_DISCARD`, and a runtime
+with memory of its own only makes room for it instead of copying it in.
+`gpu_offload` finds such arrays in the loop as the source wrote it: an
+assignment `a(i, j, ...) = value` subscripted by the loop variables, one per
+loop, that each iteration reaches before anything else of it names `a`, at
+the top of the iteration or inside IFs that compare loop variables with
+values the loop cannot change. The condition is that those loops, narrowed
+by the IFs, run over exactly the bounds of `a`.
+
+This proof does not imply that the buffer is unaliased. If any other buffer
+argument of the launch overlaps it, the runtime treats the discard as an
+ordinary write so that the other argument can still read its previous
+contents. The kernel layout's `gpu_kernel_argument.noalias` is a separate
+shared-ASR proof; it is not inferred from `overwritten`.
+
+Private array storage is placed after shared lowering by `gpu_kernel_storage`,
+before address-space specialization. Fixed-size arrays that fit the device's
+stack budget have `Thread` memory space. Larger arrays have `Global` memory
+space and the kernel layout records their per-thread workspace slices. This
+placement never turns an iteration-private value into a shared value.
+
 ## Examples
 
 ```clojure
 (GpuKernelLaunch
   :kernel (SymbolRef 1 "zero")
-  :grid_size (IntegerConstant
+  :thread_count (IntegerConstant
     :n 1
     :type (Integer
       :kind 4
@@ -85,6 +155,12 @@ lower is a compile-time error, whatever its reason, whether or not
       )
     )
   ]
+  :component_fit nil
+  :scratch []
+  :stop_status nil
+  :stop_replay []
+  :overwritten []
+  :overwritten_if []
 )
 ```
 
@@ -96,4 +172,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[Function](../symbol_nodes/Function.md), [exec_space](../enum_nodes/exec_space.md), [GpuSync](GpuSync.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)
+[Function](../symbol_nodes/Function.md), [exec_space](../enum_nodes/exec_space.md), [GpuSync](GpuSync.md), [GpuDiscard](GpuDiscard.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)

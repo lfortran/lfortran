@@ -452,6 +452,7 @@
                                             ()
                                             (Var 7 an)
                                         )
+                                        NoPointerBounds
                                     )
                                     (Print
                                         (StringFormat
@@ -473,6 +474,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -565,6 +568,7 @@
                                             ()
                                             (Var 8 an)
                                         )
+                                        NoPointerBounds
                                     )
                                     (Print
                                         (StringFormat
@@ -592,6 +596,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -616,6 +622,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -629,6 +637,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -646,6 +656,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -659,6 +671,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -676,6 +690,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -689,6 +705,8 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -706,6 +724,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -718,10 +738,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Associate
                         (Var 4 p_or_cp)
                         (Var 4 cp)
+                        NoPointerBounds
                     )
                     (SelectType
                         (Var 4 p_or_cp)

@@ -9,9 +9,10 @@ The finalized launch contract owned by a kernel's `Function.gpu` field.
 ```text
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars,
     gpu_workspace* workspaces, bool packed, int source_argument_count,
-    symbol* device_functions)
+    symbol* device_functions, symbol? lanes)
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type,
-    gpu_argument_kind kind, int argument_index, int dimension)
+    gpu_argument_kind kind, int argument_index, int dimension, bool written,
+    bool noalias)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims,
     int buffer_index, int element_size)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
@@ -23,7 +24,22 @@ gpu_workspace_dimension = (expr extent, symbol? parameter)
 dummy by symbol and argument position. A decomposed derived-type component
 also names its member symbol. `type` is the explicit scalar or buffer element
 type. `dimension` identifies an array dimension or a packed-buffer offset,
-according to the entry's role.
+according to the entry's role. `written` says whether the kernel may write a
+buffer: it is false only when every reference of the kernel to the dummy
+only reads it. The runtime keeps a buffer the kernel may write on the
+device after the launch, and copies one it only reads when the launch is
+made (see [GPU offloading](../../../gpu_offloading.md)).
+
+`noalias` says that no other buffer of any launch of the kernel shares
+storage with a buffer where either of the two is written, so the device code
+may say the buffer is not aliased. It is set once every launch of the kernel
+is known, and only for an actual argument that designates storage nothing
+else can reach: a variable that is not a pointer, a target, an associate
+name or in a common block or equivalence, reached through components that
+are not pointers. Two such actuals of different variables, or of components
+of one variable that part ways, share no storage. All buffers of one actual
+count as the same storage. A workspace is storage of its own, which no
+argument aliases.
 
 A workspace names a distinct local array, even when another scope declares
 an array with the same name. Its slot follows the argument bindings and its
@@ -37,6 +53,16 @@ and both allocation and device indexing consume that value.
 `source_argument_count` separates original arguments from these appended
 parameters. `device_functions` records the device call graph in callee-first
 order; direct self-recursion is permitted.
+
+`lanes`, when present, is the kernel's last parameter, an integer scalar
+after the extent parameters: each iteration of the kernel runs on that many
+consecutive threads of one SIMD-group, its lanes, which share the loops
+inside it ([GpuLaneIndex](../expression_nodes/GpuLaneIndex.md),
+[GpuLaneBarrier](../statement_nodes/GpuLaneBarrier.md),
+[GpuLaneBroadcast](../expression_nodes/GpuLaneBroadcast.md)). The thread
+index the kernel reads then numbers its iterations, the host starts
+`lanes` threads per iteration, and a workspace slice belongs to an
+iteration. `gpu_vector_lanes` sets it, after the finalizer.
 
 The finalizer produces this metadata after shared lowering. Host expansion
 and device emission read it without reconstructing the ABI.

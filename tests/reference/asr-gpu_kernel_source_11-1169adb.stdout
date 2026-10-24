@@ -1,0 +1,429 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __lfortran_gpu_kernel_0:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            __flat_idx:
+                                (Variable
+                                    4
+                                    __flat_idx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a:
+                                (Variable
+                                    4
+                                    a
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    4
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    __lfortran_gpu_kernel_0
+                    (FunctionType
+                        [(Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 4) Decimal))]
+                            FixedSizeArray
+                            Global
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Kernel
+                    )
+                    []
+                    [(Var 4 a)]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            GtE
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Return)]
+                        []
+                    )
+                    (Assignment
+                        (Var 4 __flat_idx)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (GpuBlockIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                Mul
+                                (GpuBlockSize
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Add
+                            (GpuThreadIndex
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 4 i)
+                        (IntegerBinOp
+                            (Var 4 __flat_idx)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 4 a)
+                            [(()
+                            (Var 4 i)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (Var 4 i)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            gpu_kernel_source_11:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __gpu_iteration_count:
+                                (Variable
+                                    2
+                                    __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    gpu_kernel_source_11
+                    []
+                    [(Assignment
+                        (Var 2 __gpu_iteration_count)
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 __gpu_iteration_count)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GpuKernelLaunch
+                            1 __lfortran_gpu_kernel_0
+                            (Var 2 __gpu_iteration_count)
+                            (IntegerConstant 64 (Integer 4) Decimal)
+                            [((Var 2 a))]
+                            ()
+                            []
+                            ()
+                            []
+                            [(Var 2 a)]
+                            [(LogicalBinOp
+                                (IntegerCompare
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    Eq
+                                    (ArrayBound
+                                        (Var 2 a)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        LBound
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Cast
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 4 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    Eq
+                                    (ArrayBound
+                                        (Var 2 a)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        UBound
+                                        (IntegerConstant 4 (Integer 8) Decimal)
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )]
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ())
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (ArrayItem
+                                    (Var 2 a)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Integer 4)
+                                    ColMajor
+                                    ()
+                                    .false.
+                                )
+                                NotEq
+                                (Var 2 i)
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                ()
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

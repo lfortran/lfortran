@@ -28,7 +28,10 @@ deallocated automatically when its scope ends. That is the difference from
 [Pointer](Pointer.md), which may refer to storage it does not own.
 
 The wrapped type carries the shape and the length: an allocatable array is an
-**Allocatable** of an [Array](Array.md) whose extents are `nil`.
+**Allocatable** of an [Array](Array.md) whose extents are `nil`. Allocation
+sets the bounds at run time, so that array always has physical type
+`DescriptorArray` (`AssumedRankArray` when its rank is assumed); the verifier
+reports any other as `asr.verify.allocatable.array_descriptor`.
 
 ## Examples
 

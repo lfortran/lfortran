@@ -348,6 +348,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         4 calcfc~fpcast_ptr

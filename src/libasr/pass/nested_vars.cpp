@@ -326,6 +326,12 @@ public:
                 // A variable in a common block lives in the block's static
                 // storage, which every procedure reaches directly.
                 if(is_module_or_global_variable(v) || v->m_common_block != nullptr) return;
+                // A component of a derived type, e.g. the `=> null()`
+                // initialization of `next` in `type(node), pointer :: next`
+                // reached through the type's default initialization, is
+                // not host storage.
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+                if (owner && ASR::is_a<ASR::Struct_t>(*owner)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope
                 // (or a child scope such as an associate block), it is a
@@ -451,6 +457,24 @@ public:
 };
 
 
+// Finds a reference to a host variable that is replaced by its context
+// variable in an expression, including in the types of its subexpressions
+class NestedVarReferenceFinder: public ASR::BaseWalkVisitor<NestedVarReferenceFinder> {
+public:
+    const std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
+    bool found = false;
+
+    NestedVarReferenceFinder(const std::map<ASR::symbol_t*,
+            std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var_)
+        : nested_var_to_ext_var(nested_var_to_ext_var_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (nested_var_to_ext_var.find(x.m_v) != nested_var_to_ext_var.end()) {
+            found = true;
+        }
+    }
+};
+
 class ReplacerNestedVars: public ASR::BaseExprReplacer<ReplacerNestedVars> {
 private:
     Allocator &al;
@@ -490,13 +514,6 @@ public:
         ASR::BaseExprReplacer<ReplacerNestedVars>::replace_ArrayPhysicalCast(x);
         x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
     }
-
-    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
-        ASR::expr_t** current_expr_copy_161 = current_expr;
-        current_expr = &(x->m_array);
-        replace_expr(x->m_array);
-        current_expr = current_expr_copy_161;
-    }
 };
 
 class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<ReplaceNestedVisitor> {
@@ -527,11 +544,14 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
         replacer(al_), nesting_map(n_map) {}
 
+    // Skip replacing original variables with context variables
+    // in the parent function except for function/subroutine calls
+    bool replaces_nested_vars() {
+        return nesting_depth != 1 || is_in_call;
+    }
+
     void call_replacer() {
-        // Skip replacing original variables with context variables
-        // in the parent function except for function/subroutine calls
-        bool skip_replace = false;
-        if (nesting_depth==1 && !is_in_call) skip_replace = true;
+        bool skip_replace = !replaces_nested_vars();
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
         if (!func_stack.empty()) {
@@ -547,6 +567,18 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             replacer.current_function_scope = current_scope;
         }
         replacer.skip_replace = skip_replace;
+        if (!skip_replace && *current_expr && !nested_var_to_ext_var.empty()) {
+            NestedVarReferenceFinder finder(nested_var_to_ext_var);
+            finder.visit_expr(**current_expr);
+            if (finder.found) {
+                // The expression can share nodes, notably its type, with a
+                // declaration of the host: `2*s` has the type of the host's
+                // `s(size(a))`. Replace in a copy, so that the declaration
+                // keeps referring to the host's own variables.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                *current_expr = duplicator.duplicate_expr(*current_expr);
+            }
+        }
         replacer.replace_expr(*current_expr);
     }
 
@@ -990,6 +1022,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        if (replaces_nested_vars() && !nested_var_to_ext_var.empty()) {
+            NestedVarReferenceFinder finder(nested_var_to_ext_var);
+            finder.visit_ttype(*xx.m_type);
+            if (finder.found) {
+                // A variable of a nested procedure can share its type with
+                // a declaration of the host, e.g. a temporary created for
+                // `v = v*v + 1` has the type of the host's `v(n)`. Replace
+                // in a copy, so that the declaration keeps referring to
+                // the host's own variables.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                xx.m_type = duplicator.duplicate_ttype(xx.m_type);
+            }
+        }
         if ( ASRUtils::is_array(xx.m_type) ) {
             ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(xx.m_type));
             ASR::dimension_t* m_dims;
@@ -1017,7 +1062,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
                         ASR::symbol_t* prev_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
                         call_replacer();
-                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length)->m_v;
                         if ( prev_sym != new_sym ) {
                             // need to convert this to a pointer
                             array->m_physical_type = ASR::array_physical_typeType::PointerArray;
@@ -1380,27 +1425,6 @@ private :
             else_body.p, else_body.size()));
     }
 
-    // Inject sync statements before cycle recursively 
-    // Currently used for do-loops
-    template<typename T>
-    static void inject_before_cycle(Allocator& al, ASR::stmt_t**& stmts, size_t& n, T& sync_stmts) {
-        Vec<ASR::stmt_t*> res;
-        res.reserve(al, n + sync_stmts.size() * 2);
-        for (size_t i = 0; i < n; i++) {
-            if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                ASR::If_t* ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
-                inject_before_cycle(al, ifs->m_body, ifs->n_body, sync_stmts);
-                inject_before_cycle(al, ifs->m_orelse, ifs->n_orelse, sync_stmts);
-            }
-            if (ASR::is_a<ASR::Cycle_t>(*stmts[i])) {
-                for (size_t j = 0; j < sync_stmts.size(); j++) res.push_back(al, sync_stmts[j]);
-            }
-            res.push_back(al, stmts[i]);
-        }
-        stmts = res.p;
-        n = res.size();
-    }
-
 public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
@@ -1428,6 +1452,11 @@ public:
             }
             if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
                 expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+                expr = ASRUtils::get_past_array_physical_cast(expr);
+                continue;
+            }
+            if (ASR::is_a<ASR::StringSection_t>(*expr)) {
+                expr = ASR::down_cast<ASR::StringSection_t>(expr)->m_arg;
                 expr = ASRUtils::get_past_array_physical_cast(expr);
                 continue;
             }
@@ -1496,27 +1525,98 @@ public:
         PassUtils::PassVisitor<AssignNestedVars>::visit_Assignment(x);
     }
 
+    bool calls_nested_procedure(ASR::expr_t *expr) {
+        bool calls_present_copy = calls_present;
+        calls_present = false;
+        visit_expr(*expr);
+        std::swap(calls_present, calls_present_copy);
+        return calls_present_copy;
+    }
+
+    void hoist_loop_bound(ASR::expr_t *&bound, std::vector<ASR::stmt_t*> &stmts) {
+        if (bound == nullptr || !calls_nested_procedure(bound)) {
+            return;
+        }
+        std::string name = current_scope->get_unique_name("__libasr_created_loop_bound");
+        ASR::stmt_t *assign = nullptr;
+        bound = PassUtils::create_auxiliary_variable_for_expr(bound, name, al,
+            current_scope, assign);
+        stmts.push_back(assign);
+    }
+
+    // do while (.true.); tmp = test; if (.not. tmp) exit; body; end do
+    void move_test_into_body(ASR::WhileLoop_t &loop) {
+        // The exit would skip an else part
+        if (loop.n_orelse > 0 || !calls_nested_procedure(loop.m_test)) {
+            return;
+        }
+        Location loc = loop.m_test->base.loc;
+        std::string name = current_scope->get_unique_name("__libasr_created_while_test");
+        ASR::stmt_t *assign = nullptr;
+        ASR::expr_t *test = PassUtils::create_auxiliary_variable_for_expr(loop.m_test, name, al,
+            current_scope, assign);
+        ASR::ttype_t *logical_type = ASRUtils::expr_type(test);
+        Vec<ASR::stmt_t*> exit_body;
+        exit_body.reserve(al, 1);
+        exit_body.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al, loc, loop.m_name)));
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, loop.n_body + 2);
+        body.push_back(al, assign);
+        body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+            ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, test, logical_type, nullptr)),
+            exit_body.p, exit_body.size(), nullptr, 0)));
+        for (size_t i=0; i<loop.n_body; i++) {
+            body.push_back(al, loop.m_body[i]);
+        }
+        loop.m_body = body.p;
+        loop.n_body = body.size();
+        loop.m_test = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical_type));
+    }
+
+    // A bound or test of loop `i` that calls a nested procedure gets a statement of its own
+    void split_loop_header(ASR::stmt_t **&m_body, size_t &n_body, size_t i) {
+        std::vector<ASR::stmt_t*> stmts;
+        if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
+            ASR::do_loop_head_t &head = ASR::down_cast<ASR::DoLoop_t>(m_body[i])->m_head;
+            hoist_loop_bound(head.m_start, stmts);
+            hoist_loop_bound(head.m_end, stmts);
+            hoist_loop_bound(head.m_increment, stmts);
+        } else if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
+            move_test_into_body(*ASR::down_cast<ASR::WhileLoop_t>(m_body[i]));
+        }
+        if (stmts.empty()) {
+            return;
+        }
+        stmts.insert(stmts.begin(), m_body, m_body + i);
+        stmts.insert(stmts.end(), m_body + i, m_body + n_body);
+        Vec<ASR::stmt_t*> body;
+        body.from_pointer_n_copy(al, stmts.data(), stmts.size());
+        m_body = body.p;
+        n_body = body.size();
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
-        std::vector<ASR::stmt_t*> loop_end_syncs;
         HostToContextVarDuplicator ctx_duplicator(al);
         for (size_t i=0; i<n_body; i++) {
+            if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
+                split_loop_header(m_body, n_body, i);
+            }
             calls_present = false;
             calls_in_loop_condition = false;
-            bool is_do_loop_sync = false;
-            if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i]) || 
-                (ASR::is_a<ASR::DoLoop_t>(*m_body[i]))) {
-                is_do_loop_sync = true;
-            }
             assigns_at_end.clear();
-            loop_end_syncs.clear();
             ctx_duplicator.ctx_vars.clear();
             ASR::symbol_t *assigned_target_sym = nullptr;
+            bool assigns_part = false;
             if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
                 ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
                 assigned_target_sym = get_root_host_symbol(assignment->m_target);
+                ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(assignment->m_target);
+                // The value keeps a part of the target in `z = cmplx(h(), aimag(z))`, made from `z%re = h()`
+                assigns_part = !ASR::is_a<ASR::Var_t>(*target) || ASRUtils::expr_references_symbol(
+                    assignment->m_value, ASR::down_cast<ASR::Var_t>(target)->m_v);
             }
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
@@ -1672,7 +1772,7 @@ public:
                                 }
                             }
                         } else if (is_procedure_variable) {
-                            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val)));
+                            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, t->base.loc, target, val, ASR::pointer_bounds_formType::NoPointerBounds)));
                         } else {
                             ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                         target, val, nullptr, false, false));
@@ -1682,9 +1782,11 @@ public:
                             } else { // Otherwise Assign Directly.
                                 body.push_back(al, assignment);
                             }
+                            // Assign the part in the context variable, so that copying it back keeps what the call wrote
+                            bool assigns_part_of_sym = skip_sync_back && assigns_part;
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                     ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
-                                    !skip_sync_back) {
+                                    (!skip_sync_back || assigns_part_of_sym)) {
                                 assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                 val, target, nullptr, false, false));
                                 /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */
@@ -1694,24 +1796,8 @@ public:
                                     assigns_at_end.push_back(assignment);
                                 }
                                 // A later statement of the where construct must see what the call wrote
-                                if (ASR::is_a<ASR::Where_t>(*m_body[i])) {
+                                if (ASR::is_a<ASR::Where_t>(*m_body[i]) || assigns_part_of_sym) {
                                     ctx_duplicator.ctx_vars[ASRUtils::symbol_get_past_external(sym)] = ext_sym;
-                                }
-                            }
-                            // For do-loop function calls inside loop condition & cycle conditions
-                            // put a sync for scalar variables.
-                            // Note: Arrays are synced during loop entries, no need to sync again
-                            // If not inside do-loop, bypass this step
-                            if (is_do_loop_sync && calls_in_loop_condition && 
-                                ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
-                                ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In && 
-                                !ASRUtils::is_array(ASRUtils::symbol_type(sym))){
-                                ASR::stmt_t *loop_sync = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
-                                                target, val, nullptr, false, false));
-                                if(ASRUtils::is_allocatable(ASRUtils::expr_type(val))){
-                                    loop_end_syncs.push_back(create_if_allocated_block(val, loop_sync));
-                                } else {
-                                    loop_end_syncs.push_back(loop_sync);
                                 }
                             }
                         }
@@ -1724,45 +1810,12 @@ public:
                 if (ASR::is_a<ASR::If_t>(*m_body[i])) {
                     ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
                     if_stmt->m_test = ctx_duplicator.duplicate_expr(if_stmt->m_test);
-                } else if (!is_do_loop_sync) {
+                } else {
                     m_body[i] = ctx_duplicator.duplicate_stmt(m_body[i]);
                 }
             }
 
-            // Inject syncs before cycle/exit if this is a loop statement
-            if (calls_in_loop_condition && !loop_end_syncs.empty()) {
-                if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
-                    ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
-                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
-                } else if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
-                    ASR::DoLoop_t* loop = ASR::down_cast<ASR::DoLoop_t>(m_body[i]);
-                    inject_before_cycle(al, loop->m_body, loop->n_body, loop_end_syncs);
-                }
-            }
-            // Handling for loop condition having function calls
-            if (calls_in_loop_condition && is_do_loop_sync) { 
-                ASR::WhileLoop_t* loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
-                Vec<ASR::stmt_t*> new_body;
-                new_body.reserve(al, loop->n_body + assigns_at_end.size() * 2);
-                // LOOP START:  Handle Assignments to main from function temporaries
-                for (auto &stm: assigns_at_end) {
-                    new_body.push_back(al, stm);
-                }
-                // Original loop body
-                for (size_t j = 0; j < loop->n_body; j++) {
-                    new_body.push_back(al, loop->m_body[j]);
-                }
-                // LOOP END: Handle Assignments from main to temporaries 
-                // (for next iteration's condition)
-                for (auto &stm: loop_end_syncs) {
-                    new_body.push_back(al, stm);
-                }
-                loop->m_body = new_body.p;
-                loop->n_body = new_body.size();
-                new_body.n = 0;  // Clear size
-                new_body.p = nullptr;  // Clear pointer after ownership transfer
-                body.push_back(al, m_body[i]);
-            } else if (calls_in_loop_condition && ASR::is_a<ASR::If_t>(*m_body[i])) {
+            if (calls_in_loop_condition && ASR::is_a<ASR::If_t>(*m_body[i])) {
                 // Handling for IF condition having function calls
                 // Handle assignments from function temporaries to main
                 ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
@@ -1969,20 +2022,6 @@ public:
         }
     }
 
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        // Step 1: Detect calls in loop condition
-        calls_present = false;
-        visit_expr(*x.m_test);
-        bool has_calls_in_condition = calls_present;
-        // Step 2: Visit body to detect calls there
-        calls_present = false;
-        // Now calls_present = true if body has calls
-        PassUtils::PassVisitor<AssignNestedVars>::visit_WhileLoop(x);
-        // Step 3: Set the condition flag (transform_stmts may 
-        // reset the flag for calls_in_loop_condition while visiting body)
-        calls_in_loop_condition = has_calls_in_condition;
-    }
-
     void visit_If(const ASR::If_t &x) {
         // Step 1: Detect calls in condition
         calls_present = false;
@@ -2102,6 +2141,12 @@ public:
         ASR::alloc_arg_t &xx = const_cast<ASR::alloc_arg_t&>(x);
         xx.m_sym_subclass = replace_type(xx.m_sym_subclass, current_scope);
         ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_alloc_arg(x);
+    }
+
+    void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+        ASR::dtio_binding_t &xx = const_cast<ASR::dtio_binding_t&>(x);
+        xx.m_type_declaration = replace_type(xx.m_type_declaration, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_dtio_binding(x);
     }
 
     void visit_TypeStmtName(const ASR::TypeStmtName_t &x) {

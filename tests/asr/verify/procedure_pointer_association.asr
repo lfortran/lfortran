@@ -150,6 +150,7 @@
             (Var
               (SymbolRef 6 "impl")
             )
+            :NoPointerBounds
           )
         ]
         nil

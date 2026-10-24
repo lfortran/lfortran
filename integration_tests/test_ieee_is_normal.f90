@@ -35,11 +35,11 @@ program test_ieee_is_normal
     print *, "ieee_is_normal(tiny) = ", result
     if (.not. result) error stop "tiny should be normal"
     
-    ! Test 5: Zero (not normal)
+    ! Test 5: Zero (normal, IEEE_CLASS is IEEE_POSITIVE_ZERO)
     x_sp = 0.0_real32
     result = ieee_is_normal(x_sp)
     print *, "ieee_is_normal(0.0) = ", result
-    if (result) error stop "0.0 should not be normal"
+    if (.not. result) error stop "0.0 should be normal"
     
     ! Test 6: Infinity (not normal)
     tmp_sp = 1.0_real32

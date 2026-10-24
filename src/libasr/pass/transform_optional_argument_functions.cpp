@@ -182,7 +182,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
                 new_args.push_back(al, s->m_args[i]);
                 new_arg_types.push_back(al, ASRUtils::get_FunctionType(*s)->m_arg_types[i]);
                 if( is_presence_optional(arg_sym, true) ) {
-                    sym2optionalargidx[&(s->base)].push_back(new_args.size() - 1);
+                    sym2optionalargidx[&(s->base)].push_back(checked_integer_cast<int32_t>(new_args.size() - 1));
                     std::string presence_bit_arg_name = "__libasr_is_present_" + std::string(ASRUtils::symbol_name(arg_sym));
                     presence_bit_arg_name = s->m_symtab->get_unique_name(presence_bit_arg_name, false);
                     ASR::expr_t* presence_bit_arg = PassUtils::create_auxiliary_variable(
@@ -384,7 +384,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
-        func_sym = class_proc->m_proc;
+        func_sym = ASRUtils::symbol_get_past_external(class_proc->m_proc);
     }
 
     if (!ASR::is_a<ASR::Function_t>(*func_sym)) {
@@ -419,13 +419,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
-                    arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(arg_type));
-                    if( str->m_len &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
+                    // The absent argument is represented by a local, which
+                    // cannot inherit an assumed length from the dummy.
+                    if( str->m_len_kind == ASR::AssumedLength ||
+                        (str->m_len && !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len))){
                         str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                        str->m_len_kind = ASR::ExpressionLength;
                     }
                 }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
@@ -695,7 +697,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 
                 std::vector<ASR::stmt_t*> if_body, else_body;
-                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr)));
+                if_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, arg_expr, ASR::pointer_bounds_formType::NoPointerBounds)));
                 if (ASRUtils::is_array(dummy_variable_type) &&
                         ASRUtils::is_class_type(ASRUtils::extract_type(dummy_variable_type))) {
                     // A local non-allocatable polymorphic array has no dynamic
@@ -711,7 +713,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     std::string dummy_variable_name = scope->get_unique_name("__libasr_created_dummy_variable_");
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                         x.m_args[i].loc, dummy_variable_name, al, scope, dummy_variable_type, ASR::intentType::Local, arg_decl, dummy_decl_var);
-                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable)));
+                    else_body.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, dummy_variable_type->base.loc, pointer_variable, dummy_variable, ASR::pointer_bounds_formType::NoPointerBounds)));
                 }
 
                 pass_result.push_back(al, builder.If(is_allocated, if_body, else_body));

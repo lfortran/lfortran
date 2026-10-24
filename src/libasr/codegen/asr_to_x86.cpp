@@ -46,7 +46,7 @@ uint64_t static get_hash(ASR::asr_t *node)
 class ASRToX86Visitor : public ASR::BaseVisitor<ASRToX86Visitor>
 {
     struct Sym {
-        uint32_t stack_offset; // The local variable is [ebp-stack_offset]
+        int32_t stack_offset; // The local variable is [ebp-stack_offset]
         std::string fn_label; // Subroutine / Function assembly label
         bool pointer; // Is variable represented as a pointer (or value)
     };
@@ -163,7 +163,7 @@ public:
                     Sym s;
                     s.stack_offset = total_offset;
                     s.pointer = false;
-                    uint32_t h = get_hash((ASR::asr_t*)v);
+                    uint64_t h = get_hash((ASR::asr_t*)v);
                     x86_symtab[h] = s;
                 } else {
                     throw CodeGenError("Variable type not supported");
@@ -190,7 +190,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        uint32_t h = get_hash((ASR::asr_t*)&x);
+        uint64_t h = get_hash((ASR::asr_t*)&x);
         std::string id = std::to_string(h);
 
         // Generate code for the subroutine
@@ -208,10 +208,10 @@ public:
             // TODO: we are assuming integer here:
             LCOMPILERS_ASSERT(arg->m_type->type == ASR::ttypeType::Integer);
             Sym s;
-            s.stack_offset = -(i*4+8); // TODO: reverse the sign of offset
+            s.stack_offset = -checked_integer_cast<int32_t>(i*4+8); // TODO: reverse the sign of offset
             // We pass intent(in) as value, otherwise as pointer
             s.pointer = (arg->m_intent != ASR::intentType::In);
-            uint32_t h = get_hash((ASR::asr_t*)arg);
+            uint64_t h = get_hash((ASR::asr_t*)arg);
             x86_symtab[h] = s;
         }
 
@@ -233,7 +233,7 @@ public:
                         Sym s;
                         s.stack_offset = total_offset;
                         s.pointer = false;
-                        uint32_t h = get_hash((ASR::asr_t*)v);
+                        uint64_t h = get_hash((ASR::asr_t*)v);
                         x86_symtab[h] = s;
                     } else {
                         throw CodeGenError("Variable type not supported");
@@ -251,7 +251,7 @@ public:
         if (x.m_return_var) {
             ASR::Variable_t *retv = ASRUtils::EXPR2VAR(x.m_return_var);
 
-            uint32_t h = get_hash((ASR::asr_t*)retv);
+            uint64_t h = get_hash((ASR::asr_t*)retv);
             LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
             Sym s = x86_symtab[h];
             X86Reg base = X86Reg::ebp;
@@ -271,7 +271,8 @@ public:
     // Expressions leave integer values in eax
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
-        m_a.asm_mov_r32_imm32(X86Reg::eax, x.m_n);
+        // The 32-bit backend keeps the low 32 bits of the constant.
+        m_a.asm_mov_r32_imm32(X86Reg::eax, static_cast<uint32_t>(x.m_n));
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
@@ -286,7 +287,7 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
-        uint32_t h = get_hash((ASR::asr_t*)v);
+        uint64_t h = get_hash((ASR::asr_t*)v);
         LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
         Sym s = x86_symtab[h];
         X86Reg base = X86Reg::ebp;
@@ -387,7 +388,7 @@ public:
         // RHS is in eax
 
         ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_target);
-        uint32_t h = get_hash((ASR::asr_t*)v);
+        uint64_t h = get_hash((ASR::asr_t*)v);
         LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
         Sym s = x86_symtab[h];
         X86Reg base = X86Reg::ebp;
@@ -409,6 +410,10 @@ public:
         //HACKISH way to handle print refactoring (always using stringformat).
         // TODO : Implement stringformat visitor.
         if(e && ASR::is_a<ASR::StringFormat_t>(*e)){
+            if (ASR::down_cast<ASR::StringFormat_t>(e)->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the x86 backend yet", x.base.base.loc);
+            }
             e = ASR::down_cast<ASR::StringFormat_t>(e)->m_args[0];
         }
         if (e->type == ASR::exprType::StringConstant) {
@@ -416,7 +421,7 @@ public:
             std::string msg = s->m_s;
             msg += "\n";
             std::string id = "string" + std::to_string(get_hash((ASR::asr_t*)e));
-            emit_print(m_a, id, msg.size());
+            emit_print(m_a, id, checked_integer_cast<uint32_t>(msg.size()));
             m_global_strings[id] = msg;
         } else {
             this->visit_expr(*e);
@@ -436,7 +441,7 @@ public:
 
             std::string msg = "\n";
             std::string id = "string" + std::to_string(get_hash((ASR::asr_t*)e));
-            emit_print(m_a, id, msg.size());
+            emit_print(m_a, id, checked_integer_cast<uint32_t>(msg.size()));
             m_global_strings[id] = msg;
         }
     }
@@ -444,7 +449,7 @@ public:
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         std::string id = "err" + std::to_string(get_hash((ASR::asr_t*)&x));
         std::string msg = "ERROR STOP\n";
-        emit_print(m_a, id, msg.size());
+        emit_print(m_a, id, checked_integer_cast<uint32_t>(msg.size()));
         m_global_strings[id] = msg;
 
         m_a.asm_call_label("exit_error_stop");
@@ -495,22 +500,22 @@ public:
     template <typename T, typename T2>
     uint8_t push_call_args(const T &x, const T2 &sub) {
         LCOMPILERS_ASSERT(sub.n_args == x.n_args);
-        // Note: when counting down in a loop, we have to use signed ints
-        // for `i`, so that it can become negative and fail the i>=0 condition.
-        for (int i=x.n_args-1; i>=0; i--) {
+        // Note: when counting down in a loop with an unsigned `i`, test
+        // before decrementing so that the loop stops after i == 0.
+        for (size_t i=x.n_args; i-- > 0;) {
             bool pass_as_pointer;
             {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(sub.m_args[i]);
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent));
                 // TODO: we are assuming integer here:
                 LCOMPILERS_ASSERT(arg->m_type->type == ASR::ttypeType::Integer);
-                uint32_t h = get_hash((ASR::asr_t*)arg);
+                uint64_t h = get_hash((ASR::asr_t*)arg);
                 Sym &s = x86_symtab[h];
                 pass_as_pointer = s.pointer;
             }
             if (x.m_args[i].m_value->type == ASR::exprType::Var) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i].m_value);
-                uint32_t h = get_hash((ASR::asr_t*)arg);
+                uint64_t h = get_hash((ASR::asr_t*)arg);
                 LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
                 Sym s = x86_symtab[h];
                 X86Reg base = X86Reg::ebp;
@@ -550,14 +555,15 @@ public:
                 m_a.asm_push_r32(X86Reg::eax);
             }
         }
-        return x.n_args*4;
+        // Preserves the existing imm8 truncation for more than 63 arguments.
+        return static_cast<uint8_t>(x.n_args*4);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(x.m_name));
 
-        uint32_t h = get_hash((ASR::asr_t*)s);
+        uint64_t h = get_hash((ASR::asr_t*)s);
         if (x86_symtab.find(h) == x86_symtab.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -574,7 +580,7 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(x.m_name);
 
-        uint32_t h = get_hash((ASR::asr_t*)s);
+        uint64_t h = get_hash((ASR::asr_t*)s);
         if (x86_symtab.find(h) == x86_symtab.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -595,11 +601,11 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
         const std::string &filename, bool time_report,
         diag::Diagnostics &diagnostics)
 {
-    int time_pass_global=0;
-    int time_pass_do_loops=0;
-    int time_visit_asr=0;
-    int time_verify=0;
-    int time_save=0;
+    int64_t time_pass_global=0;
+    int64_t time_pass_do_loops=0;
+    int64_t time_visit_asr=0;
+    int64_t time_verify=0;
+    int64_t time_save=0;
 
     ASRToX86Visitor v(al);
 
@@ -661,7 +667,7 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
         std::cout << "ASR -> x86: " << std::setw(5) << time_visit_asr << std::endl;
         std::cout << "Verify:     " << std::setw(5) << time_verify << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int total = time_pass_global + time_pass_do_loops + time_visit_asr + time_verify + time_verify + time_save;
+        int64_t total = time_pass_global + time_pass_do_loops + time_visit_asr + time_verify + time_verify + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }
     return 0;

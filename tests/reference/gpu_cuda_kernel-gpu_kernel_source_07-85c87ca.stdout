@@ -5,16 +5,15 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    double* x,
-    double* y,
+    double* __restrict__ x,
+    double* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     const double c =   2.82094791773878140e-01;
     int i;
-    const int n = 8;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
