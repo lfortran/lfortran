@@ -9388,19 +9388,16 @@ public:
                 ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(original_sym);
                 ASR::symbol_t* original_sym_owner = ASRUtils::get_asr_owner(original_sym);
                 Vec<ASR::call_arg_t> args_with_mdt;
+                // The specifics of a type-bound generic can mix `pass` and
+                // `nopass`, so "this/self" is always appended as the first
+                // argument and dropped while matching a `nopass` specific.
+                bool is_dt_present = x.n_member >= 1 && v_expr != nullptr;
                 if( x.n_member >= 1 ) {
-                    // we append "this/self" (i.e. ClassObject) as first argument
-                    // only when nopass is not used in the associated subroutine
-                    if (!nopass) {
-                        // this assigns n_args + 1
-                        args_with_mdt.reserve(al, x.n_args + 1);
+                    args_with_mdt.reserve(al, args.size() + 1);
+                    if (is_dt_present) {
                         ASR::call_arg_t v_expr_call_arg;
                         v_expr_call_arg.loc = v_expr->base.loc, v_expr_call_arg.m_value = v_expr;
                         args_with_mdt.push_back(al, v_expr_call_arg);
-                    } else {
-                        // we *don't* append "this/self", hence assign
-                        // size as `n_args`
-                        args_with_mdt.reserve(al, x.n_args);
                     }
                     for( size_t i = 0; i < args.size(); i++ ) {
                         args_with_mdt.push_back(al, args[i]);
@@ -9445,9 +9442,16 @@ public:
                         final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                             final_sym, current_scope);
                         ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
+                        nopass = cp->m_is_nopass;
+                        Vec<ASR::call_arg_t> cp_args;
+                        if (nopass && is_dt_present) {
+                            cp_args.from_pointer_n(args_with_mdt.p + 1, args_with_mdt.n - 1);
+                        } else {
+                            cp_args.from_pointer_n(args_with_mdt.p, args_with_mdt.n);
+                        }
                         Location l = x.base.base.loc;
                         // TODO: Add error message here
-                        if (ASRUtils::select_func_subrout(ASRUtils::symbol_get_past_external(cp->m_proc), args_with_mdt, l,
+                        if (ASRUtils::select_func_subrout(ASRUtils::symbol_get_past_external(cp->m_proc), cp_args, l,
                             [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,
@@ -9472,7 +9476,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                });
+                                }, true, is_dt_present);
                 } else {
                     idx = ASRUtils::select_generic_procedure(args, *p, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -9491,6 +9495,10 @@ public:
                     func_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(func_sym),
                                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+                    ASR::symbol_t* selected = ASRUtils::symbol_get_past_external(func_sym);
+                    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*selected)) {
+                        nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(selected)->m_is_nopass;
+                    }
                 }
                 // Create ExternalSymbol for procedures in different modules.
                 if( ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(func_sym)) ) {
