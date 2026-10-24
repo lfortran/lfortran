@@ -509,6 +509,8 @@ namespace LCompilers::CommandLineInterface {
         // it must not define anything of the module itself.
         compiler_options.po.separate_compilation =
             compiler_options.separate_compilation;
+        compiler_options.po.legacy_array_sections =
+            compiler_options.legacy_array_sections;
 
         // set gpu offloading in pass options
         if (compiler_options.gpu_backend == "metal") {

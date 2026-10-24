@@ -1090,7 +1090,9 @@ public:
                 if ( phys == ASR::array_physical_typeType::UnboundedPointerArray &&
                      has_undefined_assumed_size_bound(section) ) {
                     track = true;
-                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray ) {
+                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray &&
+                            pass_options.legacy_array_sections &&
+                            is_sequence_association_section(section) ) {
                     track = true;
                 }
                 if ( track ) {
@@ -1100,6 +1102,38 @@ public:
             }
         }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Associate(x);
+    }
+
+    // A section made from an array element for sequence association runs
+    // from the element to the upper bound of every dimension, except the last
+    // one when it is passed as assumed-size. Other sections, such as a(1, :)
+    // or b(1:5:2), still need copy-in/copy-out.
+    static bool is_sequence_association_section(ASR::ArraySection_t* section) {
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(section->m_v), dims);
+        if ( section->n_args != n_dims ) {
+            return false;
+        }
+        bool unbounded_tail = ASRUtils::extract_physical_type(section->m_type) ==
+            ASR::array_physical_typeType::UnboundedPointerArray;
+        for ( size_t i = 0; i < n_dims; i++ ) {
+            if ( unbounded_tail && i == n_dims - 1 ) {
+                if ( section->m_args[i].m_left == nullptr ) {
+                    return false;
+                }
+                continue;
+            }
+            int64_t right, start, length;
+            if ( section->m_args[i].m_left == nullptr ||
+                 !ASRUtils::extract_value(ASRUtils::expr_value(section->m_args[i].m_right), right) ||
+                 !ASRUtils::extract_value(ASRUtils::expr_value(dims[i].m_start), start) ||
+                 !ASRUtils::extract_value(ASRUtils::expr_value(dims[i].m_length), length) ||
+                 right != start + length - 1 ) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Check if an ArraySection has a right bound that is an ArrayBound UBound
