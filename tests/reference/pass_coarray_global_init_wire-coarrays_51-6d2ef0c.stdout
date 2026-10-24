@@ -1135,6 +1135,8 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )
                                         (SubroutineCall
                                             21 __lfortran_global_init_coarrays_51_a
@@ -1298,6 +1300,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (If
                         ()
@@ -1418,6 +1422,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 cb)
@@ -1429,6 +1435,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )

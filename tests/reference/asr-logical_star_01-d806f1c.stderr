@@ -1,0 +1,23 @@
+style suggestion: Use logical(1) instead of logical*1
+ --> tests/../integration_tests/logical_star_01.f90:3:5
+  |
+3 |     logical*1 :: l1, l1_arr(3)
+  |     ^^^^^^^^^ help: write this as 'logical(1)'
+
+style suggestion: Use logical(2) instead of logical*2
+ --> tests/../integration_tests/logical_star_01.f90:4:5
+  |
+4 |     logical*2 :: l2
+  |     ^^^^^^^^^ help: write this as 'logical(2)'
+
+style suggestion: Use logical(4) instead of logical*4
+ --> tests/../integration_tests/logical_star_01.f90:5:5
+  |
+5 |     logical*4 :: l4
+  |     ^^^^^^^^^ help: write this as 'logical(4)'
+
+style suggestion: Use logical(8) instead of logical*8
+ --> tests/../integration_tests/logical_star_01.f90:6:5
+  |
+6 |     logical*8 :: l8
+  |     ^^^^^^^^^ help: write this as 'logical(8)'

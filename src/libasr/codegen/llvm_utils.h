@@ -422,7 +422,8 @@ class ASRToLLVMVisitor;
             // Get or create the cached global allocator pointer
             llvm::Value* get_allocator(llvm::Module* mod);
 
-            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false);
+            llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false,
+                llvm::Value* dtio_unit=nullptr, llvm::Value* n_dtio=nullptr, llvm::Value* dtio_procs=nullptr);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, llvm::Value* idx);
             llvm::Value* create_gep2(llvm::Type *t, llvm::Value* ds, int idx);
 
@@ -894,12 +895,13 @@ class ASRToLLVMVisitor;
 
             void set_set_api(ASR::Set_t* set_type);
 
-            // `finalize_dest` false: `dest` has just been allocated, so the
-            // copy defines it rather than assigning to it, and it is not
-            // finalized first.
+            // `finalize_dest` is an i1 that says whether `dest` is finalized
+            // before it is defined; nullptr means that it is. It is false when
+            // `dest` has just been allocated, so the copy defines it rather
+            // than assigning to it.
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
-                bool use_defined_assignment = false, bool finalize_dest = true);
+                bool use_defined_assignment = false, llvm::Value* finalize_dest = nullptr);
 
             // A scalar class pointer is a heap-allocated class wrapper
             // {vptr, data*} owned by the pointer (freed by nullify and
@@ -1091,6 +1093,21 @@ class ASRToLLVMVisitor;
         :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor),
             llvm_symtab_fn_(llvm_symtab_fn){}
 
+        /// The parent type of `struct_sym`, or nullptr if it has none.
+        static ASR::Struct_t* get_parent_struct(ASR::Struct_t* const struct_sym) {
+            if (struct_sym->m_parent == nullptr) return nullptr;
+            return ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
+        }
+
+        /// Whether `struct_sym` or one of its ancestors has a final subroutine.
+        static bool chain_has_final_procedure(ASR::Struct_t* struct_sym) {
+            for (; struct_sym != nullptr; struct_sym = get_parent_struct(struct_sym)) {
+                if (struct_sym->n_member_functions > 0) return true;
+            }
+            return false;
+        }
+
     private:
 
 
@@ -1125,12 +1142,10 @@ class ASRToLLVMVisitor;
             auto* const struct_sym = get_struct_sym(v);
             if (LLVM::is_struct_value_dummy_copied(*v)) {
                 // A dummy argument is not finalized (F2018 7.5.6.3): only
-                // free the class wrappers that the procedure's copy owns.
-                llvm_utils_->visit_class_pointer_components(struct_sym, llvm_var,
-                    llvm_utils_->module, [&](llvm::Value* slot, llvm::Type* wrapper_type) {
-                        llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(
-                            wrapper_type->getPointerTo(), slot));
-                    });
+                // free the memory that the procedure's copy owns.
+                with_final_subroutines(false, [&]() {
+                    finalize(llvm_var, v->m_type, struct_sym, false);
+                });
                 return;
             }
             call_final_of_allocatable_local(v, llvm_var, struct_sym);
@@ -1275,21 +1290,6 @@ class ASRToLLVMVisitor;
             } else {
                 call_final_per_element(final_fn, ptr, type, struct_sym);
             }
-        }
-
-        /// The parent type of `struct_sym`, or nullptr if it has none.
-        static ASR::Struct_t* get_parent_struct(ASR::Struct_t* const struct_sym) {
-            if (struct_sym->m_parent == nullptr) return nullptr;
-            return ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-        }
-
-        /// Whether `struct_sym` or one of its ancestors has a final subroutine.
-        static bool chain_has_final_procedure(ASR::Struct_t* struct_sym) {
-            for (; struct_sym != nullptr; struct_sym = get_parent_struct(struct_sym)) {
-                if (struct_sym->n_member_functions > 0) return true;
-            }
-            return false;
         }
 
         /**
@@ -3321,7 +3321,7 @@ class ASRToLLVMVisitor;
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false, bool finalize_dest = true);
+                bool use_defined_assignment = false, llvm::Value* finalize_dest = nullptr);
 
             // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
@@ -3364,6 +3364,10 @@ class ASRToLLVMVisitor;
              * NOTICE : It doesn't handle arrays
             */
             void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
+
+            // call_struct_finalize_fn if the i1 `cond` is true.
+            void call_struct_finalize_fn_if(llvm::Value* cond, llvm::Value* ptr,
+                ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {

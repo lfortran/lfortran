@@ -7,13 +7,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* t,
-    float* y,
+    float* __restrict__ t,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __lcompilers_t_extent_1 = __scalar_args.__lcompilers_t_extent_1;
     int m = __scalar_args.m;
-    int __dim_t_0 = __scalar_args.__dim_t_0;
     int __do_loop_end;
     int __flat_idx;
     int j;

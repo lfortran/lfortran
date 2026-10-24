@@ -152,9 +152,11 @@ progress
 :hidden:
 design
 gpu_offloading
+gpu_optimization_passes
 developer_tutorial
 ast_and_asr
 interactive_cells
+interactive_evaluation
 jupyterlite
 contributing
 ```

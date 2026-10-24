@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <iostream>
+#include <vector>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -14,6 +15,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/pass/string_length_arguments.h>
+#include <libasr/pass/string_format_array_args.h>
 
 namespace LCompilers::LFortran {
 
@@ -206,11 +208,11 @@ TEST_CASE("ASR Verify INTENT(OUT) StringPhysicalCast argument path") {
     std::string src = R"""(
 program p
 implicit none
-character(2), allocatable :: str
+character(1), allocatable :: str
 call ss(str)
 contains
-subroutine ss(s)
-    character(2), intent(out) :: s
+subroutine ss(s) bind(c)
+    character(1), intent(out) :: s
 end subroutine
 end program p
 )""";
@@ -236,22 +238,24 @@ end program p
 
     ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("p"));
     ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
-    ASR::expr_t* original_arg = call_stmt->m_args[0].m_value;
+    REQUIRE(ASR::is_a<ASR::StringPhysicalCast_t>(*call_stmt->m_args[0].m_value));
+    ASR::StringPhysicalCast_t* cast_arg =
+        ASR::down_cast<ASR::StringPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    CHECK(asr_verify(*asr, true, diagnostics));
 
-    ASR::ttype_t* cast_type = ASR::down_cast<ASR::ttype_t>(
-        ASR::make_String_t(al, original_arg->base.loc, 1, nullptr,
-            ASR::string_length_kindType::ImplicitLength,
-            ASR::string_physical_typeType::DescriptorString));
-    call_stmt->m_args[0].m_value = ASR::down_cast<ASR::expr_t>(
-        ASR::make_StringPhysicalCast_t(al, original_arg->base.loc, original_arg,
-            ASR::string_physical_typeType::DescriptorString,
-            ASR::string_physical_typeType::CChar, cast_type, nullptr));
+    cast_arg->m_old = ASR::string_physical_typeType::CChar;
+    CHECK(!asr_verify(*asr, true, diagnostics));
+    diagnostics.diagnostics.clear();
+    cast_arg->m_old = ASR::string_physical_typeType::DescriptorString;
 
+    cast_arg->m_new = ASR::string_physical_typeType::DescriptorString;
+    CHECK(!asr_verify(*asr, true, diagnostics));
+    diagnostics.diagnostics.clear();
+    cast_arg->m_new = ASR::string_physical_typeType::CChar;
     CHECK(asr_verify(*asr, true, diagnostics));
 
     // Mutate cast payload to a non-variable expression.
-    ASR::StringPhysicalCast_t* cast_arg =
-        ASR::down_cast<ASR::StringPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    ASR::expr_t* original_arg = cast_arg->m_arg;
     ASR::ttype_t* int_type = ASR::down_cast<ASR::ttype_t>(
         ASR::make_Integer_t(al, original_arg->base.loc, 4));
     cast_arg->m_arg = ASR::down_cast<ASR::expr_t>(
@@ -372,6 +376,206 @@ end program
     // A call that does not pass the hidden length is caught.
     call_stmt->n_args = 2;
     CHECK(!asr_verify(*asr, after_pass, diagnostics));
+}
+
+TEST_CASE("ASR Verify array arguments of StringFormat") {
+    Allocator al(64*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+integer, allocatable :: x(:)
+integer, pointer :: y(:)
+allocate(x(3))
+print *, x, y
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    ASRVerifyOptions after_pass;
+    after_pass.string_format_array_args = true;
+    CHECK(asr_verify(*asr, true, diagnostics));
+    // Before the pass, `x` and `y` are descriptors.
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.string_format.array_argument_not_pointer_array");
+    diagnostics.diagnostics.clear();
+
+    PassOptions pass_options;
+    pass_string_format_array_args(al, *asr, pass_options);
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
+        asr->m_symtab->get_symbol("p"));
+    ASR::Print_t *print = nullptr;
+    for (size_t i = 0; i < prog->n_body; i++) {
+        if (ASR::is_a<ASR::Print_t>(*prog->m_body[i])) {
+            print = ASR::down_cast<ASR::Print_t>(prog->m_body[i]);
+        }
+    }
+    REQUIRE(print != nullptr);
+    ASR::StringFormat_t *fmt = ASR::down_cast<ASR::StringFormat_t>(print->m_text);
+    REQUIRE(fmt->n_args == 2);
+    for (size_t i = 0; i < fmt->n_args; i++) {
+        REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*fmt->m_args[i]));
+        ASR::ArrayPhysicalCast_t *cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+            fmt->m_args[i]);
+        CHECK(cast->m_old == ASR::array_physical_typeType::DescriptorArray);
+        CHECK(cast->m_new == ASR::array_physical_typeType::PointerArray);
+    }
+    // The allocatable `x` is cast as it is, the pointer `y` through a
+    // contiguous temporary.
+    CHECK(ASR::is_a<ASR::Var_t>(*ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[0])->m_arg));
+    CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[0])->m_arg)->m_v == prog->m_symtab->get_symbol("x"));
+    CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[1])->m_arg)->m_v != prog->m_symtab->get_symbol("y"));
+
+    // A PointerArray argument whose type lacks a dimension length is caught.
+    ASR::dimension_t *dims = nullptr;
+    REQUIRE(ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(fmt->m_args[0]), dims) == 1);
+    ASR::expr_t *length = dims[0].m_length;
+    dims[0].m_length = nullptr;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    bool dimension_missing = false;
+    for (const diag::Diagnostic &d : diagnostics.diagnostics) {
+        if (d.code == "asr.verify.string_format.array_argument_dimension_missing") {
+            dimension_missing = true;
+        }
+    }
+    CHECK(dimension_missing);
+    diagnostics.diagnostics.clear();
+    dims[0].m_length = length;
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
+    // A descriptor argument is caught again.
+    fmt->m_args[0] = ASR::down_cast<ASR::ArrayPhysicalCast_t>(fmt->m_args[0])->m_arg;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+}
+
+TEST_CASE("ASR Verify array items of data transfer statements") {
+    Allocator al(64*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+integer, allocatable :: x(:)
+integer, pointer :: y(:)
+character(len=4), pointer :: c(:)
+integer :: u
+allocate(x(3))
+write(u) x
+read(u) y, x
+read(c, '(i4)') x
+write(c, '(i4)') x
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    ASRVerifyOptions after_pass;
+    after_pass.string_format_array_args = true;
+    CHECK(asr_verify(*asr, true, diagnostics));
+    // Before the pass, the items and the internal files are descriptors.
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.data_transfer.array_item_not_pointer_array");
+    diagnostics.diagnostics.clear();
+
+    PassOptions pass_options;
+    pass_string_format_array_args(al, *asr, pass_options);
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
+        asr->m_symtab->get_symbol("p"));
+    std::vector<size_t> writes, reads;
+    for (size_t i = 0; i < prog->n_body; i++) {
+        if (ASR::is_a<ASR::FileWrite_t>(*prog->m_body[i])) {
+            writes.push_back(i);
+        } else if (ASR::is_a<ASR::FileRead_t>(*prog->m_body[i])) {
+            reads.push_back(i);
+        }
+    }
+    REQUIRE(writes.size() == 2);
+    REQUIRE(reads.size() == 2);
+    ASR::FileWrite_t *write = ASR::down_cast<ASR::FileWrite_t>(prog->m_body[writes[0]]);
+    ASR::FileRead_t *read = ASR::down_cast<ASR::FileRead_t>(prog->m_body[reads[0]]);
+    ASR::FileRead_t *internal_read = ASR::down_cast<ASR::FileRead_t>(
+        prog->m_body[reads[1]]);
+    // The allocatable `x` is cast as it is.
+    REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*write->m_values[0]));
+    CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        write->m_values[0])->m_arg)->m_v == prog->m_symtab->get_symbol("x"));
+    // The pointer `y` is read in place, through its descriptor, and nothing
+    // is copied back after the READ.
+    REQUIRE(ASR::is_a<ASR::Var_t>(*read->m_values[0]));
+    CHECK(ASR::down_cast<ASR::Var_t>(read->m_values[0])->m_v ==
+        prog->m_symtab->get_symbol("y"));
+    REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*read->m_values[1]));
+    CHECK(!ASR::is_a<ASR::If_t>(*prog->m_body[reads[0] + 1]));
+
+    // The internal file `c` is read through a contiguous temporary, and a
+    // copy of it is copied back after the WRITE to it.
+    REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*internal_read->m_unit));
+    ASR::expr_t *internal_file = internal_read->m_unit;
+    REQUIRE(writes[1] + 1 < prog->n_body);
+    REQUIRE(ASR::is_a<ASR::If_t>(*prog->m_body[writes[1] + 1]));
+    ASR::If_t *release = ASR::down_cast<ASR::If_t>(prog->m_body[writes[1] + 1]);
+    REQUIRE(release->n_orelse == 2);
+    CHECK(ASR::is_a<ASR::DoLoop_t>(*release->m_orelse[0]));
+    CHECK(ASR::is_a<ASR::ExplicitDeallocate_t>(*release->m_orelse[1]));
+
+    // A descriptor output item, an input item that is contiguous by
+    // construction but not cast, and a descriptor internal file are caught
+    // again.
+    ASR::expr_t *item = write->m_values[0];
+    write->m_values[0] = ASR::down_cast<ASR::ArrayPhysicalCast_t>(item)->m_arg;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.data_transfer.array_item_not_pointer_array");
+    write->m_values[0] = item;
+    item = read->m_values[1];
+    read->m_values[1] = ASR::down_cast<ASR::ArrayPhysicalCast_t>(item)->m_arg;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.data_transfer.array_item_not_pointer_array");
+    read->m_values[1] = item;
+    internal_read->m_unit = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        internal_file)->m_arg;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.data_transfer.internal_file_not_pointer_array");
 }
 
 TEST_CASE("Variable Location") {

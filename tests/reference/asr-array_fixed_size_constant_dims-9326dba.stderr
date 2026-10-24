@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.array.fixed_size_constant_dims]: an array with physical type "FixedSizeArray" must have compile-time constant lower bounds and extents
+  --> tests/asr/verify/array_fixed_size_constant_dims.asr:17:22
+   |
+17 |               :type (Array
+   |                      ^^^^^ failed here

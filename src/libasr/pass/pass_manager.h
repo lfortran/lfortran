@@ -59,8 +59,10 @@
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/dtio_callbacks.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/string_length_arguments.h>
+#include <libasr/pass/string_format_array_args.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
@@ -68,6 +70,9 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_loop_fusion.h>
+#include <libasr/pass/gpu_time_skew.h>
+#include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/dead_array_store.h>
 #include <libasr/pass/gpu_vector_lanes.h>
@@ -86,6 +91,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <chrono>
 
 namespace LCompilers {
 
@@ -106,6 +112,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"allocate_on_assignment", &pass_allocate_on_assignment},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -134,8 +141,10 @@ namespace LCompilers {
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
+            {"dtio_callbacks", &pass_dtio_callbacks},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"string_length_arguments", &pass_string_length_arguments},
+            {"string_format_array_args", &pass_string_format_array_args},
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
@@ -145,6 +154,10 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
+            {"gpu_loop_fusion", &pass_gpu_loop_fusion},
+            {"gpu_time_skew", &pass_gpu_time_skew},
+            {"gpu_index_set_split", &pass_gpu_index_set_split},
+            {"gpu_loop_transforms", &pass_gpu_loop_transforms},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_device_workspace", &pass_gpu_device_workspace},
             {"gpu_struct_component_args", &pass_gpu_struct_component_args},
@@ -298,6 +311,11 @@ namespace LCompilers {
                 // other procedure body.
                 "global_init",
                 "function_call_in_declaration",
+                // Each defined output procedure that a formatted output
+                // statement uses gets a callback with the fixed interface
+                // the runtime formatter calls, lowered by the passes below
+                // like any other procedure.
+                "dtio_callbacks",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the
@@ -307,6 +325,11 @@ namespace LCompilers {
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
                 "dead_array_store",
+                // Parallel loops assigned to the device are fused, skewed
+                // and split while they are still loops of the source
+                // (gpu_loop_fusion.cpp, gpu_time_skew.cpp,
+                // gpu_index_set_split.cpp).
+                "gpu_loop_transforms",
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
                 "gpu_array_statements",
@@ -360,6 +383,9 @@ namespace LCompilers {
                 // device routine's result needs the shape of that argument.
                 "gpu_device_allocatable",
                 "array_op",
+                // An intrinsic assignment allocates its unallocated
+                // allocatable variable, explicitly from here on.
+                "allocate_on_assignment",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
                 "print_struct_type",
@@ -392,6 +418,15 @@ namespace LCompilers {
                 // where it next needs what a kernel wrote.
                 "gpu_launch_sync",
                 "device_launch_expand",
+                // Every array a StringFormat formats or a WRITE statement
+                // transfers, and every internal file, is passed to the
+                // runtime as its contiguous data. An array item of a READ is
+                // passed so only when it is contiguous by construction;
+                // otherwise the backend reads it in place through its
+                // descriptor. This runs after every pass above that can
+                // change the physical type of an array, and before its copy
+                // loops are lowered.
+                "string_format_array_args",
                 "do_loops",
                 "while_else",
                 // Every call the passes above can create is in place, so each
@@ -427,7 +462,11 @@ namespace LCompilers {
                 "print_list_tuple",
                 "do_loops",
                 "select_case",
-                "inline_function_calls"
+                "inline_function_calls",
+                // Only the LLVM backend formats and transfers arrays
+                // through their contiguous data; the C backend expands or
+                // rejects them itself.
+                "string_format_array_args"
             };
             _user_defined_passes.clear();
         }

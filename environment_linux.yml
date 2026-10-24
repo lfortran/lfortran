@@ -22,5 +22,6 @@ dependencies:
   - zstd-static=1.5.6
   - cmake=3.29.1
   - make=4.3
+  - shell=0.3.0
   # install libunwind if building with llvmdev > 11 only on Linux
   # - libunwind=1.7.2

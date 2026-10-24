@@ -118,6 +118,8 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )
                                         (SubroutineCall
                                             9 __lfortran_global_init_global_init_01_a
@@ -179,6 +181,8 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
+                                            .false.
                                             .false.
                                             .false.
                                         )]
@@ -494,6 +498,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -522,6 +528,8 @@
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -620,6 +628,8 @@
                         )
                         (IntegerConstant 98 (Integer 4) Decimal)
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -741,6 +751,8 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 2 a_arr)
@@ -788,6 +800,8 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
+                                            .false.
                                             .false.
                                             .false.
                                         )]
@@ -1005,6 +1019,8 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 4 b_arr)
@@ -1052,6 +1068,8 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
+                                            .false.
                                             .false.
                                             .false.
                                         )]

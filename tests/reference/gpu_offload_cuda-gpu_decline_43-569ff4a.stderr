@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support giving each gpu thread a private copy of 'y%k', which the loop defines
+  --> tests/../integration_tests/gpu_decline_43.f90:23:21
+   |
+23 |         if (i == 3) y%k = 7
+   |                     ^^^^^^^ the gpu backend does not support giving each gpu thread a private copy of 'y%k', which the loop defines

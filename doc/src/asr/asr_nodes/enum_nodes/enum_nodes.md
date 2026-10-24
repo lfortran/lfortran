@@ -27,6 +27,7 @@ intent
 logicalbinop
 memory_space
 pass_attr
+pointer_bounds_form
 presence
 reduction_op
 storage_type

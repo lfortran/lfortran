@@ -390,7 +390,7 @@ time_section "🧪 Testing fortran_mpi" '
   cd fortran_mpi
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  export OMPI_MCA_btl_tcp_if_include=lo0
+  export OMPI_MCA_btl_tcp_if_include=lo
 
   git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
 

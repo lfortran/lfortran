@@ -99,6 +99,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (SubroutineCall
                         4 chars@identity
@@ -205,6 +207,8 @@
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

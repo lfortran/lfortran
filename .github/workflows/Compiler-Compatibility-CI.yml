@@ -157,6 +157,10 @@ jobs:
         with:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
+          condarc: |
+            channels:
+              - conda-forge
+            always_copy: true
           create-args: >-
             llvmdev=${{ matrix.llvm-version }}
             bison=3.4
@@ -193,6 +197,11 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             ${{ inputs.scope == 'exhaustive' && 'openmpi=5.0.6=hb85ec53_102' || '' }}
+
+      - name: Verify macOS environment tools
+        if: contains(matrix.os, 'macos')
+        shell: bash -e -l {0}
+        run: python ci/check_macos_environment.py "$CONDA_PREFIX"
 
       # Quick's LLVM 11 compiler is a Debug build with extra checks, while
       # Exhaustive builds LLVM 11 in Release; separate keys keep them from
@@ -268,6 +277,19 @@ jobs:
             actual=$(./expr2-debug)
             echo "$actual"
             test "${actual//[[:space:]]/}" = 25
+
+      - name: Configure Linux MPI transports
+        if: runner.os == 'Linux'
+        shell: bash
+        # Hosted runners can expose RDMA devices with unsupported verbs.
+        # Select Open MPI's portable path too: UCX_TLS does not constrain OFI.
+        # Share this policy across MPI applications and coarray checks.
+        run: |
+            {
+                echo "UCX_TLS=tcp,sm,self"
+                echo "OMPI_MCA_pml=ob1"
+                echo "OMPI_MCA_btl=tcp,sm,self"
+            } >> "$GITHUB_ENV"
 
       - name: Test third party codes
         shell: bash -e -l {0}

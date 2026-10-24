@@ -178,6 +178,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 21 tempfile)
                                     Public
@@ -336,6 +338,8 @@
                                                 ()
                                                 .false.
                                                 .false.
+                                                .false.
+                                                .false.
                                             )]
                                         )]
                                         []
@@ -431,7 +435,7 @@
                                                                     Default
                                                                     (Integer 8)
                                                                     ()
-                                                                    Source
+                                                                    BindC
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -615,6 +619,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 6 s)
@@ -628,6 +634,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-spread_scalar_fortran_codegen_implied_do_loops-c2f98ff",
+    "cmd": "lfortran --pass=implied_do_loops --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/spread_scalar_fortran_codegen_implied_do_loops.f90",
+    "infile_hash": "ff5db1ed5189c872a61a0ce82a3d6be845499b3c125cb2161a2e4291",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-spread_scalar_fortran_codegen_implied_do_loops-c2f98ff.f90",
+    "stdout_hash": "f73fde212b2d72bf114c0d672dc375722adb2aa5fc53cb58574cb9b9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -114,6 +114,38 @@ inline bool is_gpu_intercepted_intrinsic(const std::string &name) {
     return false;
 }
 
+// Whether an exit or a cycle of the loop named `name` is in a loop of the
+// statements walked, so that it leaves that inner loop on its way out.
+class GpuLeavesThroughLoop
+        : public ASRUtils::BlockBodyWalkVisitor<GpuLeavesThroughLoop> {
+public:
+    const std::string name;
+    size_t depth = 0;
+    bool found = false;
+
+    explicit GpuLeavesThroughLoop(const char *name_) : name(name_) {}
+
+    void leave(const char *target) {
+        if (depth > 0 && target != nullptr && name == target) found = true;
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) { leave(x.m_stmt_name); }
+
+    void visit_Cycle(const ASR::Cycle_t &x) { leave(x.m_stmt_name); }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        depth++;
+        BlockBodyWalkVisitor::visit_DoLoop(x);
+        depth--;
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        depth++;
+        BlockBodyWalkVisitor::visit_WhileLoop(x);
+        depth--;
+    }
+};
+
 template <typename D>
 class ASRToGpuCVisitor
 {
@@ -442,6 +474,17 @@ public:
     // one `emit_kernel_signature` wrote the parameter list from.
     const ASR::gpu_kernel_layout_t *current_kernel_layout = nullptr;
 
+    // A loop of the device code being written, innermost last. `leave`
+    // names the variable an exit (1) or a cycle (2) of the loop sets when
+    // it comes from a loop inside it, which breaks out of the loops in
+    // between first; it is empty when no such exit or cycle exists.
+    struct GpuLoopFrame {
+        const char *name;
+        std::string leave;
+    };
+    std::vector<GpuLoopFrame> loop_frames;
+    size_t leave_count = 0;
+
     // How the signature spelled a layout entry. The body asks the layout
     // for the name rather than rebuilding it, so the two halves cannot
     // disagree about what a parameter is called.
@@ -618,6 +661,10 @@ public:
     // host runtime binds them. A dialect epilogue reads this back.
     std::vector<GpuKernelParam> kernel_params;
 
+    // What the kernel being emitted declares ahead of its body, which it
+    // writes once the body shows which of them it refers to.
+    std::vector<GpuDeclaration> kernel_declarations;
+
     // The spellings this instantiation emits. It is a value rather than a
     // set of static members so that a dialect can carry per-invocation state,
     // such as whether the CUDA backend is emitting for the CPU emulation.
@@ -757,6 +804,29 @@ public:
     // the initialiser leaves every reference reading whatever the thread's
     // stack happened to hold.
     void emit_named_constant_decl(ASR::Variable_t *var) {
+        // A derived-type constant device code cannot be given the value of,
+        // an array of derived-type values or one with such a component, is
+        // not declared: the kernel plan declines a loop whose device code
+        // reads one, so only one nothing reads, whose declaration would be
+        // left out anyway, gets here.
+        if (ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(var->m_type))) {
+            if (ASRUtils::is_array(var->m_type)
+                    || !ASR::is_a<ASR::StructConstant_t>(*var->m_value)) {
+                return;
+            }
+            ASR::StructConstant_t *sc =
+                ASR::down_cast<ASR::StructConstant_t>(var->m_value);
+            ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
+                sc->m_dt_sym);
+            size_t next_arg = 0;
+            if (!ASR::is_a<ASR::Struct_t>(*st)
+                    || !gpu_struct_constant_unsupported_component(
+                        ASR::down_cast<ASR::Struct_t>(st), sc, next_arg)
+                        .empty()) {
+                return;
+            }
+        }
         if (ASR::is_a<ASR::Array_t>(*var->m_type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
             int64_t total = 1;
@@ -781,12 +851,88 @@ public:
             }
             src << "};\n";
         } else {
-            src << get_indent() << "const " << gpu_type(var->m_type)
+            src << get_indent() << "const "
+                << (is_struct_type(var->m_type) ? get_struct_name(var)
+                    : gpu_type(var->m_type))
                 << " " << sanitize_name(std::string(var->m_name))
                 << " = ";
             visit_expr(var->m_value);
             src << ";\n";
         }
+    }
+
+    // The brace initialiser of the device struct `st` from the values of a
+    // derived-type constant, starting at its value `next_arg`: those of the
+    // parent's components come first, as the parent member of the device
+    // struct does. False for a component the device cannot be given a
+    // value of this way.
+    bool struct_constant_initializer(ASR::Struct_t *st,
+            ASR::StructConstant_t *sc, size_t &next_arg, std::string &init) {
+        std::string out = "{";
+        bool first = true;
+        if (st->m_parent) {
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            std::string parent_init;
+            if (!ASR::is_a<ASR::Struct_t>(*parent)
+                    || !struct_constant_initializer(
+                        ASR::down_cast<ASR::Struct_t>(parent), sc, next_arg,
+                        parent_init)) {
+                return false;
+            }
+            out += parent_init;
+            first = false;
+        }
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *mem = st->m_symtab->get_symbol(st->m_members[i]);
+            if (!mem || !ASR::is_a<ASR::Variable_t>(*mem)) continue;
+            ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
+            if (next_arg >= sc->n_args) return false;
+            ASR::expr_t *value = sc->m_args[next_arg++].m_value;
+            if (!value || ASRUtils::is_allocatable_or_pointer(mv->m_type)) {
+                return false;
+            }
+            if (!first) out += ", ";
+            first = false;
+            ASR::ttype_t *elem = ASRUtils::type_get_past_array(mv->m_type);
+            if (is_struct_type(mv->m_type)) {
+                if (is_array_type(mv->m_type) || !mv->m_type_declaration
+                        || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+                    return false;
+                }
+                ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
+                    mv->m_type_declaration);
+                if (!ASR::is_a<ASR::Struct_t>(*inner)) return false;
+                size_t inner_arg = 0;
+                std::string inner_init;
+                if (!struct_constant_initializer(
+                        ASR::down_cast<ASR::Struct_t>(inner),
+                        ASR::down_cast<ASR::StructConstant_t>(value),
+                        inner_arg, inner_init)) {
+                    return false;
+                }
+                out += inner_init;
+            } else if (is_array_type(mv->m_type)) {
+                if (!ASR::is_a<ASR::ArrayConstant_t>(*value)
+                        || (!ASR::is_a<ASR::Integer_t>(*elem)
+                            && !ASR::is_a<ASR::Real_t>(*elem))) {
+                    return false;
+                }
+                ASR::ArrayConstant_t *ac =
+                    ASR::down_cast<ASR::ArrayConstant_t>(value);
+                int64_t total = get_total_elements(mv->m_type);
+                out += "{";
+                for (int64_t k = 0; k < total; k++) {
+                    if (k > 0) out += ", ";
+                    out += ASRUtils::fetch_ArrayConstant_value(ac, k);
+                }
+                out += "}";
+            } else {
+                out += expr_str(value);
+            }
+        }
+        init = out + "}";
+        return true;
     }
 
     void emit_local_var_decl(ASR::Variable_t *var) {
@@ -3440,6 +3586,8 @@ public:
                 ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
             src << get_indent() << ret_type << " " << sanitize_name(rv->m_name) << ";\n";
         }
+        // The function writes only the declarations its body refers to.
+        std::vector<GpuDeclaration> declarations;
         // Declare Parameter (constant) variables from the function scope
         for (auto &item : fn->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -3447,7 +3595,8 @@ public:
                 item.second);
             if (var->m_storage != ASR::storage_typeType::Parameter) continue;
             if (!var->m_value) continue;
-            emit_named_constant_decl(var);
+            declarations.push_back(variable_declaration(*var,
+                [&]() { emit_named_constant_decl(var); }));
         }
         // Declare local variables (non-argument, non-return, non-parameter)
         in_inline_function = true;
@@ -3467,10 +3616,14 @@ public:
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                     item.second);
-                if (var->m_storage == ASR::storage_typeType::Parameter)
+                // A named constant whose value a pass moved into an
+                // assignment, as of a derived type, is declared here.
+                if (var->m_storage == ASR::storage_typeType::Parameter
+                        && var->m_value)
                     continue;
                 if (declared_by_signature.count(item.second)) continue;
-                emit_local_var_decl(var);
+                declarations.push_back(variable_declaration(*var,
+                    [&]() { emit_local_var_decl(var); }));
             }
         }
         // Pre-scan the inline function body for Allocate statements
@@ -3580,9 +3733,12 @@ public:
                     ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v)
                         ->m_name);
         }
-        for (size_t i = 0; i < fn->n_body; i++) {
-            visit_stmt(fn->m_body[i]);
-        }
+        std::string body = captured_source([&]() {
+            for (size_t i = 0; i < fn->n_body; i++) {
+                visit_stmt(fn->m_body[i]);
+            }
+        });
+        src << gpu_referenced_declarations(declarations, body) << body;
         current_return_name.clear();
         in_inline_function = false;
         if (fn->m_return_var) {
@@ -3602,6 +3758,23 @@ public:
         array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
+    }
+
+    // What `emit` writes to `src`, which it leaves as it was.
+    template <typename F>
+    std::string captured_source(F emit) {
+        std::stringstream saved;
+        saved.swap(src);
+        emit();
+        saved.swap(src);
+        return saved.str();
+    }
+
+    // The declaration `emit` writes for `var`.
+    template <typename F>
+    GpuDeclaration variable_declaration(const ASR::Variable_t &var, F emit) {
+        std::string name(var.m_name);
+        return {{name, sanitize_name(name)}, captured_source(emit)};
     }
 
     void emit_kernel_signature(const ASR::Function_t &x);
@@ -3656,17 +3829,70 @@ public:
         }
         for (ASR::Variable_t *var : gpu_scope_declaration_order(
                 x.m_symtab, current_vla_infos, arg_names)) {
-            emit_local_var_decl(var);
+            kernel_declarations.push_back(variable_declaration(*var,
+                [&]() { emit_local_var_decl(var); }));
         }
 
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(x.m_body[i]);
-        }
+        std::string body = captured_source([&]() {
+            for (size_t i = 0; i < x.n_body; i++) {
+                visit_stmt(x.m_body[i]);
+            }
+        });
+        src << gpu_referenced_declarations(kernel_declarations, body)
+            << body;
+        kernel_declarations.clear();
 
         indent_level--;
         src << "}\n\n";
 
         dialect.emit_kernel_epilogue(src, name, kernel_params);
+    }
+
+    // Opens a loop: one that an exit or a cycle of its own leaves from a
+    // loop inside it gets the variable that says which one did.
+    GpuLoopFrame begin_loop(const char *name, ASR::stmt_t **body,
+            size_t n_body) {
+        GpuLoopFrame frame{name, ""};
+        if (name != nullptr) {
+            GpuLeavesThroughLoop leaves(name);
+            for (size_t i = 0; i < n_body; i++) {
+                leaves.visit_stmt(*body[i]);
+            }
+            if (leaves.found) {
+                frame.leave = "__lfortran_leave_"
+                    + std::to_string(leave_count++);
+                src << get_indent() << "int " << frame.leave << " = 0;\n";
+            }
+        }
+        return frame;
+    }
+
+    // Writes the body of a loop whose header is written, and closes it.
+    // An exit or a cycle of an enclosing loop that broke out of it goes
+    // on to that loop.
+    void emit_loop_body(const GpuLoopFrame &frame, ASR::stmt_t **body,
+            size_t n_body) {
+        indent_level++;
+        loop_frames.push_back(frame);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(body[i]);
+        }
+        loop_frames.pop_back();
+        indent_level--;
+        src << get_indent() << "}\n";
+        for (size_t f = 0; f < loop_frames.size(); f++) {
+            const std::string &leave = loop_frames[f].leave;
+            if (leave.empty()) continue;
+            if (f + 1 < loop_frames.size()) {
+                src << get_indent() << "if (" << leave << " != 0) break;\n";
+            } else {
+                src << get_indent() << "if (" << leave << " == 1) break;\n";
+                src << get_indent() << "if (" << leave << " == 2) {\n";
+                src << get_indent() << "    " << leave << " = 0;\n";
+                src << get_indent() << "    continue;\n";
+                src << get_indent() << "}\n";
+            }
+        }
     }
 
     void visit_stmt(ASR::stmt_t *stmt) {
@@ -4357,19 +4583,18 @@ public:
             }
             case ASR::stmtType::WhileLoop: {
                 ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+                GpuLoopFrame frame = begin_loop(wl->m_name, wl->m_body,
+                    wl->n_body);
                 src << get_indent() << "while (";
                 visit_expr(wl->m_test);
                 src << ") {\n";
-                indent_level++;
-                for (size_t i = 0; i < wl->n_body; i++) {
-                    visit_stmt(wl->m_body[i]);
-                }
-                indent_level--;
-                src << get_indent() << "}\n";
+                emit_loop_body(frame, wl->m_body, wl->n_body);
                 break;
             }
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
+                    dl->n_body);
                 src << get_indent() << "for (";
                 visit_expr(dl->m_head.m_v);
                 src << " = ";
@@ -4387,12 +4612,41 @@ public:
                     src << "++";
                 }
                 src << ") {\n";
-                indent_level++;
-                for (size_t i = 0; i < dl->n_body; i++) {
-                    visit_stmt(dl->m_body[i]);
+                emit_loop_body(frame, dl->m_body, dl->n_body);
+                break;
+            }
+            case ASR::stmtType::Exit:
+            case ASR::stmtType::Cycle: {
+                bool is_exit = ASR::is_a<ASR::Exit_t>(*stmt);
+                const char *target = is_exit
+                    ? ASR::down_cast<ASR::Exit_t>(stmt)->m_stmt_name
+                    : ASR::down_cast<ASR::Cycle_t>(stmt)->m_stmt_name;
+                // The loop it belongs to is loop_frames[f - 1]. The
+                // offload pass turned a cycle of the offloaded loop into a
+                // return and reported the exits and cycles that have no
+                // lowering, so one of the loops being written is left.
+                size_t f = loop_frames.size();
+                if (target != nullptr && target[0] != '\0') {
+                    while (f > 0 && !(loop_frames[f - 1].name != nullptr
+                            && std::string(loop_frames[f - 1].name)
+                                == target)) {
+                        f--;
+                    }
                 }
-                indent_level--;
-                src << get_indent() << "}\n";
+                if (f == 0) {
+                    throw CodeGenError("gpu offload: an exit or a cycle "
+                        "that leaves no loop of the device code",
+                        stmt->base.loc);
+                } else if (f == loop_frames.size()) {
+                    src << get_indent()
+                        << (is_exit ? "break;\n" : "continue;\n");
+                } else {
+                    const std::string &leave = loop_frames[f - 1].leave;
+                    LCOMPILERS_ASSERT(!leave.empty());
+                    src << get_indent() << leave << " = "
+                        << (is_exit ? 1 : 2) << ";\n";
+                    src << get_indent() << "break;\n";
+                }
                 break;
             }
             case ASR::stmtType::BlockCall: {
@@ -4402,59 +4656,68 @@ public:
                 BlockNameScope block_names(*this, block->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
+                // The block writes only the declarations its body refers to.
+                std::vector<GpuDeclaration> declarations;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
                         block->m_symtab, current_vla_infos)) {
-                    // Check if this variable is a VLA backed by a workspace
-                    // buffer (populated during kernel signature generation).
-                    std::string vname(v->m_name);
-                    auto vla_it = std::find_if(
-                        current_vla_infos.begin(), current_vla_infos.end(),
-                        [&](const GpuVlaWorkspace &ws) {
-                            return ws.var == &v->base;
-                        });
-                    if (vla_it != current_vla_infos.end()) {
-                        std::string elem_type_str;
-                        ASR::ttype_t *vtype =
-                            ASRUtils::type_get_past_allocatable(v->m_type);
-                        if (ASR::is_a<ASR::Array_t>(*vtype)) {
-                            elem_type_str = gpu_type(
-                                ASR::down_cast<ASR::Array_t>(
-                                    vtype)->m_type);
-                        }
-                        if (elem_type_str.empty()
-                                || elem_type_str.find("unsupported")
-                                    != std::string::npos) {
-                            throw CodeGenError(
-                                "gpu offload: workspace '" + vname +
-                                "' has no gpu type of the same width");
-                        }
-                        // Emit a device pointer into the per-thread slice
-                        std::string extent =
-                            workspace_extent_str(*vla_it);
-                        std::string slice = workspace_slice_str(*vla_it);
-                        src << get_indent() << global_prefix()
-                            << elem_type_str << "* " << vname
-                            << " = " << gpu_workspace_buffer_name(
-                                vla_it->buffer_index)
-                            << " + " << dialect.global_thread_id()
-                            << " * ";
-                        if (vla_it->dims.size() == 1) {
-                            src << slice;
+                    declarations.push_back(variable_declaration(*v, [&]() {
+                        // Check if this variable is a VLA backed by a
+                        // workspace buffer (populated during kernel
+                        // signature generation).
+                        std::string vname(v->m_name);
+                        auto vla_it = std::find_if(
+                            current_vla_infos.begin(), current_vla_infos.end(),
+                            [&](const GpuVlaWorkspace &ws) {
+                                return ws.var == &v->base;
+                            });
+                        if (vla_it != current_vla_infos.end()) {
+                            std::string elem_type_str;
+                            ASR::ttype_t *vtype =
+                                ASRUtils::type_get_past_allocatable(v->m_type);
+                            if (ASR::is_a<ASR::Array_t>(*vtype)) {
+                                elem_type_str = gpu_type(
+                                    ASR::down_cast<ASR::Array_t>(
+                                        vtype)->m_type);
+                            }
+                            if (elem_type_str.empty()
+                                    || elem_type_str.find("unsupported")
+                                        != std::string::npos) {
+                                throw CodeGenError(
+                                    "gpu offload: workspace '" + vname +
+                                    "' has no gpu type of the same width");
+                            }
+                            // Emit a device pointer into the per-thread slice
+                            std::string extent =
+                                workspace_extent_str(*vla_it);
+                            std::string slice = workspace_slice_str(*vla_it);
+                            src << get_indent() << global_prefix()
+                                << elem_type_str << "* " << vname
+                                << " = " << gpu_workspace_buffer_name(
+                                    vla_it->buffer_index)
+                                << " + " << dialect.global_thread_id()
+                                << " * ";
+                            if (vla_it->dims.size() == 1) {
+                                src << slice;
+                            } else {
+                                src << "(" << slice << ")";
+                            }
+                            src << ";\n";
+                            local_alloc_arrays.insert(&v->base);
+                            // Record the size expression for alloc-assign
+                            // and copy-loop codegen
+                            alloc_array_size_exprs[vname] = extent;
                         } else {
-                            src << "(" << slice << ")";
+                            emit_local_var_decl(v);
                         }
-                        src << ";\n";
-                        local_alloc_arrays.insert(&v->base);
-                        // Record the size expression for alloc-assign
-                        // and copy-loop codegen
-                        alloc_array_size_exprs[vname] = extent;
-                    } else {
-                        emit_local_var_decl(v);
+                    }));
+                }
+                std::string body = captured_source([&]() {
+                    for (size_t i = 0; i < block->n_body; i++) {
+                        visit_stmt(block->m_body[i]);
                     }
-                }
-                for (size_t i = 0; i < block->n_body; i++) {
-                    visit_stmt(block->m_body[i]);
-                }
+                });
+                src << gpu_referenced_declarations(declarations, body)
+                    << body;
                 indent_level--;
                 src << get_indent() << "}\n";
                 break;
@@ -4468,13 +4731,19 @@ public:
                 BlockNameScope block_names(*this, ab->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
+                std::vector<GpuDeclaration> declarations;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
                         ab->m_symtab, current_vla_infos)) {
-                    emit_local_var_decl(v);
+                    declarations.push_back(variable_declaration(*v,
+                        [&]() { emit_local_var_decl(v); }));
                 }
-                for (size_t i = 0; i < ab->n_body; i++) {
-                    visit_stmt(ab->m_body[i]);
-                }
+                std::string body = captured_source([&]() {
+                    for (size_t i = 0; i < ab->n_body; i++) {
+                        visit_stmt(ab->m_body[i]);
+                    }
+                });
+                src << gpu_referenced_declarations(declarations, body)
+                    << body;
                 indent_level--;
                 src << get_indent() << "}\n";
                 break;
@@ -5472,6 +5741,32 @@ public:
             }
             case ASR::exprType::ArrayIsContiguous: {
                 src << "1";
+                break;
+            }
+            case ASR::exprType::StructConstant: {
+                // The value of a derived-type named constant, or of an
+                // element of one, as a temporary of its device struct: it
+                // can be the object of a component reference or the value
+                // of an assignment, where a bare brace list is not valid.
+                ASR::StructConstant_t *sc =
+                    ASR::down_cast<ASR::StructConstant_t>(expr);
+                ASR::symbol_t *st = ASRUtils::symbol_get_past_external(
+                    sc->m_dt_sym);
+                std::string init;
+                size_t next_arg = 0;
+                // The kernel plan declines a constant with a component the
+                // device cannot be given a value of this way (see
+                // gpu_struct_constant_unsupported_component).
+                if (!ASR::is_a<ASR::Struct_t>(*st)
+                        || !struct_constant_initializer(
+                            ASR::down_cast<ASR::Struct_t>(st), sc, next_arg,
+                            init)) {
+                    throw CodeGenError("gpu offload: a derived-type "
+                        "constant reached the device code with a component "
+                        "it cannot be given a value of", expr->base.loc);
+                }
+                src << struct_c_name(ASR::down_cast<ASR::Struct_t>(st))
+                    << init;
                 break;
             }
             default:

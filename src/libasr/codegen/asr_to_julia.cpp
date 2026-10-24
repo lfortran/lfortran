@@ -1859,6 +1859,10 @@ public:
         size_t n_values = 0;
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+            if (str_fmt->n_dtio_bindings > 0) {
+                throw CodeGenError("user-defined derived-type output is not "
+                    "supported by the Julia backend yet", x.base.base.loc);
+            }
             n_values = str_fmt->n_args;
         } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             visit_expr(*x.m_text);

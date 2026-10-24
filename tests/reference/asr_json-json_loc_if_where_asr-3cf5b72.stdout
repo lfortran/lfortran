@@ -1,0 +1,491 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "symtab": {
+            "node": "SymbolTable1",
+            "fields": {
+                "p": {
+                    "node": "Program",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable2",
+                            "fields": {
+                                "l": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "l",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": [],
+                                        "value": [],
+                                        "storage": "Default",
+                                        "type": {
+                                            "node": "Logical",
+                                            "fields": {
+                                                "kind": 4
+                                            },
+                                            "loc": {
+                                                "first": 10,
+                                                "last": 21,
+                                                "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                "first_line": 2,
+                                                "first_column": 1,
+                                                "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                "last_line": 2,
+                                                "last_column": 12
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": [],
+                                        "common_block": []
+                                    },
+                                    "loc": {
+                                        "first": 21,
+                                        "last": 21,
+                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                        "first_line": 2,
+                                        "first_column": 12,
+                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                        "last_line": 2,
+                                        "last_column": 12
+                                    }
+                                },
+                                "m": {
+                                    "node": "Variable",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "m",
+                                        "dependencies": [],
+                                        "intent": "Local",
+                                        "symbolic_value": [],
+                                        "value": [],
+                                        "storage": "Default",
+                                        "type": {
+                                            "node": "Allocatable",
+                                            "fields": {
+                                                "type": {
+                                                    "node": "Array",
+                                                    "fields": {
+                                                        "type": {
+                                                            "node": "Logical",
+                                                            "fields": {
+                                                                "kind": 4
+                                                            },
+                                                            "loc": {
+                                                                "first": 23,
+                                                                "last": 50,
+                                                                "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                                "first_line": 3,
+                                                                "first_column": 1,
+                                                                "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                                "last_line": 3,
+                                                                "last_column": 28
+                                                            }
+                                                        },
+                                                        "dims": [
+                                                            {
+                                                                "node": "dimension",
+                                                                "fields": {
+                                                                    "start": [],
+                                                                    "length": []
+                                                                },
+                                                                "loc": {
+                                                                    "first": 49,
+                                                                    "last": 49,
+                                                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                                    "first_line": 3,
+                                                                    "first_column": 27,
+                                                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                                    "last_line": 3,
+                                                                    "last_column": 27
+                                                                }
+                                                            }
+                                                        ],
+                                                        "physical_type": "DescriptorArray",
+                                                        "memory_space": "Global"
+                                                    },
+                                                    "loc": {
+                                                        "first": 23,
+                                                        "last": 50,
+                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "first_line": 3,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "last_line": 3,
+                                                        "last_column": 28
+                                                    }
+                                                }
+                                            },
+                                            "loc": {
+                                                "first": 23,
+                                                "last": 50,
+                                                "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                "first_line": 3,
+                                                "first_column": 1,
+                                                "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                "last_line": 3,
+                                                "last_column": 28
+                                            }
+                                        },
+                                        "type_declaration": [],
+                                        "abi": "Source",
+                                        "access": "Public",
+                                        "presence": "Required",
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false,
+                                        "is_protected": false,
+                                        "pass_attr": "NotMethod",
+                                        "self_argument": [],
+                                        "codims": [],
+                                        "common_block": []
+                                    },
+                                    "loc": {
+                                        "first": 47,
+                                        "last": 50,
+                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                        "first_line": 3,
+                                        "first_column": 25,
+                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                        "last_line": 3,
+                                        "last_column": 28
+                                    }
+                                }
+                            }
+                        },
+                        "name": "p",
+                        "dependencies": [],
+                        "body": [
+                            {
+                                "node": "If",
+                                "fields": {
+                                    "name": [],
+                                    "test": {
+                                        "node": "Var",
+                                        "fields": {
+                                            "v": "l (SymbolTable2)"
+                                        },
+                                        "loc": {
+                                            "first": 56,
+                                            "last": 56,
+                                            "first_filename": "tests/json_loc_if_where_asr.f90",
+                                            "first_line": 4,
+                                            "first_column": 5,
+                                            "last_filename": "tests/json_loc_if_where_asr.f90",
+                                            "last_line": 4,
+                                            "last_column": 5
+                                        }
+                                    },
+                                    "body": [
+                                        {
+                                            "node": "Assignment",
+                                            "fields": {
+                                                "target": {
+                                                    "node": "Var",
+                                                    "fields": {
+                                                        "v": "l (SymbolTable2)"
+                                                    },
+                                                    "loc": {
+                                                        "first": 66,
+                                                        "last": 66,
+                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "first_line": 5,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "last_line": 5,
+                                                        "last_column": 3
+                                                    }
+                                                },
+                                                "value": {
+                                                    "node": "Var",
+                                                    "fields": {
+                                                        "v": "l (SymbolTable2)"
+                                                    },
+                                                    "loc": {
+                                                        "first": 70,
+                                                        "last": 70,
+                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "first_line": 5,
+                                                        "first_column": 7,
+                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "last_line": 5,
+                                                        "last_column": 7
+                                                    }
+                                                },
+                                                "overloaded": [],
+                                                "realloc_lhs": false,
+                                                "move_allocation": false,
+                                                "new_target": false,
+                                                "new_allocation": false
+                                            },
+                                            "loc": {
+                                                "first": 66,
+                                                "last": 70,
+                                                "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                "first_line": 5,
+                                                "first_column": 3,
+                                                "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                "last_line": 5,
+                                                "last_column": 7
+                                            }
+                                        }
+                                    ],
+                                    "orelse": []
+                                },
+                                "loc": {
+                                    "first": 52,
+                                    "last": 77,
+                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                    "first_line": 4,
+                                    "first_column": 1,
+                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                    "last_line": 6,
+                                    "last_column": 6
+                                }
+                            },
+                            {
+                                "node": "Where",
+                                "fields": {
+                                    "test": {
+                                        "node": "LogicalBinOp",
+                                        "fields": {
+                                            "left": {
+                                                "node": "Var",
+                                                "fields": {
+                                                    "v": "m (SymbolTable2)"
+                                                },
+                                                "loc": {
+                                                    "first": 86,
+                                                    "last": 86,
+                                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "first_line": 7,
+                                                    "first_column": 8,
+                                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "last_line": 7,
+                                                    "last_column": 8
+                                                }
+                                            },
+                                            "op": "Eqv",
+                                            "right": {
+                                                "node": "LogicalConstant",
+                                                "fields": {
+                                                    "value": true,
+                                                    "type": {
+                                                        "node": "Logical",
+                                                        "fields": {
+                                                            "kind": 4
+                                                        },
+                                                        "loc": {
+                                                            "first": 79,
+                                                            "last": 105,
+                                                            "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                            "first_line": 7,
+                                                            "first_column": 1,
+                                                            "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                            "last_line": 9,
+                                                            "last_column": 9
+                                                        }
+                                                    }
+                                                },
+                                                "loc": {
+                                                    "first": 79,
+                                                    "last": 105,
+                                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "first_line": 7,
+                                                    "first_column": 1,
+                                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "last_line": 9,
+                                                    "last_column": 9
+                                                }
+                                            },
+                                            "type": {
+                                                "node": "Allocatable",
+                                                "fields": {
+                                                    "type": {
+                                                        "node": "Array",
+                                                        "fields": {
+                                                            "type": {
+                                                                "node": "Logical",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 23,
+                                                                    "last": 50,
+                                                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                                    "first_line": 3,
+                                                                    "first_column": 1,
+                                                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                                    "last_line": 3,
+                                                                    "last_column": 28
+                                                                }
+                                                            },
+                                                            "dims": [
+                                                                {
+                                                                    "node": "dimension",
+                                                                    "fields": {
+                                                                        "start": [],
+                                                                        "length": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 49,
+                                                                        "last": 49,
+                                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                                        "first_line": 3,
+                                                                        "first_column": 27,
+                                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                                        "last_line": 3,
+                                                                        "last_column": 27
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "physical_type": "DescriptorArray",
+                                                            "memory_space": "Global"
+                                                        },
+                                                        "loc": {
+                                                            "first": 23,
+                                                            "last": 50,
+                                                            "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                            "first_line": 3,
+                                                            "first_column": 1,
+                                                            "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                            "last_line": 3,
+                                                            "last_column": 28
+                                                        }
+                                                    }
+                                                },
+                                                "loc": {
+                                                    "first": 23,
+                                                    "last": 50,
+                                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "first_line": 3,
+                                                    "first_column": 1,
+                                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                    "last_line": 3,
+                                                    "last_column": 28
+                                                }
+                                            },
+                                            "value": []
+                                        },
+                                        "loc": {
+                                            "first": 79,
+                                            "last": 105,
+                                            "first_filename": "tests/json_loc_if_where_asr.f90",
+                                            "first_line": 7,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_if_where_asr.f90",
+                                            "last_line": 9,
+                                            "last_column": 9
+                                        }
+                                    },
+                                    "body": [
+                                        {
+                                            "node": "Assignment",
+                                            "fields": {
+                                                "target": {
+                                                    "node": "Var",
+                                                    "fields": {
+                                                        "v": "m (SymbolTable2)"
+                                                    },
+                                                    "loc": {
+                                                        "first": 91,
+                                                        "last": 91,
+                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "first_line": 8,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "last_line": 8,
+                                                        "last_column": 3
+                                                    }
+                                                },
+                                                "value": {
+                                                    "node": "Var",
+                                                    "fields": {
+                                                        "v": "m (SymbolTable2)"
+                                                    },
+                                                    "loc": {
+                                                        "first": 95,
+                                                        "last": 95,
+                                                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "first_line": 8,
+                                                        "first_column": 7,
+                                                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                        "last_line": 8,
+                                                        "last_column": 7
+                                                    }
+                                                },
+                                                "overloaded": [],
+                                                "realloc_lhs": false,
+                                                "move_allocation": false,
+                                                "new_target": false,
+                                                "new_allocation": false
+                                            },
+                                            "loc": {
+                                                "first": 91,
+                                                "last": 95,
+                                                "first_filename": "tests/json_loc_if_where_asr.f90",
+                                                "first_line": 8,
+                                                "first_column": 3,
+                                                "last_filename": "tests/json_loc_if_where_asr.f90",
+                                                "last_line": 8,
+                                                "last_column": 7
+                                            }
+                                        }
+                                    ],
+                                    "orelse": []
+                                },
+                                "loc": {
+                                    "first": 79,
+                                    "last": 105,
+                                    "first_filename": "tests/json_loc_if_where_asr.f90",
+                                    "first_line": 7,
+                                    "first_column": 1,
+                                    "last_filename": "tests/json_loc_if_where_asr.f90",
+                                    "last_line": 9,
+                                    "last_column": 9
+                                }
+                            }
+                        ],
+                        "global_init": []
+                    },
+                    "loc": {
+                        "first": 0,
+                        "last": 117,
+                        "first_filename": "tests/json_loc_if_where_asr.f90",
+                        "first_line": 1,
+                        "first_column": 1,
+                        "last_filename": "tests/json_loc_if_where_asr.f90",
+                        "last_line": 10,
+                        "last_column": 11
+                    }
+                }
+            }
+        },
+        "items": [],
+        "global_init": []
+    },
+    "loc": {
+        "first": 0,
+        "last": 117,
+        "first_filename": "tests/json_loc_if_where_asr.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/json_loc_if_where_asr.f90",
+        "last_line": 10,
+        "last_column": 11
+    }
+}

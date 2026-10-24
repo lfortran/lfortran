@@ -1429,7 +1429,7 @@ public:
         ASR::expr_t *base = field(h, h.base, loc);
         before.push_back(ASRUtils::STMT(ASR::make_Associate_t(al, loc,
             view, elements(h, b.Add(base, b.i32(1)),
-                b.Add(field(h, h.base, loc), count(h, loc)), loc))));
+                b.Add(field(h, h.base, loc), count(h, loc)), loc), ASR::pointer_bounds_formType::NoPointerBounds)));
         views[ASR::down_cast<ASR::Var_t>(view)->m_v] = h.name;
         return var(ASR::down_cast<ASR::Var_t>(view)->m_v, loc);
     }

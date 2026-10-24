@@ -65,8 +65,20 @@
               )
               :dims [
                 (dimension
-                  :start nil
-                  :length nil
+                  :start (IntegerConstant
+                    :n 1
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :length (IntegerConstant
+                    :n 4
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
                 )
               ]
               :physical_type :FixedSizeArray
@@ -177,6 +189,8 @@
             :scratch []
             :stop_status nil
             :stop_replay []
+            :overwritten []
+            :overwritten_if []
           )
           (GpuSync)
         ]

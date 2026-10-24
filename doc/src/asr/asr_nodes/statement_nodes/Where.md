@@ -53,6 +53,8 @@ body cannot change which elements the `elsewhere` applies to.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
+      :new_allocation false
     )
   ]
   :orelse [
@@ -70,6 +72,8 @@ body cannot change which elements the `elsewhere` applies to.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
+      :new_allocation false
     )
   ]
 )

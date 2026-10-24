@@ -1176,9 +1176,16 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define TRUE(x, l) make_Logical_t(p.m_a, l, true, str2str_null(p.m_a, x))
 #define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
+// Parentheses are kept around a name, an array element or section and a
+// function reference (the parser cannot tell the last ones apart): around a
+// designator, `(x)` is an expression, not a variable (F2018 R1001, 9.1), so
+// semantics needs to know about them, e.g. for an ASSOCIATE selector. Around
+// any other expression they only group and are dropped.
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {
-        case LCompilers::LFortran::AST::exprType::Name: {
+        case LCompilers::LFortran::AST::exprType::Name:
+        case LCompilers::LFortran::AST::exprType::FuncCallOrArray:
+        case LCompilers::LFortran::AST::exprType::CoarrayRef: {
             return make_Parenthesis_t(al, loc, op); }
         default : { return (ast_t*)op; }
     }
@@ -2220,28 +2227,25 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 msg2);
         } else if (end_token == yytokentype::KW_COMPLEX) {
-            if (a_kind == 16) {
+            // complex*N has kind N/2 (the size of each component); suggest
+            // only for the supported kinds, unsupported ones are reported
+            // by the semantic phase
+            if (a_kind == 8 || a_kind == 16) {
+                std::string k = std::to_string(a_kind / 2);
                 diagnostics.parser_style_label(
-                "Use complex(8) instead of complex*16",
+                "Use complex(" + k + ") instead of complex*" + std::to_string(a_kind),
                 {loc},
-                "help: write this as 'complex(8)'");
-            } else {
-                diagnostics.parser_style_label(
-                "Use complex(4) instead of complex*8",
-                {loc},
-                "help: write this as 'complex(4)'");
+                "help: write this as 'complex(" + k + ")'");
             }
         } else if (end_token == yytokentype::KW_LOGICAL) {
-            if (a_kind == 4) {
+            // suggest only for the supported kinds, unsupported ones are
+            // reported by the semantic phase
+            if (a_kind == 1 || a_kind == 2 || a_kind == 4 || a_kind == 8) {
+                std::string k = std::to_string(a_kind);
                 diagnostics.parser_style_label(
-                "Use logical(4) instead of logical*4",
+                "Use logical(" + k + ") instead of logical*" + k,
                 {loc},
-                "help: write this as 'logical(4)'");
-            } else {
-                diagnostics.parser_style_label(
-                "Use logical(8) instead of logical*8",
-                {loc},
-                "help: write this as 'logical(8)'");
+                "help: write this as 'logical(" + k + ")'");
             }
         } else if (end_token == yytokentype::KW_BYTE) {
             diagnostics.parser_style_label(

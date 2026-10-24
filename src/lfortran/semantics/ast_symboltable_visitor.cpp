@@ -859,6 +859,7 @@ public:
         ScopingUnitScope scoping_unit_scope(*this,
             x.class_type == AST::modType::Submodule
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
+        PendingAttributeScope pending_attribute_scope(*this);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
@@ -1284,9 +1285,11 @@ public:
             return;
         }
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
+        PendingAttributeScope pending_attribute_scope(*this);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
@@ -1558,19 +1561,12 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         std::vector<std::string> copy_external_procedure = external_procedures;
         external_procedures.clear();
-        std::vector<std::string> symbols_to_erase;
         for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
             bool is_external = check_is_external(item.first, old_scope);
             if (is_external) {
                 external_procedures.push_back(item.first);
-                // remove it from old_scope
-                symbols_to_erase.push_back(item.first);
             }
-        }
-
-        for (auto it: symbols_to_erase) {
-            old_scope->erase_symbol(it);
         }
 
         if (is_master) {
@@ -1868,8 +1864,10 @@ public:
             throw SemanticAbort();
         }
 
+        PendingAttributeScope pending_attribute_scope(*this);
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        record_procedure_references(current_scope, x.m_items, x.n_items);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
@@ -2151,6 +2149,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        PendingAttributeScope pending_attribute_scope(*this);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2234,6 +2233,7 @@ public:
             current_procedure_args.clear();
         }
 
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
@@ -2248,7 +2248,9 @@ public:
             current_procedure_args.push_back("__lfortran_alt_ret");
         }
         std::string current_procedure_result_copy = current_procedure_result;
+        SymbolTable *current_procedure_result_scope_copy = current_procedure_result_scope;
         current_procedure_result.clear();
+        current_procedure_result_scope = nullptr;
         // Restored on exit: the enclosing procedure (the host of an internal
         // procedure or of an interface body) keeps its own ABI.
         ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
@@ -2596,6 +2598,10 @@ public:
             }
         }
 
+        if (is_pure) {
+            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
+        }
+
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -2671,6 +2677,7 @@ public:
            matter since we would have already checked the intent */
         current_procedure_args.clear();
         current_procedure_result = current_procedure_result_copy;
+        current_procedure_result_scope = current_procedure_result_scope_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
 
         // print_implicit_dictionary(implicit_dictionary);
@@ -2795,6 +2802,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        PendingAttributeScope pending_attribute_scope(*this);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2879,12 +2887,15 @@ public:
             current_procedure_args.clear();
         }
 
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
         }
         std::string current_procedure_result_copy = current_procedure_result;
+        SymbolTable *current_procedure_result_scope_copy = current_procedure_result_scope;
+        current_procedure_result_scope = current_scope;
         if (x.m_return_var == nullptr) {
             current_procedure_result = sym_name;
         } else if (AST::is_a<AST::Name_t>(*x.m_return_var)) {
@@ -3422,6 +3433,10 @@ public:
             is_pure = true;
         }
 
+        if (is_pure) {
+            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
+        }
+
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -3607,6 +3622,7 @@ public:
         }
         current_procedure_args.clear();
         current_procedure_result = current_procedure_result_copy;
+        current_procedure_result_scope = current_procedure_result_scope_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
@@ -4236,6 +4252,7 @@ public:
     // storage that every view of a block shares.
     void visit_BlockData(const AST::BlockData_t& x) {
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        PendingAttributeScope pending_attribute_scope(*this);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         std::string name;
@@ -4803,11 +4820,13 @@ public:
 
             // Resolve AST node + set it in the holder.
             bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
+            ASR::expr_t* call = nullptr;
             try {
                 visit_expr(*funcCall);
-                *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+                call = ASRUtils::EXPR(tmp); tmp=nullptr;
+                *expr_holder = call;
                 // Invoke the call to the CheckFunc
-                if( CheckFunc ) CheckFunc(*expr_holder);
+                if( CheckFunc ) CheckFunc(call);
             } catch (SemanticAbort &) {
                 current_scope = current_scope_copy;
                 in_Subroutine = in_subroutine_or_function_copy;
@@ -4852,8 +4871,8 @@ public:
             // expr_holder may resolve to non-FunctionCall nodes (e.g.
             // StructInstanceMember for type-bound member access in dimension
             // expressions), so we guard instead of asserting FunctionCall_t.
-            if (ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
-                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+            if (ASR::is_a<ASR::FunctionCall_t>(*call)) {
+                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(call);
                 if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
                     diag.add(diag::Diagnostic(
                         "Variable declaration is calling its function scope recursively",
@@ -4894,6 +4913,33 @@ public:
             curr = ASR::down_cast<ASR::Struct_t>(parent_sym);
         }
         return nullptr;
+    }
+
+    // The binding `proc_name` of `clss`; an inherited one is copied into `clss` for codegen.
+    ASR::symbol_t* resolve_and_copy_type_bound_proc(
+            ASR::Struct_t *clss, const std::string &proc_name) {
+        ASR::symbol_t *proc_sym = resolve_type_bound_proc_in_parent_chain(clss, proc_name);
+        if (proc_sym == nullptr || ASRUtils::symbol_parent_symtab(proc_sym) == clss->m_symtab) {
+            return proc_sym;
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym));
+        ASR::StructMethodDeclaration_t *parent_decl
+            = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
+        std::string local_name = ASRUtils::symbol_name(proc_sym);
+        ASR::symbol_t *local_sym = clss->m_symtab->get_symbol(local_name);
+        if (local_sym == nullptr) {
+            ASR::symbol_t *proc = ASRUtils::import_symbol(al, parent_decl->m_proc,
+                clss->m_symtab->parent, ASR::accessType::Private, "1_");
+            ASRUtils::insert_module_dependency(proc, al, current_module_dependencies);
+            local_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
+                al, proc_sym->base.loc, clss->m_symtab,
+                parent_decl->m_name, parent_decl->m_self_argument,
+                parent_decl->m_proc_name, proc,
+                parent_decl->m_abi, parent_decl->m_is_deferred,
+                parent_decl->m_is_nopass));
+            clss->m_symtab->add_symbol(local_name, local_sym);
+        }
+        return local_sym;
     }
 
     void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
@@ -4943,31 +4989,8 @@ public:
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());
                 for( std::string &cand_proc: pname.second ) {
-                    ASR::symbol_t *cand_proc_sym
-                        = resolve_type_bound_proc_in_parent_chain(clss, cand_proc);
+                    ASR::symbol_t *cand_proc_sym = resolve_and_copy_type_bound_proc(clss, cand_proc);
                     if (cand_proc_sym != nullptr) {
-                        if (ASRUtils::symbol_parent_symtab(cand_proc_sym) != clss->m_symtab) {
-                            // Inherited binding lives in a parent type's scope.
-                            // Copy the StructMethodDeclaration into the child's
-                            // symtab so that codegen never sees an ExternalSymbol
-                            // where it expects a StructMethodDeclaration.
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*cand_proc_sym));
-                            ASR::StructMethodDeclaration_t *parent_decl
-                                = ASR::down_cast<ASR::StructMethodDeclaration_t>(cand_proc_sym);
-                            std::string cand_proc_name = ASRUtils::symbol_name(cand_proc_sym);
-                            ASR::symbol_t *local_proc_sym = clss->m_symtab->get_symbol(cand_proc_name);
-                            if (local_proc_sym == nullptr) {
-                                ASR::asr_t *new_decl = ASR::make_StructMethodDeclaration_t(
-                                    al, cand_proc_sym->base.loc, clss->m_symtab,
-                                    parent_decl->m_name, parent_decl->m_self_argument,
-                                    parent_decl->m_proc_name, parent_decl->m_proc,
-                                    parent_decl->m_abi, parent_decl->m_is_deferred,
-                                    parent_decl->m_is_nopass);
-                                local_proc_sym = ASR::down_cast<ASR::symbol_t>(new_decl);
-                                clss->m_symtab->add_symbol(cand_proc_name, local_proc_sym);
-                            }
-                            cand_proc_sym = local_proc_sym;
-                        }
                         cand_procs.push_back(al, cand_proc_sym);
                     } else {
                         diag.add(diag::Diagnostic(
@@ -5012,6 +5035,85 @@ public:
             }
         }
         generic_class_procedures.clear();
+        std::set<ASR::Struct_t*> done;
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                inherit_generic_class_procedures(
+                    ASR::down_cast<ASR::Struct_t>(item.second), done);
+            }
+        }
+    }
+
+    // Merges the parent's generic bindings into `clss`, with each specific binding taken from `clss`.
+    void inherit_generic_class_procedures(ASR::Struct_t *clss,
+            std::set<ASR::Struct_t*> &done) {
+        if (clss->m_parent == nullptr || !done.insert(clss).second) {
+            return;
+        }
+        ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(clss->m_parent));
+        if (parent->m_symtab->parent == current_scope) {
+            inherit_generic_class_procedures(parent, done);
+        }
+        auto generic_procs = [](ASR::symbol_t *generic) {
+            if (ASR::is_a<ASR::CustomOperator_t>(*generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(generic);
+                return std::make_pair(op->m_procs, op->n_procs);
+            }
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+            return std::make_pair(gp->m_procs, gp->n_procs);
+        };
+        for (auto &item : parent->m_symtab->get_scope()) {
+            ASR::symbol_t *parent_generic = item.second;
+            if (!ASR::is_a<ASR::CustomOperator_t>(*parent_generic) &&
+                    !ASR::is_a<ASR::GenericProcedure_t>(*parent_generic)) {
+                continue;
+            }
+            ASR::symbol_t *own_generic = clss->m_symtab->get_symbol(item.first);
+            if (own_generic != nullptr && own_generic->type != parent_generic->type) {
+                continue;
+            }
+            Vec<ASR::symbol_t*> procs;
+            procs.reserve(al, generic_procs(parent_generic).second);
+            std::set<std::string> proc_names;
+            for (ASR::symbol_t *generic : {parent_generic, own_generic}) {
+                if (generic == nullptr) {
+                    continue;
+                }
+                auto [m_procs, n_procs] = generic_procs(generic);
+                for (size_t i = 0; i < n_procs; i++) {
+                    std::string proc_name = ASRUtils::symbol_name(m_procs[i]);
+                    if (!proc_names.insert(proc_name).second) {
+                        continue;
+                    }
+                    ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
+                        ? proc : m_procs[i]);
+                }
+            }
+            if (own_generic == nullptr) {
+                ASR::asr_t *v;
+                if (ASR::is_a<ASR::CustomOperator_t>(*parent_generic)) {
+                    v = ASR::make_CustomOperator_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::CustomOperator_t>(parent_generic)->m_access);
+                } else {
+                    v = ASR::make_GenericProcedure_t(al, parent_generic->base.loc,
+                        clss->m_symtab, s2c(al, item.first), procs.p, procs.size(),
+                        ASR::down_cast<ASR::GenericProcedure_t>(parent_generic)->m_access);
+                }
+                clss->m_symtab->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*own_generic)) {
+                ASR::CustomOperator_t *op = ASR::down_cast<ASR::CustomOperator_t>(own_generic);
+                op->m_procs = procs.p;
+                op->n_procs = procs.size();
+            } else {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(own_generic);
+                gp->m_procs = procs.p;
+                gp->n_procs = procs.size();
+            }
+        }
+        sync_pdt_specialization_symbols(clss, current_scope);
     }
 
     bool is_pdt_instantiation_of(ASR::symbol_t* candidate_sym, ASR::symbol_t* template_sym) {
@@ -5873,8 +5975,8 @@ public:
                         throw SemanticAbort();
                     }
                 }
-                    proc_sym = ASRUtils::symbol_get_past_external(proc_sym);
-                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(proc_sym));
                 // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
                 //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
                 // if (!is_deferred &&
@@ -6261,6 +6363,7 @@ public:
         }
         RequirementScope requirement_scope(*this);
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        PendingAttributeScope pending_attribute_scope(*this);
 
         std::vector<std::string> requirement_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -6630,6 +6733,7 @@ public:
             throw SemanticAbort();
         }
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Template);
+        PendingAttributeScope pending_attribute_scope(*this);
         TemplateDefinitionScope template_definition_scope(*this, true);
         std::string template_name = to_lower(std::string(x.m_name));
         std::vector<std::string> template_args;

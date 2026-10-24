@@ -613,6 +613,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 matveca~fpcast_ptr

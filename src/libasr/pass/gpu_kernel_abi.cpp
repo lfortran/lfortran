@@ -341,7 +341,7 @@ public:
         if (!kernel.m_gpu) {
             GpuDecline decline;
             if (!gpu_create_kernel_layout(al, kernel, x.m_args, x.n_args,
-                    decline)) {
+                    decline, options.fast)) {
                 report_gpu_decline(options, x.base.base.loc, decline);
                 return;
             }
@@ -431,6 +431,126 @@ public:
     }
 };
 
+// The storage an actual argument of a launch designates: a variable and
+// the chain of components of it the actual selects, outermost first. Only
+// storage no other designator can reach is tracked: a variable that is not
+// a pointer, not a target, not in a common block or equivalence and not an
+// associate name, reached through components that are not pointers either.
+// Two such designators of different variables never share storage, and a
+// variable of conforming code is not also reached through a dummy argument
+// it is associated with where either is written (Fortran 2023, the
+// restrictions on entities associated with dummy arguments).
+struct GpuArgumentStorage {
+    ASR::symbol_t *variable = nullptr;
+    std::vector<ASR::Variable_t*> components;
+
+    explicit GpuArgumentStorage(ASR::expr_t *e) {
+        std::vector<ASR::Variable_t*> chain;
+        while (e != nullptr) {
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(e);
+                ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                    member->m_m);
+                if (!ASR::is_a<ASR::Variable_t>(*m)) return;
+                auto *component = ASR::down_cast<ASR::Variable_t>(m);
+                if (ASRUtils::is_pointer(component->m_type)) return;
+                chain.push_back(component);
+                e = member->m_v;
+            } else if (ASR::is_a<ASR::Var_t>(*e)) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*s)) return;
+                auto *var = ASR::down_cast<ASR::Variable_t>(s);
+                SymbolTable *scope = var->m_parent_symtab;
+                if (ASRUtils::is_pointer(var->m_type) || var->m_target_attr
+                        || var->m_common_block != nullptr
+                        || (scope->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                            ASR::is_a<ASR::AssociateBlock_t>(
+                                *ASR::down_cast<ASR::symbol_t>(
+                                    scope->asr_owner)))) {
+                    return;
+                }
+                variable = s;
+                components.assign(chain.rbegin(), chain.rend());
+                return;
+            } else {
+                return;
+            }
+        }
+    }
+
+    bool tracked() const { return variable != nullptr; }
+
+    // Whether this and `other` are known to share no storage: different
+    // variables, or components of one variable that part ways, two
+    // components of the same derived type. A parent component is declared
+    // in the extension, not alongside the components it holds.
+    bool disjoint(const GpuArgumentStorage &other) const {
+        if (!tracked() || !other.tracked()) return false;
+        if (variable != other.variable) return true;
+        size_t n = std::min(components.size(), other.components.size());
+        for (size_t i = 0; i < n; i++) {
+            ASR::Variable_t *a = components[i], *b = other.components[i];
+            if (a == b) continue;
+            return a->m_parent_symtab == b->m_parent_symtab;
+        }
+        return false;
+    }
+};
+
+// Marks each buffer of `kernel` that no other buffer can alias in any of
+// its `launches`, so the device code may say so (`__restrict__`). A buffer
+// that is only read may share storage with another one that is only read.
+// Every buffer of one actual argument -- an array of a derived type and the
+// data of its components -- counts as that actual's storage.
+void gpu_mark_noalias_buffers(ASR::Function_t &kernel,
+        const std::vector<const ASR::GpuKernelLaunch_t*> &launches) {
+    ASR::gpu_kernel_layout_t &layout = *kernel.m_gpu;
+    for (size_t i = 0; i < layout.n_buffers; i++) {
+        layout.m_buffers[i].m_noalias = !launches.empty();
+    }
+    for (const ASR::GpuKernelLaunch_t *launch : launches) {
+        std::vector<GpuArgumentStorage> storage;
+        for (size_t i = 0; i < layout.n_buffers; i++) {
+            size_t index = layout.m_buffers[i].m_argument_index;
+            LCOMPILERS_ASSERT(index < launch->n_args);
+            storage.emplace_back(launch->m_args[index].m_value);
+        }
+        for (size_t i = 0; i < layout.n_buffers; i++) {
+            ASR::gpu_kernel_argument_t &arg = layout.m_buffers[i];
+            if (!storage[i].tracked()) {
+                arg.m_noalias = false;
+                continue;
+            }
+            for (size_t j = 0; j < layout.n_buffers && arg.m_noalias; j++) {
+                const ASR::gpu_kernel_argument_t &other = layout.m_buffers[j];
+                if (j == i || (!arg.m_written && !other.m_written)) continue;
+                if (other.m_argument_index == arg.m_argument_index
+                        || !storage[i].disjoint(storage[j])) {
+                    arg.m_noalias = false;
+                }
+            }
+        }
+    }
+}
+
+class GpuKernelLaunches : public ASR::BaseWalkVisitor<GpuKernelLaunches> {
+public:
+    std::map<ASR::Function_t*,
+        std::vector<const ASR::GpuKernelLaunch_t*>> launches;
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        launches[ASR::down_cast<ASR::Function_t>(x.m_kernel)].push_back(&x);
+    }
+};
+
 } // namespace
 
 ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
@@ -452,13 +572,16 @@ ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     return binder.valid ? result : nullptr;
 }
 
-GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
-        const ASR::Function_t &kernel) {
-    GpuKernelPrelude prelude;
-    std::map<ASR::symbol_t*, ASR::expr_t*> values;
+// Follows the statements of a kernel's prelude from `body` on, adding to
+// `values` and `exits` (see GpuKernelPrelude), and returns how many it
+// followed: it stops at the first statement that is not part of one.
+static size_t gpu_follow_prelude(Allocator &al, const ASR::Function_t &kernel,
+        ASR::stmt_t **body, size_t n_body,
+        std::map<ASR::symbol_t*, ASR::expr_t*> &values,
+        std::vector<ASR::expr_t*> &exits) {
     size_t n = 0;
-    for (; n < kernel.n_body; n++) {
-        ASR::stmt_t *stmt = kernel.m_body[n];
+    for (; n < n_body; n++) {
+        ASR::stmt_t *stmt = body[n];
         // Where a component of a derived-type local is stored says nothing
         // about the iteration (see gpu_device_struct_storage.h).
         ASR::StructInstanceMember_t *component = nullptr;
@@ -466,14 +589,62 @@ GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
         if (gpu_struct_component_storage(stmt, component, storage)) continue;
         if (ASR::is_a<ASR::If_t>(*stmt)) {
             ASR::If_t *test = ASR::down_cast<ASR::If_t>(stmt);
-            if (test->n_body != 1 || test->n_orelse != 0 ||
-                    !ASR::is_a<ASR::Return_t>(*test->m_body[0])) {
+            GpuThreadExpressionWriter writer(al, kernel, values, false);
+            ASR::expr_t *condition = writer.write(test->m_test);
+            if (condition == nullptr) break;
+            if (test->n_body == 1 && test->n_orelse == 0 &&
+                    ASR::is_a<ASR::Return_t>(*test->m_body[0])) {
+                exits.push_back(condition);
+                continue;
+            }
+            // A choice the launch makes for every thread alike, such as
+            // the numbering of a tiled launch (gpu_offload.cpp): each
+            // branch has to be a prelude of its own. A scalar then has the
+            // value of the branch taken, and a branch's exit applies when
+            // that branch is taken.
+            std::map<ASR::symbol_t*, ASR::expr_t*> then_values = values,
+                else_values = values;
+            std::vector<ASR::expr_t*> then_exits, else_exits;
+            if (gpu_follow_prelude(al, kernel, test->m_body, test->n_body,
+                        then_values, then_exits) != test->n_body
+                    || gpu_follow_prelude(al, kernel, test->m_orelse,
+                        test->n_orelse, else_values, else_exits)
+                        != test->n_orelse) {
                 break;
             }
-            GpuThreadExpressionWriter writer(al, kernel, values, false);
-            ASR::expr_t *exit = writer.write(test->m_test);
-            if (exit == nullptr) break;
-            prelude.exits.push_back(exit);
+            const Location &loc = stmt->base.loc;
+            ASR::ttype_t *logical_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t *otherwise = ASRUtils::EXPR(ASR::make_LogicalNot_t(
+                al, loc, condition, logical_type, nullptr));
+            for (ASR::expr_t *exit : then_exits) {
+                exits.push_back(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                    loc, condition, ASR::logicalbinopType::And, exit,
+                    logical_type, nullptr)));
+            }
+            for (ASR::expr_t *exit : else_exits) {
+                exits.push_back(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                    loc, otherwise, ASR::logicalbinopType::And, exit,
+                    logical_type, nullptr)));
+            }
+            std::set<ASR::symbol_t*> symbols;
+            for (auto &value : then_values) symbols.insert(value.first);
+            for (auto &value : else_values) symbols.insert(value.first);
+            for (auto &value : values) symbols.insert(value.first);
+            for (ASR::symbol_t *symbol : symbols) {
+                auto in_then = then_values.find(symbol);
+                auto in_else = else_values.find(symbol);
+                if (in_then == then_values.end()
+                        || in_else == else_values.end()) {
+                    values.erase(symbol);
+                } else if (in_then->second == in_else->second) {
+                    values[symbol] = in_then->second;
+                } else {
+                    values[symbol] = ASRUtils::EXPR(ASR::make_IfExp_t(al,
+                        loc, condition, in_then->second, in_else->second,
+                        ASRUtils::expr_type(in_then->second), nullptr));
+                }
+            }
             continue;
         }
         if (!ASR::is_a<ASR::Assignment_t>(*stmt)) break;
@@ -492,6 +663,15 @@ GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
         values.erase(target);
         if (value != nullptr) values[target] = value;
     }
+    return n;
+}
+
+GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
+        const ASR::Function_t &kernel) {
+    GpuKernelPrelude prelude;
+    std::map<ASR::symbol_t*, ASR::expr_t*> values;
+    size_t n = gpu_follow_prelude(al, kernel, kernel.m_body, kernel.n_body,
+        values, prelude.exits);
     auto rest = gpu_symbols_changed_in(kernel.m_body + n, kernel.n_body - n);
     for (auto &value : values) {
         if (!gpu_writes_symbol(*rest, value.first)) {
@@ -637,6 +817,14 @@ void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!gpu_device_capabilities(options).device_selected()) return;
     FinalizeGpuKernels finalizer(al, options);
     finalizer.visit_TranslationUnit(unit);
+
+    GpuKernelLaunches launches;
+    launches.visit_TranslationUnit(unit);
+    for (auto &kernel : launches.launches) {
+        if (kernel.first->m_gpu) {
+            gpu_mark_noalias_buffers(*kernel.first, kernel.second);
+        }
+    }
 
     // The host code that sizes a workspace can call a function, such as
     // the routine shared lowering gives `maxval`.

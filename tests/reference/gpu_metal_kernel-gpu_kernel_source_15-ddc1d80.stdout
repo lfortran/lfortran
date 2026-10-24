@@ -1,0 +1,62 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline float twice_gpu_11(float v) {
+    float twice;
+    twice = (((float)2) * v);
+    return twice;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    float a;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __dim_z_0;
+    int __lb_z_0;
+    int __dim_z_1;
+    int __lb_z_1;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* x [[buffer(0)]],
+    device float* y [[buffer(1)]],
+    device float* z [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    float a = __scalar_args.a;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __dim_z_0 = __scalar_args.__dim_z_0;
+    int __lb_z_0 = __scalar_args.__lb_z_0;
+    int __lb_z_1 = __scalar_args.__lb_z_1;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
+    int __flat_idx;
+    int i;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    {
+        float t;
+        t = (a * x[((int)(i) - (__lb_x_0))]);
+        if ((__gpu_lane == 0)) {
+            y[((int)(i) - (__lb_y_0))] = (t + y[((int)(i) - (__lb_y_0))]);
+        }
+        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+    if ((__gpu_lane == 0)) {
+        z[((int)(i) - (__lb_z_0)) + (__dim_z_0 * ((int)(2) - (__lb_z_1)))] = twice_gpu_11(y[((int)(i) - (__lb_y_0))]);
+    }
+    if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+}
+

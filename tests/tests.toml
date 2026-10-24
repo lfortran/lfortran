@@ -32,6 +32,30 @@ filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/realloc_one_object.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/realloc_shape_differs_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_fixed_size_constant_dims.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/allocatable_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/pointer_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_assumed_size_descriptor.asr"
+asr = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true
@@ -1672,6 +1696,10 @@ pass = "intent_out_deallocate"
 llvm = true
 
 [[test]]
+filename = "allocate_on_assignment_01.f90"
+pass = "allocate_on_assignment"
+
+[[test]]
 filename = "finalize_02.f90"
 llvm = true
 
@@ -1960,6 +1988,10 @@ ast_f90 = true
 filename = "../integration_tests/types_13.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "../integration_tests/logical_star_01.f90"
+semantics_only_cc = true
 
 [[test]]
 filename = "../integration_tests/types_14.f90"
@@ -3468,6 +3500,10 @@ filename = "errors/write_kind4_item_c.f90"
 c = true
 
 [[test]]
+filename = "errors/write_array_pointer_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -3527,6 +3563,10 @@ fixed_form_cc_asr = true
 
 [[test]]
 filename = "errors/continue_compilation_ff_2.f"
+fixed_form_cc_asr = true
+
+[[test]]
+filename = "errors/continue_compilation_ff_3.f"
 fixed_form_cc_asr = true
 
 [[test]]
@@ -3774,6 +3814,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_14.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_15.f"
 ast = true
 
 [[test]]
@@ -4098,6 +4142,68 @@ asr = true
 [[test]]
 filename = "special_chars_json.f90"
 ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_continuation.f90"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form.f"
+options = "--fixed-form"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do_label.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_else_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if_where_asr.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_if_where_fixed.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_use_module.f90"
+extrafiles = "json_loc_module.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_use_module_loop.f90"
+extrafiles = "json_loc_module_loop.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_template_use_module.f90"
+extrafiles = "json_loc_template_module.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_implicit_argument_casting.f90"
+options = "--implicit-argument-casting"
 asr_json = true
 
 [[test]]
@@ -4589,6 +4695,105 @@ filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_17.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_18.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_19.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_20.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_21.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_25.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_26.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_27.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_28.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_29.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_30.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_31.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_34.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_35.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_36.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_37.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_38.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_40.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_41.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_42.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_43.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_44.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_45.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_46.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -4810,7 +5015,189 @@ filename = "../integration_tests/gpu_metal_479.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_480.f90"
+gpu_metal_kernel = true
+
+# Loop nests of two and three dimensions run in tiles of 32 x 8 iterations
+# on CUDA, or flat where whole tiles would pad the nest by more than a
+# quarter.
+[[test]]
+filename = "../integration_tests/gpu_metal_485.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_09.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_10.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_11.f90"
+asr = true
+options = "--gpu=metal --pass=gpu_offload --cumulative"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_35.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_12.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_17.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_18.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_23.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_24.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_25.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_526.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_19.f90"
+gpu_cuda_kernel = true
+options = "--gpu-cache-bytes=32768"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_16.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_15.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+# The loop transformations of `--gpu=cuda` (gpu_loop_fusion.cpp) and their
+# selection by `--gpu-loop-transforms`.
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_20.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_21.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=fuse"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_22.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_522.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=none"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_523.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=swap"
+
+# An unknown name in `--gpu-loop-transforms` is an error.
+[[test]]
+filename = "errors/gpu_loop_transforms_01.f90"
+asr = true
+options = "--gpu=cuda --gpu-loop-transforms=fuse,fusion"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_30.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_36.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_03.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_04.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_05.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_06.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_08.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_09.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_15.f90"
+gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
@@ -5036,6 +5423,19 @@ filename = "errors/implicit_typing4.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "errors/implicit_typing5.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing6.f90"
+asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing7.f90"
+semantics_only_cc = true
+options = "--implicit-typing --implicit-interface"
+
+[[test]]
 filename = "external2.f90"
 asr_implicit_interface_and_typing = true
 
@@ -5114,6 +5514,15 @@ fortran = true
 [[test]]
 filename = "real_to_real_cast_fortran_codegen.f90"
 fortran = true
+
+[[test]]
+filename = "spread_scalar_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "spread_scalar_fortran_codegen_implied_do_loops.f90"
+fortran = true
+pass = "implied_do_loops"
 
 [[test]]
 filename = "int_to_int_cast_fortran_codegen.f90"
@@ -5311,6 +5720,10 @@ filename = "errors/incorrect_allocate_for_array.f90"
 asr = true
 
 [[test]]
+filename = "errors/allocatable_generic_bounds_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/incompatible_ranks_allocatable_arr1.f90"
 asr = true
 
@@ -5368,6 +5781,11 @@ options = "--implicit-interface"
 
 [[test]]
 filename = "errors/implicit_interface_procedure_kind.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
+filename = "errors/implicit_interface_intrinsic_non_fortran.f90"
 semantics_only_cc = true
 options = "--implicit-interface"
 
@@ -5640,6 +6058,19 @@ rename_symbol = true
 line = 9
 column = 13
 
+[[test]]
+filename = "collect_occurence5.f90"
+rename_symbol = true
+line = 2
+column = 12
+
+[[test]]
+filename = "collect_occurence6.f"
+rename_symbol = true
+line = 3
+column = 15
+options = "--fixed-form"
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
@@ -5787,6 +6218,15 @@ filename = "errors/show_errors1.f90"
 show_errors = true
 
 [[test]]
+filename = "errors/show_errors2.f90"
+show_errors = true
+
+[[test]]
+filename = "errors/show_errors3.f"
+show_errors = true
+options = "--fixed-form"
+
+[[test]]
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
@@ -5795,6 +6235,10 @@ extrafiles = "document_symbols1_module.f90"
 filename = "document_symbols_implicit_interface.f90"
 document_symbols = true
 options = "--implicit-interface"
+
+[[test]]
+filename = "document_symbols_continuation.f90"
+document_symbols = true
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"
@@ -6134,6 +6578,14 @@ filename = "errors/missing_include_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/include_location_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/include_location_02.f"
+ast = true
+
+[[test]]
 filename = "coarray_teams_01.f90"
 fortran = true
 pass = "coarray"
@@ -6171,6 +6623,12 @@ options = "--coarray=true"
 filename = "asr/verify/call_actual_type_mismatch.asr"
 asr = true
 
+# A StorageSize intrinsic without a compile-time value must have a character
+# argument; every other storage_size is a TypeInquiry.
+[[test]]
+filename = "asr/verify/storage_size_noncharacter_argument.asr"
+asr = true
+
 [[test]]
 filename = "asr/verify/call_rank_mismatch.asr"
 asr = true
@@ -6193,6 +6651,14 @@ asr = true
 
 [[test]]
 filename = "asr/verify/assignment_move_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_nonallocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_new_target.asr"
 asr = true
 
 [[test]]
@@ -6412,6 +6878,10 @@ filename = "asr/verify/gpu_kernel_launch_component_fit_not_block.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/omp_overwrite_host_region.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr"
 asr = true
 
@@ -6509,6 +6979,50 @@ asr = true
 
 [[test]]
 filename = "asr/verify/block_data_contains_procedure.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_form.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_stride.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_missing_upper.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_real.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_null_target.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_spec_rank.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_remapping_scalar.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/associate_pointer_bounds_descriptor_target.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_arrays.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_dimension.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_extent_type.asr"
 asr = true
 
 [[test]]
@@ -6642,3 +7156,28 @@ options = "--std=f23"
 filename = "../integration_tests/legacy_array_sections_26.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"
+
+[[test]]
+filename = "../integration_tests/real128_literal_02.f90"
+semantics_only_cc = true
+
+# An array element passed to an assumed-shape, allocatable or pointer dummy.
+[[test]]
+filename = "errors/legacy_array_sections_assumed_shape_01.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+# An element of a pointer, assumed-shape or polymorphic array passed to an
+# explicit-shape or assumed-size dummy.
+[[test]]
+filename = "errors/legacy_array_sections_pointer_element_01.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+[[test]]
+filename = "asr/verify/spread_scalar_source.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/spread_scalar_source_rank.asr"
+asr = true

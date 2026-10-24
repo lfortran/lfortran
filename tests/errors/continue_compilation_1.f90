@@ -2091,7 +2091,7 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+    allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
 end subroutine allocate_func_target_01
 
 function func_alloc_target_01() result(res) bind(c)
@@ -3371,3 +3371,366 @@ module cc1_bindc_character_length
     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
 end module cc1_bindc_character_length
+
+function cc1_bindc_implicit_result() bind(c)
+    character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+end function
+
+function cc1_bindc_explicit_result() result(c) bind(c)
+    character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
+end function
+
+! Unsupported complex*N and logical*N kinds get no style suggestion,
+! only the semantic error.
+module cc1_complex_star
+implicit none
+    complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+    logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+end module cc1_complex_star
+
+! FILE= is required when STATUS is NEW or REPLACE. Omitted STATUS, OLD,
+! UNKNOWN, and SCRATCH do not require it; SCRATCH forbids FILE=.
+subroutine cc1_open_status_new_replace_no_file()
+    character(len=7) :: cc1_open_status
+    open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+    open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+    open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+    open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+    open(5, file='cc1_open_new.dat', status='new')
+    open(6, file='cc1_open_replace.dat', status='replace')
+    open(7, status='scratch')
+    open(8, status='old')
+    open(9, status='unknown')
+    open(10)
+    cc1_open_status = 'new'
+    open(11, status=cc1_open_status)
+end subroutine cc1_open_status_new_replace_no_file
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array
+
+! An external procedure is not accessible by host association, so a name used
+! as a variable in another scoping unit is not the external procedure.
+subroutine cc1_external_name_sub()
+end subroutine cc1_external_name_sub
+
+real function cc1_external_name_fn()
+    cc1_external_name_fn = 1.0
+end function cc1_external_name_fn
+
+subroutine cc1_external_name_user()
+    cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+    print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+end subroutine cc1_external_name_user
+
+! Reading into the real or imaginary part of a complex variable is not
+! supported yet.
+module cc1_read_complex_part
+implicit none
+contains
+    subroutine cc1_rcp_use()
+        complex :: z, w(3)
+        character(len=20) :: s
+        s = '1 2 3'
+        read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+        read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+    end subroutine cc1_rcp_use
+end module cc1_read_complex_part
+
+! A subobject of a named constant is a constant, not a variable, so it cannot
+! be an actual argument for an INTENT(OUT) or INTENT(INOUT) dummy.
+module cc1_named_constant_subobject
+implicit none
+type :: cc1_ncs_t
+    integer :: k
+    integer :: a(2)
+end type cc1_ncs_t
+type(cc1_ncs_t), parameter :: cc1_ncs_s = cc1_ncs_t(7, [8, 9])
+type(cc1_ncs_t), parameter :: cc1_ncs_p(2) = &
+    [cc1_ncs_t(5, [1, 2]), cc1_ncs_t(6, [3, 4])]
+character(len=4), parameter :: cc1_ncs_c(2) = ["abcd", "efgh"]
+contains
+    subroutine cc1_ncs_int(n)
+        integer, intent(inout) :: n
+        n = 1
+    end subroutine cc1_ncs_int
+    subroutine cc1_ncs_arr(n)
+        integer, intent(out) :: n(:)
+        n = 1
+    end subroutine cc1_ncs_arr
+    subroutine cc1_ncs_chr(n)
+        character(len=*), intent(inout) :: n
+        n = "z"
+    end subroutine cc1_ncs_chr
+    subroutine cc1_ncs_use(i)
+        integer, intent(in) :: i
+        call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+        call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+    end subroutine cc1_ncs_use
+end module cc1_named_constant_subobject
+
+! A parenthesized null() is not allowed in an initializer either.
+subroutine cc1_paren_null_initializer_integer()
+    implicit none
+    integer :: i = (null())  ! {Error} null() cannot initialize 'i' of type integer(4), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_integer
+
+subroutine cc1_paren_null_initializer_type()
+    implicit none
+    type :: cc1_pni_t
+        integer :: v = 1
+    end type
+    type(cc1_pni_t) :: x = (null())  ! {Error} null() cannot initialize 'x' of type type(cc1_pni_t), which is neither a pointer nor allocatable
+end subroutine cc1_paren_null_initializer_type
+
+! A parenthesized equivalence object is an expression, not a variable.
+subroutine cc1_paren_equivalence_element()
+    implicit none
+    real :: a(3), b
+    equivalence ((a(2)), b)  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_element
+
+subroutine cc1_paren_equivalence_name()
+    implicit none
+    real :: a(3), b
+    equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
+end subroutine cc1_paren_equivalence_name
+
+module cc1_pointer_bounds
+contains
+    subroutine cc1_pointer_bounds_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+        q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+        q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+    end subroutine cc1_pointer_bounds_use
+end module cc1_pointer_bounds
+module cc1_pointer_bounds_null
+contains
+    subroutine cc1_pointer_bounds_null_use()
+        real, pointer :: arr(:)
+        arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
+    end subroutine cc1_pointer_bounds_null_use
+end module cc1_pointer_bounds_null
+module cc1_pointer_remapping_target
+contains
+    subroutine cc1_pointer_remapping_target_use(x)
+        integer, target :: x(:, :)
+        integer, target :: a(4, 5), s
+        integer, pointer :: p(:), q(:, :)
+        q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+        p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    end subroutine cc1_pointer_remapping_target_use
+end module cc1_pointer_remapping_target
+module cc1_pointer_bounds_stride
+contains
+    subroutine cc1_pointer_bounds_stride_use()
+        integer, target :: a(10)
+        integer, pointer :: p(:)
+        p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+        p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+    end subroutine cc1_pointer_bounds_stride_use
+end module cc1_pointer_bounds_stride
+module cc1_pointer_bounds_type
+contains
+    subroutine cc1_pointer_bounds_type_use()
+        real, target :: a(6)
+        real, pointer :: p(:)
+        real :: r
+        integer :: v(1)
+        integer(2) :: v2(1)
+        character(len=1) :: ch
+        logical(1) :: l1
+        p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+        p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+        p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+        p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
+    end subroutine cc1_pointer_bounds_type_use
+end module cc1_pointer_bounds_type
+module cc1_subscript_type
+contains
+    subroutine cc1_subscript_type_use()
+        integer :: a(5), b(2, 3), v(1)
+        real :: r
+        character(len=1) :: ch
+        logical :: l
+        print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+        print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+        print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+    end subroutine cc1_subscript_type_use
+end module cc1_subscript_type
+module cc1_pointer_bounds_boz
+contains
+    subroutine cc1_pointer_bounds_boz_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+        q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    end subroutine cc1_pointer_bounds_boz_use
+end module cc1_pointer_bounds_boz
+
+! C1588: an intent(out) dummy argument of a pure procedure shall not be
+! polymorphic or have a polymorphic allocatable ultimate component.
+module cc1_pure_poly_intent_out
+    implicit none
+    type :: cc1_ppo_t
+        integer :: i
+    end type
+    type :: cc1_ppo_w
+        class(cc1_ppo_t), allocatable :: c
+    end type
+    type :: cc1_ppo_w2
+        type(cc1_ppo_w) :: inner
+    end type
+    abstract interface
+        pure subroutine cc1_ppo_iface(a)
+            import :: cc1_ppo_t
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+        end subroutine
+    end interface
+contains
+    pure subroutine cc1_ppo_class(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure subroutine cc1_ppo_class_alloc(a)
+        class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+    end subroutine
+    pure subroutine cc1_ppo_star(a)
+        class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+    end subroutine
+    elemental subroutine cc1_ppo_elemental(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure integer function cc1_ppo_func(a)
+        class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+        cc1_ppo_func = 1
+    end function
+    pure subroutine cc1_ppo_comp(a)
+        type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    pure subroutine cc1_ppo_nested_comp(a)
+        type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    subroutine cc1_ppo_host()
+        type(cc1_ppo_t) :: x
+        call cc1_ppo_internal(x)
+    contains
+        pure subroutine cc1_ppo_internal(a)
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+            a%i = 1
+        end subroutine
+    end subroutine
+end module cc1_pure_poly_intent_out
+
+! An output implied-do loop with values of different types, some of them of
+! derived type, is not supported yet with run-time bounds or step, with a
+! nested loop that reuses the variable of an enclosing loop, with more than
+! 256 iterations of bounds that are not all literals, with more than 1000
+! values of different derived types, or in an unformatted transfer.
+subroutine implied_do_mixed_derived_types_error(n)
+    implicit none
+    type :: cc1_idl_a
+        integer :: i = 1
+    end type
+    type :: cc1_idl_b
+        integer :: j = 2
+    end type
+    integer, intent(in) :: n
+    integer, parameter :: m = 300
+    type(cc1_idl_a) :: x(3)
+    type(cc1_idl_b) :: y(3)
+    integer :: i, j, k(3)
+    character(80) :: line
+    k = 3
+    print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+    write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+    write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+    print '(*(i0,1x))', (x(i), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,2), i=1,3)
+    print '(*(i0,1x))', ((x(i), j=1,1), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,i), i=1,3)
+    print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,500)
+    print '(*(i0,1x))', (x(1), k(1), i=1,501)
+    print *, (x(i), (y(j), j=1,n), i=1,0)
+end subroutine implied_do_mixed_derived_types_error
+
+! Defined output of the elements of a polymorphic array, as an array item or
+! as the items of an implied-do loop, is not supported yet.
+module cc1_dtio_poly_array_1
+    implicit none
+    type :: cc1_dtio_t
+        integer :: v = 3
+    contains
+        procedure :: cc1_dtio_wf
+        generic :: write(formatted) => cc1_dtio_wf
+    end type
+contains
+    subroutine cc1_dtio_wf(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(cc1_dtio_t), intent(in) :: dtv
+        integer, intent(in) :: unit
+        character(*), intent(in) :: iotype
+        integer, intent(in) :: v_list(:)
+        integer, intent(out) :: iostat
+        character(*), intent(inout) :: iomsg
+        write(unit, '(a,i0)', iostat=iostat) 'T', dtv%v
+    end subroutine
+
+    subroutine cc1_dtio_poly_array_error()
+        class(cc1_dtio_t), allocatable :: c(:)
+        integer :: i
+        allocate(c(2))
+        print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+        print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+    end subroutine
+end module

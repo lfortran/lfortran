@@ -258,6 +258,33 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         }
     }
 
+    // An exit or a cycle the device code has no lowering for yet. The
+    // cycles of the loop itself are rewritten when the kernel is built.
+    {
+        GpuOffloadedLoopLeaves leaves(nullptr);
+        for (size_t i = 0; i < work.n_body; i++) {
+            leaves.visit_stmt(*work.body[i]);
+        }
+        std::string in_routine;
+        if (leaves.reason == GpuDeclineReason::None) {
+            for (ASR::Function_t *fn : reachable_routines(work.body,
+                    work.n_body, implementations)) {
+                for (size_t i = 0; i < fn->n_body; i++) {
+                    leaves.visit_stmt(*fn->m_body[i]);
+                }
+                if (leaves.reason != GpuDeclineReason::None) {
+                    in_routine = fn->m_name;
+                    break;
+                }
+            }
+        }
+        if (leaves.reason != GpuDeclineReason::None) {
+            report_not_offloaded(leaves.loc,
+                GpuDecline(leaves.reason, in_routine));
+            return false;
+        }
+    }
+
     // A device whose scalar type set is narrower than the shared width
     // table has to be asked about every symbol that reaches the kernel:
     // where the two sets are the same, the kernel-argument and

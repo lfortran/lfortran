@@ -51,6 +51,7 @@
               )
               :var_expr nil
             )
+            :form :NoPointerBounds
           )
         ]
         :global_init nil

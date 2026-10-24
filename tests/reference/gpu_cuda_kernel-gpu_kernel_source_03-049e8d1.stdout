@@ -5,8 +5,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* x,
-    float* y,
+    float* __restrict__ x,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -18,7 +18,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     const float cs[5] = {1.00000000e+00, 5.00000000e-01, 2.50000000e-01, 1.25000000e-01, 6.25000000e-02};
     int i;
     int j;
-    const int n = 16;
     const int nc = 5;
     float twox;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {

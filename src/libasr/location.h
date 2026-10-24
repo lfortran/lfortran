@@ -285,6 +285,16 @@ struct LocationManager {
         }
     }
 
+    // Converts a position `out_pos` in the output code (such as
+    // `Location::first` or `Location::last` of an AST or ASR node) to a
+    // (line, col) tuple in the original code, see `output_to_input_pos` for
+    // `show_last`
+    void output_pos_to_linecol(uint32_t out_pos, bool show_last,
+            uint32_t &line, uint32_t &col, std::string &filename) const {
+        pos_to_linecol(output_to_input_pos(out_pos, show_last), line, col,
+            filename);
+    }
+
     void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
         for (uint32_t pos=0; pos < s.size(); pos++) {
             if (s[pos] == '\n') newlines.push_back(pos);

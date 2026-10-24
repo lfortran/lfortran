@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: dummy procedure 'g' is not associated with a routine known at compile time
+  --> tests/../integration_tests/gpu_decline_25.f90:31:9 - 33:14
+   |
+31 |            do concurrent (i = 1:size(o))
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+33 |            end do
+   | ...^^^^^^^^^^^^^^ dummy procedure 'g' is not associated with a routine known at compile time

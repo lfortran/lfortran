@@ -18,23 +18,20 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* out,
-    pair_t* s,
-    float* __data_s_a_,
-    int* __offsets_s_a_,
-    int* __sizes_s_a_,
-    float* __data_s_b_,
-    int* __offsets_s_b_,
-    int* __sizes_s_b_,
+    float* __restrict__ out,
+    pair_t* __restrict__ s,
+    float* __restrict__ __data_s_a_,
+    int* __restrict__ __offsets_s_a_,
+    int* __restrict__ __sizes_s_a_,
+    float* __restrict__ __data_s_b_,
+    int* __restrict__ __offsets_s_b_,
+    int* __restrict__ __sizes_s_b_,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_9)
+    float* __restrict__ __workspace_9)
 {
-    int nn = __scalar_args.nn;
     int __dim_out_0 = __scalar_args.__dim_out_0;
     int __lb_out_0 = __scalar_args.__lb_out_0;
-    int __dim_out_1 = __scalar_args.__dim_out_1;
     int __lb_out_1 = __scalar_args.__lb_out_1;
-    int __dim_s_0 = __scalar_args.__dim_s_0;
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -61,7 +58,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sec_i = (1 - 1);
         while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
             __gpu_sec_i = (__gpu_sec_i + 1);
-            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj) - (__lb_out_1)))] = res[((int)(__gpu_sec_i) - (1))];
+            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj) - (__lb_out_1)))] = res[((int)((1 + (__gpu_sec_i - 1))) - (1))];
         }
     }
 }

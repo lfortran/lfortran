@@ -1033,7 +1033,7 @@ public:
                     component.component,
                     ASRUtils::symbol_type(component.component), nullptr));
             bindings.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
-                loc, member, array)));
+                loc, member, array, ASR::pointer_bounds_formType::NoPointerBounds)));
         }
         rewrite_references(fn, var, stored);
         std::set<ASR::symbol_t*> visited;
@@ -1149,7 +1149,7 @@ public:
                         if (target == nullptr || value == nullptr) continue;
                         out.push_back(al, ASRUtils::STMT(
                             ASR::make_Assignment_t(al, s->base.loc, target,
-                                value, nullptr, false, false)));
+                                value, nullptr, false, false, false, false)));
                     }
                     break;
                 }
@@ -1460,7 +1460,7 @@ class AllocationBuffers {
             loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)), range.p,
             range.n, section_type, nullptr));
         return ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-            ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)), section));
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)), section, ASR::pointer_bounds_formType::NoPointerBounds));
     }
 
     void transform(ASR::stmt_t **&body, size_t &n_body,

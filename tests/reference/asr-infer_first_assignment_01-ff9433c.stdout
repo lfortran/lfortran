@@ -134,6 +134,8 @@
         ()
         .false.
         .false.
+        .false.
+        .false.
     )
     (Assignment
         (Var 1 y)
@@ -142,6 +144,8 @@
             (Real 4)
         )
         ()
+        .false.
+        .false.
         .false.
         .false.
     )
@@ -166,6 +170,8 @@
         ()
         .false.
         .false.
+        .false.
+        .false.
     )
     (Assignment
         (Var 1 flag)
@@ -176,6 +182,8 @@
         ()
         .false.
         .false.
+        .false.
+        .false.
     )
     (Assignment
         (Var 1 s)
@@ -184,6 +192,8 @@
             (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
         )
         ()
+        .false.
+        .false.
         .false.
         .false.
     )
@@ -197,6 +207,8 @@
             ()
         )
         ()
+        .false.
+        .false.
         .false.
         .false.
     )]

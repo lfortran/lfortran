@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
+#include <libasr/asr_verify.h>
 
 #include <cctype>
 #include <deque>
@@ -13,6 +14,17 @@
 namespace LCompilers {
 
     namespace PassUtils {
+
+    // Restore casts after replacements change the physical types of shared operands.
+    void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
+    // Verifies the invariant that `verify_options` selects, which the pass
+    // `pass_name` has just established, whenever the passes are verified.
+    // The verification after each pass does not know which passes have run,
+    // so a pass that establishes an invariant checks it itself.
+    void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
+        const std::string &pass_name);
 
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
@@ -181,6 +193,26 @@ namespace LCompilers {
                 }
             }
     };
+
+    class FunctionCallFinder: public ASR::BaseWalkVisitor<FunctionCallFinder> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+                found = true;
+            }
+    };
+
+    // The extent of an array constructor element, for the type of the array
+    // section it is assigned to. A type is an annotation, not an evaluation,
+    // so an extent that needs a function call (e.g. `size(f(x > 0))`) is
+    // left deferred; the section's bounds already give it.
+    static inline ASR::expr_t* get_constructor_section_extent_for_type(
+            ASR::expr_t* curr_init, Allocator& al) {
+        ASR::expr_t* size = ASRUtils::get_size(curr_init, al, true);
+        FunctionCallFinder finder;
+        finder.visit_expr(*size);
+        return finder.found ? nullptr : size;
+    }
 
     static inline SymbolTable* instantiation_scope_for_expr(
             SymbolTable* global_scope, SymbolTable* caller_scope,
@@ -374,6 +406,11 @@ namespace LCompilers {
 
         ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
 
+        // The run-time shape check of the assignment to `target` of an
+        // expression whose array operands are `components`, which it takes.
+        ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
+            ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
@@ -457,9 +494,21 @@ namespace LCompilers {
                     || ASR::is_a<ASR::SymbolicExpression_t>(*type));
         }
 
-        static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
-            return  is_aggregate_or_array_type(var) ||
-                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+        // Whether a function result of type `type` is returned through a
+        // dummy argument, the subroutine_from_function pass making the
+        // function a subroutine: array, derived type, polymorphic, string
+        // and every allocatable result, including an allocatable scalar of
+        // an intrinsic type. The caller gets an allocatable result in an
+        // allocatable variable, whose value it can reference or assign like
+        // that of any other variable, and which it deallocates.
+        static inline bool is_result_returned_through_argument(ASR::ttype_t* type) {
+            return is_non_primitive_return_type(type) ||
+                is_aggregate_or_array_type(type) ||
+                ASRUtils::is_allocatable(type);
+        }
+
+        static inline bool is_result_returned_through_argument(ASR::expr_t* result) {
+            return is_result_returned_through_argument(ASRUtils::expr_type(result));
         }
 
 
@@ -556,7 +605,8 @@ namespace LCompilers {
 
             public:
 
-                bool asr_changed, retain_original_stmt, remove_original_stmt;
+                bool asr_changed, retain_original_stmt = false,
+                    remove_original_stmt = false;
                 Allocator& al;
                 Vec<ASR::stmt_t*> pass_result;
 
@@ -566,7 +616,16 @@ namespace LCompilers {
                     pass_result.n = 0;
                 }
 
+                // A statement list nested in a compound statement (the body
+                // of an IF or a loop) is transformed while that statement is
+                // being visited. What the last statement of the nested list
+                // asked for itself must not be taken for what the enclosing
+                // statement asks for, or removing that last statement would
+                // remove the whole enclosing statement as well, so the
+                // enclosing statement's requests are restored afterwards.
                 void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+                    bool enclosing_retain = retain_original_stmt;
+                    bool enclosing_remove = remove_original_stmt;
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, n_body);
                     if (pass_result.size() > 0) {
@@ -599,6 +658,8 @@ namespace LCompilers {
                     }
                     m_body = body.p;
                     n_body = body.size();
+                    retain_original_stmt = enclosing_retain;
+                    remove_original_stmt = enclosing_remove;
                 }
 
                 void visit_Program(const ASR::Program_t &x) {
@@ -824,7 +885,9 @@ namespace LCompilers {
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_FunctionCall(x);
                 }
 
-                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                // Records the function and module dependencies that a call to
+                // `name` as a subroutine introduces in the current scope.
+                void add_subroutine_call_dependencies(ASR::symbol_t* name) {
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -834,8 +897,8 @@ namespace LCompilers {
                         SymbolTable* temp_scope = current_scope;
 
                         if (asr_owner_sym &&
-                            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
-                            !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+                            !ASR::is_a<ASR::ExternalSymbol_t>(*name) &&
+                            !ASR::is_a<ASR::Variable_t>(*name)) {
                             while (temp_scope->parent && temp_scope->asr_owner &&
                                    ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
                                 ASR::symbol_t* temp_owner_sym =
@@ -846,21 +909,32 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(name),
                                     current_scope, temp_scope)) {
-                                function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                                function_dependencies.push_back(al, ASRUtils::symbol_name(name));
                             }
                         }
                     }
 
-                    if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
+                    if( ASR::is_a<ASR::ExternalSymbol_t>(*name) &&
                         fill_module_dependencies ) {
-                        ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
-                            module_dependencies.push_back(al, x_m_name->m_module_name);
+                        ASR::ExternalSymbol_t* ext_name = ASR::down_cast<ASR::ExternalSymbol_t>(name);
+                        if( ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(ext_name->m_external)) ) {
+                            module_dependencies.push_back(al, ext_name->m_module_name);
                         }
                     }
+                }
+
+                void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+                    add_subroutine_call_dependencies(x.m_name);
                     BaseWalkVisitor<UpdateDependenciesVisitor>::visit_SubroutineCall(x);
+                }
+
+                void visit_StringFormat(const ASR::StringFormat_t& x) {
+                    for (size_t i = 0; i < x.n_dtio_bindings; i++) {
+                        add_subroutine_call_dependencies(x.m_dtio_bindings[i].m_procedure);
+                    }
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_StringFormat(x);
                 }
 
                 void visit_BlockCall(const ASR::BlockCall_t& x) {
@@ -1250,7 +1324,7 @@ namespace LCompilers {
                          ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                         dimension.m_length = nullptr;
                     } else {
-                        dimension.m_length = ASRUtils::get_size(curr_init, al, true);
+                        dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                     }
                     Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                     dims.push_back(al, dimension);

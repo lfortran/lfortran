@@ -91,6 +91,7 @@ public:
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
                     format->m_fmt, print_args.p, print_args.size(), format->m_kind,
+                    format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);
@@ -167,6 +168,7 @@ public:
         }
         ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
         format->m_fmt, body.p, body.size(), format->m_kind,
+        format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
         format->m_type, nullptr));
         Vec<ASR::expr_t*> print_args;
         print_args.reserve(al, 1);
@@ -347,6 +349,7 @@ public:
                 if (format != nullptr) {
                     ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, format->base.base.loc,
                     format->m_fmt, print_args.p, print_args.size(), format->m_kind,
+                    format->m_dtio_bindings, format->n_dtio_bindings, format->m_dtio_unit,
                     format->m_type, format->m_value));
                     Vec<ASR::expr_t*> format_args;
                     format_args.reserve(al, 1);

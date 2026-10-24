@@ -238,6 +238,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Allocate
                         [((StructInstanceMember
@@ -461,6 +463,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 5 x)
@@ -520,6 +524,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -618,6 +624,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Assignment
                         (Var 5 i)
@@ -638,6 +646,8 @@
                             ()
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -687,6 +697,8 @@
                             )
                         )
                         ()
+                        .false.
+                        .false.
                         .false.
                         .false.
                     )
@@ -905,6 +917,8 @@
                                                                         ()
                                                                         .false.
                                                                         .false.
+                                                                        .false.
+                                                                        .false.
                                                                     )
                                                                     (Assignment
                                                                         (Var 6 dcdw)
@@ -958,6 +972,8 @@
                                                                         ()
                                                                         .false.
                                                                         .false.
+                                                                        .false.
+                                                                        .false.
                                                                     )]
                                                                 ),
                                                             dcdb:
@@ -984,7 +1000,7 @@
                                                                     Required
                                                                     .false.
                                                                     .false.
-                                                                    .false.
+                                                                    .true.
                                                                     ()
                                                                     .false.
                                                                     .false.
@@ -1019,7 +1035,7 @@
                                                                     Required
                                                                     .false.
                                                                     .false.
-                                                                    .false.
+                                                                    .true.
                                                                     ()
                                                                     .false.
                                                                     .false.
@@ -1048,6 +1064,7 @@
                                                             )
                                                             ()
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (Associate
                                                         (Var 6 dcdb)
@@ -1065,6 +1082,7 @@
                                                             )
                                                             ()
                                                         )
+                                                        NoPointerBounds
                                                     )
                                                     (DoLoop
                                                         ()
@@ -1108,6 +1126,8 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
+                                                            .false.
                                                             .false.
                                                             .false.
                                                         )]

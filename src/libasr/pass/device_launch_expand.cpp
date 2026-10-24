@@ -7,6 +7,7 @@
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
@@ -31,7 +32,8 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     ctx    = lfortran_gpu_init()
     kernel = lfortran_gpu_load_kernel(ctx, "<kernel name>", <name length>)
     call lfortran_gpu_set_buffer_arg(kernel, 0, c_loc(a), size_in_bytes(a),
-                                     access)    ! does the kernel write `a`?
+                                     access)    ! does the kernel write `a`,
+                                                ! or all of it before reading?
     ...
     scalars%x = x                       ! one struct holding every scalar
     call lfortran_gpu_set_scalar_arg(kernel, n, c_loc(scalars), sizeof(scalars))
@@ -53,14 +55,18 @@ them, before they are copied back. A run-time sized local of the kernel (a
 workspace) is a scratch buffer.
 
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
-device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
-after the launch with lfortran_gpu_read_scratch_arg when the launch says so,
-and freed with the kernel by lfortran_gpu_release_kernel. So is every
-per-thread workspace of the kernel, which is never read back.
+device holds, is set with lfortran_gpu_set_scratch_arg and read back
+after the launch with lfortran_gpu_read_scratch_arg when the launch says so.
+Per-thread workspaces use the same interface but are never read back. The
+runtime owns this storage and may reuse it across launches.
 
 The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether
 the loop can be offloaded or deriving workspace extents again.
+
+The logical count is evaluated once and normalized before any launch setup.
+The entire sequence above, including its cleanup, runs only when the effective
+count (including lanes) is positive. The common runtime rejects empty geometry.
 */
 class DeviceLaunchExpandVisitor :
         public PassUtils::PassVisitor<DeviceLaunchExpandVisitor>
@@ -72,18 +78,34 @@ class DeviceLaunchExpandVisitor :
             PassVisitor(al_, nullptr), unit(unit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-            LCOMPILERS_ASSERT(ASR::down_cast<ASR::Function_t>(
-                x.m_kernel)->m_gpu != nullptr);
+            const auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
+            LCOMPILERS_ASSERT(kernel->m_gpu != nullptr);
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *threads = declare_local(loc, "gpu_threads", int64);
+            ASR::expr_t *started = threads;
+            if (kernel->m_gpu->m_lanes) {
+                started = declare_local(loc, "gpu_started", int64);
+            }
             Vec<ASR::stmt_t*> stmts;
             stmts.reserve(al, 8);
-            if (!expand_launch(x, stmts)) {
+            if (!expand_launch(x, threads, started, stmts)) {
                 remove_original_stmt = true;
                 return;
             }
-            pass_result.reserve(al, stmts.size());
-            for (size_t i = 0; i < stmts.size(); i++) {
-                pass_result.push_back(al, stmts[i]);
+            pass_result.reserve(al, 4);
+            pass_result.push_back(al, b.Assignment(threads,
+                b.i2i_t(x.m_thread_count, int64)));
+            pass_result.push_back(al, b.If(b.Lt(threads, b.i64(0)),
+                {b.Assignment(threads, b.i64(0))}, {}));
+            if (kernel->m_gpu->m_lanes) {
+                pass_result.push_back(al, b.Assignment(started,
+                    b.Mul(threads,
+                        b.i2i_t(x.m_args[x.n_args - 1].m_value, int64))));
             }
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+                loc, nullptr, b.Gt(started, b.i64(0)), stmts.p, stmts.n,
+                nullptr, 0)));
         }
 
         void visit_GpuSync(const ASR::GpuSync_t &x) {
@@ -239,6 +261,11 @@ class DeviceLaunchExpandVisitor :
             ASR::expr_t *byte_size;
             // A buffer only the device holds (see GpuKernelLaunch.scratch).
             const ASR::gpu_scratch_buffer_t *scratch = nullptr;
+            // False for a copy of this pass that nothing is copied back
+            // from: the host never reads what the kernel writes there, so
+            // it is handed over as read only, and the runtime does not keep
+            // it on the device past the launch, when the copy may be gone.
+            bool host_reads_writes = true;
         };
 
         // One array argument inside the combined buffer of a packed launch.
@@ -745,9 +772,14 @@ class DeviceLaunchExpandVisitor :
         // the kernel is generated against the declared type, so reading a
         // component of it would read the descriptor. Copy the declared
         // type's own components into a plain local and hand that over.
+        // The local is copied back right after the launch when the kernel
+        // may write it; one with nothing to copy back -- every component
+        // of the type is an allocatable array the device is handed on its
+        // own -- leaves `written` false, since what the kernel writes there
+        // is never read.
         ASR::expr_t* plain_struct_argument(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                ASR::Variable_t *kparam, bool written,
+                ASR::Variable_t *kparam, bool &written,
                 std::vector<ASR::stmt_t*> &writebacks) {
             if (!gpu_argument_is_polymorphic_value(arg)) return arg;
             ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
@@ -768,6 +800,7 @@ class DeviceLaunchExpandVisitor :
                     + std::string(kparam->m_name) + "' to a gpu kernel");
             }
             for (ASR::stmt_t *stmt : forward) out.push_back(al, stmt);
+            written = written && !back.empty();
             if (written) {
                 for (ASR::stmt_t *stmt : back) writebacks.push_back(stmt);
             }
@@ -837,6 +870,7 @@ class DeviceLaunchExpandVisitor :
         // stops the layout part way; the caller then drops the launch and
         // the reported error fails the build.
         bool expand_launch(const ASR::GpuKernelLaunch_t &x,
+                ASR::expr_t *threads, ASR::expr_t *started,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
@@ -931,13 +965,15 @@ class DeviceLaunchExpandVisitor :
                     // bytes, so such an argument is copied into a
                     // contiguous temporary first, and copied back after
                     // when the kernel writes it.
+                    bool written = entry.m_written;
                     ASR::expr_t *buffer_arg = plain_struct_argument(loc,
-                        out, arg, kparam, entry.m_written, writebacks);
+                        out, arg, kparam, written, writebacks);
                     buffer_arg = contiguous_argument(loc, out,
-                        buffer_arg, entry.m_written, writebacks);
+                        buffer_arg, written, writebacks);
                     buffers.push_back({buffer_arg,
                         address_of(loc, buffer_arg),
                         buffer_byte_size(loc, buffer_arg)});
+                    buffers.back().host_reads_writes = written;
                     if (ASRUtils::is_array(arg_type)) {
                         // The buffers the device reads a component through
                         // are named after the kernel's own parameter, so
@@ -955,6 +991,28 @@ class DeviceLaunchExpandVisitor :
             // device keeps it after the launch (lfortran_gpu_runtime.h).
             auto access = [&](bool written) {
                 return b.i32(written ? 1 : 0);
+            };
+            // An array the kernel assigns whole before it reads it, when
+            // the launch says so, need not be copied to the device first.
+            auto buffer_access = [&](size_t i) {
+                const auto &entry = layout.m_buffers[i];
+                if (!buffers[i].host_reads_writes) return access(false);
+                if (!entry.m_written || entry.m_member
+                        || entry.m_kind != ASR::gpu_argument_kindType::GpuArray) {
+                    return access(entry.m_written);
+                }
+                ASR::expr_t *actual = x.m_args[entry.m_argument_index].m_value;
+                for (size_t j = 0; j < x.n_overwritten; j++) {
+                    if (!gpu_same_designator(x.m_overwritten[j], actual)) {
+                        continue;
+                    }
+                    ASRUtils::ExprStmtDuplicator dup(al);
+                    dup.success = true;
+                    return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                        dup.duplicate_expr(x.m_overwritten_if[j]),
+                        b.i32(2), b.i32(1), int32, nullptr));
+                }
+                return access(true);
             };
             bool any_written = false;
             for (size_t i = 0; i < layout.n_buffers; i++) {
@@ -1029,8 +1087,7 @@ class DeviceLaunchExpandVisitor :
                     args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
                     args.push_back(al, call_arg(loc, buffer.address));
                     args.push_back(al, call_arg(loc, buffer.byte_size));
-                    args.push_back(al, call_arg(loc,
-                        access(layout.m_buffers[i].m_written)));
+                    args.push_back(al, call_arg(loc, buffer_access(i)));
                     out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
                 }
             }
@@ -1089,23 +1146,10 @@ class DeviceLaunchExpandVisitor :
             // The threads that run the body are numbered from zero, and
             // the runtime starts whole blocks of them, given as int[3]: the
             // kernel sends the threads past the last back before its body.
-            // A loop of no iterations has a count below one.
-            ASR::expr_t *threads = declare_local(loc, "gpu_threads", int64);
-            out.push_back(al, b.Assignment(threads,
-                b.i2i_t(x.m_thread_count, int64)));
-            out.push_back(al, b.If(b.Lt(threads, b.i64(0)),
-                {b.Assignment(threads, b.i64(0))}, {}));
             ASR::expr_t *block_size = b.i2i_t(x.m_block_size, int64);
             ASR::ttype_t *dim3 = b.Array({3}, int32);
             ASR::expr_t *grid = declare_local(loc, "gpu_grid", dim3);
             ASR::expr_t *block = declare_local(loc, "gpu_block", dim3);
-            // An iteration of a kernel with lanes runs on that many
-            // consecutive threads, its last argument (gpu_vector_lanes.cpp).
-            ASR::expr_t *started = threads;
-            if (layout.m_lanes) {
-                started = b.Mul(threads,
-                    b.i2i_t(x.m_args[x.n_args - 1].m_value, int64));
-            }
             fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(started,
                 block_size), b.i64(1)), block_size));
             fill_geometry(loc, out, block, x.m_block_size);
@@ -1194,10 +1238,9 @@ class DeviceLaunchExpandVisitor :
                     {b.CPtr(), int32, b.CPtr(), int64},
                     {true, true, true, true}), args));
             }
-            // The kernel object holds what this launch set up -- the
-            // scalar arguments, the scratch buffers, which are read back
-            // above, and on a discrete GPU the device buffers -- so every
-            // launch releases its own.
+            // Release this launch's handle after any requested scratch
+            // readback. The runtime manages buffer lifetimes, including
+            // storage cached for later launches.
             Vec<ASR::call_arg_t> release_args;
             release_args.reserve(al, 1);
             release_args.push_back(al, call_arg(loc, gpu_kernel));

@@ -67,7 +67,7 @@
                                                                     Default
                                                                     (Integer 8)
                                                                     ()
-                                                                    Source
+                                                                    BindC
                                                                     Public
                                                                     Required
                                                                     .false.
@@ -251,6 +251,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 15 s)
@@ -264,6 +266,8 @@
                                             ()
                                         )
                                         ()
+                                        .false.
+                                        .false.
                                         .false.
                                         .false.
                                     )]

@@ -665,6 +665,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (Assignment
                         (Var 2 prho)
@@ -713,6 +714,8 @@
                         ()
                         .false.
                         .false.
+                        .false.
+                        .false.
                     )
                     (Associate
                         (Var 2 dgetrf~fpcast_ptr)
@@ -738,6 +741,7 @@
                             )
                             ()
                         )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         2 dgetrf~fpcast_ptr
@@ -763,6 +767,8 @@
                             ()
                             .false.
                             .false.
+                            .false.
+                            .false.
                         )]
                         []
                     )
@@ -779,6 +785,8 @@
                             (Var 2 prho)
                             (Var 2 one)
                             ()
+                            .false.
+                            .false.
                             .false.
                             .false.
                         )]

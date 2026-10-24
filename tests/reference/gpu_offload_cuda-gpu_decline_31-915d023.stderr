@@ -1,0 +1,5 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support giving each gpu thread a private copy of 'y%c', which the loop defines
+  --> tests/../integration_tests/gpu_decline_31.f90:36:9
+   |
+36 |         call fill(y%c, i)
+   |         ^^^^^^^^^^^^^^^^^ the gpu backend does not support giving each gpu thread a private copy of 'y%c', which the loop defines

@@ -163,6 +163,8 @@
                   :overloaded nil
                   :realloc_lhs false
                   :move_allocation false
+                  :new_target false
+                  :new_allocation false
                 )
                 (Assignment
                   :target (Var
@@ -192,6 +194,8 @@
                   :overloaded nil
                   :realloc_lhs false
                   :move_allocation false
+                  :new_target false
+                  :new_allocation false
                 )
                 (Assignment
                   :target (ArrayItem
@@ -223,6 +227,8 @@
                   :overloaded nil
                   :realloc_lhs false
                   :move_allocation false
+                  :new_target false
+                  :new_allocation false
                 )
               ]
               :return_var nil

@@ -7,7 +7,7 @@ Binds a name to a target rather than copying a value.
 ### Syntax
 
 ```text
-Associate(expr target, expr value)
+Associate(expr target, expr value, pointer_bounds_form form)
 ```
 
 ### Arguments
@@ -16,6 +16,7 @@ Associate(expr target, expr value)
 |----------|-------------|
 | `target` | the pointer or associate name being bound. |
 | `value` | what it is bound to. |
+| `form` | whether `target` gives the bounds of a pointer, and how; see [pointer_bounds_form](../enum_nodes/pointer_bounds_form.md). |
 
 ### Return values
 
@@ -33,6 +34,25 @@ anything, which is what distinguishes it from
 [PointerNullConstant](../expression_nodes/PointerNullConstant.md) value is how
 `p => null()` is represented, and [Nullify](Nullify.md) is the equivalent
 statement form.
+
+A pointer assignment with a bounds-spec-list, `p(lb:) => a`, or a
+bounds-remapping-list, `p(lb:ub) => a`, has as target an
+[ArraySection](../expression_nodes/ArraySection.md) of the pointer, and `form`
+says which of the two it is. For a bounds-spec the section has only the lower
+bound of every dimension and no upper bound: the extents of the pointer are
+those of the value, so a backend computes the upper bound of dimension `i` as
+`lb + size(value, i) - 1`. For a bounds-remapping-list it has the lower and
+the upper bound of every dimension, as written. Every bound is a scalar
+integer expression, neither has a stride, and the value and every bound are
+evaluated once. Every other association has `form`
+`NoPointerBounds`. The verifier checks that the form is set exactly when the
+target is a section of a pointer, that the bounds present are those of the
+form and are scalar integers, that the value is not `null()`, that the value
+of a bounds-spec has the rank of the pointer, that the value of a
+bounds-remapping-list is an array, and that the value is a `DescriptorArray`
+(an array of another physical type is cast to the physical type of the
+section). That the value of a bounds-remapping-list has rank one or is simply
+contiguous (F2018 9.5.4, 10.2.2.3) is checked by the frontend.
 
 ## Examples
 
@@ -52,6 +72,7 @@ statement form.
     )
     :value nil
   )
+  :form :NoPointerBounds
 )
 ```
 
@@ -63,4 +84,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[Assignment](Assignment.md), [AssociateBlock](../symbol_nodes/AssociateBlock.md), [Nullify](Nullify.md), [GetPointer](../expression_nodes/GetPointer.md)
+[Assignment](Assignment.md), [AssociateBlock](../symbol_nodes/AssociateBlock.md), [Nullify](Nullify.md), [GetPointer](../expression_nodes/GetPointer.md), [pointer_bounds_form](../enum_nodes/pointer_bounds_form.md)

@@ -93,6 +93,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 5 y)
                                     Public
@@ -284,6 +286,8 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
+                                        .false.
                                     )]
                                     (Var 3 y)
                                     Public
@@ -338,6 +342,8 @@
                                     ()
                                 )]
                                 FormatFortran
+                                []
+                                ()
                                 (Allocatable
                                     (String 1 () DeferredLength DescriptorString)
                                 )
