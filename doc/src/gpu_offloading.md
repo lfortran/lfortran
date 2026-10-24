@@ -951,6 +951,12 @@ conjoined guards, and narrower `integer(4)` bounds. Its CUDA_CPU checks reject
 poisoned NaNs as well as finite wrong values; it also runs with LLVM,
 GFortran, and native CUDA.
 
+CI has no NVIDIA GPU. The runbook in
+[`ci/cuda_nvidia`](https://github.com/lfortran/lfortran/tree/main/ci/cuda_nvidia)
+describes and scripts the manual validation on one: LFortran's `cuda`
+integration tests, and building, validating and benchmarking Formal with
+`--gpu=cuda`.
+
 ## Open questions
 
 * **Purity is not enforced yet.** LFortran currently accepts an impure procedure
