@@ -247,3 +247,4 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
     }
 }
+
