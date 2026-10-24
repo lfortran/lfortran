@@ -2421,6 +2421,7 @@ RUN(NAME where_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_17 LABELS gfortran llvm)
 RUN(NAME where_18 LABELS gfortran llvm)
 RUN(NAME where_19 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME where_20 LABELS gfortran llvm)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 RUN(NAME forall_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
