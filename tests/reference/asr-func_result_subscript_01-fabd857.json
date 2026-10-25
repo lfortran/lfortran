@@ -1,0 +1,13 @@
+{
+    "basename": "asr-func_result_subscript_01-fabd857",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/func_result_subscript_01.f90",
+    "infile_hash": "a233ac33c431d80243862ea57c2a3e2ba8422e8492e6ac9f1f4c8f9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-func_result_subscript_01-fabd857.stderr",
+    "stderr_hash": "0f9e7118f1cad94256ba79d9c016fc5101a79a5ebb4037715817501c",
+    "returncode": 1
+}

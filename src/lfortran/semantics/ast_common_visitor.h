@@ -23701,6 +23701,16 @@ public:
             // not a call target.
             is_external_procedure = true;
         }
+        if (x.n_subargs > 0 && x.n_member == 0) {
+            ASR::symbol_t *v_chk = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+            if (!v_chk || ASR::is_a<ASR::Function_t>(*v_chk)) {
+                diag.semantic_error_label(
+                    "A function reference cannot be subscripted or sectioned",
+                    {x.base.base.loc},
+                    "'" + var_name + "(...)' is a function reference, not a designator");
+                throw SemanticAbort();
+            }
+        }
         bool implicit_call_done = false;
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
