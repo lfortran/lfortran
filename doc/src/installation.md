@@ -471,6 +471,20 @@ normal/fast/standard flags still apply. An empty selected backend is an error.
 Use the full suite for primary regression coverage; add representative tests
 to the list when introducing a new feature or platform-sensitive path.
 
+To leave out specific tests, pass their registered names (the `NAME` of
+`RUN` or `COMPILE`) to `--exclude`:
+
+```bash
+pixi run -e llvm11 integration_tests -b llvm -f --exclude real128_intrinsic_math_01 real128_intrinsic_math_02 > integration-fast.log 2>&1
+```
+
+Excluded tests are removed at configure time, like the smoke selection, so
+they are neither built nor run, in every mode (`-f`, `--std=f23`, ...). This
+is for working around a test that does not compile in a downstream
+environment, such as an installed package. An unregistered name is an error.
+`LFORTRAN_CTEST_EXCLUDE` (a regular expression) only skips running tests that
+were already built.
+
 ## Optional installation alternatives
 
 Pixi above is the recommended workflow for local development and testing.

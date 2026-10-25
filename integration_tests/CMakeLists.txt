@@ -14,6 +14,9 @@ option(LFORTRAN_SMOKE "Build and run the representative CI smoke suite" OFF)
 if (LFORTRAN_SMOKE)
     include(${CMAKE_CURRENT_SOURCE_DIR}/smoke_tests.cmake)
 endif()
+set(LFORTRAN_EXCLUDE_TESTS "" CACHE STRING
+    "Registered test names (semicolon-separated) not to build or run in any mode")
+set(LFORTRAN_REGISTERED_TESTS "")
 
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
 set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
@@ -105,6 +108,9 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     endif()
 
     if (LFORTRAN_SMOKE AND NOT RUN_SMOKE_NAME IN_LIST LFORTRAN_SMOKE_TESTS)
+        set(ADD_TEST OFF)
+    endif()
+    if (RUN_SMOKE_NAME IN_LIST LFORTRAN_EXCLUDE_TESTS)
         set(ADD_TEST OFF)
     endif()
 
@@ -323,6 +329,7 @@ macro(RUN)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
     set(RUN_SMOKE_NAME "${RUN_NAME}")
+    list(APPEND LFORTRAN_REGISTERED_TESTS "${RUN_NAME}")
 
     foreach(b ${RUN_LABELS})
         if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
@@ -389,7 +396,9 @@ macro(COMPILE)
         message(FATAL_ERROR "Must specify the COMPILER argument")
     endif()
 
-    if (NOT LFORTRAN_SMOKE OR name IN_LIST LFORTRAN_SMOKE_TESTS)
+    list(APPEND LFORTRAN_REGISTERED_TESTS "${name}")
+    if ((NOT LFORTRAN_SMOKE OR name IN_LIST LFORTRAN_SMOKE_TESTS)
+            AND NOT name IN_LIST LFORTRAN_EXCLUDE_TESTS)
         foreach(compiler ${compilers})
             if (compiler STREQUAL "lfortran" AND ${LFORTRAN_BACKEND} STREQUAL "llvm")
                 add_custom_command(
@@ -6881,3 +6890,9 @@ if (LFORTRAN_SMOKE)
     endif()
     message(STATUS "Selected ${smoke_count} smoke tests for ${LFORTRAN_BACKEND}")
 endif()
+
+foreach(name IN LISTS LFORTRAN_EXCLUDE_TESTS)
+    if (NOT name IN_LIST LFORTRAN_REGISTERED_TESTS)
+        message(FATAL_ERROR "Excluded test is not registered: ${name}")
+    endif()
+endforeach()

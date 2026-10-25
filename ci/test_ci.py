@@ -96,6 +96,33 @@ class SmokeSelectionTests(unittest.TestCase):
         self.assertGreaterEqual(len(names), 200)
         self.assertLessEqual(len(names), 300)
 
+    def test_excluded_tests_are_removed_in_every_mode(self):
+        excluded = {"expr_02", "arrays_28"}
+        exclude = "-DLFORTRAN_EXCLUDE_TESTS=" + ";".join(sorted(excluded))
+        suffixes = r"(_STD_F23|_LLVM_GOC|_DETECT_LEAKS|_FAST)*$"
+        for flags in ((), ("-DFAST=ON", "-DSTD_F23=ON")):
+            with self.subTest(flags=flags):
+                full, _ = self.configure("llvm", flags=flags)
+                names, _ = self.configure("llvm", flags=(*flags, exclude))
+                removed = {n for n in full if re.sub(suffixes, "", n) in excluded}
+                self.assertEqual(len(removed), len(excluded))
+                self.assertEqual(names, full - removed)
+
+    def test_excluded_configure_time_tests_are_not_compiled(self):
+        selected, _ = self.configure("wasm")
+        name = sorted(selected)[0]
+        names, calls = self.configure(
+            "wasm", flags=(f"-DLFORTRAN_EXCLUDE_TESTS={name}",))
+        compiled = [args for args in calls if any(arg.endswith(".f90") for arg in args)]
+        self.assertEqual(names, selected - {name})
+        self.assertEqual(len(compiled), len(names))
+
+    def test_unregistered_excluded_test_is_an_error(self):
+        with self.assertRaisesRegex(AssertionError,
+                "Excluded test is not registered: no_such_test_01"):
+            self.configure("llvm", flags=(
+                "-DLFORTRAN_EXCLUDE_TESTS=expr_02;no_such_test_01",))
+
     def test_empty_selection_is_an_error(self):
         with self.assertRaisesRegex(AssertionError, "No smoke tests selected"):
             self.configure("missing_backend")
@@ -254,6 +281,28 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual("-DLFORTRAN_SMOKE=ON" in configure, smoke)
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
+
+    def test_exclude_option_reaches_cmake_configure(self):
+        spec = importlib.util.spec_from_file_location(
+            "integration_runner", INTEGRATION / "run_tests.py"
+        )
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with patch.object(sys, "argv", ["run_tests.py", "--exclude", "a_01", "b_02"]):
+            exclude = runner.get_args().exclude
+        self.assertEqual(exclude, ["a_01", "b_02"])
+        for exclude in ([], ["a_01", "b_02"]):
+            with self.subTest(exclude=exclude), \
+                    tempfile.TemporaryDirectory() as build_dir, \
+                    patch.object(runner, "BUILD_DIR", Path(build_dir)), \
+                    patch.object(runner, "run_cmd") as command:
+                runner.run_test("llvm", "lf", exclude=exclude)
+                commands = [call.args[0] for call in command.call_args_list]
+                configure = next(cmd for cmd in commands if " cmake " in cmd)
+                if exclude:
+                    self.assertIn(shlex.quote("-DLFORTRAN_EXCLUDE_TESTS=a_01;b_02"), configure)
+                else:
+                    self.assertNotIn("LFORTRAN_EXCLUDE_TESTS", configure)
 
     def test_reference_build_dir_keeps_writes_out_of_source(self):
         sys.path.insert(0, str(ROOT / "src/libasr"))

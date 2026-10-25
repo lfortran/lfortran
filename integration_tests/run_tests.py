@@ -35,7 +35,7 @@ def run_cmd(cmd, cwd=None):
         print("Command failed.")
         exit(1)
 
-def run_test(backend, std, test_pattern=None, smoke=False):
+def run_test(backend, std, test_pattern=None, smoke=False, exclude=()):
     cwd = BUILD_DIR / f"test-{backend}"
     cwd.mkdir(parents=True)
     if std == "f23":
@@ -70,6 +70,8 @@ def run_test(backend, std, test_pattern=None, smoke=False):
               f" -S {shlex.quote(BASE_DIR)} -B {shlex.quote(str(cwd))}")
     if smoke:
         common += " -DLFORTRAN_SMOKE=ON"
+    if exclude:
+        common += " " + shlex.quote("-DLFORTRAN_EXCLUDE_TESTS=" + ";".join(exclude))
     if backend == "gfortran":
         fc = shlex.quote(os.environ.get("FC") or "gfortran")
         run_cmd(f"FC={fc} cmake" + common,
@@ -161,13 +163,13 @@ def run_test(backend, std, test_pattern=None, smoke=False):
     run_cmd(ctest_cmd, cwd=cwd)
 
 
-def test_backend(backend, std, test_pattern=None, smoke=False):
+def test_backend(backend, std, test_pattern=None, smoke=False, exclude=()):
     if backend not in SUPPORTED_BACKENDS:
         raise Exception(f"Unsupported Backend: {backend}\n")
     if std not in SUPPORTED_STANDARDS:
         raise Exception(f"Unsupported Backend: {std}\n")
 
-    run_test(backend, std, test_pattern, smoke)
+    run_test(backend, std, test_pattern, smoke, exclude)
 
 def check_module_names():
     from glob import glob
@@ -213,6 +215,8 @@ def get_args():
                 help="Run specific tests matching pattern (regex)")
     parser.add_argument("--smoke", action="store_true",
                 help="Build and run the representative CI subset, including configure-time tests")
+    parser.add_argument("--exclude", nargs="+", default=[], metavar="NAME",
+                help="Do not build or run these registered tests (the NAME of RUN or COMPILE) in any mode")
     parser.add_argument("--ninja", action='store_true',
                 help="Use Ninja build system instead of Make (faster builds)")
     parser.add_argument("-m", action='store_true',
@@ -262,7 +266,7 @@ def main():
     verbose = args.verbose
     test_pattern = args.test
     for backend in args.backends:
-        test_backend(backend, args.std, test_pattern, args.smoke)
+        test_backend(backend, args.std, test_pattern, args.smoke, args.exclude)
 
 if __name__ == "__main__":
     main()
