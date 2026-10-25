@@ -1,5 +1,6 @@
-"""Drive the optional Xeus kernel through jupyter_client: the Jupyter adapter
-over FortranEvaluator::execute()."""
+"""Drive the Jupyter kernel that is built, the Xeus one or else the built-in
+one, through jupyter_client: the Jupyter adapter over
+FortranEvaluator::execute()."""
 
 import argparse
 import os

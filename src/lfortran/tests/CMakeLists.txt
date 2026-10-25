@@ -15,6 +15,13 @@ macro(ADDTESTC name)
 endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
+    if (NOT EMSCRIPTEN)
+        add_executable(test_jupyter_stubs test_jupyter_stubs.cpp ../jupyter.cpp)
+        target_compile_definitions(test_jupyter_stubs PRIVATE __EMSCRIPTEN__)
+        target_include_directories(test_jupyter_stubs PRIVATE
+            ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+        add_test(NAME test_jupyter_stubs COMMAND test_jupyter_stubs)
+    endif()
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
     if (NOT EMSCRIPTEN)
@@ -310,8 +317,29 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+            # The prompt is a client of the shared kernel, which these tests
+            # also start on their own: the built-in one.
+            if (NOT WITH_XEUS)
+                add_test(
+                    NAME test_session
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                )
+                set_tests_properties(test_session PROPERTIES TIMEOUT 180
+                    SKIP_RETURN_CODE 77)
+                add_test(
+                    NAME test_session_regressions
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
+                        --lfortran $<TARGET_FILE:lfortran>
+                )
+                set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 300
+                    SKIP_RETURN_CODE 77)
+            endif()
         endif()
-        if (WITH_XEUS)
+        # The Xeus kernel, or else the built-in one
+        if (NOT EMSCRIPTEN)
             add_test(
                 NAME test_kernel_evaluation
                 COMMAND ${LFORTRAN_TEST_PYTHON}

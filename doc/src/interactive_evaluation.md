@@ -1,7 +1,8 @@
 # Running a cell: the prompt and the Jupyter kernel
 
-The terminal prompt and the optional Xeus kernel run cells with
-`FortranEvaluator::execute(code, verbose, io)` (`src/lfortran/fortran_evaluator.h`).
+The Jupyter kernels, the built-in one (`src/lfortran/jupyter.cpp`), which the
+terminal prompt starts and is a client of, and the optional Xeus one, run
+cells with `FortranEvaluator::execute(code, verbose, io)` (`src/lfortran/fortran_evaluator.h`).
 It evaluates one cell like `evaluate()`, with fresh diagnostics and the default
 passes, and also runs the `%%showast`, `%%showasr`, `%%showllvm`, `%%showasm`,
 `%%showcpp` and `%%showfmt` inspection cells (the magic is the first line of
@@ -41,8 +42,8 @@ With `CellIO::output` set, `execute()` redirects the cell's stdout and stderr
 (file descriptors 1 and 2) to temporary files and passes what it wrote to the
 hook before each display, clear_output and input, when the cell ends, and when
 it ends the process (STOP, a fatal error); unset, the cell writes to the
-process's stdout and stderr. The kernel sets it. Jupyter messages must be
-UTF-8, so the kernel shows any other bytes of a cell's output as U+FFFD.
+process's stdout and stderr. Both kernels set it. Jupyter messages must be
+UTF-8, so the kernels show any other bytes of a cell's output as U+FFFD.
 
 ## Runtime input
 
@@ -67,8 +68,8 @@ prompt. Named and internal files never consult the hook, and C code reading
 stdin directly is not affected.
 
 The `test_lfortran` cases `FortranEvaluator execute: *` (also run in the WASM
-build of the JupyterLite kernel), `test_repl` and, in Xeus builds,
-`test_kernel_evaluation` cover this, with `test_runtime_input` for the
+build of the JupyterLite kernel), `test_repl` and `test_kernel_evaluation`
+(against whichever kernel is built) cover this, with `test_runtime_input` for the
 runtime's record handling; the `display_data_01` integration test covers
 compiled programs and `runtime_input_records` checks that ordinary named and
 internal file reads are unchanged. The complex-result cases of `test_lfortran` also

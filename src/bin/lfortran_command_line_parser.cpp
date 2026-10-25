@@ -125,6 +125,8 @@ namespace LCompilers::CommandLineInterface {
         parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
         parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
             "The kernel connection file")->required();
+        parser.kernel->add_flag("--managed", parser.opts.arg_kernel_managed,
+            "Stop when the last client disconnects (the kernel the prompt starts)");
 
         parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
         parser.mod->add_option("file", parser.opts.arg_mod_file,
@@ -243,6 +245,8 @@ namespace LCompilers::CommandLineInterface {
             "DEPRECATED: legacy alias for --separate-compilation");
         app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
         app.add_flag("-v", opts.arg_v, "Be more verbose");
+        app.add_option("--connect", opts.connect,
+            "Run the prompt in the Jupyter kernel of the connection FILE");
         app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
         app.add_option("-l", opts.arg_l, "Link library option")->allow_extra_args(false);
         app.add_option("-L", opts.arg_L, "Library path option")->allow_extra_args(false);

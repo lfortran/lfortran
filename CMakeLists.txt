@@ -372,10 +372,17 @@ endfunction()
 # XEUS (Fortran kernel)
 set(WITH_XEUS no CACHE BOOL "Build with XEUS support")
 if (WITH_XEUS)
+    # The Xeus kernel uses the built-in kernel's code (jupyter.cpp), which
+    # needs LLVM.
+    if (NOT WITH_LLVM)
+        message(FATAL_ERROR "WITH_XEUS=yes requires WITH_LLVM=yes")
+    endif()
     find_package(xeus 5.0.0 REQUIRED)
     find_package(xeus-zmq 3.0.0 REQUIRED)
     set(HAVE_LFORTRAN_XEUS yes)
-
+endif()
+# The Xeus kernel, or else the built-in one, which needs only LLVM
+if (WITH_XEUS OR (WITH_LLVM AND NOT EMSCRIPTEN))
     configure_lfortran_kernel()
 
     # Configuration and data directories for Jupyter and LFortran

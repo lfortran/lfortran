@@ -34,6 +34,13 @@ set(CWRAPPER_SRC
     set(SRC ${SRC} ../bin/tpl/whereami/whereami.cpp)
   endif()
 
+  # The Jupyter client and the built-in Jupyter kernel, which Xeus builds
+  # use too
+  if (WITH_LLVM)
+    set(SRC ${SRC}
+      jupyter.cpp
+    )
+  endif()
   if (WITH_XEUS)
     set(SRC ${SRC}
       fortran_kernel.cpp
@@ -91,6 +98,9 @@ if (WITH_LIBUNWIND)
 endif()
 if (WITH_XEUS)
     target_link_libraries(lfortran_lib xeus xeus-zmq)
+endif()
+if (WITH_LLVM AND WIN32)
+    target_link_libraries(lfortran_lib ws2_32)
 endif()
 if (XEUS_LFORTRAN_WASM_BUILD)
     target_link_libraries(lfortran_lib xeus-static)

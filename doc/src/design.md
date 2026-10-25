@@ -1,6 +1,6 @@
 # LFortran Design
 
-The native prompt and optional Xeus kernel share an
+The Jupyter kernels, which the native prompt is a client of, share an
 [interactive evaluation and runtime input API](interactive_evaluation.md).
 
 ## High Level Overview

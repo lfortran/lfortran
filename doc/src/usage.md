@@ -132,6 +132,68 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+### Sharing a session
+
+The prompt is a Jupyter client. It runs its cells in a Jupyter kernel that it
+starts, and it tells where the kernel's connection file is, so that other
+clients can join the session, with its variables, procedures and modules:
+another prompt, `jupyter console --existing FILE` or any Jupyter client.
+
+```console
+$ lfortran
+...
+  * Others can join with `lfortran --connect /tmp/lfortran-0123abcd.json`
+>>>
+$ lfortran --connect /tmp/lfortran-0123abcd.json
+```
+
+A kernel can also be started on its own; it writes the connection file if it
+does not exist and runs until a client shuts it down, or until Ctrl-C or
+SIGTERM, which end a running cell too, except Ctrl-C while the cell waits in
+EXECUTE_COMMAND_LINE, which, as C's `system()`, ignores it while its command
+runs:
+
+```console
+$ lfortran kernel -f session.json
+$ lfortran --connect session.json
+```
+
+The kernel runs one cell at a time, each client's in the order it sent them.
+Every client sees every cell's output, as in Jupyter: the prompt shows another
+client's cell, marked `[other client]`, when it runs its next cell. A cell's
+output is shown when the cell finishes, displays or reads input, what it
+wrote to stdout before what it wrote to stderr. The programs that a cell
+starts (EXECUTE_COMMAND_LINE) run without the terminal: their output is the
+cell's, and their input the kernel's, which is empty for the kernel a prompt
+starts. A cell that fails aborts the cells waiting behind it, unless it was
+sent with `stop_on_error` false.
+
+A READ asks the client that ran the cell. If that client disconnects, the READ
+fails with an I/O error: a READ with `iostat=` goes on, but any other READ ends
+the kernel, as an I/O error ends a Fortran program, and with it the session of
+every client. So does any client's cell that executes STOP or ERROR STOP, or
+that crashes.
+
+The kernel a prompt starts stops when its last client disconnects, even if the
+prompt has exited, and even while a cell runs: Ctrl-C at the prompt ends the
+prompt and, if no other client is connected, the kernel with its cell. A
+running cell cannot be interrupted yet. Whoever can read the connection file
+can run code as its owner, so on POSIX systems it is written readable by its
+owner only.
+
+The kernel is LFortran's own implementation of the Jupyter messaging protocol
+(ZeroMQ over TCP with HMAC-SHA256 signatures), which needs no third-party
+library; its client joins kernels whose connection file gives an IPv4
+address. In a build with `WITH_XEUS=yes`, `lfortran kernel` on an existing
+connection file, as a Jupyter frontend starts it, runs the Xeus kernel
+instead, on Xeus's own server: its READ reads the kernel's own stdin, it does
+not show what `-v` adds, and the cells waiting behind a failed one get an
+error reply without the idle status that a client waits for. The kernel a
+prompt starts is still LFortran's own, as Xeus cannot tell when the last
+client disconnects, and so is a kernel started without a connection file,
+which only LFortran's own writes; the client is always LFortran's own. See
+`src/lfortran/jupyter.cpp`.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
