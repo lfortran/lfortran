@@ -26,14 +26,15 @@ echo "LFORTRAN_LLVM_VERSION: ${LFORTRAN_LLVM_VERSION:-unset}"
 # for real(16)/real128 (gpu_metal_291 error-stops "real16"; real128_compare_01
 # error-stops 1; real128_literal_02 error-stops 2; template_deferred_const_05
 # and implicit_typing_13 error-stop; real_star_01 and the real128_arith,
-# real128_intrinsic math, sqrt and real tests error-stop too): their x86-64
-# backend passes fp128 libcall arguments (e.g. __lttf2, __trunctfdf2) in
-# general purpose registers instead of SSE registers. Keep compiling them;
-# skip running them on LLVM 7 and 8.
+# real128_intrinsic math, sqrt and real tests and real128_int_to_real_02
+# error-stop too): their x86-64 backend passes fp128 libcall arguments (e.g.
+# __lttf2, __trunctfdf2) in general purpose registers instead of SSE
+# registers. Keep compiling them; skip running them on LLVM 7 and 8.
 if [[ "${LFORTRAN_LLVM_VERSION}" == "7" || "${LFORTRAN_LLVM_VERSION}" == "8" ]]; then
     LFORTRAN_CTEST_EXCLUDE='gpu_metal_291|real128_compare_01|real128_literal_02|template_deferred_const_05|implicit_typing_13'
     LFORTRAN_CTEST_EXCLUDE+='|real_star_01|real128_arith_11|real128_arith_12|real128_intrinsic_math_01'
     LFORTRAN_CTEST_EXCLUDE+='|real128_intrinsic_math_02|real128_intrinsic_math_03|real128_intrinsic_real_02|real128_intrinsic_sqrt_01'
+    LFORTRAN_CTEST_EXCLUDE+='|real128_int_to_real_02'
     export LFORTRAN_CTEST_EXCLUDE
     echo "LFORTRAN_CTEST_EXCLUDE=${LFORTRAN_CTEST_EXCLUDE}"
 fi
