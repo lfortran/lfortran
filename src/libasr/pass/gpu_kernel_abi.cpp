@@ -142,6 +142,25 @@ public:
         expand(symbol, through_bindings ? gpu_local_scalar_binding(symbol,
             kernel.m_body, kernel.n_body) : nullptr);
     }
+
+    // `max(extent, 0)`, which semantics makes of an explicit-shape extent,
+    // as a conditional, which the host evaluates like the other operations.
+    void replace_IntrinsicElementalFunction(
+            ASR::IntrinsicElementalFunction_t *x) {
+        ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+            ::replace_IntrinsicElementalFunction(x);
+        if (!valid || !ASRUtils::is_integer_max(&x->base)) return;
+        ASR::expr_t *bdy = duplicate_expression(al, x->m_args[0]);
+        ASR::expr_t *els = duplicate_expression(al, x->m_args[1]);
+        if (bdy == nullptr || els == nullptr) {
+            valid = false;
+            return;
+        }
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        *current_expr = ASRUtils::EXPR(ASR::make_IfExp_t(al,
+            x->base.base.loc, b.Gt(x->m_args[0], x->m_args[1]), bdy, els,
+            x->m_type, nullptr));
+    }
 };
 
 // Whether an expression is made only of what the host can evaluate before

@@ -19,7 +19,14 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 2 n))]
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(Var 2 n)
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        ))]
                                         PointerArray
                                         Global
                                     )
@@ -50,7 +57,14 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (Var 2 n))]
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(Var 2 n)
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        ))]
                                         PointerArray
                                         Global
                                     )
@@ -293,8 +307,15 @@
                         [(Array
                             (Integer 4)
                             [((IntegerConstant 1 (Integer 4) Decimal)
-                            (FunctionParam
-                                2
+                            (IntrinsicElementalFunction
+                                Max
+                                [(FunctionParam
+                                    2
+                                    (Integer 4)
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
                                 (Integer 4)
                                 ()
                             ))]
@@ -304,8 +325,15 @@
                         (Array
                             (Integer 4)
                             [((IntegerConstant 1 (Integer 4) Decimal)
-                            (FunctionParam
-                                2
+                            (IntrinsicElementalFunction
+                                Max
+                                [(FunctionParam
+                                    2
+                                    (Integer 4)
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                0
                                 (Integer 4)
                                 ()
                             ))]

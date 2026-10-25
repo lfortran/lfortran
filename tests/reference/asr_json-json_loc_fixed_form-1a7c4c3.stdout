@@ -137,9 +137,78 @@
                                                                                 }
                                                                             },
                                                                             "length": {
-                                                                                "node": "Var",
+                                                                                "node": "IntrinsicElementalFunction",
                                                                                 "fields": {
-                                                                                    "v": "n (SymbolTable3)"
+                                                                                    "intrinsic_id": 122,
+                                                                                    "args": [
+                                                                                        {
+                                                                                            "node": "Var",
+                                                                                            "fields": {
+                                                                                                "v": "n (SymbolTable3)"
+                                                                                            },
+                                                                                            "loc": {
+                                                                                                "first": 67,
+                                                                                                "last": 67,
+                                                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                                "first_line": 8,
+                                                                                                "first_column": 13,
+                                                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                                "last_line": 8,
+                                                                                                "last_column": 13
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "node": "IntegerConstant",
+                                                                                            "fields": {
+                                                                                                "n": 0,
+                                                                                                "type": {
+                                                                                                    "node": "Integer",
+                                                                                                    "fields": {
+                                                                                                        "kind": 4
+                                                                                                    },
+                                                                                                    "loc": {
+                                                                                                        "first": 52,
+                                                                                                        "last": 59,
+                                                                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                                        "first_line": 6,
+                                                                                                        "first_column": 7,
+                                                                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                                        "last_line": 6,
+                                                                                                        "last_column": 15
+                                                                                                    }
+                                                                                                },
+                                                                                                "intboz_type": "Decimal"
+                                                                                            },
+                                                                                            "loc": {
+                                                                                                "first": 67,
+                                                                                                "last": 67,
+                                                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                                "first_line": 8,
+                                                                                                "first_column": 13,
+                                                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                                "last_line": 8,
+                                                                                                "last_column": 13
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "overload_id": 0,
+                                                                                    "type": {
+                                                                                        "node": "Integer",
+                                                                                        "fields": {
+                                                                                            "kind": 4
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 52,
+                                                                                            "last": 59,
+                                                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "first_line": 6,
+                                                                                            "first_column": 7,
+                                                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "last_line": 6,
+                                                                                            "last_column": 15
+                                                                                        }
+                                                                                    },
+                                                                                    "value": []
                                                                                 },
                                                                                 "loc": {
                                                                                     "first": 67,
@@ -285,9 +354,78 @@
                                                                             }
                                                                         },
                                                                         "length": {
-                                                                            "node": "FunctionParam",
+                                                                            "node": "IntrinsicElementalFunction",
                                                                             "fields": {
-                                                                                "param_number": 0,
+                                                                                "intrinsic_id": 122,
+                                                                                "args": [
+                                                                                    {
+                                                                                        "node": "FunctionParam",
+                                                                                        "fields": {
+                                                                                            "param_number": 0,
+                                                                                            "type": {
+                                                                                                "node": "Integer",
+                                                                                                "fields": {
+                                                                                                    "kind": 4
+                                                                                                },
+                                                                                                "loc": {
+                                                                                                    "first": 52,
+                                                                                                    "last": 59,
+                                                                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                                    "first_line": 6,
+                                                                                                    "first_column": 7,
+                                                                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                                    "last_line": 6,
+                                                                                                    "last_column": 15
+                                                                                                }
+                                                                                            },
+                                                                                            "value": []
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 35,
+                                                                                            "last": 82,
+                                                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "first_line": 5,
+                                                                                            "first_column": 7,
+                                                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "last_line": 9,
+                                                                                            "last_column": 20
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "node": "IntegerConstant",
+                                                                                        "fields": {
+                                                                                            "n": 0,
+                                                                                            "type": {
+                                                                                                "node": "Integer",
+                                                                                                "fields": {
+                                                                                                    "kind": 4
+                                                                                                },
+                                                                                                "loc": {
+                                                                                                    "first": 52,
+                                                                                                    "last": 59,
+                                                                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                                    "first_line": 6,
+                                                                                                    "first_column": 7,
+                                                                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                                    "last_line": 6,
+                                                                                                    "last_column": 15
+                                                                                                }
+                                                                                            },
+                                                                                            "intboz_type": "Decimal"
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 67,
+                                                                                            "last": 67,
+                                                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "first_line": 8,
+                                                                                            "first_column": 13,
+                                                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "last_line": 8,
+                                                                                            "last_column": 13
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "overload_id": 0,
                                                                                 "type": {
                                                                                     "node": "Integer",
                                                                                     "fields": {
@@ -307,14 +445,14 @@
                                                                                 "value": []
                                                                             },
                                                                             "loc": {
-                                                                                "first": 35,
-                                                                                "last": 82,
+                                                                                "first": 67,
+                                                                                "last": 67,
                                                                                 "first_filename": "tests/json_loc_fixed_form.f",
-                                                                                "first_line": 5,
-                                                                                "first_column": 7,
+                                                                                "first_line": 8,
+                                                                                "first_column": 13,
                                                                                 "last_filename": "tests/json_loc_fixed_form.f",
-                                                                                "last_line": 9,
-                                                                                "last_column": 20
+                                                                                "last_line": 8,
+                                                                                "last_column": 13
                                                                             }
                                                                         }
                                                                     },

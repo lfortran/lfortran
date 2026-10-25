@@ -84,24 +84,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 7 owned)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 7 owned)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                9 1_extent_n
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            9 1_extent_n
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -135,24 +142,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 7 owned)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 7 owned)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                9 1_extent_step
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            9 1_extent_step
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -251,24 +265,31 @@
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (StructInstanceMember
-                                                    (ArrayItem
-                                                        (Var 7 owned)
-                                                        [(()
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        (StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)]
-                                                            []
+                                                (IntrinsicElementalFunction
+                                                    Max
+                                                    [(StructInstanceMember
+                                                        (ArrayItem
+                                                            (Var 7 owned)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            ())]
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
                                                             .true.
-                                                            .false.
                                                         )
-                                                        ColMajor
+                                                        9 1_extent_n
+                                                        (Integer 4)
                                                         ()
-                                                        .true.
                                                     )
-                                                    9 1_extent_n
+                                                    (IntegerConstant 0 (Integer 4) Decimal)]
+                                                    0
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -303,24 +324,31 @@
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (StructInstanceMember
-                                                    (ArrayItem
-                                                        (Var 7 owned)
-                                                        [(()
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        (StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)]
-                                                            []
+                                                (IntrinsicElementalFunction
+                                                    Max
+                                                    [(StructInstanceMember
+                                                        (ArrayItem
+                                                            (Var 7 owned)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            ())]
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
                                                             .true.
-                                                            .false.
                                                         )
-                                                        ColMajor
+                                                        9 1_extent_step
+                                                        (Integer 4)
                                                         ()
-                                                        .true.
                                                     )
-                                                    9 1_extent_step
+                                                    (IntegerConstant 0 (Integer 4) Decimal)]
+                                                    0
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -347,24 +375,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 7 owned)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 7 owned)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                9 1_extent_n
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            9 1_extent_n
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -399,24 +434,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 7 owned)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 7 owned)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                9 1_extent_step
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            9 1_extent_step
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1125,24 +1167,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 2 shared)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 2 shared)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                4 1_extent_n
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            4 1_extent_n
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1222,24 +1271,31 @@
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (StructInstanceMember
-                                                    (ArrayItem
-                                                        (Var 2 shared)
-                                                        [(()
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        (StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)]
-                                                            []
+                                                (IntrinsicElementalFunction
+                                                    Max
+                                                    [(StructInstanceMember
+                                                        (ArrayItem
+                                                            (Var 2 shared)
+                                                            [(()
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            ())]
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            ColMajor
+                                                            ()
                                                             .true.
-                                                            .false.
                                                         )
-                                                        ColMajor
+                                                        4 1_extent_n
+                                                        (Integer 4)
                                                         ()
-                                                        .true.
                                                     )
-                                                    4 1_extent_n
+                                                    (IntegerConstant 0 (Integer 4) Decimal)]
+                                                    0
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -1266,24 +1322,31 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (Var 2 shared)
-                                                                [(()
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                ())]
-                                                                (StructType
-                                                                    [(Integer 4)
-                                                                    (Integer 4)]
-                                                                    []
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(StructInstanceMember
+                                                                (ArrayItem
+                                                                    (Var 2 shared)
+                                                                    [(()
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    ())]
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ColMajor
+                                                                    ()
                                                                     .true.
-                                                                    .false.
                                                                 )
-                                                                ColMajor
+                                                                4 1_extent_n
+                                                                (Integer 4)
                                                                 ()
-                                                                .true.
                                                             )
-                                                            4 1_extent_n
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1434,24 +1497,31 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (StructInstanceMember
-                                            (ArrayItem
-                                                (Var 6 shared)
-                                                [(()
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                ())]
-                                                (StructType
-                                                    [(Integer 4)
-                                                    (Integer 4)]
-                                                    []
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 6 shared)
+                                                    [(()
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
                                                     .true.
-                                                    .false.
                                                 )
-                                                ColMajor
+                                                6 1_extent_n
+                                                (Integer 4)
                                                 ()
-                                                .true.
                                             )
-                                            6 1_extent_n
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1485,24 +1555,31 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (StructInstanceMember
-                                            (ArrayItem
-                                                (Var 6 shared)
-                                                [(()
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                ())]
-                                                (StructType
-                                                    [(Integer 4)
-                                                    (Integer 4)]
-                                                    []
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 6 shared)
+                                                    [(()
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
                                                     .true.
-                                                    .false.
                                                 )
-                                                ColMajor
+                                                6 1_extent_step
+                                                (Integer 4)
                                                 ()
-                                                .true.
                                             )
-                                            6 1_extent_step
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1641,24 +1718,31 @@
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                (StructInstanceMember
-                                    (ArrayItem
-                                        (Var 6 shared)
-                                        [(()
-                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                        ())]
-                                        (StructType
-                                            [(Integer 4)
-                                            (Integer 4)]
-                                            []
+                                (IntrinsicElementalFunction
+                                    Max
+                                    [(StructInstanceMember
+                                        (ArrayItem
+                                            (Var 6 shared)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ColMajor
+                                            ()
                                             .true.
-                                            .false.
                                         )
-                                        ColMajor
+                                        6 1_extent_n
+                                        (Integer 4)
                                         ()
-                                        .true.
                                     )
-                                    6 1_extent_n
+                                    (IntegerConstant 0 (Integer 4) Decimal)]
+                                    0
                                     (Integer 4)
                                     ()
                                 ))]
@@ -1693,24 +1777,31 @@
                             (Array
                                 (Integer 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                (StructInstanceMember
-                                    (ArrayItem
-                                        (Var 6 shared)
-                                        [(()
-                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                        ())]
-                                        (StructType
-                                            [(Integer 4)
-                                            (Integer 4)]
-                                            []
+                                (IntrinsicElementalFunction
+                                    Max
+                                    [(StructInstanceMember
+                                        (ArrayItem
+                                            (Var 6 shared)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            ColMajor
+                                            ()
                                             .true.
-                                            .false.
                                         )
-                                        ColMajor
+                                        6 1_extent_step
+                                        (Integer 4)
                                         ()
-                                        .true.
                                     )
-                                    6 1_extent_step
+                                    (IntegerConstant 0 (Integer 4) Decimal)]
+                                    0
                                     (Integer 4)
                                     ()
                                 ))]
@@ -1737,24 +1828,31 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (StructInstanceMember
-                                            (ArrayItem
-                                                (Var 6 shared)
-                                                [(()
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                ())]
-                                                (StructType
-                                                    [(Integer 4)
-                                                    (Integer 4)]
-                                                    []
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 6 shared)
+                                                    [(()
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
                                                     .true.
-                                                    .false.
                                                 )
-                                                ColMajor
+                                                6 1_extent_n
+                                                (Integer 4)
                                                 ()
-                                                .true.
                                             )
-                                            6 1_extent_n
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
                                             (Integer 4)
                                             ()
                                         ))]
@@ -1789,24 +1887,31 @@
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (StructInstanceMember
-                                            (ArrayItem
-                                                (Var 6 shared)
-                                                [(()
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                ())]
-                                                (StructType
-                                                    [(Integer 4)
-                                                    (Integer 4)]
-                                                    []
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(StructInstanceMember
+                                                (ArrayItem
+                                                    (Var 6 shared)
+                                                    [(()
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    ())]
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ColMajor
+                                                    ()
                                                     .true.
-                                                    .false.
                                                 )
-                                                ColMajor
+                                                6 1_extent_step
+                                                (Integer 4)
                                                 ()
-                                                .true.
                                             )
-                                            6 1_extent_step
+                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                            0
                                             (Integer 4)
                                             ()
                                         ))]
