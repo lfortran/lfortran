@@ -411,6 +411,15 @@ namespace LCompilers {
         ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
             ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
 
+        // Whether the allocated object of `alloc_arg` has a shape other than
+        // the one `alloc_arg` gives it (F2018 10.2.1.3), also when both have
+        // the same number of elements, e.g. `a = transpose(a)`, as the
+        // `shape_differs` of a ReAlloc. The extents are compared as integers
+        // of `idx_type`. It reads the descriptor, so it is evaluated only
+        // while the object is allocated. An object of rank 0 never differs.
+        ASR::expr_t* make_shape_differs(Allocator &al, const Location &loc,
+            const ASR::alloc_arg_t& alloc_arg, ASR::ttype_t* idx_type);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);

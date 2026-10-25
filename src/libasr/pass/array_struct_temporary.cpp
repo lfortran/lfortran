@@ -1368,7 +1368,7 @@ bool set_allocation_size(
 
 void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
-    ASR::expr_t* rank_source) {
+    ASR::expr_t* rank_source, bool is_target) {
     if( !ASRUtils::is_allocatable(temporary_var) ) {
         return ;
     }
@@ -1397,7 +1397,17 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
     dealloc_args.push_back(al, temporary_var);
-    if( !add_allocated_check ) {
+    // A polymorphic target can also take another dynamic type, which
+    // array_op gives it, so it is allocated again
+    if( !add_allocated_check && is_target &&
+        !ASRUtils::is_class_type(ASRUtils::extract_type(
+            ASRUtils::expr_type(temporary_var))) ) {
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(al,
+            temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+            PassUtils::make_shape_differs(al, temporary_var->base.loc,
+                alloc_arg, ASRUtils::TYPE(ASR::make_Integer_t(al,
+                    temporary_var->base.loc, 4))))));
+    } else if( !add_allocated_check ) {
         current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
             temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -3318,11 +3328,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 target_Type == targetType::OriginalTarget &&
                 realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, underlying_target, *current_expr,
-                                               current_body, target);
+                                               current_body, target, true);
             } else if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
                 target_Type == targetType::OriginalTarget &&
                 realloc_lhs ) {
-                insert_allocate_stmt_for_array(al, target, *current_expr, current_body);
+                insert_allocate_stmt_for_array(al, target, *current_expr,
+                                               current_body, nullptr, true);
             }
             return true;
         }

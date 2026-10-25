@@ -1954,34 +1954,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             loc)), {allocate}, {}));
     }
 
-    // Whether the allocated object of `alloc_arg` has a shape other than
-    // the one `alloc_arg` gives it (F2018 10.2.1.3), also when both have the
-    // same number of elements, e.g. `a = transpose(a)`. It reads the
-    // descriptor, so it is evaluated only while the object is allocated.
-    // An object of rank 0 never differs.
     ASR::expr_t* make_shape_differs(const ASR::alloc_arg_t& alloc_arg,
             const Location& loc) {
-        ASRUtils::ASRBuilder b(al, loc);
-        ASRUtils::ExprStmtDuplicator d(al);
-        ASR::ttype_t* idx_type = get_index_type(loc);
-        ASR::expr_t* shape_differs = nullptr;
-        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
-            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
-            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
-                    != get_index_kind()) {
-                length = b.i2i_t(length, idx_type);
-            }
-            ASR::expr_t* dim_differs = b.NotEq(b.ArraySize(
-                d.duplicate_expr(alloc_arg.m_a), b.i_t(i + 1, idx_type),
-                idx_type), length);
-            shape_differs = shape_differs == nullptr ? dim_differs
-                : b.Or(shape_differs, dim_differs);
-        }
-        if (shape_differs == nullptr) {
-            shape_differs = b.bool_t(false, ASRUtils::TYPE(
-                ASR::make_Logical_t(al, loc, 4)));
-        }
-        return shape_differs;
+        return PassUtils::make_shape_differs(al, loc, alloc_arg,
+            get_index_type(loc));
     }
 
     // The variable whose dynamic type a polymorphic array `value` has, for
