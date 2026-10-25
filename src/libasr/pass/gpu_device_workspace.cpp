@@ -197,6 +197,12 @@ private:
                 dim.loc = arr->m_dims[d].loc;
                 dim.m_start = substitute(arr->m_dims[d].m_start, values);
                 dim.m_length = substitute(arr->m_dims[d].m_length, values);
+                // max(n, 0) over a constant argument gives a fixed-size
+                // local, as the extent n alone does.
+                if (ASR::expr_t *folded = ASRUtils::fold_integer_max(al,
+                        dim.m_length)) {
+                    dim.m_length = folded;
+                }
                 dims.push_back(al, dim);
             }
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,

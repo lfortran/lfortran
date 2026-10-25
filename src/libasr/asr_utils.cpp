@@ -13034,6 +13034,32 @@ ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
     return arg;
 }
 
+bool is_integer_max(ASR::expr_t* e) {
+    if (e == nullptr || !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+        return false;
+    }
+    ASR::IntrinsicElementalFunction_t* f =
+        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+    return f->m_intrinsic_id == static_cast<int64_t>(
+            IntrinsicElementalFunctions::Max) &&
+        f->n_args == 2 && is_integer(*f->m_type);
+}
+
+ASR::expr_t* fold_integer_max(Allocator& al, ASR::expr_t* e) {
+    if (!is_integer_max(e)) {
+        return nullptr;
+    }
+    ASR::IntrinsicElementalFunction_t* f =
+        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+    int64_t left = 0, right = 0;
+    if (!extract_value(expr_value(f->m_args[0]), left) ||
+            !extract_value(expr_value(f->m_args[1]), right)) {
+        return nullptr;
+    }
+    return EXPR(ASR::make_IntegerConstant_t(al, e->base.loc,
+        std::max(left, right), f->m_type));
+}
+
 ASR::asr_t* make_IntrinsicElementalFunction_t_util(
     Allocator &al, const Location &a_loc, int64_t a_intrinsic_id,
     ASR::expr_t** a_args, size_t n_args, int64_t a_overload_id,
@@ -13800,6 +13826,11 @@ ASR::expr_t* ReplaceFunctionParamWithArg::replace_FunctionParam_with_arg(ASR::ex
     }
     replacements.clear();
 
+    // An extent max(n, 0) over a constant argument is a constant, as the
+    // extent n alone is.
+    if (ASR::expr_t* folded = fold_integer_max(al, tc)) {
+        return folded;
+    }
     return tc;
 }
 

@@ -4146,6 +4146,51 @@ public:
             ASRUtils::duplicate_type(al, type), nullptr));
     }
 
+    // Records whether the expression it walks calls a procedure or an array
+    // intrinsic.
+    class ExtentCallFinder : public ASR::BaseWalkVisitor<ExtentCallFinder> {
+        public:
+        bool found = false;
+
+        void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+            found = true;
+        }
+
+        void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& /*x*/) {
+            found = true;
+        }
+    };
+
+    // An explicit-shape dimension whose upper bound is below its lower bound
+    // has zero extent, so a length known only at run time is max(length, 0).
+    // A length that cannot be negative, such as size(x), needs no clamp. A
+    // length that calls a procedure or an array intrinsic is left as it is:
+    // the passes turn max() of it into a call of a generated function, which
+    // they do not yet support in the bounds of a type.
+    ASR::expr_t* explicit_shape_extent(ASR::expr_t* length) {
+        if (length == nullptr || ASRUtils::expr_value(length) != nullptr ||
+                ASR::is_a<ASR::ArraySize_t>(*length) ||
+                ASR::is_a<ASR::StringLen_t>(*length) ||
+                ASRUtils::is_integer_max(length)) {
+            return length;
+        }
+        ExtentCallFinder call_finder;
+        call_finder.visit_expr(*length);
+        if (call_finder.found) {
+            return length;
+        }
+        const Location &loc = length->base.loc;
+        ASR::ttype_t* type = ASRUtils::expr_type(length);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, length);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            0, type)));
+        return ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
+            al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Max),
+            args.p, args.size(), 0, type, nullptr));
+    }
+
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
         AST::dimension_t *m_dim, size_t n_dim, bool &is_compile_time,
         bool is_char_type, bool is_argument, char* var_name) {  
@@ -4209,8 +4254,9 @@ public:
                         current_scope, m_dim[i].m_end, var_name, 
                         [this, dim_ptr = &dim](ASR::expr_t* end){
                             dimension_attribute_error_check(end);
-                            dim_ptr->m_length = ASRUtils::compute_length_from_start_end(
-                                this->al, dim_ptr->m_start, end);
+                            dim_ptr->m_length = explicit_shape_extent(
+                                ASRUtils::compute_length_from_start_end(
+                                    this->al, dim_ptr->m_start, end));
                         });
                     dim.m_length = nullptr;
                 } else {
@@ -4234,14 +4280,16 @@ public:
                         postponed_genericProcedure_calls_vec[start_call].check =
                             [this, dim_ptr = &dim, end](ASR::expr_t* start){
                                 dimension_attribute_error_check(start);
-                                dim_ptr->m_length = ASRUtils::compute_length_from_start_end(
-                                    this->al, start, end);
+                                dim_ptr->m_length = explicit_shape_extent(
+                                    ASRUtils::compute_length_from_start_end(
+                                        this->al, start, end));
                             };
                     } else if (pdt_kind_bound) {
                         dim.m_length = pdt_component_extent(dim.m_start, end);
                     } else {
-                        dim.m_length = ASRUtils::compute_length_from_start_end(al,
-                            dim.m_start, end);
+                        dim.m_length = explicit_shape_extent(
+                            ASRUtils::compute_length_from_start_end(al,
+                                dim.m_start, end));
                     }
                     if (is_derived_type && !pdt_kind_bound && !start_postponed) {
                         ASR::expr_t* length_value = ASRUtils::expr_value(dim.m_length);

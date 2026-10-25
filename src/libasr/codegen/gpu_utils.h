@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <algorithm>
 #include <cctype>
 #include <functional>
 #include <set>
@@ -32,6 +33,7 @@ enum class GpuExtentKind {
     Neg,        // -children[0]
     Compare,    // children[0] `cmpop` children[1]
     Select,     // children[0] ? children[1] : children[2]
+    Max,        // the larger of children[0] and children[1]
     Product,    // children[0] * children[1] * ...
     ArgScalar,  // the value of the kernel parameter `arg_index`
     ArgMember,  // the component `member_path` of parameter `arg_index`
@@ -226,6 +228,7 @@ inline void gpu_read_extent_names(const GpuExtent &e,
         case GpuExtentKind::Neg:
         case GpuExtentKind::Compare:
         case GpuExtentKind::Select:
+        case GpuExtentKind::Max:
         case GpuExtentKind::Product: {
             for (const GpuExtent &c : e.children) {
                 gpu_read_extent_names(c, names, found);
@@ -1719,6 +1722,26 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         out.children.push_back(std::move(t));
         out.children.push_back(std::move(bdy));
         out.children.push_back(std::move(els));
+        return out;
+    }
+    // `max(extent, 0)`, which semantics makes of an explicit-shape extent
+    // known only at run time.
+    if (ASRUtils::is_integer_max(v)) {
+        ASR::IntrinsicElementalFunction_t *f =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(v);
+        GpuExtent l = gpu_derive_extent(f->m_args[0], scope, depth);
+        GpuExtent r = gpu_derive_extent(f->m_args[1], scope, depth);
+        if (!l.ok() || !r.ok()) return none;
+        // Over two constants it is a constant, as each of them is.
+        if (l.kind == GpuExtentKind::Constant &&
+                r.kind == GpuExtentKind::Constant) {
+            return gpu_extent_literal(std::max(l.int_value, r.int_value));
+        }
+        GpuExtent out;
+        out.kind = GpuExtentKind::Max;
+        out.expr = v;
+        out.children.push_back(std::move(l));
+        out.children.push_back(std::move(r));
         return out;
     }
     {
