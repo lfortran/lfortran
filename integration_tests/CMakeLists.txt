@@ -6893,6 +6893,6 @@ endif()
 
 foreach(name IN LISTS LFORTRAN_EXCLUDE_TESTS)
     if (NOT name IN_LIST LFORTRAN_REGISTERED_TESTS)
-        message(FATAL_ERROR "Excluded test is not registered: ${name}")
+        message(FATAL_ERROR "Excluded test is not registered: '${name}'")
     endif()
 endforeach()

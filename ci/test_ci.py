@@ -36,6 +36,7 @@ class SmokeSelectionTests(unittest.TestCase):
         )
         compiler.chmod(0o755)
         cls.configurations = {}
+        cls.targets = {}
 
     def configure(self, backend, smoke=True, flags=()):
         key = (backend, smoke, flags)
@@ -64,6 +65,9 @@ class SmokeSelectionTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             names = {test["name"] for test in json.loads(result.stdout)["tests"]}
             calls = [json.loads(line) for line in compiler_log.read_text().splitlines()]
+            targets = (build / "CMakeFiles/TargetDirectories.txt").read_text()
+            self.targets[key] = {Path(line).name.removesuffix(".dir")
+                                 for line in targets.splitlines()}
             self.configurations[key] = (names, calls)
         return self.configurations[key]
 
@@ -108,6 +112,17 @@ class SmokeSelectionTests(unittest.TestCase):
                 self.assertEqual(len(removed), len(excluded))
                 self.assertEqual(names, full - removed)
 
+    def test_full_suite_exclusion_covers_run_and_compile(self):
+        # COMPILE tests create a target, not a ctest test.
+        compiled = "character_len_of_function_12614"
+        flags = (f"-DLFORTRAN_EXCLUDE_TESTS=real128_intrinsic_math_01;{compiled}",)
+        full, _ = self.configure("llvm", smoke=False)
+        names, _ = self.configure("llvm", smoke=False, flags=flags)
+        self.assertEqual(names, full - {"real128_intrinsic_math_01"})
+        target = f"{compiled}_lfortran"
+        self.assertIn(target, self.targets[("llvm", False, ())])
+        self.assertNotIn(target, self.targets[("llvm", False, flags)])
+
     def test_excluded_configure_time_tests_are_not_compiled(self):
         selected, _ = self.configure("wasm")
         name = sorted(selected)[0]
@@ -119,7 +134,7 @@ class SmokeSelectionTests(unittest.TestCase):
 
     def test_unregistered_excluded_test_is_an_error(self):
         with self.assertRaisesRegex(AssertionError,
-                "Excluded test is not registered: no_such_test_01"):
+                "Excluded test is not registered: 'no_such_test_01'"):
             self.configure("llvm", flags=(
                 "-DLFORTRAN_EXCLUDE_TESTS=expr_02;no_such_test_01",))
 
@@ -288,7 +303,8 @@ class RunnerTests(unittest.TestCase):
         )
         runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(runner)
-        with patch.object(sys, "argv", ["run_tests.py", "--exclude", "a_01", "b_02"]):
+        with patch.object(sys, "argv", ["run_tests.py", "--exclude", "a_01", "-f",
+                                        "--exclude", "b_02"]):
             exclude = runner.get_args().exclude
         self.assertEqual(exclude, ["a_01", "b_02"])
         for exclude in ([], ["a_01", "b_02"]):

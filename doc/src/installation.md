@@ -482,8 +482,8 @@ Excluded tests are removed at configure time, like the smoke selection, so
 they are neither built nor run, in every mode (`-f`, `--std=f23`, ...). This
 is for working around a test that does not compile in a downstream
 environment, such as an installed package. An unregistered name is an error.
-`LFORTRAN_CTEST_EXCLUDE` (a regular expression) only skips running tests that
-were already built.
+The `LFORTRAN_CTEST_EXCLUDE` environment variable (a regular expression) only
+skips running tests that were already built.
 
 ## Optional installation alternatives
 

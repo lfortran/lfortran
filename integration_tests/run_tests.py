@@ -157,9 +157,9 @@ def run_test(backend, std, test_pattern=None, smoke=False, exclude=()):
         ctest_cmd += " -V"
     if test_pattern:
         ctest_cmd += f" -R {shlex.quote(test_pattern)}"
-    exclude = os.environ.get("LFORTRAN_CTEST_EXCLUDE", "").strip()
-    if exclude:
-        ctest_cmd += f" -E {shlex.quote(exclude)}"
+    ctest_exclude = os.environ.get("LFORTRAN_CTEST_EXCLUDE", "").strip()
+    if ctest_exclude:
+        ctest_cmd += f" -E {shlex.quote(ctest_exclude)}"
     run_cmd(ctest_cmd, cwd=cwd)
 
 
@@ -215,7 +215,7 @@ def get_args():
                 help="Run specific tests matching pattern (regex)")
     parser.add_argument("--smoke", action="store_true",
                 help="Build and run the representative CI subset, including configure-time tests")
-    parser.add_argument("--exclude", nargs="+", default=[], metavar="NAME",
+    parser.add_argument("--exclude", nargs="+", action="extend", default=[], metavar="NAME",
                 help="Do not build or run these registered tests (the NAME of RUN or COMPILE) in any mode")
     parser.add_argument("--ninja", action='store_true',
                 help="Use Ninja build system instead of Make (faster builds)")
