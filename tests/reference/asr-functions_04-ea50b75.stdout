@@ -33,24 +33,11 @@
                                     ()
                                 ),
                             to_negative:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     4
                                     to_negative
-                                    2 to_negative
-                                    stdlib_int
-                                    []
-                                    to_negative
+                                    [4 to_negative~genericprocedure@to_negative]
                                     Public
-                                ),
-                            to_negative@to_negative~genericprocedure:
-                                (ExternalSymbol
-                                    4
-                                    to_negative@to_negative~genericprocedure
-                                    2 to_negative~genericprocedure
-                                    stdlib_int
-                                    []
-                                    to_negative~genericprocedure
-                                    Private
                                 ),
                             to_negative~genericprocedure:
                                 (ExternalSymbol
@@ -61,6 +48,16 @@
                                     []
                                     to_negative~genericprocedure
                                     Public
+                                ),
+                            to_negative~genericprocedure@to_negative:
+                                (ExternalSymbol
+                                    4
+                                    to_negative~genericprocedure@to_negative
+                                    2 to_negative~genericprocedure
+                                    stdlib_int
+                                    []
+                                    to_negative~genericprocedure
+                                    Private
                                 )
                         })
                     functions_04
@@ -69,7 +66,7 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                4 to_negative@to_negative~genericprocedure
+                                4 to_negative~genericprocedure@to_negative
                                 4 to_negative
                                 [((Var 4 int))]
                                 (Integer 4)
@@ -107,7 +104,7 @@
                         ()
                         (IntegerCompare
                             (FunctionCall
-                                4 to_negative@to_negative~genericprocedure
+                                4 to_negative~genericprocedure@to_negative
                                 4 to_negative
                                 [((Var 4 int))]
                                 (Integer 4)

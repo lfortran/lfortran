@@ -22,7 +22,7 @@
                                     interface_04_mod1
                                     []
                                     a1
-                                    Public
+                                    Private
                                 ),
                             i:
                                 (Variable
@@ -182,13 +182,10 @@
                         4
                         {
                             a:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     4
                                     a
-                                    2 a
-                                    interface_04_mod1
-                                    []
-                                    a
+                                    [4 a1@a]
                                     Public
                                 ),
                             a1:
@@ -200,6 +197,16 @@
                                     []
                                     a1
                                     Public
+                                ),
+                            a1@a:
+                                (ExternalSymbol
+                                    4
+                                    a1@a
+                                    2 a1
+                                    interface_04_mod1
+                                    []
+                                    a1
+                                    Private
                                 )
                         })
                     interface_04_mod2

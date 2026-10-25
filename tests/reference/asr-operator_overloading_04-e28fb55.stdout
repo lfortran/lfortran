@@ -199,16 +199,6 @@
                                                     raw
                                                     Public
                                                 ),
-                                            assign_string_char:
-                                                (ExternalSymbol
-                                                    5
-                                                    assign_string_char
-                                                    2 assign_string_char
-                                                    operator_overloading_04_stdlib_string_type
-                                                    []
-                                                    assign_string_char
-                                                    Public
-                                                ),
                                             string:
                                                 (Variable
                                                     5
@@ -304,7 +294,7 @@
                                         .false.
                                         Host
                                     )
-                                    []
+                                    [assign_string_char]
                                     [(Var 5 string)]
                                     [(Assignment
                                         (Var 5 trimmed_string)
@@ -317,8 +307,8 @@
                                             ()
                                         )
                                         (SubroutineCall
-                                            5 assign_string_char
-                                            5 assign_string_char
+                                            2 assign_string_char
+                                            2 ~assign
                                             [((Var 5 trimmed_string))
                                             ((StructInstanceMember
                                                 (Var 5 string)
@@ -352,7 +342,7 @@
                         })
                     operator_overloading_04_stdlib_string_type
                     ()
-                    [operator_overloading_04_stdlib_string_type]
+                    []
                     .false.
                     .false.
                     .false.
@@ -376,7 +366,7 @@
                                                     operator_overloading_04_stdlib_string_type
                                                     []
                                                     assign_string_char
-                                                    Public
+                                                    Private
                                                 ),
                                             chomped_string:
                                                 (Variable
@@ -468,13 +458,10 @@
                                                     ()
                                                 ),
                                             ~assign:
-                                                (ExternalSymbol
+                                                (CustomOperator
                                                     7
                                                     ~assign
-                                                    2 ~assign
-                                                    operator_overloading_04_stdlib_string_type
-                                                    []
-                                                    ~assign
+                                                    [7 assign_string_char@~assign]
                                                     Public
                                                 )
                                         })
