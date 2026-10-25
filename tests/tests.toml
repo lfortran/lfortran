@@ -7189,3 +7189,7 @@ asr = true
 [[test]]
 filename = "asr/verify/spread_scalar_source_rank.asr"
 asr = true
+
+[[test]]
+filename = "errors/continue_compilation_forall_impure.f90"
+semantics_only_cc = true

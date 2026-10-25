@@ -2424,6 +2424,7 @@ RUN(NAME where_19 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME forallloop_01 LABELS gfortran)
 RUN(NAME forall_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME forall_pure_ok_01 LABELS gfortran llvm)
 RUN(NAME forall_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-typing)
 RUN(NAME forall_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_04 LABELS gfortran llvm)
