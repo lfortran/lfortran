@@ -26,6 +26,7 @@ typedef enum cudaError {
     cudaErrorInvalidConfiguration = 9,
     cudaErrorInvalidMemcpyDirection = 21,
     cudaErrorInvalidDeviceFunction = 98,
+    cudaErrorNoDevice = 100,
     cudaErrorInvalidDevice = 101,
     cudaErrorInvalidResourceHandle = 400
 } cudaError_t;

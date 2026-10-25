@@ -41,6 +41,10 @@ const lfortran_cuda_cpu_stats *lfortran_cuda_cpu_get_stats(void);
 // Calls `hook` at the start of every cudaDeviceSynchronize; NULL removes it.
 void lfortran_cuda_cpu_set_synchronize_hook(void (*hook)(void));
 
+// Sets how many devices the emulation has: 1 (the default) or 0, which makes
+// cudaSetDevice fail with cudaErrorNoDevice, as on a machine without a GPU.
+void lfortran_cuda_cpu_set_device_count(int count);
+
 // Whether `ptr` points into a live device allocation; if so, its start and
 // size are stored in `*base` and `*size`.
 int lfortran_cuda_cpu_find_allocation(const void *ptr, void **base,

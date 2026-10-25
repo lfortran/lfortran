@@ -438,10 +438,10 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     singleton = (lfortran_gpu_ctx*)calloc(1, sizeof(lfortran_gpu_ctx));
     singleton->device = MTLCreateSystemDefaultDevice();
     if (!singleton->device) {
+        // Without a device every launch would be skipped and the program
+        // would continue with the values its loops never computed.
         fprintf(stderr, "lfortran_gpu_init: Metal is not supported on this device\n");
-        free(singleton);
-        singleton = NULL;
-        return NULL;
+        exit(1);
     }
     singleton->queue = [singleton->device newCommandQueue];
     singleton->last_command_buffer = nil;

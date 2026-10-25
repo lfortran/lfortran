@@ -81,6 +81,7 @@ static void (*synchronize_hook)(void) = NULL;
 // Whether a copy or a launch was issued after the last synchronizing call.
 static int pending_work = 0;
 static int current_device = 0;
+static int device_count = 1;
 
 static cudaError_t fail(cudaError_t error) {
     stats.errors++;
@@ -140,7 +141,12 @@ void lfortran_cuda_cpu_set_synchronize_hook(void (*hook)(void)) {
     synchronize_hook = hook;
 }
 
+void lfortran_cuda_cpu_set_device_count(int count) {
+    device_count = count;
+}
+
 cudaError_t cudaSetDevice(int device) {
+    if (device_count == 0) return fail(cudaErrorNoDevice);
     if (device != 0) return fail(cudaErrorInvalidDevice);
     current_device = device;
     return cudaSuccess;
@@ -362,6 +368,7 @@ const char *cudaGetErrorString(cudaError_t error) {
         case cudaErrorInvalidMemcpyDirection:
             return "invalid copy direction for memcpy";
         case cudaErrorInvalidDeviceFunction: return "invalid device function";
+        case cudaErrorNoDevice: return "no CUDA-capable device is detected";
         case cudaErrorInvalidDevice: return "invalid device ordinal";
         case cudaErrorInvalidResourceHandle:
             return "invalid resource handle";
