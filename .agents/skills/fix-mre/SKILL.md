@@ -107,7 +107,8 @@ you have not observed is a guess.
 
 1. Make the code change in the LFortran source. Keep changes minimal and
    focused on the bug. Match the formatting of the file you are editing;
-   do not reformat surrounding code.
+   do not reformat surrounding code. Write any comment in plain English, as
+   `AGENTS.md` requires.
 2. Before the first rebuild with the fix, write the integration test (Phase 4)
    and capture its fail-before log with the still-unfixed build (see
    **Confirm the test actually captures the bug**). Then rebuild:
@@ -271,6 +272,8 @@ Not committed. Review the diff, then commit when ready.
 
 When authorized to commit, follow `AGENTS.md`: one focused bug fix with its
 integration test, imperative mood, and no unrelated refactoring or formatting.
+Write the commit message in plain English: short, common words and short,
+direct sentences.
 Dependent fixes may share a PR under `fix-issue`, but retain separate commits.
 
 **Do not add `Co-authored-by:` or `Co-author:` lines to any commit.** Do not use
