@@ -254,6 +254,16 @@ static int failed_free()
     return 1;
 }
 
+// Without a device the runtime stops at initialization: it must not skip
+// the launch and leave the program with the values never computed.
+static int no_device()
+{
+    lfortran_cuda_cpu_set_device_count(0);
+    auto *ctx = lfortran_gpu_init();
+    fprintf(stderr, "the runtime initialization returned without a device\n");
+    return ctx == nullptr ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
     lfortran_cuda_cpu_set_synchronize_hook(on_synchronize);
@@ -292,6 +302,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();
+    }
+    if (argc == 2 && strcmp(argv[1], "no-device") == 0) {
+        return no_device();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);

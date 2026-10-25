@@ -253,14 +253,9 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     if (singleton) return singleton;
     singleton = (lfortran_gpu_ctx*)calloc(1, sizeof(lfortran_gpu_ctx));
     singleton->device_id = 0;
-    cudaError_t err = cudaSetDevice(0);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_init: cudaSetDevice failed: %s\n",
-            cudaGetErrorString(err));
-        free(singleton);
-        singleton = NULL;
-        return NULL;
-    }
+    // Without a device every launch would be skipped and the program would
+    // continue with the values its loops never computed.
+    check(cudaSetDevice(0), "cudaSetDevice");
     return singleton;
 }
 
