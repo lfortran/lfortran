@@ -42,9 +42,12 @@ float        __trunctfsf2_lf_impl(lf_float128 a);
 
 lf_float128 __floatsitf_lf_impl(int32_t  a);
 lf_float128 __floatditf_lf_impl(int64_t  a);
+lf_float128 __floatunsitf_lf_impl(uint32_t a);
 lf_float128 __floatunditf_lf_impl(uint64_t a);
 int32_t      __fixtfsi_lf_impl(lf_float128 a);
 int64_t      __fixtfdi_lf_impl(lf_float128 a);
+uint32_t     __fixunstfsi_lf_impl(lf_float128 a);
+uint64_t     __fixunstfdi_lf_impl(lf_float128 a);
 
 #if !defined(__wasm32__)
 int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b);
