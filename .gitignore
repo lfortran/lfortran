@@ -238,6 +238,8 @@ doc/man/lfortran.1
 /run.sh
 /run_re.sh
 /.fix-issue/
+# make-release state, downstream clones, and downloaded tarballs/logs.
+/.release/
 /mre_*.f90
 /re_*.f90
 /test_ref
