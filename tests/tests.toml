@@ -7189,3 +7189,8 @@ asr = true
 [[test]]
 filename = "asr/verify/spread_scalar_source_rank.asr"
 asr = true
+
+# A function reference is not a designator and cannot be subscripted.
+[[test]]
+filename = "errors/func_result_subscript_01.f90"
+semantics_only_cc = true

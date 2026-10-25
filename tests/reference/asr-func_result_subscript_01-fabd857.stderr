@@ -1,0 +1,5 @@
+semantic error: A function reference cannot be subscripted or sectioned
+ --> tests/errors/func_result_subscript_01.f90:5:10
+  |
+5 | print *, transpose(m)(2,:)
+  |          ^^^^^^^^^^^^^^^^^ 'transpose(...)' is a function reference, not a designator
