@@ -14,19 +14,19 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int m = __scalar_args.m;
     int __do_loop_end;
     int __flat_idx;
-    int j;
+    int j__dc;
     int k;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    j = (__flat_idx + 1);
+    j__dc = (__flat_idx + 1);
     __do_loop_end = m;
     k = (1 - 1);
     while (((k + 1) <= __do_loop_end)) {
         k = (k + 1);
-        t[((int)(k) - (1))] = ((float)j);
+        t[((int)(k) - (1))] = ((float)j__dc);
     }
-    y[((int)(j) - (1))] = t[((int)(4) - (1))];
+    y[((int)(j__dc) - (1))] = t[((int)(4) - (1))];
 }
 

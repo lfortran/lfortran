@@ -3734,3 +3734,17 @@ contains
         print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
     end subroutine
 end module
+
+module cc1_dc_index_name
+contains
+    subroutine cc1_dc_index_assign(r)
+        integer, intent(out) :: r(3)
+        integer :: i
+        do concurrent (i = 1:3)
+            do i = 1, 2
+                i = 5  ! {Error} Assignment to loop variable `i` is not allowed
+            end do
+            r(i) = 1
+        end do
+    end subroutine
+end module cc1_dc_index_name

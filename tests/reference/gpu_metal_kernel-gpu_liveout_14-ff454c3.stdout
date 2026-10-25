@@ -35,16 +35,16 @@ kernel void __lfortran_gpu_kernel_0(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     float __gpu_scalar_argument;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
-    __gpu_scalar_argument = y[((int)(i) - (__lb_y_0))];
-    eval_gpu_14(x[((int)(i) - (__lb_x_0))], __gpu_scalar_argument);
-    y[((int)(i) - (__lb_y_0))] = __gpu_scalar_argument;
-    y[((int)(i) - (__lb_y_0))] = ((y[((int)(i) - (__lb_y_0))] + m.s) + m.coef[((int)(2) - (1))]);
+    i__dc = (__flat_idx + 1);
+    __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
+    eval_gpu_14(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
+    y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.coef[((int)(2) - (1))]);
 }
 
 inline void eval_poly_gpu_20(float x, thread float& y) {
@@ -71,15 +71,15 @@ kernel void __lfortran_gpu_kernel_1(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     float __gpu_scalar_argument;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
-    __gpu_scalar_argument = y[((int)(i) - (__lb_y_0))];
-    eval_poly_gpu_20(x[((int)(i) - (__lb_x_0))], __gpu_scalar_argument);
-    y[((int)(i) - (__lb_y_0))] = __gpu_scalar_argument;
-    y[((int)(i) - (__lb_y_0))] = ((y[((int)(i) - (__lb_y_0))] + m.s) + m.c1);
+    i__dc = (__flat_idx + 1);
+    __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
+    eval_poly_gpu_20(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
+    y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.c1);
 }
 

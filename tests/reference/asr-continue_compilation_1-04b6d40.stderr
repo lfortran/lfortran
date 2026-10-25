@@ -4657,3 +4657,9 @@ semantic error: defined output of the elements of a polymorphic array is not sup
      |
 3734 |         print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
      |                              ^^^^ 
+
+semantic error: Assignment to loop variable `i` is not allowed
+    --> tests/errors/continue_compilation_1.f90:3745:17
+     |
+3745 |                 i = 5  ! {Error} Assignment to loop variable `i` is not allowed
+     |                 ^ 

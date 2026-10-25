@@ -15,7 +15,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     int j;
     int k;
     int m;
@@ -24,25 +24,25 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
+    i__dc = (__flat_idx + __loop_start_0);
     k = __gpu_buf_k[((int)(1) - (1))];
     m = __gpu_buf_m[((int)(1) - (1))];
     s = __gpu_buf_s[((int)(1) - (1))];
     {
         int __gpu_frame;
-        int __gpu_frame_i;
-        if ((i < (1 + 9))) {
-            __gpu_frame = ((i - ((1 + 9) - ((9 + (1 - 1)) / 1))) * 1);
+        int __gpu_frame_i__dc;
+        if ((i__dc < (1 + 9))) {
+            __gpu_frame = ((i__dc - ((1 + 9) - ((9 + (1 - 1)) / 1))) * 1);
             if ((__gpu_frame < 9)) {
                 if ((__gpu_frame < 9)) {
-                    __gpu_frame_i = (1 + __gpu_frame);
+                    __gpu_frame_i__dc = (1 + __gpu_frame);
                 } else {
-                    __gpu_frame_i = (((100 + 1) - 0) + (__gpu_frame - 9));
+                    __gpu_frame_i__dc = (((100 + 1) - 0) + (__gpu_frame - 9));
                 }
-                a[((int)(__gpu_frame_i) - (1))] = __gpu_frame_i;
+                a[((int)(__gpu_frame_i__dc) - (1))] = __gpu_frame_i__dc;
                 {
                     int t;
-                    t = __gpu_frame_i;
+                    t = __gpu_frame_i__dc;
                     if ((t == 7)) {
                         k = 70;
                         __gpu_buf_k[((int)(1) - (1))] = k;
@@ -64,10 +64,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
                 }
             }
         } else {
-            a[((int)(i) - (1))] = i;
+            a[((int)(i__dc) - (1))] = i__dc;
             {
                 int t;
-                t = i;
+                t = i__dc;
                 {
                 }
                 j = (1 - 1);
@@ -90,7 +90,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int* __restrict__ a)
 {
     int __flat_idx;
-    int i;
+    int i__dc;
     int j;
     int k;
     int m;
@@ -99,14 +99,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     k = __gpu_buf_k1[((int)(1) - (1))];
     m = __gpu_buf_m1[((int)(1) - (1))];
     s = __gpu_buf_s1[((int)(1) - (1))];
-    a[((int)(i) - (1))] = i;
+    a[((int)(i__dc) - (1))] = i__dc;
     {
         int t;
-        t = i;
+        t = i__dc;
         if ((t == 7)) {
             k = 70;
             __gpu_buf_k1[((int)(1) - (1))] = k;

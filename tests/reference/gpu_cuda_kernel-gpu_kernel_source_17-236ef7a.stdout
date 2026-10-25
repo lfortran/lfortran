@@ -13,36 +13,36 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     const int n = 10;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + __loop_start_0);
+    i__dc = (__flat_idx + __loop_start_0);
     {
         int __gpu_frame;
-        int __gpu_frame_i;
-        if ((i < (1 + 1))) {
-            __gpu_frame = ((i - ((1 + 1) - ((2 + (1 - 1)) / 1))) * 1);
+        int __gpu_frame_i__dc;
+        if ((i__dc < (1 + 1))) {
+            __gpu_frame = ((i__dc - ((1 + 1) - ((2 + (1 - 1)) / 1))) * 1);
             if ((__gpu_frame < 2)) {
                 if ((__gpu_frame < 1)) {
-                    __gpu_frame_i = (1 + __gpu_frame);
+                    __gpu_frame_i__dc = (1 + __gpu_frame);
                 } else {
-                    __gpu_frame_i = (((n + 1) - 1) + (__gpu_frame - 1));
+                    __gpu_frame_i__dc = (((n + 1) - 1) + (__gpu_frame - 1));
                 }
-                if ((__gpu_frame_i == 1)) {
-                    d[((int)(__gpu_frame_i) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
+                if ((__gpu_frame_i__dc == 1)) {
+                    d[((int)(__gpu_frame_i__dc) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
                 } else {
-                    if ((__gpu_frame_i == n)) {
-                        d[((int)(__gpu_frame_i) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
+                    if ((__gpu_frame_i__dc == n)) {
+                        d[((int)(__gpu_frame_i__dc) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
                     } else {
-                        d[((int)(__gpu_frame_i) - (1))] = (  5.00000000000000000e-01f * (a[((int)((__gpu_frame_i + 1)) - (1))] - a[((int)((__gpu_frame_i - 1)) - (1))]));
+                        d[((int)(__gpu_frame_i__dc) - (1))] = (  5.00000000000000000e-01f * (a[((int)((__gpu_frame_i__dc + 1)) - (1))] - a[((int)((__gpu_frame_i__dc - 1)) - (1))]));
                     }
                 }
             }
         } else {
-            d[((int)(i) - (1))] = (  5.00000000000000000e-01f * (a[((int)((i + 1)) - (1))] - a[((int)((i - 1)) - (1))]));
+            d[((int)(i__dc) - (1))] = (  5.00000000000000000e-01f * (a[((int)((i__dc + 1)) - (1))] - a[((int)((i__dc - 1)) - (1))]));
         }
     }
 }
@@ -58,20 +58,20 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc;
     const int n = 10;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i = (__flat_idx + 1);
-    if ((i == 1)) {
-        d[((int)(i) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
+    i__dc = (__flat_idx + 1);
+    if ((i__dc == 1)) {
+        d[((int)(i__dc) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
     } else {
-        if ((i == n)) {
-            d[((int)(i) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
+        if ((i__dc == n)) {
+            d[((int)(i__dc) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
         } else {
-            d[((int)(i) - (1))] = (  5.00000000000000000e-01f * (a[((int)((i + 1)) - (1))] - a[((int)((i - 1)) - (1))]));
+            d[((int)(i__dc) - (1))] = (  5.00000000000000000e-01f * (a[((int)((i__dc + 1)) - (1))] - a[((int)((i__dc - 1)) - (1))]));
         }
     }
 }
