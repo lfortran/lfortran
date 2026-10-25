@@ -63,7 +63,7 @@ int run_builtin_kernel(const std::string &connection_file, CompilerOptions &opti
 // A kernel's stdin channel, on which a READ asks the client that ran the
 // cell: Jupyter clients connect it with the identity of their shell socket.
 // It keeps its connections on a thread of its own, and tells when the client
-// asked disconnects.
+// asked disconnects, which the stdin channel of Xeus does not.
 class InputChannel {
     struct Impl;
     std::unique_ptr<Impl> impl;
@@ -84,6 +84,8 @@ public:
     // Asks and waits as long as the client is connected; false if it is not.
     bool request(const std::string &identity, const std::string parts[4],
         std::string &value);
+    // Whether it can listen on `ip`: an IPv4 address.
+    static bool serves(const std::string &ip);
 };
 
 #endif

@@ -2,7 +2,8 @@
 that misbehave: large output, connections that stall, a client that leaves
 during a READ, before the others or during a cell, a cell that ends the
 kernel or starts programs, cells queued behind a failing one, and
-`lfortran -v`."""
+`lfortran -v`. Each case runs against whichever kernel is
+built."""
 
 import argparse
 import contextlib
@@ -94,12 +95,12 @@ def value(client, code, timeout=20):
 
 
 @contextlib.contextmanager
-def kernel(exe, cwd):
+def kernel(exe, cwd, ip="127.0.0.1"):
     """A kernel started on a connection file, as a Jupyter frontend does, a
     function that connects a client to it, and the connection file's content
     with its "path"."""
     connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
-    write_connection_file(str(connection), key=uuid.uuid4().hex.encode())
+    write_connection_file(str(connection), ip=ip, key=uuid.uuid4().hex.encode())
     clients = []
 
     def join():
@@ -560,10 +561,19 @@ def verbose(exe, cwd):
         shows_all(prompt(exe, cwd, ["-v", "--connect", ports["path"]], b"1+1\r\x04"))
 
 
+def xeus_connection_files(exe, cwd):
+    """The Xeus kernel serves a connection file whose stdin channel the
+    built-in one cannot (a host name rather than an IPv4 address) with
+    Xeus's own server."""
+    with kernel(exe, cwd, ip="localhost") as (_, join, _ports):
+        check(value(join(), "6*7") == "42", "a cell did not run")
+
+
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
     read_disconnect_fatal, late_stdin, prompt_departure, prompt_interrupted,
     idle_prompt, slow_prompt, prompt_stop, child_processes, signal_during_cell,
-    stop_on_error, verbose]}
+    stop_on_error, verbose, xeus_connection_files]}
+XEUS_ONLY = {"xeus_connection_files"}
 
 
 def main():
@@ -571,6 +581,8 @@ def main():
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--case", choices=CASES, action="append",
         help="run only this case (repeatable)")
+    parser.add_argument("--builtin", action="store_true",
+        help="the kernel is the built-in one, not the Xeus one")
     args = parser.parse_args()
     exe = str(Path(args.lfortran).resolve())
     cwd = Path.cwd() / ("session-regressions-" + uuid.uuid4().hex)
@@ -580,6 +592,8 @@ def main():
     failed = []
     try:
         for name in args.case or CASES:
+            if args.builtin and name in XEUS_ONLY:
+                continue
             try:
                 CASES[name](exe, cwd)
                 print(name + ": passed", flush=True)

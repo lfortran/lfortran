@@ -186,12 +186,15 @@ The kernel is LFortran's own implementation of the Jupyter messaging protocol
 library; its client joins kernels whose connection file gives an IPv4
 address. In a build with `WITH_XEUS=yes`, `lfortran kernel` on an existing
 connection file, as a Jupyter frontend starts it, runs the Xeus kernel
-instead, on Xeus's own server: its READ reads the kernel's own stdin, it does
-not show what `-v` adds, and the cells waiting behind a failed one get an
-error reply without the idle status that a client waits for. The kernel a
-prompt starts is still LFortran's own, as Xeus cannot tell when the last
-client disconnects, and so is a kernel started without a connection file,
-which only LFortran's own writes; the client is always LFortran's own. See
+instead. The kernel a prompt starts is still LFortran's own, as Xeus cannot
+tell when the last client disconnects, and so is a kernel started without a
+connection file, which only LFortran's own writes; the client is always
+LFortran's own. With Xeus 5, rather than 6, or on a connection file whose
+stdin channel LFortran's own cannot serve (an address that is not IPv4,
+another transport than TCP or another signature scheme than HMAC-SHA256), the
+Xeus kernel runs on Xeus's own server: its READ waits even after the client
+asked has gone, it does not show what `-v` adds, and the cells waiting behind a failed
+one get an error reply without the idle status that a client waits for. See
 `src/lfortran/jupyter.cpp`.
 
 ## Invoking LFortran

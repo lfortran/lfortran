@@ -318,8 +318,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --lfortran $<TARGET_FILE:lfortran>
             )
             # The prompt is a client of the shared kernel, which these tests
-            # also start on their own: the built-in one.
-            if (NOT WITH_XEUS)
+            # also start on their own: the Xeus one with WITH_XEUS, else the
+            # built-in one. With Xeus 5 the Xeus kernel runs on Xeus's own
+            # server, which lacks what they check (see fortran_kernel.cpp).
+            if (NOT WITH_XEUS OR xeus_VERSION VERSION_GREATER_EQUAL 6)
+                if (WITH_XEUS)
+                    set(LFORTRAN_KERNEL_KIND)
+                else()
+                    set(LFORTRAN_KERNEL_KIND --builtin)
+                endif()
                 add_test(
                     NAME test_session
                     COMMAND ${LFORTRAN_TEST_PYTHON}
@@ -332,7 +339,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     NAME test_session_regressions
                     COMMAND ${LFORTRAN_TEST_PYTHON}
                         ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                        --lfortran $<TARGET_FILE:lfortran>
+                        --lfortran $<TARGET_FILE:lfortran> ${LFORTRAN_KERNEL_KIND}
                 )
                 set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 300
                     SKIP_RETURN_CODE 77)

@@ -1,9 +1,9 @@
 // The parts of the Jupyter messaging protocol that LFortran needs, with no
 // third-party library: a kernel, which `lfortran kernel` runs when not built
 // with Xeus or when its connection file does not exist yet, and which the
-// prompt always starts, and a client for the prompt. Any Jupyter client can
-// use the kernel, and the client can use any Jupyter kernel whose connection
-// file gives an IPv4 address.
+// prompt always starts, a client for the prompt, and the stdin channel of
+// both kernels. Any Jupyter client can use the kernel, and the client can use
+// any Jupyter kernel whose connection file gives an IPv4 address.
 //
 // Transport: ZeroMQ's ZMTP 3.0 with the NULL mechanism over TCP (the "tcp"
 // transport of a connection file), implementing only what a Jupyter kernel
@@ -1097,6 +1097,16 @@ bool InputChannel::request(const std::string &identity, const std::string parts[
     int answer;
     while ((answer = wait(value, 1000)) == 0) {}
     return answer > 0;
+}
+
+bool InputChannel::serves(const std::string &ip)
+{
+    try {
+        address(ip, 0);
+        return true;
+    } catch (const std::runtime_error &) {
+        return false;
+    }
 }
 
 // The client
