@@ -14,8 +14,8 @@ description: >
   links. Not for release-policy discussions or CI changes unrelated to a
   release.
 compatibility: >
-  Requires git, authenticated gh with push access to lfortran/lfortran,
-  maintainer rights on conda-forge/lfortran-feedstock and
+  Requires git, authenticated gh (with the `workflow` scope) and push access
+  to lfortran/lfortran, maintainer rights on conda-forge/lfortran-feedstock and
   lfortran/lfortran-conda-testing, user forks of both, curl, python3, and Pixi
   for any LFortran build. Waits of several hours are normal.
 ---
@@ -79,7 +79,17 @@ Set these once and record them:
 ```bash
 ME=$(gh api user -q .login)            # fork owner, e.g. certik
 PREV=$(gh release view --repo lfortran/lfortran --json tagName -q .tagName)
+gh auth status 2>&1 | grep 'Token scopes'   # must include 'workflow'
 ```
+
+Step 7 always changes `.github/workflows/CI.yml` in conda-testing. GitHub
+refuses a token without the `workflow` scope both when you push that file
+over HTTPS and when you merge the PR. The merge error ("the base branch
+policy prohibits the merge") does not mention the scope. If the scope is
+missing, ask the user once, at the start, to run
+`! gh auth refresh -h github.com -s workflow`. Otherwise push over SSH
+(`git@github.com:$ME/lfortran-conda-testing.git`) and have the user merge
+the conda-testing PR in the browser.
 
 ## Step 1 — Choose the version
 
@@ -255,8 +265,9 @@ Then add the label: `gh pr edit <pr> --repo conda-forge/lfortran-feedstock
 after the label was added**, so add the label again after every push,
 including bot rerender commits.
 
-regro-cf-autotick-bot usually opens its own `lfortran vX.Y.Z` PR. Close it
-with a comment pointing at your PR.
+regro-cf-autotick-bot usually opens its own `lfortran vX.Y.Z` PR, sometimes
+only after yours. Whenever it appears, close it with a comment pointing at
+your PR.
 
 ### Make it pass with patches
 
@@ -307,18 +318,24 @@ Quick runs, as fix-issue does. The next release removes the patch in Step 5.
 
 ## Step 7 — lfortran-conda-testing
 
-Start only after the new package is on anaconda.org for every platform the
+Start only after the new package can be installed on every platform the
 feedstock builds (`.ci_support/*.yaml`: linux-64, linux-aarch64, osx-64,
-osx-arm64, win-64):
+osx-arm64, win-64). Check the channel index that the solvers read, not the
+anaconda.org API. The API lists uploaded files about an hour before the
+index does, and a run started in between fails in every job. Wait in the
+background until this prints all five platforms:
 
 ```bash
-curl -s https://api.anaconda.org/package/conda-forge/lfortran | python3 -I -c \
-  "import sys,json; d=json.load(sys.stdin); print(sorted({f['attrs'].get('subdir','') for f in d['files'] if f['version']=='X.Y.Z'}))"
+for s in linux-64 linux-aarch64 osx-64 osx-arm64 win-64; do
+  curl -sL https://conda.anaconda.org/conda-forge/$s/current_repodata.json | python3 -I -c \
+    "import sys,json; d=json.load(sys.stdin); p={**d.get('packages',{}),**d.get('packages.conda',{})}; \
+     print('$s' if any(v['name']=='lfortran' and v['version']=='X.Y.Z' for v in p.values()) else '')"
+done
 ```
 
-Uploads, and then the CDN, can take an hour or more after the merge. A
-`nothing provides lfortran ==X.Y.Z` failure in CI means it is still too
-early. Rerun the job; do not treat it as a regression.
+If CI still fails to solve with `lfortran =X.Y.Z * does not exist (perhaps a
+typo or a missing channel)`, it is too early, not a regression. Rerun the
+failed jobs (`gh run rerun <id> --failed`) once the index lists the version.
 
 ```bash
 gh repo fork lfortran/lfortran-conda-testing --clone=false
@@ -334,7 +351,16 @@ git fetch upstream && git switch -c lf<minor> upstream/main
    that is commented out, or each workaround comment that links an lfortran
    issue or PR, check whether the fix is in `$PREV..vX.Y.Z`. If it is,
    restore the original step in its own commit.
-3. Push, then open the PR:
+3. Compare the third-party pins in `CI.yml` (`git checkout <tag or SHA>`
+   lines and `test "$(git rev-parse HEAD)" = ...` checks) with the ones
+   LFortran tests at `vX.Y.Z`, in `ci/test_third_party_codes.sh` and
+   `ci/test_caffeine.sh`. A pin that lags LFortran's can fail for reasons
+   already fixed upstream: 0.68.0's PRK coarray failure came from Caffeine
+   0.8.2, which does not set `stat=` (lfortran#14114, fixed in Caffeine
+   0.8.4, which LFortran already used). Moving a lagging pin to LFortran's
+   commit is an environment fix. Make it when its job fails, in its own
+   commit naming the LFortran commit that moved the pin.
+4. Push (see the `workflow` scope note under **State**), then open the PR:
    `gh pr create --repo lfortran/lfortran-conda-testing --base main --head
    $ME:lf<minor> --title "Add version X.Y.Z" --body ""`.
 
@@ -343,8 +369,19 @@ tests, run from the `vX.Y.Z` checkout against the conda package. Then
 third-party codes (minpack, dftatom, fastGPT, stdlib, SNAP, POT3D, PRIMA,
 LAPACK), fpm packages, do concurrent/GPU (Formal, Fiats, PRK), coarrays
 (Caffeine), and Windows, each on macOS and Linux where listed. Wait for all
-of them. For each failure, save the log, compare against the last green run
-on upstream `main`, and classify:
+of them. For each failure, save the log and compare it per job: find the
+most recent upstream `main` run in which that job passed (the latest `main`
+run as a whole may be red for another job). Then classify:
+
+- **Too early** (the solver cannot find `lfortran =X.Y.Z`): see above.
+- **Intermittent** (a job that passed earlier in this PR, or on the previous
+  attempt, fails with the same commit, package, and pins, often without a
+  diagnostic): rerun the failed jobs once with `gh run rerun <id> --failed`.
+  If the same failure comes back, treat it as real. If the rerun passes,
+  search for an existing issue. Otherwise file one titled
+  `Intermittent: <symptom> (X.Y.Z)`, with the failing job URL, the pinned
+  commits and versions, the end of the log, and how to try to reproduce it.
+  Do not add a workaround for it.
 
 - **Environment or toolchain** (solver conflicts with the new package's
   dependencies, new Python requirements of LFortran's test runners, a
@@ -357,19 +394,37 @@ on upstream `main`, and classify:
   runtime files are missing): fix the feedstock with a patch and a new build
   number in a follow-up feedstock PR, then port it as in Step 6. Work around
   it here only until the new build is published.
-- **LFortran regression** (it passed with `$PREV`, and the third-party code
-  and the environment did not change): reproduce it with an LFortran built
-  at `vX.Y.Z` (a worktree on the tag, AGENTS.md Pixi setup). Search open and
-  closed lfortran issues. File a new issue only when no existing one covers
-  it, with a reproducer (repro-issue/create-mre). Then use the narrowest
-  workaround that keeps the rest of the coverage: a compiler flag, skipping
-  one test, or commenting out one command or step. Put a comment next to it,
+- **LFortran bug** (it passed with `$PREV`, and the third-party code and the
+  environment did not change; or it is one of LFortran's own tests, run from
+  the `vX.Y.Z` checkout, failing against the package, even a test added in
+  this release): reproduce it first with the released package itself, which
+  needs no build:
+  `pixi exec --spec "lfortran==X.Y.Z" --spec clang --channel conda-forge -- bash -c '...'`.
+  The feedstock builds with its `llvm_version` (LLVM 21 for 0.68.0), not
+  LLVM 11, and a bug can depend on it. #15968 (an undefined `__floatunsitf`
+  under `--fast` on macOS arm64) appears only with LLVM 21 or newer, and
+  passed with the Pixi `llvm11` build. Search open and closed lfortran
+  issues. File a new issue only when no existing one covers it, with a
+  minimal reproducer (repro-issue/create-mre) and the LLVM version it needs.
+  Then use the narrowest workaround that keeps the rest of the coverage: a
+  compiler flag, skipping one test, or commenting out one command or step.
+  Put a comment next to it,
   `# Disabled for LFortran X.Y.Z: https://github.com/lfortran/lfortran/issues/<n>`,
   following the existing comments in `CI.yml`. Never disable a whole job to
   get past a single failure.
+  - To skip one of LFortran's integration tests, note that
+    `LFORTRAN_CTEST_EXCLUDE` only filters ctest after every test was built.
+    A test that fails to compile or link stops the build. If `run_tests.py`
+    at `vX.Y.Z` has `--exclude` (lfortran#15972), pass the registered test
+    names to it. Otherwise delete just their `RUN(...)` lines, on the
+    affected OS only, before calling `run_tests.py`:
+    `sed -i.bak '/^RUN(NAME <name> /d' CMakeLists.txt`.
 
 Commit each workaround separately and push. Merge once every check is
-green: `gh pr merge <pr> --repo lfortran/lfortran-conda-testing --merge`.
+green: `gh pr merge <pr> --repo lfortran/lfortran-conda-testing --merge`. If
+the merge is refused for the token's missing `workflow` scope, ask the user
+to merge it in the browser, then confirm with `gh pr view <pr> --json
+state,mergedAt`.
 
 ## Step 8 — Fix every regression on LFortran main
 
@@ -379,6 +434,14 @@ batch mode if there are several. The goal is that the next release passes
 conda-testing with the workarounds removed. Link the fix PRs from the issues
 and from `state.md`. Report draft PRs that are still iterating as in
 progress. Do not hold the release report for them.
+
+Pass the reproduction environment to fix-issue. If the bug needs the
+feedstock's LLVM, the fixer also builds the Pixi environment with that LLVM
+(such as `llvm21`) in the same worktree, and shows the test failing before
+the fix and passing after with it. It still runs the suites with `llvm11`. Quick runs
+`--fast` only with LLVM 11, so such a test may never fail in Quick; the PR
+must say so. The user may mark fix PRs ready or merge them; record a merged
+PR as merged.
 
 ## Step 9 — Announcement and report
 
@@ -403,6 +466,7 @@ Then report:
 - conda-testing: environment fixes, pins, re-enabled steps, and disabled
   steps with their issue links.
 - Regressions: issue → fix PR → status.
+- Intermittent failures: job, symptom, and the issue filed or linked.
 - Anything still open or blocked, and what it waits on.
 
 Never report the release as complete while a step is unfinished. Name the
