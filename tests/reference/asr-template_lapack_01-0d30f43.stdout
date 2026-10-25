@@ -356,7 +356,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 8 lda))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 8 lda)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -422,7 +429,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 8 ldb))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 8 ldb)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -488,7 +502,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 8 ldc))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 8 ldc)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -729,8 +750,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                7
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    7
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -747,8 +775,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                9
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    9
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -770,8 +805,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                12
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    12
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -1379,7 +1421,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 4 lda))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 4 lda)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -1445,7 +1494,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 4 ldb))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 4 ldb)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -1511,7 +1567,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 4 ldc))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 4 ldc)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -1752,8 +1815,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                7
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    7
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -1770,8 +1840,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                9
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    9
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -1793,8 +1870,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                12
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    12
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -2523,7 +2607,14 @@
                                                     (Array
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 12 lda))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 12 lda)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -2581,7 +2672,14 @@
                                                     (Array
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 12 ldb))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 12 ldb)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -2639,7 +2737,14 @@
                                                     (Array
                                                         (Real 8)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 12 ldc))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 12 ldc)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -2906,8 +3011,15 @@
                                         (Array
                                             (Real 8)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                7
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    7
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -2920,8 +3032,15 @@
                                         (Array
                                             (Real 8)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                9
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    9
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -2935,8 +3054,15 @@
                                         (Array
                                             (Real 8)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                12
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    12
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -2997,7 +3123,14 @@
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 11 lda))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 11 lda)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -3055,7 +3188,14 @@
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 11 ldb))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 11 ldb)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -3113,7 +3253,14 @@
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 11 ldc))
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(Var 11 ldc)
+                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))
                                                         (()
                                                         ())]
                                                         UnboundedPointerArray
@@ -3346,8 +3493,15 @@
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                7
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    7
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -3360,8 +3514,15 @@
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                9
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    9
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -3375,8 +3536,15 @@
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (FunctionParam
-                                                12
+                                            (IntrinsicElementalFunction
+                                                Max
+                                                [(FunctionParam
+                                                    12
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                0
                                                 (Integer 4)
                                                 ()
                                             ))
@@ -3535,7 +3703,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 17 lda))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 17 lda)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -3601,7 +3776,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 17 ldb))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 17 ldb)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -3667,7 +3849,14 @@
                                                                             .false.
                                                                         )
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 17 ldc))
+                                                                        (IntrinsicElementalFunction
+                                                                            Max
+                                                                            [(Var 17 ldc)
+                                                                            (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                            0
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        ))
                                                                         (()
                                                                         ())]
                                                                         UnboundedPointerArray
@@ -3908,8 +4097,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                7
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    7
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -3926,8 +4122,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                9
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    9
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))
@@ -3949,8 +4152,15 @@
                                                                 .false.
                                                             )
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (FunctionParam
-                                                                12
+                                                            (IntrinsicElementalFunction
+                                                                Max
+                                                                [(FunctionParam
+                                                                    12
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (IntegerConstant 0 (Integer 4) Decimal)]
+                                                                0
                                                                 (Integer 4)
                                                                 ()
                                                             ))

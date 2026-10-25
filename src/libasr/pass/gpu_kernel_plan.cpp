@@ -683,6 +683,16 @@ public:
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy,
                     els, ASRUtils::expr_type(bdy), nullptr));
             }
+            case GpuExtentKind::Max: {
+                // As a conditional, which the host evaluates like the other
+                // operations of an extent. Each arm is built again, so that
+                // the condition does not share its nodes.
+                ASR::expr_t *l = child(0), *r = child(1);
+                if (!l || !r) return nullptr;
+                ASR::expr_t *bdy = child(0), *els = child(1);
+                return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, b.Gt(l, r),
+                    bdy, els, ASRUtils::expr_type(bdy), nullptr));
+            }
             case GpuExtentKind::Product: {
                 ASR::expr_t *out = nullptr;
                 for (size_t i = 0; i < e.children.size(); i++) {

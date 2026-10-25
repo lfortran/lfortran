@@ -463,8 +463,18 @@ private:
     }
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
-        int64_t s = 0, l = 0, v = 0;
+        int64_t s = 0, l = 0, v = 0, zero = -1;
         ASR::expr_t *length = arr->m_dims[d].m_length;
+        // Semantics writes a run-time extent `n` as max(n, 0), which a loop
+        // up to `n` covers as well.
+        if (ASRUtils::is_integer_max(length)) {
+            ASR::IntrinsicElementalFunction_t *clamp =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(length);
+            if (ASRUtils::extract_value(ASRUtils::expr_value(
+                    clamp->m_args[1]), zero) && zero == 0) {
+                length = clamp->m_args[0];
+            }
+        }
         // A dummy that cannot change still has the value used on entry
         // when the automatic array's shape was established.
         if (length && ASR::is_a<ASR::Var_t>(*length) &&
@@ -476,11 +486,11 @@ private:
                     ASR::down_cast<ASR::Var_t>(length)->m_v)->m_intent
                     == ASR::intentType::In &&
                 constant(arr->m_dims[d].m_start, s) && s == 1 &&
-                PassUtils::same_expression(arr->m_dims[d].m_length, e)) {
+                PassUtils::same_expression(length, e)) {
             return true;
         }
         return constant(arr->m_dims[d].m_start, s)
-            && constant(arr->m_dims[d].m_length, l) && constant(e, v)
+            && constant(length, l) && constant(e, v)
             && v == s + l - 1;
     }
 

@@ -916,6 +916,12 @@ bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value);
 
 bool is_value_constant(ASR::expr_t *a_value);
 
+// Whether `e` is max() of two integers.
+bool is_integer_max(ASR::expr_t* e);
+
+// max() of two integer constants as a constant, or nullptr for anything else.
+ASR::expr_t* fold_integer_max(Allocator& al, ASR::expr_t* e);
+
 // A local that is neither saved nor a parameter is initialized on every entry
 // to its procedure or BLOCK. A non-constant initializer on such a local is
 // how a pass evaluates a specification expression, such as the bound of an
@@ -2890,6 +2896,15 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         if( ASR::is_a<ASR::ArraySection_t>(*x->m_v) ) {
             *current_expr = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                 al, x->base.base.loc, x->m_v, x->m_dim, x->m_type, x->m_value, true));
+        }
+    }
+
+    // An extent max(n, 0) over a constant argument is a constant, as the
+    // extent n alone is.
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_IntrinsicElementalFunction(x);
+        if (ASR::expr_t* folded = fold_integer_max(al, &x->base)) {
+            *current_expr = folded;
         }
     }
 
