@@ -127,9 +127,34 @@ def main():
             messages = check(client, "print *, 'a', achar(200), 'b'", [])
             assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
                        for m in messages), messages
+            # All of a cell's stdout, however long, and its stderr.
+            messages = check(client, "program long_output\ninteger :: i\n"
+                             "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
+                             "write(0, '(a)') 'to stderr'\nend program", [])
+            streams = {"stdout": "", "stderr": ""}
+            for m in messages:
+                if m["msg_type"] == "stream":
+                    streams[m["content"]["name"]] += m["content"]["text"]
+            assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
+            assert streams["stderr"] == "to stderr\n", streams["stderr"]
+            # Output larger than 1 MiB comes in parts, which do not split a
+            # UTF-8 character (3 bytes here, so a part's end falls in one).
+            messages = check(client, "print '(a)', repeat('\u20ac', 400000)", [])
+            parts = [m["content"]["text"] for m in messages
+                     if m["msg_type"] == "stream" and m["content"]["name"] == "stdout"]
+            assert len(parts) > 1, len(parts)
+            assert "".join(parts) == "\u20ac" * 400000 + "\n", len("".join(parts))
             # Cells must not leak file descriptors (MAX_OPEN_FILES).
             for i in range(100):
                 check(client, "%d + 1" % i, [str(i + 1)])
+            # A cell that writes but leaves no descriptor for its output to
+            # be passed on fails, and the kernel still answers.
+            reply, messages = execute(client, "integer :: k, ios\n"
+                "do k = 1, 1000\nopen(unit=k+10, status='scratch', iostat=ios)\n"
+                "if (ios /= 0) exit\nend do\nprint '(a)', 'opened'")
+            assert reply["status"] == "error", reply
+            client.kernel_info()
+            assert client.get_shell_msg(timeout=30)["msg_type"] == "kernel_info_reply"
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode

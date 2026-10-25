@@ -1,6 +1,8 @@
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <type_traits>
@@ -29,6 +31,13 @@
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
 
+
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
@@ -71,6 +80,124 @@ struct InputContext {
     const LCompilers::FortranEvaluator::CellIO &io;
     std::string record;
 };
+
+#ifdef _WIN32
+int dup_fd(int fd) { return _dup(fd); }
+// Programs that the cell starts may inherit the files and the saved
+// descriptors, which keeps them open as long as those programs run.
+void keep_from_children(int) {}
+int dup2_fd(int from, int to) { return _dup2(from, to); }
+void close_fd(int fd) { _close(fd); }
+void rewind_fd(int fd) { _lseek(fd, 0, SEEK_SET); }
+long long size_fd(int fd) { return _lseeki64(fd, 0, SEEK_END); }
+int read_fd(int fd, char *buffer, unsigned size) { return _read(fd, buffer, size); }
+#else
+// Programs that the cell starts inherit the cell's descriptors 1 and 2, but
+// not the files behind them or the saved ones.
+int dup_fd(int fd) { return fcntl(fd, F_DUPFD_CLOEXEC, 0); }
+void keep_from_children(int fd) { fcntl(fd, F_SETFD, FD_CLOEXEC); }
+int dup2_fd(int from, int to) { return dup2(from, to); }
+void close_fd(int fd) { close(fd); }
+void rewind_fd(int fd) { lseek(fd, 0, SEEK_SET); }
+long long size_fd(int fd) { return lseek(fd, 0, SEEK_END); }
+int read_fd(int fd, char *buffer, unsigned size) { return read(fd, buffer, size); }
+#endif
+
+// While a cell runs with CellIO::output set, its stdout and stderr (file
+// descriptors 1 and 2) go to temporary files rather than pipes: a file never
+// fills up, so nothing has to read it while the cell runs.
+class OutputCapture {
+    FILE *files[2];
+    int saved[2];
+public:
+    OutputCapture() {
+        files[0] = tmpfile();
+        files[1] = tmpfile();
+        if (!files[0] || !files[1]) {
+            if (files[0]) fclose(files[0]);
+            if (files[1]) fclose(files[1]);
+            throw LCompilers::LCompilersException(
+                "cannot create a temporary file for the cell's output");
+        }
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            keep_from_children(fileno(files[i]));
+            saved[i] = dup_fd(1 + i);
+            if (saved[i] < 0 || dup2_fd(fileno(files[i]), 1 + i) < 0) {
+                if (saved[i] >= 0) close_fd(saved[i]);
+                for (int j = 0; j < i; j++) {
+                    dup2_fd(saved[j], 1 + j);
+                    close_fd(saved[j]);
+                }
+                fclose(files[0]);
+                fclose(files[1]);
+                throw LCompilers::LCompilersException(
+                    "cannot redirect the cell's output to a temporary file");
+            }
+        }
+    }
+    ~OutputCapture() {
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            dup2_fd(saved[i], 1 + i);
+            close_fd(saved[i]);
+            fclose(files[i]);
+        }
+    }
+    OutputCapture(const OutputCapture &) = delete;
+    OutputCapture &operator=(const OutputCapture &) = delete;
+    // Passes what the cell has written since the last call to `output`, in
+    // parts of at most about 1 MiB that do not split a UTF-8 character, so
+    // that a cell that writes much is not held in memory whole. The cell
+    // writes to new files meanwhile, as may `output` itself.
+    void flush(const std::function<void(int, const std::string &)> &output) {
+        const size_t part = size_t(1) << 20;
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            FILE *written = files[i];
+            if (size_fd(fileno(written)) == 0) continue;
+            FILE *next = tmpfile();
+            if (!next) {
+                throw LCompilers::LCompilersException(
+                    "cannot create a temporary file for the cell's output");
+            }
+            keep_from_children(fileno(next));
+            if (dup2_fd(fileno(next), 1 + i) < 0) {
+                fclose(next);
+                throw LCompilers::LCompilersException(
+                    "cannot redirect the cell's output to a temporary file");
+            }
+            files[i] = next;
+            std::unique_ptr<FILE, int (*)(FILE *)> closing(written, fclose);
+            int fd = fileno(written);
+            std::string text;
+            char buffer[4096];
+            rewind_fd(fd);
+            int n;
+            while ((n = read_fd(fd, buffer, sizeof(buffer))) > 0) {
+                text.append(buffer, n);
+                // The byte after the part tells whether it ends a character.
+                if (text.size() > part) {
+                    size_t end = part;
+                    while (end > part - 4
+                            && (static_cast<unsigned char>(text[end]) & 0xc0) == 0x80) {
+                        end--;
+                    }
+                    output(1 + i, text.substr(0, end));
+                    text.erase(0, end);
+                }
+            }
+            if (!text.empty()) output(1 + i, text);
+        }
+    }
+};
+
+// What the cell running with CellIO::output has written but not yet passed
+// on, for when it ends the process.
+std::function<void()> *flush_at_exit = nullptr;
 
 // A hook is called from generated code, so its exception must not unwind
 // through it.
@@ -520,8 +647,51 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     LCOMPILERS_ASSERT(compiler_options.interactive);
     CellResult out;
-    DisplayContext display{io, ""};
-    InputContext input{io, ""};
+    // What the cell writes goes to io.output before anything it displays,
+    // clears or reads.
+    std::optional<OutputCapture> capture;
+    std::function<void()> flush_output = [&]() { if (capture) capture->flush(io.output); };
+    // A cell that ends the process (STOP, a fatal error) still passes on
+    // what it wrote.
+    struct FlushAtExit {
+        FlushAtExit(std::function<void()> *flush) {
+            static const int registered = std::atexit([]() {
+                try {
+                    if (flush_at_exit) (*flush_at_exit)();
+                } catch (...) {
+                    // The process is ending; what is left is lost.
+                }
+            });
+            (void)registered;
+            flush_at_exit = flush;
+        }
+        ~FlushAtExit() { flush_at_exit = nullptr; }
+    };
+    std::optional<FlushAtExit> flush_at_exit_guard;
+    CellIO hooks_io = io;
+    if (io.output) {
+        flush_at_exit_guard.emplace(&flush_output);
+        if (io.display) {
+            hooks_io.display = [&](const std::string &mime, const std::string &data) {
+                flush_output();
+                io.display(mime, data);
+            };
+        }
+        if (io.clear_output) {
+            hooks_io.clear_output = [&]() {
+                flush_output();
+                io.clear_output();
+            };
+        }
+        if (io.input) {
+            hooks_io.input = [&](std::string &record) {
+                flush_output();
+                return io.input(record);
+            };
+        }
+    }
+    DisplayContext display{hooks_io, ""};
+    InputContext input{hooks_io, ""};
     struct Hooks {
         Hooks(DisplayContext &display, InputContext &input) {
             [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
@@ -539,6 +709,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     PassManager passes;
     passes.use_default_passes();
     try {
+        if (io.output) capture.emplace();
         const auto newline = code.find('\n');
         auto magic = code.substr(0, newline);
         // Trailing blanks and the \r of a CRLF line ending are not part of it.
@@ -594,6 +765,15 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         get_local_addresses(trace);
         get_local_info(trace);
         out.error_traceback = stacktrace2str(trace, stacktrace_depth);
+    }
+    try {
+        flush_output();
+    } catch (const LCompilersException &error) {
+        // The cell ran, but what it wrote cannot be passed on (no
+        // descriptor is left for the next temporary file, say).
+        out.ok = false;
+        out.error_name = error.name();
+        out.error_value = error.msg();
     }
     return out;
 }

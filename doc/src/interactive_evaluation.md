@@ -35,9 +35,14 @@ the runtime (`_lfortran_set_display_hooks`) that forward to that cell's
 functions do nothing. The hooks are process-wide, so cells must not run
 concurrently. An exception thrown by a hook does not unwind through generated
 code; the cell fails with `DisplayError` and the exception's message. The
-module is built with or without Xeus. `execute()` does not capture
-stdout/stderr; that is up to the frontend. Jupyter messages must be UTF-8, so
-the kernel shows any other bytes of a cell's output as U+FFFD.
+module is built with or without Xeus.
+
+With `CellIO::output` set, `execute()` redirects the cell's stdout and stderr
+(file descriptors 1 and 2) to temporary files and passes what it wrote to the
+hook before each display, clear_output and input, when the cell ends, and when
+it ends the process (STOP, a fatal error); unset, the cell writes to the
+process's stdout and stderr. The kernel sets it. Jupyter messages must be
+UTF-8, so the kernel shows any other bytes of a cell's output as U+FFFD.
 
 ## Runtime input
 

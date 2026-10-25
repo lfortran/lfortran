@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -3050,6 +3051,60 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
     REQUIRE(cell.ok);
     CHECK(data == "again");
 }
+
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: output capture") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string out[3];
+    int parts = 0;
+    FortranEvaluator::CellIO io;
+    // A hook that writes to stdout itself, as a kernel that logs its messages
+    // does, must not write over the cell's output that is still to be passed.
+    io.output = [&](int stream, const std::string &text) {
+        out[stream] += text;
+        if (stream == 1) {
+            parts++;
+            std::fputs("from the hook\n", stdout);
+            std::fflush(stdout);
+        }
+    };
+    auto cell = e.execute("print '(a)', repeat('x', 3000000)\n"
+        "write(0, '(a)') 'to stderr'", false, io);
+    REQUIRE(cell.ok);
+    // In parts of at most about 1 MiB
+    CHECK(parts == 3);
+    CHECK(out[1] == std::string(3000000, 'x') + "\n");
+    CHECK(out[2] == "to stderr\n");
+    // What the cell wrote is passed on before each display, clear_output
+    // and input, so that a client shows them in order.
+    std::vector<std::string> events;
+    io.output = [&](int stream, const std::string &text) {
+        events.push_back(std::to_string(stream) + ":" + text);
+    };
+    io.display = [&](const std::string &, const std::string &data) {
+        events.push_back("display:" + data);
+    };
+    io.clear_output = [&]() { events.push_back("clear"); };
+    io.input = [&](std::string &record) {
+        events.push_back("input");
+        record = "5";
+        return 0;
+    };
+    cell = e.execute("use lfortran_display, only: display_data, clear_output\n"
+        "integer :: n\n"
+        "print '(a)', 'one'\n"
+        "call display_data('text/plain', 'shown')\n"
+        "print '(a)', 'two'\n"
+        "call clear_output()\n"
+        "write(0, '(a)') 'three'\n"
+        "read(*,*) n\n"
+        "print '(a)', 'four'", false, io);
+    REQUIRE(cell.ok);
+    CHECK(events == std::vector<std::string>{"1:one\n", "display:shown", "1:two\n",
+        "clear", "2:three\n", "input", "1:four\n"});
+}
+#endif
 
 // Like test_runtime_input, the stdin cases run natively only; the WASM test
 // build also cannot read the integration test sources.

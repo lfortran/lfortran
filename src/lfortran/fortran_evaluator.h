@@ -79,6 +79,12 @@ public:
         // `record` set (without a newline), -1 at end of file, or > 0 if no
         // input is available. Unset, the cell reads the process's stdin.
         std::function<int(std::string &record)> input;
+        // Receives what the cell writes to stdout (stream 1) and stderr
+        // (stream 2). Set, both are captured while the cell runs and passed
+        // here before each display, clear_output and input, and when the
+        // cell ends. Unset, the cell writes to the process's stdout and
+        // stderr.
+        std::function<void(int stream, const std::string &text)> output;
     };
 
     struct CellResult {
