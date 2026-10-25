@@ -863,6 +863,10 @@ lf_float128 __floatunditf_lf_impl(uint64_t x) {
     return f128_pack_parts(0, exp, mant);
 }
 
+lf_float128 __floatunsitf_lf_impl(uint32_t x) {
+    return __floatunditf_lf_impl(x);
+}
+
 int32_t __fixtfsi_lf_impl(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_inf || p.is_zero) return 0;
@@ -879,6 +883,23 @@ int64_t __fixtfdi_lf_impl(lf_float128 a) {
     if (p.exp > 62) return p.sign ? (int64_t)0x8000000000000000LL : (int64_t)0x7FFFFFFFFFFFFFFFLL;
     uint64_t v = u128_lo(u128_shr(p.mant, 112 - p.exp));
     return p.sign ? -(int64_t)v : (int64_t)v;
+}
+
+/* Unsigned conversions: negative values give 0, too large ones saturate. */
+uint32_t __fixunstfsi_lf_impl(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_zero || p.sign) return 0;
+    if (p.is_inf || p.exp > 31) return 0xFFFFFFFFu;
+    if (p.exp < 0) return 0;
+    return (uint32_t)u128_lo(u128_shr(p.mant, 112 - p.exp));
+}
+
+uint64_t __fixunstfdi_lf_impl(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_zero || p.sign) return 0;
+    if (p.is_inf || p.exp > 63) return 0xFFFFFFFFFFFFFFFFull;
+    if (p.exp < 0) return 0;
+    return u128_lo(u128_shr(p.mant, 112 - p.exp));
 }
 
 /* ========================================================================
@@ -2555,9 +2576,12 @@ double      __trunctfdf2(lf_f128_abi a)             { return __trunctfdf2_lf_imp
 float       __trunctfsf2(lf_f128_abi a)             { return __trunctfsf2_lf_impl(lf_f128_from_abi(a)); }
 lf_f128_abi __floatsitf(int32_t a)                  { return lf_f128_to_abi(__floatsitf_lf_impl(a)); }
 lf_f128_abi __floatditf(int64_t a)                  { return lf_f128_to_abi(__floatditf_lf_impl(a)); }
+lf_f128_abi __floatunsitf(uint32_t a)               { return lf_f128_to_abi(__floatunsitf_lf_impl(a)); }
 lf_f128_abi __floatunditf(uint64_t a)               { return lf_f128_to_abi(__floatunditf_lf_impl(a)); }
 int32_t     __fixtfsi(lf_f128_abi a)                { return __fixtfsi_lf_impl(lf_f128_from_abi(a)); }
 int64_t     __fixtfdi(lf_f128_abi a)                { return __fixtfdi_lf_impl(lf_f128_from_abi(a)); }
+uint32_t    __fixunstfsi(lf_f128_abi a)             { return __fixunstfsi_lf_impl(lf_f128_from_abi(a)); }
+uint64_t    __fixunstfdi(lf_f128_abi a)             { return __fixunstfdi_lf_impl(lf_f128_from_abi(a)); }
 
 int __eqtf2   (lf_f128_abi a, lf_f128_abi b) { return __eqtf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
 int __netf2   (lf_f128_abi a, lf_f128_abi b) { return __netf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
@@ -2673,6 +2697,10 @@ LF_WASM_TF2_ATTR void __floatditf(lf_float128 *out, int64_t a) {
     f128_store_words(out, __floatditf_lf_impl(a));
 }
 
+LF_WASM_TF2_ATTR void __floatunsitf(lf_float128 *out, uint32_t a) {
+    f128_store_words(out, __floatunsitf_lf_impl(a));
+}
+
 LF_WASM_TF2_ATTR void __floatunditf(lf_float128 *out, uint64_t a) {
     f128_store_words(out, __floatunditf_lf_impl(a));
 }
@@ -2683,6 +2711,14 @@ LF_WASM_TF2_ATTR int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
 
 LF_WASM_TF2_ATTR int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
     return __fixtfdi_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+LF_WASM_TF2_ATTR uint32_t __fixunstfsi(uint64_t a_lo, uint64_t a_hi) {
+    return __fixunstfsi_lf_impl(f128_from_words(a_lo, a_hi));
+}
+
+LF_WASM_TF2_ATTR uint64_t __fixunstfdi(uint64_t a_lo, uint64_t a_hi) {
+    return __fixunstfdi_lf_impl(f128_from_words(a_lo, a_hi));
 }
 
 LF_WASM_TF2_ATTR int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
@@ -2908,9 +2944,12 @@ _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__floatsitf,     __floatsitf_lf_impl)
 _LF_SHIM_FROM_SCALAR(__floatditf,     __floatditf_lf_impl)
+_LF_SHIM_FROM_SCALAR(__floatunsitf,   __floatunsitf_lf_impl)
 _LF_SHIM_FROM_SCALAR(__floatunditf,   __floatunditf_lf_impl)
 _LF_SHIM_TO_INT(__fixtfsi,            __fixtfsi_lf_impl)
 _LF_SHIM_TO_INT(__fixtfdi,            __fixtfdi_lf_impl)
+_LF_SHIM_TO_INT(__fixunstfsi,         __fixunstfsi_lf_impl)
+_LF_SHIM_TO_INT(__fixunstfdi,         __fixunstfdi_lf_impl)
 _LF_SHIM_TO_DOUBLE(__trunctfdf2,      __trunctfdf2_lf_impl)
 _LF_SHIM_TO_FLOAT(__trunctfsf2,       __trunctfsf2_lf_impl)
 _LF_SHIM2_TO_INT(__eqtf2,             __eqtf2_lf_impl)
