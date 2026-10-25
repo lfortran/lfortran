@@ -1,0 +1,571 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            allocate_on_assignment_03:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_t_v:
+                                (ExternalSymbol
+                                    5
+                                    1_t_v
+                                    3 v
+                                    allocate_on_assignment_03_m
+                                    [t]
+                                    v
+                                    Public
+                                ),
+                            a:
+                                (Variable
+                                    5
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                    )
+                                    5 t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    5
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                    )
+                                    5 t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            q:
+                                (Variable
+                                    5
+                                    q
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
+                                            .true.
+                                        )
+                                    )
+                                    5 ~unlimited_polymorphic_type
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            t:
+                                (ExternalSymbol
+                                    5
+                                    t
+                                    2 t
+                                    allocate_on_assignment_03_m
+                                    []
+                                    t
+                                    Public
+                                ),
+                            t2:
+                                (ExternalSymbol
+                                    5
+                                    t2
+                                    2 t2
+                                    allocate_on_assignment_03_m
+                                    []
+                                    t2
+                                    Public
+                                ),
+                            u:
+                                (Variable
+                                    5
+                                    u
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
+                                            .true.
+                                        )
+                                    )
+                                    5 ~unlimited_polymorphic_type
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            ~unlimited_polymorphic_type:
+                                (Struct
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    ~unlimited_polymorphic_type
+                                    (StructType
+                                        []
+                                        []
+                                        .false.
+                                        .true.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                )
+                        })
+                    allocate_on_assignment_03
+                    [allocate_on_assignment_03_m]
+                    [(Allocate
+                        [((Var 5 b)
+                        []
+                        []
+                        ()
+                        5 t2
+                        (StructType
+                            [(Integer 4)]
+                            []
+                            .true.
+                            .false.
+                        ))]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 5 a)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntrinsicElementalFunction
+                                    SameTypeAs
+                                    [(Var 5 a)
+                                    (Var 5 b)]
+                                    0
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ImplicitDeallocate
+                                [(Var 5 a)]
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 5 a)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 5 a)
+                            (Var 5 b)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        [(Allocate
+                            [((Var 5 a)
+                            []
+                            []
+                            ()
+                            ()
+                            (StructType
+                                [(Integer 4)]
+                                []
+                                .false.
+                                .false.
+                            ))]
+                            ()
+                            ()
+                            (Var 5 b)
+                        )
+                        (Assignment
+                            (Var 5 a)
+                            (Var 5 b)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .true.
+                        )]
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 5 a)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntrinsicElementalFunction
+                                    SameTypeAs
+                                    [(Var 5 a)
+                                    (Var 5 a)]
+                                    0
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ImplicitDeallocate
+                                [(Var 5 a)]
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 5 a)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 5 a)
+                            (Var 5 a)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        [(Allocate
+                            [((Var 5 a)
+                            []
+                            []
+                            ()
+                            ()
+                            (StructType
+                                [(Integer 4)]
+                                []
+                                .false.
+                                .false.
+                            ))]
+                            ()
+                            ()
+                            (Var 5 a)
+                        )
+                        (Assignment
+                            (Var 5 a)
+                            (Var 5 a)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .true.
+                        )]
+                    )
+                    (ImplicitDeallocate
+                        [(Var 5 q)]
+                    )
+                    (Allocate
+                        [((Var 5 q)
+                        []
+                        []
+                        ()
+                        ()
+                        (Integer 4))]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 5 q)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .true.
+                    )
+                    (ImplicitDeallocate
+                        [(Var 5 u)]
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 5 u)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 5 u)
+                            (Var 5 q)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        [(Allocate
+                            [((Var 5 u)
+                            []
+                            []
+                            ()
+                            ()
+                            (StructType
+                                []
+                                []
+                                .false.
+                                .true.
+                            ))]
+                            ()
+                            ()
+                            (Var 5 q)
+                        )
+                        (Assignment
+                            (Var 5 u)
+                            (Var 5 q)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .true.
+                        )]
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 5 a)
+                                5 1_t_v
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                ),
+            allocate_on_assignment_03_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            t:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            v:
+                                                (Variable
+                                                    3
+                                                    v
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    t
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [v]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                ),
+                            t2:
+                                (Struct
+                                    (SymbolTable
+                                        4
+                                        {
+                                            w:
+                                                (Variable
+                                                    4
+                                                    w
+                                                    []
+                                                    Local
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    t2
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [w]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    2 t
+                                    []
+                                )
+                        })
+                    allocate_on_assignment_03_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

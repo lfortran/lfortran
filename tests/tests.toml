@@ -1704,6 +1704,10 @@ filename = "allocate_on_assignment_02.f90"
 pass = "allocate_on_assignment"
 
 [[test]]
+filename = "allocate_on_assignment_03.f90"
+pass = "allocate_on_assignment"
+
+[[test]]
 filename = "finalize_02.f90"
 llvm = true
 
