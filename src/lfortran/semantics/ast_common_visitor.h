@@ -27455,6 +27455,16 @@ public:
                             && !compiler_options.std_f23_conformance ) {
                         default_init = get_default_initialized_component_value(
                             arg_var, loc);
+                        if( default_init != nullptr ) {
+                            diag.semantic_warning_label(
+                                "structure constructor omits component '"
+                                + constructor_args[i] + "', which has no "
+                                "default initialization (extension)",
+                                {loc},
+                                "help: '" + constructor_args[i] + "' takes the "
+                                "default-initialized value of its type; give it "
+                                "a value to conform to Fortran 2023 C7104");
+                        }
                     }
                 }
                 if( default_init == nullptr && is_default_needed ) {
