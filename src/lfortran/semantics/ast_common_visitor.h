@@ -8355,22 +8355,18 @@ public:
                                                 }
                                                 if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
                                                     ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
-                                                    if (ASRUtils::is_complex(*v->m_type)) {
-                                                        ASR::expr_t* complex_value = ASRUtils::EXPR(
-                                                            ASR::make_ComplexConstant_t(al, x.base.base.loc,
-                                                                rc->m_r, 0.0, v->m_type));
-                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
-                                                            ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                                rc->m_r, rc->m_type)),
-                                                            ASR::cast_kindType::RealToComplex, v->m_type, complex_value, nullptr));
-                                                    } else if (ASRUtils::is_integer(*v->m_type)) {
-                                                        ASR::expr_t* integer_value = ASRUtils::EXPR(
-                                                            ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                                                (int64_t)rc->m_r, v->m_type));
-                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
-                                                            ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                                rc->m_r, rc->m_type)),
-                                                            ASR::cast_kindType::RealToInteger, v->m_type, integer_value, nullptr));
+                                                    if (!ASRUtils::is_array(v->m_type) &&
+                                                        (ASRUtils::is_complex(*v->m_type) ||
+                                                         ASRUtils::is_integer(*v->m_type) ||
+                                                         ASRUtils::is_real(*v->m_type))) {
+                                                        // kind=10 and kind=16 m_r is a pointer to the value's
+                                                        // bytes, so fold with the kind-aware implicit cast.
+                                                        ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                                                            &init_val, rc->m_type, v->m_type, diag);
+                                                        if (ASRUtils::is_real(*v->m_type) &&
+                                                            ASRUtils::expr_value(init_val)) {
+                                                            init_val = ASRUtils::expr_value(init_val);
+                                                        }
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, rc->m_r, v->m_type));
                                                     }
@@ -8385,9 +8381,8 @@ public:
                                                                 ic->m_n, ic->m_type)),
                                                             ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value, nullptr));
                                                     } else if (ASRUtils::is_real(*v->m_type)) {
-                                                        ASR::expr_t* real_value = ASRUtils::EXPR(
-                                                            ASR::make_RealConstant_t(al, x.base.base.loc,
-                                                                (double)ic->m_n, v->m_type));
+                                                        ASR::expr_t* real_value = ASRUtils::make_RealConstant_util(
+                                                            al, x.base.base.loc, (double)ic->m_n, v->m_type);
                                                         init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
