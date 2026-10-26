@@ -1362,14 +1362,154 @@ public:
     }
 };
 
+// Whether an entity of the derived type `struct_sym` can invoke a procedure
+// that is not called explicitly: the type, a type it extends or the type of
+// a component has a final subroutine (F2018 7.5.6.3) or a type-bound generic,
+// such as a defined assignment of a component (10.2.1.3) or a defined
+// input/output procedure (12.6.4.8). A polymorphic component can have any
+// dynamic type.
+static bool struct_may_invoke_procedures(ASR::symbol_t *struct_sym,
+        std::set<ASR::symbol_t*> &visited) {
+    if (struct_sym == nullptr) {
+        return false;
+    }
+    struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+    if (!ASR::is_a<ASR::Struct_t>(*struct_sym) || !visited.insert(struct_sym).second) {
+        return false;
+    }
+    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+    if (st->n_member_functions > 0) {
+        return true;
+    }
+    for (auto &item: st->m_symtab->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
+                ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+            return true;
+        }
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            continue;
+        }
+        ASR::Variable_t *member = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::ttype_t *type = ASRUtils::extract_type(member->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*type) && (ASRUtils::is_class_type(type) ||
+                struct_may_invoke_procedures(member->m_type_declaration, visited))) {
+            return true;
+        }
+    }
+    return struct_may_invoke_procedures(st->m_parent, visited);
+}
+
+// Whether a procedure can be invoked when the variable `v` is referenced or
+// goes out of scope: it is finalizable, or it is of a derived type with a
+// defined assignment of a component. A polymorphic allocatable variable, or
+// a polymorphic intent(out) dummy, which is finalized on entry, can have any
+// dynamic type. A polymorphic pointer is finalized only when it is
+// deallocated (see ContainedReentryFinder); the context variable of a
+// polymorphic dummy is such a pointer.
+static bool variable_may_invoke_procedures(ASR::Variable_t *v) {
+    ASR::ttype_t *type = ASRUtils::extract_type(v->m_type);
+    if (!ASR::is_a<ASR::StructType_t>(*type)) {
+        return false;
+    }
+    if (ASRUtils::is_class_type(type) && (ASRUtils::is_allocatable(v->m_type) ||
+            v->m_intent == ASR::intentType::Out)) {
+        return true;
+    }
+    std::set<ASR::symbol_t*> visited;
+    return struct_may_invoke_procedures(v->m_type_declaration, visited);
+}
+
 // Finds whether a host can be entered again while a procedure contained in it runs:
-// a contained procedure calls a procedure that is not contained in the host, or a
-// contained procedure is passed as an argument or associated with a pointer
+// a contained procedure calls a procedure that is not contained in the host,
+// explicitly or implicitly (by finalization, a defined assignment of a component
+// or a defined input/output), or a contained procedure is passed as an argument or
+// associated with a pointer
 class ContainedReentryFinder: public ASR::BaseWalkVisitor<ContainedReentryFinder> {
 public:
     const ASR::Function_t *host = nullptr;
     bool in_contained = false;
     bool may_reenter = false;
+
+    void check_variable(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        may_reenter = may_reenter || (in_contained && ASR::is_a<ASR::Variable_t>(*sym) &&
+            variable_may_invoke_procedures(ASR::down_cast<ASR::Variable_t>(sym)));
+    }
+
+    // A derived-type item, also of a namelist group, can be transferred by a
+    // defined input/output procedure that is not bound to its type
+    // (F2018 12.6.4.8.3)
+    void check_io_items(ASR::expr_t **items, size_t n_items, ASR::symbol_t *nml) {
+        if (!in_contained) {
+            return;
+        }
+        for (size_t i = 0; i < n_items; i++) {
+            may_reenter = may_reenter || ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(ASRUtils::expr_type(items[i])));
+        }
+        if (nml == nullptr) {
+            return;
+        }
+        ASR::Namelist_t *group = ASR::down_cast<ASR::Namelist_t>(
+            ASRUtils::symbol_get_past_external(nml));
+        for (size_t i = 0; i < group->n_var_list; i++) {
+            may_reenter = may_reenter || ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(ASRUtils::symbol_type(
+                    ASRUtils::symbol_get_past_external(group->m_var_list[i]))));
+        }
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        check_variable((ASR::symbol_t*)&x);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_Variable(x);
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        check_variable(x.m_m);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_StructInstanceMember(x);
+    }
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        std::set<ASR::symbol_t*> visited;
+        may_reenter = may_reenter || (in_contained &&
+            struct_may_invoke_procedures(x.m_dt_sym, visited));
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_StructConstructor(x);
+    }
+
+    void visit_StringFormat(const ASR::StringFormat_t &x) {
+        may_reenter = may_reenter || (in_contained && x.n_dtio_bindings > 0);
+        check_io_items(x.m_args, x.n_args, nullptr);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_StringFormat(x);
+    }
+
+    // Deallocating a polymorphic pointer finalizes its dynamic type
+    void check_deallocated(ASR::expr_t **vars, size_t n_vars) {
+        for (size_t i = 0; i < n_vars && in_contained; i++) {
+            may_reenter = may_reenter ||
+                ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(vars[i])));
+        }
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        check_deallocated(x.m_vars, x.n_vars);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_ExplicitDeallocate(x);
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        check_deallocated(x.m_vars, x.n_vars);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_ImplicitDeallocate(x);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        check_io_items(x.m_values, x.n_values, x.m_nml);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_FileWrite(x);
+    }
+
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        check_io_items(x.m_values, x.n_values, x.m_nml);
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_FileRead(x);
+    }
 
     bool is_contained(ASR::symbol_t *sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
@@ -1398,6 +1538,7 @@ public:
 
     void visit_Var(const ASR::Var_t &x) {
         may_reenter = may_reenter || is_contained(x.m_v);
+        check_variable(x.m_v);
     }
 
     bool find(const ASR::Function_t &x) {
@@ -1613,9 +1754,13 @@ public:
     the last sync, as a contained procedure called through a procedure
     pointer is not synced. A flag in the context module tells whether an
     instance is active, so a host that is not entered again only sets and
-    resets the flag. A host whose contained procedures only call each other
-    and are only called directly cannot be entered again while one of them
-    runs, and a program cannot be entered again; they are left unchanged.
+    resets the flag. A host is left unchanged when its contained procedures
+    explicitly call only each other, are only called directly, and invoke
+    no procedure implicitly: they reference no entity that can be finalized
+    or assigned by a defined assignment of a component, and transfer no
+    derived-type item, which could use defined input/output (see
+    ContainedReentryFinder). Such a host cannot be entered again while one of
+    them runs. A program cannot be entered again and is left unchanged too.
 
     ```fortran
         reentered = active
