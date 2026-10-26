@@ -5324,9 +5324,235 @@ namespace MatMul {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_MatMul(Allocator &,
-        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&, diag::Diagnostics&) {
-        // TODO
+    template <typename T>
+    struct is_std_complex : std::false_type {};
+
+    template <typename T>
+    struct is_std_complex<std::complex<T>> : std::true_type {};
+
+    // Only fold when the result type is the one Fortran gives the product.
+    // `create_MatMul` takes the kind from one argument, so an argument of
+    // the same type category but another kind (real(4) with real(8)) is left
+    // to run time instead of being folded in the wrong kind.
+    static inline bool matmul_arg_foldable(ASR::ttype_t *arg_type,
+            ASR::ttype_t *elem_type) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(arg_type));
+        bool same_kind = ASRUtils::extract_kind_from_ttype_t(t) ==
+            ASRUtils::extract_kind_from_ttype_t(elem_type);
+        if (is_integer(*t)) {
+            return !is_integer(*elem_type) || same_kind;
+        } else if (is_real(*t)) {
+            return (is_real(*elem_type) || is_complex(*elem_type)) && same_kind;
+        } else if (is_complex(*t)) {
+            return is_complex(*elem_type) && same_kind;
+        } else if (is_logical(*t)) {
+            return is_logical(*elem_type) && same_kind;
+        }
+        return false;
+    }
+
+    static inline ASR::ArrayConstant_t *matmul_constant_arg(ASR::expr_t *arg) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        arg = ASRUtils::expr_value(arg);
+        if (arg && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        if (!arg || !ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::ArrayConstant_t>(arg);
+    }
+
+    template <typename T>
+    static inline bool matmul_element(Allocator &al, ASR::ArrayConstant_t *a,
+            int64_t i, T &v) {
+        ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+        if (e && ASR::is_a<ASR::ComplexConstructor_t>(*e)) {
+            e = ASR::down_cast<ASR::ComplexConstructor_t>(e)->m_value;
+        }
+        if (!e) return false;
+        if constexpr (std::is_same_v<T, bool>) {
+            if (!ASR::is_a<ASR::LogicalConstant_t>(*e)) return false;
+            v = ASR::down_cast<ASR::LogicalConstant_t>(e)->m_value;
+            return true;
+        } else {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                v = static_cast<T>(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+                return true;
+            }
+            if constexpr (!std::is_integral_v<T>) {
+                if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+                    v = static_cast<T>(ASR::down_cast<ASR::RealConstant_t>(e)->m_r);
+                    return true;
+                }
+            }
+            if constexpr (is_std_complex<T>::value) {
+                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                    v = T(static_cast<typename T::value_type>(c->m_re),
+                        static_cast<typename T::value_type>(c->m_im));
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    // Sets `s` to `s + x * y` and returns true, or returns false if the
+    // product or the sum overflows int64_t.
+    static inline bool matmul_checked_fma(int64_t &s, int64_t x, int64_t y) {
+        constexpr int64_t max = std::numeric_limits<int64_t>::max();
+        constexpr int64_t min = std::numeric_limits<int64_t>::min();
+        if (x != 0 && y != 0) {
+            bool overflow = x > 0
+                ? (y > 0 ? x > max / y : y < min / x)
+                : (y > 0 ? x < min / y : y < max / x);
+            if (overflow) return false;
+        }
+        int64_t p = x * y;
+        if ((p > 0 && s > max - p) || (p < 0 && s < min - p)) return false;
+        s += p;
+        return true;
+    }
+
+    // Folds `matrix_a` (n x k) times `matrix_b` (k x m), both column major,
+    // computing in the precision of the result element type T. A rank 1
+    // argument is a 1 x k or a k x 1 matrix. An integer result that
+    // overflows T is an error.
+    template <typename T>
+    static inline ASR::expr_t *eval_MatMul_values(Allocator &al,
+            const Location &loc, ASR::ttype_t *return_type,
+            ASR::ArrayConstant_t *a, ASR::ArrayConstant_t *b,
+            int64_t n, int64_t k, int64_t m, diag::Diagnostics &diag) {
+        std::vector<T> va(n * k), vb(k * m);
+        T v{};
+        for (int64_t i = 0; i < n * k; i++) {
+            if (!matmul_element(al, a, i, v)) return nullptr;
+            va[i] = v;
+        }
+        for (int64_t i = 0; i < k * m; i++) {
+            if (!matmul_element(al, b, i, v)) return nullptr;
+            vb[i] = v;
+        }
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(return_type));
+        std::vector<ASR::expr_t*> values(n * m);
+        for (int64_t j = 0; j < m; j++) {
+            for (int64_t i = 0; i < n; i++) {
+                T s{};
+                if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                    // Accumulate exactly and reject a result outside T.
+                    int64_t exact = 0;
+                    bool fits = true;
+                    for (int64_t p = 0; p < k && fits; p++) {
+                        fits = matmul_checked_fma(exact,
+                            va[i + p * n], vb[p + j * k]);
+                    }
+                    if (!fits || !integer_fits<T>(exact)) {
+                        append_error(diag, "integer overflow in `matmul`: "
+                            "the result does not fit in integer(" +
+                            std::to_string(sizeof(T)) + ")", loc);
+                        return nullptr;
+                    }
+                    s = static_cast<T>(exact);
+                } else {
+                    for (int64_t p = 0; p < k; p++) {
+                        T x = va[i + p * n], y = vb[p + j * k];
+                        if constexpr (std::is_same_v<T, bool>) {
+                            s = s || (x && y);
+                        } else {
+                            s += x * y;
+                        }
+                    }
+                }
+                ASR::expr_t *value = nullptr;
+                if constexpr (std::is_same_v<T, bool>) {
+                    value = EXPR(ASR::make_LogicalConstant_t(al, loc, s, elem_type));
+                } else if constexpr (std::is_integral_v<T>) {
+                    value = EXPR(ASR::make_IntegerConstant_t(al, loc, s, elem_type));
+                } else if constexpr (is_std_complex<T>::value) {
+                    value = EXPR(ASR::make_ComplexConstant_t(al, loc,
+                        s.real(), s.imag(), elem_type));
+                } else {
+                    value = ASRUtils::make_RealConstant_util(al, loc, s, elem_type);
+                }
+                values[i + j * n] = value;
+            }
+        }
+        ASRBuilder builder(al, loc);
+        return builder.ArrayConstant(values, elem_type, false, return_type);
+    }
+
+    static inline ASR::expr_t *eval_MatMul(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(return_type));
+        ASR::ArrayConstant_t *consts[2];
+        int64_t shape[2][2];
+        for (int i = 0; i < 2; i++) {
+            ASR::ttype_t *arg_type = expr_type(args[i]);
+            if (!matmul_arg_foldable(arg_type, elem_type)) return nullptr;
+            consts[i] = matmul_constant_arg(args[i]);
+            if (!consts[i]) return nullptr;
+            ASR::dimension_t *dims = nullptr;
+            int rank = checked_integer_cast<int>(
+                extract_dimensions_from_ttype(arg_type, dims));
+            int64_t lengths[2] = {1, 1};
+            for (int d = 0; d < rank; d++) {
+                if (!dims[d].m_length || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[d].m_length), lengths[d])) {
+                    return nullptr;
+                }
+            }
+            if (rank == 1) {
+                // A vector `matrix_a` is a row, a vector `matrix_b` a column.
+                shape[i][0] = i == 0 ? 1 : lengths[0];
+                shape[i][1] = i == 0 ? lengths[0] : 1;
+            } else {
+                shape[i][0] = lengths[0];
+                shape[i][1] = lengths[1];
+            }
+            if (ASRUtils::get_fixed_size_of_array(consts[i]->m_type) !=
+                    shape[i][0] * shape[i][1]) {
+                return nullptr;
+            }
+        }
+        int64_t n = shape[0][0], k = shape[0][1], m = shape[1][1];
+        if (shape[1][0] != k) return nullptr;
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        if (is_logical(*elem_type)) {
+            return eval_MatMul_values<bool>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 1) {
+            return eval_MatMul_values<int8_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 2) {
+            return eval_MatMul_values<int16_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 4) {
+            return eval_MatMul_values<int32_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 8) {
+            return eval_MatMul_values<int64_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_real(*elem_type) && kind == 4) {
+            return eval_MatMul_values<float>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_real(*elem_type) && kind == 8) {
+            return eval_MatMul_values<double>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_complex(*elem_type) && kind == 4) {
+            return eval_MatMul_values<std::complex<float>>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_complex(*elem_type) && kind == 8) {
+            return eval_MatMul_values<std::complex<double>>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        }
+        // Other kinds are not folded at compile time.
         return nullptr;
     }
 

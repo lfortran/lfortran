@@ -3748,3 +3748,22 @@ contains
         end do
     end subroutine
 end module cc1_dc_index_name
+
+module cc1_matmul_overflow
+contains
+    subroutine cc1_matmul_overflow_sub()
+        integer, parameter :: a(1,1) = reshape([100000], [1,1])
+        integer, parameter :: x(1) = [100000]
+        integer(1), parameter :: b(1,2) = reshape([100_1, 100_1], [1,2])
+        integer(1), parameter :: v(2) = [1_1, 1_1]
+        integer(8), parameter :: c(1,2) = reshape([9223372036854775807_8, 1_8], [1,2])
+        integer(8), parameter :: u(2) = [1_8, 1_8]
+        integer, parameter :: p(1) = matmul(a, x)  ! {Error} integer overflow in `matmul`
+        integer :: y(1)
+        integer(1) :: w(1)
+        integer(8) :: z(1)
+        y = matmul(a, x)  ! {Error} integer overflow in `matmul`
+        w = matmul(b, v)  ! {Error} integer overflow in `matmul`
+        z = matmul(c, u)  ! {Error} integer overflow in `matmul`
+    end subroutine
+end module cc1_matmul_overflow

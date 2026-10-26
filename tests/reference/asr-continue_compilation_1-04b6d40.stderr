@@ -1562,6 +1562,12 @@ semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_intern
 3665 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
      |                                              ^ 
 
+semantic error: integer overflow in `matmul`: the result does not fit in integer(4)
+    --> tests/errors/continue_compilation_1.f90:3761:38
+     |
+3761 |         integer, parameter :: p(1) = matmul(a, x)  ! {Error} integer overflow in `matmul`
+     |                                      ^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4663,3 +4669,21 @@ semantic error: Assignment to loop variable `i` is not allowed
      |
 3745 |                 i = 5  ! {Error} Assignment to loop variable `i` is not allowed
      |                 ^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(4)
+    --> tests/errors/continue_compilation_1.f90:3765:13
+     |
+3765 |         y = matmul(a, x)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(1)
+    --> tests/errors/continue_compilation_1.f90:3766:13
+     |
+3766 |         w = matmul(b, v)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(8)
+    --> tests/errors/continue_compilation_1.f90:3767:13
+     |
+3767 |         z = matmul(c, u)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
