@@ -3609,6 +3609,7 @@ RUN(NAME callback_06 LABELS gfortran llvm)
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME recursion_04 LABELS gfortran llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

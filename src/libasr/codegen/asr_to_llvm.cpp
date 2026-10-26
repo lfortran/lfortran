@@ -13124,6 +13124,15 @@ public:
                     llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                     llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
+                // A variable that is not a dummy argument holds the data pointer of an unbounded array
+                if( ASRUtils::is_array(value_type) && !LLVM::is_llvm_pointer(*value_type) &&
+                    ASRUtils::extract_physical_type(value_type) ==
+                        ASR::array_physical_typeType::UnboundedPointerArray &&
+                    (llvm::isa<llvm::AllocaInst>(llvm_value) ||
+                     llvm::isa<llvm::GlobalVariable>(llvm_value)) ) {
+                    llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                    llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
+                }
                 if( is_value_data_only_array ) { // This needs a refactor to handle
                     ASR::ttype_t* target_type_ = ASRUtils::type_get_past_pointer(target_type);
                     switch( ASRUtils::extract_physical_type(target_type_) ) {

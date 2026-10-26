@@ -51,6 +51,31 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __libasr_saved_a:
+                                                (Variable
+                                                    3
+                                                    __libasr_saved_a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             a:
                                                 (Variable
                                                     3
@@ -235,6 +260,15 @@
                                         .false.
                                     )
                                     (Assignment
+                                        (Var 3 __libasr_saved_a)
+                                        (Var 3 a_nested_ctx)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
                                         (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
@@ -261,6 +295,24 @@
                                     )
                                     (Assignment
                                         (Var 3 a_nested_ctx)
+                                        (Var 3 __libasr_saved_a)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 __libasr_saved_a)
+                                        (Var 3 a_nested_ctx)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a_nested_ctx)
                                         (Var 3 a)
                                         ()
                                         .false.
@@ -278,6 +330,15 @@
                                     (Assignment
                                         (Var 3 a)
                                         (Var 3 a_nested_ctx)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 a_nested_ctx)
+                                        (Var 3 __libasr_saved_a)
                                         ()
                                         .false.
                                         .false.

@@ -20,6 +20,7 @@ define void @__module_recursion_01_sub1(i32* %x) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
+  %__libasr_saved_x = alloca i32, align 4
   %1 = load i32, i32* %x, align 1
   %2 = load i32, i32* @__module_recursion_01_n, align 4
   %3 = icmp slt i32 %1, %2
@@ -50,11 +51,15 @@ free_nonnull:                                     ; preds = %then
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %then
-  %17 = load i32, i32* %x, align 1
-  store i32 %17, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
+  %17 = load i32, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
+  store i32 %17, i32* %__libasr_saved_x, align 4
+  %18 = load i32, i32* %x, align 1
+  store i32 %18, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
   call void @sub1.__module_recursion_01_sub2()
-  %18 = load i32, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
-  store i32 %18, i32* %x, align 1
+  %19 = load i32, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
+  store i32 %19, i32* %x, align 1
+  %20 = load i32, i32* %__libasr_saved_x, align 4
+  store i32 %20, i32* @__module___lcompilers_created__nested_context__recursion_01__sub1__x, align 4
   call void @__module_recursion_01_sub1(i32* %x)
   br label %ifcont
 

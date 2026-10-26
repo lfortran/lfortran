@@ -34,48 +34,202 @@ target datalayout = "..."
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_subroutine_without_type_01.mytype.3_class* %self) {
 .entry:
+  %is_associated16 = alloca i1, align 1
   %0 = call i8* @_lfortran_get_default_allocator()
-  %1 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %self, null
-  br i1 %1, label %then, label %else
+  %is_associated = alloca i1, align 1
+  %__libasr_saved_self = alloca %module_call_subroutine_without_type_01.mytype.3_class*, align 8
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %1 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %2 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %1 to i64
+  %3 = icmp eq i64 %2, 0
+  br i1 %3, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %2 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
-  %3 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %2 to i8*
-  call void @_lfortran_free_alloc(i8* %0, i8* %3)
-  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
-  br label %ifcont3
+  store i1 false, i1* %is_associated, align 1
+  br label %ifcont
 
 else:                                             ; preds = %.entry
-  %4 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
-  %5 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %4, null
-  br i1 %5, label %then1, label %else2
-
-then1:                                            ; preds = %else
-  %6 = call i8* @_lfortran_get_default_allocator()
-  %7 = call i8* @_lfortran_malloc_alloc(i8* %6, i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %7, i8 0, i32 16, i1 false)
-  %8 = bitcast i8* %7 to %module_call_subroutine_without_type_01.mytype.3_class*
-  store %module_call_subroutine_without_type_01.mytype.3_class* %8, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %4 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %1, i32 0, i32 1
+  %5 = load i8*, %module_call_subroutine_without_type_01.mytype.3** %4, align 1
+  %6 = ptrtoint i8* %5 to i64
+  %7 = icmp ne i64 %6, 0
+  store i1 %7, i1* %is_associated, align 1
   br label %ifcont
 
-else2:                                            ; preds = %else
-  br label %ifcont
+ifcont:                                           ; preds = %else, %then
+  %8 = load i1, i1* %is_associated, align 1
+  br i1 %8, label %then1, label %else8
 
-ifcont:                                           ; preds = %else2, %then1
+then1:                                            ; preds = %ifcont
   %9 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
-  %10 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %9 to i8*
-  %11 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %self to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %10, i8* %11, i32 16, i1 false)
-  br label %ifcont3
+  %10 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %9, null
+  br i1 %10, label %then2, label %else3
 
-ifcont3:                                          ; preds = %ifcont, %then
+then2:                                            ; preds = %then1
+  %11 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %12 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %11 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %12)
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  br label %ifcont7
+
+else3:                                            ; preds = %then1
+  %13 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %14 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %13, null
+  br i1 %14, label %then4, label %else5
+
+then4:                                            ; preds = %else3
+  %15 = call i8* @_lfortran_get_default_allocator()
+  %16 = call i8* @_lfortran_malloc_alloc(i8* %15, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %16, i8 0, i32 16, i1 false)
+  %17 = bitcast i8* %16 to %module_call_subroutine_without_type_01.mytype.3_class*
+  store %module_call_subroutine_without_type_01.mytype.3_class* %17, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  br label %ifcont6
+
+else5:                                            ; preds = %else3
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %then4
+  %18 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %19 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %18 to i8*
+  %20 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %9 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %19, i8* %20, i32 16, i1 false)
+  br label %ifcont7
+
+ifcont7:                                          ; preds = %ifcont6, %then2
+  br label %ifcont9
+
+else8:                                            ; preds = %ifcont
+  %21 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %22 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %21 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %22)
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  br label %ifcont9
+
+ifcont9:                                          ; preds = %else8, %ifcont7
+  %23 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %self, null
+  br i1 %23, label %then10, label %else11
+
+then10:                                           ; preds = %ifcont9
+  %24 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %25 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %24 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %25)
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  br label %ifcont15
+
+else11:                                           ; preds = %ifcont9
+  %26 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %27 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %26, null
+  br i1 %27, label %then12, label %else13
+
+then12:                                           ; preds = %else11
+  %28 = call i8* @_lfortran_get_default_allocator()
+  %29 = call i8* @_lfortran_malloc_alloc(i8* %28, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %29, i8 0, i32 16, i1 false)
+  %30 = bitcast i8* %29 to %module_call_subroutine_without_type_01.mytype.3_class*
+  store %module_call_subroutine_without_type_01.mytype.3_class* %30, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  br label %ifcont14
+
+else13:                                           ; preds = %else11
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %else13, %then12
+  %31 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %32 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %31 to i8*
+  %33 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %self to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %32, i8* %33, i32 16, i1 false)
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %ifcont14, %then10
   call void @get_i.__module_module_call_subroutine_without_type_01_get_r()
+  %34 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %35 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %34 to i64
+  %36 = icmp eq i64 %35, 0
+  br i1 %36, label %then17, label %else18
+
+then17:                                           ; preds = %ifcont15
+  store i1 false, i1* %is_associated16, align 1
+  br label %ifcont19
+
+else18:                                           ; preds = %ifcont15
+  %37 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %34, i32 0, i32 1
+  %38 = load i8*, %module_call_subroutine_without_type_01.mytype.3** %37, align 1
+  %39 = ptrtoint i8* %38 to i64
+  %40 = icmp ne i64 %39, 0
+  store i1 %40, i1* %is_associated16, align 1
+  br label %ifcont19
+
+ifcont19:                                         ; preds = %else18, %then17
+  %41 = load i1, i1* %is_associated16, align 1
+  br i1 %41, label %then20, label %else27
+
+then20:                                           ; preds = %ifcont19
+  %42 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %43 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %42, null
+  br i1 %43, label %then21, label %else22
+
+then21:                                           ; preds = %then20
+  %44 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %45 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %44 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %45)
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  br label %ifcont26
+
+else22:                                           ; preds = %then20
+  %46 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %47 = icmp eq %module_call_subroutine_without_type_01.mytype.3_class* %46, null
+  br i1 %47, label %then23, label %else24
+
+then23:                                           ; preds = %else22
+  %48 = call i8* @_lfortran_get_default_allocator()
+  %49 = call i8* @_lfortran_malloc_alloc(i8* %48, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %49, i8 0, i32 16, i1 false)
+  %50 = bitcast i8* %49 to %module_call_subroutine_without_type_01.mytype.3_class*
+  store %module_call_subroutine_without_type_01.mytype.3_class* %50, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  br label %ifcont25
+
+else24:                                           ; preds = %else22
+  br label %ifcont25
+
+ifcont25:                                         ; preds = %else24, %then23
+  %51 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %52 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %51 to i8*
+  %53 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %42 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i32(i8* %52, i8* %53, i32 16, i1 false)
+  br label %ifcont26
+
+ifcont26:                                         ; preds = %ifcont25, %then21
+  br label %ifcont28
+
+else27:                                           ; preds = %ifcont19
+  %54 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  %55 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %54 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %55)
+  store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
+  br label %ifcont28
+
+ifcont28:                                         ; preds = %else27, %ifcont26
   br label %return
 
-return:                                           ; preds = %ifcont3
+return:                                           ; preds = %ifcont28
   br label %FINALIZE_SYMTABLE_get_i
 
 FINALIZE_SYMTABLE_get_i:                          ; preds = %return
+  br label %Finalize_Variable___libasr_saved_self
+
+Finalize_Variable___libasr_saved_self:            ; preds = %FINALIZE_SYMTABLE_get_i
+  %56 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %__libasr_saved_self, align 8
+  %57 = icmp ne %module_call_subroutine_without_type_01.mytype.3_class* %56, null
+  br i1 %57, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %Finalize_Variable___libasr_saved_self
+  %58 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %56 to i8*
+  call void @_lfortran_free_alloc(i8* %0, i8* %58)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %Finalize_Variable___libasr_saved_self
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
   ret void
 }
 

@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <set>
+#include <tuple>
 
 namespace LCompilers {
 
@@ -1436,6 +1437,89 @@ public:
     bool calls_present = false;
     bool calls_in_loop_condition = false;
     std::set<ASR::symbol_t*> nested_proc_dispatch_hosts;
+    // Nesting depth of the statement lists being transformed
+    size_t transform_depth = 0;
+    std::map<std::tuple<ASR::symbol_t*, ASR::symbol_t*, size_t>, ASR::symbol_t*> saved_context_vars;
+
+    ASR::stmt_t* copy_context_var(ASR::expr_t *target, ASR::expr_t *value,
+            bool associate, bool move) {
+        const Location &loc = value->base.loc;
+        if (associate) {
+            ASR::stmt_t *associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                target, value));
+            if (!ASRUtils::is_pointer(ASRUtils::expr_type(value)) ||
+                    !ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+                return associate_stmt;
+            }
+            // The context variable is disassociated until the first host instance syncs it
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *is_associated = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc,
+                value, nullptr, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::expr_t*> nullify_args;
+            nullify_args.reserve(al, 1);
+            nullify_args.push_back(al, target);
+            return b.If(is_associated, {associate_stmt},
+                {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_args.p, nullify_args.size()))});
+        }
+        ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            target, value, nullptr, move, move));
+        if (ASRUtils::is_allocatable(ASRUtils::expr_type(value))) {
+            return create_if_allocated_block(value, assignment);
+        }
+        return assignment;
+    }
+
+    /*
+    A procedure can be entered again while a procedure contained in it runs,
+    and the new instance syncs its own variables into the shared context
+    variables. Each instance therefore saves the context variables before it
+    syncs them for a call and restores them after it, so that a contained
+    procedure always sees the host instance that invoked it (Fortran 2018,
+    15.6.2.4). A program cannot be entered again.
+
+    ```fortran
+        saved_x = ctx_x
+        ctx_x = x
+        call inner()
+        x = ctx_x
+        ctx_x = saved_x
+    ```
+    */
+    void save_context_var(ASR::symbol_t *ext_sym, ASR::symbol_t *type_declaration,
+            bool associate, bool move, std::vector<ASR::stmt_t*> &saves,
+            std::vector<ASR::stmt_t*> &restores) {
+        if (!ASR::is_a<ASR::Function_t>(*cur_func_sym)) {
+            return;
+        }
+        SymbolTable *host_scope = ASR::down_cast<ASR::Function_t>(cur_func_sym)->m_symtab;
+        ASR::symbol_t *ctx_sym = ASRUtils::symbol_get_past_external(ext_sym);
+        // A statement synced inside the statement of another sync needs its own copy
+        auto key = std::make_tuple(cur_func_sym, ctx_sym, transform_depth);
+        ASR::symbol_t *saved_sym = nullptr;
+        auto it = saved_context_vars.find(key);
+        if (it != saved_context_vars.end()) {
+            saved_sym = it->second;
+        } else {
+            std::string name = host_scope->get_unique_name("__libasr_saved_" +
+                std::string(ASRUtils::symbol_name(ctx_sym)), false);
+            ASR::ttype_t *type = ASRUtils::duplicate_type(al, ASRUtils::symbol_type(ctx_sym));
+            // A local procedure that is not a pointer would declare a procedure
+            if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+                type = ASRUtils::TYPE(ASR::make_Pointer_t(al, type->base.loc, type));
+            }
+            saved_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                ctx_sym->base.loc, host_scope, s2c(al, name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                type, type_declaration, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+            host_scope->add_symbol(name, saved_sym);
+            saved_context_vars[key] = saved_sym;
+        }
+        ASR::expr_t *ctx = ASRUtils::EXPR(ASR::make_Var_t(al, ctx_sym->base.loc, ext_sym));
+        ASR::expr_t *saved = ASRUtils::EXPR(ASR::make_Var_t(al, ctx_sym->base.loc, saved_sym));
+        saves.push_back(copy_context_var(saved, ctx, associate, move));
+        restores.push_back(copy_context_var(ctx, saved, associate, move));
+    }
 
     static ASR::symbol_t* get_root_host_symbol(ASR::expr_t* expr) {
         expr = ASRUtils::get_past_array_physical_cast(expr);
@@ -1600,6 +1684,7 @@ public:
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
         HostToContextVarDuplicator ctx_duplicator(al);
+        transform_depth++;
         for (size_t i=0; i<n_body; i++) {
             if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
                 split_loop_header(m_body, n_body, i);
@@ -1619,6 +1704,8 @@ public:
                     assignment->m_value, ASR::down_cast<ASR::Var_t>(target)->m_v);
             }
             visit_stmt(*m_body[i]);
+            size_t sync_start = body.size();
+            std::vector<ASR::stmt_t*> saves, restores;
             if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
                 if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
                     for (auto &sym: nesting_map[cur_func_sym]) {
@@ -1725,6 +1812,16 @@ public:
                             ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration &&
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
+                        if (sym_ == sym) {
+                            bool by_reference = ASRUtils::is_array(ASRUtils::symbol_type(sym)) ||
+                                ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym));
+                            bool moves = by_reference && ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) &&
+                                ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym));
+                            save_context_var(ext_sym, ASR::down_cast<ASR::Variable_t>(
+                                ASRUtils::symbol_get_past_external(sym))->m_type_declaration,
+                                (by_reference && !moves) || (!by_reference && is_procedure_variable),
+                                moves, saves, restores);
+                        }
                         if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
                             if( ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) && ASRUtils::is_allocatable(ASRUtils::symbol_type(ext_sym)) ) {
                                 auto it_len = assumed_length_ctx_var_len.find(t);
@@ -1743,6 +1840,10 @@ public:
                                         ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                             len_target, len_call, nullptr, false, false));
                                     body.push_back(al, len_assign);
+                                    if (sym_ == sym) {
+                                        save_context_var(len_ext_sym, nullptr, false, false,
+                                            saves, restores);
+                                    }
                                 }
                                 // For allocatable arrays, use Assignment instead of Associate
                                 // to properly handle reallocation in nested functions
@@ -1804,6 +1905,17 @@ public:
                     }
                 }
             }
+            if (!saves.empty()) {
+                std::vector<ASR::stmt_t*> syncs(body.p + sync_start, body.p + body.size());
+                body.n = sync_start;
+                for (auto &stm: saves) {
+                    body.push_back(al, stm);
+                }
+                for (auto &stm: syncs) {
+                    body.push_back(al, stm);
+                }
+                assigns_at_end.insert(assigns_at_end.end(), restores.begin(), restores.end());
+            }
 
             // A moved array is unallocated in the host until it is moved back
             if (!ctx_duplicator.ctx_vars.empty()) {
@@ -1861,6 +1973,7 @@ public:
         }
         m_body = body.p;
         n_body = body.size();
+        transform_depth--;
     }
 
     void visit_Function(const ASR::Function_t &x) {
