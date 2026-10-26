@@ -5676,6 +5676,8 @@ RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_29 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_30 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
+RUN(NAME structure_constructor_args_31 LABELS gfortran llvm NO_STD_F23)
+RUN(NAME structure_constructor_args_32 LABELS gfortran llvm NO_STD_F23)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_call_in_decl_02 LABELS gfortran llvm)

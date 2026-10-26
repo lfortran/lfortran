@@ -15416,8 +15416,6 @@ public:
                 &null_args);
         }
 
-        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
-
         std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
             if (vals[i].m_value == nullptr
@@ -15563,6 +15561,16 @@ public:
                 vals.p[i].m_value = nullptr;
             }
         }
+        return make_struct_constructor(loc, v, vals, members, is_const);
+    }
+
+    // Returns the structure constructor of the type `v` with the component
+    // values `vals`, one for each of `members`, which are conformed to their
+    // components first. If `is_const` and every value is constant, it is a
+    // StructConstant of the folded values.
+    ASR::asr_t* make_struct_constructor(const Location& loc, ASR::symbol_t* v,
+            Vec<ASR::call_arg_t>& vals, const std::vector<ASR::symbol_t*>& members,
+            bool is_const) {
         conform_struct_constructor_args(vals, members);
 
         // Ensure all values are constant before creating StructConstant
@@ -15575,6 +15583,7 @@ public:
                     break;
             }
         }
+        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
         if (is_const) {
             // A StructConstant holds constants only: store the folded value of
             // each argument, not the parameter reference or nested constructor
@@ -27232,6 +27241,76 @@ public:
         return true;
     }
 
+    // Returns the value of an object of the derived type `type_sym` that is
+    // only default initialized, or nullptr if the type has no default
+    // initialization, that is, if no direct component of it has a default
+    // initializer. A component without one is left undefined. A
+    // parameterized derived type is not handled. The value is the
+    // constructor `type_sym()` would be if every component could be omitted,
+    // so it is folded into a constant wherever that constructor would be.
+    ASR::expr_t* get_default_initialized_struct_value(ASR::symbol_t* type_sym,
+            const Location& loc) {
+        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(type_sym);
+        if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
+            return nullptr;
+        }
+        StructConstructorInfo info = get_struct_constructor_info(struct_sym);
+        if (!info.kind_indices.empty()) {
+            return nullptr;
+        }
+        bool has_default_initialization = false;
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, info.members.size());
+        for (ASR::symbol_t* member : info.members) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = nullptr;
+            if (member != nullptr && ASR::is_a<ASR::Variable_t>(*member)) {
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+                if (member_var->m_value == nullptr
+                        && member_var->m_symbolic_value != nullptr) {
+                    // The component's default initializer, such as a scalar
+                    // structure constructor for an array component, has no
+                    // constant value; it is not used here, and leaving the
+                    // component undefined would lose it.
+                    return nullptr;
+                }
+                arg.m_value = member_var->m_value != nullptr ? member_var->m_value
+                    : get_default_initialized_component_value(member_var, loc);
+            }
+            if (arg.m_value != nullptr) {
+                has_default_initialization = true;
+            }
+            args.push_back(al, arg);
+        }
+        if (!has_default_initialization) {
+            return nullptr;
+        }
+        return ASRUtils::EXPR(make_struct_constructor(loc, type_sym, args,
+            info.members, false));
+    }
+
+    // Returns the value of the component `member_var`, which has no default
+    // initializer, in an object that is only default initialized, or nullptr
+    // if it has none: a nonpointer, nonallocatable component of a derived
+    // type that has default initialization takes the default-initialized
+    // value of that type. For an array component, this is the scalar value
+    // of each element, which the structure constructor spreads to the
+    // component's shape as it does a scalar value given for it.
+    ASR::expr_t* get_default_initialized_component_value(
+            ASR::Variable_t* member_var, const Location& loc) {
+        if (member_var->m_value != nullptr || member_var->m_symbolic_value != nullptr
+                || member_var->m_type_declaration == nullptr
+                || ASRUtils::is_allocatable(member_var->m_type)
+                || ASRUtils::is_pointer(member_var->m_type)
+                || !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(member_var->m_type))) {
+            return nullptr;
+        }
+        return get_default_initialized_struct_value(
+            member_var->m_type_declaration, loc);
+    }
+
     // `null_args`, if given, has an entry for each positional argument in
     // `args`; it is extended to every component and records whether each
     // keyword argument is a reference to the intrinsic `null()`.
@@ -27365,6 +27444,27 @@ public:
                     default_init = is_kind_param ? arg_var->m_symbolic_value : arg_var->m_value;
                     if( ASRUtils::is_allocatable(arg_var->m_type) ) {
                         is_default_needed = false;
+                    }
+                    // C7104 requires a value for a component without
+                    // default initialization even if its type has default
+                    // initialization. Like GFortran and Intel Fortran, the
+                    // component takes the default-initialized value of its
+                    // type, except with --std=f23.
+                    if( default_init == nullptr && is_default_needed
+                            && !is_kind_param
+                            && !compiler_options.std_f23_conformance ) {
+                        default_init = get_default_initialized_component_value(
+                            arg_var, loc);
+                        if( default_init != nullptr ) {
+                            diag.semantic_warning_label(
+                                "structure constructor omits component '"
+                                + constructor_args[i] + "', which has no "
+                                "default initialization (extension)",
+                                {loc},
+                                "help: '" + constructor_args[i] + "' takes the "
+                                "default-initialized value of its type; give it "
+                                "a value to conform to Fortran 2023 C7104");
+                        }
                     }
                 }
                 if( default_init == nullptr && is_default_needed ) {
