@@ -1,0 +1,5 @@
+runtime error: Array 'x' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+ --> tests/errors/realloc_lhs_fn_result_05.f90:9:5
+  |
+9 |     x = make_array(3)
+  |     ^ not allocated here
