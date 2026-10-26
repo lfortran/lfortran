@@ -15,6 +15,13 @@ macro(ADDTESTC name)
 endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
+    if (NOT EMSCRIPTEN)
+        add_executable(test_jupyter_stubs test_jupyter_stubs.cpp ../jupyter.cpp)
+        target_compile_definitions(test_jupyter_stubs PRIVATE __EMSCRIPTEN__)
+        target_include_directories(test_jupyter_stubs PRIVATE
+            ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+        add_test(NAME test_jupyter_stubs COMMAND test_jupyter_stubs)
+    endif()
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
     if (NOT EMSCRIPTEN)
@@ -301,17 +308,35 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
-        # The prompt is driven through a pipe on the other platforms only;
-        # this test has not been run on Windows.
-        if (NOT WIN32)
+        # The prompt is driven through a pipe, and on a pseudo-terminal
+        # where there is one (not on Windows).
+        add_test(
+            NAME test_repl
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                --lfortran $<TARGET_FILE:lfortran>
+        )
+        # The prompt is a client of the shared kernel, here the built-in one.
+        if (NOT WITH_XEUS)
             add_test(
-                NAME test_repl
+                NAME test_session
                 COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
-                    --lfortran $<TARGET_FILE:lfortran>
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
+                    --lfortran $<TARGET_FILE:lfortran> --builtin
             )
+            set_tests_properties(test_session PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
+            add_test(
+                NAME test_session_regressions
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
+                    --lfortran $<TARGET_FILE:lfortran> --builtin
+            )
+            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
+                SKIP_RETURN_CODE 77)
         endif()
-        if (WITH_XEUS)
+        # The Xeus kernel, or else the built-in one
+        if (NOT EMSCRIPTEN)
             add_test(
                 NAME test_kernel_evaluation
                 COMMAND ${LFORTRAN_TEST_PYTHON}

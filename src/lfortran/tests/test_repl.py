@@ -3,9 +3,11 @@
 pipe or a pseudo-terminal. Also run a compiled program on a pseudo-terminal."""
 
 import argparse
+import contextlib
 import os
 import re
 import select
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,6 +17,26 @@ import time
 ENTER = b"\r"
 CTRL_D = b"\x04"
 NEW_LINE = "\x0e"  # Ctrl-N: a new line in the cell
+
+
+@contextlib.contextmanager
+def working_directory():
+    """A temporary directory to run the prompt in. The kernel the prompt
+    started, whose working directory it is too, may still be stopping when
+    the prompt has exited, and Windows cannot remove it until then."""
+    path = tempfile.mkdtemp()
+    try:
+        yield path
+    finally:
+        deadline = time.monotonic() + 30
+        while True:
+            try:
+                shutil.rmtree(path)
+                break
+            except OSError:
+                if time.monotonic() > deadline:
+                    raise
+                time.sleep(0.1)
 
 
 def run_repl(lfortran, cwd, cells, timeout=60, max_output=1 << 20, args=()):
@@ -43,7 +65,7 @@ def check_keeps_files_in_cwd(lfortran):
     # The prompt must not write the submitted text to a file in the user's
     # directory, here one named `input` (#13189).
     sentinel = b"KEEP THIS FILE\n"
-    with tempfile.TemporaryDirectory() as cwd:
+    with working_directory() as cwd:
         path = os.path.join(cwd, "input")
         with open(path, "wb") as f:
             f.write(sentinel)
@@ -78,7 +100,7 @@ def check_cell_output(lfortran):
     # decimal point and a successful cell shows its warnings.
     cells = ["%%showast" + NEW_LINE + "integer :: shown", "1.0",
         "max0(1, 2_8)"]
-    with tempfile.TemporaryDirectory() as cwd:
+    with working_directory() as cwd:
         code, out = run_repl(lfortran, cwd, cells)
         if code != 0 or "Exiting." not in out:
             sys.exit("the prompt did not exit cleanly (code %d):\n%s"
@@ -171,7 +193,7 @@ def check_read_from_terminal(lfortran):
     except ImportError:
         print("skipped: no pseudo-terminals")
         return
-    with tempfile.TemporaryDirectory() as cwd:
+    with working_directory() as cwd:
         repl = PtyRepl(pty, termios, lfortran, cwd, timeout=60)
         code = None
         try:
@@ -226,7 +248,7 @@ def check_compiled_read_from_terminal(lfortran):
     except ImportError:
         print("skipped: no pseudo-terminals")
         return
-    with tempfile.TemporaryDirectory() as cwd:
+    with working_directory() as cwd:
         with open(os.path.join(cwd, "read_terminal.f90"), "w") as f:
             f.write(READ_TERMINAL_SOURCE)
         exe = os.path.join(cwd, "read_terminal")

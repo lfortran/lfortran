@@ -74,6 +74,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <lfortran/jupyter.h>
 
 
 #ifdef WITH_LSP
@@ -423,7 +424,11 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose, CompilerOptions &cu)
+// The prompt is a Jupyter client. Its cells run in the kernel of `connect`, a
+// connection file, or else in a kernel it starts with its own `arguments`,
+// which other clients can join.
+int prompt(bool verbose, const std::string &connect,
+    const std::vector<std::string> &arguments)
 {
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
@@ -434,12 +439,28 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    cu.interactive = true;
-    LCompilers::FortranEvaluator e(cu);
+    std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
+    std::string connection_file = connect;
+    try {
+        if (connect.empty()) {
+            // The kernel stops when its last client disconnects, which may
+            // be after the prompt exits.
+            kernel = LCompilers::LFortran::jupyter::Client::start(
+                LCompilers::binary_executable_path, arguments, true, connection_file);
+        } else {
+            kernel = std::make_unique<LCompilers::LFortran::jupyter::Client>(connect);
+        }
+    } catch (const std::runtime_error &error) {
+        std::cerr << "error: " << error.what() << std::endl;
+        return 1;
+    }
+    std::cout << "  * Others can join with `lfortran --connect " << connection_file
+        << "`" << std::endl;
 
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
     while (true) {
+        kernel->show_others();
         std::string input;
         {
             // The terminal is in raw mode only while a line is edited, so
@@ -460,36 +481,14 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        auto cell = e.execute(input, verbose);
-        if (!cell.ok) {
-            std::cerr << cell.error_text();
-            continue;
-        }
-        std::cerr << cell.diagnostics;
-        if (cell.inspection) {
-            std::cout << cell.output;
-            if (!cell.output.empty() && cell.output.back() != '\n') {
-                std::cout << std::endl;
-            }
-            continue;
-        }
-
-        auto &r = cell.value;
-        if (verbose) {
-            section("AST:");
-            std::cout << r.ast  << std::endl;
-            section("ASR:");
-            std::cout << r.asr << std::endl;
-            section("LLVM IR:");
-            std::cout << r.llvm_ir << std::endl;
-        }
-
-        if (verbose) {
-            std::cout << "Return type: " << r.type_name() << std::endl;
-            section("Result:");
-        }
-        if (r.has_value() || verbose) {
-            std::cout << r.text() << std::endl;
+        if (!kernel->execute(input, verbose)) {
+            // A cell that ends the kernel, with STOP or ERROR STOP, ends the
+            // prompt that started it with the kernel's exit status, as when
+            // the prompt ran its cells itself.
+            const int status = kernel->kernel_status(5000);
+            if (status >= 0) return status;
+            std::cerr << "error: the kernel has stopped" << std::endl;
+            return 1;
         }
     }
     return 0;
@@ -2842,10 +2841,11 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (kernel) {
-#ifdef HAVE_LFORTRAN_XEUS
-        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
+#if defined(HAVE_LFORTRAN_XEUS) || defined(HAVE_LFORTRAN_LLVM)
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
+            opts.arg_kernel_managed);
 #else
-        std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
+        std::cerr << "The kernel subcommand requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }
@@ -2904,7 +2904,8 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, compiler_options);
+        return prompt(opts.arg_v, opts.connect,
+            std::vector<std::string>(argv + 1, argv + argc));
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
