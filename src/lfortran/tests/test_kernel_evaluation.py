@@ -164,21 +164,40 @@ def main():
     check_stop_flushes(args.lfortran)
 
 
+def builtin_stop_kernel(lfortran):
+    """True when `lfortran kernel --managed` is the built-in kernel.
+
+    That kernel flushes its subscribers from an atexit handler, so stdout
+    written before STOP is delivered. A Xeus kernel publishes the same text
+    but does not flush it before the process ends. Builds from before the
+    flag existed have no built-in kernel to ask.
+    """
+    help_text = subprocess.run(
+        [lfortran, "kernel", "--help"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    ).stdout
+    return "--managed" in help_text
+
+
 def check_stop_flushes(lfortran):
-    """A cell's STOP ends the kernel, and stdout written before it is
-    delivered. On Windows, STOP must call the host exit() so the flush
-    registered with atexit runs."""
+    """A cell's STOP ends the kernel with status 0. On the built-in kernel,
+    stdout written before it is delivered. On Windows, STOP must call the
+    host exit() so the flush registered with atexit runs."""
     directory = Path.cwd() / ("kernel-stop-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
     log = directory / "kernel.log"
     client = None
     process = None
+    managed = builtin_stop_kernel(lfortran)
     try:
         write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+        command = [lfortran, "kernel", "-f", str(connection)]
+        if managed:
+            command.append("--managed")
         with log.open("wb") as output:
             process = subprocess.Popen(
-                [lfortran, "kernel", "-f", str(connection)],
+                command,
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
             )
             client = BlockingKernelClient(connection_file=str(connection))
@@ -212,8 +231,9 @@ def check_stop_flushes(lfortran):
             code = process.wait(timeout=10)
             blob = "".join(texts)
             assert code == 0, (code, blob, log.read_text(errors="replace"))
-            assert "before-stop" in blob, blob
-            assert "after-stop" not in blob, blob
+            if managed:
+                assert "before-stop" in blob, blob
+                assert "after-stop" not in blob, blob
     except BaseException:
         if log.exists():
             print(log.read_text(errors="replace"))
