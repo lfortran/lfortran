@@ -1,5 +1,5 @@
 module implicit_typing_03_first
-  parameter (x=90)
+  integer,parameter :: x=90
 end module implicit_typing_03_first
 
 module implicit_typing_03_second
