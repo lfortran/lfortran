@@ -216,8 +216,8 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 5 a1)
-                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 5 __libasr_saved_a)
+                                        (Var 5 a_nested_ctx)
                                         ()
                                         .false.
                                         .false.
@@ -225,8 +225,8 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 __libasr_saved_a)
-                                        (Var 5 a_nested_ctx)
+                                        (Var 5 a1)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
                                         .false.
@@ -258,6 +258,13 @@
                                         .false.
                                         .false.
                                     )
+                                    (SubroutineCall
+                                        4 modproc
+                                        ()
+                                        [((Var 5 a2))]
+                                        ()
+                                        .false.
+                                    )
                                     (Assignment
                                         (Var 5 a_nested_ctx)
                                         (Var 5 __libasr_saved_a)
@@ -265,13 +272,6 @@
                                         .false.
                                         .false.
                                         .false.
-                                        .false.
-                                    )
-                                    (SubroutineCall
-                                        4 modproc
-                                        ()
-                                        [((Var 5 a2))]
-                                        ()
                                         .false.
                                     )]
                                     ()

@@ -339,6 +339,24 @@
                                     []
                                     []
                                     [(Assignment
+                                        (Var 3 __libasr_saved_i)
+                                        (Var 3 i_nested_ctx)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 __libasr_saved_x)
+                                        (Var 3 x_nested_ctx)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
                                         (Var 3 i)
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
@@ -353,24 +371,6 @@
                                             3.000000
                                             (Real 4)
                                         )
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 3 __libasr_saved_i)
-                                        (Var 3 i_nested_ctx)
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 3 __libasr_saved_x)
-                                        (Var 3 x_nested_ctx)
                                         ()
                                         .false.
                                         .false.
