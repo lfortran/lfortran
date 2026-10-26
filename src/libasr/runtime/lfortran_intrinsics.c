@@ -2690,7 +2690,8 @@ bool is_format_match(char format_value, Primitive_Types current_arg_type){
     if (lowered_format_value == 'g') return true;
     if (lowered_format_value == 'z') {
         return current_arg_correct_format == 'i' ||
-               current_arg_correct_format == 'f';
+               current_arg_correct_format == 'f' ||
+               current_arg_correct_format == 'a';
     }
     if (lowered_format_value == 'o') {
         return current_arg_correct_format == 'i';
@@ -4853,9 +4854,25 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         result_len += bin_len;
                     }
                 } else if (tolower(value[0]) == 'z') {
+                    void* z_arg = s_info.current_arg_info.current_arg;
+                    Primitive_Types z_type = s_info.current_element_type;
+                    uint32_t first_char = 0;
+                    if (z_type == CHAR_PTR_TYPE || z_type == STRING_DESCRIPTOR_TYPE) {
+                        // Like GFortran's extension, Z editing of a character
+                        // item writes the code of its first character.
+                        int32_t char_kind = s_info.current_arg_info.current_string_kind;
+                        if (char_val != NULL && s_info.current_arg_info.current_string_len > 0) {
+                            if (char_kind == 4) {
+                                memcpy(&first_char, char_val, sizeof(uint32_t));
+                            } else {
+                                first_char = (uint8_t)char_val[0];
+                            }
+                        }
+                        z_arg = &first_char;
+                        z_type = char_kind == 4 ? UNSIGNED_INTEGER_32_TYPE : UNSIGNED_INTEGER_8_TYPE;
+                    }
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_hexadecimal(value, s_info.current_element_type,
-                        s_info.current_arg_info.current_arg, &temp_buf);
+                    handle_hexadecimal(value, z_type, z_arg, &temp_buf);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
                     result_len += temp_len;
