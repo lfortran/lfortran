@@ -4439,6 +4439,8 @@ RUN(NAME array_section_37 LABELS gfortran llvm)
 RUN(NAME array_section_38 LABELS gfortran llvm)
 RUN(NAME array_section_39 LABELS gfortran llvm)
 RUN(NAME array_section_40 LABELS gfortran llvm)
+RUN(NAME array_section_41 LABELS gfortran llvm c)
+RUN(NAME array_section_42 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)

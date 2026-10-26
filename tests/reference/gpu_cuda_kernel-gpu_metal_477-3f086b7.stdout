@@ -40,7 +40,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __flat_idx;
     float __gpu_scalar_argument;
     float* __libasr_created__subroutine_call_work;
-    float* __libasr_created__subroutine_call_work1;
     int j__dc;
     float w[256];
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
@@ -49,9 +48,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     __libasr_created__subroutine_call_work = x + ((int)(((int)1)) - (1)) + (256 * ((int)(j__dc) - (1)));
-    __libasr_created__subroutine_call_work1 = __libasr_created__subroutine_call_work;
     __gpu_scalar_argument = r;
-    work_device_gt_gpu_28(__libasr_created__subroutine_call_work1, 256, __gpu_scalar_argument, w);
+    work_device_gt_gpu_28(__libasr_created__subroutine_call_work, 256, __gpu_scalar_argument, w);
     r = __gpu_scalar_argument;
     y[((int)(j__dc) - (1))] = r;
 }
@@ -100,12 +98,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     j__dc1 = (__flat_idx + 1);
     {
         float* __libasr_created__subroutine_call_work;
-        float* __libasr_created__subroutine_call_work1;
         float outer_1;
         float w[256];
         __libasr_created__subroutine_call_work = x + ((int)(((int)1)) - (1)) + (256 * ((int)(j__dc1) - (1)));
-        __libasr_created__subroutine_call_work1 = __libasr_created__subroutine_call_work;
-        work_device_gt_gpu_29(__libasr_created__subroutine_call_work1, 256, outer_1, w);
+        work_device_gt_gpu_29(__libasr_created__subroutine_call_work, 256, outer_1, w);
         y[((int)(j__dc1) - (1))] = outer_1;
     }
 }
