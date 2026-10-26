@@ -306,10 +306,11 @@ public:
                             value = ASRUtils::make_RealConstant_util(al, a_loc,
                                 rval, dest_type2);
                         }
+                    } else if (src_kind == 16) {
+                        value = nullptr;
                     } else {
-                        double rval = r->m_r;
-                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                            rval, dest_type2);
+                        value = ASRUtils::make_RealConstant_util(al, a_loc,
+                            r->m_r, dest_type2);
                     }
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
