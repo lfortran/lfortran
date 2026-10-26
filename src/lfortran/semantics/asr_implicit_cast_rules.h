@@ -306,10 +306,16 @@ public:
                             value = ASRUtils::make_RealConstant_util(al, a_loc,
                                 rval, dest_type2);
                         }
+                    } else if (src_kind == 16) {
+                        // kind=16 m_r is a pointer to the binary128 bytes.
+                        lf_float128 v = ASRUtils::real_constant_get_r16(r);
+                        value = dest_kind == 16
+                            ? ASRUtils::make_RealConstant_r16(al, a_loc, v, dest_type2)
+                            : ASRUtils::make_RealConstant_util(al, a_loc,
+                                lf_f128_to_double(v), dest_type2);
                     } else {
-                        double rval = r->m_r;
-                        value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                            rval, dest_type2);
+                        value = ASRUtils::make_RealConstant_util(al, a_loc,
+                            r->m_r, dest_type2);
                     }
               } else {
                   LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
