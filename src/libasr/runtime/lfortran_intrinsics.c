@@ -8521,6 +8521,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         int round_mode_val;
         int pad_mode;
         int32_t unit_recl = 0;
+        // Trailing blanks in a file name are not significant
+        char *f_name_trimmed = (char *) f_name_data;
+        trim_trailing_spaces(&f_name_trimmed, &f_name_len, true);
         char *c_f_name_data = to_c_string(f_name_data, f_name_len);
         if (named != NULL) {
             *named = true;
