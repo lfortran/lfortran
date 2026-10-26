@@ -1,6 +1,8 @@
 // The parts of the Jupyter messaging protocol that LFortran needs, with no
 // third-party library: a kernel, which `lfortran kernel` runs when not built
-// with Xeus, and its stdin channel. Any Jupyter client can use the kernel.
+// with Xeus and which the prompt always starts, a client for the prompt, and
+// the stdin channel of both kernels. Any Jupyter client can use the kernel,
+// and the client can use any Jupyter kernel.
 //
 // Transport: ZeroMQ's ZMTP 3.0 with the NULL mechanism over TCP (the "tcp"
 // transport of a connection file), implementing only what a Jupyter kernel
@@ -201,6 +203,20 @@ socket_t listen_on(const std::string &ip, int &port)
     socklen_t size = sizeof(a);
     getsockname(s, reinterpret_cast<sockaddr *>(&a), &size);
     port = ntohs(a.sin_port);
+    return s;
+}
+
+socket_t connect_to(const std::string &ip, int port)
+{
+    sockaddr_in a = address(ip == "*" || ip == "0.0.0.0" ? "127.0.0.1" : ip, port);
+    socket_t s = socket(AF_INET, SOCK_STREAM, 0);
+    if (s == no_socket) throw std::runtime_error("cannot create a socket: " + socket_error());
+    if (connect(s, reinterpret_cast<sockaddr *>(&a), sizeof(a)) != 0) {
+        std::string reason = socket_error();
+        close_socket(s);
+        throw std::runtime_error("cannot connect to the kernel at " + ip + ":"
+            + std::to_string(port) + ": " + reason);
+    }
     return s;
 }
 
@@ -991,6 +1007,399 @@ bool InputChannel::serves(const std::string &ip)
     }
 }
 
+// The client
+
+namespace {
+
+// Waits at most `timeout` ms (-1: no limit) for a message from one of
+// `peers`, the client's connections to the kernel; returns its index, -1 if
+// none comes in time, or -2 once the kernel has closed a connection.
+int next_message(Peer *const (&peers)[3], const std::string &key, Message &m, int timeout)
+{
+    for (;;) {
+        for (int i = 0; i < 3; i++) {
+            std::vector<std::string> frames;
+            while (peers[i]->next(frames)) {
+                if (decode(frames, key, m)) return i;
+            }
+        }
+        for (Peer *peer : peers) {
+            if (peer->closed) return -2;
+        }
+        std::vector<pollfd> fds;
+        for (Peer *peer : peers) fds.push_back({peer->s, POLLIN, 0});
+        const int n = poll_sockets(fds, timeout);
+        if (n < 0 && interrupted()) continue;
+        if (n < 0) return -2;
+        if (n == 0) return -1;
+        for (int i = 0; i < 3; i++) {
+            if (fds[i].revents) peers[i]->read();
+        }
+    }
+}
+
+} // namespace
+
+Client::Client(const std::string &connection_file)
+{
+    start_sockets();
+    Connection c = read_connection(connection_file);
+    key = c.key;
+    session = random_hex();
+    iopub = std::make_unique<Peer>(connect_to(c.ip, c.ports[jupyter::iopub]), "SUB", true);
+    // Subscribe to every message (in ZMTP 3.0, a message starting with 1).
+    iopub->send({std::string(1, '\x01')});
+    shell = std::make_unique<Peer>(connect_to(c.ip, c.ports[jupyter::shell]), "DEALER", true,
+        session);
+    stdin_ = std::make_unique<Peer>(connect_to(c.ip, c.ports[stdin_channel]), "DEALER", true,
+        session);
+    Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
+    // As jupyter_client's wait_for_ready(): send kernel_info_requests until
+    // IOPub delivers, as a kernel may start publishing to a new subscriber a
+    // little later. A kernel that runs a cell replies after it.
+    for (int attempt = 0; attempt < 50; attempt++) {
+        Message request = new_message("kernel_info_request", Object{}, Object{}, session);
+        if (!send_message(*shell, request, key)) break;
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
+        bool replied = false;
+        while (!replied || std::chrono::steady_clock::now() < deadline) {
+            Message m;
+            const int i = next_message(peers, key, m, 50);
+            if (i == -2) throw std::runtime_error("the kernel closed the connection");
+            if (m.parent_id() != request.id()) continue;
+            if (i == 0) return;
+            if (i == 1) replied = true;
+        }
+    }
+    throw std::runtime_error("the kernel does not answer");
+}
+
+Client::~Client()
+{
+#ifdef _WIN32
+    if (process) CloseHandle(reinterpret_cast<HANDLE>(process));
+#endif
+}
+
+namespace {
+
+// Prints an IOPub message as a terminal shows it: plain text only. A cell of
+// another client is shown with its code.
+void show(const Message &m, bool other)
+{
+    const std::string type = m.type();
+    const Object *data = m.content.getObject("data");
+    if (type == "execute_input" && other) {
+        std::istringstream lines(get_string(m.content, "code"));
+        for (std::string line; std::getline(lines, line);) {
+            std::cout << "[other client] " << line << "\n";
+        }
+        std::cout << std::flush;
+    } else if (type == "stream") {
+        (get_string(m.content, "name") == "stderr" ? std::cerr : std::cout)
+            << get_string(m.content, "text") << std::flush;
+    } else if (type == "execute_result" && data) {
+        std::cout << get_string(*data, "text/plain") << std::endl;
+    } else if (type == "display_data" && data) {
+        if (data->getString("text/plain")) {
+            std::cout << get_string(*data, "text/plain") << std::endl;
+        } else {
+            for (const auto &item : *data) {
+                std::cout << "[" << llvm::StringRef(item.first).str() << " output]" << std::endl;
+                break;
+            }
+        }
+    } else if (type == "error") {
+        if (const Array *traceback = m.content.getArray("traceback")) {
+            for (const auto &line : *traceback) {
+                if (auto text = line.getAsString()) std::cerr << text->str() << "\n";
+            }
+            std::cerr << std::flush;
+        }
+    }
+}
+
+} // namespace
+
+bool Client::execute(const std::string &code, bool verbose)
+{
+    Object content{{"code", kernel::utf8(code)}, {"silent", false},
+        {"store_history", true}, {"user_expressions", Object{}},
+        {"allow_stdin", true}, {"stop_on_error", true}};
+    if (verbose) content["lfortran_verbose"] = true;
+    Message request = new_message("execute_request", Object{}, std::move(content), session);
+    if (!send_message(*shell, request, key)) return false;
+    Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
+    bool replied = false, idle = false;
+    while (!replied || !idle) {
+        Message m;
+        const int i = next_message(peers, key, m, -1);
+        if (i < 0) {
+            show_last(request.id());
+            return false;
+        }
+        const std::string type = m.type();
+        if (i == 2 && type == "input_request") {
+            // A line of the terminal, ended by Enter (CR or LF); Ctrl-D
+            // on an empty line is end of file, which Jupyter clients
+            // send as "\x04".
+            std::cout << get_string(m.content, "prompt") << std::flush;
+            std::string record;
+            int c;
+            while ((c = getchar()) != EOF && c != '\n' && c != '\r' && c != 4) {
+                record += static_cast<char>(c);
+            }
+            if ((c == EOF || c == 4) && record.empty()) record = "\x04";
+            clearerr(stdin);
+            Message input = new_message("input_reply", m.header,
+                Object{{"value", kernel::utf8(record)}}, session);
+            if (!send_message(*stdin_, input, key)) return false;
+            continue;
+        }
+        if (m.parent_id() != request.id()) {
+            // Another client's cell, which ran before this one
+            if (i == 0 && get_string(m.parent, "session") != session) show(m, true);
+            continue;
+        }
+        if (i == 1) {
+            if (type == "execute_reply") {
+                replied = true;
+                if (get_string(m.content, "status") == "aborted") {
+                    std::cerr << "The cell did not run, as a cell before it failed."
+                        << std::endl;
+                }
+            }
+        } else if (type == "status") {
+            if (get_string(m.content, "execution_state") == "idle") idle = true;
+        } else {
+            show(m, false);
+        }
+    }
+    return true;
+}
+
+void Client::show_others()
+{
+    Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
+    Message m;
+    for (int i; (i = next_message(peers, key, m, 0)) >= 0;) {
+        if (i == 0 && get_string(m.parent, "session") != session) show(m, true);
+    }
+}
+
+void Client::show_last(const std::string &request_id)
+{
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    while (!iopub->closed && std::chrono::steady_clock::now() < deadline) {
+        std::vector<pollfd> fds{{iopub->s, POLLIN, 0}};
+        if (poll_sockets(fds, 50) > 0) iopub->read();
+    }
+    std::vector<std::string> frames;
+    while (iopub->next(frames)) {
+        Message m;
+        if (!decode(frames, key, m)) continue;
+        if (m.parent_id() == request_id) {
+            show(m, false);
+        } else if (get_string(m.parent, "session") != session) {
+            show(m, true);
+        }
+    }
+}
+
+int Client::kernel_status(int timeout)
+{
+    if (!process) return -1;
+#ifdef _WIN32
+    HANDLE handle = reinterpret_cast<HANDLE>(process);
+    DWORD code;
+    if (WaitForSingleObject(handle, static_cast<DWORD>(timeout)) != WAIT_OBJECT_0
+            || !GetExitCodeProcess(handle, &code)) {
+        return -1;
+    }
+    return static_cast<int>(code);
+#else
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+    for (;;) {
+        int status;
+        const pid_t child = waitpid(static_cast<pid_t>(process), &status, WNOHANG);
+        if (child == static_cast<pid_t>(process)) {
+            process = 0;
+            return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+        }
+        if (child < 0 || std::chrono::steady_clock::now() > deadline) return -1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+#endif
+}
+
+namespace {
+
+#ifdef _WIN32
+// `arg` as a command line gives it to a program: quoted if it has spaces or
+// quotes, which are escaped, as are the backslashes before them or before
+// the closing quote, as CommandLineToArgvW and the C runtime split it.
+std::string quote_argument(const std::string &arg)
+{
+    if (!arg.empty() && arg.find_first_of(" \t\n\v\"") == std::string::npos) return arg;
+    std::string quoted = "\"";
+    size_t backslashes = 0;
+    for (char c : arg) {
+        if (c == '\\') {
+            backslashes++;
+            continue;
+        }
+        quoted.append(c == '"' ? 2 * backslashes + 1 : backslashes, '\\');
+        backslashes = 0;
+        quoted += c;
+    }
+    quoted.append(2 * backslashes, '\\');
+    return quoted + "\"";
+}
+
+// Starts `args` (the program first) with NUL as its standard input, output
+// and error, which are the only handles it inherits: it does not hold the
+// prompt's pipes open. It gets a console of its own, without a window, for
+// the programs that its cells run, and so it does not get the prompt's
+// Ctrl-C. Returns its process handle, or null.
+HANDLE spawn(const std::vector<std::string> &args)
+{
+    std::string command_line;
+    for (const std::string &arg : args) {
+        if (!command_line.empty()) command_line += ' ';
+        command_line += quote_argument(arg);
+    }
+    SECURITY_ATTRIBUTES inherited{sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE};
+    HANDLE input = CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        &inherited, OPEN_EXISTING, 0, nullptr);
+    HANDLE output = CreateFileA("NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        &inherited, OPEN_EXISTING, 0, nullptr);
+    HANDLE handles[2] = {input, output};
+    SIZE_T size = 0;
+    InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+    std::vector<char> list(size);
+    auto attributes = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(list.data());
+    PROCESS_INFORMATION process{};
+    bool started = false;
+    if (input != INVALID_HANDLE_VALUE && output != INVALID_HANDLE_VALUE
+            && InitializeProcThreadAttributeList(attributes, 1, 0, &size)) {
+        STARTUPINFOEXA startup{};
+        startup.StartupInfo.cb = sizeof(startup);
+        startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+        startup.StartupInfo.hStdInput = input;
+        startup.StartupInfo.hStdOutput = output;
+        startup.StartupInfo.hStdError = output;
+        startup.lpAttributeList = attributes;
+        started = UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                handles, sizeof(handles), nullptr, nullptr)
+            && CreateProcessA(args[0].c_str(), &command_line[0], nullptr, nullptr, TRUE,
+                CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT,
+                nullptr, nullptr, &startup.StartupInfo, &process);
+        DeleteProcThreadAttributeList(attributes);
+    }
+    for (HANDLE handle : handles) {
+        if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle);
+    }
+    if (!started) return nullptr;
+    CloseHandle(process.hThread);
+    return process.hProcess;
+}
+#endif
+
+} // namespace
+
+std::unique_ptr<Client> Client::start(const std::string &executable,
+    const std::vector<std::string> &arguments, bool managed, std::string &connection_file)
+{
+    start_sockets();
+    // Free ports, which the kernel then listens on, as jupyter_client does:
+    // all are taken before any is released, so that no two are the same.
+    Connection c;
+    c.key = random_hex();
+    std::vector<socket_t> taken;
+    for (int &port : c.ports) {
+        port = 0;
+        taken.push_back(listen_on(c.ip, port));
+    }
+    for (socket_t s : taken) close_socket(s);
+    std::error_code error;
+    std::filesystem::path directory = std::filesystem::temp_directory_path(error);
+    if (error) directory = ".";
+    connection_file = (directory / ("lfortran-" + random_hex() + ".json")).string();
+    write_connection(connection_file, c);
+
+    std::vector<std::string> args{executable};
+    args.insert(args.end(), arguments.begin(), arguments.end());
+    args.insert(args.end(), {"kernel", "-f", connection_file});
+    if (managed) args.push_back("--managed");
+#ifdef _WIN32
+    HANDLE child = spawn(args);
+    if (!child) {
+        std::remove(connection_file.c_str());
+        throw std::runtime_error("cannot start the kernel " + executable);
+    }
+    auto exited = [&]() { return WaitForSingleObject(child, 0) == WAIT_OBJECT_0; };
+    auto abandon = [&]() {
+        TerminateProcess(child, 1);
+        CloseHandle(child);
+    };
+#else
+    std::vector<char *> argv;
+    for (std::string &arg : args) argv.push_back(&arg[0]);
+    argv.push_back(nullptr);
+    // The kernel does not use the terminal: it may outlive the prompt, whose
+    // output must then end. In its own process group, it does not get the
+    // prompt's Ctrl-C.
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0);
+    posix_spawn_file_actions_addopen(&actions, 1, "/dev/null", O_WRONLY, 0);
+    posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0);
+    posix_spawnattr_t attributes;
+    posix_spawnattr_init(&attributes);
+    posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    posix_spawnattr_setpgroup(&attributes, 0);
+    pid_t child;
+    int failed = posix_spawn(&child, executable.c_str(), &actions, &attributes,
+        argv.data(), environ);
+    posix_spawn_file_actions_destroy(&actions);
+    posix_spawnattr_destroy(&attributes);
+    if (failed != 0) {
+        std::remove(connection_file.c_str());
+        throw std::runtime_error("cannot start the kernel " + executable + ": "
+            + std::strerror(failed));
+    }
+    auto exited = [&]() {
+        int status;
+        return waitpid(child, &status, WNOHANG) == child;
+    };
+    auto abandon = [&]() {
+        kill(child, SIGKILL);
+        waitpid(child, nullptr, 0);
+    };
+#endif
+    // Connect once the kernel listens.
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+    for (;;) {
+        try {
+            auto client = std::make_unique<Client>(connection_file);
+#ifdef _WIN32
+            client->process = reinterpret_cast<intptr_t>(child);
+#else
+            client->process = child;
+#endif
+            return client;
+        } catch (const std::runtime_error &) {
+            const bool gone = exited();
+            if (gone || std::chrono::steady_clock::now() > deadline) {
+                if (!gone) abandon();
+                std::remove(connection_file.c_str());
+                throw std::runtime_error("the kernel did not start");
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+    }
+}
+
 // The built-in kernel
 
 namespace {
@@ -1397,7 +1806,8 @@ int run_builtin_kernel(const std::string &connection_filename, CompilerOptions &
     }
     FortranEvaluator e(options);
     if (!managed) {
-        std::cout << "LFortran Jupyter kernel. Connect with `jupyter console --existing "
+        std::cout << "LFortran Jupyter kernel. Connect with `lfortran --connect "
+            << connection_filename << "` or `jupyter console --existing "
             << connection_filename << "`." << std::endl;
     }
 
@@ -1425,6 +1835,37 @@ int run_kernel(const std::string &connection_filename, CompilerOptions &options,
 #endif
 
 #else // __EMSCRIPTEN__
+
+namespace LCompilers::LFortran::jupyter {
+
+class Peer {};
+
+Client::Client(const std::string &)
+{
+    throw std::runtime_error("Jupyter clients are not supported in this build");
+}
+
+Client::~Client() = default;
+
+bool Client::execute(const std::string &, bool)
+{
+    return false;
+}
+
+void Client::show_others() {}
+
+int Client::kernel_status(int)
+{
+    return -1;
+}
+
+std::unique_ptr<Client> Client::start(const std::string &,
+    const std::vector<std::string> &, bool, std::string &)
+{
+    throw std::runtime_error("Jupyter clients are not supported in this build");
+}
+
+} // namespace LCompilers::LFortran::jupyter
 
 #ifndef HAVE_LFORTRAN_XEUS
 int LCompilers::LFortran::run_kernel(const std::string &, CompilerOptions &, bool)

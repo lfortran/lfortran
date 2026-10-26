@@ -1,6 +1,8 @@
-"""A shared session (`lfortran kernel -f`) with clients that misbehave:
-large output, connections that stall, a client that leaves during a READ,
-cells queued behind a failing one, and cells that stop the kernel."""
+"""A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
+that misbehave: large output, connections that stall, a client that leaves
+during a READ, before the others or during a cell that does not end, cells
+queued behind a failing one, cells that stop the kernel, and `lfortran -v`.
+Each case runs against whichever kernel is built."""
 
 import argparse
 import contextlib
@@ -8,7 +10,9 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
+import signal
 import socket
 import subprocess
 import time
@@ -134,22 +138,52 @@ def zmtp(port, socket_type):
     return s
 
 
+def prompt(exe, cwd, arguments=(), stdin=b"", timeout=60, status=0):
+    result = subprocess.run([exe, "--no-color", *arguments], input=stdin,
+        capture_output=True, cwd=cwd, timeout=timeout)
+    check(result.returncode == status, "the prompt exited with %d, not %d:\n%s"
+        % (result.returncode, status, (result.stdout + result.stderr).decode(errors="replace")))
+    return result.stdout + result.stderr
+
+
+def started_prompt(exe, cwd):
+    """A prompt that starts its kernel, and the kernel's connection file"""
+    process = subprocess.Popen([exe, "--no-color"], cwd=cwd,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out = b""
+    while True:
+        line = process.stdout.readline()
+        if not line:
+            process.kill()
+            process.wait()
+            raise AssertionError("the prompt did not tell its connection file:\n%r" % out)
+        out += line
+        joined = re.search(rb"lfortran --connect (\S+)`", line)
+        if joined:
+            return process, Path(joined.group(1).decode())
+
+
+def wait_removed(connection, timeout=30):
+    deadline = time.monotonic() + timeout
+    while connection.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    return not connection.exists()
+
+
 def large_output(exe, cwd):
     """A stream larger than the most a subscriber that does not read can be
-    sent reaches a client that does read, followed by the cell's idle status.
-    The subscriber that does not read holds nothing back."""
+    sent reaches the prompt, followed by the cell's idle status, for which
+    the prompt waits. The subscriber that does not read holds nothing back."""
     with kernel(exe, cwd) as (_, join, ports):
         client = join()
         stalled = zmtp(ports["iopub_port"], b"SUB")
         stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
         size = 70 * 1024 * 1024
-        reply, messages = run(client, "print '(a)', repeat('x', %d)" % size, timeout=120)
-        check(reply["status"] == "ok", reply)
-        text = "".join(m["content"].get("text", "") for m in messages
-            if m["msg_type"] == "stream")
-        check(text.count("x") >= size, "the client lost the output")
-        check(value(client, "6*7") == "42", "the next cell did not run")
-        check(value(join(), "7*8") == "56", "another client did not run its cell")
+        out = prompt(exe, cwd, ["--connect", ports["path"]],
+            b"print '(a)', repeat('x', %d)\r6*7\r\x04" % size)
+        check(out.count(b"x") >= size, "the prompt lost the output")
+        check(re.search(rb"^42\r?$", out, re.M), "the prompt did not run its next cell")
+        check(value(client, "7*8") == "56", "another client did not run its cell")
         stalled.close()
 
 
@@ -181,7 +215,8 @@ def stalled_connections(exe, cwd):
         # may take waits for it.
         msg_id = client.execute(busy(12))
         time.sleep(1)
-        check(value(join(), "6*9", timeout=30) == "54", "a client that connected during the cell failed")
+        out = prompt(exe, cwd, ["--connect", ports["path"]], b"6*9\r\x04")
+        check(re.search(rb"^54\r?$", out, re.M), "the prompt failed:\n" + out.decode(errors="replace"))
         check(reply_to(client, msg_id)["status"] == "ok", "the long cell failed")
         client.shutdown()
         try:
@@ -237,44 +272,86 @@ def late_stdin(exe, cwd):
             client.stop_channels()
 
 
-def stop_flushes(exe, cwd):
-    """STOP and ERROR STOP end the kernel. Output written before them reaches
-    the client, and the code after them does not run."""
-    cases = [
-        ("print *, 'before'\nif (.true.) stop\nprint *, 'after'", 0, None),
-        ("print *, 'before'\nstop 3\nprint *, 'after'", 3, "STOP"),
-        ("print *, 'before'\nerror stop\nprint *, 'after'", 1, "ERROR STOP"),
-    ]
-    for code, status, shown in cases:
-        with kernel(exe, cwd) as (process, join, _info):
-            client = join()
-            msg_id = client.execute(code)
-            texts = []
-            deadline = time.monotonic() + 20
-            exited = None
-            while time.monotonic() < deadline:
-                if process.poll() is not None and exited is None:
-                    exited = time.monotonic()
-                if exited is not None and time.monotonic() > exited + 1:
-                    break
-                try:
-                    msg = client.get_iopub_msg(timeout=0.2)
-                except queue.Empty:
-                    continue
-                except Exception:
-                    if exited is not None:
-                        break
-                    raise
-                if (msg.get("parent_header") or {}).get("msg_id") != msg_id:
-                    continue
-                if msg["msg_type"] == "stream":
-                    texts.append(msg["content"].get("text", ""))
-            got = process.wait(timeout=10)
-            blob = "".join(texts)
-            check(got == status, "%s exited %d:\n%s" % (code, got, blob))
-            check("before" in blob and "after" not in blob, blob)
-            if shown:
-                check(shown in blob, blob)
+def prompt_departure(exe, cwd):
+    """The kernel a prompt starts goes on while others use it, whether the
+    prompt exits or is killed, and stops after its last client leaves."""
+    for kill in [False, True]:
+        process, connection = started_prompt(exe, cwd)
+        client = None
+        try:
+            client = connect(connection)
+            check(run(client, "integer :: kept = 3")[0]["status"] == "ok", "declaration failed")
+            if kill:
+                process.kill()
+                process.wait()
+            else:
+                process.communicate(b"\x04", timeout=60)
+                check(process.returncode == 0, "the prompt failed")
+            check(value(client, "kept + 1") == "4", "the kernel stopped with the prompt")
+            client.stop_channels()
+            client = None
+            check(wait_removed(connection), "the kernel did not stop after its last client")
+        finally:
+            if client:
+                client.stop_channels()
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+
+
+def prompt_killed_in_cell(exe, cwd):
+    """The kernel a prompt starts stops, removing its connection file, when
+    the prompt is killed (Ctrl-C) during a cell that does not end and no
+    other client is connected."""
+    process, connection = started_prompt(exe, cwd)
+    try:
+        heartbeat = json.loads(connection.read_text())["hb_port"]
+        process.stdin.write(b"do while (.true.); end do\r")
+        process.stdin.flush()
+        time.sleep(2)
+        check(process.poll() is None and connection.exists(), "the cell ended")
+        if os.name == "posix":
+            process.send_signal(signal.SIGINT)
+        else:
+            process.kill()
+        process.wait(timeout=20)
+        check(wait_removed(connection), "the kernel outlived its prompt")
+        deadline = time.monotonic() + 30
+        while True:
+            try:
+                socket.create_connection(("127.0.0.1", heartbeat), timeout=1).close()
+            except OSError:
+                break
+            check(time.monotonic() < deadline, "the kernel still listens")
+            time.sleep(0.1)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+
+
+def stop_ends_session(exe, cwd):
+    """STOP and ERROR STOP stop the kernel, whose output before them reaches
+    its clients. The prompt that started the kernel exits with its exit
+    status, as it did when it ran its cells itself; another prompt tells that
+    the kernel has stopped."""
+    # A cell of only `stop` is the expression of a variable named stop.
+    for code, status, shown in [(b"if (.true.) stop", 0, b""), (b"stop 3", 3, b"STOP 3"),
+            (b"error stop", 1, b"ERROR STOP")]:
+        out = prompt(exe, cwd, stdin=b"print *, 'before'\r" + code + b"\r6*7\r\x04",
+            status=status)
+        check(b"before" in out and shown in out and not re.search(rb"^42\r?$", out, re.M),
+            "%s:\n%s" % (code, out.decode(errors="replace")))
+    deadline = time.monotonic() + 30
+    while list(cwd.glob("lfortran-*.json")) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    check(not list(cwd.glob("lfortran-*.json")), "a kernel left its connection file")
+    with kernel(exe, cwd) as (process, join, ports):
+        join()  # once the kernel listens
+        out = prompt(exe, cwd, ["--connect", ports["path"]], b"print *, 'shown'\rif (.true.) stop\r\x04",
+            status=1)
+        check(b"shown" in out and b"the kernel has stopped" in out, out.decode(errors="replace"))
+        check(process.wait(timeout=20) == 0, "STOP ended the kernel with an error")
 
 
 def stop_on_error(exe, cwd):
@@ -310,9 +387,22 @@ def stop_on_error(exe, cwd):
             check(value(client, "qx") == expected, "stop_on_error=%s: qx" % stop)
 
 
+def verbose(exe, cwd):
+    """`lfortran -v` shows a cell's AST, ASR, LLVM IR and return type, in the
+    kernel the prompt starts and in one it joins."""
+    def shows_all(out):
+        for label in [b"AST:", b"ASR:", b"LLVM IR:", b"Return type:"]:
+            check(label in out, "%s missing:\n%s" % (label, out.decode(errors="replace")))
+        check(re.search(rb"^2\r?$", out, re.M), "no value:\n" + out.decode(errors="replace"))
+    shows_all(prompt(exe, cwd, ["-v"], b"1+1\r\x04"))
+    with kernel(exe, cwd) as (_, join, ports):
+        join()  # once the kernel listens
+        shows_all(prompt(exe, cwd, ["-v", "--connect", ports["path"]], b"1+1\r\x04"))
+
 
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
-    late_stdin, stop_flushes, stop_on_error]}
+    late_stdin, prompt_departure, prompt_killed_in_cell, stop_ends_session, stop_on_error,
+    verbose]}
 
 
 def main():
