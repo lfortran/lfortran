@@ -4,6 +4,7 @@ over FortranEvaluator::execute()."""
 import argparse
 import os
 from pathlib import Path
+import queue
 import subprocess
 import sys
 import time
@@ -143,6 +144,76 @@ def main():
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
+    except BaseException:
+        if log.exists():
+            print(log.read_text(errors="replace"))
+        raise
+    finally:
+        if client:
+            client.stop_channels()
+        if process and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+        connection.unlink(missing_ok=True)
+        log.unlink(missing_ok=True)
+        directory.rmdir()
+    check_stop_flushes(args.lfortran)
+
+
+def check_stop_flushes(lfortran):
+    """A cell's STOP ends the kernel, and stdout written before it is
+    delivered. On Windows, STOP must call the host exit() so the flush
+    registered with atexit runs."""
+    directory = Path.cwd() / ("kernel-stop-" + uuid.uuid4().hex)
+    directory.mkdir(mode=0o700)
+    connection = directory / "connection.json"
+    log = directory / "kernel.log"
+    client = None
+    process = None
+    try:
+        write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+        with log.open("wb") as output:
+            process = subprocess.Popen(
+                [lfortran, "kernel", "-f", str(connection)],
+                stdin=subprocess.DEVNULL, stdout=output, stderr=output,
+            )
+            client = BlockingKernelClient(connection_file=str(connection))
+            client.load_connection_file()
+            client.start_channels()
+            client.wait_for_ready(timeout=30)
+            msg_id = client.execute(
+                "print *, 'before-stop'\nif (.true.) stop\nprint *, 'after-stop'")
+            texts = []
+            deadline = time.monotonic() + 20
+            exited = None
+            while time.monotonic() < deadline:
+                if process.poll() is not None and exited is None:
+                    exited = time.monotonic()
+                # The process exiting does not by itself deliver the last
+                # messages, so keep reading briefly after it goes.
+                if exited is not None and time.monotonic() > exited + 1:
+                    break
+                try:
+                    msg = client.get_iopub_msg(timeout=0.2)
+                except queue.Empty:
+                    continue
+                except Exception:
+                    if exited is not None:
+                        break
+                    raise
+                parent = (msg.get("parent_header") or {}).get("msg_id")
+                if parent != msg_id or msg["msg_type"] != "stream":
+                    continue
+                texts.append(msg["content"].get("text", ""))
+            code = process.wait(timeout=10)
+            blob = "".join(texts)
+            assert code == 0, (code, blob, log.read_text(errors="replace"))
+            assert "before-stop" in blob, blob
+            assert "after-stop" not in blob, blob
     except BaseException:
         if log.exists():
             print(log.read_text(errors="replace"))
