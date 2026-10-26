@@ -1299,6 +1299,27 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     ASR::symbol_t* new_x_name = nullptr;
                     if (is_external && (v.proc2newproc.find(x.m_name) != v.proc2newproc.end())) {
                         new_x_name = v.proc2newproc[x.m_name].first;
+                        // The cached ExternalSymbol may have been created in
+                        // another function's scope; re-create it here so that
+                        // m_name stays within the current scope.
+                        if (new_x_name != nullptr &&
+                            ASRUtils::symbol_parent_symtab(new_x_name)->get_counter() !=
+                                current_scope->get_counter()) {
+                            ASR::ExternalSymbol_t* orig_ext =
+                                ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
+                            ASR::symbol_t* target = ASRUtils::symbol_get_past_external(new_x_name);
+                            std::string new_ext_name = current_scope->get_unique_name(
+                                ASRUtils::symbol_name(new_x_name));
+                            ASR::symbol_t* new_ext = ASR::down_cast<ASR::symbol_t>(
+                                ASR::make_ExternalSymbol_t(al, x.m_name->base.loc,
+                                    current_scope, s2c(al, new_ext_name), target,
+                                    orig_ext->m_module_name,
+                                    orig_ext->m_scope_names, orig_ext->n_scope_names,
+                                    ASRUtils::symbol_name(target),
+                                    orig_ext->m_access));
+                            current_scope->add_symbol(new_ext_name, new_ext);
+                            new_x_name = new_ext;
+                        }
                     } else {
                         new_x_name = resolve_new_proc(x.m_name);
                         // If the call target was an ExternalSymbol and
