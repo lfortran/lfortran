@@ -127,6 +127,8 @@ ones (`FortranEvaluator shadow a variable/function/module across cells`) are
 the executable description of the semantics above: each checks that the new
 binding is visible *and* that the old one is still alive.
 
-One cell is one `evaluate2()` call, so a test is written as a sequence of them.
+One cell is one `FortranEvaluator::execute()` call, which for an ordinary cell
+is one `evaluate2()` call, so a test is written as a sequence of them (see
+{doc}`interactive_evaluation`).
 See {doc}`jupyterlite` for reproducing a lab bug in the browser and reducing it
 to such a test.

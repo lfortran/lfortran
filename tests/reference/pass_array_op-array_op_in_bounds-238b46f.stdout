@@ -246,6 +246,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -400,6 +401,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -453,6 +455,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_0_1)
@@ -467,12 +470,28 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         []
                     )
                     (DebugCheckArrayBounds
                         (Var 2 x)
                         [(Var 2 z)]
+                        [(0
+                        1
+                        1
+                        (ArraySize
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 z)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
                         .false.
                     )
                     (Assignment
@@ -485,6 +504,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -532,6 +552,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __libasr_index_0_3)
@@ -543,6 +564,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                             .false.
@@ -559,6 +581,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -617,6 +640,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                             .false.

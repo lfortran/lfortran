@@ -73,6 +73,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (IntrinsicImpureSubroutine
                         CoSum
@@ -109,6 +110,8 @@
                                 )
                                 (Var 2 val)]
                                 FormatFortran
+                                []
+                                ()
                                 (Allocatable
                                     (String 1 () DeferredLength DescriptorString)
                                 )

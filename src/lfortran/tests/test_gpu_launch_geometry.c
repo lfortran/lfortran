@@ -14,7 +14,10 @@ static void register_kernels(void)
         "kernel void geometry_empty() {}\n");
 }
 #else
-void lfortran_gpu_register_kernel(const char *name, void (*func)(void **));
+// As in the code the CUDA code generator emits for the CPU emulation, the
+// kernels are thunks, registered with the type of a kernel.
+typedef void (*kernel_func_t)(void);
+void lfortran_gpu_register_kernel(const char *name, kernel_func_t func);
 
 static void geometry_write(void **args)
 {
@@ -29,8 +32,10 @@ static void geometry_empty(void **args)
 
 static void register_kernels(void)
 {
-    lfortran_gpu_register_kernel("geometry_write", geometry_write);
-    lfortran_gpu_register_kernel("geometry_empty", geometry_empty);
+    lfortran_gpu_register_kernel("geometry_write",
+        (kernel_func_t)geometry_write);
+    lfortran_gpu_register_kernel("geometry_empty",
+        (kernel_func_t)geometry_empty);
 }
 #endif
 

@@ -135,6 +135,7 @@
         .false.
         .false.
         .false.
+        .false.
     )
     (Assignment
         (Var 1 y)
@@ -143,6 +144,7 @@
             (Real 4)
         )
         ()
+        .false.
         .false.
         .false.
         .false.
@@ -169,6 +171,7 @@
         .false.
         .false.
         .false.
+        .false.
     )
     (Assignment
         (Var 1 flag)
@@ -177,6 +180,7 @@
             (Logical 4)
         )
         ()
+        .false.
         .false.
         .false.
         .false.
@@ -191,6 +195,7 @@
         .false.
         .false.
         .false.
+        .false.
     )
     (Assignment
         (Var 1 x)
@@ -202,6 +207,7 @@
             ()
         )
         ()
+        .false.
         .false.
         .false.
         .false.

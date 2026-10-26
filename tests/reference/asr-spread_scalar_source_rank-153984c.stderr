@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.spread.scalar_source_rank]: `spread` of a scalar `source` must return a rank 1 array
+  --> tests/asr/verify/spread_scalar_source_rank.asr:61:18
+   |
+61 |                 (IntrinsicArrayFunction
+   |                  ^^^^^^^^^^^^^^^^^^^^^^ failed here

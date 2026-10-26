@@ -1,0 +1,29 @@
+#include <metal_stdlib>
+using namespace metal;
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* __gpu_buf_k [[buffer(0)]],
+    device int* __gpu_buf_last [[buffer(1)]],
+    device int* b [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int i__dc;
+    int k;
+    int last;
+    if ((((0 * 0) + __thread_id) >= 100)) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i__dc = (__flat_idx + 1);
+    k = __gpu_buf_k[((int)(1) - (1))];
+    last = __gpu_buf_last[((int)(1) - (1))];
+    k = (i__dc * 10);
+    __gpu_buf_k[((int)(1) - (1))] = k;
+    b[((int)(i__dc) - (1))] = (k + 1);
+    if ((i__dc == 100)) {
+        last = (k + i__dc);
+        __gpu_buf_last[((int)(1) - (1))] = last;
+    }
+}
+

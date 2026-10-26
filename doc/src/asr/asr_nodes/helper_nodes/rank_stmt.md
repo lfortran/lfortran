@@ -57,6 +57,7 @@ indexed and sectioned.
       :realloc_lhs false
       :move_allocation false
       :new_target false
+      :new_allocation false
     )
   ]
 )

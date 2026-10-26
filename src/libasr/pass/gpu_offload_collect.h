@@ -12,6 +12,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/parallel_canonicalize.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
 
@@ -56,6 +57,12 @@ public:
     }
 
     void visit_Var(const ASR::Var_t &x) {
+        // A routine named as an actual argument is code, which
+        // GpuFunctionCollector imports, not a value the kernel is handed.
+        if (ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(x.m_v))) {
+            return;
+        }
         // A variable owned by a Block or AssociateBlock scope that is
         // nested *inside* the loop travels with that scope into the
         // kernel, so it must not become a kernel parameter. A variable
@@ -254,59 +261,97 @@ public:
 bool is_single_assignment_binding(ASR::symbol_t *sym,
         ASR::stmt_t **body, size_t n_body);
 
+// The dummy argument the `i`-th actual argument of a call is associated
+// with, or, for `i` equal to the number of actual arguments, the passed
+// object of a type-bound call; for a type-bound call, of the procedure
+// the binding names. Nullptr when it is not known, or when the object of
+// a NOPASS binding is asked for, which is not passed (`not_passed`).
+ASR::Variable_t *gpu_call_dummy(const ASR::SubroutineCall_t &x, size_t i,
+    bool *not_passed = nullptr);
+ASR::Variable_t *gpu_call_dummy(const ASR::FunctionCall_t &x, size_t i,
+    bool *not_passed = nullptr);
+
+// Whether the passed object of a type-bound call is also one of its actual
+// arguments, as it is once the call has been resolved: it is then not
+// looked at a second time.
+bool gpu_call_object_is_argument(const ASR::SubroutineCall_t &x);
+
+// Whether the procedure a call names may define its `i`-th actual argument
+// (see gpu_call_dummy): the dummy argument it is associated with is not
+// `intent(in)` and not passed by value, or is not known.
+bool gpu_call_may_define(const ASR::SubroutineCall_t &x, size_t i);
+
+// Whether the procedure a call names defines its `i`-th actual argument
+// whole: the dummy argument it is associated with is `intent(out)`.
+bool gpu_call_defines(const ASR::SubroutineCall_t &x, size_t i);
+
+// The scalar variable whose own storage a designator that is defined
+// defines: `k`, `y`, `y%k`, `y%a%x` or `y%c(i)` for a component `c` that is
+// neither allocatable nor a pointer. Nullptr for anything else: an array
+// variable, or a part of an allocatable or pointer array or component,
+// which is not stored in the variable.
+ASR::symbol_t *gpu_defined_variable(ASR::expr_t *designator);
+
 // Collects local variables used in do concurrent body that are NOT
 // arrays and NOT the loop variables — these are per-thread temporaries
 class GpuLocalVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuLocalVarCollector> {
 public:
+    // What the body assigns.
     std::set<std::string> &assigned_vars;
     std::set<std::string> &inner_loop_vars;
     std::set<SymbolTable*> enclosing_scopes;
+    // What the body passes to a procedure that may define it, or may
+    // leave it alone, and does not also assign. An `intent(out)` actual
+    // argument counts here too: the call may not run in every iteration.
+    std::set<std::string> may_define;
 
     GpuLocalVarCollector(std::set<std::string> &av,
         std::set<std::string> &ilv,
         const std::set<SymbolTable*> &scopes = {})
         : assigned_vars(av), inner_loop_vars(ilv), enclosing_scopes(scopes) {}
 
+    // A variable the body defines (into `defined`), unless it is a local
+    // of a BLOCK or ASSOCIATE in the body.
+    void note(ASR::symbol_t *sym) { note(sym, assigned_vars); }
+    void note(ASR::symbol_t *sym, std::set<std::string> &defined) {
+        if (sym == nullptr || ASR::is_a<ASR::Variable_t>(*sym) == false) {
+            if (sym != nullptr && ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                defined.insert(ASRUtils::symbol_name(sym));
+            }
+            return;
+        }
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (var->m_parent_symtab->asr_owner) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                var->m_parent_symtab->asr_owner);
+            if ((ASR::is_a<ASR::Block_t>(*owner) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*owner)) &&
+                    enclosing_scopes.find(var->m_parent_symtab)
+                        == enclosing_scopes.end()) {
+                return;
+            }
+        }
+        defined.insert(ASRUtils::symbol_name(sym));
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
-        // Check if target is a simple Var (not ArrayItem)
-        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-            ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(x.m_target);
-            // Skip variables local to Block or AssociateBlock scopes
-            bool is_block_local = false;
-            if (ASR::is_a<ASR::Variable_t>(*v->m_v)) {
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                if (var->m_parent_symtab->asr_owner) {
-                    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-                        var->m_parent_symtab->asr_owner);
-                    if (ASR::is_a<ASR::Block_t>(*owner) ||
-                        ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                        if (enclosing_scopes.find(var->m_parent_symtab)
-                                == enclosing_scopes.end()) {
-                            is_block_local = true;
-                        }
-                    }
-                }
-            }
-            if (!is_block_local) {
-                std::string name = ASRUtils::symbol_name(v->m_v);
-                ASR::ttype_t *type = ASRUtils::symbol_type(v->m_v);
-                if (!ASRUtils::is_array(type)) {
-                    assigned_vars.insert(name);
-                }
-            }
-        }
-        // Check if target is a StructInstanceMember (e.g., x%v = ...)
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target)) {
-            ASR::StructInstanceMember_t *sm =
-                ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
-                ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(sm->m_v);
-                std::string name = ASRUtils::symbol_name(v->m_v);
-                assigned_vars.insert(name);
-            }
-        }
+        note(gpu_defined_variable(x.m_target));
         ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_Assignment(x);
+    }
+
+    // An actual argument the procedure may define.
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value && gpu_call_may_define(x, i)) {
+                note(gpu_defined_variable(x.m_args[i].m_value), may_define);
+            }
+        }
+        if (x.m_dt && !gpu_call_object_is_argument(x)
+                && gpu_call_may_define(x, x.n_args)) {
+            note(gpu_defined_variable(x.m_dt), may_define);
+        }
+        ASR::BaseWalkVisitor<GpuLocalVarCollector>::visit_SubroutineCall(x);
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
@@ -334,26 +379,49 @@ public:
 };
 
 // Collects all Function symbols referenced by FunctionCall/SubroutineCall
-// nodes in the loop body so they can be imported into the kernel.
+// nodes in the loop body so they can be imported into the kernel, and the
+// routines named as actual arguments, which whoever receives them calls.
 class GpuFunctionCollector :
         public ASRUtils::BlockBodyWalkVisitor<GpuFunctionCollector> {
 public:
-    std::map<std::string, ASR::symbol_t*> functions;
+    // The name a procedure is referenced by, to the symbol referencing it,
+    // once per procedure: procedures are told apart by identity, so that
+    // a contained procedure and a module procedure of one name, say, are
+    // both collected.
+    std::multimap<std::string, ASR::symbol_t*> functions;
+
+    // Adds the procedure `sym` names under `name`, unless it is collected
+    // already. True if it was added.
+    bool add(const std::string &name, ASR::symbol_t *sym) {
+        if (!collected.insert(ASRUtils::symbol_get_past_external(sym))
+                .second) {
+            return false;
+        }
+        functions.emplace(name, sym);
+        return true;
+    }
+
+    // A dummy procedure is not a routine of its own: device code calls
+    // the routines its callers hand over (see
+    // gpu_specialize_dummy_procedures).
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Function_t>(*resolved) ||
+                ASRUtils::is_dummy_procedure(
+                    *ASR::down_cast<ASR::Function_t>(resolved))) {
+            return;
+        }
+        add(ASRUtils::symbol_name(x.m_v), x.m_v);
+    }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
         if (ASR::is_a<ASR::Function_t>(*resolved) ||
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved)) {
-            std::string name = ASRUtils::symbol_name(x.m_name);
-            if (functions.find(name) == functions.end()) {
-                functions[name] = x.m_name;
-            }
+            add(ASRUtils::symbol_name(x.m_name), x.m_name);
         }
         if (x.m_original_name) {
-            std::string orig_name = ASRUtils::symbol_name(x.m_original_name);
-            if (functions.find(orig_name) == functions.end()) {
-                functions[orig_name] = x.m_original_name;
-            }
+            add(ASRUtils::symbol_name(x.m_original_name), x.m_original_name);
         }
         ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_FunctionCall(x);
     }
@@ -362,13 +430,13 @@ public:
         ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(x.m_name);
         if (ASR::is_a<ASR::Function_t>(*resolved) ||
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved)) {
-            std::string name = ASRUtils::symbol_name(x.m_name);
-            if (functions.find(name) == functions.end()) {
-                functions[name] = x.m_name;
-            }
+            add(ASRUtils::symbol_name(x.m_name), x.m_name);
         }
         ASR::BaseWalkVisitor<GpuFunctionCollector>::visit_SubroutineCall(x);
     }
+
+private:
+    std::set<ASR::symbol_t*> collected;
 };
 
 // Every routine a loop body reaches, however deep: the implementation of
@@ -436,20 +504,152 @@ public:
     }
 };
 
+// The one element of the buffer a scalar whose value is kept after a
+// parallel loop is handed to the kernel in, and handed back in.
+ASR::expr_t* gpu_liveout_slot(Allocator &al, const Location &loc,
+    ASR::symbol_t *buffer, ASR::ttype_t *scalar_type);
+
+// Puts the value of the private copy each thread of a kernel keeps of a
+// variable whose value is kept after the loop back where it is shared,
+// after the statements that define the copy or a part of it: only the
+// part an assignment or the actual argument of a call defines is put
+// back, so that what other iterations define of the variable is left
+// alone, and after a call only the scalars it changed, unless the dummy
+// argument is `intent(out)`. `entries` are the assignments that give each copy its value on
+// entry, from where the value is shared, which is where it is put back.
+//
+// A definition in a loop of a statement of the kernel body would put the
+// value back on every trip; a flag records it instead, and the value is
+// put back once, after that statement, if the flag is set. That is only
+// done for a definition of the whole copy or of a component of it (the
+// part an element names can change from one trip to the next), and for a
+// statement that nothing leaves early (CYCLE, EXIT, RETURN, GO TO, STOP),
+// which could skip the write after it.
+class GpuLiveoutWriteBack : public PassUtils::PassVisitor<GpuLiveoutWriteBack> {
+public:
+    std::set<ASR::stmt_t*> entries;
+
+    GpuLiveoutWriteBack(Allocator &al_);
+
+    void run(ASR::Function_t &kernel);
+
+    void visit_Assignment(const ASR::Assignment_t &x);
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
+    void visit_DoLoop(const ASR::DoLoop_t &x);
+    void visit_WhileLoop(const ASR::WhileLoop_t &x);
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x);
+
+private:
+    // The private copy, and where its value is shared.
+    std::map<ASR::symbol_t*, ASR::expr_t*> shared;
+    SymbolTable *kernel_scope = nullptr;
+    // Whether the statement of the kernel body being visited can have a
+    // write put after it, and how many loops of it are around the one
+    // visited.
+    bool deferring = false;
+    int loops = 0;
+    // The writes put after the statement, under their flags.
+    std::vector<std::pair<ASR::symbol_t*, ASR::stmt_t*>> deferred;
+
+    // The private copy `designator` is a part of, if it is one.
+    ASR::symbol_t *copy_of(ASR::expr_t *designator);
+    // `<the same part of the shared value> = designator`.
+    ASR::stmt_t *put_back(const Location &loc, ASR::expr_t *designator,
+        ASR::symbol_t *copy);
+    // Puts a definition of `designator` back, after the statement visited
+    // (into `after`) or after the statement of the kernel body.
+    void define(const Location &loc, ASR::expr_t *designator,
+        ASR::symbol_t *copy, std::vector<ASR::stmt_t*> &after);
+};
+
+// Whether `name`, of type `type`, is a derived-type variable of a type with
+// allocatable or pointer parts and a derived-type component, which the
+// kernel cannot hold as a local of its own (the lowering of such a local
+// is not done yet). Each thread keeps private copies of the scalar parts
+// of it the loop defines instead (gpu_offload_liveout.cpp), whether or not
+// its value is kept after the loop.
+bool gpu_no_kernel_local_struct(SymbolTable *scope,
+    const std::string &name, ASR::ttype_t *type);
+
+// Whether `name`, of type `type`, is a derived-type variable that each
+// thread can keep a private copy of whole: not polymorphic, allocatable or
+// a pointer, of a type without allocatable or pointer parts, and small
+// enough.
+bool gpu_struct_privately_copyable(SymbolTable *scope, const std::string &name,
+    ASR::ttype_t *type);
+
+// Where a kernel keeps a variable that a parallel loop assigns (`assigned`)
+// or passes to a procedure that may define it.
+enum class GpuLocality {
+    // A local of the kernel, which starts undefined in every thread.
+    KernelLocal,
+    // A kernel argument, as a variable the loop only reads is.
+    KernelArgument,
+    // A kernel argument of which each thread keeps private copies of the
+    // parts the loop defines, taken on entry, and puts back what it defines
+    // of them when `live` (plan_liveouts in gpu_offload_liveout.cpp).
+    PrivateCopies,
+};
+
+// The one place that decides it. The invariant: a variable the loop
+// assigns is a kernel local iff its value is not kept after the loop
+// (`live`), it is not an array, and either every assignment to it assigns
+// it whole, or the first statement of the loop body that names it assigns
+// it whole, so that every iteration defines all of it first -- or, for a
+// derived-type value no thread can copy whole and the kernel can hold as a
+// local, every assignment assigns it whole or a component of it whole
+// (`y%k = ...`, `y%c = ...`); the components such a local leaves
+// undefined are then undefined, as before this pass kept anything after the
+// loop. A derived-type value the loop otherwise defines in parts
+// (`y%c(i)`, `y%in%k`), in parts at all when each thread can copy it
+// whole, or that the kernel cannot hold as a local
+// (gpu_no_kernel_local_struct) gets private copies of those parts, taken
+// from the kernel argument; so does one each thread can copy whole that a
+// procedure may define. Anything else is a kernel argument: a variable
+// only a procedure may define keeps its value.
+GpuLocality gpu_locality(SymbolTable *scope, const std::string &name,
+    ASR::ttype_t *type, bool live, bool assigned, ASR::stmt_t **body,
+    size_t n_body);
+
 // Collects StructInstanceMember references to allocatable array members
 // in the loop body. Used to decompose struct-typed kernel
 // parameters into separate flat array buffers for Metal.
-// Collects all variable names referenced (read) in a set of statements.
-// Used to determine which variables are live after a parallel loop.
+// Collects all variable names referenced in a set of statements, except
+// in the parallel loop `skip`. Used to determine which variables are live
+// after that loop.
 class PostLoopVarCollector :
         public ASRUtils::BlockBodyWalkVisitor<PostLoopVarCollector> {
 public:
     std::set<std::string> &referenced_vars;
-    PostLoopVarCollector(std::set<std::string> &rv) : referenced_vars(rv) {}
+    const ASR::OMPRegion_t *skip;
+    PostLoopVarCollector(std::set<std::string> &rv,
+        const ASR::OMPRegion_t *skip_ = nullptr)
+        : referenced_vars(rv), skip(skip_) {}
     void visit_Var(const ASR::Var_t &x) {
         referenced_vars.insert(ASRUtils::symbol_name(x.m_v));
     }
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (&x == skip) return;
+        ASR::BaseWalkVisitor<PostLoopVarCollector>::visit_OMPRegion(x);
+    }
 };
+
+// The names of the variables that may be referenced once the parallel
+// loop `loop` has run: by a statement of the procedure (or main program)
+// that holds it -- the statements after it, in the statement list that
+// holds it and in each construct around it, and every other statement of
+// a loop around it, which can run again -- or by a procedure it contains,
+// which a later statement may call. When the procedure has a GO TO, which
+// can run any statement again, `everything` is set instead.
+std::set<std::string> gpu_names_referenced_after_loop(
+    const ASR::OMPRegion_t &loop, SymbolTable *scope, bool &everything);
+
+// Whether the value a parallel loop in `scope` gives the variable `sym`
+// can be read once the procedure (or main program) holding the loop has
+// returned, or by another procedure: it is a dummy argument or the
+// function result, it is saved, or it belongs to a module or to a host
+// procedure.
+bool gpu_visible_outside_procedure(ASR::symbol_t *sym, SymbolTable *scope);
 
 // Collects the symbols targeted by Var nodes in a set of statements,
 // including the bodies of nested Block and AssociateBlock scopes. Used to

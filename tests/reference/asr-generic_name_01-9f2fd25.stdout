@@ -324,6 +324,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -351,6 +352,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -564,6 +566,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -585,6 +588,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -894,6 +898,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 6 fptwo)
@@ -902,6 +907,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -916,6 +922,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 6 ione)
@@ -924,11 +931,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 6 izero)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -950,6 +959,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 6 c)
@@ -967,6 +977,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -997,6 +1008,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -1073,6 +1086,8 @@
                                 ()
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

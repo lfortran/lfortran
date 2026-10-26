@@ -341,7 +341,7 @@ public:
         if (!kernel.m_gpu) {
             GpuDecline decline;
             if (!gpu_create_kernel_layout(al, kernel, x.m_args, x.n_args,
-                    decline)) {
+                    decline, options.fast)) {
                 report_gpu_decline(options, x.base.base.loc, decline);
                 return;
             }

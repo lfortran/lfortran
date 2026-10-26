@@ -1368,7 +1368,7 @@ bool set_allocation_size(
 
 void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
-    ASR::expr_t* rank_source) {
+    ASR::expr_t* rank_source, bool is_target) {
     if( !ASRUtils::is_allocatable(temporary_var) ) {
         return ;
     }
@@ -1397,7 +1397,17 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);
     dealloc_args.push_back(al, temporary_var);
-    if( !add_allocated_check ) {
+    // A polymorphic target can also take another dynamic type, which
+    // array_op gives it, so it is allocated again
+    if( !add_allocated_check && is_target &&
+        !ASRUtils::is_class_type(ASRUtils::extract_type(
+            ASRUtils::expr_type(temporary_var))) ) {
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(al,
+            temporary_var->base.loc, alloc_args.p, alloc_args.size(),
+            PassUtils::make_shape_differs(al, temporary_var->base.loc,
+                alloc_arg, ASRUtils::TYPE(ASR::make_Integer_t(al,
+                    temporary_var->base.loc, 4))))));
+    } else if( !add_allocated_check ) {
         current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
             temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -1473,11 +1483,30 @@ ASR::expr_t* create_and_declare_temporary_variable_for_scalar(
     return scalar_var_temporary;
 }
 
+// A defined operation is evaluated as its function call `m_overloaded`.
+static ASR::expr_t* get_past_defined_operation(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::OverloadedBinOp:
+            return ASR::down_cast<ASR::OverloadedBinOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedBoolOp:
+            return ASR::down_cast<ASR::OverloadedBoolOp_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedCompare:
+            return ASR::down_cast<ASR::OverloadedCompare_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedStringConcat:
+            return ASR::down_cast<ASR::OverloadedStringConcat_t>(x)->m_overloaded;
+        case ASR::exprType::OverloadedUnaryMinus:
+            return ASR::down_cast<ASR::OverloadedUnaryMinus_t>(x)->m_overloaded;
+        default:
+            return x;
+    }
+}
+
 ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
     ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false) {
+    array_expr = get_past_defined_operation(array_expr);
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
         allocate_size_reference = array_expr;
@@ -1780,6 +1809,7 @@ bool reads_elementwise_operands_in_place(ASR::exprType op) {
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerCompare:
         case ASR::exprType::RealCompare:
+        case ASR::exprType::ComplexCompare:
         case ASR::exprType::StringCompare:
             return true;
         default:
@@ -1791,9 +1821,6 @@ bool is_temporary_needed(ASR::expr_t* value) {
     if(!value) { return false; }
     bool is_expr_with_no_type = (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
         value->type) == exprs_with_no_type.end()) && ASRUtils::is_array(ASRUtils::expr_type(value));
-    bool is_non_empty_fixed_size_array = (!ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
-        (ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) &&
-        ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0));
     // A null pointer value carries no array data, so copying it into an array
     // temporary is meaningless: the temporary would be read as a descriptor and
     // dereferenced. Leave it as is so that the null value reaches its
@@ -1803,8 +1830,7 @@ bool is_temporary_needed(ASR::expr_t* value) {
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
         && !is_directly_addressable_expr(value)
-        && !is_null_pointer
-        && is_non_empty_fixed_size_array;
+        && !is_null_pointer;
 }
 
 class ContainsFunctionReference:
@@ -2816,8 +2842,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_ComplexCompare(const ASR::ComplexCompare_t& x) {
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_ComplexCompare(x);
-        rebind_BinOp_shape(const_cast<ASR::ComplexCompare_t&>(x));
+        ASR::ComplexCompare_t& xx = const_cast<ASR::ComplexCompare_t&>(x);
+        std::pair<ASR::expr_t*, ASR::expr_t*> binop;
+        if( !visit_BinOpUtil(&xx, "complex_compare", binop, ASR::exprType::ComplexCompare) ) {
+            return ;
+        }
+        xx.m_left = binop.first;
+        xx.m_right = binop.second;
+        CallReplacerOnExpressionsVisitor::visit_ComplexCompare(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_LogicalCompare(const ASR::LogicalCompare_t& x) {
@@ -3043,6 +3076,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             return ; 
         }
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
+        if( !ASRUtils::is_fixed_size_array(xx.m_type) ) {
+            // A result whose shape is only known at run time cannot be stored
+            // inline, so it is reshaped from a descriptor of `source`.
+            ASR::ttype_t* array_ttype = ASRUtils::expr_type(xx.m_array);
+            ASR::array_physical_typeType array_ptype = ASRUtils::extract_physical_type(array_ttype);
+            if( array_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                xx.m_array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, xx.m_array->base.loc, xx.m_array, array_ptype,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASRUtils::duplicate_type(al, array_ttype, nullptr,
+                        ASR::array_physical_typeType::DescriptorArray, true),
+                    nullptr));
+            }
+            return;
+        }
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
             ASR::array_physical_typeType::FixedSizeArray &&
@@ -3310,11 +3358,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 target_Type == targetType::OriginalTarget &&
                 realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, underlying_target, *current_expr,
-                                               current_body, target);
+                                               current_body, target, true);
             } else if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
                 target_Type == targetType::OriginalTarget &&
                 realloc_lhs ) {
-                insert_allocate_stmt_for_array(al, target, *current_expr, current_body);
+                insert_allocate_stmt_for_array(al, target, *current_expr,
+                                               current_body, nullptr, true);
             }
             return true;
         }

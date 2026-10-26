@@ -1149,7 +1149,7 @@ public:
                         if (target == nullptr || value == nullptr) continue;
                         out.push_back(al, ASRUtils::STMT(
                             ASR::make_Assignment_t(al, s->base.loc, target,
-                                value, nullptr, false, false, false)));
+                                value, nullptr, false, false, false, false)));
                     }
                     break;
                 }

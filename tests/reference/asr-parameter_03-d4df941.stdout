@@ -49,6 +49,8 @@
                             ()
                             [(Var 2 l_knd)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

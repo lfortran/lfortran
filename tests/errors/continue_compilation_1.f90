@@ -3612,3 +3612,139 @@ contains
         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
     end subroutine cc1_pointer_bounds_boz_use
 end module cc1_pointer_bounds_boz
+
+! C1588: an intent(out) dummy argument of a pure procedure shall not be
+! polymorphic or have a polymorphic allocatable ultimate component.
+module cc1_pure_poly_intent_out
+    implicit none
+    type :: cc1_ppo_t
+        integer :: i
+    end type
+    type :: cc1_ppo_w
+        class(cc1_ppo_t), allocatable :: c
+    end type
+    type :: cc1_ppo_w2
+        type(cc1_ppo_w) :: inner
+    end type
+    abstract interface
+        pure subroutine cc1_ppo_iface(a)
+            import :: cc1_ppo_t
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+        end subroutine
+    end interface
+contains
+    pure subroutine cc1_ppo_class(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure subroutine cc1_ppo_class_alloc(a)
+        class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+    end subroutine
+    pure subroutine cc1_ppo_star(a)
+        class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+    end subroutine
+    elemental subroutine cc1_ppo_elemental(a)
+        class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+        a%i = 1
+    end subroutine
+    pure integer function cc1_ppo_func(a)
+        class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+        cc1_ppo_func = 1
+    end function
+    pure subroutine cc1_ppo_comp(a)
+        type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    pure subroutine cc1_ppo_nested_comp(a)
+        type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+    end subroutine
+    subroutine cc1_ppo_host()
+        type(cc1_ppo_t) :: x
+        call cc1_ppo_internal(x)
+    contains
+        pure subroutine cc1_ppo_internal(a)
+            class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+            a%i = 1
+        end subroutine
+    end subroutine
+end module cc1_pure_poly_intent_out
+
+! An output implied-do loop with values of different types, some of them of
+! derived type, is not supported yet with run-time bounds or step, with a
+! nested loop that reuses the variable of an enclosing loop, with more than
+! 256 iterations of bounds that are not all literals, with more than 1000
+! values of different derived types, or in an unformatted transfer.
+subroutine implied_do_mixed_derived_types_error(n)
+    implicit none
+    type :: cc1_idl_a
+        integer :: i = 1
+    end type
+    type :: cc1_idl_b
+        integer :: j = 2
+    end type
+    integer, intent(in) :: n
+    integer, parameter :: m = 300
+    type(cc1_idl_a) :: x(3)
+    type(cc1_idl_b) :: y(3)
+    integer :: i, j, k(3)
+    character(80) :: line
+    k = 3
+    print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+    write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+    write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+    print '(*(i0,1x))', (x(i), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,2), i=1,3)
+    print '(*(i0,1x))', ((x(i), j=1,1), y(i), i=1,3)
+    print '(*(i0,1x))', (x(i), (y(j), j=1,i), i=1,3)
+    print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+    print '(*(i0,1x))', (x(1), y(1), i=1,500)
+    print '(*(i0,1x))', (x(1), k(1), i=1,501)
+    print *, (x(i), (y(j), j=1,n), i=1,0)
+end subroutine implied_do_mixed_derived_types_error
+
+! Defined output of the elements of a polymorphic array, as an array item or
+! as the items of an implied-do loop, is not supported yet.
+module cc1_dtio_poly_array_1
+    implicit none
+    type :: cc1_dtio_t
+        integer :: v = 3
+    contains
+        procedure :: cc1_dtio_wf
+        generic :: write(formatted) => cc1_dtio_wf
+    end type
+contains
+    subroutine cc1_dtio_wf(dtv, unit, iotype, v_list, iostat, iomsg)
+        class(cc1_dtio_t), intent(in) :: dtv
+        integer, intent(in) :: unit
+        character(*), intent(in) :: iotype
+        integer, intent(in) :: v_list(:)
+        integer, intent(out) :: iostat
+        character(*), intent(inout) :: iomsg
+        write(unit, '(a,i0)', iostat=iostat) 'T', dtv%v
+    end subroutine
+
+    subroutine cc1_dtio_poly_array_error()
+        class(cc1_dtio_t), allocatable :: c(:)
+        integer :: i
+        allocate(c(2))
+        print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+        print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+    end subroutine
+end module
+
+module cc1_dc_index_name
+contains
+    subroutine cc1_dc_index_assign(r)
+        integer, intent(out) :: r(3)
+        integer :: i
+        do concurrent (i = 1:3)
+            do i = 1, 2
+                i = 5  ! {Error} Assignment to loop variable `i` is not allowed
+            end do
+            r(i) = 1
+        end do
+    end subroutine
+end module cc1_dc_index_name

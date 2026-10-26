@@ -225,6 +225,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 circle_area)
                                     Private
@@ -350,6 +351,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -370,6 +372,8 @@
                                             )
                                             (Var 5 area)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -476,6 +480,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -489,6 +494,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

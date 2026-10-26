@@ -27,12 +27,12 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
     int __flat_idx;
-    int i;
+    int i__dc;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
+    i__dc = (__flat_idx + 1);
     {
         int __gpu_loop_end;
         int __gpu_loop_end1;
@@ -42,7 +42,7 @@ kernel void __lfortran_gpu_kernel_0(
         int n;
         float value;
         float x;
-        n = limits[((int)(i) - (1))];
+        n = limits[((int)(i__dc) - (1))];
         value = ((float)0);
         if ((__gpu_lane == 0)) {
             __gpu_loop_end = n;
@@ -120,7 +120,7 @@ kernel void __lfortran_gpu_kernel_0(
                     n = (n - 1);
                 }
             }
-            __gpu_loop_end1 = (_lcompilers_optimization_modulo_i32_gpu_19(i, 23) - 1);
+            __gpu_loop_end1 = (_lcompilers_optimization_modulo_i32_gpu_19(i__dc, 23) - 1);
             j = 0;
             if ((__gpu_loop_end1 >= 0)) {
                 for (__gpu_loop_group1 = 0; __gpu_loop_group1 <= (__gpu_loop_end1 - 15); __gpu_loop_group1 += 16) {
@@ -166,7 +166,7 @@ kernel void __lfortran_gpu_kernel_0(
                 j = (j + (-(2)));
                 value = (value + (((float)j) *   1.25000000000000000e-01));
             }
-            result[((int)(i) - (1))] = value;
+            result[((int)(i__dc) - (1))] = value;
         }
         if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
         j = simd_shuffle(j, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));

@@ -1,15 +1,17 @@
 function triad(a::Array{Float32, 1}, b::Array{Float32, 1}, scalar::Float32, c::Array{Float32, 1})
     local i::Int32
+    local i__dc::Int32
     local j::Int32
+    local j__dc::Int32
     local n::Int32
     local n2::Int32
     n = length(a)
     n2 = length(b)
-    Threads.@threads for i ∈ 1:n
-        c[i] = a[i] + scalar * b[i]
+    Threads.@threads for i__dc ∈ 1:n
+        c[i__dc] = a[i__dc] + scalar * b[i__dc]
     end
-    Threads.@threads for j ∈ 1:n2
-        c[j] = b[j] + scalar
+    Threads.@threads for j__dc ∈ 1:n2
+        c[j__dc] = b[j__dc] + scalar
     end
 end
 

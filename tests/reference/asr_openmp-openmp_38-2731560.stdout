@@ -3824,6 +3824,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nx)
@@ -3832,11 +3833,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nz)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -3888,6 +3891,8 @@
                                             )
                                             (Var 2 iz)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_liveout_09-74f2119",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_liveout_09.f90",
+    "infile_hash": "3009c90cf123ab0440fccc044877f3e192d2bf34d1f929292d17b6da",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_liveout_09-74f2119.stdout",
+    "stdout_hash": "32c6bed7f65a9d732050d589b2a470acc6f973ad464cfcfc4108ff86",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

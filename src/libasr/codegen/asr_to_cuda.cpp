@@ -171,12 +171,13 @@ struct CudaDialect {
         src << "\n// Auto-generated kernel registration\n";
         if (emulate_cpu) {
             if (kernel_names.empty()) return;
-            // The thunks are registered instead of the kernels, and a plain
-            // constructor attribute keeps the file free of any C++ runtime
-            // dependency. Under separate compilation the per-object device
-            // sources are concatenated, so the registrar is named after the
-            // first kernel to keep it unique per translation unit.
-            src << "typedef void (*kernel_func_t)(void **);\n";
+            // The thunks are registered instead of the kernels, with the
+            // type of a kernel, and the emulated cudaLaunchKernel calls them.
+            // A plain constructor attribute keeps the file free of any C++
+            // runtime dependency. Under separate compilation the per-object
+            // device sources are concatenated, so the registrar is named after
+            // the first kernel to keep it unique per translation unit.
+            src << "typedef void (*kernel_func_t)(void);\n";
             src << "extern \"C\" void lfortran_gpu_register_kernel("
                    "const char *name, kernel_func_t func);\n\n";
             src << "__attribute__((constructor)) static void "
@@ -184,7 +185,7 @@ struct CudaDialect {
                 << "(void) {\n";
             for (auto &kname : kernel_names) {
                 src << "    lfortran_gpu_register_kernel(\"" << kname
-                    << "\", __lf_thunk_" << kname << ");\n";
+                    << "\", (kernel_func_t)__lf_thunk_" << kname << ");\n";
             }
             src << "}\n";
             return;

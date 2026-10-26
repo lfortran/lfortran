@@ -19,6 +19,7 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_hashtable)
     if (NOT EMSCRIPTEN)
         ADDTESTC(test_runtime_input lfortran_runtime_static)
+        ADDTESTC(test_runtime_dtio lfortran_runtime_static)
     endif()
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
@@ -309,6 +310,16 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+        endif()
+        if (WITH_XEUS)
+            add_test(
+                NAME test_kernel_evaluation
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
         endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"

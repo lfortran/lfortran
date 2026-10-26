@@ -1508,6 +1508,60 @@ semantic error: an equivalence object must be a variable, an array element or a 
 3529 |     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
      |                     ^^^ not allowed in EQUIVALENCE
 
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3632:46
+     |
+3632 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_iface' cannot be polymorphic
+     |                                              ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3637:42
+     |
+3637 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class' cannot be polymorphic
+     |                                          ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3641:55
+     |
+3641 |         class(cc1_ppo_t), allocatable, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_class_alloc' cannot be polymorphic
+     |                                                       ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3644:34
+     |
+3644 |         class(*), intent(out) :: a(:)  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_star' cannot be polymorphic
+     |                                  ^^^^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3647:42
+     |
+3647 |         class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_elemental' cannot be polymorphic
+     |                                          ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3651:51
+     |
+3651 |         class(cc1_ppo_t), pointer, intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_func' cannot be polymorphic
+     |                                                   ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+    --> tests/errors/continue_compilation_1.f90:3655:41
+     |
+3655 |         type(cc1_ppo_w), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_comp' cannot have a polymorphic allocatable ultimate component
+     |                                         ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+    --> tests/errors/continue_compilation_1.f90:3658:42
+     |
+3658 |         type(cc1_ppo_w2), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_nested_comp' cannot have a polymorphic allocatable ultimate component
+     |                                          ^ 
+
+semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+    --> tests/errors/continue_compilation_1.f90:3665:46
+     |
+3665 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
+     |                                              ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -2740,11 +2794,11 @@ semantic error: Variable 'k' is not declared
 681 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
-semantic error: Expected logical expression in if statement, but recieved logical(4)[:] instead
+semantic error: A function reference cannot be subscripted or sectioned
    --> tests/errors/continue_compilation_1.f90:692:13
     |
 692 |         if (abs(arr1)(1) /= 2471095) error stop
-    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical(4)[:] expression, expected logical
+    |             ^^^^^^^^^^^^ 'abs(...)' is a function reference, not a designator
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
    --> tests/errors/continue_compilation_1.f90:700:22
@@ -4531,3 +4585,81 @@ semantic error: a bound in a pointer bounds specification or remapping list must
      |
 3612 |         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
      |           ^^^^ 
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3691:25
+     |
+3691 |     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^ 
+     |
+3691 |     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                          ~ not a constant expression
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3692:14
+     |
+3692 |     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+     |              ^^^^^^^^^^^^^^^^^^^^^ 
+     |
+3692 |     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                 ~ not a constant expression
+
+semantic error: output of an implied-do loop with run-time bounds or step and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3693:31
+     |
+3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                               ^^^^^^^^^^^^^^^^^^^ 
+     |
+3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
+     |                                                ~ not a constant expression
+
+semantic error: output of an implied-do loop with a nested loop that reuses an enclosing loop variable and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3694:25
+     |
+3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+     |
+3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+     |                          ~~~~~~~~~~~~~ reuses the variable of an enclosing loop
+
+semantic error: output of an implied-do loop with more than 256 iterations, bounds that are not all literals and values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3695:25
+     |
+3695 |     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: unformatted output of an implied-do loop with values of different types, including derived types, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3696:15
+     |
+3696 |     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
+     |               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: output of an implied-do loop with more than 1000 values of different derived types is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3701:25
+     |
+3701 |     print '(*(i0,1x))', (x(1), y(1), i=1,501)  ! {Error} more than 1000 values ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: output of an implied-do loop with more than 1000 values of different derived types is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3702:25
+     |
+3702 |     print '(*(i0,1x))', ((x(1), j=1,2), y(1), i=1,334)  ! {Error} more than 1000 values ... is not supported yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: defined output of the elements of a polymorphic array is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3733:29
+     |
+3733 |         print '(2(dt,1x))', c  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+     |                             ^ 
+
+semantic error: defined output of the elements of a polymorphic array is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3734:30
+     |
+3734 |         print '(2(dt,1x))', (c(i), i = 1, 2)  ! {Error} defined output of the elements of a polymorphic array is not supported yet
+     |                              ^^^^ 
+
+semantic error: Assignment to loop variable `i` is not allowed
+    --> tests/errors/continue_compilation_1.f90:3745:17
+     |
+3745 |                 i = 5  ! {Error} Assignment to loop variable `i` is not allowed
+     |                 ^ 

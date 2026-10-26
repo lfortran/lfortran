@@ -1,0 +1,39 @@
+#include <stdint.h>
+
+__device__ inline void maybe_set_gpu_9(float& x, int i) {
+    if ((i == 7)) {
+        x =   7.50000000000000000e+00f;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_a_0;
+    int __lb_a_0;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ __gpu_buf_x,
+    int* __restrict__ a,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __lb_a_0 = __scalar_args.__lb_a_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    float __gpu_before;
+    int i__dc;
+    float x;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    x = __gpu_buf_x[((int)(1) - (1))];
+    a[((int)(i__dc) - (__lb_a_0))] = i__dc;
+    __gpu_before = x;
+    maybe_set_gpu_9(x, i__dc);
+    if (((int)((x != __gpu_before) && ((int)((x == x) || (__gpu_before == __gpu_before)))))) {
+        __gpu_buf_x[((int)(1) - (1))] = x;
+    }
+}
+

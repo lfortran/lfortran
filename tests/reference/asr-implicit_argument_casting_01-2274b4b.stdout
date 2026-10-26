@@ -161,6 +161,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )]
                     ()
                     Public
@@ -360,6 +361,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (CPtrToPointer
                                         (PointerToCPtr
@@ -413,14 +415,12 @@
                                             (Var 4 w_cast)
                                             DescriptorArray
                                             PointerArray
-                                            (Pointer
-                                                (Array
-                                                    (Real 8)
-                                                    [(()
-                                                    ())]
-                                                    PointerArray
-                                                    Global
-                                                )
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
                                             )
                                             ()
                                         ))]
@@ -441,6 +441,8 @@
                                                 .false.
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

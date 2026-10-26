@@ -1,0 +1,40 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int n;
+    int __dim_a_0;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ __gpu_buf_tmp,
+    float* __restrict__ a,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int __gpu_defined;
+    int i__dc;
+    int j;
+    float tmp;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    tmp = __gpu_buf_tmp[((int)(1) - (1))];
+    tmp = ((float)0);
+    __gpu_buf_tmp[((int)(1) - (1))] = tmp;
+    __gpu_defined = 0;
+    j = (1 - 1);
+    while (((j + 1) <= 200)) {
+        j = (j + 1);
+        tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
+        __gpu_defined = 1;
+    }
+    if (__gpu_defined) {
+        __gpu_buf_tmp[((int)(1) - (1))] = tmp;
+    }
+    a[((int)(i__dc) - (1))] = tmp;
+}
+

@@ -1,0 +1,130 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_start_0;
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ __gpu_buf_k,
+    int* __restrict__ __gpu_buf_m,
+    int* __restrict__ __gpu_buf_s,
+    int* __restrict__ a,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_start_0 = __scalar_args.__loop_start_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i__dc;
+    int j;
+    int k;
+    int m;
+    int s;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + __loop_start_0);
+    k = __gpu_buf_k[((int)(1) - (1))];
+    m = __gpu_buf_m[((int)(1) - (1))];
+    s = __gpu_buf_s[((int)(1) - (1))];
+    {
+        int __gpu_frame;
+        int __gpu_frame_i__dc;
+        if ((i__dc < (1 + 9))) {
+            __gpu_frame = ((i__dc - ((1 + 9) - ((9 + (1 - 1)) / 1))) * 1);
+            if ((__gpu_frame < 9)) {
+                if ((__gpu_frame < 9)) {
+                    __gpu_frame_i__dc = (1 + __gpu_frame);
+                } else {
+                    __gpu_frame_i__dc = (((100 + 1) - 0) + (__gpu_frame - 9));
+                }
+                a[((int)(__gpu_frame_i__dc) - (1))] = __gpu_frame_i__dc;
+                {
+                    int t;
+                    t = __gpu_frame_i__dc;
+                    if ((t == 7)) {
+                        k = 70;
+                        __gpu_buf_k[((int)(1) - (1))] = k;
+                    }
+                    {
+                        if ((t == 9)) {
+                            m = 90;
+                            __gpu_buf_m[((int)(1) - (1))] = m;
+                        }
+                    }
+                    j = (1 - 1);
+                    while (((j + 1) <= 3)) {
+                        j = (j + 1);
+                        if ((t == 11)) {
+                            s = (s + j);
+                            __gpu_buf_s[((int)(1) - (1))] = s;
+                        }
+                    }
+                }
+            }
+        } else {
+            a[((int)(i__dc) - (1))] = i__dc;
+            {
+                int t;
+                t = i__dc;
+                {
+                }
+                j = (1 - 1);
+                while (((j + 1) <= 3)) {
+                    j = (j + 1);
+                    if ((t == 11)) {
+                        s = (s + j);
+                        __gpu_buf_s[((int)(1) - (1))] = s;
+                    }
+                }
+            }
+        }
+    }
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* __restrict__ __gpu_buf_k1,
+    int* __restrict__ __gpu_buf_m1,
+    int* __restrict__ __gpu_buf_s1,
+    int* __restrict__ a)
+{
+    int __flat_idx;
+    int i__dc;
+    int j;
+    int k;
+    int m;
+    int s;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 100)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    k = __gpu_buf_k1[((int)(1) - (1))];
+    m = __gpu_buf_m1[((int)(1) - (1))];
+    s = __gpu_buf_s1[((int)(1) - (1))];
+    a[((int)(i__dc) - (1))] = i__dc;
+    {
+        int t;
+        t = i__dc;
+        if ((t == 7)) {
+            k = 70;
+            __gpu_buf_k1[((int)(1) - (1))] = k;
+        }
+        {
+            if ((t == 9)) {
+                m = 90;
+                __gpu_buf_m1[((int)(1) - (1))] = m;
+            }
+        }
+        j = (1 - 1);
+        while (((j + 1) <= 3)) {
+            j = (j + 1);
+            if ((t == 11)) {
+                s = (s + j);
+                __gpu_buf_s1[((int)(1) - (1))] = s;
+            }
+        }
+    }
+}
+

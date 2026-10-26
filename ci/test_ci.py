@@ -36,6 +36,7 @@ class SmokeSelectionTests(unittest.TestCase):
         )
         compiler.chmod(0o755)
         cls.configurations = {}
+        cls.targets = {}
 
     def configure(self, backend, smoke=True, flags=()):
         key = (backend, smoke, flags)
@@ -64,6 +65,9 @@ class SmokeSelectionTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             names = {test["name"] for test in json.loads(result.stdout)["tests"]}
             calls = [json.loads(line) for line in compiler_log.read_text().splitlines()]
+            targets = (build / "CMakeFiles/TargetDirectories.txt").read_text()
+            self.targets[key] = {Path(line).name.removesuffix(".dir")
+                                 for line in targets.splitlines()}
             self.configurations[key] = (names, calls)
         return self.configurations[key]
 
@@ -95,6 +99,44 @@ class SmokeSelectionTests(unittest.TestCase):
         self.assertIn("expr_02_STD_F23_LLVM_GOC_DETECT_LEAKS_FAST", names)
         self.assertGreaterEqual(len(names), 200)
         self.assertLessEqual(len(names), 300)
+
+    def test_excluded_tests_are_removed_in_every_mode(self):
+        excluded = {"expr_02", "arrays_28"}
+        exclude = "-DLFORTRAN_EXCLUDE_TESTS=" + ";".join(sorted(excluded))
+        suffixes = r"(_STD_F23|_LLVM_GOC|_DETECT_LEAKS|_FAST)*$"
+        for flags in ((), ("-DFAST=ON", "-DSTD_F23=ON")):
+            with self.subTest(flags=flags):
+                full, _ = self.configure("llvm", flags=flags)
+                names, _ = self.configure("llvm", flags=(*flags, exclude))
+                removed = {n for n in full if re.sub(suffixes, "", n) in excluded}
+                self.assertEqual(len(removed), len(excluded))
+                self.assertEqual(names, full - removed)
+
+    def test_full_suite_exclusion_covers_run_and_compile(self):
+        # COMPILE tests create a target, not a ctest test.
+        compiled = "character_len_of_function_12614"
+        flags = (f"-DLFORTRAN_EXCLUDE_TESTS=real128_intrinsic_math_01;{compiled}",)
+        full, _ = self.configure("llvm", smoke=False)
+        names, _ = self.configure("llvm", smoke=False, flags=flags)
+        self.assertEqual(names, full - {"real128_intrinsic_math_01"})
+        target = f"{compiled}_lfortran"
+        self.assertIn(target, self.targets[("llvm", False, ())])
+        self.assertNotIn(target, self.targets[("llvm", False, flags)])
+
+    def test_excluded_configure_time_tests_are_not_compiled(self):
+        selected, _ = self.configure("wasm")
+        name = sorted(selected)[0]
+        names, calls = self.configure(
+            "wasm", flags=(f"-DLFORTRAN_EXCLUDE_TESTS={name}",))
+        compiled = [args for args in calls if any(arg.endswith(".f90") for arg in args)]
+        self.assertEqual(names, selected - {name})
+        self.assertEqual(len(compiled), len(names))
+
+    def test_unregistered_excluded_test_is_an_error(self):
+        with self.assertRaisesRegex(AssertionError,
+                "Excluded test is not registered: 'no_such_test_01'"):
+            self.configure("llvm", flags=(
+                "-DLFORTRAN_EXCLUDE_TESTS=expr_02;no_such_test_01",))
 
     def test_empty_selection_is_an_error(self):
         with self.assertRaisesRegex(AssertionError, "No smoke tests selected"):
@@ -255,6 +297,29 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual("--no-tests=error" in commands[-1], smoke)
                 self.assertLess(commands.index(configure), commands.index("make -j8"))
 
+    def test_exclude_option_reaches_cmake_configure(self):
+        spec = importlib.util.spec_from_file_location(
+            "integration_runner", INTEGRATION / "run_tests.py"
+        )
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with patch.object(sys, "argv", ["run_tests.py", "--exclude", "a_01", "-f",
+                                        "--exclude", "b_02"]):
+            exclude = runner.get_args().exclude
+        self.assertEqual(exclude, ["a_01", "b_02"])
+        for exclude in ([], ["a_01", "b_02"]):
+            with self.subTest(exclude=exclude), \
+                    tempfile.TemporaryDirectory() as build_dir, \
+                    patch.object(runner, "BUILD_DIR", Path(build_dir)), \
+                    patch.object(runner, "run_cmd") as command:
+                runner.run_test("llvm", "lf", exclude=exclude)
+                commands = [call.args[0] for call in command.call_args_list]
+                configure = next(cmd for cmd in commands if " cmake " in cmd)
+                if exclude:
+                    self.assertIn(shlex.quote("-DLFORTRAN_EXCLUDE_TESTS=a_01;b_02"), configure)
+                else:
+                    self.assertNotIn("LFORTRAN_EXCLUDE_TESTS", configure)
+
     def test_reference_build_dir_keeps_writes_out_of_source(self):
         sys.path.insert(0, str(ROOT / "src/libasr"))
         try:
@@ -390,6 +455,60 @@ class RunnerTests(unittest.TestCase):
             if line.startswith("##[group] ") and line != "##[group] Setup"
         ]
         self.assertEqual(selected, sections)
+
+
+class MPITransportTests(unittest.TestCase):
+    def test_linux_transports_are_shared_by_coarrays_and_applications(self):
+        workflows = ROOT / ".github/workflows"
+        source = (workflows / "Compiler-Compatibility-CI.yml").read_text()
+        job = source.split("\n  test_llvm:\n", 1)[1]
+        marker = "      - name: Configure Linux MPI transports\n"
+        self.assertTrue(marker in job, "Linux MPI transport setup is missing")
+        setup = job.split(marker, 1)[1].split("\n      - ", 1)[0]
+        condition = re.search(r"^\s*if: (.+)$", setup, re.MULTILINE).group(1)
+        self.assertEqual(condition, "runner.os == 'Linux'")
+        self.assertEqual(source.count("UCX_TLS="), 1)
+        for command in ("ci/test_caffeine.sh", "ci/test_third_party_codes.sh"):
+            self.assertLess(job.index(marker), job.index(command))
+        for scope, caller in (("quick", "Quick-Checks-CI.yml"),
+                              ("exhaustive", "Exhaustive-Checks-CI.yml")):
+            with self.subTest(scope=scope):
+                caller_source = (workflows / caller).read_text()
+                call = caller_source.split(
+                    "uses: ./.github/workflows/Compiler-Compatibility-CI.yml", 1
+                )[1].split("\n\n", 1)[0]
+                self.assertIn(f"scope: {scope}", call)
+                with tempfile.TemporaryDirectory() as workspace:
+                    github_env = Path(workspace) / "github-env"
+                    script = setup.split("        run: ", 1)[1]
+                    if script.startswith("|\n"):
+                        script = script[2:]
+                    result = subprocess.run(
+                        ["bash", "-e", "-o", "pipefail"],
+                        input=script,
+                        env=dict(os.environ, GITHUB_ENV=str(github_env),
+                                 LFORTRAN_CI_SCOPE=scope, UCX_TLS="all",
+                                 OMPI_MCA_pml="cm", OMPI_MCA_btl="ofi,uct"),
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    configured = dict(
+                        line.split("=", 1) for line in github_env.read_text().splitlines()
+                    )
+                    self.assertEqual(configured.get("UCX_TLS"), "tcp,sm,self")
+                    for parameter, value in (("OMPI_MCA_pml", "ob1"),
+                                             ("OMPI_MCA_btl", "tcp,sm,self")):
+                        with self.subTest(parameter=parameter):
+                            self.assertEqual(configured.get(parameter), value)
+
+    def test_fortran_mpi_uses_linux_loopback(self):
+        source = (ROOT / "ci/test_third_party_codes.sh").read_text()
+        linux = source.split('if [[ "$(uname)" != "Darwin" ]]; then', 1)[1]
+        mpi = linux.split("git clone https://github.com/lfortran/fortran_mpi.git", 1)[1]
+        mpi = mpi.split("FC=\"$FC --cpp\" ./run_tests.sh", 1)[0]
+        self.assertEqual(re.findall(
+            r"(?m)^\s*export OMPI_MCA_btl_tcp_if_include=(\S+)$", mpi
+        ), ["lo"])
 
 
 class WorkflowPolicyTests(unittest.TestCase):

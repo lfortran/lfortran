@@ -221,10 +221,10 @@
                                     []
                                     ()
                                 ),
-                            i:
+                            i__dc:
                                 (Variable
                                     5
-                                    i
+                                    i__dc
                                     []
                                     Local
                                     ()
@@ -407,9 +407,10 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
-                        (Var 5 i)
+                        (Var 5 i__dc)
                         (IntegerBinOp
                             (Var 5 __flat_idx)
                             Add
@@ -421,12 +422,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
                             (Var 5 a)
                             [(()
-                            (Var 5 i)
+                            (Var 5 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -447,7 +449,7 @@
                             Mul
                             (IntrinsicElementalFunction
                                 Real
-                                [(Var 5 i)]
+                                [(Var 5 i__dc)]
                                 0
                                 (Real 4)
                                 ()
@@ -459,12 +461,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
                             (Var 5 b)
                             [(()
-                            (Var 5 i)
+                            (Var 5 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -475,7 +478,7 @@
                             (ArrayItem
                                 (Var 5 b)
                                 [(()
-                                (Var 5 i)
+                                (Var 5 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -486,7 +489,7 @@
                             (ArrayItem
                                 (Var 5 a)
                                 [(()
-                                (Var 5 i)
+                                (Var 5 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -497,6 +500,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -819,6 +823,31 @@
                                     []
                                     ()
                                 ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             n:
                                 (Variable
                                     2
@@ -851,6 +880,7 @@
                         (Var 2 n)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -915,11 +945,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __gpu_loop_end)
                         (Var 2 n)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -952,6 +984,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1084,11 +1117,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr__created__var__0__idl_save_)
                         (Var 2 i)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1136,6 +1171,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __1__libasr_index_)
@@ -1150,6 +1186,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -1157,6 +1194,7 @@
                         (Var 2 i)
                         (Var 2 __libasr__created__var__0__idl_save_)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1221,11 +1259,13 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 __libasr__created__var__1__idl_save_)
                         (Var 2 i)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -1288,6 +1328,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (Var 2 __1__libasr_index_1)
@@ -1302,6 +1343,7 @@
                             .false.
                             .false.
                             .false.
+                            .false.
                         )]
                         []
                     )
@@ -1309,6 +1351,7 @@
                         (Var 2 i)
                         (Var 2 __libasr__created__var__1__idl_save_)
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.

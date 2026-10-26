@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a derived-type constant with component 'z', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these
+  --> tests/../integration_tests/gpu_decline_27.f90:23:5 - 25:10
+   |
+23 |        do concurrent (i = 1:size(o))
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+25 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived-type constant with component 'z', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these

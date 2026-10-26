@@ -8,13 +8,10 @@
                         6
                         {
                             is_finite:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     6
                                     is_finite
-                                    2 is_finite
-                                    inf_mod_1
-                                    []
-                                    is_finite
+                                    [6 is_finite_1@is_finite]
                                     Public
                                 ),
                             is_finite_1:
@@ -35,7 +32,7 @@
                                     inf_mod_1
                                     []
                                     is_finite_1
-                                    Public
+                                    Private
                                 )
                         })
                     bobyqa_exmp
@@ -109,13 +106,10 @@
                         4
                         {
                             is_finite:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     4
                                     is_finite
-                                    2 is_finite
-                                    inf_mod_1
-                                    []
-                                    is_finite
+                                    [4 is_finite_1@is_finite]
                                     Public
                                 ),
                             is_finite_1:
@@ -172,6 +166,8 @@
                                             ()
                                             [(Var 5 x)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -206,7 +202,7 @@
                                     inf_mod_1
                                     []
                                     is_finite_1
-                                    Public
+                                    Private
                                 )
                         })
                     infnan_mod_1

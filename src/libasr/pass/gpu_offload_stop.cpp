@@ -416,17 +416,16 @@ private:
     }
 };
 
-ASR::ttype_t* status_type(Allocator &al, const Location &loc, int64_t n,
-        bool with_extent) {
+ASR::ttype_t* status_type(Allocator &al, const Location &loc, int64_t n) {
     ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
     Vec<ASR::dimension_t> dims;
     dims.reserve(al, 1);
     ASR::dimension_t dim;
     dim.loc = loc;
-    dim.m_start = with_extent ? ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-        al, loc, 1, int4, ASR::integerbozType::Decimal)) : nullptr;
-    dim.m_length = with_extent ? ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-        al, loc, n, int4, ASR::integerbozType::Decimal)) : nullptr;
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, 1, int4, ASR::integerbozType::Decimal));
+    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+        al, loc, n, int4, ASR::integerbozType::Decimal));
     dims.push_back(al, dim);
     return ASRUtils::TYPE(ASR::make_Array_t(al, loc, int4, dims.p, dims.n,
         ASR::array_physical_typeType::FixedSizeArray,
@@ -545,10 +544,10 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
     ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
     // The buffer is the last parameter of the kernel. Its extent is only
-    // known once every site has been numbered.
+    // known once every site has been numbered, and is set below.
     ASR::symbol_t *status = append_dummy(al, loc, kernel,
-        "__gpu_stop_status", status_type(al, loc, 1, true),
-        status_type(al, loc, 1, false));
+        "__gpu_stop_status", status_type(al, loc, 1),
+        status_type(al, loc, 1));
     StopLowering lowering(al, loc, stopping, status);
 
     for (ASR::Function_t *fn : rewritten) {
@@ -583,14 +582,19 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
 
     int64_t n_sites = (int64_t)lowering.sites.size();
     ASR::down_cast<ASR::Variable_t>(status)->m_type =
-        status_type(al, loc, n_sites + 1, true);
+        status_type(al, loc, n_sites + 1);
+    // `append_dummy` made the kernel a signature of its own, so its last
+    // parameter is updated in place.
+    ASR::FunctionType_t *kernel_type = ASRUtils::get_FunctionType(kernel);
+    kernel_type->m_arg_types[kernel_type->n_arg_types - 1] =
+        status_type(al, loc, n_sites + 1);
 
     // The host side: the statement a thread recorded is run once the host
     // has waited for the launch. The status is cleared once, on entry to
     // the procedure that launches the kernel (see gpu_launch_sync.cpp).
     stops.host_status = gpu_new_variable(al, loc, host_scope,
         host_scope->get_unique_name("__gpu_stop_status"),
-        status_type(al, loc, n_sites + 1, true));
+        status_type(al, loc, n_sites + 1));
     auto host_item = [&](int64_t index) {
         Vec<ASR::array_index_t> args;
         args.reserve(al, 1);

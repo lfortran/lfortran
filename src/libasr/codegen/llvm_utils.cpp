@@ -316,7 +316,8 @@ namespace LCompilers {
         return allocator_instance;
     }
 
-    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank)
+    llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank,
+        llvm::Value* dtio_unit, llvm::Value* n_dtio, llvm::Value* dtio_procs)
     {
         llvm::Function *fn_printf = LLVM::get_or_declare_function(
             *module, "_lcompilers_string_format_fortran",
@@ -330,7 +331,10 @@ namespace LCompilers {
             i32,
             i32,
             i32,
-            i32}, true);
+            i32,
+            i32, // dtio_unit
+            i32, // n_dtio
+            i8_ptr->getPointerTo()}, true); // dtio_procs
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
@@ -354,6 +358,12 @@ namespace LCompilers {
             full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         }
         full_args.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), leading_blank));
+        full_args.push_back(dtio_unit ? dtio_unit :
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+        full_args.push_back(n_dtio ? n_dtio :
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+        full_args.push_back(dtio_procs ? dtio_procs : llvm::ConstantPointerNull::get(
+            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo()));
         for (size_t i = 6; i < args.size(); i++) {
             full_args.push_back(args[i]);
         }

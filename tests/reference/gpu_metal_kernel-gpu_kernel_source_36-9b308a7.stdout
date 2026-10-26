@@ -14,12 +14,12 @@ kernel void __lfortran_gpu_kernel_0(
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
-    int i;
+    int i__dc4;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
-    y[((int)(i) - (1))] = (((float)2) * x[((int)(i) - (1))]);
+    i__dc4 = (__flat_idx + 1);
+    y[((int)(i__dc4) - (1))] = (((float)2) * x[((int)(i__dc4) - (1))]);
 }
 

@@ -1,9 +1,12 @@
 add_library(doctest STATIC doctest.cpp)
 add_library(p::doctest ALIAS doctest)
 
-add_executable(test_gpu_cuda_api_state test_gpu_cuda_api_state.cpp)
+# The production CUDA runtime on the CPU emulation of the CUDA runtime API,
+# whose cuda_runtime.h the include path has to find.
+add_executable(test_gpu_cuda_api_state test_gpu_cuda_api_state.cpp
+    ../libasr/runtime/cuda_cpu/cuda_cpu_runtime.c)
 target_include_directories(test_gpu_cuda_api_state PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/cuda_api_test_double")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libasr/runtime/cuda_cpu")
 add_test(NAME test_gpu_cuda_api_state COMMAND test_gpu_cuda_api_state)
 add_test(NAME test_gpu_cuda_api_state_read_only
     COMMAND test_gpu_cuda_api_state read-only)
@@ -15,6 +18,18 @@ add_test(NAME test_gpu_cuda_api_state_discard_read_only
     COMMAND test_gpu_cuda_api_state discard read-only)
 add_test(NAME test_gpu_cuda_api_state_discard_resident
     COMMAND test_gpu_cuda_api_state discard resident)
+add_test(NAME test_gpu_cuda_api_state_discard_fill
+    COMMAND test_gpu_cuda_api_state discard-fill)
+add_test(NAME test_gpu_cuda_api_state_failed_free
+    COMMAND test_gpu_cuda_api_state failed-free)
+set_tests_properties(test_gpu_cuda_api_state_failed_free PROPERTIES
+    PASS_REGULAR_EXPRESSION "lfortran_gpu: cudaFree failed: invalid argument")
+add_test(NAME test_gpu_cuda_api_state_no_device
+    COMMAND test_gpu_cuda_api_state no-device)
+set_tests_properties(test_gpu_cuda_api_state_no_device PROPERTIES
+    PASS_REGULAR_EXPRESSION
+        "lfortran_gpu: cudaSetDevice failed: no CUDA-capable device is detected"
+    FAIL_REGULAR_EXPRESSION "returned without a device")
 foreach(case IN ITEMS wide-first narrow-first same-size nonalias read-prefix
         read-same zero-size repeat discard-narrow-first discard-read-prefix
         discard-read-same discard-repeat discard-read-before-write)

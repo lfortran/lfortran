@@ -5,6 +5,7 @@
 #include <libasr/codegen/asr_to_c_cpp.h>
 #include <libasr/codegen/asr_to_fortran.h>
 
+#include <map>
 #include <set>
 
 using LCompilers::ASR::is_a;
@@ -58,6 +59,10 @@ public:
 
     // True while emitting component declarations inside a derived type definition.
     bool in_struct_member_declaration = false;
+
+    // The names the imports of specific procedures are declared under, see
+    // `import_name`.
+    std::map<const ASR::symbol_t*, std::string> import_names;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -149,15 +154,60 @@ public:
         }
     }
 
+    // Whether `x` is an import of a specific procedure of a generic, such as
+    // `f@g`, whose name is not a Fortran name.
+    static bool is_specific_import(const ASR::ExternalSymbol_t &x) {
+        return std::string(x.m_name).find('@') != std::string::npos
+            && std::string(x.m_original_name).find('@') == std::string::npos
+            && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_external));
+    }
+
+    // The name the import `x` is declared under. An import of a specific
+    // procedure takes the procedure's own name, unless its scope or a host
+    // has another entity of that name.
+    std::string import_name(const ASR::ExternalSymbol_t &x) {
+        if (!is_specific_import(x)) {
+            return x.m_name;
+        }
+        const ASR::symbol_t *sym = (const ASR::symbol_t*)&x;
+        auto it = import_names.find(sym);
+        if (it != import_names.end()) {
+            return it->second;
+        }
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(x.m_external);
+        auto taken = [&](const std::string &name) {
+            ASR::symbol_t *s = x.m_parent_symtab->resolve_symbol(name);
+            if (s != nullptr && ASRUtils::symbol_get_past_external(s) != target) {
+                return true;
+            }
+            for (auto &[other, other_name] : import_names) {
+                const ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(other);
+                if (other_name == name && ASRUtils::symbol_get_past_external(e->m_external) != target
+                        && ASRUtils::is_symbol_of_scope_chain(x.m_parent_symtab,
+                            const_cast<ASR::symbol_t*>(other))) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        std::string name = x.m_original_name;
+        for (int i = 1; taken(name); i++) {
+            name = std::string(x.m_original_name) + "_" + std::to_string(i);
+        }
+        import_names[sym] = name;
+        return name;
+    }
+
     // The name a call spells for procedure `sym`: an import's local name,
     // which is what the scope of the call declares (`use m, only: g => f`
     // calls `g`), and the procedure's own name otherwise.
     std::string call_name(ASR::symbol_t *sym) {
         if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
-            std::string local = ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_name;
-            // An internal helper is not imported under its own name; see
-            // `visit_ExternalSymbol`.
-            if (local.find('@') == std::string::npos) return local;
+            ASR::ExternalSymbol_t *x = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+            if (std::string(x->m_name).find('@') == std::string::npos
+                    || is_specific_import(*x)) {
+                return import_name(*x);
+            }
         }
         return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sym));
     }
@@ -1008,7 +1058,7 @@ public:
         r += indent;
         r += "module procedure ";
         for (size_t i = 0; i < x.n_procs; i++) {
-            r += ASRUtils::symbol_name(x.m_procs[i]);
+            r += call_name(x.m_procs[i]);
             if (i < x.n_procs-1) r += ", ";
         }
         dec_indent();
@@ -1026,15 +1076,16 @@ public:
         // Ensure no stale output leaks when this symbol does not emit a use line.
         src.clear();
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
-        if (std::string(x.m_name).find('@') != std::string::npos ||
+        if ((std::string(x.m_name).find('@') != std::string::npos && !is_specific_import(x)) ||
             std::string(x.m_original_name).find('@') != std::string::npos) {
             return;
         }
+        std::string local_name = import_name(x);
         auto append_import_name = [&](std::string &out) {
-            if (std::strcmp(x.m_name, x.m_original_name) == 0) {
-                out += std::string(x.m_name);
+            if (local_name == x.m_original_name) {
+                out += local_name;
             } else {
-                out += std::string(x.m_name);
+                out += local_name;
                 out += " => ";
                 out += std::string(x.m_original_name);
             }
@@ -1076,8 +1127,8 @@ public:
                 // Long names do not fit on a line; break it between tokens,
                 // where a continuation needs no leading ampersand.
                 std::string cont = "&\n" + indent + std::string(2 * indent_spaces, ' ');
-                src += cont + x.m_name;
-                if (std::strcmp(x.m_name, x.m_original_name) != 0) {
+                src += cont + local_name;
+                if (local_name != x.m_original_name) {
                     src += " => " + cont + std::string(x.m_original_name);
                 }
             } else {
@@ -2517,7 +2568,11 @@ public:
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         std::string r = "";
-        if (x.m_original_name) {
+        // A call through a generic or an operator calls its specific.
+        if (x.m_original_name && !ASR::is_a<ASR::GenericProcedure_t>(
+                    *ASRUtils::symbol_get_past_external(x.m_original_name))
+                && !ASR::is_a<ASR::CustomOperator_t>(
+                    *ASRUtils::symbol_get_past_external(x.m_original_name))) {
             r += ASRUtils::symbol_name(x.m_original_name);
         } else {
             if (x.m_dt) {
@@ -2731,10 +2786,38 @@ public:
         visit_TypeInquiry_helper(out, intrinsic_func_name, x);
     }
 
-    void visit_IntrinsicArrayFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicArrayFunction_t &x) {
-        out += func_name;
-        visit_expr(*x.m_args[0]);
-        out += "(" + src;
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
+        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
+        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
+        std::string out = intrinsic_func_name + "(";
+        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
+            // A scalar `source` is stored as a one element array (verified
+            // by `Spread::verify_args`): `[source]`, or a temporary holding
+            // it once a pass moved the array constructor out. Print its
+            // element, `spread([source], ...)` would have rank 2.
+            ASR::expr_t* source = x.m_args[0];
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*source)) {
+                source = ASR::down_cast<ASR::ArrayPhysicalCast_t>(source)->m_arg;
+            }
+            if (ASR::is_a<ASR::ArrayConstant_t>(*source)) {
+                out += array_constant_element(
+                    *ASR::down_cast<ASR::ArrayConstant_t>(source), 0);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*source)) {
+                visit_expr(*ASR::down_cast<ASR::ArrayConstructor_t>(source)->m_args[0]);
+                out += src;
+            } else if (ASR::is_a<ASR::Var_t>(*source)) {
+                visit_expr(*source);
+                out += src + "(1)";
+            } else {
+                throw CodeGenError("`spread` of a scalar `source` held in "
+                    "this kind of expression is not supported yet",
+                    x.base.base.loc);
+            }
+        } else {
+            visit_expr(*x.m_args[0]);
+            out += src;
+        }
         for (size_t i = 1; i < x.n_args; i++) {
             out += ", ";
             visit_expr(*x.m_args[i]);
@@ -2742,24 +2825,6 @@ public:
         }
         out += ")";
         src = out;
-    }
-
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
-        std::string out;
-        std::string intrinsic_func_name = ASRUtils::get_array_intrinsic_name(static_cast<int64_t>(x.m_arr_intrinsic_id));
-        if(intrinsic_func_name == "DotProduct") intrinsic_func_name = "dot_product";
-        if(intrinsic_func_name == "Reduce") intrinsic_func_name = "reduce";
-        if(intrinsic_func_name == "Spread" && x.m_overload_id == -1){
-            ASR::ArrayPhysicalCast_t *arr_physical = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[0]);
-            if(ASR::is_a<ASR::ArrayConstant_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstant_t *arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_physical->m_arg);
-                x.m_args[0] = ASRUtils::fetch_ArrayConstant_value(al, arr_const, 0);
-            } else if(ASR::is_a<ASR::ArrayConstructor_t>(*arr_physical->m_arg)){
-                ASR::ArrayConstructor_t *arr_const = ASR::down_cast<ASR::ArrayConstructor_t>(arr_physical->m_arg);
-                x.m_args[0] = arr_const->m_args[0];
-            }
-        }
-        visit_IntrinsicArrayFunction_helper(out, intrinsic_func_name, x);
     }
 
     void visit_IntrinsicImpureFunction_helper(std::string &out, std::string func_name, const ASR::IntrinsicImpureFunction_t &x) {

@@ -681,18 +681,22 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
                 ASR::array_physical_typeType::FixedSizeArray &&
                 ASRUtils::extract_physical_type(x->m_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
-                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(x->m_type);
-                Vec<ASR::dimension_t> empty_dims; empty_dims.reserve(al, n_dims);
-                for( size_t i = 0; i < n_dims; i++ ) {
-                    ASR::dimension_t empty_dim;
-                    empty_dim.loc = x->base.base.loc;
-                    empty_dim.m_start = nullptr;
-                    empty_dim.m_length = nullptr;
-                    empty_dims.push_back(al, empty_dim);
+                // A result of constant shape is stored inline like its
+                // source. One whose shape is only known at run time cannot
+                // be, so it is reshaped from a descriptor of the source.
+                if( ASRUtils::is_fixed_size_array(x->m_type) ) {
+                    x->m_type = ASRUtils::duplicate_type(al, x->m_type, nullptr,
+                        ASR::array_physical_typeType::FixedSizeArray, true);
+                } else {
+                    ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_array);
+                    x->m_array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                        al, x->m_array->base.loc, x->m_array,
+                        ASR::array_physical_typeType::FixedSizeArray,
+                        ASR::array_physical_typeType::DescriptorArray,
+                        ASRUtils::duplicate_type(al, array_type, nullptr,
+                            ASR::array_physical_typeType::DescriptorArray, true),
+                        nullptr));
                 }
-                x->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, x->base.base.loc,
-                    ASRUtils::extract_type(x->m_type), empty_dims.p, empty_dims.size(),
-                    ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
             }
         }
 };

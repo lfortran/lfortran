@@ -197,6 +197,8 @@
                                                 ()
                                             )]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -585,6 +587,7 @@
                                                 .false.
                                                 .false.
                                                 .false.
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -668,6 +671,7 @@
                                                     ()
                                                     .false.
                                                 )
+                                                .false.
                                                 .false.
                                                 .false.
                                                 .false.
@@ -960,6 +964,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -984,6 +989,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -1005,6 +1011,7 @@
                                             )
                                             (Var 13 second)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.
@@ -1034,6 +1041,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -1057,6 +1065,7 @@
                                             )
                                             (Var 13 zone)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.
@@ -1340,6 +1349,8 @@
                                                     ()
                                                 )]
                                                 FormatFortran
+                                                []
+                                                ()
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1396,6 +1407,8 @@
                                                     ()
                                                 )]
                                                 FormatFortran
+                                                []
+                                                ()
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1454,6 +1467,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                             .false.
@@ -1940,13 +1954,10 @@
                         2
                         {
                             convert_raw:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     2
                                     convert_raw
-                                    4 convert_raw
-                                    tomlf_utils_convert
-                                    []
-                                    convert_raw
+                                    [2 toml_raw_to_timestamp@convert_raw]
                                     Public
                                 ),
                             new_toml_time@~toml_time:
@@ -1957,7 +1968,7 @@
                                     tomlf_datetime
                                     []
                                     new_toml_time
-                                    Public
+                                    Private
                                 ),
                             toml_date:
                                 (ExternalSymbol
@@ -1989,6 +2000,16 @@
                                     toml_raw_to_timestamp
                                     Public
                                 ),
+                            toml_raw_to_timestamp@convert_raw:
+                                (ExternalSymbol
+                                    2
+                                    toml_raw_to_timestamp@convert_raw
+                                    4 toml_raw_to_timestamp
+                                    tomlf_utils_convert
+                                    []
+                                    toml_raw_to_timestamp
+                                    Private
+                                ),
                             toml_time:
                                 (ExternalSymbol
                                     2
@@ -2000,13 +2021,10 @@
                                     Public
                                 ),
                             ~toml_time:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     2
                                     ~toml_time
-                                    7 ~toml_time
-                                    tomlf_datetime
-                                    []
-                                    ~toml_time
+                                    [2 new_toml_time@~toml_time]
                                     Public
                                 )
                         })
@@ -2039,7 +2057,7 @@
                                     tomlf_datetime
                                     []
                                     new_toml_time
-                                    Public
+                                    Private
                                 ),
                             toml_date:
                                 (ExternalSymbol
@@ -2314,6 +2332,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -2350,6 +2369,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 stat)
@@ -2361,6 +2381,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -2382,13 +2403,10 @@
                                     Public
                                 ),
                             ~toml_time:
-                                (ExternalSymbol
+                                (GenericProcedure
                                     4
                                     ~toml_time
-                                    7 ~toml_time
-                                    tomlf_datetime
-                                    []
-                                    ~toml_time
+                                    [4 new_toml_time@~toml_time]
                                     Public
                                 )
                         })

@@ -245,7 +245,9 @@ end program
     dimension.m_parameter = parameter;
 
     ASR::expr_t *extent = dimension.m_extent;
-    ASR::symbol_t *index = kernel->m_symtab->get_symbol("i");
+    // The DO CONCURRENT index-name `i` has construct scope, so semantics
+    // gives it its own variable `i__dc`.
+    ASR::symbol_t *index = kernel->m_symtab->get_symbol("i__dc");
     REQUIRE(index != nullptr);
     dimension.m_extent = ASRUtils::EXPR(
         ASR::make_Var_t(allocator, extent->base.loc, index));

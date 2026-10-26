@@ -186,6 +186,7 @@
                                                         .false.
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 13 build_dirs)
@@ -211,6 +212,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                         .false.
                                                         .false.
@@ -819,26 +821,24 @@
                                             (Var 10 targets)
                                             DescriptorArray
                                             PointerArray
-                                            (Allocatable
-                                                (Array
-                                                    (StructType
-                                                        [(Pointer
-                                                            (StructType
-                                                                []
-                                                                []
-                                                                .true.
-                                                                .false.
-                                                            )
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    [(()
-                                                    ())]
-                                                    PointerArray
-                                                    Global
+                                            (Array
+                                                (StructType
+                                                    [(Pointer
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
                                                 )
+                                                [(()
+                                                ())]
+                                                PointerArray
+                                                Global
                                             )
                                             ()
                                         ))

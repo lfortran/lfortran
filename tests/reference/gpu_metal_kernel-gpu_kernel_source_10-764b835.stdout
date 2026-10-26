@@ -14,23 +14,23 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id [[thread_position_in_grid]])
 {
     int __flat_idx;
-    int i;
+    int i__dc;
     float multiply_add_result;
     if ((((0 * 0) + __thread_id) >= 4)) {
         return;
     }
     __flat_idx = ((0 * 0) + __thread_id);
-    i = (__flat_idx + 1);
-    y[((int)(i) - (1))] = ((x[((int)(i) - (1))] *   2.00000000000000000e+00) +   1.00000000000000000e+00);
+    i__dc = (__flat_idx + 1);
+    y[((int)(i__dc) - (1))] = ((x[((int)(i__dc) - (1))] *   2.00000000000000000e+00) +   1.00000000000000000e+00);
     {
         float a;
         float b;
         float multiply_add_1;
-        a = x[((int)(i) - (1))];
+        a = x[((int)(i__dc) - (1))];
         b =   2.00000000000000000e+00;
         multiply_add_1 = ((a * b) +   1.00000000000000000e+00);
         multiply_add_result = multiply_add_1;
     }
-    z[((int)(i) - (1))] = multiply_add_result;
+    z[((int)(i__dc) - (1))] = multiply_add_result;
 }
 

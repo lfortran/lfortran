@@ -17,6 +17,16 @@
                                     bin_add
                                     Public
                                 ),
+                            bin_add@~add:
+                                (ExternalSymbol
+                                    5
+                                    bin_add@~add
+                                    2 bin_add
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    bin_add
+                                    Private
+                                ),
                             f:
                                 (Variable
                                     5
@@ -58,6 +68,16 @@
                                     logical_and
                                     Public
                                 ),
+                            logical_and@~mul:
+                                (ExternalSymbol
+                                    5
+                                    logical_and@~mul
+                                    2 logical_and
+                                    operator_overloading_01_overload_asterisk_m
+                                    []
+                                    logical_and
+                                    Private
+                                ),
                             t:
                                 (Variable
                                     5
@@ -90,23 +110,17 @@
                                     ()
                                 ),
                             ~add:
-                                (ExternalSymbol
+                                (CustomOperator
                                     5
                                     ~add
-                                    2 ~add
-                                    operator_overloading_01_overload_asterisk_m
-                                    []
-                                    ~add
+                                    [5 bin_add@~add]
                                     Public
                                 ),
                             ~mul:
-                                (ExternalSymbol
+                                (CustomOperator
                                     5
                                     ~mul
-                                    2 ~mul
-                                    operator_overloading_01_overload_asterisk_m
-                                    []
-                                    ~mul
+                                    [5 logical_and@~mul]
                                     Public
                                 )
                         })
@@ -126,7 +140,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
+                                    5 logical_and@~mul
                                     5 ~mul
                                     [((Var 5 t))
                                     ((Var 5 t))]
@@ -136,6 +150,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -156,7 +172,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
+                                    5 logical_and@~mul
                                     5 ~mul
                                     [((Var 5 t))
                                     ((Var 5 f))]
@@ -166,6 +182,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -186,7 +204,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
+                                    5 logical_and@~mul
                                     5 ~mul
                                     [((Var 5 f))
                                     ((Var 5 t))]
@@ -196,6 +214,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -216,7 +236,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 logical_and
+                                    5 logical_and@~mul
                                     5 ~mul
                                     [((Var 5 f))
                                     ((Var 5 f))]
@@ -226,6 +246,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -246,7 +268,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
+                                    5 bin_add@~add
                                     5 ~add
                                     [((Var 5 t))
                                     ((Var 5 t))]
@@ -256,6 +278,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -276,7 +300,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
+                                    5 bin_add@~add
                                     5 ~add
                                     [((Var 5 t))
                                     ((Var 5 f))]
@@ -286,6 +310,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -306,7 +332,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
+                                    5 bin_add@~add
                                     5 ~add
                                     [((Var 5 f))
                                     ((Var 5 t))]
@@ -316,6 +342,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -336,7 +364,7 @@
                                 (Logical 4)
                                 ()
                                 (FunctionCall
-                                    5 bin_add
+                                    5 bin_add@~add
                                     5 ~add
                                     [((Var 5 f))
                                     ((Var 5 f))]
@@ -346,6 +374,8 @@
                                 )
                             )]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )
@@ -476,6 +506,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         [(If
                                             ()
@@ -501,11 +532,13 @@
                                                 .false.
                                                 .false.
                                                 .false.
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 4 bin_add)
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ()
+                                                .false.
                                                 .false.
                                                 .false.
                                                 .false.
@@ -629,6 +662,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

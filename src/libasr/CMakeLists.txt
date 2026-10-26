@@ -50,6 +50,7 @@ set(SRC
     pass/function_result_scope.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
+    pass/dtio_callbacks.cpp
     pass/array_passed_in_function_call.cpp
     pass/string_length_arguments.cpp
     pass/string_format_array_args.cpp
@@ -103,6 +104,7 @@ set(SRC
     pass/gpu_offload_body.cpp
     pass/gpu_offload_decide.cpp
     pass/gpu_offload_launch.cpp
+    pass/gpu_offload_liveout.cpp
     pass/gpu_offload_overwrite.cpp
     pass/gpu_offload_host_association.cpp
     pass/gpu_offload_privatize.cpp
@@ -231,25 +233,29 @@ install(
     DESTINATION ${CMAKE_INSTALL_PREFIX}/share/lfortran
 )
 
+# Relative to runtime/. The CPU emulation of the CUDA runtime API (cuda_cpu/)
+# keeps its own directory, which holds its cuda_runtime.h.
 set(LFORTRAN_GPU_RUNTIME_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_metal.m
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cuda.cu
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_cpu.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/cuda_cpu_device.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/lfortran_gpu_runtime.h
+    lfortran_gpu_metal.m
+    lfortran_gpu_cuda.c
+    lfortran_gpu_runtime.h
+    cuda_cpu/cuda_runtime.h
+    cuda_cpu/cuda_cpu_runtime.c
+    cuda_cpu/cuda_cpu_device.h
+    cuda_cpu/cuda_cpu_emulator.h
 )
 
 # The driver compiles these sources when linking GPU programs. Keep the
 # build-tree and installed layouts consistent with its runtime lookup path.
 if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
     set(LFORTRAN_GPU_RUNTIME_COPIES)
-    foreach(source IN LISTS LFORTRAN_GPU_RUNTIME_SOURCES)
-        get_filename_component(name "${source}" NAME)
+    foreach(name IN LISTS LFORTRAN_GPU_RUNTIME_SOURCES)
+        set(source "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${name}")
         set(destination "${CMAKE_CURRENT_BINARY_DIR}/runtime/${name}")
+        get_filename_component(destination_dir "${destination}" DIRECTORY)
         add_custom_command(
             OUTPUT "${destination}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory
-                "${CMAKE_CURRENT_BINARY_DIR}/runtime"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${destination_dir}"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${source}" "${destination}"
             DEPENDS "${source}"
@@ -269,5 +275,8 @@ if (LFORTRAN_GPU_RUNTIME_INSTALL_PARENT)
 else()
     set(LFORTRAN_GPU_RUNTIME_INSTALL_DIR "libasr/runtime")
 endif()
-install(FILES ${LFORTRAN_GPU_RUNTIME_SOURCES}
-    DESTINATION ${LFORTRAN_GPU_RUNTIME_INSTALL_DIR})
+foreach(name IN LISTS LFORTRAN_GPU_RUNTIME_SOURCES)
+    get_filename_component(subdir "${name}" DIRECTORY)
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/runtime/${name}"
+        DESTINATION "${LFORTRAN_GPU_RUNTIME_INSTALL_DIR}/${subdir}")
+endforeach()

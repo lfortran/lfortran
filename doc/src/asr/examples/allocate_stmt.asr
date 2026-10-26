@@ -169,6 +169,36 @@
                 :type nil
               )
             ]
+            :shape_differs (IntegerCompare
+              :left (ArraySize
+                :v (Var
+                  :v (SymbolRef 1 "a")
+                )
+                :dim (IntegerConstant
+                  :n 1
+                  :type (Integer
+                    :kind 4
+                  )
+                  :intboz_type :Decimal
+                )
+                :type (Integer
+                  :kind 4
+                )
+                :value nil
+              )
+              :op :NotEq
+              :right (IntegerConstant
+                :n 20
+                :type (Integer
+                  :kind 4
+                )
+                :intboz_type :Decimal
+              )
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
           )
           (ExplicitDeallocate
             :vars [

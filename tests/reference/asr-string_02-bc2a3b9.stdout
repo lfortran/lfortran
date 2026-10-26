@@ -120,6 +120,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 firstname)
@@ -128,6 +129,7 @@
                             (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -142,6 +144,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 greetings)
@@ -150,6 +153,7 @@
                             (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -165,6 +169,8 @@
                             (Var 2 firstname)
                             (Var 2 surname)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

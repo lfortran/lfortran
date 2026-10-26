@@ -161,6 +161,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 eq)
                                     Public
@@ -311,6 +312,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 ne)
@@ -320,6 +322,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -489,6 +492,16 @@
                                     map_s_iter_equal
                                     Public
                                 ),
+                            map_s_iter_equal@~eq:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_equal@~eq
+                                    2 map_s_iter_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_equal
+                                    Private
+                                ),
                             map_s_iter_not_equal:
                                 (ExternalSymbol
                                     6
@@ -498,6 +511,16 @@
                                     []
                                     map_s_iter_not_equal
                                     Public
+                                ),
+                            map_s_iter_not_equal@~noteq:
+                                (ExternalSymbol
+                                    6
+                                    map_s_iter_not_equal@~noteq
+                                    2 map_s_iter_not_equal
+                                    gftl2_integer32complex32map
+                                    []
+                                    map_s_iter_not_equal
+                                    Private
                                 ),
                             map_setiterator:
                                 (ExternalSymbol
@@ -510,23 +533,17 @@
                                     Public
                                 ),
                             ~eq:
-                                (ExternalSymbol
+                                (CustomOperator
                                     6
                                     ~eq
-                                    2 ~eq
-                                    gftl2_integer32complex32map
-                                    []
-                                    ~eq
+                                    [6 map_s_iter_equal@~eq]
                                     Public
                                 ),
                             ~noteq:
-                                (ExternalSymbol
+                                (CustomOperator
                                     6
                                     ~noteq
-                                    2 ~noteq
-                                    gftl2_integer32complex32map
-                                    []
-                                    ~noteq
+                                    [6 map_s_iter_not_equal@~noteq]
                                     Public
                                 )
                         })
@@ -544,6 +561,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -557,6 +575,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (If
                         ()
@@ -567,7 +586,7 @@
                             (Logical 4)
                             ()
                             (FunctionCall
-                                6 map_s_iter_not_equal
+                                6 map_s_iter_not_equal@~noteq
                                 6 ~noteq
                                 [((Var 6 iter1))
                                 ((Var 6 iter2))]

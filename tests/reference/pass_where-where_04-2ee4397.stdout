@@ -105,6 +105,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 absdiff)
@@ -113,6 +114,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -246,6 +248,7 @@
                                             .false.
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -336,6 +339,8 @@
                                             ()
                                             [(Var 3 reldiff)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -428,6 +433,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

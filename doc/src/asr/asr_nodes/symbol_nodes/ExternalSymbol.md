@@ -40,6 +40,11 @@ named `f` into the using scope, pointing at the real symbol in `m`. Every
 reference in that scope then names the local **ExternalSymbol**, so every
 symbol a program unit refers to is reachable from its own symbol table.
 
+A generic procedure or an operator is not imported as an **ExternalSymbol**;
+the using scope gets its own node for it. Its specific procedures are imported
+as private **ExternalSymbol**s named `<specific>@<generic>`, such as
+`show_int@show`. See [GenericProcedure](GenericProcedure.md).
+
 ## Examples
 
 ```clojure

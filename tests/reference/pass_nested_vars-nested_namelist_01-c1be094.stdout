@@ -295,6 +295,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 x)
@@ -306,6 +307,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 i_nested_ctx)
@@ -314,11 +316,13 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 x_nested_ctx)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -337,11 +341,13 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 x)
                                         (Var 3 x_nested_ctx)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.

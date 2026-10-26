@@ -67,6 +67,13 @@ task limits such as "local only" or "do not push" take precedence. Requests to
 triage, reproduce, review, plan, or discuss an example prompt select their
 corresponding skills rather than starting issue fixes.
 
+## Release Workflow
+
+When the user asks to make, cut, or publish an LFortran release, load and
+follow [make-release](.agents/skills/make-release/SKILL.md). Invoking it
+authorizes the tag, the downstream PRs, and the fix PRs it describes; only
+the green tip of `main` may be released.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -100,6 +107,7 @@ Available skills:
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
+| `make-release` | Release the green tip of `main`: tag with generated notes, verify the tarball, update the conda-forge feedstock (patches upstreamed afterwards) and lfortran-conda-testing, and turn regressions into issues and fix PRs |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
 enhancements, new features, and maintenance or internal-correctness work.

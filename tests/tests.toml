@@ -32,6 +32,30 @@ filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/realloc_one_object.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/realloc_shape_differs_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_fixed_size_constant_dims.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/allocatable_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/pointer_array_descriptor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/variable_assumed_size_descriptor.asr"
+asr = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true
@@ -1670,6 +1694,18 @@ run = true
 filename = "finalize_01.f90"
 pass = "intent_out_deallocate"
 llvm = true
+
+[[test]]
+filename = "allocate_on_assignment_01.f90"
+pass = "allocate_on_assignment"
+
+[[test]]
+filename = "allocate_on_assignment_02.f90"
+pass = "allocate_on_assignment"
+
+[[test]]
+filename = "allocate_on_assignment_03.f90"
+pass = "allocate_on_assignment"
 
 [[test]]
 filename = "finalize_02.f90"
@@ -4679,6 +4715,93 @@ filename = "../integration_tests/gpu_decline_19.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_20.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_21.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_25.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_26.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_27.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_28.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_29.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_30.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_31.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_34.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_35.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_36.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_37.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_38.f90"
+gpu_offload_cuda = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_decline_40.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_41.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_42.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_43.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_44.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_45.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_46.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -5026,6 +5149,66 @@ gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_liveout_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_03.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_04.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_derived_component_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_05.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_06.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_08.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_09.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_10.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_liveout_15.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -5339,6 +5522,15 @@ fortran = true
 [[test]]
 filename = "real_to_real_cast_fortran_codegen.f90"
 fortran = true
+
+[[test]]
+filename = "spread_scalar_fortran_codegen.f90"
+fortran = true
+
+[[test]]
+filename = "spread_scalar_fortran_codegen_implied_do_loops.f90"
+fortran = true
+pass = "implied_do_loops"
 
 [[test]]
 filename = "int_to_int_cast_fortran_codegen.f90"
@@ -6439,6 +6631,12 @@ options = "--coarray=true"
 filename = "asr/verify/call_actual_type_mismatch.asr"
 asr = true
 
+# A StorageSize intrinsic without a compile-time value must have a character
+# argument; every other storage_size is a TypeInquiry.
+[[test]]
+filename = "asr/verify/storage_size_noncharacter_argument.asr"
+asr = true
+
 [[test]]
 filename = "asr/verify/call_rank_mismatch.asr"
 asr = true
@@ -6461,6 +6659,14 @@ asr = true
 
 [[test]]
 filename = "asr/verify/assignment_move_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_nonallocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_new_allocation_new_target.asr"
 asr = true
 
 [[test]]
@@ -6816,6 +7022,18 @@ filename = "asr/verify/associate_pointer_bounds_descriptor_target.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/debug_check_array_bounds_arrays.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_dimension.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/debug_check_array_bounds_extent_type.asr"
+asr = true
+
+[[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
 
@@ -6833,6 +7051,10 @@ run = true
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_04.f90"
+run = true
+
+[[test]]
+filename = "errors/realloc_lhs_fn_result_05.f90"
 run = true
 
 [[test]]
@@ -6941,6 +7163,15 @@ filename = "errors/system_clock_f23_01.f90"
 semantics_only_cc = true
 options = "--std=f23"
 
+[[test]]
+filename = "errors/structure_constructor_f23_01.f90"
+semantics_only_cc = true
+options = "--std=f23"
+
+[[test]]
+filename = "warnings/structure_constructor_01.f90"
+semantics_only_cc = true
+
 # The rank-mismatch warning for an array passed to a scalar dummy.
 [[test]]
 filename = "../integration_tests/legacy_array_sections_26.f90"
@@ -6963,3 +7194,16 @@ options = "--legacy-array-sections"
 filename = "errors/legacy_array_sections_pointer_element_01.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"
+
+[[test]]
+filename = "asr/verify/spread_scalar_source.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/spread_scalar_source_rank.asr"
+asr = true
+
+# A function reference is not a designator and cannot be subscripted.
+[[test]]
+filename = "errors/func_result_subscript_01.f90"
+semantics_only_cc = true

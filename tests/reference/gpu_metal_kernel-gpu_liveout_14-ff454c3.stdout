@@ -1,0 +1,85 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct model_t {
+    float coef[3];
+    float s;
+};
+
+struct poly_t {
+    float c1;
+    float s;
+};
+
+inline void eval_gpu_14(float x, thread float& y) {
+    y = (((float)2) * x);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device model_t& m [[buffer(0)]],
+    device float* x [[buffer(1)]],
+    device float* y [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    float __gpu_scalar_argument;
+    int i__dc;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i__dc = (__flat_idx + 1);
+    __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
+    eval_gpu_14(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
+    y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.coef[((int)(2) - (1))]);
+}
+
+inline void eval_poly_gpu_20(float x, thread float& y) {
+    y = (((float)2) * x);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device poly_t& m [[buffer(0)]],
+    device float* x [[buffer(1)]],
+    device float* y [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    float __gpu_scalar_argument;
+    int i__dc;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i__dc = (__flat_idx + 1);
+    __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
+    eval_poly_gpu_20(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
+    y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.c1);
+}
+

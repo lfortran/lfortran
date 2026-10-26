@@ -150,6 +150,7 @@
                                         .false.
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
@@ -175,6 +176,8 @@
                                             )
                                             (Var 3 v)]
                                             FormatFortran
+                                            []
+                                            ()
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -196,6 +199,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                         .false.
@@ -314,6 +318,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -322,6 +327,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -336,6 +342,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -344,6 +351,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                         .false.
@@ -358,6 +366,7 @@
                         .false.
                         .false.
                         .false.
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block
@@ -367,6 +376,8 @@
                             ()
                             [(Var 2 myreal)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

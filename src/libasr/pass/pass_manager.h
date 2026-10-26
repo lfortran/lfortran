@@ -59,6 +59,7 @@
 #include <libasr/pass/replace_print_struct_type.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/dtio_callbacks.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/string_length_arguments.h>
 #include <libasr/pass/string_format_array_args.h>
@@ -111,6 +112,7 @@ namespace LCompilers {
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
+            {"allocate_on_assignment", &pass_allocate_on_assignment},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -139,6 +141,7 @@ namespace LCompilers {
             {"nested_vars", &pass_nested_vars},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
+            {"dtio_callbacks", &pass_dtio_callbacks},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"string_length_arguments", &pass_string_length_arguments},
             {"string_format_array_args", &pass_string_format_array_args},
@@ -308,6 +311,11 @@ namespace LCompilers {
                 // other procedure body.
                 "global_init",
                 "function_call_in_declaration",
+                // Each defined output procedure that a formatted output
+                // statement uses gets a callback with the fixed interface
+                // the runtime formatter calls, lowered by the passes below
+                // like any other procedure.
+                "dtio_callbacks",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the
@@ -375,6 +383,9 @@ namespace LCompilers {
                 // device routine's result needs the shape of that argument.
                 "gpu_device_allocatable",
                 "array_op",
+                // An intrinsic assignment allocates its unallocated
+                // allocatable variable, explicitly from here on.
+                "allocate_on_assignment",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
                 "print_struct_type",
@@ -455,7 +466,11 @@ namespace LCompilers {
                 // Only the LLVM backend formats and transfers arrays
                 // through their contiguous data; the C backend expands or
                 // rejects them itself.
-                "string_format_array_args"
+                "string_format_array_args",
+                // The C backend allocates a derived-type scalar on
+                // assignment itself and cannot lower the allocation status
+                // check that the pass emits (#15949).
+                "allocate_on_assignment"
             };
             _user_defined_passes.clear();
         }
