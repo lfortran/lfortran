@@ -29,12 +29,30 @@ contains
     end function
 end module
 
+module operator_overloading_50_c
+    implicit none
+    type :: c_t
+        integer :: x
+    contains
+        procedure, pass(b) :: c_gt
+        generic :: operator(>) => c_gt
+    end type
+contains
+    elemental logical function c_gt(a, b)
+        integer, intent(in) :: a
+        class(c_t), intent(in) :: b
+        c_gt = a > b%x
+    end function
+end module
+
 program operator_overloading_50
     use operator_overloading_50_a
     use operator_overloading_50_b
+    use operator_overloading_50_c
     implicit none
     type(date_type) :: date, dates(3)
     type(b_t) :: s, v(3)
+    type(c_t) :: w(3)
     logical :: l(3)
 
     date%year = 2024
@@ -59,4 +77,11 @@ program operator_overloading_50
     if (.not. l(1) .or. l(2) .or. l(3)) error stop
     l = s < v
     if (l(1) .or. l(2) .or. .not. l(3)) error stop
+
+    w%x = [1, 2, 3]
+    print *, 2 > w
+    if (count(2 > w) /= 1) error stop
+    if (size(2 > w(2:3)) /= 2) error stop
+    l = 2 > w
+    if (.not. l(1) .or. l(2) .or. l(3)) error stop
 end program
