@@ -17500,6 +17500,16 @@ public:
             phys_type != ASR::array_physical_typeType::DescriptorArray;
     }
 
+    // Whether `v` is the associate name of an ASSOCIATE construct that is
+    // associated with a variable selector. It is declared as a pointer to
+    // the selector
+    static bool is_variable_associate_name(ASR::Variable_t *v) {
+        ASR::asr_t *owner = v->m_parent_symtab->asr_owner;
+        return ASRUtils::is_pointer(v->m_type) && owner != nullptr &&
+            ASR::is_a<ASR::symbol_t>(*owner) &&
+            ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+    }
+
     // An element of an assumed-shape, pointer or polymorphic array is not
     // followed in memory by the elements that follow it in array element
     // order, so it does not designate an element sequence and may not be
@@ -17517,7 +17527,22 @@ public:
         if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(array_type))) {
             return nullptr;
         }
-        if (ASRUtils::is_pointer(array_type)) {
+        bool associate_name = false;
+        if (ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(array)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                associate_name = is_variable_associate_name(v);
+                // Contiguous only if its selector is. The standard allows a
+                // non-contiguous one via a copy of the element sequence; not
+                // implemented yet, so it is rejected (fix in a separate PR).
+                if (associate_name && !v->m_contiguous_attr) {
+                    return "element of a non-contiguous array";
+                }
+            }
+        }
+        if (!associate_name && ASRUtils::is_pointer(array_type)) {
             return "element of a pointer array";
         }
         if (ASR::is_a<ASR::Var_t>(*array)) {
