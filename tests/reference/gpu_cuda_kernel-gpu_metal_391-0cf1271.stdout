@@ -5,7 +5,11 @@ __device__ inline void ramp_gpu_17(float x, int n, float* y) {
     int j;
     __do_loop_end = n;
     j = (1 - 1);
-    while (((j + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((j + 1) <= __do_loop_end))))) {
+            j = (j + 1);
+            break;
+        }
         j = (j + 1);
         y[((int)(j) - (1))] = (x + ((float)j));
     }
@@ -63,7 +67,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end = __gpu_heap___gpu_call_result_n1;
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__gpu_sum_k + 1) <= __do_loop_end))))) {
+                __gpu_sum_k = (__gpu_sum_k + 1);
+                break;
+            }
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + ((__gpu_heap___gpu_call_result_lb1 + (__gpu_sum_k - 1)) - __gpu_heap___gpu_call_result_lb1))) - (1))]);
         }

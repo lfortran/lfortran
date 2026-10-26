@@ -30,7 +30,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         float small[6000];
         k = (1 - 1);
-        while (((k + 1) <= 6000)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= 6000))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             small[((int)(k) - (1))] = ((float)(k + j__dc));
         }
@@ -44,19 +48,31 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             point q[4000];
             __do_loop_end = (1 + 4000 - 1);
             __libasr_index_0_ = (1 - 1);
-            while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            while (1) {
+                if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                    __libasr_index_0_ = (__libasr_index_0_ + 1);
+                    break;
+                }
                 __libasr_index_0_ = (__libasr_index_0_ + 1);
                 q[((int)(__libasr_index_0_) - (1))].a = ((float)j__dc);
             }
             __do_loop_end1 = (1 + 4000 - 1);
             __libasr_index_0_1 = (1 - 1);
-            while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
+            while (1) {
+                if (((int)(!(((__libasr_index_0_1 + 1) <= __do_loop_end1))))) {
+                    __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+                    break;
+                }
                 __libasr_index_0_1 = (__libasr_index_0_1 + 1);
                 q[((int)(__libasr_index_0_1) - (1))].b = ((float)1);
             }
             __do_loop_end2 = (1 + 4000 - 1);
             __libasr_index_0_2 = (1 - 1);
-            while (((__libasr_index_0_2 + 1) <= __do_loop_end2)) {
+            while (1) {
+                if (((int)(!(((__libasr_index_0_2 + 1) <= __do_loop_end2))))) {
+                    __libasr_index_0_2 = (__libasr_index_0_2 + 1);
+                    break;
+                }
                 __libasr_index_0_2 = (__libasr_index_0_2 + 1);
                 q[((int)(__libasr_index_0_2) - (1))].c = ((float)2);
             }
@@ -86,7 +102,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     {
         float* large = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * 20000;
         k = (1 - 1);
-        while (((k + 1) <= 20000)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= 20000))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             large[((int)(k) - (1))] = ((float)(k + j__dc1));
         }
@@ -96,7 +116,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
             aggregate q;
             __do_loop_end = ((120000 - 1) + 1);
             __libasr_index_0_ = (1 - 1);
-            while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            while (1) {
+                if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                    __libasr_index_0_ = (__libasr_index_0_ + 1);
+                    break;
+                }
                 __libasr_index_0_ = (__libasr_index_0_ + 1);
                 q.a[((int)(__libasr_index_0_) - (1))] = ((float)j__dc1);
             }
@@ -110,7 +134,11 @@ __device__ inline void update_gpu_40(aggregate& q, int j) {
     int __libasr_index_0_;
     __do_loop_end = ((120000 - 1) + 1);
     __libasr_index_0_ = (1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         q.a[((int)(__libasr_index_0_) - (1))] = ((float)j);
     }
@@ -139,7 +167,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     {
         float* large = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 20000;
         k = (1 - 1);
-        while (((k + 1) <= 20000)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= 20000))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             large[((int)(k) - (1))] = ((float)(k + j__dc2));
         }
@@ -178,7 +210,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     {
         float* large = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 20000;
         k = (1 - 1);
-        while (((k + 1) <= 20000)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= 20000))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             large[((int)(k) - (1))] = ((float)(k + j__dc3));
         }

@@ -86,20 +86,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -188,24 +218,58 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
                                 )
-                                (Integer 4)
+                                (Logical 4)
                                 ()
                             )
-                            GtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -294,20 +358,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 9 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 9 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -396,24 +490,58 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -2 (Integer 4) Decimal)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
                                 )
-                                (Integer 4)
+                                (Logical 4)
                                 ()
                             )
-                            GtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -2 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -502,20 +630,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -600,20 +758,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 3 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -702,24 +890,58 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
-                                    (IntegerConstant 3 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -3 (Integer 4) Decimal)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -3 (Integer 4) Decimal)
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
                                 )
-                                (Integer 4)
+                                (Logical 4)
                                 ()
                             )
-                            GtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -3 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -808,20 +1030,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -910,24 +1162,58 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
                                 )
-                                (Integer 4)
+                                (Logical 4)
                                 ()
                             )
-                            GtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -1016,20 +1302,50 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    LtE
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
                                 ()
                             )
-                            LtE
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)
@@ -1118,24 +1434,58 @@
                     )
                     (WhileLoop
                         ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
+                        [(If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Add
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -1 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
                                 )
-                                (Integer 4)
+                                (Logical 4)
                                 ()
                             )
-                            GtE
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Logical 4)
-                            ()
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Add
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
                         )
-                        [(Assignment
+                        (Assignment
                             (Var 2 i)
                             (IntegerBinOp
                                 (Var 2 i)

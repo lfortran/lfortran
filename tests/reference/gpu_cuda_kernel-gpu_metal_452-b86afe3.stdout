@@ -11,7 +11,11 @@ __device__ inline void values_gpu_18(tensor_t self, float* __data_self_values_, 
     __libasr_index_0_1 = __lb_self_values__dim1;
     __do_loop_end = ((((int)__size_self_values_) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         r[((int)(__libasr_index_0_) - (1))] = __data_self_values_[((int)(__libasr_index_0_1) - (__lb_self_values__dim1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -67,7 +71,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_index_0_1 = 1;
         __do_loop_end = (__sizes_outs_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                __libasr_index_0_ = (__libasr_index_0_ + 1);
+                break;
+            }
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             y[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_1_tensor_t_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -75,14 +83,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = n;
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((__gpu_sum_k + 1) <= __do_loop_end1))))) {
+                __gpu_sum_k = (__gpu_sum_k + 1);
+                break;
+            }
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + pow((y[((int)(__gpu_sum_k) - (1))] - a[((int)(__gpu_sum_k) - (1)) + (3 * ((int)(p__dc) - (1)))]), 2));
         }
         c[((int)(p__dc) - (1))] = __gpu_sum_res;
         __do_loop_end2 = n;
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end2)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end2))))) {
+                __gpu_sec_i = (__gpu_sec_i + 1);
+                break;
+            }
             __gpu_sec_i = (__gpu_sec_i + 1);
             d[((int)(__gpu_sec_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = ((a[((int)(__gpu_sec_i) - (1)) + (3 * ((int)(p__dc) - (1)))] - y[((int)(__gpu_sec_i) - (1))]) * ((float)2));
         }

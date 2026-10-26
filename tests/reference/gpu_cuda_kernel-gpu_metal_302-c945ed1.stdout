@@ -22,7 +22,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         float r[4];
         __gpu_elem_i = (1 - 1);
-        while (((__gpu_elem_i + 1) <= 4)) {
+        while (1) {
+            if (((int)(!(((__gpu_elem_i + 1) <= 4))))) {
+                __gpu_elem_i = (__gpu_elem_i + 1);
+                break;
+            }
             __gpu_elem_i = (__gpu_elem_i + 1);
             r[((int)(__gpu_elem_i) - (1))] = (x[((int)(__gpu_elem_i) - (1))] + ((float)i__dc));
         }

@@ -23,7 +23,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     j__dc = (__flat_idx + 1);
     __do_loop_end = m;
     k = (1 - 1);
-    while (((k + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((k + 1) <= __do_loop_end))))) {
+            k = (k + 1);
+            break;
+        }
         k = (k + 1);
         t[((int)(k) - (1))] = ((float)j__dc);
     }

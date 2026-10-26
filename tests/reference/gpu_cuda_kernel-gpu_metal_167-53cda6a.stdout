@@ -24,7 +24,11 @@ __device__ inline void get_vals_gpu_19(float* a, int __1a, int __2a, int i, floa
     __libasr_index_0_1 = 1;
     __do_loop_end = ((((int)__1a) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         v[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
