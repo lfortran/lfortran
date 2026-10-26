@@ -1087,6 +1087,12 @@ public:
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
             ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
             if ( ASRUtils::is_array(source_type) ) {
+                // is_simply_contiguous reads ASR rewritten by earlier passes
+                // here, where a true result still holds (see its comment).
+                // The base of a FixedSizeArray section is the array itself:
+                // the pointers that passes put in place of a section, such
+                // as the section pointers of array_struct_temporary, are
+                // DescriptorArray.
                 ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(source_type);
                 if ( (phys == ASR::array_physical_typeType::UnboundedPointerArray &&
                         has_undefined_assumed_size_bound(section)) ||

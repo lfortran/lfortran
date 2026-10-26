@@ -3971,9 +3971,14 @@ static inline bool is_contiguous_array_designator(ASR::expr_t* x) {
 // array designator that is contiguous by its form, or a reference to a
 // function that returns a pointer with the CONTIGUOUS attribute.
 //
-// This inspects the subscripts of a section as the frontend builds them, and
-// is meant for that ASR only: passes rewrite how a subscript `:` is spelled,
-// and replace variables by pointers that stand for them.
+// This inspects the subscripts of a section as the frontend builds them. On
+// ASR that passes have rewritten, a true result still holds, but a false one
+// may be needlessly conservative: a `:` that a pass spells other than below
+// counts as a partial triplet, which can only make the section not simply
+// contiguous, and a pointer that a pass puts in place of a variable is not
+// simply contiguous, even when the variable is. A true result relies on a
+// scalar subscript having only an upper bound and a triplet having a stride,
+// as both the frontend and the passes build them.
 //
 // A subscript `:` is represented by the LBOUND and UBOUND of the array, an
 // absent stride by 1. As an extension to 9.5.4, a triplet whose bounds are
