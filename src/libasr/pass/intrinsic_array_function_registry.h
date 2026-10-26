@@ -5401,14 +5401,32 @@ namespace MatMul {
         }
     }
 
+    // Sets `s` to `s + x * y` and returns true, or returns false if the
+    // product or the sum overflows int64_t.
+    static inline bool matmul_checked_fma(int64_t &s, int64_t x, int64_t y) {
+        constexpr int64_t max = std::numeric_limits<int64_t>::max();
+        constexpr int64_t min = std::numeric_limits<int64_t>::min();
+        if (x != 0 && y != 0) {
+            bool overflow = x > 0
+                ? (y > 0 ? x > max / y : y < min / x)
+                : (y > 0 ? x < min / y : y < max / x);
+            if (overflow) return false;
+        }
+        int64_t p = x * y;
+        if ((p > 0 && s > max - p) || (p < 0 && s < min - p)) return false;
+        s += p;
+        return true;
+    }
+
     // Folds `matrix_a` (n x k) times `matrix_b` (k x m), both column major,
     // computing in the precision of the result element type T. A rank 1
-    // argument is a 1 x k or a k x 1 matrix.
+    // argument is a 1 x k or a k x 1 matrix. An integer result that
+    // overflows T is an error.
     template <typename T>
     static inline ASR::expr_t *eval_MatMul_values(Allocator &al,
             const Location &loc, ASR::ttype_t *return_type,
             ASR::ArrayConstant_t *a, ASR::ArrayConstant_t *b,
-            int64_t n, int64_t k, int64_t m) {
+            int64_t n, int64_t k, int64_t m, diag::Diagnostics &diag) {
         std::vector<T> va(n * k), vb(k * m);
         T v{};
         for (int64_t i = 0; i < n * k; i++) {
@@ -5425,17 +5443,29 @@ namespace MatMul {
         for (int64_t j = 0; j < m; j++) {
             for (int64_t i = 0; i < n; i++) {
                 T s{};
-                for (int64_t p = 0; p < k; p++) {
-                    T x = va[i + p * n], y = vb[p + j * k];
-                    if constexpr (std::is_same_v<T, bool>) {
-                        s = s || (x && y);
-                    } else if constexpr (std::is_integral_v<T>) {
-                        // Wrap around in the width of the result kind, like
-                        // the run-time `matmul`, instead of invoking UB.
-                        s = static_cast<T>(static_cast<uint64_t>(s) +
-                            static_cast<uint64_t>(x) * static_cast<uint64_t>(y));
-                    } else {
-                        s += x * y;
+                if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                    // Accumulate exactly and reject a result outside T.
+                    int64_t exact = 0;
+                    bool fits = true;
+                    for (int64_t p = 0; p < k && fits; p++) {
+                        fits = matmul_checked_fma(exact,
+                            va[i + p * n], vb[p + j * k]);
+                    }
+                    if (!fits || !integer_fits<T>(exact)) {
+                        append_error(diag, "integer overflow in `matmul`: "
+                            "the result does not fit in integer(" +
+                            std::to_string(sizeof(T)) + ")", loc);
+                        return nullptr;
+                    }
+                    s = static_cast<T>(exact);
+                } else {
+                    for (int64_t p = 0; p < k; p++) {
+                        T x = va[i + p * n], y = vb[p + j * k];
+                        if constexpr (std::is_same_v<T, bool>) {
+                            s = s || (x && y);
+                        } else {
+                            s += x * y;
+                        }
                     }
                 }
                 ASR::expr_t *value = nullptr;
@@ -5458,7 +5488,7 @@ namespace MatMul {
 
     static inline ASR::expr_t *eval_MatMul(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args,
-        diag::Diagnostics&) {
+        diag::Diagnostics& diag) {
         ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable(return_type));
         ASR::ArrayConstant_t *consts[2];
@@ -5496,31 +5526,31 @@ namespace MatMul {
         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
         if (is_logical(*elem_type)) {
             return eval_MatMul_values<bool>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_integer(*elem_type) && kind == 1) {
             return eval_MatMul_values<int8_t>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_integer(*elem_type) && kind == 2) {
             return eval_MatMul_values<int16_t>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_integer(*elem_type) && kind == 4) {
             return eval_MatMul_values<int32_t>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_integer(*elem_type) && kind == 8) {
             return eval_MatMul_values<int64_t>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_real(*elem_type) && kind == 4) {
             return eval_MatMul_values<float>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_real(*elem_type) && kind == 8) {
             return eval_MatMul_values<double>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_complex(*elem_type) && kind == 4) {
             return eval_MatMul_values<std::complex<float>>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         } else if (is_complex(*elem_type) && kind == 8) {
             return eval_MatMul_values<std::complex<double>>(al, loc, return_type,
-                consts[0], consts[1], n, k, m);
+                consts[0], consts[1], n, k, m, diag);
         }
         // Other kinds are not folded at compile time.
         return nullptr;
