@@ -7159,6 +7159,11 @@ filename = "errors/system_clock_f23_01.f90"
 semantics_only_cc = true
 options = "--std=f23"
 
+[[test]]
+filename = "errors/structure_constructor_f23_01.f90"
+semantics_only_cc = true
+options = "--std=f23"
+
 # The rank-mismatch warning for an array passed to a scalar dummy.
 [[test]]
 filename = "../integration_tests/legacy_array_sections_26.f90"

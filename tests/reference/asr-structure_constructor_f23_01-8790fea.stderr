@@ -1,0 +1,5 @@
+semantic error: Argument was not specified
+  --> tests/errors/structure_constructor_f23_01.f90:21:13
+   |
+21 |     hello = blah2()
+   |             ^^^^^^^ Argument 'b' not specified for blah2
