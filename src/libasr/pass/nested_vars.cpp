@@ -1362,6 +1362,52 @@ public:
     }
 };
 
+// Finds whether a host can be entered again while a procedure contained in it runs:
+// a contained procedure calls a procedure that is not contained in the host, or a
+// contained procedure is passed as an argument or associated with a pointer
+class ContainedReentryFinder: public ASR::BaseWalkVisitor<ContainedReentryFinder> {
+public:
+    const ASR::Function_t *host = nullptr;
+    bool in_contained = false;
+    bool may_reenter = false;
+
+    bool is_contained(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        return ASR::is_a<ASR::Function_t>(*sym) &&
+            ASRUtils::symbol_parent_symtab(sym) == host->m_symtab &&
+            ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))->m_deftype ==
+                ASR::deftypeType::Implementation;
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        bool in_contained_copy = in_contained;
+        in_contained = &x != host;
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_Function(x);
+        in_contained = in_contained_copy;
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        may_reenter = may_reenter || (in_contained && !is_contained(x.m_name));
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        may_reenter = may_reenter || (in_contained && !is_contained(x.m_name));
+        ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_FunctionCall(x);
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        may_reenter = may_reenter || is_contained(x.m_v);
+    }
+
+    bool find(const ASR::Function_t &x) {
+        host = &x;
+        may_reenter = false;
+        visit_Function(x);
+        return may_reenter;
+    }
+};
+
 // Puts the statements made by `make_restores` before every return of a procedure
 class ReturnRestorer: public PassUtils::PassVisitor<ReturnRestorer> {
 public:
@@ -1558,33 +1604,76 @@ public:
     /*
     A procedure can be entered again while a procedure contained in it runs,
     and the new instance syncs its own variables into the shared context
-    variables. Each instance of a procedure host therefore saves the context
-    variables when it starts and restores them before it returns, so that
-    after a call that entered the host again a contained procedure called
-    directly by the host sees the variables of the instance that called it
-    (Fortran 2018, 15.6.2.4). Within an instance the context variables keep
-    the values of the last sync, as a contained procedure called through a
-    procedure pointer is not synced. A program cannot be entered again.
+    variables. An instance of a procedure host that is entered while another
+    instance of it is active therefore saves the context variables when it
+    starts and restores them before it returns, so that after a call that
+    entered the host again a contained procedure called directly by the host
+    sees the variables of the instance that called it (Fortran 2018,
+    15.6.2.4). Within an instance the context variables keep the values of
+    the last sync, as a contained procedure called through a procedure
+    pointer is not synced. A flag in the context module tells whether an
+    instance is active, so a host that is not entered again only sets and
+    resets the flag. A host whose contained procedures only call each other
+    and are only called directly cannot be entered again while one of them
+    runs, and a program cannot be entered again; they are left unchanged.
 
     ```fortran
-        saved_x = ctx_x
+        reentered = active
+        active = .true.
+        if (reentered) saved_x = ctx_x
         ...
         ctx_x = x
         call inner()
         x = ctx_x
         ...
-        ctx_x = saved_x
+        if (reentered) ctx_x = saved_x
+        active = reentered
     ```
     */
     void save_and_restore_context_vars(ASR::Function_t &x) {
         auto it = host_context_vars.find((ASR::symbol_t*)&x);
-        if (it == host_context_vars.end()) {
+        // A host defined in another compilation unit is not compiled here
+        if (it == host_context_vars.end() ||
+                ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::ExternalUndefined) {
             return;
         }
+        ContainedReentryFinder reentry_finder;
+        if (!reentry_finder.find(x)) {
+            return;
+        }
+        std::vector<ContextVarCopy> &vars = it->second;
+        const Location &loc = x.base.base.loc;
+        ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        SymbolTable *module_scope = ASRUtils::symbol_parent_symtab(vars[0].ctx_var);
+        std::string active_name = module_scope->get_unique_name(
+            "__libasr_active_" + std::string(x.m_name), false);
+        ASR::expr_t *inactive = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false,
+            logical_type));
+        ASR::symbol_t *active_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, module_scope, s2c(al, active_name), nullptr, 0,
+            ASR::intentType::Local, inactive, inactive, ASR::storage_typeType::Default,
+            logical_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+            ASR::presenceType::Required, false));
+        module_scope->add_symbol(active_name, active_sym);
+        ASR::symbol_t *active_ext = resolve_or_create_external_symbol(al, x.m_symtab,
+            active_sym, vars[0].module_name);
+        SymbolTable *scope = x.m_symtab;
+        std::string reentered_name = scope->get_unique_name("__libasr_reentered", false);
+        ASR::symbol_t *reentered_sym = ASR::down_cast<ASR::Var_t>(
+            PassUtils::create_auxiliary_variable(loc, reentered_name, al, scope, logical_type,
+            ASR::intentType::Local, nullptr, nullptr))->m_v;
+        auto var = [&](ASR::symbol_t *sym) {
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        };
+        auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
+            return ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target, value,
+                nullptr, false, false));
+        };
+
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> ctx_and_saved;
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body + it->second.size());
-        for (auto &v: it->second) {
+        Vec<ASR::stmt_t*> saves;
+        saves.reserve(al, vars.size());
+        for (auto &v: vars) {
             ASR::symbol_t *ext_sym = nullptr;
             auto it_ext = module_var_to_external.find(v.ctx_var);
             if (it_ext != module_var_to_external.end() &&
@@ -1597,26 +1686,30 @@ public:
             ASR::symbol_t *saved_sym = create_context_var_copy(x.m_symtab, "__libasr_saved_",
                 v.ctx_var, v.type_declaration);
             ctx_and_saved.push_back({ext_sym, saved_sym});
-            body.push_back(al, copy_context_var(
-                ASRUtils::EXPR(ASR::make_Var_t(al, saved_sym->base.loc, saved_sym)),
-                ASRUtils::EXPR(ASR::make_Var_t(al, saved_sym->base.loc, ext_sym)),
+            saves.push_back(al, copy_context_var(var(saved_sym), var(ext_sym),
                 v.associate, v.move));
         }
-        std::vector<ContextVarCopy> &vars = it->second;
         auto make_restores = [&]() {
-            std::vector<ASR::stmt_t*> restores;
+            Vec<ASR::stmt_t*> restores;
+            restores.reserve(al, vars.size());
             for (size_t i = 0; i < vars.size(); i++) {
-                ASR::symbol_t *ext_sym = ctx_and_saved[i].first;
-                ASR::symbol_t *saved_sym = ctx_and_saved[i].second;
-                restores.push_back(copy_context_var(
-                    ASRUtils::EXPR(ASR::make_Var_t(al, saved_sym->base.loc, ext_sym)),
-                    ASRUtils::EXPR(ASR::make_Var_t(al, saved_sym->base.loc, saved_sym)),
-                    vars[i].associate, vars[i].move));
+                restores.push_back(al, copy_context_var(var(ctx_and_saved[i].first),
+                    var(ctx_and_saved[i].second), vars[i].associate, vars[i].move));
             }
-            return restores;
+            return std::vector<ASR::stmt_t*>{
+                ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, var(reentered_sym),
+                    restores.p, restores.size(), nullptr, 0)),
+                assign(var(active_ext), var(reentered_sym))};
         };
         ReturnRestorer restorer(al, make_restores);
         restorer.restore_before_returns(x);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body + 5);
+        body.push_back(al, assign(var(reentered_sym), var(active_ext)));
+        body.push_back(al, assign(var(active_ext), ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+            al, loc, true, logical_type))));
+        body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, var(reentered_sym),
+            saves.p, saves.size(), nullptr, 0)));
         for (size_t i = 0; i < x.n_body; i++) {
             body.push_back(al, x.m_body[i]);
         }
