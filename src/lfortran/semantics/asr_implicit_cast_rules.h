@@ -177,9 +177,13 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    // kind=10 m_r is a pointer to the long double bytes
-                    int64_t i = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 10
+                    // kind=10 and kind=16 m_r is a pointer to the value's bytes
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+                    int64_t i = src_kind == 10
                         ? static_cast<int64_t>(ASRUtils::real_constant_get_r10(r))
+                        : src_kind == 16
+                        ? static_cast<int64_t>(lf_f128_to_double(
+                            ASRUtils::real_constant_get_r16(r)))
                         : static_cast<int64_t>(r->m_r);
                     value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                         i, dest_type2);
@@ -353,9 +357,13 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::RealConstant_t>(*value) ) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
-                    // kind=10 m_r is a pointer to the long double bytes
-                    double rval = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 10
-                        ? ASRUtils::real_constant_get_r10(r) : r->m_r;
+                    // kind=10 and kind=16 m_r is a pointer to the value's bytes
+                    int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+                    double rval = src_kind == 10
+                        ? ASRUtils::real_constant_get_r10(r)
+                        : src_kind == 16
+                        ? lf_f128_to_double(ASRUtils::real_constant_get_r16(r))
+                        : r->m_r;
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       rval, 0, dest_type2);
                 } else {
