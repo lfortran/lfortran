@@ -115,12 +115,9 @@ public:
     const LCompilers::PassOptions& pass_options;
 
     // Variables that were associated (by pass_array_by_data) with an
-    // ArraySection whose source array is UnboundedPointerArray (assumed-size)
-    // or FixedSizeArray (sequence association via --legacy-array-sections).
-    // Copy-in/copy-out must be skipped for these because:
-    // - UnboundedPointerArray: section bounds reference undefined UBound
-    // - FixedSizeArray: sequence association requires the callee to index the
-    //   original contiguous memory with its own leading dimension
+    // ArraySection of an UnboundedPointerArray (assumed-size) array whose
+    // bounds reference its undefined UBound. Copy-in/copy-out must be skipped
+    // for these, because the size of the copy cannot be determined.
     std::set<ASR::symbol_t*> vars_from_assumed_size_sections;
 
     CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
@@ -1074,29 +1071,22 @@ public:
 
     // Track Associate statements created by pass_array_by_data where the
     // source is an ArraySection of an assumed-size (UnboundedPointerArray)
-    // array or a FixedSizeArray (sequence association via --legacy-array-sections).
-    // For UnboundedPointerArray: allocation size cannot be determined (undefined UBound).
-    // For FixedSizeArray: sequence association requires the callee to index the
-    // original contiguous memory with its own leading dimension; copy-in would
-    // create a packed temporary with wrong memory layout.
+    // array: the allocation size cannot be determined (undefined UBound).
+    // Every other section, such as a(1, :) of a fixed-size array, may be
+    // non-contiguous, so it gets copy-in/copy-out. An array element passed
+    // for sequence association (with --legacy-array-sections) is not a
+    // section here: semantics passes it as the address of the element.
     void visit_Associate(const ASR::Associate_t& x) {
         if ( ASR::is_a<ASR::ArraySection_t>(*x.m_value) &&
              ASR::is_a<ASR::Var_t>(*x.m_target) ) {
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
             ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
-            if ( ASRUtils::is_array(source_type) ) {
-                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(source_type);
-                bool track = false;
-                if ( phys == ASR::array_physical_typeType::UnboundedPointerArray &&
-                     has_undefined_assumed_size_bound(section) ) {
-                    track = true;
-                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray ) {
-                    track = true;
-                }
-                if ( track ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
-                    vars_from_assumed_size_sections.insert(sym);
-                }
+            if ( ASRUtils::is_array(source_type) &&
+                 ASRUtils::extract_physical_type(source_type) ==
+                     ASR::array_physical_typeType::UnboundedPointerArray &&
+                 has_undefined_assumed_size_bound(section) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                vars_from_assumed_size_sections.insert(sym);
             }
         }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Associate(x);

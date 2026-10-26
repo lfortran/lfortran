@@ -4438,6 +4438,7 @@ RUN(NAME array_section_36 LABELS gfortran llvm)
 RUN(NAME array_section_37 LABELS gfortran llvm)
 RUN(NAME array_section_38 LABELS gfortran llvm)
 RUN(NAME array_section_39 LABELS gfortran llvm)
+RUN(NAME array_section_40 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -5276,6 +5277,7 @@ RUN(NAME legacy_array_sections_29 LABELS gfortran llvm
 RUN(NAME legacy_array_sections_30 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_31 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_32 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_33 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
