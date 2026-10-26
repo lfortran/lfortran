@@ -308,16 +308,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
-        # The prompt is still in-process. Driving it has not been run on Windows.
-        if (NOT WIN32)
-            add_test(
-                NAME test_repl
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
-                    --lfortran $<TARGET_FILE:lfortran>
-            )
-        endif()
-        # The built-in kernel, when this build does not use Xeus.
+        # The prompt is driven through a pipe, and on a pseudo-terminal
+        # where there is one (not on Windows).
+        add_test(
+            NAME test_repl
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                --lfortran $<TARGET_FILE:lfortran>
+        )
+        # The prompt is a client of the shared kernel, here the built-in one.
         if (NOT WITH_XEUS)
             add_test(
                 NAME test_session

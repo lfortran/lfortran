@@ -1,10 +1,11 @@
 """Shares one Jupyter kernel (`lfortran kernel -f`) between several stock
-jupyter_client clients."""
+jupyter_client clients and the prompt (`lfortran --connect`)."""
 
 import argparse
 import os
 import queue
 from pathlib import Path
+import re
 import shutil
 import signal
 import subprocess
@@ -158,10 +159,61 @@ def shared_session(lfortran, cwd, connection):
         a.stop_channels()
         clients.remove(a)
         check(value(b, "x + 1") == "22", "kernel lost after a disconnect")
+
+        # The prompt as a client.
+        prompt = subprocess.run([lfortran, "--no-color", "--connect", str(connection)],
+            input=b"x + 100\rread(*,*) x\r7\rx * 3\r\x04",
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd, timeout=60)
+        out = prompt.stdout.decode(errors="replace")
+        check(prompt.returncode == 0, "the prompt failed:\n" + out)
+        for expected in [r"^121\r?$", r"^21\r?$"]:
+            check(re.search(expected, out, re.M),
+                "expected %r in the prompt output:\n%s" % (expected, out))
+        check(value(b, "x") == "7", "the prompt's READ did not set x")
         b.shutdown()
     finally:
         for client in clients:
             client.stop_channels()
+
+
+def prompt_session(lfortran, cwd):
+    """The plain prompt runs its cells in a kernel it starts, which other
+    clients can join and which outlives the prompt while they are connected."""
+    prompt = subprocess.Popen([lfortran, "--no-color"], cwd=cwd,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    client = None
+    try:
+        out = b""
+        while True:
+            line = prompt.stdout.readline()
+            check(line, "the prompt did not tell its connection file:\n%s"
+                % out.decode(errors="replace"))
+            out += line
+            joined = re.search(rb"lfortran --connect (\S+)`", line)
+            if joined:
+                break
+        connection = Path(joined.group(1).decode())
+        client = connect(connection)
+        check(run(client, "integer :: shared = 5")[0]["status"] == "ok", "declaration failed")
+        rest, _ = prompt.communicate(b"shared + 1\r\x04", timeout=60)
+        out = (out + rest).decode(errors="replace")
+        check(prompt.returncode == 0, "the prompt failed:\n" + out)
+        check("[other client] integer :: shared = 5" in out,
+            "the prompt did not show the other client's cell:\n" + out)
+        check(re.search(r"^6\r?$", out, re.M), "the prompt's cell failed:\n" + out)
+        check(value(client, "shared * 2") == "10", "the kernel stopped with the prompt")
+        client.stop_channels()
+        client = None
+        deadline = time.monotonic() + 30
+        while connection.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        check(not connection.exists(), "the kernel did not stop after its last client")
+    finally:
+        if client:
+            client.stop_channels()
+        if prompt.poll() is None:
+            prompt.kill()
+            prompt.wait()
 
 
 def start(lfortran, cwd, connection, log):
@@ -221,6 +273,11 @@ def main():
                         kernel.wait()
                 check(kernel.returncode == 0, "the kernel exited with %d" % kernel.returncode)
                 check(not connection.exists(), "the kernel left its connection file")
+        prompt_session(args.lfortran, cwd)
+        missing = subprocess.run([args.lfortran, "--connect", str(cwd / "missing.json")],
+            input=b"", capture_output=True, timeout=60)
+        check(missing.returncode != 0 and b"connection file" in missing.stderr,
+            "connecting to no kernel: %r" % missing.stderr)
     except BaseException:
         if log_path.exists():
             print(log_path.read_text(errors="replace"))

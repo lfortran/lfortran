@@ -1,8 +1,10 @@
 #ifndef LFORTRAN_JUPYTER_H
 #define LFORTRAN_JUPYTER_H
 
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace LCompilers {
 struct CompilerOptions;
@@ -13,8 +15,8 @@ namespace LCompilers::LFortran {
 // Runs the Jupyter kernel of a connection file with `options`. The kernel is
 // the Xeus one with WITH_XEUS, else the built-in one (jupyter.cpp), which
 // needs no third-party library. If the file does not exist, the built-in
-// kernel listens on free ports and writes it. A `managed` kernel, started with
-// `--managed`, is always the built-in one: it stops when its last client
+// kernel listens on free ports and writes it. A `managed` kernel, the one the
+// prompt starts, is always the built-in one: it stops when its last client
 // disconnects and removes the file.
 int run_kernel(const std::string &connection_filename, CompilerOptions &options,
     bool managed);
@@ -22,6 +24,46 @@ int run_kernel(const std::string &connection_filename, CompilerOptions &options,
 } // namespace LCompilers::LFortran
 
 namespace LCompilers::LFortran::jupyter {
+
+class Peer;
+
+// The prompt's Jupyter client: it runs cells in a kernel, prints their output
+// and the other clients' cells and output, and answers their READs from the
+// terminal.
+class Client {
+    std::string key, session;
+    std::unique_ptr<Peer> shell, stdin_, iopub;
+    // The kernel that start() started: its process ID, or its process
+    // handle on Windows
+    intptr_t process = 0;
+
+    // Shows what the kernel published before it closed its connections.
+    void show_last(const std::string &request_id);
+public:
+    // Connects to the kernel of a connection file.
+    explicit Client(const std::string &connection_file);
+    ~Client();
+    Client(const Client &) = delete;
+    Client &operator=(const Client &) = delete;
+
+    // Starts `executable kernel` with `arguments` (the prompt's own) on a new
+    // connection file in the temporary directory, which it returns in
+    // `connection_file` for other clients, and connects to it. A `managed`
+    // kernel stops when its last client disconnects.
+    static std::unique_ptr<Client> start(const std::string &executable,
+        const std::vector<std::string> &arguments, bool managed,
+        std::string &connection_file);
+
+    // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
+    // false if the kernel has gone.
+    bool execute(const std::string &code, bool verbose = false);
+    // Prints what the other clients ran since the last call.
+    void show_others();
+    // Waits at most `timeout` ms for the kernel that start() started to
+    // exit; returns its exit status, or -1 if it has not exited, did not end
+    // normally or was not started by this client.
+    int kernel_status(int timeout);
+};
 
 #ifndef __EMSCRIPTEN__
 
