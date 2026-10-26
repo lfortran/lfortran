@@ -1423,8 +1423,9 @@ static bool variable_may_invoke_procedures(ASR::Variable_t *v) {
 // Finds whether a host can be entered again while a procedure contained in it runs:
 // a contained procedure calls a procedure that is not contained in the host,
 // explicitly or implicitly (by finalization, a defined assignment of a component
-// or a defined input/output), or a contained procedure is passed as an argument or
-// associated with a pointer
+// or a defined input/output), or references one, which an intrinsic such as
+// `reduce` or a procedure pointer can call, or a contained procedure is passed
+// as an argument or associated with a pointer
 class ContainedReentryFinder: public ASR::BaseWalkVisitor<ContainedReentryFinder> {
 public:
     const ASR::Function_t *host = nullptr;
@@ -1536,8 +1537,14 @@ public:
         ASR::BaseWalkVisitor<ContainedReentryFinder>::visit_FunctionCall(x);
     }
 
+    static bool is_procedure(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        return ASR::is_a<ASR::Function_t>(*sym) || ASRUtils::is_symbol_procedure_variable(sym);
+    }
+
     void visit_Var(const ASR::Var_t &x) {
-        may_reenter = may_reenter || is_contained(x.m_v);
+        may_reenter = may_reenter || is_contained(x.m_v) ||
+            (in_contained && is_procedure(x.m_v));
         check_variable(x.m_v);
     }
 
@@ -1755,10 +1762,11 @@ public:
     pointer is not synced. A flag in the context module tells whether an
     instance is active, so a host that is not entered again only sets and
     resets the flag. A host is left unchanged when its contained procedures
-    explicitly call only each other, are only called directly, and invoke
-    no procedure implicitly: they reference no entity that can be finalized
-    or assigned by a defined assignment of a component, and transfer no
-    derived-type item, which could use defined input/output (see
+    explicitly call only each other, are only called directly, name
+    procedures only to call them (an intrinsic such as `reduce` calls a
+    procedure it is passed), and invoke no procedure implicitly: they reference no entity that can be
+    finalized or assigned by a defined assignment of a component, and
+    transfer no derived-type item, which could use defined input/output (see
     ContainedReentryFinder). Such a host cannot be entered again while one of
     them runs. A program cannot be entered again and is left unchanged too.
 
