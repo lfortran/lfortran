@@ -4,6 +4,7 @@ over FortranEvaluator::execute()."""
 import argparse
 import os
 from pathlib import Path
+import queue
 import subprocess
 import sys
 import time
@@ -127,12 +128,112 @@ def main():
             messages = check(client, "print *, 'a', achar(200), 'b'", [])
             assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
                        for m in messages), messages
+            # All of a cell's stdout, however long, and its stderr.
+            messages = check(client, "program long_output\ninteger :: i\n"
+                             "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
+                             "write(0, '(a)') 'to stderr'\nend program", [])
+            streams = {"stdout": "", "stderr": ""}
+            for m in messages:
+                if m["msg_type"] == "stream":
+                    streams[m["content"]["name"]] += m["content"]["text"]
+            assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
+            assert streams["stderr"] == "to stderr\n", streams["stderr"]
             # Cells must not leak file descriptors (MAX_OPEN_FILES).
             for i in range(100):
                 check(client, "%d + 1" % i, [str(i + 1)])
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
+    except BaseException:
+        if log.exists():
+            print(log.read_text(errors="replace"))
+        raise
+    finally:
+        if client:
+            client.stop_channels()
+        if process and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+        connection.unlink(missing_ok=True)
+        log.unlink(missing_ok=True)
+        directory.rmdir()
+    check_stop_flushes(args.lfortran)
+
+
+def builtin_stop_kernel(lfortran):
+    """True when `lfortran kernel --managed` is the built-in kernel.
+
+    That kernel flushes its subscribers from an atexit handler, so stdout
+    written before STOP is delivered. A Xeus kernel publishes the same text
+    but does not flush it before the process ends. Builds from before the
+    flag existed have no built-in kernel to ask.
+    """
+    help_text = subprocess.run(
+        [lfortran, "kernel", "--help"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    ).stdout
+    return "--managed" in help_text
+
+
+def check_stop_flushes(lfortran):
+    """A cell's STOP ends the kernel with status 0. On the built-in kernel,
+    stdout written before it is delivered. On Windows, STOP must call the
+    host exit() so the flush registered with atexit runs."""
+    directory = Path.cwd() / ("kernel-stop-" + uuid.uuid4().hex)
+    directory.mkdir(mode=0o700)
+    connection = directory / "connection.json"
+    log = directory / "kernel.log"
+    client = None
+    process = None
+    managed = builtin_stop_kernel(lfortran)
+    try:
+        write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+        command = [lfortran, "kernel", "-f", str(connection)]
+        if managed:
+            command.append("--managed")
+        with log.open("wb") as output:
+            process = subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL, stdout=output, stderr=output,
+            )
+            client = BlockingKernelClient(connection_file=str(connection))
+            client.load_connection_file()
+            client.start_channels()
+            client.wait_for_ready(timeout=30)
+            msg_id = client.execute(
+                "print *, 'before-stop'\nif (.true.) stop\nprint *, 'after-stop'")
+            texts = []
+            deadline = time.monotonic() + 20
+            exited = None
+            while time.monotonic() < deadline:
+                if process.poll() is not None and exited is None:
+                    exited = time.monotonic()
+                # The process exiting does not by itself deliver the last
+                # messages, so keep reading briefly after it goes.
+                if exited is not None and time.monotonic() > exited + 1:
+                    break
+                try:
+                    msg = client.get_iopub_msg(timeout=0.2)
+                except queue.Empty:
+                    continue
+                except Exception:
+                    if exited is not None:
+                        break
+                    raise
+                parent = (msg.get("parent_header") or {}).get("msg_id")
+                if parent != msg_id or msg["msg_type"] != "stream":
+                    continue
+                texts.append(msg["content"].get("text", ""))
+            code = process.wait(timeout=10)
+            blob = "".join(texts)
+            assert code == 0, (code, blob, log.read_text(errors="replace"))
+            if managed:
+                assert "before-stop" in blob, blob
+                assert "after-stop" not in blob, blob
     except BaseException:
         if log.exists():
             print(log.read_text(errors="replace"))
