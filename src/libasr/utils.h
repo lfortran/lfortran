@@ -184,7 +184,6 @@ struct CompilerOptions {
     bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
-    bool use_loop_variable_after_loop = false;
     std::string target = "";
     std::string march = "";
     std::string mcpu = "";

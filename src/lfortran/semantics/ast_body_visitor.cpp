@@ -1850,8 +1850,7 @@ public:
                     }
                 }
             }
-            if (compiler_options.use_loop_variable_after_loop ||
-                    compiler_options.po.use_loop_variable_after_loop) {
+            if (compiler_options.po.use_loop_variable_after_loop) {
                 ASR::ttype_t* int_type = ASRUtils::expr_type(idl->m_var);
                 ASR::expr_t* final_idx_const = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, idl->m_var->base.loc, idx, int_type));

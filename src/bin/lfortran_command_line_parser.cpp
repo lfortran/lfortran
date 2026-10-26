@@ -481,7 +481,6 @@ namespace LCompilers::CommandLineInterface {
             // legacy options
             compiler_options.fixed_form = true;
             compiler_options.legacy_array_sections = true;
-            compiler_options.use_loop_variable_after_loop = true;
             compiler_options.separate_compilation = true;
         } else {
             throw lc::LCompilersException(
