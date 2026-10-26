@@ -2511,8 +2511,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
+                            // The passed object of a type-bound operator is not
+                            // in a_args, so the shape comes from both operands.
+                            Vec<ASR::call_arg_t> operands;
+                            operands.reserve(al, 2);
+                            operands.push_back(al, ASR::call_arg_t{ left->base.loc, left });
+                            operands.push_back(al, ASR::call_arg_t{ right->base.loc, right });
                             ASR::expr_t* first_array_arg =
-                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                                ASRUtils::find_first_array_arg_if_elemental(func, operands);
                             if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -3606,12 +3612,18 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
-                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args >= 1 &&
-                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            // The passed object of a type-bound operator is not
+                            // in a_args, so the shape comes from both operands.
+                            Vec<ASR::call_arg_t> operands;
+                            operands.reserve(al, 2);
+                            operands.push_back(al, ASR::call_arg_t{ left->base.loc, left });
+                            operands.push_back(al, ASR::call_arg_t{ right->base.loc, right });
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, operands);
+                            if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(al,
