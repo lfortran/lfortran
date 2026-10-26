@@ -15416,8 +15416,6 @@ public:
                 &null_args);
         }
 
-        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
-
         std::vector<ASR::symbol_t*> members = get_struct_constructor_info(v).members;
         for (size_t i = 0; i < vals.size() && i < members.size(); i++) {
             if (vals[i].m_value == nullptr
@@ -15563,6 +15561,16 @@ public:
                 vals.p[i].m_value = nullptr;
             }
         }
+        return make_struct_constructor(loc, v, vals, members, is_const);
+    }
+
+    // Returns the structure constructor of the type `v` with the component
+    // values `vals`, one for each of `members`, which are conformed to their
+    // components first. If `is_const` and every value is constant, it is a
+    // StructConstant of the folded values.
+    ASR::asr_t* make_struct_constructor(const Location& loc, ASR::symbol_t* v,
+            Vec<ASR::call_arg_t>& vals, const std::vector<ASR::symbol_t*>& members,
+            bool is_const) {
         conform_struct_constructor_args(vals, members);
 
         // Ensure all values are constant before creating StructConstant
@@ -15575,6 +15583,7 @@ public:
                     break;
             }
         }
+        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
         if (is_const) {
             // A StructConstant holds constants only: store the folded value of
             // each argument, not the parameter reference or nested constructor
@@ -27236,7 +27245,9 @@ public:
     // only default initialized, or nullptr if the type has no default
     // initialization, that is, if no direct component of it has a default
     // initializer. A component without one is left undefined. A
-    // parameterized derived type is not handled.
+    // parameterized derived type is not handled. The value is the
+    // constructor `type_sym()` would be if every component could be omitted,
+    // so it is folded into a constant wherever that constructor would be.
     ASR::expr_t* get_default_initialized_struct_value(ASR::symbol_t* type_sym,
             const Location& loc) {
         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(type_sym);
@@ -27248,7 +27259,6 @@ public:
             return nullptr;
         }
         bool has_default_initialization = false;
-        bool is_const = true;
         Vec<ASR::call_arg_t> args;
         args.reserve(al, info.members.size());
         for (ASR::symbol_t* member : info.members) {
@@ -27270,31 +27280,23 @@ public:
             }
             if (arg.m_value != nullptr) {
                 has_default_initialization = true;
-                is_const = is_const && (ASRUtils::is_value_constant(arg.m_value)
-                    || ASRUtils::is_value_constant(ASRUtils::expr_value(arg.m_value)));
             }
             args.push_back(al, arg);
         }
         if (!has_default_initialization) {
             return nullptr;
         }
-        ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, type_sym, true);
-        if (is_const) {
-            for (size_t i = 0; i < args.size(); i++) {
-                args.p[i].m_value = fold_struct_constant_arg(args.p[i].m_value);
-            }
-            return ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, type_sym,
-                args.p, args.size(), type));
-        }
-        return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, loc, type_sym,
-            args.p, args.size(), type, nullptr));
+        return ASRUtils::EXPR(make_struct_constructor(loc, type_sym, args,
+            info.members, false));
     }
 
     // Returns the value of the component `member_var`, which has no default
     // initializer, in an object that is only default initialized, or nullptr
     // if it has none: a nonpointer, nonallocatable component of a derived
     // type that has default initialization takes the default-initialized
-    // value of that type.
+    // value of that type. For an array component, this is the scalar value
+    // of each element, which the structure constructor spreads to the
+    // component's shape as it does a scalar value given for it.
     ASR::expr_t* get_default_initialized_component_value(
             ASR::Variable_t* member_var, const Location& loc) {
         if (member_var->m_value != nullptr || member_var->m_symbolic_value != nullptr
@@ -27305,14 +27307,8 @@ public:
                     *ASRUtils::type_get_past_array(member_var->m_type))) {
             return nullptr;
         }
-        ASR::expr_t* value = get_default_initialized_struct_value(
+        return get_default_initialized_struct_value(
             member_var->m_type_declaration, loc);
-        if (value == nullptr || !ASRUtils::is_array(member_var->m_type)) {
-            return value;
-        }
-        return broadcast_struct_scalar_to_array_initializer(loc,
-            ASRUtils::externalize_struct_refs_in_init(al, value, current_scope),
-            member_var->m_type);
     }
 
     // `null_args`, if given, has an entry for each positional argument in
