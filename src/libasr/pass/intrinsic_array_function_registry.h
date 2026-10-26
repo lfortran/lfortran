@@ -5430,7 +5430,8 @@ namespace MatMul {
                     if constexpr (std::is_same_v<T, bool>) {
                         s = s || (x && y);
                     } else if constexpr (std::is_integral_v<T>) {
-                        // Wrap around on overflow instead of invoking UB.
+                        // Wrap around in the width of the result kind, like
+                        // the run-time `matmul`, instead of invoking UB.
                         s = static_cast<T>(static_cast<uint64_t>(s) +
                             static_cast<uint64_t>(x) * static_cast<uint64_t>(y));
                     } else {
@@ -5496,7 +5497,16 @@ namespace MatMul {
         if (is_logical(*elem_type)) {
             return eval_MatMul_values<bool>(al, loc, return_type,
                 consts[0], consts[1], n, k, m);
-        } else if (is_integer(*elem_type)) {
+        } else if (is_integer(*elem_type) && kind == 1) {
+            return eval_MatMul_values<int8_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m);
+        } else if (is_integer(*elem_type) && kind == 2) {
+            return eval_MatMul_values<int16_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m);
+        } else if (is_integer(*elem_type) && kind == 4) {
+            return eval_MatMul_values<int32_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m);
+        } else if (is_integer(*elem_type) && kind == 8) {
             return eval_MatMul_values<int64_t>(al, loc, return_type,
                 consts[0], consts[1], n, k, m);
         } else if (is_real(*elem_type) && kind == 4) {
