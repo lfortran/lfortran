@@ -1512,8 +1512,11 @@ public:
             return b.If(is_associated, {associate_stmt},
                 {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_args.p, nullify_args.size()))});
         }
+        ASR::ttype_t *target_type = ASRUtils::expr_type(target);
+        bool realloc = move || (ASRUtils::is_array(target_type) &&
+            ASRUtils::is_allocatable(target_type));
         ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-            target, value, nullptr, move, move));
+            target, value, nullptr, realloc, move));
         if (ASRUtils::is_allocatable(ASRUtils::expr_type(value))) {
             return create_if_allocated_block(value, assignment);
         }
@@ -1626,39 +1629,38 @@ public:
         x.n_body = body.size();
     }
 
-    /*
-    A contained procedure that passes a variable of its host to the host
-    itself would pass the context variable, which the new instance of the
-    host saves and syncs with its own variables. Pass a copy instead, and
-    copy it back after the call.
+    struct ContextArgCopy {
+        // The context variable as the statement refers to it
+        ASR::symbol_t *ctx_var_ref;
+        ASR::symbol_t *copy;
+        bool associate;
+        bool allocatable_array;
+    };
 
-    ```fortran
-        tmp = ctx_x
-        call host(tmp)
-        ctx_x = tmp
-    ```
-    */
-    void copy_context_args(ASR::symbol_t *callee, ASR::call_arg_t *args, size_t n_args,
-            ASR::symbol_t *assigned_sym, std::vector<ASR::stmt_t*> &copies_in,
-            std::vector<ASR::stmt_t*> &copies_out) {
+    // Finds the context variables that a call passes to the host that owns their variables
+    bool find_context_args(ASR::symbol_t *callee, ASR::call_arg_t *args, size_t n_args,
+            std::vector<std::pair<ASR::symbol_t*, ContextArgCopy>> &copies) {
         callee = ASRUtils::symbol_get_past_external(callee);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+            callee = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
+        }
         if (!ASR::is_a<ASR::Function_t>(*callee)) {
-            return;
+            return false;
         }
         ASR::Function_t *callee_fn = ASR::down_cast<ASR::Function_t>(callee);
+        bool found = false;
         for (size_t i = 0; i < n_args; i++) {
-            ASR::expr_t **arg = &args[i].m_value;
-            if (*arg == nullptr || i >= callee_fn->n_args) {
+            ASR::expr_t *arg = args[i].m_value;
+            if (arg == nullptr || i >= callee_fn->n_args) {
                 continue;
             }
-            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(**arg)) {
-                arg = &ASR::down_cast<ASR::ArrayPhysicalCast_t>(*arg)->m_arg;
-            }
-            if (!ASR::is_a<ASR::Var_t>(**arg)) {
+            arg = ASRUtils::get_past_array_physical_cast(arg);
+            if (!ASR::is_a<ASR::Var_t>(*arg)) {
                 continue;
             }
-            ASR::symbol_t *ctx_var = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(*arg)->m_v);
+            ASR::symbol_t *ctx_var_ref = ASR::down_cast<ASR::Var_t>(arg)->m_v;
+            ASR::symbol_t *ctx_var = ASRUtils::symbol_get_past_external(ctx_var_ref);
             auto it = ctx_var_to_host_var.find(ctx_var);
             if (it == ctx_var_to_host_var.end() ||
                     ASRUtils::symbol_parent_symtab(it->second)->asr_owner != &callee->base ||
@@ -1673,20 +1675,103 @@ public:
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(type))) {
                 continue;
             }
-            bool move = ASRUtils::is_array(type) && ASRUtils::is_allocatable(type);
-            bool associate = !move && (ASRUtils::is_array(type) || ASRUtils::is_pointer(type));
-            const Location &loc = (*arg)->base.loc;
+            found = true;
+            bool copied = false;
+            for (auto &c: copies) {
+                copied = copied || c.first == ctx_var;
+            }
+            if (copied) {
+                continue;
+            }
+            bool allocatable_array = ASRUtils::is_array(type) && ASRUtils::is_allocatable(type);
             ASR::symbol_t *copy = create_context_var_copy(current_scope, "__libasr_created_arg_",
                 ctx_var, ASR::down_cast<ASR::Variable_t>(it->second)->m_type_declaration);
-            ASR::expr_t *ctx = *arg;
-            *arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, copy));
-            copies_in.push_back(copy_context_var(*arg, ctx, associate, move));
-            // A moved copy is moved back even if the call does not change it
-            if ((move || ASR::down_cast<ASR::Variable_t>(dummy)->m_intent != ASR::intentType::In) &&
-                    ctx_var != assigned_sym) {
-                copies_out.push_back(copy_context_var(ctx, *arg, associate, move));
+            copies.push_back({ctx_var, {ctx_var_ref, copy,
+                !allocatable_array && (ASRUtils::is_array(type) || ASRUtils::is_pointer(type)),
+                allocatable_array}});
+        }
+        return found;
+    }
+
+    /*
+    A contained procedure that passes a variable of its host to the host
+    itself would pass the context variable, which the new instance of the
+    host saves and syncs with its own variables. The statement (or the test
+    of an if) uses a copy of the context variable instead, in every reference
+    to it, so that the other actual arguments and the target see the same
+    object, and the copy is copied back after it (at the start of each branch
+    of an if). An allocatable array is moved, unless the statement also calls
+    another procedure, which could read the variable by host association.
+
+    ```fortran
+        tmp = ctx_x
+        call host(tmp, tmp(1))
+        ctx_x = tmp
+    ```
+    */
+    void copy_context_args(ASR::stmt_t *&stmt, std::vector<ASR::stmt_t*> &copies_in,
+            std::vector<ASR::stmt_t*> &copies_out) {
+        FunctionCallCollector collector;
+        ASR::If_t *if_stmt = nullptr;
+        if (ASR::is_a<ASR::If_t>(*stmt)) {
+            if_stmt = ASR::down_cast<ASR::If_t>(stmt);
+            collector.visit_expr(*if_stmt->m_test);
+        } else if (ASR::is_a<ASR::SubroutineCall_t>(*stmt) || ASR::is_a<ASR::Assignment_t>(*stmt) ||
+                ASR::is_a<ASR::Print_t>(*stmt) || ASR::is_a<ASR::FileWrite_t>(*stmt)) {
+            collector.visit_stmt(*stmt);
+        } else {
+            return;
+        }
+        std::vector<std::pair<ASR::symbol_t*, ContextArgCopy>> copies;
+        bool calls_other = false;
+        if (ASR::is_a<ASR::SubroutineCall_t>(*stmt)) {
+            ASR::SubroutineCall_t *call = ASR::down_cast<ASR::SubroutineCall_t>(stmt);
+            calls_other = !find_context_args(call->m_name, call->m_args, call->n_args, copies);
+        }
+        for (ASR::FunctionCall_t *call: collector.calls) {
+            if (!find_context_args(call->m_name, call->m_args, call->n_args, copies)) {
+                calls_other = true;
             }
         }
+        if (copies.empty()) {
+            return;
+        }
+        HostToContextVarDuplicator duplicator(al);
+        for (auto &item: copies) {
+            ContextArgCopy &c = item.second;
+            duplicator.ctx_vars[item.first] = c.copy;
+            const Location &loc = c.copy->base.loc;
+            copies_in.push_back(copy_context_var(ASRUtils::EXPR(ASR::make_Var_t(al, loc, c.copy)),
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, c.ctx_var_ref)), c.associate,
+                c.allocatable_array && !calls_other));
+        }
+        auto copy_back = [&](std::vector<ASR::stmt_t*> &stmts) {
+            for (auto &item: copies) {
+                ContextArgCopy &c = item.second;
+                const Location &loc = c.copy->base.loc;
+                stmts.push_back(copy_context_var(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, c.ctx_var_ref)),
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, c.copy)), c.associate,
+                    c.allocatable_array));
+            }
+        };
+        if (if_stmt == nullptr) {
+            stmt = duplicator.duplicate_stmt(stmt);
+            copy_back(copies_out);
+            return;
+        }
+        if_stmt->m_test = duplicator.duplicate_expr(if_stmt->m_test);
+        auto prepend_copy_back = [&](ASR::stmt_t **&m_body, size_t &n_body) {
+            std::vector<ASR::stmt_t*> stmts;
+            copy_back(stmts);
+            stmts.insert(stmts.end(), m_body, m_body + n_body);
+            Vec<ASR::stmt_t*> body;
+            body.from_pointer_n_copy(al, stmts.data(), stmts.size());
+            m_body = body.p;
+            n_body = body.size();
+        };
+        prepend_copy_back(if_stmt->m_body, if_stmt->n_body);
+        prepend_copy_back(if_stmt->m_orelse, if_stmt->n_orelse);
     }
 
     static ASR::symbol_t* get_root_host_symbol(ASR::expr_t* expr) {
@@ -1875,23 +1960,7 @@ public:
                     assignment->m_value, ASR::down_cast<ASR::Var_t>(target)->m_v);
             }
             std::vector<ASR::stmt_t*> arg_copies_in, arg_copies_out;
-            if (ASR::is_a<ASR::SubroutineCall_t>(*m_body[i])) {
-                ASR::SubroutineCall_t *call = ASR::down_cast<ASR::SubroutineCall_t>(m_body[i]);
-                if (call->m_dt == nullptr) {
-                    copy_context_args(call->m_name, call->m_args, call->n_args, nullptr,
-                        arg_copies_in, arg_copies_out);
-                }
-            } else if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
-                ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
-                FunctionCallCollector collector;
-                collector.visit_expr(*assignment->m_value);
-                for (ASR::FunctionCall_t *call: collector.calls) {
-                    if (call->m_dt == nullptr) {
-                        copy_context_args(call->m_name, call->m_args, call->n_args,
-                            assigned_target_sym, arg_copies_in, arg_copies_out);
-                    }
-                }
-            }
+            copy_context_args(m_body[i], arg_copies_in, arg_copies_out);
             for (auto &stm: arg_copies_in) {
                 body.push_back(al, stm);
             }
