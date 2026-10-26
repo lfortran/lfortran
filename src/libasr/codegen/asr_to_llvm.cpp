@@ -13128,8 +13128,8 @@ public:
                 if( ASRUtils::is_array(value_type) && !LLVM::is_llvm_pointer(*value_type) &&
                     ASRUtils::extract_physical_type(value_type) ==
                         ASR::array_physical_typeType::UnboundedPointerArray &&
-                    (llvm::isa<llvm::AllocaInst>(llvm_value) ||
-                     llvm::isa<llvm::GlobalVariable>(llvm_value)) ) {
+                    ASR::is_a<ASR::Var_t>(*x.m_value) &&
+                    !ASRUtils::is_arg_dummy(ASRUtils::EXPR2VAR(x.m_value)->m_intent) ) {
                     llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
                     llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
