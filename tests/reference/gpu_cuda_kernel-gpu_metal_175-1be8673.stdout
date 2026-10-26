@@ -22,7 +22,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i__dc = (__flat_idx + 1);
     __do_loop_end = ((((int)2) + ((int)1)) - 1);
     __gpu_sec_i = (1 - 1);
-    while (((__gpu_sec_i + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end))))) {
+            __gpu_sec_i = (__gpu_sec_i + 1);
+            break;
+        }
         __gpu_sec_i = (__gpu_sec_i + 1);
         a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i__dc) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i__dc) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_sec_i - 1))) - (__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1]))];
     }
@@ -57,13 +61,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         float* r = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
         __gpu_elem_i = (1 - 1);
-        while (((__gpu_elem_i + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__gpu_elem_i + 1) <= __do_loop_end))))) {
+                __gpu_elem_i = (__gpu_elem_i + 1);
+                break;
+            }
             __gpu_elem_i = (__gpu_elem_i + 1);
             r[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i__dc1) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1]))];
         }
         __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __gpu_sec_i1 = (1 - 1);
-        while (((__gpu_sec_i1 + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i1 + 1) <= __do_loop_end1))))) {
+                __gpu_sec_i1 = (__gpu_sec_i1 + 1);
+                break;
+            }
             __gpu_sec_i1 = (__gpu_sec_i1 + 1);
             b[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(i__dc1) - (1)))] = r[((int)((1 + (__gpu_sec_i1 - 1))) - (1))];
         }

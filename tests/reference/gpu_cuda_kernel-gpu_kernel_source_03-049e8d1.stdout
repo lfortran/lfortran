@@ -31,7 +31,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     twox = (  2.00000000000000000e+00f * x[((int)(i__dc) - (1))]);
     __do_loop_end = nc;
     j = (1 - 1);
-    while (((j + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((j + 1) <= __do_loop_end))))) {
+            j = (j + 1);
+            break;
+        }
         j = (j + 1);
         b2 = b1;
         b1 = b0;

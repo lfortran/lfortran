@@ -14,7 +14,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     __gpu_bc_i = (1 - 1);
-    while (((__gpu_bc_i + 1) <= 2)) {
+    while (1) {
+        if (((int)(!(((__gpu_bc_i + 1) <= 2))))) {
+            __gpu_bc_i = (__gpu_bc_i + 1);
+            break;
+        }
         __gpu_bc_i = (__gpu_bc_i + 1);
         t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j__dc) - (1))] +   4.10000000000000000e+01f);
     }

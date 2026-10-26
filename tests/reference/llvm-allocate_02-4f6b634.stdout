@@ -81,88 +81,104 @@ ifcont:                                           ; preds = %merge_allocated
   store i32 0, i32* %i, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %ifcont10, %ifcont
+loop.head:                                        ; preds = %ifcont13, %ifcont
+  br i1 true, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
   %31 = load i32, i32* %i, align 4
   %32 = add i32 %31, 1
   %33 = icmp sle i32 %32, 1000000
-  br i1 %33, label %loop.body, label %loop.end
+  %34 = xor i1 %33, true
+  br i1 %34, label %then1, label %else
 
-loop.body:                                        ; preds = %loop.head
-  %34 = load i32, i32* %i, align 4
-  %35 = add i32 %34, 1
-  store i32 %35, i32* %i, align 4
-  %36 = load %array.1*, %array.1** %arr, align 8
-  %37 = ptrtoint %array.1* %36 to i64
-  %38 = icmp eq i64 %37, 0
-  br i1 %38, label %merge_allocated2, label %check_data1
+then1:                                            ; preds = %loop.body
+  %35 = load i32, i32* %i, align 4
+  %36 = add i32 %35, 1
+  store i32 %36, i32* %i, align 4
+  br label %loop.end
 
-check_data1:                                      ; preds = %loop.body
-  %39 = getelementptr %array.1, %array.1* %36, i32 0, i32 0
-  %40 = load i32*, i32** %39, align 1
-  %41 = ptrtoint i32* %40 to i64
-  %42 = icmp ne i64 %41, 0
-  br label %merge_allocated2
+unreachable_after_exit:                           ; No predecessors!
+  br label %ifcont2
 
-merge_allocated2:                                 ; preds = %check_data1, %loop.body
-  %is_allocated3 = phi i1 [ false, %loop.body ], [ %42, %check_data1 ]
-  br i1 %is_allocated3, label %then4, label %else
+else:                                             ; preds = %loop.body
+  br label %ifcont2
 
-then4:                                            ; preds = %merge_allocated2
-  %43 = getelementptr %array.1, %array.1* %36, i32 0, i32 0
-  %44 = load i32*, i32** %43, align 1
-  %45 = bitcast i32* %44 to i8*
-  call void @_lfortran_free_alloc(i8* %2, i8* %45)
-  %46 = getelementptr %array.1, %array.1* %36, i32 0, i32 0
-  store i32* null, i32** %46, align 8
-  br label %ifcont5
+ifcont2:                                          ; preds = %else, %unreachable_after_exit
+  %37 = load i32, i32* %i, align 4
+  %38 = add i32 %37, 1
+  store i32 %38, i32* %i, align 4
+  %39 = load %array.1*, %array.1** %arr, align 8
+  %40 = ptrtoint %array.1* %39 to i64
+  %41 = icmp eq i64 %40, 0
+  br i1 %41, label %merge_allocated4, label %check_data3
 
-else:                                             ; preds = %merge_allocated2
-  br label %ifcont5
+check_data3:                                      ; preds = %ifcont2
+  %42 = getelementptr %array.1, %array.1* %39, i32 0, i32 0
+  %43 = load i32*, i32** %42, align 1
+  %44 = ptrtoint i32* %43 to i64
+  %45 = icmp ne i64 %44, 0
+  br label %merge_allocated4
 
-ifcont5:                                          ; preds = %else, %then4
-  %47 = load %array.1*, %array.1** %arr, align 8
-  %48 = ptrtoint %array.1* %47 to i64
-  %49 = icmp eq i64 %48, 0
-  br i1 %49, label %merge_allocated7, label %check_data6
+merge_allocated4:                                 ; preds = %check_data3, %ifcont2
+  %is_allocated5 = phi i1 [ false, %ifcont2 ], [ %45, %check_data3 ]
+  br i1 %is_allocated5, label %then6, label %else7
 
-check_data6:                                      ; preds = %ifcont5
-  %50 = getelementptr %array.1, %array.1* %47, i32 0, i32 0
-  %51 = load i32*, i32** %50, align 1
-  %52 = ptrtoint i32* %51 to i64
-  %53 = icmp ne i64 %52, 0
-  br label %merge_allocated7
+then6:                                            ; preds = %merge_allocated4
+  %46 = getelementptr %array.1, %array.1* %39, i32 0, i32 0
+  %47 = load i32*, i32** %46, align 1
+  %48 = bitcast i32* %47 to i8*
+  call void @_lfortran_free_alloc(i8* %2, i8* %48)
+  %49 = getelementptr %array.1, %array.1* %39, i32 0, i32 0
+  store i32* null, i32** %49, align 8
+  br label %ifcont8
 
-merge_allocated7:                                 ; preds = %check_data6, %ifcont5
-  %is_allocated8 = phi i1 [ false, %ifcont5 ], [ %53, %check_data6 ]
-  br i1 %is_allocated8, label %then9, label %ifcont10
+else7:                                            ; preds = %merge_allocated4
+  br label %ifcont8
 
-then9:                                            ; preds = %merge_allocated7
+ifcont8:                                          ; preds = %else7, %then6
+  %50 = load %array.1*, %array.1** %arr, align 8
+  %51 = ptrtoint %array.1* %50 to i64
+  %52 = icmp eq i64 %51, 0
+  br i1 %52, label %merge_allocated10, label %check_data9
+
+check_data9:                                      ; preds = %ifcont8
+  %53 = getelementptr %array.1, %array.1* %50, i32 0, i32 0
+  %54 = load i32*, i32** %53, align 1
+  %55 = ptrtoint i32* %54 to i64
+  %56 = icmp ne i64 %55, 0
+  br label %merge_allocated10
+
+merge_allocated10:                                ; preds = %check_data9, %ifcont8
+  %is_allocated11 = phi i1 [ false, %ifcont8 ], [ %56, %check_data9 ]
+  br i1 %is_allocated11, label %then12, label %ifcont13
+
+then12:                                           ; preds = %merge_allocated10
   call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @9 to i8*), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @0, i32 0, i32 0))
   unreachable
 
-ifcont10:                                         ; preds = %merge_allocated7
-  %54 = load %array.1*, %array.1** %arr, align 8
-  %55 = getelementptr %array.1, %array.1* %54, i32 0, i32 7
-  store i64 0, i64* %55, align 8
-  %56 = getelementptr %array.1, %array.1* %54, i32 0, i32 3
-  store i8 1, i8* %56, align 1
-  %57 = getelementptr %array.1, %array.1* %54, i32 0, i32 8
-  %58 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %57, i32 0, i32 0
-  %59 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %58, i32 0
-  %60 = getelementptr %dimension_descriptor, %dimension_descriptor* %59, i32 0, i32 2
-  %61 = getelementptr %dimension_descriptor, %dimension_descriptor* %59, i32 0, i32 0
-  %62 = getelementptr %dimension_descriptor, %dimension_descriptor* %59, i32 0, i32 1
-  store i64 1, i64* %60, align 8
-  store i64 1, i64* %61, align 8
-  store i64 1, i64* %62, align 8
-  %63 = getelementptr %array.1, %array.1* %54, i32 0, i32 0
-  %64 = call i8* @_lfortran_get_default_allocator()
-  %65 = call i8* @_lfortran_malloc_alloc(i8* %64, i64 4)
-  %66 = bitcast i8* %65 to i32*
-  store i32* %66, i32** %63, align 8
+ifcont13:                                         ; preds = %merge_allocated10
+  %57 = load %array.1*, %array.1** %arr, align 8
+  %58 = getelementptr %array.1, %array.1* %57, i32 0, i32 7
+  store i64 0, i64* %58, align 8
+  %59 = getelementptr %array.1, %array.1* %57, i32 0, i32 3
+  store i8 1, i8* %59, align 1
+  %60 = getelementptr %array.1, %array.1* %57, i32 0, i32 8
+  %61 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %60, i32 0, i32 0
+  %62 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %61, i32 0
+  %63 = getelementptr %dimension_descriptor, %dimension_descriptor* %62, i32 0, i32 2
+  %64 = getelementptr %dimension_descriptor, %dimension_descriptor* %62, i32 0, i32 0
+  %65 = getelementptr %dimension_descriptor, %dimension_descriptor* %62, i32 0, i32 1
+  store i64 1, i64* %63, align 8
+  store i64 1, i64* %64, align 8
+  store i64 1, i64* %65, align 8
+  %66 = getelementptr %array.1, %array.1* %57, i32 0, i32 0
+  %67 = call i8* @_lfortran_get_default_allocator()
+  %68 = call i8* @_lfortran_malloc_alloc(i8* %67, i64 4)
+  %69 = bitcast i8* %68 to i32*
+  store i32* %69, i32** %66, align 8
   br label %loop.head
 
-loop.end:                                         ; preds = %loop.head
+loop.end:                                         ; preds = %then1, %loop.head
   br label %return
 
 return:                                           ; preds = %loop.end
@@ -172,8 +188,8 @@ FINALIZE_SYMTABLE_allocate_02:                    ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_allocate_02
-  %67 = load %array.1*, %array.1** %arr, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1* %67)
+  %70 = load %array.1*, %array.1** %arr, align 8
+  call void @finalize_allocatable__Array_1_i32(%array.1* %70)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }

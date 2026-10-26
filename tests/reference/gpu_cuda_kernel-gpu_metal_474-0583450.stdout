@@ -26,13 +26,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float t[64];
         __do_loop_end = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= __do_loop_end))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             t[((int)(k) - (1))] = ((float)((j__dc + k) + it));
         }
         __do_loop_end1 = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((k + 1) <= __do_loop_end1))))) {
+                k = (k + 1);
+                break;
+            }
             k = (k + 1);
             g[((int)(k) - (1)) + (64 * ((int)(j__dc) - (1)))] = t[((int)(((m + 1) - k)) - (1))];
         }
@@ -68,13 +76,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         float __gpu_sum_res;
         float t[64];
         __gpu_elem_i = (1 - 1);
-        while (((__gpu_elem_i + 1) <= 64)) {
+        while (1) {
+            if (((int)(!(((__gpu_elem_i + 1) <= 64))))) {
+                __gpu_elem_i = (__gpu_elem_i + 1);
+                break;
+            }
             __gpu_elem_i = (__gpu_elem_i + 1);
             t[((int)(__gpu_elem_i) - (1))] = (x[((int)(__gpu_elem_i) - (1)) + (64 * ((int)(j__dc1) - (1)))] + ((float)1));
         }
         __do_loop_end = ((((int)64) + ((int)1)) - 1);
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end))))) {
+                __gpu_sec_i = (__gpu_sec_i + 1);
+                break;
+            }
             __gpu_sec_i = (__gpu_sec_i + 1);
             g[((int)(__gpu_sec_i) - (1)) + (64 * ((int)(j__dc1) - (1)))] = t[((int)((m + ((__gpu_sec_i - 1) * (-(1))))) - (1))];
         }
@@ -82,7 +98,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
             __gpu_sum_res =   0.00000000000000000e+00f;
             __do_loop_end1 = ((((int)16384) + ((int)1)) - 1);
             __gpu_sum_k = (((int)1) - 1);
-            while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+            while (1) {
+                if (((int)(!(((__gpu_sum_k + 1) <= __do_loop_end1))))) {
+                    __gpu_sum_k = (__gpu_sum_k + 1);
+                    break;
+                }
                 __gpu_sum_k = (__gpu_sum_k + 1);
                 __gpu_sum_res = (__gpu_sum_res + xr[((int)(4) - (1)) + (4 * ((int)(__gpu_sum_k) - (1)))]);
             }
@@ -136,13 +156,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
         __1_k = 4;
         __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   4.00000000000000000e+00f;
         __gpu_elem_i1 = (1 - 1);
-        while (((__gpu_elem_i1 + 1) <= 4)) {
+        while (1) {
+            if (((int)(!(((__gpu_elem_i1 + 1) <= 4))))) {
+                __gpu_elem_i1 = (__gpu_elem_i1 + 1);
+                break;
+            }
             __gpu_elem_i1 = (__gpu_elem_i1 + 1);
             u[((int)(__gpu_elem_i1) - (1))] = (__libasr__created__var__0__array_constant_[((int)(__gpu_elem_i1) - (1))] * ((float)j__dc3));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= 4)) {
+        while (1) {
+            if (((int)(!(((__gpu_sum_k + 1) <= 4))))) {
+                __gpu_sum_k = (__gpu_sum_k + 1);
+                break;
+            }
             __gpu_sum_k = (__gpu_sum_k + 1);
             __gpu_sum_res = (__gpu_sum_res + u[((int)(__gpu_sum_k) - (1))]);
         }

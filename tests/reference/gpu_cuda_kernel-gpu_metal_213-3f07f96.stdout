@@ -22,7 +22,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i__dc = (__flat_idx + 1);
     __do_loop_end = ((((((int)__dim_d_0) + ((int)__lb_d_0)) - 1) - ((int)__lb_d_0)) + 1);
     __gpu_sec_i = (1 - 1);
-    while (((__gpu_sec_i + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end))))) {
+            __gpu_sec_i = (__gpu_sec_i + 1);
+            break;
+        }
         __gpu_sec_i = (__gpu_sec_i + 1);
         d[((int)((((int)__lb_d_0) + (__gpu_sec_i - 1))) - (__lb_d_0))] =   1.00000000000000000e+00;
     }
@@ -95,7 +99,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc3 = (__flat_idx + 1);
     j__dc = (1 - 1);
-    while (((j__dc + 1) <= 2)) {
+    while (1) {
+        if (((int)(!(((j__dc + 1) <= 2))))) {
+            j__dc = (j__dc + 1);
+            break;
+        }
         j__dc = (j__dc + 1);
         m[((int)(i__dc3) - (__lb_m_0)) + (__dim_m_0 * ((int)(j__dc) - (__lb_m_1)))] =   1.50000000000000000e+00;
     }

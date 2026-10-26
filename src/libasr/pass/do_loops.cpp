@@ -35,7 +35,18 @@ to:
         ...
     end do
 
-The comparison is >= for c<0.
+The comparison is >= for c<0. With use_loop_variable_after_loop, `i` ends one
+step past its last value when the loop is not left by an exit:
+
+    i = a-c
+    do while (.true.)
+        if (.not. (i+c <= b)) then
+            i = i+c
+            exit
+        end if
+        i = i+c
+        ...
+    end do
 */
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {

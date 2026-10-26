@@ -7,7 +7,11 @@ __device__ inline float _lcompilers_dot_product_gpu_61(float* matrix_a, int __1m
     result =   0.00000000000000000e+00f;
     __do_loop_end = ((((int)__1matrix_a) + ((int)1)) - 1);
     i = (((int)1) - 1);
-    while (((i + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((i + 1) <= __do_loop_end))))) {
+            i = (i + 1);
+            break;
+        }
         i = (i + 1);
         result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[(__stride_matrix_b_dim1 * ((int)(i) - (1)))]));
     }
@@ -31,7 +35,11 @@ __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c
     __libasr__created__var__0__idl_save_ = row;
     __do_loop_end = (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1);
     row = (end_point - 1);
-    while (((row + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((row + 1) <= __do_loop_end))))) {
+            row = (row + 1);
+            break;
+        }
         row = (row + 1);
         __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(row) - (1));
         __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_61(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + (1 * ((int)__1w))) - 1)) - (row)) / (1)) + 1), 1);
@@ -43,7 +51,11 @@ __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c
     __libasr_index_0_1 = 1;
     __do_loop_end1 = ((((int)((int)((1 * (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1)) + 2))) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end1))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         faces[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__3__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -64,7 +76,11 @@ __device__ inline void pair_values_device_t_gpu_80(float x, float* pair) {
     __libasr_index_0_1 = 1;
     __do_loop_end = ((((int)2) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         pair[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__4__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -115,14 +131,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2)) - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                __libasr_index_0_ = (__libasr_index_0_ + 1);
+                break;
+            }
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __do_loop_end1 = ((((int)7) + ((int)1)) - 1);
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end1))))) {
+                __gpu_sec_i = (__gpu_sec_i + 1);
+                break;
+            }
             __gpu_sec_i = (__gpu_sec_i + 1);
             out[((int)(__gpu_sec_i) - (1)) + (7 * ((int)(j__dc) - (1)))] = (__gpu_call_result[((int)((1 + (__gpu_sec_i - 1))) - (1))] * ((float)j__dc));
         }
@@ -138,14 +162,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + 2 - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                __libasr_index_0_ = (__libasr_index_0_ + 1);
+                break;
+            }
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_pair_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __gpu_sec_i1 = (1 - 1);
-        while (((__gpu_sec_i1 + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i1 + 1) <= __do_loop_end1))))) {
+                __gpu_sec_i1 = (__gpu_sec_i1 + 1);
+                break;
+            }
             __gpu_sec_i1 = (__gpu_sec_i1 + 1);
             pairs[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(j__dc) - (1)))] = __gpu_call_result[((int)(__gpu_sec_i1) - (1))];
         }
@@ -159,7 +191,11 @@ __device__ inline float _lcompilers_dot_product1_gpu_63(float* matrix_a, int __1
     result =   0.00000000000000000e+00f;
     __do_loop_end = ((((int)__1matrix_a) + ((int)1)) - 1);
     i = (((int)1) - 1);
-    while (((i + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((i + 1) <= __do_loop_end))))) {
+            i = (i + 1);
+            break;
+        }
         i = (i + 1);
         result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[(__stride_matrix_b_dim1 * ((int)(i) - (1)))]));
     }
@@ -183,7 +219,11 @@ __device__ inline void face_values_gpu_45(float* w, int __1w, float* c, int __1c
     __libasr__created__var__0__idl_save_ = row;
     __do_loop_end = (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1);
     row = (end_point - 1);
-    while (((row + 1) <= __do_loop_end)) {
+    while (1) {
+        if (((int)(!(((row + 1) <= __do_loop_end))))) {
+            row = (row + 1);
+            break;
+        }
         row = (row + 1);
         __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(row) - (1));
         __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product1_gpu_63(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + (1 * ((int)__1w))) - 1)) - (row)) / (1)) + 1), 1);
@@ -195,7 +235,11 @@ __device__ inline void face_values_gpu_45(float* w, int __1w, float* c, int __1c
     __libasr_index_0_1 = 1;
     __do_loop_end1 = ((((int)((int)((1 * (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1)) + 2))) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
+    while (1) {
+        if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end1))))) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            break;
+        }
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         faces[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__3__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -247,14 +291,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
+            if (((int)(!(((__libasr_index_0_ + 1) <= __do_loop_end))))) {
+                __libasr_index_0_ = (__libasr_index_0_ + 1);
+                break;
+            }
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __do_loop_end1 = ((((int)__dim_out_0) + ((int)1)) - 1);
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+        while (1) {
+            if (((int)(!(((__gpu_sec_i + 1) <= __do_loop_end1))))) {
+                __gpu_sec_i = (__gpu_sec_i + 1);
+                break;
+            }
             __gpu_sec_i = (__gpu_sec_i + 1);
             out[((int)(__gpu_sec_i) - (1)) + (__dim_out_0 * ((int)(j__dc) - (1)))] = (__gpu_call_result[((int)((1 + (__gpu_sec_i - 1))) - (1))] * ((float)j__dc));
         }
