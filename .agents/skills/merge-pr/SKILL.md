@@ -61,11 +61,19 @@ For each PR (batch: see "Batches" below):
    draft, mergeable state, head SHA, commits (authors, merge-from-main
    commits), files and diff, reviews and review threads, comments, check
    runs on the head SHA, linked issues (`fixes #N`), and open PRs that target
-   the same issue or the same files (duplicates, stacks). Record the base SHA
-   of the last green run and what merged to `main` since.
+   the same issue or the same files (duplicates, stacks). Find what merged to
+   `main` since the PR's base (`base.sha` from the PR, or the merge base):
+   `gh api repos/lfortran/lfortran/compare/<base>...main` (or the GitHub
+   compare/commit tools); the local clone may be shallow, so `git fetch
+   --unshallow` or `git fetch origin main` before using `git log` ranges.
+   Check fork workflow runs awaiting approval with
+   `gh run list --repo lfortran/lfortran --branch <head-ref> --status action_required`
+   (or the GitHub Actions list tool); zero check runs alone does not
+   distinguish "awaiting approval" from "never triggered".
 2. **Judge content** (next section) → risk class R0–R3 plus findings.
-   For R2, or whenever placement is in doubt, also run the `pr-review`
-   skill on the diff; treat its blockers as content findings.
+   For R2, or whenever placement is in doubt, also apply the `pr-review`
+   skill to the diff (inline for a single PR; in a batch, inside that PR's
+   subagent); treat its blockers as content findings.
 3. **Check gates** G1–G9.
 4. **Decide** one verdict from the decision table and **act** on it.
 5. **Report** a decision card per PR (format at the end).
@@ -88,8 +96,12 @@ to a shared predicate.
   one type/kind combination, one intrinsic, an opt-in flag such as `--gpu`).
   Examples: #15588, #15701, #15960, #15601 (`cast_to_wider_kind` acts only
   when kinds differ).
-- *Non-local:* default compile path for every program, a shared helper in
-  `asr_utils`/`pass_utils`, what a pass skips (`is_temporary_needed`, #15122),
+- A helper with many callers (in `asr_utils`, `pass_utils`, `llvm_utils`,
+  `llvm_array_utils`, ...) is still *local* when the change is guarded so
+  every other caller's behavior is unchanged (#15601; #15967 adds only a
+  null edge for character arrays). Check the guard against each caller.
+- *Non-local:* default compile path for every program, an unguarded change to
+  a shared helper, what a pass skips (`is_temporary_needed`, #15122),
   pass pipeline membership or order (#15870 broke the C backend), symbol
   tables and scoping/`use` import (#15323, #15888), allocation/realloc/
   finalization semantics, runtime I/O or RNG paths every program hits
@@ -161,17 +173,28 @@ removal is a blocker regardless of class.
 - **G3 CI.** All twelve required Quick jobs (listed in
   `doc/src/installation.md#ci-coverage`) report `success` on the current head
   SHA. Fork PRs may sit at `action_required`: workflow approval is the
-  maintainer's decision, so judge content first and tell the user which runs
-  to approve (only for R0–R2 content that is plausibly mergeable). Exhaustive
+  maintainer's decision, so judge content first, require G2 (no conflict)
+  first, and only then tell the user which runs to approve (only for R0–R2
+  content that is plausibly mergeable). Exhaustive
   is not a gate unless the user asks for it.
 - **G4 Freshness.** A stale green run is acceptable (#15122 merged on an
-  11-day-old run) **unless** `main` has since merged an `ASR.asdl` change, a
-  reference refresh, a pass-pipeline change, or edits to the same files, and
-  the PR adds/updates references or `.asr` inputs or touches those areas —
-  then require a rebase and a fresh green run (#15868). Re-check this after
-  every merge in a batch.
+  11-day-old run; AGENTS.md: do not update a PR only to keep it current).
+  Require a rebase and a fresh green run only when `main` has since merged
+  something the PR's evidence depends on:
+  - an `ASR.asdl` change, and the PR adds or edits `.asr` inputs or
+    references (#15868 broke `main` exactly this way);
+  - a reference refresh of files the PR also changes;
+  - a pass-pipeline or default-option change that the PR's code path runs
+    through;
+  - changes to the same functions the PR modifies (same hunks or the same
+    function bodies, not merely the same large file such as
+    `ast_common_visitor.h`).
+  Re-check this after every merge in a batch.
 - **G5 Tests.** Behavior changes carry a registered test that fails on `main`
-  and passes on the branch (integration test with `gfortran` and `llvm`
+  and passes on the branch (accept the body's fail-before/pass-after claim
+  when it names the base SHA and the failure and CI runs the test's labels;
+  verify it locally with Pixi/LLVM 11 for adoption, rewrite, R2 changes, or
+  a claim that looks inconsistent with the diff) (integration test with `gfortran` and `llvm`
   labels preferred; diagnostics appended to
   `tests/errors/continue_compilation_1.f90`, #13877, #12339). CI/docs-only
   changes are judged by their own harness tests and the linked failing run.
@@ -183,7 +206,8 @@ removal is a blocker regardless of class.
 - **G8 Reviews.** No unresolved changes-requested review or blocker-level
   thread from a member or the area owner (coarrays: bonachea, #12466).
   Non-blocking points may become follow-up issues (#12222 → #12339).
-- **G9 Main health.** If `main`'s Quick is red, fixing `main` comes first
+- **G9 Main health.** Check the latest completed Quick run on `main` (command
+  in "Batches", step 2). If it is red, fixing `main` comes first
   (smallest test/CI-only fix forward; a PR red only because of `main` waits
   for that fix and a rebase, #15913).
 
@@ -193,10 +217,11 @@ removal is a blocker regardless of class.
 | --- | --- | --- |
 | Both halves pass | **MERGE** | Merge with a merge commit (`gh pr merge N --merge` / `merge_pull_request` method `merge`); stacks bottom-up; then re-check G4 for the rest of the batch and watch `main`'s Quick. |
 | Only G3 pending, content R0–R2 sound | **WAIT CI** | List runs to approve (fork) or pending jobs; enable auto-merge only if the user asked. |
-| External PR, conflicts | **REQUEST** | Comment T1, mark draft. |
-| External PR, CI red because of the PR | **REQUEST** | Comment T2, mark draft. |
-| PR red or conflicting because of `main` | **REBASE** | Fix `main` first (G9); comment T3 on external PRs; rebase the user's own branches and rerun. |
-| External PR, sound content (R1/R2), but stalled on process (conflicts the author can't resolve, merge-from-main history, missing LLVM 11 refs, small defects) or reached by the user's fix-issue batch | **ADOPT** | Cherry-pick its commit(s) unchanged (authorship preserved) onto a fresh branch from `main` in the user's fork; fix defects in *separate* follow-up commits; open a draft PR crediting `@author` and "builds on #N"; run the fix-issue verification; comment T4 on the original. |
+| Someone else's PR, conflicts | **REQUEST** | Comment T1; mark external PRs draft (members: comment only). |
+| Someone else's PR, CI red because of the PR | **REQUEST** | Comment T2; mark external PRs draft (members: comment only). |
+| The user's own PR, conflicts or stale per G4 | **REBASE** | Rebase onto `main` (`--force-with-lease`), refresh references with LLVM 11 if needed, rerun Quick. |
+| PR red or conflicting because of `main` | **REBASE** | Fix `main` first (G9); comment T3 on someone else's PR; rebase the user's own branches and rerun. |
+| External PR, sound content (R1/R2), and REQUEST does not apply or did not work: the author has not responded for 7+ days after a request, the defect is one the author cannot fix (LLVM 11 references, merge-from-main history to untangle), or the user's fix-issue batch reached the issue | **ADOPT** | Cherry-pick its commit(s) unchanged (authorship preserved) onto a fresh branch from `main` in the user's fork; fix defects in *separate* follow-up commits; open a draft PR crediting `@author` and "builds on #N"; run the fix-issue verification; comment T4 on the original. |
 | External PR whose fix is in the wrong layer, incomplete, or adds plumbing, but has a useful test | **REWRITE** | Same as ADOPT, but write the fix anew (smaller or more complete) in the user's commit, keep the contributor's test commit, credit them (#15962 → #15990, #15924 → #16002); comment T4. |
 | Several PRs for one issue | **CONSOLIDATE** | Keep the most complete test and correct-layer fix (tie-break: opened first, then simpler); adopt it; credit the others; comment T5 on each and close after the winner merges (#15940/#15941 → #15987). |
 | Content finding the author can fix (missing test, misplaced test, unrelated edit, missing backend label, description out of date) | **REQUEST** | One review comment per finding, each concrete and quoting the rule (style: "Please add this into continue compilation." + link to AGENTS.md test placement). |
@@ -207,12 +232,18 @@ removal is a blocker regardless of class.
 | Merged, then a narrow regression appears | **FIX FORWARD** | File the issue, open the smallest scoped fix with a test for the affected backend (#15949 → #15951); revert only if a fix is not hours away (#15508 → #15510/#15511). |
 
 Every leftover or adjacent bug found while judging goes into an issue
-(search open and closed issues first) and the PR's "Not covered" list.
+(search open and closed issues first) and the PR's "Not covered" list. In
+assess mode, list them as "to file" instead.
+
+Prefer REQUEST over ADOPT the first time: it keeps the contributor in the
+loop and costs the maintainer nothing. ADOPT is for when waiting would cost
+more than redoing.
 
 ### Comment templates
 
-Use the maintainer's wording; fill in numbers; end with the attribution
-footer the session requires.
+Use the maintainer's wording and fill in numbers. Comments follow the
+running environment's rules for GitHub comments; commits and PR bodies
+follow AGENTS.md (no AI attribution or co-author trailers).
 
 - **T1** "This pull request has merge conflicts with `main`. Please resolve
   the conflicts (marking this as a draft until then)."
@@ -230,7 +261,9 @@ footer the session requires.
 ## Batches
 
 1. Resolve the full PR list (all pages); record it once.
-2. Check `main` health (G9) first.
+2. Check `main` health (G9) first: `gh run list --repo lfortran/lfortran
+   --workflow Quick-Checks-CI.yml --branch main --limit 3` (or the GitHub
+   Actions list tool); a red latest completed run means fix `main` first.
 3. Group: stacks (bottom-up), duplicate sets (same issue or same diff),
    independent PRs.
 4. Judge content for all PRs (independent PRs in parallel subagents, read
@@ -249,10 +282,16 @@ footer the session requires.
 #N <title> (@author, external|member|own, R<k>) — VERDICT
 Content: <layers>, <+/- behavior vs mechanical>, <local|non-local: consumers>,
          placement <ok|issue>, mitigations <present/missing>, design <none|...>
-Gates:   G1 ✓ G2 ✓ G3 ✓ (12/12 on abc1234) G4 ✓ G5 ✓ G6 ✓ G7 n/a G8 ✓ G9 ✓
+Gates:   G1 ✓ G2 ✗ (conflict) G3 pending (awaiting approval on abc1234)
+         G4 ✓ G5 ✓ (claim) G6 ✓ G7 n/a G8 ✓ G9 ✓
 Action:  <merged at ... | commented T1 + drafted | adopted as #M | ...>
-Follow-ups: <issues filed or linked>
+         (assess mode: "would ...")
+Follow-ups: <issues filed, linked, or "to file">
 ```
+
+Gate markers: `✓` pass, `✗` fail (say why), `pending` (CI running or
+awaiting approval), `?` could not be determined (say what is missing),
+`n/a`.
 
 End a batch with a table of every PR and its verdict; never present a
 partially processed batch as complete.
