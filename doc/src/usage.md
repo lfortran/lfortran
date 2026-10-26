@@ -132,6 +132,36 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+### Jupyter kernel
+
+`lfortran kernel -f FILE` serves one Fortran session to Jupyter clients
+(`jupyter console --existing FILE`, or any other Jupyter client). A build
+with LLVM uses LFortran's own implementation of the Jupyter messaging
+protocol, which needs no third-party library. If FILE does not exist, the
+kernel listens on free ports and writes it. The plain `lfortran` prompt
+still runs its cells itself.
+
+The kernel runs one cell at a time, in the order the cells arrive. Every
+client sees every cell's output. A cell's output is shown when the cell
+finishes or reads input. A cell that fails aborts the cells waiting behind
+it, unless it was sent with `stop_on_error` false.
+
+A READ asks the client that ran the cell. If that client disconnects, the
+READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes
+on, but any other READ stops the kernel with a runtime error, as it stops a
+program. STOP, ERROR STOP and a crash stop the kernel too.
+
+`lfortran kernel -f FILE --managed` stops when its last client disconnects,
+also during a cell that does not end, and removes the connection file when
+it stops. A running cell cannot be interrupted yet. Whoever can read the
+connection file can run code as its owner, so the kernel writes it readable
+by its owner only.
+
+In a build with `WITH_XEUS=yes`, `lfortran kernel` without `--managed` runs
+the Xeus kernel instead. A `--managed` kernel is still LFortran's own, as
+Xeus cannot tell when the last client disconnects. See
+`src/lfortran/jupyter.cpp`.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
