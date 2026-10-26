@@ -1,6 +1,8 @@
 program matmul_09
-! Folding `matmul` of integer(4) parameter arrays wraps around in the
-! width of the result kind, like the run-time `matmul` (#15872)
+! Intentionally non-conforming: the integer products overflow in a constant
+! expression. Checks that folding `matmul` does not crash and wraps in the
+! result kind, like LFortran's other folding (huge(1)+1, sum, dot_product)
+! (#15872). GFortran rejects the overflow unless given -fno-range-check.
 implicit none
 integer, parameter :: a(1,1) = reshape([100000], [1,1])
 integer, parameter :: x(1) = [100000]
