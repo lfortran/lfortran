@@ -316,25 +316,28 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                 --lfortran $<TARGET_FILE:lfortran>
         )
-        # The prompt is a client of the shared kernel, here the built-in one.
-        if (NOT WITH_XEUS)
-            add_test(
-                NAME test_session
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-            )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
-            add_test(
-                NAME test_session_regressions
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-            )
-            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
-                SKIP_RETURN_CODE 77)
+        # The prompt is a client of the shared kernel.
+        if (WITH_XEUS)
+            set(LFORTRAN_KERNEL_KIND)
+        else()
+            set(LFORTRAN_KERNEL_KIND --builtin)
         endif()
+        add_test(
+            NAME test_session
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
+                --lfortran $<TARGET_FILE:lfortran> ${LFORTRAN_KERNEL_KIND}
+        )
+        set_tests_properties(test_session PROPERTIES TIMEOUT 180
+            SKIP_RETURN_CODE 77)
+        add_test(
+            NAME test_session_regressions
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
+                --lfortran $<TARGET_FILE:lfortran> ${LFORTRAN_KERNEL_KIND}
+        )
+        set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
+            SKIP_RETURN_CODE 77)
         # The Xeus kernel, or else the built-in one
         if (NOT EMSCRIPTEN)
             add_test(

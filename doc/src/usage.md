@@ -182,7 +182,9 @@ The kernel is LFortran's own implementation of the Jupyter messaging protocol
 library. In a build with `WITH_XEUS=yes`, `lfortran kernel` runs the Xeus
 kernel instead, but the kernel a prompt starts is still LFortran's own, as
 Xeus cannot tell when the last client disconnects; the client is always
-LFortran's own. See `src/lfortran/jupyter.cpp`.
+LFortran's own. With Xeus 5, a READ whose client has disconnected waits
+instead of failing, and `lfortran -v` does not show a cell's AST, ASR and LLVM
+IR in that kernel. See `src/lfortran/jupyter.cpp`.
 
 ## Invoking LFortran
 

@@ -400,9 +400,18 @@ def verbose(exe, cwd):
         shows_all(prompt(exe, cwd, ["-v", "--connect", ports["path"]], b"1+1\r\x04"))
 
 
+def xeus_connection_files(exe, cwd):
+    """The Xeus kernel serves a connection file whose stdin channel the
+    built-in one cannot (a host name rather than an IPv4 address) with
+    Xeus's own server."""
+    with kernel(exe, cwd, ip="localhost") as (_, join, _ports):
+        check(value(join(), "6*7") == "42", "a cell did not run")
+
+
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, stop_ends_session, stop_on_error,
-    verbose]}
+    verbose, xeus_connection_files]}
+XEUS_ONLY = {"xeus_connection_files"}
 
 
 def main():
@@ -422,6 +431,8 @@ def main():
     failed = []
     try:
         for name in args.case or CASES:
+            if args.builtin and name in XEUS_ONLY:
+                continue
             try:
                 CASES[name](exe, cwd)
                 print(name + ": passed", flush=True)
