@@ -17,6 +17,7 @@
 
 #include <lfortran/fortran_kernel.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/jupyter.h>
 #include <lfortran/utils.h>
 #include <libasr/string_utils.h>
 
@@ -244,13 +245,20 @@ namespace LCompilers::LFortran {
     }
 #endif
 
-    int run_kernel(const std::string &connection_filename)
+    int run_kernel(const std::string &connection_filename, CompilerOptions &options,
+        bool managed)
     {
 #ifdef __EMSCRIPTEN__
         (void)connection_filename;
+        (void)options;
+        (void)managed;
         throw LCompilersException("run_kernel() is not available in the WASM build");
         return 1;
 #else
+        // Xeus does not tell when its last client disconnects, so the kernel
+        // the prompt starts is the built-in one.
+        if (managed) return jupyter::run_builtin_kernel(connection_filename, options, true);
+
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();
 
         // Create interpreter instance

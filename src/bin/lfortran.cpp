@@ -74,6 +74,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <lfortran/jupyter.h>
 
 
 #ifdef WITH_LSP
@@ -2842,10 +2843,11 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (kernel) {
-#ifdef HAVE_LFORTRAN_XEUS
-        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
+#if defined(HAVE_LFORTRAN_XEUS) || defined(HAVE_LFORTRAN_LLVM)
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
+            opts.arg_kernel_managed);
 #else
-        std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
+        std::cerr << "The kernel subcommand requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }

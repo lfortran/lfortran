@@ -746,7 +746,10 @@ See [how to run tests](#tests) to make sure all tests pass
 
 ### Enabling the Jupyter Kernel
 
-To install the Jupyter kernel, install the following Conda packages also:
+A build with LLVM has a Jupyter kernel (`lfortran kernel -f FILE`), LFortran's
+own implementation of the protocol, which needs no other library; its
+kernelspec is installed with LFortran. To use the Xeus kernel instead, install
+the following Conda packages also:
 ```
 conda install xeus=6.0.0 xeus-zmq=4.0.0 nlohmann_json
 ```
