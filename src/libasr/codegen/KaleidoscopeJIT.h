@@ -33,6 +33,8 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
 
 #if LLVM_VERSION_MAJOR >= 13
@@ -41,6 +43,11 @@
 
 #if LLVM_VERSION_MAJOR >= 21
 #include "llvm/ExecutionEngine/Orc/SelfExecutorProcessControl.h"
+#endif
+
+// absoluteSymbols(), which newer LLVM declares here rather than in Core.h
+#if __has_include("llvm/ExecutionEngine/Orc/AbsoluteSymbols.h")
+#include "llvm/ExecutionEngine/Orc/AbsoluteSymbols.h"
 #endif
 
 #if LLVM_VERSION_MAJOR >= 16
@@ -119,6 +126,25 @@ public:
       ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
       ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);
     }
+#ifdef _WIN32
+    // STOP calls exit(), which must be the host's, whose atexit handlers run:
+    // the search of the process can find the exit() of another C runtime,
+    // such as msvcrt.dll's, which does not run them.
+    defineHostSymbol("exit", reinterpret_cast<void *>(&::exit));
+#endif
+  }
+
+  // Resolves `name` in the code it compiles to `address` in the host.
+  void defineHostSymbol(StringRef name, void *address) {
+    SymbolMap symbols;
+#if LLVM_VERSION_MAJOR >= 17
+    symbols[Mangle(name)] = {ExecutorAddr::fromPtr(address), JITSymbolFlags::Exported};
+#else
+    symbols[Mangle(name)] = JITEvaluatedSymbol(
+        static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(address)),
+        JITSymbolFlags::Exported);
+#endif
+    cantFail(JITDL.define(absoluteSymbols(std::move(symbols))));
   }
 #else
   // LLVM 7: Constructor takes TargetMachine directly, different API structure

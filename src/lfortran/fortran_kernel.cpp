@@ -1,20 +1,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#ifdef _WIN32
-#    include <io.h>
-#    define fileno _fileno
-#    define dup _dup
-#    define dup2 _dup2
-#    define close _close
-#    include <fcntl.h>
-#else
-#    include <unistd.h>
-#endif
-
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
 #include <xeus/xkernel_configuration.hpp>
@@ -38,44 +24,6 @@ namespace nl = nlohmann;
 
 namespace LCompilers::LFortran {
 
-
-    class RedirectStdout
-    {
-    public:
-        RedirectStdout(std::string &out) : _out{out} {
-            stdout_fileno = fileno(stdout);
-            std::cout << std::flush;
-            fflush(stdout);
-            saved_stdout = dup(stdout_fileno);
-#ifdef _WIN32
-            if (_pipe(out_pipe, 65536, O_BINARY) != 0) {
-#else
-            if (pipe(out_pipe) != 0) {
-#endif
-                throw LCompilersException("pipe() failed");
-            }
-            dup2(out_pipe[1], stdout_fileno);
-            close(out_pipe[1]);
-            printf("X");
-        }
-
-        ~RedirectStdout() {
-            fflush(stdout);
-            auto n = read(out_pipe[0], buffer, MAX_LEN);
-            dup2(saved_stdout, stdout_fileno);
-            close(saved_stdout);
-            close(out_pipe[0]);
-            // The first byte is the "X" written by the constructor.
-            _out = n > 1 ? std::string(&buffer[1], n - 1) : std::string();
-        }
-    private:
-        std::string &_out;
-        static const size_t MAX_LEN=1024;
-        char buffer[MAX_LEN+1] = {0};
-        int out_pipe[2];
-        int saved_stdout;
-        int stdout_fileno;
-    };
 
     // Xeus serializes the messages after execute_request_impl() returns, and
     // nlohmann::json throws on a string that is not UTF-8, which would leave
@@ -159,19 +107,11 @@ namespace LCompilers::LFortran {
         io.clear_output = [&]() { if (!silent) clear_output(false); };
         // A disabled input channel must not read the host terminal.
         if (!config.allow_stdin) io.input = [](std::string &) { return 1; };
-        FortranEvaluator::CellResult cell;
-        std::string std_out;
-        try {
-            RedirectStdout capture(std_out);
-            cell = e.execute(code, false, io);
-        } catch (const LCompilersException &error) {
-            // Capturing stdout failed; the request still needs a reply.
-            cell.ok = false;
-            cell.error_name = error.name();
-            cell.error_value = error.msg();
-        }
+        io.output = [&](int stream, const std::string &text) {
+            if (!silent) publish_stream(stream == 1 ? "stdout" : "stderr", utf8(text));
+        };
+        FortranEvaluator::CellResult cell = e.execute(code, false, io);
         if (!silent) {
-            if (!std_out.empty()) publish_stream("stdout", utf8(std_out));
             if (!cell.output.empty()) publish_stream("stdout", utf8(cell.output));
             if (!cell.ok) publish_stream("stderr", utf8(cell.error_text()));
             else if (!cell.diagnostics.empty()) {
