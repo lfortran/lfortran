@@ -45,8 +45,8 @@
 #include "llvm/ExecutionEngine/Orc/SelfExecutorProcessControl.h"
 #endif
 
-// absoluteSymbols(), which newer LLVM declares here rather than in Core.h
-#if __has_include("llvm/ExecutionEngine/Orc/AbsoluteSymbols.h")
+// absoluteSymbols() moved out of Core.h in LLVM 20.
+#if LLVM_VERSION_MAJOR >= 20
 #include "llvm/ExecutionEngine/Orc/AbsoluteSymbols.h"
 #endif
 
