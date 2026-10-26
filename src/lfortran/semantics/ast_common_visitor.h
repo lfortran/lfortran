@@ -17534,9 +17534,9 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
                 associate_name = is_variable_associate_name(v);
-                // Contiguous only if its selector is. The standard allows a
-                // non-contiguous one via a copy of the element sequence; not
-                // implemented yet, so it is rejected (fix in a separate PR).
+                // Contiguous only if its selector is. An element of a
+                // non-contiguous one is rejected: its address is not
+                // followed by the next elements in memory.
                 if (associate_name && !v->m_contiguous_attr) {
                     return "element of a non-contiguous array";
                 }
