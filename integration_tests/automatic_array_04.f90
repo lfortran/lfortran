@@ -17,14 +17,16 @@ contains
 
     subroutine s(n)
         integer, intent(in) :: n
-        integer :: a(n), b(2:n), c(n, 3)
+        integer :: a(n), b(2:n), c(n, 3), d(max(n, -5))
         a = 1
         b = 1
         c = 1
+        d = 1
         if (size(a) /= 0 .or. sum(a) /= 0) error stop 1
         if (size(b) /= 0 .or. lbound(b, 1) /= 1 .or. ubound(b, 1) /= 0) error stop 2
         if (size(c) /= 0 .or. any(shape(c) /= [0, 3])) error stop 3
         if (ubound(c, 1) /= 0 .or. ubound(c, 2) /= 3) error stop 4
+        if (size(d) /= 0 .or. ubound(d, 1) /= 0) error stop 11
         call t(a, n)
     end subroutine
 

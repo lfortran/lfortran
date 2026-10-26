@@ -4161,17 +4161,35 @@ public:
         }
     };
 
+    // Whether `e` is max() of two integers one of which is a constant that is
+    // not negative, so that `e` cannot be negative either.
+    static bool is_nonnegative_integer_max(ASR::expr_t* e) {
+        if (!ASRUtils::is_integer_max(e)) {
+            return false;
+        }
+        ASR::IntrinsicElementalFunction_t* f =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+        for (size_t i = 0; i < f->n_args; i++) {
+            int64_t v = 0;
+            if (ASRUtils::extract_value(ASRUtils::expr_value(f->m_args[i]), v)
+                    && v >= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // An explicit-shape dimension whose upper bound is below its lower bound
     // has zero extent, so a length known only at run time is max(length, 0).
-    // A length that cannot be negative, such as size(x), needs no clamp. A
-    // length that calls a procedure or an array intrinsic is left as it is:
-    // the passes turn max() of it into a call of a generated function, which
-    // they do not yet support in the bounds of a type.
+    // A length that cannot be negative, such as size(x) or max(n, 0), needs
+    // no clamp. A length that calls a procedure or an array intrinsic is left
+    // as it is: the passes turn max() of it into a call of a generated
+    // function, which they do not yet support in the bounds of a type.
     ASR::expr_t* explicit_shape_extent(ASR::expr_t* length) {
         if (length == nullptr || ASRUtils::expr_value(length) != nullptr ||
                 ASR::is_a<ASR::ArraySize_t>(*length) ||
                 ASR::is_a<ASR::StringLen_t>(*length) ||
-                ASRUtils::is_integer_max(length)) {
+                is_nonnegative_integer_max(length)) {
             return length;
         }
         ExtentCallFinder call_finder;
