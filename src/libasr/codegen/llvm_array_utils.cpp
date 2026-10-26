@@ -1180,9 +1180,22 @@ namespace LCompilers {
                     ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
                 ASR::String_t* str = ASRUtils::get_string_type(array_type);
 
-                memory_holder = llvm_utils->get_string_data(
-                        str,
-                        builder->CreateLoad(load_type, get_pointer_to_data(array_exp, array_type, array, llvm_utils->module)), true);
+                llvm::Value* const string_desc = builder->CreateLoad(load_type,
+                    get_pointer_to_data(array_exp, array_type, array, llvm_utils->module));
+                // The data pointer of an array of strings points to a string
+                // descriptor, which a pointer array that was nullified does
+                // not have: do not read the data of a descriptor that is not
+                // there.
+                llvm::Value* const is_string_desc_null = builder->CreateICmpEQ(
+                    builder->CreatePtrToInt(string_desc, llvm::Type::getInt64Ty(context)),
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                llvm::BasicBlock *checkStringDataBB = llvm::BasicBlock::Create(context, "check_string_data", fn);
+                wrapperNullBB = llvm::BasicBlock::Create(context, "string_desc_null", fn);
+                builder->CreateCondBr(is_string_desc_null, wrapperNullBB, checkStringDataBB);
+                builder->SetInsertPoint(wrapperNullBB);
+                builder->CreateBr(mergeBB);
+                builder->SetInsertPoint(checkStringDataBB);
+                memory_holder = llvm_utils->get_string_data(str, string_desc, true);
             } else if(ASRUtils::non_unlimited_polymorphic_class(array_type)){
                 auto const struct_sym = ASR::down_cast<ASR::Struct_t>( ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_exp)));
                 llvm::Type* const class_type = llvm_utils->getClassType(struct_sym);
