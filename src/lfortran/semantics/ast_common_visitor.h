@@ -8349,7 +8349,13 @@ public:
                                                     !ASRUtils::is_complex(*ASRUtils::expr_type(init_val)) &&
                                                     ASRUtils::expr_value(init_val)) {
                                                     ASR::expr_t* init_val_value = ASRUtils::expr_value(init_val);
-                                                    if (ASR::is_a<ASR::RealConstant_t>(*init_val_value)) {
+                                                    if (ASR::is_a<ASR::RealConstant_t>(*init_val_value) &&
+                                                        !ASRUtils::is_array(v->m_type)) {
+                                                        // kind=10 and kind=16 m_r is a pointer to the value's
+                                                        // bytes, so fold with the kind-aware implicit cast.
+                                                        ImplicitCastRules::set_converted_value(al, x.base.base.loc,
+                                                            &init_val, ASRUtils::expr_type(init_val), v->m_type, diag);
+                                                    } else if (ASR::is_a<ASR::RealConstant_t>(*init_val_value)) {
                                                         init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(
                                                             al, x.base.base.loc, init_val,
                                                             ASR::cast_kindType::RealToComplex, v->m_type));
@@ -8362,8 +8368,7 @@ public:
                                                 if (ASR::is_a<ASR::RealConstant_t>(*init_val)) {
                                                     ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(init_val);
                                                     if (!ASRUtils::is_array(v->m_type) &&
-                                                        (ASRUtils::is_complex(*v->m_type) ||
-                                                         ASRUtils::is_integer(*v->m_type) ||
+                                                        (ASRUtils::is_integer(*v->m_type) ||
                                                          ASRUtils::is_real(*v->m_type))) {
                                                         // kind=10 and kind=16 m_r is a pointer to the value's
                                                         // bytes, so fold with the kind-aware implicit cast.

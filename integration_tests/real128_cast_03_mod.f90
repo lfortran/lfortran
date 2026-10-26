@@ -14,4 +14,6 @@ module real128_cast_03_mod
     parameter (three_halves = 1.5_real128)
     integer :: n
     parameter (n = 2.5_real128)
+    complex(real64) :: zh
+    parameter (zh = 1.5_real128)
 end module real128_cast_03_mod
