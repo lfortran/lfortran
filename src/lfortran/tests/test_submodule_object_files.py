@@ -8,8 +8,9 @@ program must run the new code of the submodule, as it does when a build
 system rebuilds just what changed (#14167). The submodule gains variables
 that need setting up at run time, which the program's object file cannot
 know about, and loses them again, which the program's object file must not
-depend on. The program is also compiled before the submodule. Everything is
-checked with and without `--fast`.
+depend on. The program is also compiled before the submodule, which calls a
+private procedure of its parent. Everything is checked with and without
+`--fast`.
 """
 
 import argparse
@@ -66,6 +67,38 @@ contains
         if (associated(sp)) r = r + 10 * size(sp)
         if (.not. associated(obj%q)) r = r + 100
         if (objc(2)%nm == "abcd") r = r + 1000
+    end procedure
+end submodule
+"""
+
+# A private procedure of the parent that only the submodule calls. The
+# program's object file, which emits the parent, must still define it, under
+# a name the submodule's object file can refer to. gfortran 13 does not
+# export such a procedure, which is why this is not in an integration test.
+MODULE_PRIVATE = """\
+module sof_m
+implicit none
+private
+public :: f
+interface
+    module function f() result(r)
+        integer :: r
+    end function
+end interface
+contains
+    integer function helper(i)
+        integer, intent(in) :: i
+        helper = i + 100
+    end function
+end module
+"""
+
+SUBMODULE_PRIVATE = """\
+submodule (sof_m) sof_s
+implicit none
+contains
+    module procedure f
+        r = helper({value})
     end procedure
 end submodule
 """
@@ -129,6 +162,15 @@ def check(lfortran, workdir, flags):
         write(cwd, "p.f90", PROGRAM)
         compile(lfortran, cwd, flags, ["m", "p", "s"])
         link_and_run(lfortran, cwd, flags, "1143")
+    with tempfile.TemporaryDirectory(dir=workdir) as cwd:
+        write(cwd, "m.f90", MODULE_PRIVATE)
+        write(cwd, "s.f90", SUBMODULE_PRIVATE.format(value=1))
+        write(cwd, "p.f90", PROGRAM)
+        compile(lfortran, cwd, flags, ["m", "p", "s"])
+        link_and_run(lfortran, cwd, flags, "101")
+        write(cwd, "s.f90", SUBMODULE_PRIVATE.format(value=2))
+        compile(lfortran, cwd, flags, ["s"])
+        link_and_run(lfortran, cwd, flags, "102")
 
 
 def main():
