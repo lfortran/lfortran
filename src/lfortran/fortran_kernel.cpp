@@ -272,6 +272,7 @@ namespace LCompilers::LFortran {
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
                              xeus::make_null_debugger,
                              debugger_config);
+        jupyter::kernel_started();
 
         std::cout <<
             "Starting xeus-fortran kernel...\n\n"

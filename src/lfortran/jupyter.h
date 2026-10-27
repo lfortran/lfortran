@@ -71,13 +71,18 @@ public:
 
 // Stops this process, a kernel, once the process `parent` has exited, and
 // removes `connection_file`, which `parent` wrote (`lfortran kernel
-// --parent`); the kernel also removes it when it exits by itself. The prompt
-// starts its kernel so, which then stops with the prompt however the prompt
-// ends: also if it is killed or its terminal closes, when it cannot end the
-// kernel itself. A parent that has already exited stops the kernel at once.
-// Returns false, and does nothing, if `parent` is not a process ID or is a
-// running process other than this process's parent.
+// --parent`); once the kernel has started on that file (kernel_started), it
+// also removes it when it exits by itself or on SIGTERM. The prompt starts
+// its kernel so, which then stops with the prompt however the prompt ends:
+// also if it is killed or its terminal closes, when it cannot end the kernel
+// itself. A parent that has already exited stops the kernel at once. Returns
+// false, and does nothing, if `parent` is not a process ID or is a running
+// process other than this process's parent.
 bool stop_with_parent(long long parent, const std::string &connection_file);
+
+// Tells that the kernel listens as its connection file says. A kernel that
+// fails to start leaves the file alone.
+void kernel_started();
 
 // Makes Ctrl-C end the prompt, after it ends the kernel that the prompt
 // started (Client::start), removes the kernel's connection file and restores

@@ -1123,13 +1123,13 @@ HANDLE take_owned_process()
 BOOL WINAPI interrupt_prompt(DWORD event)
 {
     if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
+    release_owned_connection();
     HANDLE handle = take_owned_process();
     if (handle) {
         TerminateProcess(handle, 1);
         WaitForSingleObject(handle, 2000);
         CloseHandle(handle);
     }
-    release_owned_connection();
     if (terminal_saved) SetConsoleMode(terminal_input, terminal_mode);
     // The default handler then ends the prompt, as without this handler.
     return FALSE;
@@ -1137,6 +1137,7 @@ BOOL WINAPI interrupt_prompt(DWORD event)
 #else
 extern "C" void interrupt_prompt(int)
 {
+    release_owned_connection();
     const pid_t pid = static_cast<pid_t>(owned_pid);
     owned_pid = 0;
     if (pid > 0) {
@@ -1145,7 +1146,6 @@ extern "C" void interrupt_prompt(int)
         kill(pid, SIGKILL);
         waitpid(pid, nullptr, 0);
     }
-    release_owned_connection();
     // TCSANOW: the output may never drain, as when nothing reads it.
     if (terminal_saved) tcsetattr(STDIN_FILENO, TCSANOW, &terminal_state);
     // End by SIGINT, as without this handler, so that a shell knows that
@@ -1160,25 +1160,27 @@ extern "C" void interrupt_prompt(int)
 }
 #endif
 
-// Ends the kernel this prompt started and removes its connection file.
-// `wait_ms` is how long a SIGTERM may take to finish, including the
-// built-in kernel flushing output, before the process is killed. Safe to
-// call twice: the first call takes the process.
+// Removes the connection file of the kernel this prompt started and ends the
+// kernel. The file goes first, as this prompt may not live to remove it
+// after the kernel has gone. `wait_ms` is how long a SIGTERM may take to
+// finish, including the built-in kernel flushing output, before the process
+// is killed. Safe to call twice: the first call takes the process.
 void end_owned_kernel(int wait_ms)
 {
 #ifdef _WIN32
+    release_owned_connection();
     HANDLE handle = take_owned_process();
     if (handle) {
         TerminateProcess(handle, 1);
         WaitForSingleObject(handle, static_cast<DWORD>(wait_ms));
         CloseHandle(handle);
     }
-    release_owned_connection();
 #else
     sigset_t blocked, previous;
     sigemptyset(&blocked);
     sigaddset(&blocked, SIGINT);
     sigprocmask(SIG_BLOCK, &blocked, &previous);
+    release_owned_connection();
     const pid_t pid = static_cast<pid_t>(owned_pid);
     owned_pid = 0;
     if (pid > 0) {
@@ -1197,7 +1199,6 @@ void end_owned_kernel(int wait_ms)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
-    release_owned_connection();
     sigprocmask(SIG_SETMASK, &previous, nullptr);
 #endif
 }
@@ -1618,6 +1619,31 @@ void own_connection_file(const std::string &connection_file)
     std::atexit(remove_owned_connection_file);
 }
 
+// The connection file of a kernel that stops with its parent. The kernel
+// owns it once it has started on it (kernel_started), not if it fails to.
+const std::string *parent_connection_file = nullptr;
+
+// Removes the connection file that the kernel owns, then ends the process
+// as SIGTERM does by default. The Xeus kernel, which does not handle
+// SIGTERM, then removes the file too. The built-in kernel replaces this
+// handler with its own.
+extern "C" void terminate_kernel(int)
+{
+#ifdef _WIN32
+    remove_owned_connection_file();
+#else
+    if (owned_connection_file) unlink(owned_connection_file->c_str());
+#endif
+    std::signal(SIGTERM, SIG_DFL);
+#ifndef _WIN32
+    sigset_t terminate;
+    sigemptyset(&terminate);
+    sigaddset(&terminate, SIGTERM);
+    sigprocmask(SIG_UNBLOCK, &terminate, nullptr);
+#endif
+    std::raise(SIGTERM);
+}
+
 #ifdef _WIN32
 // The ID of the process that created this one, which may have exited since.
 // 0 if it cannot be told.
@@ -1681,10 +1707,17 @@ bool stop_with_parent(long long parent, const std::string &connection_file)
         return false;
     }
 #endif
-    own_connection_file(connection_file);
-    // Stop on SIGTERM, also if the parent ignored it, which this process
-    // inherited. The built-in kernel then handles it.
-    std::signal(SIGTERM, SIG_DFL);
+    parent_connection_file = new std::string(connection_file);
+#ifndef _WIN32
+    // Stop on SIGTERM also if the parent blocked it, which this process
+    // inherited, as do the threads it starts from here on.
+    sigset_t terminate;
+    sigemptyset(&terminate);
+    sigaddset(&terminate, SIGTERM);
+    sigprocmask(SIG_UNBLOCK, &terminate, nullptr);
+#endif
+    // Also if the parent ignored it
+    std::signal(SIGTERM, terminate_kernel);
     std::thread([=]() {
 #ifdef _WIN32
         if (handle) {
@@ -1700,10 +1733,15 @@ bool stop_with_parent(long long parent, const std::string &connection_file)
 #endif
         std::remove(connection_file.c_str());
         // The built-in kernel stops as it does on SIGTERM, also during a
-        // cell. The Xeus kernel does not handle SIGTERM and terminates.
+        // cell. The Xeus kernel terminates.
         std::raise(SIGTERM);
     }).detach();
     return true;
+}
+
+void kernel_started()
+{
+    if (parent_connection_file) own_connection_file(*parent_connection_file);
 }
 
 // The built-in kernel
@@ -2090,6 +2128,7 @@ int run_builtin_kernel(const std::string &connection_filename, CompilerOptions &
         return 1;
     }
     if (!existing || managed) own_connection_file(connection_filename);
+    kernel_started();
     std::signal(SIGINT, request_stop);
     std::signal(SIGTERM, request_stop);
 
@@ -2162,6 +2201,8 @@ bool stop_with_parent(long long, const std::string &)
 {
     return true;
 }
+
+void kernel_started() {}
 
 void handle_interrupt() {}
 

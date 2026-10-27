@@ -208,6 +208,13 @@ def kill_pid(pid):
         pass
 
 
+def terminate_with_kernel(process):
+    """SIGTERM to the prompt and its kernel at once, as `pkill lfortran`"""
+    for pid, _ in children_of(process.pid):
+        os.kill(pid, signal.SIGTERM)
+    process.terminate()
+
+
 def large_output(exe, cwd):
     """A stream larger than the most a subscriber that does not read can be
     sent reaches the prompt, followed by the cell's idle status, for which
@@ -359,9 +366,12 @@ def prompt_departure(exe, cwd):
     if os.name == "posix":
         endings += [("hung up", None, None,
                 lambda process: process.send_signal(signal.SIGHUP)),
-            # The kernel inherits what the prompt ignores.
+            ("terminated with its kernel", None, None, terminate_with_kernel),
+            # The kernel inherits what the prompt ignores or blocks.
             ("killed while ignoring SIGTERM", None,
-                lambda: signal.signal(signal.SIGTERM, signal.SIG_IGN), kill)]
+                lambda: signal.signal(signal.SIGTERM, signal.SIG_IGN), kill),
+            ("killed while blocking SIGTERM", None,
+                lambda: signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM}), kill)]
     for how, cell, preexec_fn, end in endings:
         process, connection = started_prompt(exe, cwd, preexec_fn)
         client = None
@@ -437,7 +447,8 @@ def prompt_killed_in_cell(exe, cwd):
 def kernel_parent(exe, cwd):
     """`lfortran kernel --parent` takes only the process that started the
     kernel. Another running process, or what is not a process ID, is an
-    error that leaves the connection file alone."""
+    error that leaves the connection file alone, as does a kernel that
+    cannot start on the file."""
     connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
     write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
     content = connection.read_bytes()
@@ -457,6 +468,15 @@ def kernel_parent(exe, cwd):
         other.kill()
         other.wait()
         connection.unlink()
+    text = "not a connection file\n"
+    connection.write_text(text)
+    result = subprocess.run(
+        [exe, "--no-color", "kernel", "-f", str(connection), "--parent", str(os.getpid())],
+        capture_output=True, cwd=cwd, timeout=60)
+    check(result.returncode != 0, "the kernel started on a file that is not a connection file")
+    check(connection.exists() and connection.read_text() == text,
+        "a kernel that did not start removed the file")
+    connection.unlink()
 
 
 def stop_ends_session(exe, cwd):
