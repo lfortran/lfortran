@@ -3143,6 +3143,12 @@ fmt = true
 options = "--fixed-form"
 
 [[test]]
+filename = "fmt_fixed_form_infer1.F"
+fmt = true
+cpp_infer = true
+options = "--fixed-form-infer"
+
+[[test]]
 filename = "../integration_tests/doloop_19.f90"
 ast = true
 ast_f90 = true

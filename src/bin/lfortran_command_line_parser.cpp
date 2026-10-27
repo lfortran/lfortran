@@ -657,9 +657,18 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
         }
 
+        // The source file whose extension selects the fixed form and
+        // preprocessing below: fmt and pywrap take their own file
+        std::string source_file = opts.arg_file;
+        if (*fmt) {
+            source_file = opts.arg_fmt_file;
+        } else if (*pywrap) {
+            source_file = opts.arg_pywrap_file;
+        }
+
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
+        if (opts.fixed_form_infer && (endswith(source_file, ".f") || endswith(source_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 
@@ -679,7 +688,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.c_preprocessor = false;
         // Decide if a file gets preprocessing based on the extension
         // Gfortran does the same thing
-        } else if (opts.cpp_infer && (endswith(opts.arg_file, ".F90") || endswith(opts.arg_file, ".F"))) {
+        } else if (opts.cpp_infer && (endswith(source_file, ".F90") || endswith(source_file, ".F"))) {
             compiler_options.c_preprocessor = true;
         } else {
             compiler_options.c_preprocessor = false;
