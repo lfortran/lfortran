@@ -318,8 +318,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         )
         # The prompt starts the kernel that is built: the built-in one here.
         # These cases assume that kernel: a READ whose client leaves fails,
-        # `lfortran -v` reaches the interpreter, and a failed cell is aborted
-        # with an idle status.
+        # and a failed cell is aborted with an idle status.
         if (NOT WITH_XEUS)
             add_test(
                 NAME test_session
@@ -355,7 +354,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --lfortran $<TARGET_FILE:lfortran>
                     --case xeus_connection_files --case implicit_typing
                     --case prompt_departure --case prompt_killed_in_cell
-                    --case stop_ends_session
+                    --case stop_ends_session --case verbose
             )
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)

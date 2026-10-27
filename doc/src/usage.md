@@ -188,11 +188,9 @@ which needs no third-party library. In a build with `WITH_XEUS=yes`,
 `lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
 still ends that kernel when it exits. The Xeus kernel uses Xeus's own server
 for every channel. A READ whose client has disconnected waits there, and the
-clients behind that cell wait with it. A client's `lfortran -v` does not show
-the cell's AST, ASR and LLVM IR in that kernel, because Xeus does not pass
-that field of the request to the interpreter. A cell that fails aborts the
-requests already waiting with an error reply and no idle status, so a client
-that waits for the aborted cell to become idle waits with it. See
+clients behind that cell wait with it. A cell that fails aborts the requests
+already waiting with an error reply and no idle status, so a client that
+waits for the aborted cell to become idle waits with it. See
 `src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.
 
 ## Invoking LFortran

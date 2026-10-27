@@ -101,8 +101,12 @@ namespace LCompilers::LFortran {
         };
 #endif
         // `lfortran -v` is the execute_request field lfortran_verbose. Xeus
-        // does not give that field to the interpreter, so a cell here is
-        // never verbose.
+        // does not give the content to the interpreter, so the client also
+        // puts that field in the header.
+        const nl::json &header = parent_header();
+        const auto field = header.find("lfortran_verbose");
+        const bool verbose = field != header.end() && field->is_boolean()
+            && field->get<bool>();
         FortranEvaluator::CellResult cell = kernel::execute(e, code, io,
             [&](const std::string &name, const std::string &text) {
                 if (!silent) publish_stream(name, text);
@@ -110,7 +114,7 @@ namespace LCompilers::LFortran {
             [&](const std::string &text) {
                 if (!silent) publish_execution_result(execution_counter,
                     nl::json{{"text/plain", text}}, nl::json::object());
-            });
+            }, verbose);
         nl::json result;
         if (cell.ok) {
             result["status"] = "ok";

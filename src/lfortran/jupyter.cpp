@@ -1281,6 +1281,9 @@ bool Client::execute(const std::string &code, bool verbose)
         {"allow_stdin", true}, {"stop_on_error", true}};
     if (verbose) content["lfortran_verbose"] = true;
     Message request = new_message("execute_request", Object{}, std::move(content), session);
+    // Also in the header, which Xeus passes to the interpreter, unlike the
+    // rest of the content.
+    if (verbose) request.header["lfortran_verbose"] = true;
     if (!send_message(*shell, request, key)) return false;
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     bool replied = false, idle = false;
