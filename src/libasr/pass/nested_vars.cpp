@@ -762,11 +762,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             // a new module.
             current_scope = al.make_new<SymbolTable>(current_scope_copy);
             std::string parent_names = "";
+            // The context of a procedure of a module that this translation
+            // unit emits as a weak copy is a copy as well, and has the same
+            // name in every object file that emits one.
+            bool weak_definition = false;
             SymbolTable *parent_scope = ASRUtils::symbol_parent_symtab(it.first);
             while (parent_scope != nullptr) {
                 if (parent_scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner)) {
                     ASR::symbol_t *parent_sym = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
                     parent_names = std::string(ASRUtils::symbol_name(parent_sym)) + "__" + parent_names;
+                    if (ASR::is_a<ASR::Module_t>(*parent_sym)) {
+                        weak_definition = ASR::down_cast<ASR::Module_t>(
+                            parent_sym)->m_weak_definition;
+                    }
                 }
                 parent_scope = parent_scope->parent;
             }
@@ -974,7 +982,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             nullptr,
                                             nullptr,
                                             0,
-                                            false, false, false, nullptr);
+                                            false, false, false, weak_definition,
+                                            nullptr);
             if (is_any_variable_externally_defined) {
                 // this module is externally defined, so we mark it as external
                 current_scope->mark_all_variables_external(al);

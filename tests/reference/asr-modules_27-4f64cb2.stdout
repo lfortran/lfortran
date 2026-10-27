@@ -93,6 +93,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_build_array:
@@ -582,6 +583,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_build_keyval:
@@ -847,6 +849,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

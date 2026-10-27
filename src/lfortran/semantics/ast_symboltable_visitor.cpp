@@ -897,7 +897,7 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false, false, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -944,7 +944,7 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false, false, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {

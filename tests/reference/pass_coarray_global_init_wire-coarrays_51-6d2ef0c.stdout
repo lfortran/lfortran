@@ -1682,6 +1682,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     __lfortran_global_init_coarrays_51_a
                 ),
             coarrays_51_b:
@@ -1945,6 +1946,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     __lfortran_global_init_coarrays_51_b

@@ -32,12 +32,16 @@ namespace LCompilers {
     // A submodule is the exception. It is compiled into an object file of its
     // own, which a program compiled before it cannot know about, so every
     // procedure of the submodule calls the submodule's initializer on entry
-    // instead, and that initializer calls those of its ancestor submodules
-    // first. The program does not call the initializer of a submodule it
-    // read back from a `.smod` file.
+    // instead, and that initializer calls those of the modules that the
+    // submodule uses and its ancestors do not, and those of its ancestor
+    // submodules, first. The program does not call the initializer of a
+    // submodule it read back from a `.smod` file, nor, outside separate
+    // compilation, that of a module only such submodules use.
     //
-    // Nothing else calls an initializer twice, so under `--fast` the guard is
-    // dropped, except a submodule's, and the body is the initialization
+    // A module's initializer can thus be called many times, by the program
+    // and by every submodule that uses it. Under `--fast` only the guards of
+    // the program's and the translation unit's initializers, which nothing
+    // calls twice, are dropped, and their bodies are the initialization
     // statements themselves. The guard at
     // the top of a procedure or block body is a different thing — it is the
     // save attribute of an initialized local, so it decides behaviour rather

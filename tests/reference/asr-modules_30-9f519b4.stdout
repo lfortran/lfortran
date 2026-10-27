@@ -323,6 +323,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_modules_30:
@@ -619,6 +620,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_package_modules_30:
@@ -765,6 +767,7 @@
                     ()
                     [fpm_manifest_executable_modules_30]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

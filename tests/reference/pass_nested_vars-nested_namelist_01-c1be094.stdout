@@ -71,6 +71,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             nested_namelist_01:
@@ -362,6 +363,7 @@
                     nested_namelist_01_mod
                     ()
                     []
+                    .false.
                     .false.
                     .false.
                     .false.

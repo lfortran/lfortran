@@ -996,6 +996,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_type_keyval:
@@ -1228,6 +1229,7 @@
                     tomlf_type_keyval
                     ()
                     [tomlf_type_value]
+                    .false.
                     .false.
                     .false.
                     .false.
@@ -1571,6 +1573,7 @@
                     tomlf_type_value
                     ()
                     []
+                    .false.
                     .false.
                     .false.
                     .false.

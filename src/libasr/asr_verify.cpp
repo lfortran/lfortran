@@ -631,6 +631,9 @@ public:
         require(x.m_name, "Module name is required");
         require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
             "The asr_owner invariant failed");
+        require(!(x.m_weak_definition && x.m_parent_module),
+            "A submodule cannot be a weak definition: the object file of its "
+            "own source is the one that defines it");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         verify_global_init(x.m_global_init, x.m_symtab, "Module",
             x.base.base.loc);

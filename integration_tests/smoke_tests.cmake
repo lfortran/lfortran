@@ -55,7 +55,8 @@ set(LFORTRAN_SMOKE_TESTS
     submodule_23a submodule_25a submodule_27a submodule_29a
     submodule_30a submodule_34a submodule_37a submodule_38a
     submodule_39a submodule_40a submodule_44a submodule_50a
-    submodule_51a submodule_53a operator_overloading_36
+    submodule_51a submodule_53a submodule_61 submodule_62 submodule_63
+    operator_overloading_36
     separate_compilation_16 separate_compilation_17 separate_compilation_18
     separate_compilation_19 separate_compilation_20 separate_compilation_21
     separate_compilation_22 separate_compilation_23 separate_compilation_24

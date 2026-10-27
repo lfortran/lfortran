@@ -6,6 +6,7 @@
 #include <libasr/pass/global_init.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -506,14 +507,18 @@ class GlobalInitWireVisitor {
 
         Allocator &al;
         ASR::TranslationUnit_t &unit;
+        // Each module is compiled into an object file of its own, whose
+        // initializer every program and submodule using it calls.
+        bool separate_compilation;
         // One import per (scope, initializer): a scope that calls the same
         // initializer twice must not gain two external symbols for it.
         std::map<std::pair<SymbolTable*, ASR::Function_t*>, ASR::symbol_t*> imports;
 
     public:
 
-        GlobalInitWireVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_):
-            al(al_), unit(unit_) {}
+        GlobalInitWireVisitor(Allocator &al_, ASR::TranslationUnit_t &unit_,
+                bool separate_compilation_):
+            al(al_), unit(unit_), separate_compilation(separate_compilation_) {}
 
         // `scope` is `outer` or nested in it, so it sees the symbols of
         // `outer` without importing them.
@@ -573,7 +578,7 @@ class GlobalInitWireVisitor {
                     }
                 }
             }
-            for (ASR::Module_t *s : submodules) wire_submodule(s);
+            for (ASR::Module_t *s : submodules) wire_submodule(s, module_order);
         }
 
         // Nothing outside a submodule can name its variables, so nothing
@@ -586,8 +591,25 @@ class GlobalInitWireVisitor {
         // This keeps the initialization in the object file that defines the
         // submodule, which a program compiled before the submodule, or not
         // recompiled after it, cannot know about. The parent module is not
-        // one of these: the program initializes it.
-        void wire_submodule(ASR::Module_t *s) {
+        // one of these: the program initializes it. The modules that the
+        // submodule uses and none of its ancestors does are: the program may
+        // not know about them, so the submodule's initializer runs theirs
+        // first, in dependency order. Each runs once, however many submodules
+        // and programs call it.
+        void wire_submodule(ASR::Module_t *s,
+                const std::vector<std::string> &module_order) {
+            std::vector<ASR::Function_t*> owned_inits;
+            std::vector<ASR::Module_t*> owned = ASRUtils::submodule_owned_modules(unit, *s);
+            for (auto &name : module_order) {
+                ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
+                if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)
+                        || std::find(owned.begin(), owned.end(),
+                            ASR::down_cast<ASR::Module_t>(sym)) == owned.end()) {
+                    continue;
+                }
+                ASR::Function_t *fn = global_init_of(sym);
+                if (fn != nullptr) owned_inits.push_back(fn);
+            }
             std::vector<ASR::Function_t*> ancestor_inits;
             ASR::symbol_t *sym = unit.m_symtab->get_symbol(s->m_parent_module);
             while (sym != nullptr && ASR::is_a<ASR::Module_t>(*sym)) {
@@ -598,13 +620,16 @@ class GlobalInitWireVisitor {
                 sym = unit.m_symtab->get_symbol(ancestor->m_parent_module);
             }
             ASR::Function_t *own = global_init_of(&s->base);
-            if (own == nullptr && ancestor_inits.empty()) return;
+            if (own == nullptr && ancestor_inits.empty() && owned_inits.empty()) return;
             if (own == nullptr) {
                 own = ASRUtils::get_or_create_global_init(al, unit,
                     (ASR::asr_t*)&s->base);
             }
             const Location &loc = s->base.base.loc;
             std::vector<ASR::stmt_t*> calls;
+            for (ASR::Function_t *fn : owned_inits) {
+                calls.push_back(call_of(own->m_symtab, fn, loc));
+            }
             for (auto it = ancestor_inits.rbegin(); it != ancestor_inits.rend(); ++it) {
                 calls.push_back(call_of(own->m_symtab, *it, loc));
             }
@@ -642,7 +667,16 @@ class GlobalInitWireVisitor {
                 ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
                 if (m->m_parent_module && m->m_loaded_from_mod) continue;
                 ASR::Function_t *fn = global_init_of(sym);
-                if (fn != nullptr) module_inits.push_back(fn);
+                if (fn == nullptr) continue;
+                // Outside separate compilation, a module only declared here
+                // is one that only submodules read back from `.smod` files
+                // use. Its definitions are in their object files, whose
+                // procedures initialize it (see `wire_submodule`).
+                if (!separate_compilation && ASRUtils::get_FunctionType(fn)->m_abi
+                        == ASR::abiType::ExternalUndefined) {
+                    continue;
+                }
+                module_inits.push_back(fn);
             }
             if (module_inits.empty() && global_init_of(&p->base) == nullptr) {
                 return;
@@ -678,12 +712,14 @@ void pass_global_init(Allocator &al, ASR::TranslationUnit_t &unit,
 
 namespace {
 
-// Under `--fast` the run-once guard of an initializer *function* is dead
-// weight: the program calls every module and program initializer exactly
-// once, in the order this pass just put in, and the translation unit's own is
-// called once by the target's startup hook. Unwrap it, so the body is the
-// initialization statements themselves. A submodule's initializer is the
-// exception: every entry into the submodule calls it.
+// Under `--fast` the run-once guard of a program's initializer is dead
+// weight: the program calls it exactly once, and the translation unit's own is
+// called once by the target's startup hook. Unwrap them, so the body is the
+// initialization statements themselves. The guard of a module's or
+// submodule's initializer stays: every entry into a submodule calls the
+// submodule's own, which calls those of the modules that only it may know
+// about, and these may be the very ones the program calls too, defined in the
+// program's object file.
 //
 // The guard at the top of a procedure or block body is a different thing —
 // it is what gives an initialized local the save attribute Fortran requires,
@@ -715,13 +751,7 @@ void strip_run_once_guards(ASR::TranslationUnit_t &unit, Allocator &al) {
     };
     strip_of(unit.m_global_init, unit.m_symtab);
     for (auto &item : unit.m_symtab->get_scope()) {
-        if (ASR::is_a<ASR::Module_t>(*item.second)) {
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
-            // A submodule's initializer runs on every entry into one of its
-            // procedures, so its guard is what makes it run once.
-            if (m->m_parent_module) continue;
-            strip_of(m->m_global_init, m->m_symtab);
-        } else if (ASR::is_a<ASR::Program_t>(*item.second)) {
+        if (ASR::is_a<ASR::Program_t>(*item.second)) {
             ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
             strip_of(p->m_global_init, p->m_symtab);
         }
@@ -732,7 +762,7 @@ void strip_run_once_guards(ASR::TranslationUnit_t &unit, Allocator &al) {
 
 void pass_global_init_wire(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
-    GlobalInitWireVisitor v(al, unit);
+    GlobalInitWireVisitor v(al, unit, pass_options.separate_compilation);
     v.visit_TranslationUnit();
     if (pass_options.fast) strip_run_once_guards(unit, al);
     PassUtils::UpdateDependenciesVisitor u(al);

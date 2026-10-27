@@ -332,6 +332,7 @@
                         "loaded_from_mod": true,
                         "intrinsic": false,
                         "has_submodules": false,
+                        "weak_definition": false,
                         "global_init": []
                     },
                     "loc": {

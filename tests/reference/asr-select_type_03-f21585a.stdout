@@ -149,6 +149,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             class_default_select_type_user:
@@ -730,6 +731,7 @@
                     class_default_select_type_user
                     ()
                     [class_default_select_type]
+                    .false.
                     .false.
                     .false.
                     .false.

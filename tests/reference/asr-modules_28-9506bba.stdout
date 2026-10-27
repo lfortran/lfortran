@@ -279,6 +279,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_dependency:
@@ -1056,6 +1057,7 @@
                     ()
                     [fpm_git]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

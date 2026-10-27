@@ -6,6 +6,7 @@
 #include <memory>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <llvm/ADT/STLExtras.h>
@@ -7403,9 +7404,14 @@ public:
                 *ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner));
     }
 
-    static bool is_submodule_variable(const ASR::Variable_t &x) {
-        return is_module_variable(x) && ASR::down_cast<ASR::Module_t>(
-            ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))->m_parent_module;
+    // A variable of a submodule, or of a module emitted as a weak copy: no
+    // `main` may set it up, as the program can be compiled before the
+    // submodule that defines it, or that defines the copy.
+    static bool set_up_without_main(const ASR::Variable_t &x) {
+        if (!is_module_variable(x)) return false;
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(
+            ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner));
+        return m->m_parent_module || m->m_weak_definition;
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -7661,9 +7667,10 @@ public:
             // derived type. Like the scalar, this is queued whether or not the
             // global is external here: under separate compilation the
             // definition and the program are in different translation units,
-            // and only the one that has the program can emit the setup (a
-            // submodule's variables are the exception, see
-            // `set_up_submodule_variables`). A
+            // and only the one that has the program can emit the setup (the
+            // variables of a submodule, and outside separate compilation of
+            // every module, are set up by the object file that defines them,
+            // see `set_up_module_variables`). A
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
             // the broadcast constructor above.
@@ -7885,7 +7892,7 @@ public:
                     // descriptor from the start.
                     llvm::GlobalVariable* desc = create_null_array_descriptor_global(
                         type_, llvm_var_name + "_descriptor__");
-                    if (is_submodule_variable(x) && ASRUtils::is_character(*x.m_type)
+                    if (set_up_without_main(x) && ASRUtils::is_character(*x.m_type)
                             && !pointer_null_array_init) {
                         set_string_array_descriptor_data(desc, x.m_type,
                             llvm_var_name + "_string_descriptor__");
@@ -8183,6 +8190,8 @@ public:
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        std::unordered_set<llvm::GlobalValue*> defined_before;
+        if (x.m_weak_definition) defined_before = definitions();
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
@@ -8247,14 +8256,39 @@ public:
                 visit_Variable(*v);
             }
         }
-        if (x.m_parent_module) {
-            set_up_submodule_variables(arrays_mark, structs_mark,
+        if (x.m_parent_module || !compiler_options.separate_compilation) {
+            set_up_module_variables(arrays_mark, structs_mark,
                 struct_arrays_mark);
         }
 
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
+        if (x.m_weak_definition) make_weak(defined_before);
+    }
+
+    // The globals and procedures this translation unit defines.
+    std::unordered_set<llvm::GlobalValue*> definitions() {
+        std::unordered_set<llvm::GlobalValue*> defined;
+        for (llvm::GlobalValue &gv : module->global_values()) {
+            if (!gv.isDeclaration()) defined.insert(&gv);
+        }
+        return defined;
+    }
+
+    // Every exported definition made since `defined_before` belongs to a
+    // module that other object files may define as well. Weak linkage lets
+    // the linker keep any one copy, or the one strong definition of a program
+    // that uses the module itself. Unlike `weak_odr` it also keeps every call
+    // and access going to that copy rather than inlining this one, which has
+    // its own saved variables and descriptors.
+    void make_weak(const std::unordered_set<llvm::GlobalValue*> &defined_before) {
+        for (llvm::GlobalValue &gv : module->global_values()) {
+            if (!gv.isDeclaration() && gv.hasExternalLinkage()
+                    && defined_before.find(&gv) == defined_before.end()) {
+                gv.setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+            }
+        }
     }
 
     // The global `ptr` names is defined in this translation unit, not only
@@ -8268,7 +8302,10 @@ public:
     // The variables of a submodule are set up by the object file that
     // defines them, as that is the one object file linked wherever they are,
     // and a program compiled before the submodule, or not recompiled after
-    // it, cannot know what they are. Take what the submodule's variables
+    // it, cannot know what they are. Outside separate compilation, so are
+    // those of every module: the program's object file defines the modules it
+    // uses, and the object file of a submodule those only the submodule uses.
+    // Take what the module's variables
     // just queued (from the marks on) back out of the queues `main` empties:
     // - a variable another object file defines is set up there;
     // - one defined here is still set up by `main` if this translation unit
@@ -8276,10 +8313,11 @@ public:
     // - otherwise the members of a derived type variable are set up by a
     //   startup constructor of this object file, and an array pointer or
     //   allocatable array needs nothing more than its companion descriptor.
-    // Only the submodule's procedures can name these variables, and they run
-    // the submodule's initializer on entry, which may assign the members a
-    // value; the constructor runs before any of that.
-    void set_up_submodule_variables(size_t arrays_mark, size_t structs_mark,
+    // Only the submodule's procedures can name these variables (and those of
+    // the modules only it uses), and they run the submodule's initializer on
+    // entry, which may assign the members a value; the constructor runs
+    // before any of that.
+    void set_up_module_variables(size_t arrays_mark, size_t structs_mark,
             size_t struct_arrays_mark) {
         // A cell sets up its globals when it runs (`emit_interactive_global_setup`).
         if (compiler_options.interactive) return;

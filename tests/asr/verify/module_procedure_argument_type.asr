@@ -79,6 +79,7 @@
         false
         false
         true
+        false
         nil
       )
       "s" (Module
@@ -155,6 +156,7 @@
         "s"
         "m"
         []
+        false
         false
         false
         false

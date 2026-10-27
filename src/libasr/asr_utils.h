@@ -1220,8 +1220,26 @@ ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::ttype_t* asr_t
 
 // Only declares what the modules of `u` define, for a translation unit whose
 // object file does not define them. A submodule that `u` compiles from source
-// is the exception: its object file defines it, whatever else is in `u`.
-void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
+// is the exception: its object file defines it, whatever else is in `u`. So
+// are the modules in `keep`.
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u,
+    const std::set<LCompilers::ASR::Module_t*> &keep = {});
+
+// The modules of `u` that the submodule `s` uses, directly or through other
+// modules, and that none of its ancestors uses: what `s` can reach that a
+// program using its ancestors may know nothing about. Submodules and modules
+// with coarrays, which every image allocates at start up, are not included.
+std::vector<ASR::Module_t*> submodule_owned_modules(const ASR::TranslationUnit_t &u,
+    const ASR::Module_t &s);
+
+// The `submodule_owned_modules` of every submodule `u` compiles from source.
+std::set<ASR::Module_t*> local_submodules_owned_modules(const ASR::TranslationUnit_t &u);
+
+// The modules of `u` that only the submodules read back from `.smod` files
+// use, not the program units of `u` or the modules they use. Submodules and
+// modules with coarrays are not included.
+std::vector<ASR::Module_t*> modules_used_only_by_loaded_submodules(
+    const ASR::TranslationUnit_t &u);
 
 // Only declares what the submodules read back from `.smod` files define: the
 // object file of each submodule's own source defines it.

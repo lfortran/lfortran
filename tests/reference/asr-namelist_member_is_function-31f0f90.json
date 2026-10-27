@@ -2,12 +2,12 @@
     "basename": "asr-namelist_member_is_function-31f0f90",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/namelist_member_is_function.asr",
-    "infile_hash": "41cf2955c13ac37f179d74d5c32adc0d3da89db2fc00fc4d7d3080ca",
+    "infile_hash": "fcdeee5caf77d20462991a9c6cf5f77ee9ea98cb0af862b41e848d9c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-namelist_member_is_function-31f0f90.stderr",
-    "stderr_hash": "9b605aa4e4dd305d65716ecc4beb4de8d8b324103a14a16b18de6472",
+    "stderr_hash": "25f31f4985b75df10732010f4ac57ecc5035a27c0184cbfd9ca63588",
     "returncode": 2
 }

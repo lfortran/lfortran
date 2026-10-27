@@ -4803,16 +4803,154 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
     }
 }
 
-void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u,
+        const std::set<LCompilers::ASR::Module_t*> &keep)
 {
     Allocator al(4*1024);
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
             if (m->m_parent_module && !m->m_loaded_from_mod) continue;
+            if (keep.count(m)) continue;
             m->m_symtab->mark_all_variables_external(al);
         }
     }
+}
+
+namespace {
+
+// Adds the module `name` of `u`, and every module it uses directly or
+// through other modules, to `closure`.
+void add_module_closure(const ASR::TranslationUnit_t &u, const std::string &name,
+        std::set<std::string> &closure)
+{
+    std::vector<std::string> pending = {name};
+    while (!pending.empty()) {
+        std::string n = pending.back();
+        pending.pop_back();
+        ASR::symbol_t *sym = u.m_symtab->get_symbol(n);
+        if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
+        if (!closure.insert(n).second) continue;
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
+        for (size_t i = 0; i < m->n_dependencies; i++) {
+            pending.push_back(m->m_dependencies[i]);
+        }
+    }
+}
+
+bool module_has_coarrays(const ASR::Module_t &m)
+{
+    for (auto &item : m.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*item.second)
+                && ASR::down_cast<ASR::Variable_t>(item.second)->n_codims > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The modules of `u` that `closure` names, except the submodules and the
+// modules with coarrays, in the order of `u`'s symbol table.
+std::vector<ASR::Module_t*> closure_modules(const ASR::TranslationUnit_t &u,
+        const std::set<std::string> &closure)
+{
+    std::vector<ASR::Module_t*> modules;
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (!closure.count(item.first) || !ASR::is_a<ASR::Module_t>(*item.second)) {
+            continue;
+        }
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
+        if (m->m_parent_module == nullptr && !module_has_coarrays(*m)) {
+            modules.push_back(m);
+        }
+    }
+    return modules;
+}
+
+// Adds the names of the modules whose symbols `scope`, or a scope nested in
+// it, imports to `names`.
+void add_imported_module_names(SymbolTable *scope, std::set<std::string> &names)
+{
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        switch (sym->type) {
+            case ASR::symbolType::ExternalSymbol:
+                names.insert(ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_module_name);
+                break;
+            case ASR::symbolType::Function:
+            case ASR::symbolType::Block:
+            case ASR::symbolType::AssociateBlock:
+            case ASR::symbolType::Struct:
+                add_imported_module_names(symbol_symtab(sym), names);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+} // anonymous namespace
+
+std::vector<ASR::Module_t*> submodule_owned_modules(const ASR::TranslationUnit_t &u,
+        const ASR::Module_t &s)
+{
+    std::set<std::string> owned, ancestors;
+    for (size_t i = 0; i < s.n_dependencies; i++) {
+        add_module_closure(u, s.m_dependencies[i], owned);
+    }
+    for (char *parent = s.m_parent_module; parent != nullptr; ) {
+        add_module_closure(u, parent, ancestors);
+        ASR::symbol_t *sym = u.m_symtab->get_symbol(parent);
+        if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) break;
+        parent = ASR::down_cast<ASR::Module_t>(sym)->m_parent_module;
+    }
+    for (auto &name : ancestors) owned.erase(name);
+    return closure_modules(u, owned);
+}
+
+std::set<ASR::Module_t*> local_submodules_owned_modules(const ASR::TranslationUnit_t &u)
+{
+    std::set<ASR::Module_t*> owned;
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Module_t>(*item.second)) continue;
+        ASR::Module_t *s = ASR::down_cast<ASR::Module_t>(item.second);
+        if (s->m_parent_module == nullptr || s->m_loaded_from_mod) continue;
+        for (ASR::Module_t *m : submodule_owned_modules(u, *s)) owned.insert(m);
+    }
+    return owned;
+}
+
+std::vector<ASR::Module_t*> modules_used_only_by_loaded_submodules(
+        const ASR::TranslationUnit_t &u)
+{
+    std::set<std::string> used, by_submodules;
+    for (auto &item : u.m_symtab->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Module_t>(*sym)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
+            if (m->m_parent_module && m->m_loaded_from_mod) {
+                for (size_t i = 0; i < m->n_dependencies; i++) {
+                    add_module_closure(u, m->m_dependencies[i], by_submodules);
+                }
+            } else if (!m->m_loaded_from_mod) {
+                add_module_closure(u, item.first, used);
+            }
+            continue;
+        }
+        std::set<std::string> names;
+        if (ASR::is_a<ASR::Program_t>(*sym)) {
+            ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(sym);
+            for (size_t i = 0; i < p->n_dependencies; i++) {
+                names.insert(p->m_dependencies[i]);
+            }
+            add_imported_module_names(p->m_symtab, names);
+        } else if (ASR::is_a<ASR::Function_t>(*sym) || ASR::is_a<ASR::BlockData_t>(*sym)) {
+            add_imported_module_names(symbol_symtab(sym), names);
+        }
+        for (auto &name : names) add_module_closure(u, name, used);
+    }
+    for (auto &name : used) by_submodules.erase(name);
+    return closure_modules(u, by_submodules);
 }
 
 void mark_loaded_submodules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
@@ -14444,7 +14582,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Module(ASR::Module_t* module_t,
         al, module_t->base.base.loc, module_symtab,
         module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
         module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
-        module_t->m_has_submodules, module_t->m_global_init,
+        module_t->m_has_submodules, module_t->m_weak_definition, module_t->m_global_init,
         module_t->m_start_name, module_t->m_end_name
     ));
 }

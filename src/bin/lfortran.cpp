@@ -1336,13 +1336,37 @@ int compile_src_to_object_file(const std::string &infile,
                 || LCompilers::ASRUtils::block_data_present(*asr)
                 || local_submodule)
             && !compiler_options.separate_compilation) {
-        LCompilers::ASRUtils::mark_modules_as_external(*asr);
+        // The modules that only the submodules compiled here use, and not
+        // their ancestors, are not known to a program compiled before them,
+        // nor are they up to date in one not recompiled since. This object
+        // file therefore defines them too, as a copy that the object files of
+        // the program and of other submodules that use them may define as
+        // well.
+        std::set<LCompilers::ASR::Module_t*> owned;
+        if (local_submodule) {
+            owned = LCompilers::ASRUtils::local_submodules_owned_modules(*asr);
+        }
+        LCompilers::ASRUtils::mark_modules_as_external(*asr, owned);
+        for (LCompilers::ASR::Module_t *m : owned) {
+            m->m_weak_definition = true;
+        }
     }
     // A submodule read back from a `.smod` file is defined in the object
     // file compiled from its own source, so that it is up to date however
-    // its source and the program are compiled and in whichever order.
+    // its source and the program are compiled and in whichever order. So
+    // are the modules that only such submodules use, unless they are
+    // intrinsic modules, whose code only changes with the compiler.
     if (!compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_loaded_submodules_as_external(*asr);
+        if (LCompilers::ASRUtils::main_program_present(*asr)) {
+            Allocator al(4*1024);
+            for (LCompilers::ASR::Module_t *m :
+                    LCompilers::ASRUtils::modules_used_only_by_loaded_submodules(*asr)) {
+                if (!LCompilers::startswith(m->m_name, "lfortran_intrinsic")) {
+                    m->m_symtab->mark_all_variables_external(al);
+                }
+            }
+        }
     }
 
     // The object files of a submodule and of its ancestors call each other's

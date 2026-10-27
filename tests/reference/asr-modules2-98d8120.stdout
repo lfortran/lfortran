@@ -24,6 +24,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_structure_base:
@@ -176,6 +177,7 @@
                     ()
                     [tomlf_type_value]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()
@@ -593,6 +595,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_type_value:
@@ -741,6 +744,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

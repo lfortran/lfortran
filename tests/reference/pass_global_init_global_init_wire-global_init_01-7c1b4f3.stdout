@@ -941,6 +941,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     __lfortran_global_init_global_init_01_a
                 ),
             global_init_01_b:
@@ -1296,6 +1297,7 @@
                     global_init_01_b
                     ()
                     [global_init_01_a]
+                    .false.
                     .false.
                     .false.
                     .false.

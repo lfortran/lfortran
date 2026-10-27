@@ -1534,6 +1534,15 @@ RUN(NAME submodule_59 FILE submodule_59b LABELS gfortran llvm llvm_submodule llv
 # The submodules' own object files set up their variables (#14167)
 RUN(NAME submodule_60 FILE submodule_60d LABELS gfortran llvm_submodule llvm_single_invocation
     EXTRAFILES submodule_60a.f90 submodule_60b.f90 submodule_60c.f90)
+# The submodules' object files define the modules only they use (#14167).
+# NO_LLVM_GOC: under separate compilation nothing sets up the members of the
+# derived type variable of a module the program does not use (#13233).
+RUN(NAME submodule_61 FILE submodule_61d LABELS gfortran llvm_submodule llvm_single_invocation
+    NO_LLVM_GOC EXTRAFILES submodule_61a.f90 submodule_61b.f90 submodule_61c.f90)
+RUN(NAME submodule_62 FILE submodule_62e LABELS gfortran llvm_submodule llvm_single_invocation
+    EXTRAFILES submodule_62a.f90 submodule_62b.f90 submodule_62c.f90 submodule_62d.f90)
+RUN(NAME submodule_63 FILE submodule_63e LABELS gfortran llvm_submodule llvm_single_invocation
+    EXTRAFILES submodule_63a.f90 submodule_63b.f90 submodule_63c.f90 submodule_63d.f90)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_14 LABELS gfortran llvm)
