@@ -5776,6 +5776,19 @@ namespace MatMul {
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
+        // Every loop below runs over the bounds of the dimensions it indexes
+        // and the assertion checks that the contracted dimensions agree, so
+        // the elements of the operands need no bounds checks.
+        ASR::down_cast<ASR::ArrayItem_t>(a_ref)->m_in_bounds = true;
+        ASR::down_cast<ASR::ArrayItem_t>(b_ref)->m_in_bounds = true;
+        ASR::stmt_t *load_b_elem = nullptr;
+        if ( overload_id != 1 ) {
+            // `matrix_b(k, j)` does not depend on the innermost index `i`
+            ASR::expr_t *b_elem = declare("b_elem",
+                ASRUtils::duplicate_type(al, expr_type(b_ref)), Local);
+            load_b_elem = b.Assignment(b_elem, b_ref);
+            b_ref = b_elem;
+        }
         ASR::expr_t *mul_value;
         if (is_logical(*expr_type(a_ref))) {
             mul_value = b.And(a_ref, b_ref);
@@ -5798,28 +5811,64 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
-        // Each element is accumulated in a scalar local and stored once,
-        // rather than loading and storing the result for every term.
-        ASR::expr_t *acc = declare("acc",
-            ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
-        ASR::stmt_t *init_stmt = nullptr;
-        ASR::stmt_t *update_stmt = nullptr;
-        if (is_logical(*expr_type(res_ref))) {
-            init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
-            update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
+        if ( overload_id == 1 ) {
+            // Each element is a dot product over a column of `matrix_b`,
+            // accumulated in a scalar local and stored once.
+            ASR::expr_t *acc = declare("acc",
+                ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
+            ASR::stmt_t *init_stmt = nullptr;
+            ASR::stmt_t *update_stmt = nullptr;
+            if (is_logical(*expr_type(res_ref))) {
+                init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
+                update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
+            } else {
+                init_stmt = b.Assign_Constant(acc, 0);
+                update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
+            }
+            body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
+                b.DoLoop(j, b_lbound, b_ubound, {
+                    init_stmt,
+                    b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
+                        update_stmt
+                    }),
+                    b.Assignment(res_ref, acc),
+                })
+            }));
         } else {
-            init_stmt = b.Assign_Constant(acc, 0);
-            update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
-        }
-        body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
-            b.DoLoop(j, b_lbound, b_ubound, {
-                init_stmt,
-                b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
-                    update_stmt
+            // Column j of the result is accumulated in place, one column of
+            // `matrix_a` at a time (for a vector `matrix_b` the j loop has one
+            // iteration):
+            //     r(:, j) = 0
+            //     do k: t = b(k, j); r(:, j) = r(:, j) + a(:, k) * t
+            // The innermost loop walks the columns of `matrix_a` and of the
+            // result contiguously, and every element is still summed over k
+            // in increasing order. The result must not overlap an operand;
+            // the caller assigns through a temporary when it might.
+            auto res_item = [&]() {
+                return overload_id == 2 ? b.ArrayItem_01(result, {i})
+                    : b.ArrayItem_01(result, {i, j});
+            };
+            ASR::stmt_t *init_stmt = nullptr;
+            ASR::stmt_t *update_stmt = nullptr;
+            if (is_logical(*expr_type(res_ref))) {
+                init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
+                update_stmt = b.Assignment(res_item(), b.Or(res_item(), mul_value));
+            } else {
+                init_stmt = b.Assign_Constant(res_ref, 0);
+                update_stmt = b.Assignment(res_item(), b.Add(res_item(), mul_value));
+            }
+            body.push_back(al, b.DoLoop(j, b_lbound, b_ubound, {
+                b.DoLoop(i, a_lbound, a_ubound, {
+                    init_stmt
                 }),
-                b.Assignment(res_ref, acc),
-            })
-        }));
+                b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
+                    load_b_elem,
+                    b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
+                        update_stmt
+                    })
+                })
+            }));
+        }
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

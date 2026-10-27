@@ -1,0 +1,13 @@
+{
+    "basename": "pass_intrinsic_function-matmul_11-bfb0e69",
+    "cmd": "lfortran --pass=intrinsic_function --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/matmul_11.f90",
+    "infile_hash": "9a6022e2b246540b174a44c05cf7de0ab22aa9041d26ebd691f53d9d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_intrinsic_function-matmul_11-bfb0e69.stdout",
+    "stdout_hash": "a49d8ff9874e18d85b71c3f89400b37b4f7c09a4c1dab4c404fec293",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
