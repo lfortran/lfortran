@@ -29,8 +29,16 @@ namespace LCompilers {
     // own initializer correct, which a target startup hook calls with no
     // ordering at all.
     //
-    // Nothing calls any of them twice, so under `--fast` the guard is dropped
-    // and the body is the initialization statements themselves. The guard at
+    // A submodule is the exception. It is compiled into an object file of its
+    // own, which a program compiled before it cannot know about, so every
+    // procedure of the submodule calls the submodule's initializer on entry
+    // instead, and that initializer calls those of its ancestor submodules
+    // first. The program does not call the initializer of a submodule it
+    // read back from a `.smod` file.
+    //
+    // Nothing else calls an initializer twice, so under `--fast` the guard is
+    // dropped, except a submodule's, and the body is the initialization
+    // statements themselves. The guard at
     // the top of a procedure or block body is a different thing — it is the
     // save attribute of an initialized local, so it decides behaviour rather
     // than repeating a call that cannot happen — and is kept in every mode.

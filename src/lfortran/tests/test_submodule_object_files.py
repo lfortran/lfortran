@@ -5,7 +5,11 @@ The module, the submodule and the program are compiled with `-c` into
 separate object files and linked. Then only the submodule's source is
 changed, only it is recompiled, and the objects are linked again: the
 program must run the new code of the submodule, as it does when a build
-system rebuilds just what changed (#14167).
+system rebuilds just what changed (#14167). The submodule gains variables
+that need setting up at run time, which the program's object file cannot
+know about, and loses them again, which the program's object file must not
+depend on. The program is also compiled before the submodule. Everything is
+checked with and without `--fast`.
 """
 
 import argparse
@@ -39,6 +43,33 @@ contains
 end submodule
 """
 
+# Variables set up at run time: an array pointer associated with a target,
+# a derived type with an array pointer component, and an array of a derived
+# type with a character component. gfortran does not support the first one
+# in a submodule, which is why this is not an integration test.
+SUBMODULE_VARS = """\
+submodule (sof_m) sof_s
+implicit none
+type :: tp
+    integer, pointer :: q(:) => null()
+end type
+type :: tc
+    character(len=4) :: nm = "abcd"
+end type
+integer, target :: sarr(4) = [1, 2, 3, 4]
+integer, pointer :: sp(:) => sarr
+type(tp) :: obj
+type(tc) :: objc(2)
+contains
+    module procedure f
+        r = {value} * size(pa)
+        if (associated(sp)) r = r + 10 * size(sp)
+        if (.not. associated(obj%q)) r = r + 100
+        if (objc(2)%nm == "abcd") r = r + 1000
+    end procedure
+end submodule
+"""
+
 PROGRAM = """\
 program sof_p
 use sof_m
@@ -62,11 +93,42 @@ def write(cwd, name, source):
         f.write(source)
 
 
-def link_and_run(lfortran, cwd, expected):
-    run([lfortran, "m.o", "s.o", "p.o", "-o", "a.out"], cwd)
+def compile(lfortran, cwd, flags, names):
+    for name in names:
+        run([lfortran, "--no-color"] + flags + ["-c", name + ".f90", "-o",
+            name + ".o"], cwd)
+
+
+def link_and_run(lfortran, cwd, flags, expected):
+    run([lfortran] + flags + ["m.o", "s.o", "p.o", "-o", "a.out"], cwd)
     out = run([os.path.join(cwd, "a.out")], cwd).strip()
     if out != expected:
-        sys.exit("expected %r, got %r" % (expected, out))
+        sys.exit("%s: expected %r, got %r" % (" ".join(flags) or "default",
+            expected, out))
+
+
+def check(lfortran, workdir, flags):
+    with tempfile.TemporaryDirectory(dir=workdir) as cwd:
+        write(cwd, "m.f90", MODULE)
+        write(cwd, "s.f90", SUBMODULE.format(value=1))
+        write(cwd, "p.f90", PROGRAM)
+        compile(lfortran, cwd, flags, ["m", "s", "p"])
+        link_and_run(lfortran, cwd, flags, "3")
+        write(cwd, "s.f90", SUBMODULE.format(value=2))
+        compile(lfortran, cwd, flags, ["s"])
+        link_and_run(lfortran, cwd, flags, "6")
+        write(cwd, "s.f90", SUBMODULE_VARS.format(value=3))
+        compile(lfortran, cwd, flags, ["s"])
+        link_and_run(lfortran, cwd, flags, "1149")
+        write(cwd, "s.f90", SUBMODULE.format(value=4))
+        compile(lfortran, cwd, flags, ["s"])
+        link_and_run(lfortran, cwd, flags, "12")
+    with tempfile.TemporaryDirectory(dir=workdir) as cwd:
+        write(cwd, "m.f90", MODULE)
+        write(cwd, "s.f90", SUBMODULE_VARS.format(value=1))
+        write(cwd, "p.f90", PROGRAM)
+        compile(lfortran, cwd, flags, ["m", "p", "s"])
+        link_and_run(lfortran, cwd, flags, "1143")
 
 
 def main():
@@ -76,17 +138,8 @@ def main():
     args = parser.parse_args()
     lfortran = os.path.abspath(args.lfortran)
     os.makedirs(args.workdir, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=args.workdir) as cwd:
-        write(cwd, "m.f90", MODULE)
-        write(cwd, "s.f90", SUBMODULE.format(value=1))
-        write(cwd, "p.f90", PROGRAM)
-        for name in ["m", "s", "p"]:
-            run([lfortran, "--no-color", "-c", name + ".f90", "-o",
-                name + ".o"], cwd)
-        link_and_run(lfortran, cwd, "3")
-        write(cwd, "s.f90", SUBMODULE.format(value=2))
-        run([lfortran, "--no-color", "-c", "s.f90", "-o", "s.o"], cwd)
-        link_and_run(lfortran, cwd, "6")
+    for flags in [[], ["--fast"]]:
+        check(lfortran, args.workdir, flags)
     print("ok")
 
 

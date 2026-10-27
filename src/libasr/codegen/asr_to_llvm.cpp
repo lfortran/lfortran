@@ -880,6 +880,9 @@ public:
         size_t n_dims;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
+    // The translation unit has a main program, whose `main` sets up the
+    // globals queued below.
+    bool unit_has_program = false;
     std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
     struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
         ASR::expr_t* expr; // The module variable.
@@ -2251,6 +2254,7 @@ public:
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
+        unit_has_program = ASRUtils::main_program_present(x);
         // Set host target DataLayout so that getTypeAllocSize() returns
         // correct sizes (respecting alignment) during IR generation.
         // This deliberately stays the host layout rather than the selected
@@ -6173,6 +6177,36 @@ public:
             llvm::ConstantAggregateZero::get(desc_type), name);
     }
 
+    // The elements of a character array share one string descriptor, which
+    // the array's data points at and which holds their length. `main` sets
+    // that up for the arrays it can see, but nothing runs for those of a
+    // submodule compiled into an object file of its own, so the companion
+    // descriptor `desc` of such an array points at one from the start.
+    void set_string_array_descriptor_data(llvm::GlobalVariable* desc,
+            ASR::ttype_t* array_type, const std::string& name) {
+        ASR::String_t* str = ASRUtils::get_string_type(array_type);
+        if (str->m_physical_type != ASR::DescriptorString) return;
+        int64_t len = 0;
+        if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength
+                && str->m_len != nullptr && ASRUtils::expr_value(str->m_len)) {
+            ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), len);
+        }
+        llvm::StructType* str_desc_type = llvm::cast<llvm::StructType>(string_descriptor);
+        llvm::Constant* str_desc_init = llvm::ConstantStruct::get(str_desc_type, {
+            llvm::Constant::getNullValue(str_desc_type->getElementType(0)),
+            llvm::ConstantInt::get(str_desc_type->getElementType(1), len)});
+        llvm::GlobalVariable* str_desc = new llvm::GlobalVariable(*module,
+            str_desc_type, false, llvm::GlobalVariable::InternalLinkage,
+            str_desc_init, name);
+        llvm::StructType* desc_type = llvm::cast<llvm::StructType>(desc->getValueType());
+        std::vector<llvm::Constant*> fields;
+        for (unsigned i = 0; i < desc_type->getNumElements(); i++) {
+            fields.push_back(llvm::Constant::getNullValue(desc_type->getElementType(i)));
+        }
+        fields[0] = llvm::ConstantExpr::getBitCast(str_desc, desc_type->getElementType(0));
+        desc->setInitializer(llvm::ConstantStruct::get(desc_type, fields));
+    }
+
     // The same, for a `null()` value of type `array_type` appearing inside a
     // static initializer, where no variable global exists to name it after.
     //
@@ -7369,6 +7403,11 @@ public:
                 *ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner));
     }
 
+    static bool is_submodule_variable(const ASR::Variable_t &x) {
+        return is_module_variable(x) && ASR::down_cast<ASR::Module_t>(
+            ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))->m_parent_module;
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -7622,7 +7661,9 @@ public:
             // derived type. Like the scalar, this is queued whether or not the
             // global is external here: under separate compilation the
             // definition and the program are in different translation units,
-            // and only the one that has the program can emit the setup. A
+            // and only the one that has the program can emit the setup (a
+            // submodule's variables are the exception, see
+            // `set_up_submodule_variables`). A
             // variable that has an initializer is left alone: its members are
             // either already described by the static initializer, or set up by
             // the broadcast constructor above.
@@ -7842,9 +7883,14 @@ public:
                     // In separate compilation, main() cannot initialize
                     // submodule-private variables, so we need a valid
                     // descriptor from the start.
-                    module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            create_null_array_descriptor_global(type_,
-                                llvm_var_name + "_descriptor__"));
+                    llvm::GlobalVariable* desc = create_null_array_descriptor_global(
+                        type_, llvm_var_name + "_descriptor__");
+                    if (is_submodule_variable(x) && ASRUtils::is_character(*x.m_type)
+                            && !pointer_null_array_init) {
+                        set_string_array_descriptor_data(desc, x.m_type,
+                            llvm_var_name + "_string_descriptor__");
+                    }
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(desc);
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
@@ -8191,6 +8237,9 @@ public:
             instantiate_function(*v);
             mangle_prefix = ASRUtils::cell_prefix(x.m_symtab) + "__module_" + std::string(x.m_name) + "_";
         }
+        size_t arrays_mark = allocatable_array_details.size();
+        size_t structs_mark = allocatable_struct_array_members_details.size();
+        size_t struct_arrays_mark = struct_array_global_members_details.size();
         for (auto &sym: variables) {
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                     sym);
@@ -8198,10 +8247,91 @@ public:
                 visit_Variable(*v);
             }
         }
+        if (x.m_parent_module) {
+            set_up_submodule_variables(arrays_mark, structs_mark,
+                struct_arrays_mark);
+        }
 
         visit_procedures(x);
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
+    }
+
+    // The global `ptr` names is defined in this translation unit, not only
+    // declared for a definition in another object file.
+    static bool global_defined_here(llvm::Value *ptr) {
+        llvm::GlobalVariable *gv = llvm::dyn_cast<llvm::GlobalVariable>(
+            ptr->stripPointerCasts());
+        return gv != nullptr && gv->hasInitializer();
+    }
+
+    // The variables of a submodule are set up by the object file that
+    // defines them, as that is the one object file linked wherever they are,
+    // and a program compiled before the submodule, or not recompiled after
+    // it, cannot know what they are. Take what the submodule's variables
+    // just queued (from the marks on) back out of the queues `main` empties:
+    // - a variable another object file defines is set up there;
+    // - one defined here is still set up by `main` if this translation unit
+    //   has the program, as every other module variable is;
+    // - otherwise the members of a derived type variable are set up by a
+    //   startup constructor of this object file, and an array pointer or
+    //   allocatable array needs nothing more than its companion descriptor.
+    // Only the submodule's procedures can name these variables, and they run
+    // the submodule's initializer on entry, which may assign the members a
+    // value; the constructor runs before any of that.
+    void set_up_submodule_variables(size_t arrays_mark, size_t structs_mark,
+            size_t struct_arrays_mark) {
+        // A cell sets up its globals when it runs (`emit_interactive_global_setup`).
+        if (compiler_options.interactive) return;
+        std::vector<to_be_allocated_array> arrays;
+        for (size_t i = arrays_mark; i < allocatable_array_details.size(); i++) {
+            if (unit_has_program && global_defined_here(
+                    allocatable_array_details[i].pointer_to_array_type)) {
+                arrays.push_back(allocatable_array_details[i]);
+            }
+        }
+        allocatable_array_details.resize(arrays_mark);
+        allocatable_array_details.insert(allocatable_array_details.end(),
+            arrays.begin(), arrays.end());
+
+        std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> structs, ctor_structs;
+        for (size_t i = structs_mark; i < allocatable_struct_array_members_details.size(); i++) {
+            auto &st = allocatable_struct_array_members_details[i];
+            if (!global_defined_here(st.second)) continue;
+            (unit_has_program ? structs : ctor_structs).push_back(st);
+        }
+        allocatable_struct_array_members_details.resize(structs_mark);
+        allocatable_struct_array_members_details.insert(
+            allocatable_struct_array_members_details.end(),
+            structs.begin(), structs.end());
+
+        std::vector<struct_array_global> struct_arrays, ctor_struct_arrays;
+        for (size_t i = struct_arrays_mark; i < struct_array_global_members_details.size(); i++) {
+            auto &st = struct_array_global_members_details[i];
+            if (!global_defined_here(st.ptr)) continue;
+            (unit_has_program ? struct_arrays : ctor_struct_arrays).push_back(st);
+        }
+        struct_array_global_members_details.resize(struct_arrays_mark);
+        struct_array_global_members_details.insert(
+            struct_array_global_members_details.end(),
+            struct_arrays.begin(), struct_arrays.end());
+
+        if (ctor_structs.empty() && ctor_struct_arrays.empty()) return;
+        llvm::Function *ctor_fn = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false),
+            llvm::Function::InternalLinkage,
+            mangle_prefix + "__lfortran_module_startup", module.get());
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", ctor_fn));
+        // The constructor belongs to no Fortran source construct.
+        builder->SetCurrentDebugLocation(llvm::DebugLoc());
+        std::swap(allocatable_struct_array_members_details, ctor_structs);
+        std::swap(struct_array_global_members_details, ctor_struct_arrays);
+        emit_global_struct_members_setup();
+        std::swap(allocatable_struct_array_members_details, ctor_structs);
+        std::swap(struct_array_global_members_details, ctor_struct_arrays);
+        builder->CreateRetVoid();
+        builder->ClearInsertionPoint();
+        llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
     }
 
 #ifdef HAVE_TARGET_WASM
