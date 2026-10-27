@@ -3678,6 +3678,7 @@ RUN(NAME host_assoc_05 LABELS gfortran llvm)
 RUN(NAME host_assoc_06 LABELS llvm)
 RUN(NAME host_assoc_07 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME host_assoc_08 LABELS gfortran llvm)
+RUN(NAME host_assoc_09 LABELS gfortran llvm)
 RUN(NAME host_assoc_11 LABELS gfortran llvm)
 RUN(NAME host_assoc_12 LABELS gfortran llvm)
 

@@ -50,8 +50,9 @@ internal procedure that stands for a variable of its host (see "Host
 Association" in the design document). Its `symbolic_value` is a
 [StructInstanceMember](../expression_nodes/StructInstanceMember.md) of a
 member of [Reference](../type_nodes/Reference.md) type of the frame dummy
-argument of its own procedure, and its type is that of the designated
-variable. It is bound when the procedure is entered, before any other
+argument of its own procedure (in a thunk that a procedure value of an
+internal procedure names, of the frame slot of its host: a `Save` pointer to
+the frame), and its type is that of the designated variable. It is bound when the procedure is entered, before any other
 declaration is evaluated, like a dummy argument associated by reference, so
 it may have a type otherwise allowed only for a dummy argument. Nothing
 allocates, initializes, finalizes or deallocates it: the host owns the

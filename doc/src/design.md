@@ -201,10 +201,22 @@ the outer host through the aliases of the procedure it is nested in, whose
 own frame refers to them; the pass processes the hosts from the outside in.
 Calls between the internal procedures of a host pass on the frame dummy.
 
-For now, a program unit in which an internal procedure is used as a
-procedure value (an actual argument, a pointer target or an interface), or a
-main program with a global initializer, keeps the older lowering through
-module variables that are copied in and out around calls.
+A procedure value of an internal procedure that needs the frame (an actual
+argument, a pointer target, the interface of a procedure variable, the
+callback of a defined output procedure) cannot pass it. It names instead a
+*thunk*: a procedure of the host with the interface of the internal
+procedure, which calls it with the frame that the host's *frame slot*, a
+`Save` pointer of the host, points to. A statement that makes a procedure
+value points the slot at the frame of its instance first, and every instance
+of the host saves the slot when it starts and restores it before it returns.
+So a procedure value reaches the instance that made it, unless a newer
+instance of the same host has made a procedure value since and is still
+active; values that carry their frame would be exact in that case too. A
+call in an interface body to a procedure of the host that reads one of its
+variables for a bound or a length (`import :: n`) uses a thunk the same way.
+The thunks and the procedures that make procedure values read the slot
+directly, so a backend must resolve a saved variable of the host there
+(`ASRUtils::is_frame_slot`).
 
 The ASR after this pass is not valid Fortran: a member of Reference type and
 a HostAssociated variable have no Fortran syntax, and
