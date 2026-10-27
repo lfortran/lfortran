@@ -238,12 +238,15 @@ public:
                         // kind=10 m_r is a pointer to the long double bytes
                         value = ASRUtils::make_RealConstant_r10(al, a_loc,
                             static_cast<long double>(i->m_n), dest_type2);
-                    } else if (dest_kind != 16) {
+                    } else if (dest_kind == 16) {
+                        // kind=16 m_r is a pointer to the binary128 bytes;
+                        // every int64 value is exact in binary128.
+                        value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                            lf_f128_from_int64(i->m_n), dest_type2);
+                    } else {
                         double rval = static_cast<double>(i->m_n);
                         value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                     rval, dest_type2);
-                    } else {
-                        value = nullptr;
                     }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));

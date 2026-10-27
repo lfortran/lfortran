@@ -8392,12 +8392,12 @@ public:
                                                                 ic->m_n, ic->m_type)),
                                                             ASR::cast_kindType::IntegerToComplex, v->m_type, complex_value, nullptr));
                                                     } else if (ASRUtils::is_real(*v->m_type)) {
-                                                        ASR::expr_t* real_value = ASRUtils::make_RealConstant_util(
-                                                            al, x.base.base.loc, (double)ic->m_n, v->m_type);
-                                                        init_val = ASRUtils::EXPR(ASR::make_Cast_t(al, x.base.base.loc,
+                                                        // Fold from the integer, not a double, so that
+                                                        // kind=10 and kind=16 values stay exact.
+                                                        init_val = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, x.base.base.loc,
                                                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                                 ic->m_n, ic->m_type)),
-                                                            ASR::cast_kindType::IntegerToReal, v->m_type, real_value, nullptr));
+                                                            ASR::cast_kindType::IntegerToReal, v->m_type));
                                                     } else {
                                                         init_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, ic->m_n, v->m_type));
                                                     }
