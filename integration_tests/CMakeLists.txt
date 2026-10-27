@@ -5812,6 +5812,7 @@ RUN(NAME separate_compilation_67 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_68 LABELS gfortran llvm EXTRAFILES separate_compilation_68a.f90 EXTRA_ARGS --separate-compilation) # zero extent of an explicit-shape result and dummy of a module procedure called from another translation unit (#13475)
 RUN(NAME separate_compilation_69 LABELS gfortran llvm EXTRAFILES separate_compilation_69a.f90)
 RUN(NAME separate_compilation_70 LABELS gfortran llvm EXTRAFILES separate_compilation_70a.f90)
+RUN(NAME separate_compilation_71 LABELS gfortran llvm EXTRAFILES separate_compilation_71a.f90 separate_compilation_71b.f90 EXTRA_ARGS --separate-compilation --all-mangling --mangle-underscore) # intrinsic module procedures compiled into two object files link (#16082)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

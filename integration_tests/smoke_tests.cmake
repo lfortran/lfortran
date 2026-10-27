@@ -60,6 +60,7 @@ set(LFORTRAN_SMOKE_TESTS
     separate_compilation_19 separate_compilation_20 separate_compilation_21
     separate_compilation_22 separate_compilation_23 separate_compilation_24
     separate_compilation_25 separate_compilation_26 separate_compilation_27
+    separate_compilation_71
 
     # Character handling, formatted/unformatted I/O and source forms.
     string_01 string_02 string_03 string_04 string_05 string_06

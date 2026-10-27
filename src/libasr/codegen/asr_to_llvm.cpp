@@ -1052,6 +1052,8 @@ public:
             target_config.data_layout);
         common_block_storage_coalesces = !llvm::Triple(
             target_config.triple).isOSBinFormatWasm();
+        odr_definitions_use_comdat = llvm::Triple(
+            target_config.triple).supportsCOMDAT();
     }
 
     // The target data layout and object format the storage of common blocks
@@ -1061,6 +1063,11 @@ public:
     // zero storage every unit defines into one. A WebAssembly object file
     // does not, so there the storage is an ordinary definition.
     bool common_block_storage_coalesces = true;
+    // Whether a definition the linker may merge with identical definitions in
+    // other object files is placed in its own COMDAT. A COFF (Windows) linker
+    // merges them only then; a Mach-O object file has no COMDATs and merges
+    // weak definitions without one.
+    bool odr_definitions_use_comdat = true;
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
@@ -10825,6 +10832,18 @@ public:
         uint64_t h = get_hash((ASR::asr_t*)&x);
         procedure_host = &x.base;
         llvm::Function* F = llvm_symtab_fn[h];
+        // A procedure of an intrinsic module is compiled into every unit that
+        // uses the module, under the same name when the names carry no unit
+        // ID (--mangle-underscore). Let the linker keep one of the identical
+        // definitions. Unlike LinkOnceODR, WeakODR is never discarded, so a
+        // later interactive cell can still call an earlier cell's copy. The
+        // COMDAT is what lets a COFF linker merge the copies.
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic) {
+            F->setLinkage(llvm::Function::WeakODRLinkage);
+            if (odr_definitions_use_comdat) {
+                F->setComdat(module->getOrInsertComdat(F->getName()));
+            }
+        }
         llvm_goto_targets.clear();
         current_sret_arg = nullptr;
         // Clear alloca pool for each new function to avoid cross-function references
