@@ -1,0 +1,50 @@
+program fixed_form_do_label1
+integer :: i, j, k, it
+it = 0
+do j = 1, 10
+    do i = 1, 10
+        11 it = it + 1
+    end do
+end do
+do k = 1, 2
+    do j = 1, 2
+        do i = 1, 2
+            12 it = it + 1
+        end do
+    end do
+end do
+do i = 1, 4
+    13 it = it + 10
+end do
+do j = 1, 2
+    do i = 1, 5
+        it = it + 100
+    14 end do
+end do
+do j = 1, 3
+    do i = 1, 4
+        if (i == 2) go to 15
+        it = it + 1000
+    15 end do
+end do
+do j = 1, 2
+    do i = 1, 3
+        if (i == 1) go to 16
+        it = it + 10000
+        16 it = it + 1
+    end do
+end do
+do i = 1, 2
+    17 it = it + 100000
+end do
+do i = 1, 3
+    18 it = it + 100000
+end do
+do j = 1, 2
+    do i = 1, 2
+        it = it + 1000000
+    19 end do
+20 end do
+print *, it
+if (it /= 4550154) error stop
+end program fixed_form_do_label1
