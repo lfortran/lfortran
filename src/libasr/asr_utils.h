@@ -979,6 +979,15 @@ static inline bool has_own_storage(const ASR::Variable_t &v) {
     return v.m_common_block == nullptr && !is_host_associated(v);
 }
 
+// Whether an internal procedure reaches the host variable `v` through the
+// frame of its host (see nested_vars). A variable in a common block lives in
+// the static storage of the block, and each thread has its own threadprivate
+// variable: internal procedures reference them directly.
+static inline bool is_reached_through_host_frame(const ASR::Variable_t &v) {
+    return v.m_common_block == nullptr &&
+        v.m_storage != ASR::storage_typeType::Threadprivate;
+}
+
 static inline bool is_reference(const ASR::ttype_t *t) {
     return t != nullptr && ASR::is_a<ASR::Reference_t>(*t);
 }
@@ -993,6 +1002,22 @@ static inline ASR::Variable_t* get_reference_member(
     }
     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(member);
     return is_reference(v->m_type) ? v : nullptr;
+}
+
+// Whether `decl` declares the type of a frame (see nested_vars): a derived
+// type with a member of Reference type.
+static inline bool is_frame_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    for (auto &item: ASR::down_cast<ASR::Struct_t>(decl)->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*item.second) && is_reference(
+                ASR::down_cast<ASR::Variable_t>(item.second)->m_type)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // The common block in whose storage `v` lives, or nullptr when `v` has

@@ -2162,10 +2162,1182 @@ public:
     }
 };
 
+/*
+Host frames
+===========
+
+Each instance of a host (a procedure or main program with internal
+procedures that use its variables) gets a frame: a local object of a derived
+type declared in the host, with one member per host variable that its internal
+procedures use. A member holds the address of the variable (a member of
+Reference type, bound by BindReference at the start of the host's body), so
+nothing is copied, and every instance of a recursive host has its own frame.
+
+    recursive subroutine h(n)                   ! after the pass
+        integer, intent(in) :: n
+        integer :: k
+        type :: __lcompilers_frame_h
+            integer, reference :: k
+        end type
+        type(__lcompilers_frame_h) :: __lcompilers_frame
+        bind_reference(__lcompilers_frame%k, k)
+        k = n
+        call inner(__lcompilers_frame)
+    contains
+        subroutine inner(__lcompilers_frame)
+            type(__lcompilers_frame_h), intent(in) :: __lcompilers_frame
+            integer, host_associated :: k => __lcompilers_frame%k
+            if (k > 1) call h(k - 1)
+            k = k + 1
+        end subroutine
+    end subroutine
+
+An internal procedure that needs the frame gets it as its last dummy
+argument, and each call passes it: the host its frame object, an internal
+procedure its own frame dummy. In an internal procedure, each host variable
+is replaced by an alias: a variable of the same type with HostAssociated
+storage, bound on entry to the variable its frame member refers to. A named
+constant of the host is replaced by a copy.
+
+A member refers to the variable itself, except for a variable whose
+representation is fixed at run time by the host (a non-allocatable,
+non-pointer array or character) or that is a procedure: the host associates
+a pointer "view" with it on entry, and the member refers to the view.
+
+An internal procedure of an internal procedure (an extension) reaches a
+variable of a more distant host through the aliases of the procedures in
+between: the pass processes the hosts from the outside in, so that the
+variables of a host are aliases of the procedures nested in it, which become
+host variables of their own internal procedures in turn. A call to an
+internal procedure of a more distant host passes the frame dummy of the
+procedure nested in that host, which is reached the same way.
+
+For now, the legacy lowering above (context modules) remains for a whole
+program unit in which an internal procedure is used as a procedure value (an
+actual argument, a pointer target, an interface), in which an interface body
+calls an internal procedure (the frame is not available there), or which is
+a main program with a global initializer (called before the frame is bound).
+*/
+
+namespace HostFrames {
+
+static ASR::symbol_t *scope_owner(SymbolTable *scope) {
+    if (scope != nullptr && scope->asr_owner != nullptr &&
+            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        return ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+    }
+    return nullptr;
+}
+
+static bool is_procedure(ASR::symbol_t *sym) {
+    return sym != nullptr && (ASR::is_a<ASR::Function_t>(*sym) ||
+        ASR::is_a<ASR::Program_t>(*sym));
+}
+
+// An internal procedure: a procedure with a body, declared in a procedure or
+// main program.
+static bool is_internal_procedure(ASR::symbol_t *sym) {
+    if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+        return false;
+    }
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+    return ASRUtils::get_FunctionType(f)->m_deftype ==
+            ASR::deftypeType::Implementation &&
+        is_procedure(scope_owner(f->m_symtab->parent));
+}
+
+static bool is_dummy_argument_of(ASR::symbol_t *sym, ASR::symbol_t *procedure) {
+    if (!ASR::is_a<ASR::Function_t>(*procedure)) {
+        return false;
+    }
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(procedure);
+    for (size_t i = 0; i < f->n_args; i++) {
+        if (ASR::is_a<ASR::Var_t>(*f->m_args[i]) &&
+                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == sym) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether a frame can give the internal procedures of the program unit
+// `root` (a procedure or main program that is not nested in another one)
+// their host instance. It cannot yet when an internal procedure is used as
+// a procedure value, where its frame would have to travel with the value.
+class FrameEligibility: public ASR::BaseWalkVisitor<FrameEligibility> {
+public:
+    bool eligible = true;
+    bool has_internal_procedures = false;
+    // Inside an interface body, or the interface of a procedure variable,
+    // where no frame is available
+    size_t in_interface = 0;
+
+    void visit_Function(const ASR::Function_t &x) {
+        if (is_internal_procedure((ASR::symbol_t*) &x)) {
+            has_internal_procedures = true;
+        }
+        bool interface = ASRUtils::get_FunctionType(x)->m_deftype !=
+            ASR::deftypeType::Implementation;
+        in_interface += interface;
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_Function(x);
+        in_interface -= interface;
+    }
+
+    // A procedure of the host that reads a host variable for the bounds of
+    // an interface (`import :: n`) is called where no frame is available.
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (in_interface > 0 && is_internal_procedure(
+                ASRUtils::symbol_get_past_external(x.m_name))) {
+            eligible = false;
+        }
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_FunctionCall(x);
+    }
+
+    void visit_Template(const ASR::Template_t &/*x*/) {}
+
+    // The global initializer of a main program is called before the
+    // program starts, so before its frame could be bound.
+    void visit_Program(const ASR::Program_t &x) {
+        if (x.m_global_init != nullptr) {
+            eligible = false;
+        }
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_Program(x);
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (is_internal_procedure(x.m_v)) {
+            eligible = false;
+        }
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        // A procedure variable or dummy declared with the interface of an
+        // internal procedure
+        if (x.m_type_declaration != nullptr && is_internal_procedure(
+                ASRUtils::symbol_get_past_external(x.m_type_declaration))) {
+            eligible = false;
+        }
+        bool interface = ASR::is_a<ASR::FunctionType_t>(
+            *ASRUtils::type_get_past_pointer(x.m_type));
+        in_interface += interface;
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_ttype(*x.m_type);
+        in_interface -= interface;
+        // The value of a bind(c) complex value dummy is not addressable
+        if (x.m_value_attr && ASR::is_a<ASR::Complex_t>(*x.m_type)) {
+            ASR::symbol_t *owner = scope_owner(x.m_parent_symtab);
+            if (owner != nullptr && ASR::is_a<ASR::Function_t>(*owner) &&
+                    ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
+                        owner))->m_abi == ASR::abiType::BindC) {
+                eligible = false;
+            }
+        }
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_Variable(x);
+    }
+
+    void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+        if (is_internal_procedure(x.m_procedure) ||
+                (x.m_callback != nullptr && is_internal_procedure(x.m_callback))) {
+            eligible = false;
+        }
+        ASR::BaseWalkVisitor<FrameEligibility>::visit_dtio_binding(x);
+    }
+};
+
+// The entities of the host whose scope is `host` that an internal procedure
+// of the host, or a procedure nested in it, refers to: its variables and
+// dummy procedures, and the internal procedures of the host it calls.
+class HostReferenceCollector: public ASR::BaseWalkVisitor<HostReferenceCollector> {
+public:
+    SymbolTable *host;
+    ASR::symbol_t *host_sym;
+    std::set<ASR::symbol_t*> entities;
+    std::set<ASR::symbol_t*> called;
+
+    HostReferenceCollector(SymbolTable *host_): host(host_),
+        host_sym(scope_owner(host_)) {}
+
+    void note(ASR::symbol_t *sym) {
+        if (sym == nullptr || ASRUtils::symbol_parent_symtab(sym) != host) {
+            return;
+        }
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            if (ASRUtils::is_reached_through_host_frame(
+                    *ASR::down_cast<ASR::Variable_t>(sym))) {
+                entities.insert(sym);
+            }
+        } else if (ASR::is_a<ASR::Function_t>(*sym) &&
+                is_dummy_argument_of(sym, host_sym)) {
+            entities.insert(sym);
+        }
+    }
+
+    void note_call(ASR::symbol_t *name) {
+        note(name);
+        if (is_internal_procedure(name) &&
+                ASRUtils::symbol_parent_symtab(name) == host) {
+            called.insert(name);
+        }
+    }
+
+    void note_namelist(ASR::symbol_t *nml) {
+        if (nml == nullptr) {
+            return;
+        }
+        nml = ASRUtils::symbol_get_past_external(nml);
+        if (!ASR::is_a<ASR::Namelist_t>(*nml)) {
+            return;
+        }
+        ASR::Namelist_t *group = ASR::down_cast<ASR::Namelist_t>(nml);
+        for (size_t i = 0; i < group->n_var_list; i++) {
+            note(group->m_var_list[i]);
+        }
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        // An interface body does not access its host
+        if (ASRUtils::get_FunctionType(x)->m_deftype !=
+                ASR::deftypeType::Implementation) {
+            return;
+        }
+        ASR::BaseWalkVisitor<HostReferenceCollector>::visit_Function(x);
+    }
+
+    void visit_Template(const ASR::Template_t &/*x*/) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        note(x.m_v);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        note_call(x.m_name);
+        ASR::BaseWalkVisitor<HostReferenceCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        note_call(x.m_name);
+        ASR::BaseWalkVisitor<HostReferenceCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        note_namelist(x.m_nml);
+        ASR::BaseWalkVisitor<HostReferenceCollector>::visit_FileRead(x);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        note_namelist(x.m_nml);
+        ASR::BaseWalkVisitor<HostReferenceCollector>::visit_FileWrite(x);
+    }
+
+    void visit_Namelist(const ASR::Namelist_t &x) {
+        for (size_t i = 0; i < x.n_var_list; i++) {
+            note(x.m_var_list[i]);
+        }
+    }
+};
+
+// Whether a host variable is reached through a pointer view (see above)
+static bool reached_through_view(ASR::symbol_t *sym) {
+    if (ASR::is_a<ASR::Function_t>(*sym)) {
+        return true;
+    }
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_host_associated(*v)) {
+        return false;
+    }
+    ASR::ttype_t *t = v->m_type;
+    if (ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)) {
+        return false;
+    }
+    if (ASR::is_a<ASR::FunctionType_t>(*t)) {
+        return true;
+    }
+    if (ASRUtils::is_array(t)) {
+        return !ASRUtils::is_assumed_rank_array(t);
+    }
+    return ASRUtils::is_character(*t);
+}
+
+// The type of the pointer view of a host variable
+static ASR::ttype_t *view_type(Allocator &al, ASR::symbol_t *sym) {
+    const Location &loc = sym->base.loc;
+    if (ASR::is_a<ASR::Function_t>(*sym)) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            duplicator.duplicate_ttype(ASR::down_cast<ASR::Function_t>(
+                sym)->m_function_signature)));
+    }
+    ASR::ttype_t *t = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+    if (ASR::is_a<ASR::FunctionType_t>(*t)) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            duplicator.duplicate_ttype(t)));
+    }
+    if (ASRUtils::is_array(t)) {
+        if (ASRUtils::extract_physical_type(t) ==
+                ASR::array_physical_typeType::UnboundedPointerArray) {
+            // An assumed-size array has no upper bound to describe
+            return ASRUtils::duplicate_type_with_empty_dims(al, t,
+                ASR::array_physical_typeType::UnboundedPointerArray, true);
+        }
+        ASR::ttype_t *view = ASRUtils::duplicate_type_with_empty_dims(al, t);
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(view);
+        if (ASRUtils::is_character(*array->m_type)) {
+            ASR::String_t *str = ASRUtils::get_string_type(array->m_type);
+            if (str->m_len_kind == ASR::AssumedLength || (str->m_len != nullptr &&
+                    !ASRUtils::is_value_constant(str->m_len))) {
+                array->m_type = ASRUtils::TYPE(ASR::make_String_t(al,
+                    str->base.base.loc, str->m_kind, nullptr,
+                    ASR::DeferredLength, ASR::DescriptorString));
+            }
+        }
+        return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, view));
+    }
+    ASR::String_t *str = ASRUtils::get_string_type(t);
+    return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+        ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, str->m_kind,
+            nullptr, ASR::DeferredLength, ASR::DescriptorString))));
+}
+
+// The frame of a host
+struct Frame {
+    ASR::symbol_t *type = nullptr;
+    ASR::symbol_t *object = nullptr;
+    // host variable or dummy procedure -> its member
+    std::map<ASR::symbol_t*, ASR::Variable_t*> members;
+    // member -> the symbol of the host that names it, as for the members
+    // of any derived type declared in a procedure
+    std::map<ASR::Variable_t*, ASR::symbol_t*> member_names;
+};
+
+// The procedure whose host is being processed, and what replaces the host's
+// entities in it and in the procedures nested in it.
+struct Child {
+    ASR::Function_t *proc = nullptr;
+    ASR::symbol_t *frame_dummy = nullptr;
+    // host variable, named constant or dummy procedure -> its alias or copy
+    std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
+    // namelist group of the host -> its copy
+    std::map<ASR::symbol_t*, ASR::symbol_t*> namelists;
+};
+
+// Replaces the entities of the host in an expression
+class HostEntityReplacer: public ASR::BaseExprReplacer<HostEntityReplacer> {
+public:
+    Child *child = nullptr;
+
+    void replace_Var(ASR::Var_t *x) {
+        auto it = child->replacements.find(x->m_v);
+        if (it != child->replacements.end()) {
+            x->m_v = it->second;
+        }
+    }
+
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
+        ASR::BaseExprReplacer<HostEntityReplacer>::replace_ArrayPhysicalCast(x);
+        x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+    }
+};
+
+// Whether a node refers to an entity of the host that is replaced, or calls
+// an internal procedure of the host that needs the frame (the call gets the
+// frame as an actual argument)
+class HostEntityFinder: public ASR::BaseWalkVisitor<HostEntityFinder> {
+public:
+    const Child &child;
+    const std::set<ASR::symbol_t*> &needs_frame;
+    bool found = false;
+
+    HostEntityFinder(const Child &child_, const std::set<ASR::symbol_t*> &needs_frame_):
+        child(child_), needs_frame(needs_frame_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (child.replacements.find(x.m_v) != child.replacements.end()) {
+            found = true;
+        }
+    }
+
+    void visit_call_name(ASR::symbol_t *name) {
+        if (child.replacements.find(name) != child.replacements.end() ||
+                needs_frame.find(name) != needs_frame.end()) {
+            found = true;
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_call_name(x.m_name);
+        ASR::BaseWalkVisitor<HostEntityFinder>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_call_name(x.m_name);
+        ASR::BaseWalkVisitor<HostEntityFinder>::visit_SubroutineCall(x);
+    }
+};
+
+// Appends the frame as the last actual argument of every call to an internal
+// procedure of the host that needs it
+class FrameActuals {
+public:
+    Allocator &al;
+    const std::set<ASR::symbol_t*> &needs_frame;
+    std::set<const ASR::asr_t*> done;
+
+    FrameActuals(Allocator &al_, const std::set<ASR::symbol_t*> &needs_frame_):
+        al(al_), needs_frame(needs_frame_) {}
+
+    void append(const ASR::asr_t *call, ASR::symbol_t *name,
+            ASR::call_arg_t *&args, size_t &n_args, ASR::symbol_t *frame,
+            const Location &loc) {
+        append(call, name, args, n_args, ASRUtils::EXPR(ASR::make_Var_t(al,
+            loc, frame)), loc);
+    }
+
+    void append(const ASR::asr_t *call, ASR::symbol_t *name,
+            ASR::call_arg_t *&args, size_t &n_args, ASR::expr_t *frame,
+            const Location &loc) {
+        if (needs_frame.find(name) == needs_frame.end() ||
+                !done.insert(call).second) {
+            return;
+        }
+        ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(name);
+        size_t n_user = callee->n_args - 1;
+        Vec<ASR::call_arg_t> new_args;
+        new_args.reserve(al, n_user + 1);
+        for (size_t i = 0; i < n_args; i++) {
+            new_args.push_back(al, args[i]);
+        }
+        // Absent optional arguments that the call leaves out
+        while (new_args.size() < n_user) {
+            ASR::call_arg_t absent;
+            absent.loc = loc;
+            absent.m_value = nullptr;
+            new_args.push_back(al, absent);
+        }
+        ASR::call_arg_t actual;
+        actual.loc = loc;
+        actual.m_value = frame;
+        new_args.push_back(al, actual);
+        args = new_args.p;
+        n_args = new_args.size();
+    }
+};
+
+// Passes the frame object of the host at its calls, in its body and in its
+// BLOCK and ASSOCIATE constructs, but not in its internal procedures
+class HostCalls: public ASR::BaseWalkVisitor<HostCalls> {
+public:
+    FrameActuals &actuals;
+    ASR::symbol_t *frame;
+
+    HostCalls(FrameActuals &actuals_, ASR::symbol_t *frame_):
+        actuals(actuals_), frame(frame_) {}
+
+    void visit_Function(const ASR::Function_t &/*x*/) {}
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::FunctionCall_t &xx = const_cast<ASR::FunctionCall_t&>(x);
+        actuals.append(&x.base.base, x.m_name, xx.m_args, xx.n_args, frame,
+            x.base.base.loc);
+        ASR::BaseWalkVisitor<HostCalls>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        actuals.append(&x.base.base, x.m_name, xx.m_args, xx.n_args, frame,
+            x.base.base.loc);
+        ASR::BaseWalkVisitor<HostCalls>::visit_SubroutineCall(x);
+    }
+};
+
+// Rewrites an internal procedure of the host and the procedures nested in it:
+// the entities of the host become aliases or copies, and calls to internal
+// procedures of the host that need the frame pass the frame dummy.
+class Rewriter: public ASR::CallReplacerOnExpressionsVisitor<Rewriter> {
+public:
+    Allocator &al;
+    Child &child;
+    FrameActuals &actuals;
+    HostEntityReplacer replacer;
+    bool in_own_signature = false;
+
+    Rewriter(Allocator &al_, Child &child_, FrameActuals &actuals_):
+            al(al_), child(child_), actuals(actuals_) {
+        replacer.child = &child;
+    }
+
+    bool refers_to_host(ASR::expr_t *expr) {
+        HostEntityFinder finder(child, actuals.needs_frame);
+        finder.visit_expr(*expr);
+        return finder.found;
+    }
+
+    bool refers_to_host(ASR::ttype_t *type) {
+        HostEntityFinder finder(child, actuals.needs_frame);
+        finder.visit_ttype(*type);
+        return finder.found;
+    }
+
+    void call_replacer() {
+        if (*current_expr == nullptr || !refers_to_host(*current_expr)) {
+            return;
+        }
+        // The expression can share nodes, notably its type, with a
+        // declaration of the host: replace in a copy.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        *current_expr = duplicator.duplicate_expr(*current_expr);
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::get_FunctionType(x)->m_deftype !=
+                ASR::deftypeType::Implementation) {
+            return;
+        }
+        ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
+        if (refers_to_host(xx.m_function_signature)) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            xx.m_function_signature = duplicator.duplicate_ttype(
+                xx.m_function_signature);
+        }
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_Function(x);
+    }
+
+    void visit_Template(const ASR::Template_t &/*x*/) {}
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::Variable_t &xx = const_cast<ASR::Variable_t&>(x);
+        bool changed = false;
+        // A variable can share its type with a declaration of the host
+        if (refers_to_host(xx.m_type)) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            xx.m_type = duplicator.duplicate_ttype(xx.m_type);
+            changed = true;
+        }
+        changed = changed ||
+            (xx.m_symbolic_value != nullptr && refers_to_host(xx.m_symbolic_value)) ||
+            (xx.m_value != nullptr && refers_to_host(xx.m_value));
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_Variable(x);
+        if (changed) {
+            update_dependencies(xx);
+        }
+    }
+
+    void update_dependencies(ASR::Variable_t &v) {
+        SetChar deps;
+        deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, deps, v.m_type,
+            v.m_symbolic_value, v.m_value, v.m_name);
+        v.m_dependencies = deps.p;
+        v.n_dependencies = deps.size();
+    }
+
+    void visit_Namelist(const ASR::Namelist_t &x) {
+        ASR::Namelist_t &xx = const_cast<ASR::Namelist_t&>(x);
+        for (size_t i = 0; i < xx.n_var_list; i++) {
+            auto it = child.replacements.find(xx.m_var_list[i]);
+            if (it != child.replacements.end()) {
+                xx.m_var_list[i] = it->second;
+            }
+        }
+    }
+
+    // A namelist group of the host becomes a group of the procedure that
+    // lists the aliases
+    void replace_namelist(ASR::symbol_t *&nml) {
+        if (nml == nullptr || ASRUtils::symbol_parent_symtab(nml) !=
+                child.proc->m_symtab->parent ||
+                !ASR::is_a<ASR::Namelist_t>(*nml)) {
+            return;
+        }
+        auto it = child.namelists.find(nml);
+        if (it != child.namelists.end()) {
+            nml = it->second;
+            return;
+        }
+        ASR::Namelist_t *group = ASR::down_cast<ASR::Namelist_t>(nml);
+        Vec<ASR::symbol_t*> var_list;
+        var_list.reserve(al, group->n_var_list);
+        for (size_t i = 0; i < group->n_var_list; i++) {
+            auto r = child.replacements.find(group->m_var_list[i]);
+            var_list.push_back(al, r != child.replacements.end()
+                ? r->second : group->m_var_list[i]);
+        }
+        SymbolTable *scope = child.proc->m_symtab;
+        std::string name = scope->get_unique_name(
+            ASRUtils::symbol_name(nml), false);
+        ASR::symbol_t *copy = ASR::down_cast<ASR::symbol_t>(ASR::make_Namelist_t(
+            al, nml->base.loc, scope, group->m_group_name, var_list.p,
+            var_list.size()));
+        scope->add_symbol(name, copy);
+        child.namelists[nml] = copy;
+        nml = copy;
+    }
+
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_FileRead(x);
+        replace_namelist(const_cast<ASR::FileRead_t&>(x).m_nml);
+    }
+
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_FileWrite(x);
+        replace_namelist(const_cast<ASR::FileWrite_t&>(x).m_nml);
+    }
+
+    void replace_call_name(ASR::symbol_t *&name) {
+        auto it = child.replacements.find(name);
+        if (it != child.replacements.end()) {
+            name = it->second;
+        }
+    }
+
+    // The frame dummy, as an actual argument. In the signature of the
+    // procedure, a dummy argument is a FunctionParam.
+    ASR::expr_t *frame_actual(const Location &loc) {
+        if (in_own_signature) {
+            return ASRUtils::EXPR(ASR::make_FunctionParam_t(al, loc,
+                child.proc->n_args - 1, ASRUtils::symbol_type(child.frame_dummy),
+                nullptr));
+        }
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, child.frame_dummy));
+    }
+
+    void visit_FunctionType(const ASR::FunctionType_t &x) {
+        bool own = &x.base == child.proc->m_function_signature;
+        bool in_own_signature_copy = in_own_signature;
+        in_own_signature = in_own_signature || own;
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_FunctionType(x);
+        in_own_signature = in_own_signature_copy;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::FunctionCall_t &xx = const_cast<ASR::FunctionCall_t&>(x);
+        replace_call_name(xx.m_name);
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_FunctionCall(x);
+        if (child.frame_dummy != nullptr) {
+            actuals.append(&x.base.base, xx.m_name, xx.m_args, xx.n_args,
+                frame_actual(x.base.base.loc), x.base.base.loc);
+        }
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        replace_call_name(xx.m_name);
+        ASR::CallReplacerOnExpressionsVisitor<Rewriter>::visit_SubroutineCall(x);
+        if (child.frame_dummy != nullptr) {
+            actuals.append(&x.base.base, xx.m_name, xx.m_args, xx.n_args,
+                child.frame_dummy, x.base.base.loc);
+        }
+    }
+};
+
+class HostFrameBuilder {
+public:
+    Allocator &al;
+
+    diag::Diagnostics *diagnostics;
+    bool failed = false;
+
+    HostFrameBuilder(Allocator &al_, diag::Diagnostics *diagnostics_):
+        al(al_), diagnostics(diagnostics_) {}
+
+    // A value dummy argument of a bind(c) procedure is held by the procedure
+    // as a value, not as a variable with an address that a frame can refer
+    // to (#14178).
+    bool reject_unsupported(ASR::symbol_t *host_sym,
+            const std::vector<ASR::symbol_t*> &captured) {
+        if (!ASR::is_a<ASR::Function_t>(*host_sym) || ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(host_sym))->m_abi !=
+                    ASR::abiType::BindC) {
+            return false;
+        }
+        for (ASR::symbol_t *sym: captured) {
+            if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+                    !ASR::down_cast<ASR::Variable_t>(sym)->m_value_attr ||
+                    !is_dummy_argument_of(sym, host_sym)) {
+                continue;
+            }
+            std::string msg = "host association of a value dummy argument "
+                "of a bind(c) procedure is not supported yet";
+            if (diagnostics == nullptr) {
+                throw LCompilersException(msg);
+            }
+            diagnostics->message_label(msg, {sym->base.loc},
+                "used by an internal procedure of '" +
+                std::string(ASRUtils::symbol_name(host_sym)) + "'",
+                diag::Level::Error, diag::Stage::ASRPass);
+            failed = true;
+            return true;
+        }
+        return false;
+    }
+
+    static SymbolTable *procedure_scope(ASR::symbol_t *procedure) {
+        return ASRUtils::symbol_symtab(procedure);
+    }
+
+    // The internal procedures of a host, in the order of its symbol table
+    static std::vector<ASR::Function_t*> internal_procedures(SymbolTable *host) {
+        std::vector<ASR::Function_t*> procs;
+        for (auto &item: host->get_scope()) {
+            if (is_internal_procedure(item.second) &&
+                    ASRUtils::symbol_parent_symtab(item.second) == host) {
+                procs.push_back(ASR::down_cast<ASR::Function_t>(item.second));
+            }
+        }
+        return procs;
+    }
+
+    // The entities of the host that a type, or an expression, refers to
+    void collect(SymbolTable *host, ASR::ttype_t *type, ASR::expr_t *expr,
+            std::set<ASR::symbol_t*> &entities) {
+        HostReferenceCollector c(host);
+        if (type != nullptr) {
+            c.visit_ttype(*type);
+        }
+        if (expr != nullptr) {
+            c.visit_expr(*expr);
+        }
+        entities.insert(c.entities.begin(), c.entities.end());
+    }
+
+    static bool is_constant(ASR::symbol_t *sym) {
+        return ASR::is_a<ASR::Variable_t>(*sym) &&
+            ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
+                ASR::storage_typeType::Parameter;
+    }
+
+    ASR::Variable_t *add_variable(SymbolTable *scope, const std::string &hint,
+            const Location &loc, ASR::intentType intent,
+            ASR::expr_t *symbolic_value, ASR::expr_t *value,
+            ASR::storage_typeType storage, ASR::ttype_t *type,
+            ASR::symbol_t *type_declaration, bool target = false,
+            bool is_volatile = false) {
+        std::string name = scope->get_unique_name(hint, false);
+        SetChar deps;
+        deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, deps, type, symbolic_value,
+            value, name);
+        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, name),
+                deps.p, deps.size(), intent, symbolic_value, value, storage,
+                type, type_declaration, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required, false,
+                target, false, nullptr, is_volatile));
+        scope->add_symbol(name, sym);
+        return ASR::down_cast<ASR::Variable_t>(sym);
+    }
+
+    // The declaration of the variables of the type of a host entity
+    static ASR::symbol_t *type_declaration_of(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            return sym;
+        }
+        return ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+    }
+
+    // Declares the frame type and object of the host, and binds the members
+    // at the start of its body
+    Frame make_frame(ASR::symbol_t *host_sym, const std::vector<ASR::symbol_t*> &captured,
+            Vec<ASR::stmt_t*> &prologue) {
+        SymbolTable *host = procedure_scope(host_sym);
+        const Location &loc = host_sym->base.loc;
+        Frame frame;
+        SymbolTable *members_scope = al.make_new<SymbolTable>(host);
+        Vec<char*> member_names;
+        member_names.reserve(al, captured.size());
+        std::set<std::string> dependency_names;
+        std::map<ASR::symbol_t*, ASR::symbol_t*> views;
+        std::string type_name = host->get_unique_name("__lcompilers_frame_" +
+            std::string(ASRUtils::symbol_name(host_sym)), false);
+        for (ASR::symbol_t *sym: captured) {
+            std::string name = ASRUtils::symbol_name(sym);
+            ASR::ttype_t *referenced;
+            ASR::symbol_t *type_declaration = type_declaration_of(sym);
+            if (reached_through_view(sym)) {
+                ASR::ttype_t *type = view_type(al, sym);
+                ASR::Variable_t *view = add_variable(host,
+                    "__lcompilers_view_" + name, sym->base.loc,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, type, type_declaration);
+                views[sym] = (ASR::symbol_t*) view;
+                referenced = type;
+            } else {
+                referenced = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::ttype_t *member_type = ASRUtils::TYPE(ASR::make_Reference_t(al,
+                sym->base.loc, duplicator.duplicate_ttype(referenced)));
+            ASR::Variable_t *member = add_variable(members_scope, name,
+                sym->base.loc, ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, member_type, type_declaration);
+            frame.members[sym] = member;
+            member_names.push_back(al, member->m_name);
+            std::string member_name = host->get_unique_name("1_" + type_name +
+                "_" + std::string(member->m_name), false);
+            ASR::symbol_t *member_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(al, sym->base.loc, host,
+                    s2c(al, member_name), (ASR::symbol_t*) member,
+                    s2c(al, type_name), nullptr, 0, member->m_name,
+                    ASR::accessType::Public));
+            host->add_symbol(member_name, member_sym);
+            frame.member_names[member] = member_sym;
+            if (type_declaration != nullptr && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(referenced))) {
+                dependency_names.insert(ASRUtils::symbol_name(type_declaration));
+            }
+        }
+        SetChar dependencies;
+        dependencies.reserve(al, dependency_names.size());
+        for (const std::string &name: dependency_names) {
+            dependencies.push_back(al, s2c(al, name));
+        }
+        frame.type = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
+            members_scope, s2c(al, type_name), nullptr, dependencies.p,
+            dependencies.size(), member_names.p, member_names.size(), nullptr, 0,
+            ASR::abiType::Source, ASR::accessType::Public, false, false, false,
+            nullptr, 0, nullptr, nullptr, nullptr, 0));
+        ASR::down_cast<ASR::Struct_t>(frame.type)->m_struct_signature =
+            ASRUtils::make_StructType_t_util(al, loc, frame.type, true);
+        host->add_symbol(type_name, frame.type);
+        frame.object = (ASR::symbol_t*) add_variable(host, "__lcompilers_frame",
+            loc, ASR::intentType::Local, nullptr, nullptr,
+            ASR::storage_typeType::Default, frame_type(loc, frame), frame.type);
+
+        for (ASR::symbol_t *sym: captured) {
+            const Location &sloc = sym->base.loc;
+            ASR::expr_t *variable = ASRUtils::EXPR(ASR::make_Var_t(al, sloc, sym));
+            if (ASR::is_a<ASR::Variable_t>(*sym) && ASRUtils::is_host_associated(
+                    *ASR::down_cast<ASR::Variable_t>(sym))) {
+                // A variable of a more distant host: pass on the reference
+                // to it
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                variable = duplicator.duplicate_expr(
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_symbolic_value);
+            }
+            auto view = views.find(sym);
+            if (view != views.end()) {
+                ASR::expr_t *pointer = ASRUtils::EXPR(ASR::make_Var_t(al, sloc,
+                    view->second));
+                prologue.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, sloc, pointer, variable)));
+                variable = pointer;
+            }
+            prologue.push_back(al, ASRUtils::STMT(ASR::make_BindReference_t(al, sloc,
+                member_designator(sloc, frame, frame.object, frame.members[sym]),
+                variable)));
+        }
+        return frame;
+    }
+
+    ASR::ttype_t *frame_type(const Location &loc, const Frame &frame) {
+        return ASRUtils::make_StructType_t_util(al, loc, frame.type, true);
+    }
+
+    // `object%member`, which designates the variable the member refers to
+    ASR::expr_t *member_designator(const Location &loc, const Frame &frame,
+            ASR::symbol_t *object, ASR::Variable_t *member) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t *referenced = duplicator.duplicate_ttype(
+            ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type);
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, object)),
+            frame.member_names.at(member), referenced, nullptr));
+    }
+
+    // Appends the frame dummy to an internal procedure of the host
+    ASR::symbol_t *add_frame_dummy(ASR::Function_t *proc, const Frame &frame) {
+        const Location &loc = proc->base.base.loc;
+        ASR::Variable_t *dummy = add_variable(proc->m_symtab, "__lcompilers_frame",
+            loc, ASR::intentType::In, nullptr, nullptr,
+            ASR::storage_typeType::Default, frame_type(loc, frame), frame.type);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, proc->n_args + 1);
+        for (size_t i = 0; i < proc->n_args; i++) {
+            args.push_back(al, proc->m_args[i]);
+        }
+        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            (ASR::symbol_t*) dummy)));
+        proc->m_args = args.p;
+        proc->n_args = args.size();
+        ASR::FunctionType_t *old = ASRUtils::get_FunctionType(proc);
+        Vec<ASR::ttype_t*> arg_types;
+        arg_types.reserve(al, old->n_arg_types + 1);
+        for (size_t i = 0; i < old->n_arg_types; i++) {
+            arg_types.push_back(al, old->m_arg_types[i]);
+        }
+        arg_types.push_back(al, frame_type(loc, frame));
+        proc->m_function_signature = ASRUtils::TYPE(ASR::make_FunctionType_t(al,
+            old->base.base.loc, arg_types.p, arg_types.size(),
+            old->m_return_var_type, old->m_abi, old->m_deftype,
+            old->m_bindc_name, old->m_elemental, old->m_pure, old->m_module,
+            old->m_inline, old->m_static, old->m_restrictions,
+            old->n_restrictions, old->m_is_restriction, old->m_exec_space));
+        return (ASR::symbol_t*) dummy;
+    }
+
+    // The alias in `child` of the host entity `sym`, which `member` of the
+    // frame refers to
+    ASR::symbol_t *make_alias(Child &child, const Frame &frame,
+            ASR::symbol_t *sym, ASR::Variable_t *member) {
+        const Location &loc = sym->base.loc;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t *type = duplicator.duplicate_ttype(
+            ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type);
+        bool target = false, is_volatile = false;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            target = v->m_target_attr;
+            is_volatile = v->m_is_volatile;
+        }
+        return (ASR::symbol_t*) add_variable(child.proc->m_symtab,
+            ASRUtils::symbol_name(sym), loc, ASR::intentType::Local,
+            member_designator(loc, frame, child.frame_dummy, member), nullptr,
+            ASR::storage_typeType::HostAssociated, type,
+            member->m_type_declaration, target, is_volatile);
+    }
+
+    // A copy in `child` of the named constant `v` of the host
+    ASR::symbol_t *copy_constant(Child &child, ASR::Variable_t *v) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t *value = duplicator.duplicate_expr(v->m_value);
+        ASR::expr_t *symbolic_value = duplicator.duplicate_expr(
+            v->m_value != nullptr ? v->m_value : v->m_symbolic_value);
+        ASR::Variable_t *copy = add_variable(child.proc->m_symtab, v->m_name,
+            v->base.base.loc, ASR::intentType::Local, symbolic_value, value,
+            ASR::storage_typeType::Parameter, duplicator.duplicate_ttype(v->m_type),
+            v->m_type_declaration);
+        copy->m_abi = v->m_abi;
+        return (ASR::symbol_t*) copy;
+    }
+
+    // Processes the host `host_sym`, then its internal procedures as hosts
+    void process(ASR::symbol_t *host_sym) {
+        SymbolTable *host = procedure_scope(host_sym);
+        std::vector<ASR::Function_t*> procs = internal_procedures(host);
+        if (procs.empty()) {
+            return;
+        }
+        std::map<ASR::Function_t*, HostReferenceCollector*> uses;
+        std::vector<HostReferenceCollector> collectors;
+        collectors.reserve(procs.size());
+        for (ASR::Function_t *proc: procs) {
+            collectors.emplace_back(host);
+            collectors.back().visit_Function(*proc);
+        }
+        for (size_t i = 0; i < procs.size(); i++) {
+            uses[procs[i]] = &collectors[i];
+        }
+
+        // The internal procedures that need the frame: those that refer to a
+        // host variable, and those that call one that needs it
+        std::set<ASR::symbol_t*> needs_frame;
+        for (ASR::Function_t *proc: procs) {
+            for (ASR::symbol_t *e: uses[proc]->entities) {
+                if (!is_constant(e)) {
+                    needs_frame.insert((ASR::symbol_t*) proc);
+                    break;
+                }
+            }
+        }
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (ASR::Function_t *proc: procs) {
+                if (needs_frame.count((ASR::symbol_t*) proc)) {
+                    continue;
+                }
+                for (ASR::symbol_t *s: uses[proc]->called) {
+                    if (needs_frame.count(s)) {
+                        needs_frame.insert((ASR::symbol_t*) proc);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // The host entities the frame refers to, including those that their
+        // types refer to, in the order of the host's symbol table
+        std::set<ASR::symbol_t*> captured_set;
+        std::vector<ASR::symbol_t*> worklist;
+        for (ASR::Function_t *proc: procs) {
+            for (ASR::symbol_t *e: uses[proc]->entities) {
+                if (!is_constant(e) && captured_set.insert(e).second) {
+                    worklist.push_back(e);
+                }
+            }
+        }
+        while (!worklist.empty()) {
+            ASR::symbol_t *e = worklist.back();
+            worklist.pop_back();
+            if (!ASR::is_a<ASR::Variable_t>(*e) || reached_through_view(e)) {
+                continue;
+            }
+            std::set<ASR::symbol_t*> deps;
+            collect(host, ASR::down_cast<ASR::Variable_t>(e)->m_type, nullptr, deps);
+            for (ASR::symbol_t *d: deps) {
+                if (!is_constant(d) && captured_set.insert(d).second) {
+                    worklist.push_back(d);
+                }
+            }
+        }
+        std::vector<ASR::symbol_t*> captured;
+        for (auto &item: host->get_scope()) {
+            if (captured_set.count(item.second)) {
+                captured.push_back(item.second);
+            }
+        }
+
+        if (reject_unsupported(host_sym, captured)) {
+            return;
+        }
+
+        Frame frame;
+        Vec<ASR::stmt_t*> prologue;
+        prologue.reserve(al, 2*captured.size());
+        if (!captured.empty()) {
+            frame = make_frame(host_sym, captured, prologue);
+        }
+
+        // Frame dummies first, so that every call can pass the frame
+        std::map<ASR::Function_t*, Child> children;
+        for (ASR::Function_t *proc: procs) {
+            Child &child = children[proc];
+            child.proc = proc;
+            if (needs_frame.count((ASR::symbol_t*) proc)) {
+                child.frame_dummy = add_frame_dummy(proc, frame);
+            }
+        }
+        FrameActuals actuals(al, needs_frame);
+        for (ASR::Function_t *proc: procs) {
+            Child &child = children[proc];
+            // The aliases and copies, including those of the entities that
+            // their types and values refer to
+            std::vector<ASR::symbol_t*> pending(uses[proc]->entities.begin(),
+                uses[proc]->entities.end());
+            std::vector<ASR::symbol_t*> created;
+            while (!pending.empty()) {
+                ASR::symbol_t *e = pending.back();
+                pending.pop_back();
+                if (child.replacements.count(e)) {
+                    continue;
+                }
+                ASR::symbol_t *r;
+                if (is_constant(e)) {
+                    r = copy_constant(child, ASR::down_cast<ASR::Variable_t>(e));
+                } else {
+                    LCOMPILERS_ASSERT(child.frame_dummy != nullptr);
+                    r = make_alias(child, frame, e, frame.members[e]);
+                }
+                child.replacements[e] = r;
+                created.push_back(r);
+                ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(r);
+                std::set<ASR::symbol_t*> deps;
+                collect(host, rv->m_type, rv->m_storage ==
+                    ASR::storage_typeType::Parameter ? rv->m_symbolic_value : nullptr,
+                    deps);
+                pending.insert(pending.end(), deps.begin(), deps.end());
+            }
+            Rewriter rewriter(al, child, actuals);
+            for (ASR::symbol_t *r: created) {
+                rewriter.visit_Variable(*ASR::down_cast<ASR::Variable_t>(r));
+            }
+            rewriter.visit_Function(*proc);
+        }
+
+        if (!captured.empty()) {
+            HostCalls calls(actuals, frame.object);
+            ASR::stmt_t **&body = ASR::is_a<ASR::Function_t>(*host_sym)
+                ? ASR::down_cast<ASR::Function_t>(host_sym)->m_body
+                : ASR::down_cast<ASR::Program_t>(host_sym)->m_body;
+            size_t &n_body = ASR::is_a<ASR::Function_t>(*host_sym)
+                ? ASR::down_cast<ASR::Function_t>(host_sym)->n_body
+                : ASR::down_cast<ASR::Program_t>(host_sym)->n_body;
+            for (size_t i = 0; i < n_body; i++) {
+                calls.visit_stmt(*body[i]);
+            }
+            for (auto &item: host->get_scope()) {
+                if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                        ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                    calls.visit_symbol(*item.second);
+                }
+            }
+            for (size_t i = 0; i < n_body; i++) {
+                prologue.push_back(al, body[i]);
+            }
+            body = prologue.p;
+            n_body = prologue.size();
+        }
+
+        for (ASR::Function_t *proc: procs) {
+            process((ASR::symbol_t*) proc);
+        }
+    }
+};
+
+// The procedures and main programs that are not nested in a procedure
+static void collect_program_units(SymbolTable *scope,
+        std::vector<ASR::symbol_t*> &units) {
+    for (auto &item: scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Program_t>(*sym) || ASR::is_a<ASR::Function_t>(*sym)) {
+            units.push_back(sym);
+        } else if (ASR::is_a<ASR::Module_t>(*sym)) {
+            collect_program_units(ASR::down_cast<ASR::Module_t>(sym)->m_symtab, units);
+        }
+    }
+}
+
+// The program unit that `sym`, a procedure or main program, is nested in
+static ASR::symbol_t *program_unit_of(ASR::symbol_t *sym) {
+    ASR::symbol_t *unit = sym;
+    for (SymbolTable *scope = ASRUtils::symbol_parent_symtab(sym); scope != nullptr;
+            scope = scope->parent) {
+        ASR::symbol_t *owner = scope_owner(scope);
+        if (is_procedure(owner)) {
+            unit = owner;
+        }
+    }
+    return unit;
+}
+
+} // namespace HostFrames
+
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
+    const LCompilers::PassOptions& pass_options) {
+    std::vector<ASR::symbol_t*> units;
+    HostFrames::collect_program_units(unit.m_symtab, units);
+    // The program units whose internal procedures keep the legacy lowering,
+    // and those that get frames
+    std::set<ASR::symbol_t*> legacy_units;
+    std::vector<ASR::symbol_t*> frame_units;
+    for (ASR::symbol_t *u: units) {
+        HostFrames::FrameEligibility eligibility;
+        eligibility.visit_symbol(*u);
+        if (!eligibility.has_internal_procedures) {
+            continue;
+        }
+        if (!eligibility.eligible) {
+            legacy_units.insert(u);
+        } else if (!(ASR::is_a<ASR::Function_t>(*u) &&
+                ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(u))->m_abi ==
+                    ASR::abiType::ExternalUndefined)) {
+            // A procedure defined in another translation unit (loaded from
+            // a module file) is lowered there.
+            frame_units.push_back(u);
+        }
+    }
+
     NestedVarVisitor v(al);
     v.visit_TranslationUnit(unit);
+    for (auto it = v.nesting_map.begin(); it != v.nesting_map.end();) {
+        if (legacy_units.count(HostFrames::program_unit_of(it->first)) == 0) {
+            it = v.nesting_map.erase(it);
+        } else {
+            ++it;
+        }
+    }
     ReplaceNestedVisitor w(al, v.nesting_map);
     w.create_context_modules(unit);
     // Re-point references to the moved program types before replacing the
@@ -2179,8 +3351,20 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
         w.assumed_length_ctx_var_len, w.program_procedure_interfaces);
     z.visit_TranslationUnit(unit);
+
+    HostFrames::HostFrameBuilder builder(al, pass_options.diagnostics);
+    for (ASR::symbol_t *u: frame_units) {
+        builder.process(u);
+        if (builder.failed) {
+            return;
+        }
+    }
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
+    ASRVerifyOptions verify_options;
+    verify_options.nested_vars = true;
+    PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
+        "nested_vars");
 }
 
 

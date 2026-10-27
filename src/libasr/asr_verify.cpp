@@ -78,6 +78,8 @@ public:
     bool check_string_format_array_args = false;
     // See ASRVerifyOptions::intrinsic_function.
     bool check_intrinsic_function = false;
+    // See ASRVerifyOptions::nested_vars.
+    bool check_nested_vars = false;
     // The StringFormats whose arguments are the items of a READ statement.
     std::set<const StringFormat_t*> input_formats;
 
@@ -1698,6 +1700,9 @@ public:
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
+        if (check_nested_vars) {
+            verify_no_frame_call_in_declaration(x);
+        }
         // An assumed-size dummy `a(n, *)` has no extent in its last
         // dimension, so it is passed as its data alone, never as a
         // descriptor of the actual argument. Only a polymorphic dummy needs
@@ -2431,6 +2436,137 @@ public:
         if ( x_mv_name != current_name ) {
             variable_dependencies.push_back(x_mv_name);
         }
+        if (check_nested_vars) {
+            verify_not_host_variable(x);
+        }
+    }
+
+    // The procedure or main program whose scope `scope` is, or is nested in
+    // through BLOCK, ASSOCIATE and derived type scopes.
+    static ASR::symbol_t *enclosing_procedure(SymbolTable *scope) {
+        for (; scope != nullptr; scope = scope->parent) {
+            if (scope->asr_owner != nullptr &&
+                    ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                    scope->asr_owner);
+                if (ASR::is_a<ASR::Function_t>(*owner) ||
+                        ASR::is_a<ASR::Program_t>(*owner)) {
+                    return owner;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // See ASRVerifyOptions::nested_vars. An interface body does not access
+    // its host: an expression in it is only ever evaluated in the scope
+    // that calls through it.
+    void verify_not_host_variable(const Var_t &x) {
+        if (!ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+            return;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
+        // Constants and the variables that nested_vars leaves out of the
+        // frame
+        if (v->m_storage == ASR::storage_typeType::Parameter ||
+                !ASRUtils::is_reached_through_host_frame(*v)) {
+            return;
+        }
+        ASR::symbol_t *owner = enclosing_procedure(v->m_parent_symtab);
+        ASR::symbol_t *here = enclosing_procedure(current_symtab);
+        if (owner == nullptr || here == nullptr || owner == here ||
+                (ASR::is_a<ASR::Function_t>(*here) &&
+                 ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
+                    here))->m_deftype != ASR::deftypeType::Implementation)) {
+            return;
+        }
+        // A template is not code: only its instantiations are
+        for (SymbolTable *scope = current_symtab; scope != nullptr;
+                scope = scope->parent) {
+            if (scope->asr_owner != nullptr &&
+                    ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(
+                        scope->asr_owner))) {
+                return;
+            }
+        }
+        // A procedure defined in another translation unit is lowered there
+        for (ASR::symbol_t *p = here; p != nullptr;
+                p = enclosing_procedure(ASRUtils::symbol_parent_symtab(p))) {
+            if (ASR::is_a<ASR::Function_t>(*p) && ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(p))->m_abi ==
+                        ASR::abiType::ExternalUndefined) {
+                return;
+            }
+        }
+        require_id(false, "asr.verify.nested_vars.host_variable",
+            "the variable '" + std::string(v->m_name) + "' of '" +
+            std::string(ASRUtils::symbol_name(owner)) + "' is referenced "
+            "directly by '" + std::string(ASRUtils::symbol_name(here)) +
+            "' after the nested_vars pass, instead of through its frame");
+    }
+
+    // Whether a procedure takes the frame of its host (see nested_vars): a
+    // dummy argument of a frame type.
+    static bool takes_frame(ASR::Function_t *f) {
+        for (size_t i = 0; i < f->n_args; i++) {
+            ASR::ttype_t *t = ASRUtils::expr_type(f->m_args[i]);
+            if (t == nullptr || !ASR::is_a<ASR::StructType_t>(*t) ||
+                    !ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*arg) && ASRUtils::is_frame_type(
+                    ASR::down_cast<ASR::Variable_t>(arg)->m_type_declaration)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The calls in a declaration of a host to its internal procedures that
+    // take its frame
+    class FrameCallInDeclaration: public BaseWalkVisitor<FrameCallInDeclaration> {
+    public:
+        SymbolTable *host;
+        ASR::symbol_t *found = nullptr;
+
+        FrameCallInDeclaration(SymbolTable *host_): host(host_) {}
+
+        void visit_FunctionCall(const FunctionCall_t &x) {
+            ASR::symbol_t *f = ASRUtils::symbol_get_past_external(x.m_name);
+            if (ASR::is_a<ASR::Function_t>(*f) &&
+                    ASRUtils::symbol_parent_symtab(f) == host &&
+                    takes_frame(ASR::down_cast<ASR::Function_t>(f))) {
+                found = f;
+            }
+            BaseWalkVisitor<FrameCallInDeclaration>::visit_FunctionCall(x);
+        }
+    };
+
+    // See ASRVerifyOptions::nested_vars.
+    void verify_no_frame_call_in_declaration(const Variable_t &x) {
+        ASR::symbol_t *owner = x.m_parent_symtab->asr_owner != nullptr &&
+            ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner) : nullptr;
+        if (owner == nullptr || !(ASR::is_a<ASR::Function_t>(*owner) ||
+                ASR::is_a<ASR::Program_t>(*owner))) {
+            return;
+        }
+        FrameCallInDeclaration calls(x.m_parent_symtab);
+        calls.visit_ttype(*x.m_type);
+        if (x.m_symbolic_value != nullptr) {
+            calls.visit_expr(*x.m_symbolic_value);
+        }
+        if (x.m_value != nullptr) {
+            calls.visit_expr(*x.m_value);
+        }
+        require_id(calls.found == nullptr,
+            "asr.verify.nested_vars.frame_call_in_declaration",
+            "the declaration of '" + std::string(x.m_name) + "' calls the "
+            "internal procedure '" + (calls.found ? std::string(
+                ASRUtils::symbol_name(calls.found)) : std::string()) +
+            "', which takes the frame of its host, before the frame is bound");
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
@@ -5382,6 +5518,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
     v.check_string_length_arguments = options.string_length_arguments;
     v.check_string_format_array_args = options.string_format_array_args;
     v.check_intrinsic_function = options.intrinsic_function;
+    v.check_nested_vars = options.nested_vars;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

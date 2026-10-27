@@ -2960,6 +2960,21 @@ asr = true
 pass = "nested_vars"
 
 [[test]]
+filename = "errors/host_assoc_bindc_value_01.f90"
+llvm = true
+
+[[test]]
+filename = "host_assoc_frame_01.f90"
+fortran = true
+pass = "nested_vars"
+options = "--cumulative"
+
+[[test]]
+filename = "host_assoc_frame_02.f90"
+fortran = true
+pass = "nested_vars"
+
+[[test]]
 filename = "../integration_tests/callback_01.f90"
 asr = true
 llvm = true

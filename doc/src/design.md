@@ -200,6 +200,21 @@ designates through the frame. Such a variable has no storage of its own
 (`ASRUtils::has_own_storage`), so it is never allocated, initialized,
 finalized or deallocated by the internal procedure.
 
+A non-allocatable, non-pointer array or character variable, whose
+representation the host fixes at run time, and a dummy procedure are reached
+through a pointer *view*: a local pointer of the host, associated with the
+variable at the start of its body, which the member then refers to. Named
+constants of the host are copied into the internal procedure. An internal
+procedure of an internal procedure (an extension) reaches the variables of
+the outer host through the aliases of the procedure it is nested in, whose
+own frame refers to them; the pass processes the hosts from the outside in.
+Calls between the internal procedures of a host pass on the frame dummy.
+
+For now, a program unit in which an internal procedure is used as a
+procedure value (an actual argument, a pointer target or an interface), or a
+main program with a global initializer, keeps the older lowering through
+module variables that are copied in and out around calls.
+
 The ASR after this pass is not valid Fortran: a member of Reference type and
 a HostAssociated variable have no Fortran syntax, and
 `--show-fortran` prints them as `reference`, `host_associated` and
