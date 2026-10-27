@@ -1745,7 +1745,8 @@ namespace LCompilers {
 
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp, bool use_loop_variable_after_loop,
-                                         SymbolTable* current_scope) {
+                                         SymbolTable* current_scope,
+                                         bool exact_unit_step_exit) {
             Location loc = loop.base.base.loc;
             ASR::expr_t *a=loop.m_head.m_start;
             ASR::expr_t *b=loop.m_head.m_end;
@@ -1755,6 +1756,7 @@ namespace LCompilers {
             ASR::stmt_t *inc_stmt = nullptr;
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
+            ASR::expr_t *zero_trip_guard = nullptr;
             Vec<ASR::stmt_t*> pre_loop_stmts;
             pre_loop_stmts.reserve(al, 2);
             if( !loop_var && a && current_scope ) {
@@ -1889,6 +1891,59 @@ namespace LCompilers {
                     } else {
                         cmp_op = ASR::cmpopType::GtE;
                     }
+                    // With --fast, give a unit-step loop (c = 1 or c = -1)
+                    // an exit test from which LLVM can compute the trip
+                    // count of a loop with run-time bounds (it cannot from
+                    // `i + c <= b`, which never becomes false for
+                    // b = huge(i)), so that it can vectorize the loop:
+                    // * a is a constant other than -huge(i)-1 (huge(i) for
+                    //   c = -1), so `i = a - c` does not wrap:
+                    //       i = a - c
+                    //       do while (i < b)        ! (i > b for c = -1)
+                    //           i = i + c
+                    // * otherwise:
+                    //       i = a - c
+                    //       if (i + c <= b) then    ! (>= for c = -1)
+                    //           do while (i /= b)
+                    //               i = i + c
+                    //   The guard is the first `i + c <= b` test, which
+                    //   holds exactly when a <= b, even if `a - c` wrapped.
+                    //   Only a loop over the whole range of the kind, whose
+                    //   iteration count is not representable, differs.
+                    // In both forms the DO variable takes the values a, ...,
+                    // b, the loop runs |b - a| + 1 times (also for
+                    // b = huge(i)), and `i + c` in the body never wraps.
+                    if (!not_constant_inc && exact_unit_step_exit &&
+                            current_scope && loop.n_orelse == 0 &&
+                            (increment == 1 || increment == -1)) {
+                        ASR::ttype_t *log_type = ASRUtils::TYPE(
+                            ASR::make_Logical_t(al, loc, 4));
+                        int a_kind = ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(loop_var));
+                        int64_t first = 0;
+                        int64_t max_value = a_kind <= 8 ? (int64_t)(
+                            ((uint64_t)1 << (8 * a_kind - 1)) - 1) : 0;
+                        bool a_minus_c_wraps = a_kind > 8
+                            || !ASRUtils::extract_value(
+                                ASRUtils::expr_value(a), first)
+                            || first < -max_value || first > max_value
+                            || (increment == -1 && first == max_value);
+                        if (a_minus_c_wraps) {
+                            ASR::ttype_t *int_type = ASRUtils::TYPE(
+                                ASR::make_Integer_t(al, loc, a_kind));
+                            zero_trip_guard = ASRUtils::EXPR(
+                                ASR::make_IntegerCompare_t(al, loc,
+                                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                                loop_var, ASR::binopType::Add, c, int_type,
+                                nullptr)), cmp_op, b, log_type, nullptr));
+                        }
+                        ASR::cmpopType exit_op = a_minus_c_wraps
+                            ? ASR::cmpopType::NotEq
+                            : (increment == 1 ? ASR::cmpopType::Lt
+                                              : ASR::cmpopType::Gt);
+                        cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                            loop_var, exit_op, b, log_type, nullptr));
+                    }
                 } else {
                     cmp_op = (ASR::cmpopType) comp;
                 }
@@ -1934,6 +1989,13 @@ namespace LCompilers {
 
             ASR::stmt_t *while_loop_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc,
                 loop.m_name, cond, body.p, body.size(), loop.m_orelse, loop.n_orelse));
+            if (zero_trip_guard) {
+                Vec<ASR::stmt_t*> guarded;
+                guarded.reserve(al, 1);
+                guarded.push_back(al, while_loop_stmt);
+                while_loop_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+                    zero_trip_guard, guarded.p, guarded.n, nullptr, 0));
+            }
             Vec<ASR::stmt_t*> result;
             result.reserve(al, 2 + pre_loop_stmts.size());
             for (size_t i = 0; i < pre_loop_stmts.size(); i++) {

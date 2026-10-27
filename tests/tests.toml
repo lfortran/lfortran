@@ -6292,6 +6292,11 @@ pass = "do_loops"
 options = "--use-loop-variable-after-loop"
 
 [[test]]
+filename = "../integration_tests/doloop_23.f90"
+pass = "do_loops"
+options = "--fast"
+
+[[test]]
 filename = "../integration_tests/use_02.f90"
 asr = true
 
