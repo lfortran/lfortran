@@ -4885,8 +4885,11 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
         // TODO: Construct appropriate return type here
         // For now simply coping the type from expr1
         if (ASRUtils::is_simd_array(expr1)) {
+            // The broadcast is an ordinary array of the target's constant
+            // shape, which is cast to the SIMD target below.
             // TODO: Make this more general; do not check for SIMDArray
-            ret_type = ASRUtils::duplicate_type(al, expr1_type);
+            ret_type = ASRUtils::duplicate_type(al, expr1_type, nullptr,
+                ASR::array_physical_typeType::FixedSizeArray, true);
         } else {
             ret_type = expr1_type;
         }
