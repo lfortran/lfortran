@@ -1821,6 +1821,7 @@ public:
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
                         (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)) ||
                         ASRUtils::is_entry_initialized_local(x) ||
+                        ASRUtils::is_host_associated(x) ||
                         (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
                             ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                         "Initialisation of " + std::string(x.m_name) +
@@ -1868,6 +1869,7 @@ public:
             }
             if(str->m_len_kind == ASR::AssumedLength && 
                 x.m_storage !=ASR::Parameter &&
+                !ASRUtils::is_host_associated(x) &&
                 !ASRUtils::is_pointer(x.m_type) /*Tolerate pointer*/){
                 require(x.m_intent != ASR::Local,
                     "AssumedLength-string variable should be a dummy variable (intent IN or OUT or INOUT) or a function return variable.");
@@ -1880,7 +1882,11 @@ public:
         _return_var_or_intent_out = x.m_intent == ASR::intentType::Out ||
                                     x.m_intent == ASR::intentType::InOut ||
                                     x.m_intent == ASR::intentType::ReturnVar;
-        visit_ttype(*x.m_type);
+        if (is_struct) {
+            visit_member_type(*x.m_type);
+        } else {
+            visit_ttype(*x.m_type);
+        }
         _return_var_or_intent_out = false;
 
         for (size_t i = 0; i < x.n_codims; i++) {
@@ -1970,8 +1976,12 @@ public:
                     ASR::down_cast<ASR::Struct_t>(decl)->m_is_abstract &&
                     !declares_unlimited_polymorphic(
                         ASR::down_cast<ASR::Struct_t>(decl))) {
+                // A member of Reference type refers to a variable of the
+                // referenced type.
+                ASR::ttype_t *declared = ASRUtils::is_reference(x.m_type)
+                    ? ASR::down_cast<ASR::Reference_t>(x.m_type)->m_type : x.m_type;
                 require_id(ASRUtils::is_class_type(
-                        ASRUtils::extract_type(x.m_type)),
+                        ASRUtils::extract_type(declared)),
                     "asr.verify.variable.abstract_type_not_instantiated",
                     "Variable '" + std::string(x.m_name) +
                     "' has the abstract type '" +
@@ -2010,8 +2020,168 @@ public:
         if (x.m_common_block != nullptr) {
             verify_common_block_variable(x);
         }
+        if (ASRUtils::is_reference(x.m_type)) {
+            verify_reference_member(x);
+        }
+        if (ASRUtils::is_host_associated(x)) {
+            verify_host_associated_variable(x);
+        }
 
         current_name = current_name_copy;
+    }
+
+    // A member of Reference type holds the address of a variable of the
+    // referenced type. A derived type is laid out from its declaration.
+    void verify_reference_member(const Variable_t &x) {
+        ASR::ttype_t *referenced = ASR::down_cast<ASR::Reference_t>(x.m_type)->m_type;
+        require_id(x.m_symbolic_value == nullptr && x.m_value == nullptr,
+            "asr.verify.reference.member_initializer",
+            "the reference member '" + std::string(x.m_name) +
+            "' cannot have an initial value");
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(referenced))) {
+            require_id(x.m_type_declaration != nullptr,
+                "asr.verify.reference.member_type_declaration",
+                "the reference member '" + std::string(x.m_name) +
+                "' references a derived type, so it must declare it");
+        }
+    }
+
+    // A HostAssociated variable denotes the variable that its symbolic_value
+    // designates through the frame dummy argument of its own procedure, and
+    // it is bound when the procedure is entered.
+    void verify_host_associated_variable(const Variable_t &x) {
+        std::string var = "the host associated variable '" +
+            std::string(x.m_name) + "'";
+        require_id(x.m_intent == ASR::intentType::Local &&
+                x.m_value == nullptr && x.m_common_block == nullptr &&
+                x.n_codims == 0,
+            "asr.verify.host_associated.local",
+            var + " must be a local variable without a value, a common "
+            "block or codimensions");
+        ASR::asr_t *owner = x.m_parent_symtab->asr_owner;
+        ASR::Function_t *procedure = nullptr;
+        if (ASR::is_a<ASR::symbol_t>(*owner) && ASR::is_a<ASR::Function_t>(
+                *ASR::down_cast<ASR::symbol_t>(owner))) {
+            procedure = ASR::down_cast<ASR::Function_t>(
+                ASR::down_cast<ASR::symbol_t>(owner));
+        }
+        require_id(procedure != nullptr,
+            "asr.verify.host_associated.procedure",
+            var + " must be declared by a procedure");
+        if (procedure == nullptr) {
+            return;
+        }
+        for (size_t i = 0; i < procedure->n_args; i++) {
+            require_id(!ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) ||
+                    ASR::down_cast<ASR::Var_t>(procedure->m_args[i])->m_v
+                        != &x.base,
+                "asr.verify.host_associated.not_argument",
+                var + " cannot be a dummy argument");
+        }
+        ASR::StructInstanceMember_t *designator = nullptr;
+        if (x.m_symbolic_value != nullptr &&
+                ASR::is_a<ASR::StructInstanceMember_t>(*x.m_symbolic_value)) {
+            designator = ASR::down_cast<ASR::StructInstanceMember_t>(
+                x.m_symbolic_value);
+        }
+        bool designates_frame_member = designator != nullptr &&
+            ASRUtils::get_reference_member(*designator) != nullptr &&
+            ASR::is_a<ASR::Var_t>(*designator->m_v);
+        ASR::symbol_t *frame = designates_frame_member
+            ? ASR::down_cast<ASR::Var_t>(designator->m_v)->m_v : nullptr;
+        bool frame_is_dummy = false;
+        for (size_t i = 0; frame != nullptr && i < procedure->n_args; i++) {
+            frame_is_dummy = frame_is_dummy ||
+                (ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) &&
+                 ASR::down_cast<ASR::Var_t>(procedure->m_args[i])->m_v == frame);
+        }
+        require_id(frame_is_dummy,
+            "asr.verify.host_associated.designator",
+            var + " must be bound to a reference member of a dummy argument "
+            "of its own procedure");
+    }
+
+    // A Reference is the type of a member of a derived type, and of nothing
+    // else: not of a variable, an expression or a part of another type.
+    void visit_member_type(const ttype_t &t) {
+        if (ASR::is_a<ASR::Reference_t>(t)) {
+            visit_ttype(*ASR::down_cast<ASR::Reference_t>(&t)->m_type);
+        } else {
+            visit_ttype(t);
+        }
+    }
+
+    void visit_Reference(const Reference_t &x) {
+        require_id(false, "asr.verify.reference.member_only",
+            "a reference type can only be the type of a member of a "
+            "derived type");
+        visit_ttype(*x.m_type);
+    }
+
+    // The type of a designator agrees with the type of the variable it is
+    // referenced as in everything that fixes the representation of that
+    // variable.
+    static bool same_variable_type(ASR::ttype_t *a, ASR::ttype_t *b,
+            ASR::expr_t *a_expr, ASR::expr_t *b_expr) {
+        if (ASRUtils::is_allocatable(a) != ASRUtils::is_allocatable(b) ||
+                ASRUtils::is_pointer(a) != ASRUtils::is_pointer(b) ||
+                ASRUtils::is_array(a) != ASRUtils::is_array(b) ||
+                ASRUtils::is_class_type(ASRUtils::extract_type(a)) !=
+                    ASRUtils::is_class_type(ASRUtils::extract_type(b))) {
+            return false;
+        }
+        if (ASRUtils::is_array(a) &&
+                (ASRUtils::extract_n_dims_from_ttype(a) !=
+                    ASRUtils::extract_n_dims_from_ttype(b) ||
+                 ASRUtils::extract_physical_type(a) !=
+                    ASRUtils::extract_physical_type(b))) {
+            return false;
+        }
+        return ASRUtils::types_equal(a, b, a_expr, b_expr, false);
+    }
+
+    void visit_BindReference(const BindReference_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_BindReference(x);
+        if (diagnostics.has_error()) {
+            return;
+        }
+        ASR::Variable_t *member = nullptr;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_reference)) {
+            member = ASRUtils::get_reference_member(
+                *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_reference));
+        }
+        require_id(member != nullptr,
+            "asr.verify.bind_reference.target",
+            "a reference can only be bound to a member of reference type");
+        bool designator = false;
+        if (ASR::is_a<ASR::Var_t>(*x.m_variable)) {
+            designator = ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_variable)->m_v));
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_variable)) {
+            designator = ASRUtils::get_reference_member(
+                *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_variable)) != nullptr;
+        }
+        require_id(designator,
+            "asr.verify.bind_reference.variable",
+            "a reference must refer to a variable or to the variable a "
+            "reference member refers to");
+        if (member == nullptr || !designator) {
+            return;
+        }
+        ASR::ttype_t *referenced =
+            ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type;
+        // The message is built only when the check fails
+        if (!same_variable_type(ASRUtils::expr_type(x.m_reference),
+                ASRUtils::expr_type(x.m_variable), x.m_reference, x.m_variable) ||
+                !same_variable_type(referenced, ASRUtils::expr_type(x.m_variable),
+                    nullptr, nullptr)) {
+            require_id(false, "asr.verify.bind_reference.type",
+                "the variable bound to the reference member '" +
+                std::string(member->m_name) + "' has type " +
+                ASRUtils::type_to_str_python_symbol(ASRUtils::expr_type(x.m_variable), nullptr) +
+                ", but the member references " +
+                ASRUtils::type_to_str_python_symbol(referenced, nullptr));
+        }
     }
 
     // A variable in a common block has no storage of its own: the block's
@@ -2618,6 +2788,7 @@ public:
             return;
         }
         verify_struct_member_shape(x);
+        verify_reference_designator(x);
         if (!check_external || diagnostics.has_error()) {
             return;
         }
@@ -2638,6 +2809,27 @@ public:
             "asr.verify.struct_member.belongs_to_struct",
             "'" + std::string(struct_type->m_name) +
             "' has no member named '" + member_name + "'");
+    }
+
+    // A member of Reference type designates the variable it refers to, which
+    // has the referenced type, and a frame is never an array.
+    void verify_reference_designator(const StructInstanceMember_t &x) {
+        ASR::Variable_t *member = ASRUtils::get_reference_member(x);
+        if (member == nullptr || x.m_type == nullptr) {
+            return;
+        }
+        require_id(!ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+            "asr.verify.reference.scalar_base",
+            "the reference member '" + std::string(member->m_name) +
+            "' cannot be read from an array");
+        ASR::ttype_t *referenced =
+            ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type;
+        require_id(same_variable_type(x.m_type, referenced, nullptr, nullptr),
+            "asr.verify.reference.designator_type",
+            "the reference member '" + std::string(member->m_name) +
+            "' designates a variable of type " +
+            ASRUtils::type_to_str_python_symbol(referenced, nullptr) +
+            ", but its type is " + ASRUtils::type_to_str_python_symbol(x.m_type, nullptr));
     }
 
     // Reading a scalar component of an array base yields an array of the
@@ -3960,7 +4152,7 @@ public:
 
     void visit_StructType(const StructType_t& x) {
         for (size_t i = 0; i < x.n_data_member_types; i++) {
-            visit_ttype(*x.m_data_member_types[i]);
+            visit_member_type(*x.m_data_member_types[i]);
         }
     }
 
