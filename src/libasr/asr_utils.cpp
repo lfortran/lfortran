@@ -12824,11 +12824,19 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // `ASR::FunctionParam_t`.
                 ASR::expr_t* arg_expr = arg;
                 ASR::expr_t* orig_arg_expr = func->m_args[i];
-                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
+                // A FunctionParam can also be a dummy argument of the
+                // procedure whose signature contains the call (such as the
+                // frame of its host, see nested_vars), which need not be one
+                // of the callee's.
+                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr) &&
+                        (size_t) ASR::down_cast<ASR::FunctionParam_t>(arg_expr)->m_param_number
+                            < func->n_args) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
                     arg_expr = func->m_args[func_param->m_param_number];
-                } 
-                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr)) {
+                }
+                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr) &&
+                        (size_t) ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr)->m_param_number
+                            < func->n_args) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr);
                     orig_arg_expr = func->m_args[func_param->m_param_number];
                 }

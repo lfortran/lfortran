@@ -264,9 +264,15 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
         }
 
         // The type of the procedure variable `x` declared by a transformed
-        // interface, or null.
+        // interface, or null. For a member of Reference type (of a host
+        // frame, see nested_vars), the referenced type: that of the
+        // procedure variable the member refers to.
         ASR::ttype_t* transformed_procedure_variable_type(const ASR::Variable_t &x) {
-            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))) {
+            ASR::ttype_t* type = x.m_type;
+            if (ASRUtils::is_reference(type)) {
+                type = ASR::down_cast<ASR::Reference_t>(type)->m_type;
+            }
+            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) {
                 return nullptr;
             }
             ASR::Function_t* decl = transformed_interface(x.m_type_declaration);
@@ -274,7 +280,7 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
                 return nullptr;
             }
             ASR::ttype_t* new_type = decl->m_function_signature;
-            if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+            if (ASR::is_a<ASR::Pointer_t>(*type)) {
                 new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
             }
             return new_type;
@@ -284,8 +290,13 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
             ASR::ttype_t* new_type = transformed_procedure_variable_type(x);
             if (new_type != nullptr) {
-                const_cast<ASR::Variable_t&>(x).m_type = ASRUtils::import_procedure_type(
-                    al, new_type, x.m_parent_symtab);
+                new_type = ASRUtils::import_procedure_type(al, new_type,
+                    x.m_parent_symtab);
+                if (ASRUtils::is_reference(x.m_type)) {
+                    new_type = ASRUtils::TYPE(ASR::make_Reference_t(al,
+                        x.base.base.loc, new_type));
+                }
+                const_cast<ASR::Variable_t&>(x).m_type = new_type;
             }
         }
 

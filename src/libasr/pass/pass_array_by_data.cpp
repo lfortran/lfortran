@@ -1637,8 +1637,17 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 std::string new_sym_name = x.m_parent_symtab->get_unique_name(x.m_name);
                 ASR::ttype_t* new_var_type = subrout->m_function_signature;
-                if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+                // A member of a host frame (see nested_vars) refers to a
+                // procedure variable of the host
+                bool reference = ASRUtils::is_reference(x.m_type);
+                ASR::ttype_t* var_type = reference
+                    ? ASR::down_cast<ASR::Reference_t>(x.m_type)->m_type : x.m_type;
+                if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
                     new_var_type = ASRUtils::TYPE(ASR::make_Pointer_t(v.al, x.base.base.loc, new_var_type));
+                }
+                if (reference) {
+                    new_var_type = ASRUtils::TYPE(ASR::make_Reference_t(v.al,
+                        x.base.base.loc, new_var_type));
                 }
                 ASR::symbol_t* new_func_sym_ = ASR::down_cast<ASR::symbol_t>(
                     ASRUtils::make_Variable_t_util(v.al, x.base.base.loc, x.m_parent_symtab, s2c(v.al, new_sym_name),
@@ -1683,6 +1692,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::StructInstanceMember_t& sim = const_cast<ASR::StructInstanceMember_t&>(x);
                 sim.m_m = new_func_sym_;
                 sim.m_type = ASRUtils::symbol_type(new_func_sym_);
+                // A member of Reference type designates the variable it
+                // refers to
+                if (ASRUtils::is_reference(sim.m_type)) {
+                    sim.m_type = ASR::down_cast<ASR::Reference_t>(sim.m_type)->m_type;
+                }
             }
         }
 

@@ -717,6 +717,23 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_global_var_idx_map[get_hash((ASR::asr_t *)v)] = global_var_idx;
     }
 
+    // The frames through which internal procedures reach the variables of
+    // their host (see nested_vars) need addressable variables and derived
+    // types, which this backend does not have.
+    void reject_host_frames(SymbolTable *symtab) {
+        for (auto &item : symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (ASRUtils::is_frame_type(v->m_type_declaration) ||
+                    ASRUtils::is_host_associated(*v)) {
+                throw CodeGenError("host association is not supported by the "
+                    "wasm backend yet", v->base.base.loc);
+            }
+        }
+    }
+
     void declare_symbols(const ASR::TranslationUnit_t &x) {
         {
             // Process intrinsic modules in the right order
@@ -1160,6 +1177,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void emit_function_body(const ASR::Function_t &x) {
         LCOMPILERS_ASSERT(m_func_name_idx_map.find(get_hash((ASR::asr_t *)&x)) !=
                         m_func_name_idx_map.end());
+        reject_host_frames(x.m_symtab);
 
         cur_sym_info = m_func_name_idx_map[get_hash((ASR::asr_t *)&x)];
 

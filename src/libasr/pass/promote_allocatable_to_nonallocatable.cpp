@@ -305,6 +305,17 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
+        // The internal procedures of a host can allocate and deallocate an
+        // allocatable that a member of its frame refers to.
+        void visit_BindReference(const ASR::BindReference_t& x) {
+            if( ASR::is_a<ASR::Var_t>(*x.m_variable) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_variable)) ) {
+                push_to_scopes_until_symbol_scope(
+                    ASR::down_cast<ASR::Var_t>(x.m_variable)->m_v);
+            }
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_BindReference(x);
+        }
+
         void visit_ReAlloc(const ASR::ReAlloc_t& x) {
             // A device has no heap: a reallocation there gives the array
             // the one shape it can have, as an allocation does.
