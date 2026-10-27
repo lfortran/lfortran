@@ -329,7 +329,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
-                                                        PointerArray
+                                                        DescriptorArray
                                                         Global
                                                     )
                                                     ()
