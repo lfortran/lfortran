@@ -232,55 +232,7 @@
                     )
                     []
                     [(Var 4 entry__lcompilers)]
-                    [(Associate
-                        (Var 4 messpr~fpcast_ptr)
-                        (FunctionPointerCast
-                            (Var 4 messpr)
-                            4 messpr~fpcast
-                            (FunctionType
-                                []
-                                ()
-                                Source
-                                Interface
-                                ()
-                                .false.
-                                .false.
-                                .false.
-                                .false.
-                                .false.
-                                []
-                                .false.
-                                Host
-                            )
-                            ()
-                        )
-                        NoPointerBounds
-                    )
-                    (Associate
-                        (Var 4 messpr~fpcast_ptr)
-                        (FunctionPointerCast
-                            (Var 4 messpr)
-                            4 messpr~fpcast
-                            (FunctionType
-                                []
-                                ()
-                                Source
-                                Interface
-                                ()
-                                .false.
-                                .false.
-                                .false.
-                                .false.
-                                .false.
-                                []
-                                .false.
-                                Host
-                            )
-                            ()
-                        )
-                        NoPointerBounds
-                    )
-                    (If
+                    [(If
                         ()
                         (IntegerCompare
                             (Var 4 entry__lcompilers)
@@ -318,6 +270,30 @@
                     (GoToTarget
                         2
                         2
+                    )
+                    (Associate
+                        (Var 4 messpr~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 4 messpr)
+                            4 messpr~fpcast
+                            (FunctionType
+                                []
+                                ()
+                                Source
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                        NoPointerBounds
                     )
                     (SubroutineCall
                         4 messpr~fpcast_ptr
