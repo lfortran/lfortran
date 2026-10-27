@@ -28,6 +28,11 @@ to:
 
     d = fma(a, b, c)
 
+A scalar accumulation such as `s = s + a * b` (the assignment target is the
+addend) is not converted unless fast-math is disabled: the loop-carried
+fma call would hide the reduction from the LLVM loop vectorizer, while with
+fast-math LLVM fuses the multiply and the add itself.
+
 */
 
 class ReplaceRealBinOpFMA : public ASR::BaseExprReplacer<ReplaceRealBinOpFMA>{
@@ -43,7 +48,26 @@ class ReplaceRealBinOpFMA : public ASR::BaseExprReplacer<ReplaceRealBinOpFMA>{
         return false;
     }
 
+    // An expression that still adds to the accumulator, i.e. the
+    // accumulator itself or an unconverted `acc + ...` chain.
+    bool is_accumulation(ASR::expr_t* expr) {
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            return ASR::down_cast<ASR::Var_t>(expr)->m_v == accumulator;
+        }
+        if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
+            ASR::RealBinOp_t* binop = ASR::down_cast<ASR::RealBinOp_t>(expr);
+            return (binop->m_op == ASR::binopType::Add ||
+                    binop->m_op == ASR::binopType::Sub) &&
+                (is_accumulation(binop->m_left) || is_accumulation(binop->m_right));
+        }
+        return false;
+    }
+
 public :
+    // Scalar variable assigned by the current statement, if its value is
+    // to be kept out of fma calls.
+    ASR::symbol_t* accumulator = nullptr;
+
     ReplaceRealBinOpFMA(Allocator& al, 
         const LCompilers::PassOptions& pass_options, const ASR::TranslationUnit_t& unit)
         :al{al}, pass_options{pass_options}, unit{unit}{}
@@ -65,6 +89,9 @@ public :
             other_expr = x->m_right;
             is_other_expr_negative = (x->m_op == ASR::binopType::Sub);
         } else {
+            return ;
+        }
+        if( accumulator && is_accumulation(other_expr) ) {
             return ;
         }
 
@@ -92,10 +119,20 @@ public :
 
 class CallReplacerFMA : public ASR::CallReplacerOnExpressionsVisitor<CallReplacerFMA>{
     ReplaceRealBinOpFMA replacer;
+    const LCompilers::PassOptions& pass_options;
 public :
     CallReplacerFMA(Allocator &al, const ASR::TranslationUnit_t &unit,
                       const LCompilers::PassOptions& pass_options) 
-                      : replacer{al, pass_options, unit}{}
+                      : replacer{al, pass_options, unit}, pass_options{pass_options}{}
+    void visit_Assignment(const ASR::Assignment_t& x){
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        if( !pass_options.no_fast_math && ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_real(*target_type) && !ASRUtils::is_array(target_type) ) {
+            replacer.accumulator = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+        }
+        CallReplacerOnExpressionsVisitor::visit_Assignment(x);
+        replacer.accumulator = nullptr;
+    }
     void call_replacer(){
         if(ASR::is_a<ASR::RealBinOp_t>(**current_expr)){
             replacer.current_expr = current_expr;

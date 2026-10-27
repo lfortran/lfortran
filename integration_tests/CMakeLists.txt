@@ -4051,6 +4051,7 @@ RUN(NAME div_to_mul LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME fma LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME fma_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME fma_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME fma_04 LABELS gfortran llvm)
 RUN(NAME loop_unroll_small LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME loop_unroll_large LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME loop_var_use_after_loop LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
