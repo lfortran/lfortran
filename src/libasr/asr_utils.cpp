@@ -8199,14 +8199,16 @@ std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims )
 }
 
 std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
-    bool encode_dimensions_, bool set_dimensional_hint, ASR::expr_t* expr)
+    bool encode_dimensions_, bool set_dimensional_hint, ASR::expr_t* expr,
+    ASR::symbol_t* type_declaration)
 {
     bool is_dimensional = false;
     std::string res = "";
     switch (t->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            res = get_type_code(array_t->m_type, use_underscore_sep, false, false, expr);
+            res = get_type_code(array_t->m_type, use_underscore_sep, false, false, expr,
+                type_declaration);
             if( encode_dimensions_ ) {
                 encode_dimensions(array_t->n_dims, res, use_underscore_sep);
                 return res;
@@ -8311,8 +8313,9 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
-            if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
+            if ( expr != nullptr || type_declaration != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(expr != nullptr
+                    ? ASRUtils::get_struct_sym_from_struct_expr(expr) : type_declaration);
                 res = symbol_name(sym);
                 if (sym != nullptr && !res.empty() && res[0] != '~' &&
                         ASR::is_a<ASR::Struct_t>(*sym)) {
@@ -8340,8 +8343,9 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
             break;
         }
         case ASR::ttypeType::UnionType: {
-            if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr));
+            if ( expr != nullptr || type_declaration != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(expr != nullptr
+                    ? ASRUtils::get_union_sym_from_union_expr(expr) : type_declaration);
                 res = symbol_name(sym);
             } else {
                 res = "UnionType";

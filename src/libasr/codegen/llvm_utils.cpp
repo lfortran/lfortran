@@ -808,7 +808,8 @@ namespace LCompilers {
         }
     }
 
-    llvm::Type* LLVMUtils::get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module,
+            ASR::symbol_t* type_declaration) {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(m_type_);
         llvm::Type* el_type = nullptr;
         bool is_pointer = LLVM::is_llvm_pointer(*m_type_);
@@ -839,22 +840,22 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::StructType: {
-                if (expr) {
+                if (expr || type_declaration) {
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(expr
+                        ? ASRUtils::get_struct_sym_from_struct_expr(expr) : type_declaration);
                     if (ASR::down_cast<ASR::StructType_t>(m_type)->m_is_cstruct) {
-                        el_type = getStructType(ASR::down_cast<ASR::Struct_t>(
-                                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))),
+                        el_type = getStructType(ASR::down_cast<ASR::Struct_t>(struct_sym),
                                                 module);
                     } else {
-                        el_type = getClassType(ASR::down_cast<ASR::Struct_t>(
-                                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))));
+                        el_type = getClassType(ASR::down_cast<ASR::Struct_t>(struct_sym));
                     }
                 } else {
-                    // Without an expression there is no Struct symbol to lay
-                    // the type out from, so it is laid out as an anonymous
-                    // struct of its member types. A member is laid out the
-                    // way it would be anywhere else -- an allocatable one as
-                    // its descriptor -- which is more than an element type
-                    // can be.
+                    // Without an expression or a declaration there is no
+                    // Struct symbol to lay the type out from, so it is laid
+                    // out as an anonymous struct of its member types. A
+                    // member is laid out the way it would be anywhere else
+                    // -- an allocatable one as its descriptor -- which is
+                    // more than an element type can be.
                     ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(m_type);
                     std::vector<llvm::Type*> member_types;
                     for (size_t i = 0; i < st->n_data_member_types; i++) {
@@ -867,7 +868,8 @@ namespace LCompilers {
             }
             case ASR::ttypeType::UnionType: {
                 el_type = getUnion(ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr))),
+                                                ASRUtils::symbol_get_past_external(expr
+                                                    ? ASRUtils::get_union_sym_from_union_expr(expr) : type_declaration)),
                                             module);
                 break;
             }
@@ -894,7 +896,8 @@ namespace LCompilers {
         return a_kind;
     }
 
-    llvm::Type* LLVMUtils::get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+            ASR::symbol_t* type_declaration) {
         ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(asr_type);
         bool is_local_array_type = false, is_local_malloc_array_type = false;
         bool is_local_list = false;
@@ -902,12 +905,12 @@ namespace LCompilers {
         int local_n_dims = 0;
         int local_a_kind = -1;
         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-        llvm::Type* key_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_key_type, nullptr, local_m_storage,
+        llvm::Type* key_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_key_type, type_declaration, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
         int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind, module);
-        llvm::Type* value_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_value_type, nullptr, local_m_storage,
+        llvm::Type* value_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_value_type, type_declaration, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
@@ -919,7 +922,8 @@ namespace LCompilers {
                                         value_type_size, key_llvm_type, value_llvm_type);
     }
 
-    llvm::Type* LLVMUtils::get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+            ASR::symbol_t* type_declaration) {
         ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(asr_type);
         bool is_local_array_type = false, is_local_malloc_array_type = false;
         bool is_local_list = false;
@@ -927,7 +931,7 @@ namespace LCompilers {
         int local_n_dims = 0;
         int local_a_kind = -1;
         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-        llvm::Type* el_llvm_type = get_type_from_ttype_t(set_expr, asr_set->m_type, nullptr, local_m_storage,
+        llvm::Type* el_llvm_type = get_type_from_ttype_t(set_expr, asr_set->m_type, type_declaration, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
@@ -1665,26 +1669,31 @@ namespace LCompilers {
                                 switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
-                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module,
+                            type_declaration);
+                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type,
+                            false, type_declaration);
                         break;
                     }
                     case ASR::array_physical_typeType::PointerArray:
                     case ASR::array_physical_typeType::UnboundedPointerArray : {
-                        llvm_type = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm_type = get_el_type(arg_expr, v_type->m_type, module,
+                            type_declaration);
                         llvm_type = ASRUtils::is_character(*v_type->m_type) ? llvm_type
                             : llvm_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims));
-                        llvm_type = llvm::ArrayType::get(get_el_type(arg_expr, v_type->m_type, module),
+                        llvm_type = llvm::ArrayType::get(get_el_type(arg_expr, v_type->m_type, module,
+                                            type_declaration),
                                         ASRUtils::get_fixed_size_of_array(
                                             v_type->m_dims, v_type->n_dims));
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
-                        llvm::Type* el_ty = get_el_type(arg_expr, v_type->m_type, module);
+                        llvm::Type* el_ty = get_el_type(arg_expr, v_type->m_type, module,
+                            type_declaration);
                         int64_t simd_len = ASRUtils::get_fixed_size_of_array(
                             v_type->m_dims, v_type->n_dims);
                         if (simd_len <= 0) {
@@ -1703,8 +1712,10 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::AssumedRankArray: {
-                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module,
+                            type_declaration);
+                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type,
+                            false, type_declaration);
                         is_array_type = true;
                         break;
                     }
@@ -1799,7 +1810,8 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::UnionType) : {
                 llvm_type = getUnion(ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(arg_expr))),
+                                                ASRUtils::symbol_get_past_external(arg_expr
+                                                    ? ASRUtils::get_union_sym_from_union_expr(arg_expr) : type_declaration)),
                                             module,
                                             LLVM::is_llvm_pointer(*asr_type));
                 break;
@@ -1827,7 +1839,7 @@ namespace LCompilers {
             case (ASR::ttypeType::List) : {
                 is_list = true;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(arg_expr, asr_list->m_type, nullptr, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(arg_expr, asr_list->m_type, type_declaration, m_storage,
                                                                  is_array_type, is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
                                                                  a_kind, module, m_abi);
@@ -1846,11 +1858,11 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::Dict): {
-                llvm_type = get_dict_type(arg_expr, asr_type, module);
+                llvm_type = get_dict_type(arg_expr, asr_type, module, type_declaration);
                 break;
             }
             case (ASR::ttypeType::Set): {
-                llvm_type = get_set_type(arg_expr, asr_type, module);
+                llvm_type = get_set_type(arg_expr, asr_type, module, type_declaration);
                 break;
             }
             case (ASR::ttypeType::Tuple) : {
@@ -1865,7 +1877,7 @@ namespace LCompilers {
                     int local_n_dims = 0;
                     int local_a_kind = -1;
                     ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                    llvm_el_types.push_back(get_type_from_ttype_t(arg_expr, asr_tuple->m_type[i], nullptr, local_m_storage,
+                    llvm_el_types.push_back(get_type_from_ttype_t(arg_expr, asr_tuple->m_type[i], type_declaration, local_m_storage,
                         is_local_array_type, is_local_malloc_array_type,
                         is_local_list, local_m_dims, local_n_dims, local_a_kind, module, m_abi));
                 }

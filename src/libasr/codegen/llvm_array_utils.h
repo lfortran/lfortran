@@ -129,7 +129,8 @@ namespace LCompilers {
                     ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
-                    bool get_pointer=false) = 0;
+                    bool get_pointer=false,
+                    ASR::symbol_t* type_declaration=nullptr) = 0;
 
                 /*
                 * Fills the elements of the input array descriptor
@@ -489,7 +490,8 @@ namespace LCompilers {
                     ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
-                    bool get_pointer=false);
+                    bool get_pointer=false,
+                    ASR::symbol_t* type_declaration=nullptr);
 
                 virtual
                 void fill_array_details(

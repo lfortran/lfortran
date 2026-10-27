@@ -1151,8 +1151,11 @@ static inline std::int64_t extract_dim_value_int(ASR::expr_t* dim) {
 
 std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims );
 
+// A struct or union is named by its declaration: the one of `expr`, or
+// `type_declaration` when there is no expression.
 std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep=false,
-    bool encode_dimensions_=true, bool set_dimensional_hint=true, ASR::expr_t* expr = nullptr);
+    bool encode_dimensions_=true, bool set_dimensional_hint=true, ASR::expr_t* expr = nullptr,
+    ASR::symbol_t* type_declaration = nullptr);
 
 static inline std::string get_type_code(ASR::ttype_t** types, size_t n_types,
     bool use_underscore_sep=false, bool encode_dimensions=true) {
