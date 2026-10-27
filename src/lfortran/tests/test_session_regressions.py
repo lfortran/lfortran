@@ -94,10 +94,10 @@ def value(client, code, timeout=20):
 
 
 @contextlib.contextmanager
-def kernel(exe, cwd, ip="127.0.0.1"):
+def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
     """A kernel started on a connection file, as a Jupyter frontend does, a
     function that connects a client to it, and the connection file's content
-    with its "path"."""
+    with its "path". `arguments` are compiler options of the kernel process."""
     connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
     write_connection_file(str(connection), ip=ip, key=uuid.uuid4().hex.encode())
     clients = []
@@ -107,7 +107,8 @@ def kernel(exe, cwd, ip="127.0.0.1"):
         return clients[-1]
 
     with connection.with_suffix(".log").open("wb") as log:
-        process = subprocess.Popen([exe, "--no-color", "kernel", "-f", str(connection)],
+        process = subprocess.Popen(
+            [exe, "--no-color", *arguments, "kernel", "-f", str(connection)],
             cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
         info = json.loads(connection.read_text())
         info["path"] = str(connection)
@@ -387,6 +388,22 @@ def stop_on_error(exe, cwd):
             check(value(client, "qx") == expected, "stop_on_error=%s: qx" % stop)
 
 
+def implicit_typing(exe, cwd):
+    """Compiler options of the kernel process reach the cells. A name that
+    starts with x is real."""
+    with kernel(exe, cwd, arguments=["--implicit-typing"]) as (_, join, _ports):
+        client = join()
+        check(run(client, "x = 4")[0]["status"] == "ok", "implicit typing rejected x")
+        check(value(client, "x") == "4.0", "x was not real")
+
+
+def xeus_connection_files(exe, cwd):
+    """The Xeus kernel serves a connection file whose address is a host name.
+    The built-in kernel listens on an IPv4 address only."""
+    with kernel(exe, cwd, ip="localhost") as (_, join, _ports):
+        check(value(join(), "6*7") == "42", "a cell did not run")
+
+
 def verbose(exe, cwd):
     """`lfortran -v` shows a cell's AST, ASR, LLVM IR and return type, in the
     kernel the prompt starts and in one it joins."""
@@ -402,7 +419,9 @@ def verbose(exe, cwd):
 
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, stop_ends_session, stop_on_error,
-    verbose]}
+    implicit_typing, verbose, xeus_connection_files]}
+# The built-in kernel rejects a host name in the connection file.
+XEUS_ONLY = {"xeus_connection_files"}
 
 
 def main():
@@ -422,6 +441,8 @@ def main():
     failed = []
     try:
         for name in args.case or CASES:
+            if args.builtin and name in XEUS_ONLY:
+                continue
             try:
                 CASES[name](exe, cwd)
                 print(name + ": passed", flush=True)

@@ -11,6 +11,7 @@
 #else
 #include <xeus-zmq/xzmq_context.hpp>
 #include <xeus-zmq/xserver_zmq.hpp>
+#include <xeus/xinput.hpp>
 #endif
 
 #include <nlohmann/json.hpp>
@@ -19,34 +20,15 @@
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/jupyter.h>
 #include <lfortran/utils.h>
-#include <libasr/string_utils.h>
 
 namespace nl = nlohmann;
 
 namespace LCompilers::LFortran {
 
 
-    // Xeus serializes the messages after execute_request_impl() returns, and
     // nlohmann::json throws on a string that is not UTF-8, which would leave
-    // the request without a reply. Such bytes are shown as U+FFFD instead.
-    static std::string utf8(const std::string &s)
-    {
-        if (is_valid_utf8(s)) return s;
-        std::string out;
-        size_t i = 0;
-        while (i < s.size()) {
-            const unsigned char c = static_cast<unsigned char>(s[i]);
-            const size_t n = c >= 0xf0 ? 4 : c >= 0xe0 ? 3 : c >= 0xc0 ? 2 : 1;
-            if (i + n <= s.size() && is_valid_utf8(s.data() + i, n)) {
-                out.append(s, i, n);
-                i += n;
-            } else {
-                out += "\xef\xbf\xbd";
-                i++;
-            }
-        }
-        return out;
-    }
+    // the request without a reply.
+    using kernel::utf8;
 
     class custom_interpreter : public xeus::xinterpreter
     {
@@ -55,7 +37,8 @@ namespace LCompilers::LFortran {
         FortranEvaluator e;
 
     public:
-        custom_interpreter() : compiler_options{}, e{compiler_options} {
+        explicit custom_interpreter(const CompilerOptions &options = {})
+                : compiler_options{options}, e{compiler_options} {
             e.compiler_options.interactive = true;
             e.compiler_options.po.runtime_library_dir =
                 LCompilers::LFortran::get_runtime_library_dir();
@@ -108,24 +91,28 @@ namespace LCompilers::LFortran {
         io.clear_output = [&]() { if (!silent) clear_output(false); };
         // A disabled input channel must not read the host terminal.
         if (!config.allow_stdin) io.input = [](std::string &) { return 1; };
-        io.output = [&](int stream, const std::string &text) {
-            if (!silent) publish_stream(stream == 1 ? "stdout" : "stderr", utf8(text));
+#ifndef __EMSCRIPTEN__
+        // Xeus's own stdin channel. It blocks until an input_reply arrives,
+        // including after the client that was asked has gone, so the clients
+        // behind this cell wait with it. "\x04" is end of file.
+        else io.input = [](std::string &record) {
+            record = xeus::blocking_input_request("", false);
+            return record == "\x04" ? -1 : 0;
         };
-        FortranEvaluator::CellResult cell = e.execute(code, false, io);
-        if (!silent) {
-            if (!cell.output.empty()) publish_stream("stdout", utf8(cell.output));
-            if (!cell.ok) publish_stream("stderr", utf8(cell.error_text()));
-            else if (!cell.diagnostics.empty()) {
-                publish_stream("stderr", utf8(cell.diagnostics));
-            }
-        }
+#endif
+        // `lfortran -v` is the execute_request field lfortran_verbose. Xeus
+        // does not give that field to the interpreter, so a cell here is
+        // never verbose.
+        FortranEvaluator::CellResult cell = kernel::execute(e, code, io,
+            [&](const std::string &name, const std::string &text) {
+                if (!silent) publish_stream(name, text);
+            },
+            [&](const std::string &text) {
+                if (!silent) publish_execution_result(execution_counter,
+                    nl::json{{"text/plain", text}}, nl::json::object());
+            });
         nl::json result;
         if (cell.ok) {
-            if (cell.value.has_value() && !silent) {
-                publish_execution_result(execution_counter,
-                    nl::json{{"text/plain", utf8(cell.value.text())}},
-                    nl::json::object());
-            }
             result["status"] = "ok";
             result["payload"] = nl::json::array();
             result["user_expressions"] = nl::json::object();
@@ -212,21 +199,17 @@ namespace LCompilers::LFortran {
 
     nl::json custom_interpreter::kernel_info_request_impl()
     {
-        std::string version = LFORTRAN_VERSION;
-        std::string banner = ""
-            "LFortran " + version + "\n"
-            "Jupyter kernel for Fortran";
         return xeus::create_info_reply(
-            "LFortran",
-            version,
-            "fortran",
-            "2018",
-            "text/x-fortran",
-            ".f90",
+            kernel::implementation,
+            LFORTRAN_VERSION,
+            kernel::language,
+            kernel::language_version,
+            kernel::mimetype,
+            kernel::file_extension,
             "",
-            std::string("text/x-fortran"),
+            std::string(kernel::mimetype),
             "",
-            banner
+            kernel::banner(LFORTRAN_VERSION)
         );
     }
 
@@ -263,7 +246,7 @@ namespace LCompilers::LFortran {
 
         // Create interpreter instance
         using interpreter_ptr = std::unique_ptr<custom_interpreter>;
-        interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter());
+        interpreter_ptr interpreter = interpreter_ptr(new custom_interpreter(options));
 
         using history_manager_ptr = std::unique_ptr<xeus::xhistory_manager>;
         history_manager_ptr hist = xeus::make_in_memory_history_manager();
