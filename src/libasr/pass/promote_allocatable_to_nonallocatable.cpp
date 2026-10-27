@@ -563,6 +563,10 @@ class PromoteAllocatableToNonAllocatable:
                     !is_deferred_len_character_array &&
                     !is_class_array &&
                     ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                    // A HostAssociated variable is the allocatable of the
+                    // host, whose allocation outlives this procedure.
+                    ASRUtils::has_own_storage(*ASR::down_cast<ASR::Variable_t>(
+                        var_sym)) &&
                     !in_module &&
                     (!device_only || in_device) &&
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
