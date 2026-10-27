@@ -48,9 +48,9 @@ The signature of the procedure is left unchanged; a pass that builds it again
 from the types of the dummies substitutes the initializer of the local
 (ASRUtils::ReplaceWithFunctionParamVisitor). This includes a caller that sizes
 the result of a procedure from its type, also when the procedure was loaded
-from a module file (in another translation unit, the locals are never set). The maximum is created after the
-intrinsic function pass, so it is lowered by the backends directly and never
-becomes a helper procedure that only one translation unit could see.
+from a module file (in another translation unit, the locals are never set).
+The maximum is a conditional expression (see Max::create_extent), which the
+code generators lower directly.
 */
 
 namespace LCompilers {
@@ -166,6 +166,20 @@ private:
             duplicator.duplicate_expr(start));
     }
 
+    // max(0, length) for the dimension `dim` of `array`, where `length` is
+    // evaluated on entry in a local of `scope`. The maximum refers to
+    // `length` twice, so a length that references a function (whose result
+    // may be finalized) is first evaluated once in a local of its own.
+    ASR::expr_t* clamped_length(SymbolTable* scope,
+            const ASR::Variable_t& array, size_t dim, ASR::expr_t* length) {
+        PassUtils::FunctionCallFinder finder;
+        finder.visit_expr(*length);
+        if (finder.found) {
+            length = create_entry_local(scope, array, "length", dim, length);
+        }
+        return ASRUtils::Max::create_extent(al, length);
+    }
+
     // The extent of the dimension `dim` of `array`, whose declared length is
     // `length`, evaluated on entry in a local of `scope`. A length that
     // function_call_in_declaration already captured in such a local is
@@ -174,13 +188,13 @@ private:
             const ASR::Variable_t& array, size_t dim, ASR::expr_t* length) {
         if (ASR::Variable_t* v = get_entry_local(scope, length)) {
             if (extents.insert(v).second) {
-                v->m_symbolic_value = ASRUtils::Max::create_extent(al,
+                v->m_symbolic_value = clamped_length(scope, array, dim,
                     v->m_symbolic_value);
             }
             return length;
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::expr_t* extent = ASRUtils::Max::create_extent(al,
+        ASR::expr_t* extent = clamped_length(scope, array, dim,
             duplicator.duplicate_expr(length));
         if (ASRUtils::is_value_constant(extent)) {
             // E.g. a template parameter, a named constant without a value.

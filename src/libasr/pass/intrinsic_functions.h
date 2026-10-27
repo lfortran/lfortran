@@ -8142,11 +8142,18 @@ namespace Max {
     }
 
     // The extent of an explicit-shape dimension whose length `ub - lb + 1`
-    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2).
+    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2). It is a
+    // conditional expression rather than a reference to the MAX intrinsic,
+    // so that it can be created before the intrinsic function pass, which
+    // would turn MAX into a helper procedure, and the code generators lower
+    // it directly, also in the type of a procedure loaded from a module
+    // file. It refers to `length` twice: a length that must be evaluated
+    // once (e.g. a function reference) is passed in a variable holding it.
     static inline ASR::expr_t* create_extent(Allocator &al,
             ASR::expr_t* length) {
         const Location &loc = length->base.loc;
-        ASR::ttype_t* type = ASRUtils::expr_type(length);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(length));
         int64_t value = 0;
         ASR::expr_t* length_value = ASRUtils::expr_value(length);
         if (length_value != nullptr
@@ -8156,13 +8163,15 @@ namespace Max {
             }
             return EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
         }
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, 2);
-        args.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)));
-        args.push_back(al, length);
-        return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
-            static_cast<int64_t>(IntrinsicElementalFunctions::Max),
-            args.p, args.size(), 0, type, nullptr));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* zero = EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
+        ASR::ttype_t* logical_type = TYPE(ASR::make_Logical_t(al, loc, 4));
+        return EXPR(ASR::make_IfExp_t(al, loc,
+            EXPR(ASR::make_IntegerCompare_t(al, loc, length,
+                ASR::cmpopType::Gt, zero, logical_type, nullptr)),
+            duplicator.duplicate_expr(length),
+            EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)),
+            type, nullptr));
     }
 
 }  // namespace Max
