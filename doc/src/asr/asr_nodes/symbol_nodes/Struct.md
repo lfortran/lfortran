@@ -21,7 +21,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 |----------|-------------|
 | `symtab` | the symbol table of the type: one [Variable](Variable.md) per data component and one [StructMethodDeclaration](StructMethodDeclaration.md) per type-bound procedure. |
 | `name` | the name of the derived type. |
-| `struct_signature` | the [StructType](../type_nodes/StructType.md) that describes an instance of this type. |
+| `struct_signature` | the [StructType](../type_nodes/StructType.md) that describes an instance of this type, with `is_cstruct` true (`asr.verify.struct.signature_is_instance_type`). |
 | `dependencies` | the names of the symbols the definition refers to. |
 | `members` | the names of the data components, in declaration order. The order fixes the storage layout. |
 | `member_functions` | the names of the type-bound procedures. |

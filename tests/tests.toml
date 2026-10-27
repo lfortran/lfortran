@@ -6897,6 +6897,10 @@ filename = "asr/verify/struct_parent_is_function.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/struct_signature_polymorphic.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/generic_procedure_specific_is_variable.asr"
 asr = true
 

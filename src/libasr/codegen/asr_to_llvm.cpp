@@ -2896,7 +2896,7 @@ public:
                             malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4));
                         } else if (curr_arg.m_sym_subclass == nullptr) {
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
-                            dest_asr_type = ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc, dest_class_sym, true);
+                            dest_asr_type = ASRUtils::get_struct_signature(dest_class_sym);
                             malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4));
                         } else {
                             llvm::Type* llvm_type = nullptr;
@@ -14907,7 +14907,7 @@ public:
                 if (is_value_class) {
                     vptr_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_target);
                     value_struct = builder->CreateBitCast(value_struct, target_llvm_type->getPointerTo());
-                    deepcopy_type = ASRUtils::make_StructType_t_util(al, x.m_target->base.loc, vptr_sym, true);
+                    deepcopy_type = ASRUtils::get_struct_signature(vptr_sym);
                     deepcopy_var = x.m_target;
                 } else {
                     vptr_sym = ASRUtils::get_struct_sym_from_struct_expr(x.m_value);
@@ -14919,7 +14919,7 @@ public:
                     } else {
                         target_struct = builder->CreateBitCast(target_struct, value_llvm_type->getPointerTo());
                     }
-                    deepcopy_type = ASRUtils::make_StructType_t_util(al, x.m_value->base.loc, vptr_sym, true);
+                    deepcopy_type = ASRUtils::get_struct_signature(vptr_sym);
                     deepcopy_var = x.m_value;
                 }
 
@@ -15877,8 +15877,7 @@ public:
         if (ASR::is_a<ASR::Allocatable_t>(*asr_ttype) &&
             ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_ttype))) {
             llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_ttype, module.get());
-            ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)), true);
+            ASR::ttype_t* wrapped_struct_type = ASRUtils::get_struct_signature(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)));
             if (value_struct_type == nullptr) {
                 value_struct_type = wrapped_struct_type;
             }
@@ -15894,8 +15893,7 @@ public:
         } else {
             if (ASR::is_a<ASR::StructType_t>(*
                     ASRUtils::type_get_past_allocatable_pointer(asr_ttype)) && (value_struct_type == nullptr)) {
-                value_struct_type = ASRUtils::make_StructType_t_util(al, asr_type->base.loc,
-                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)), true);
+                value_struct_type = ASRUtils::get_struct_signature(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)));
             }
             llvm_cond = builder->CreateICmpEQ(
                         builder->CreateLoad(llvm_type->getPointerTo(), tmp),
@@ -15931,8 +15929,7 @@ public:
                     if (ASRUtils::is_class_type(asr_type) &&
                         !ASR::is_a<ASR::StructType_t>(*
                             ASRUtils::type_get_past_allocatable_pointer(value_struct_type))) {
-                        alloc_arg.m_type = ASRUtils::make_StructType_t_util(al, asr_type->base.loc,
-                                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)), true);
+                        alloc_arg.m_type = ASRUtils::get_struct_signature(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr)));
                         alloc_arg.m_sym_subclass = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target_expr));
                     } else {
                         if (value_struct_type) {
