@@ -4693,3 +4693,21 @@ semantic error: Different shape for array assignment on dimension 2(5 and 3)
      |
 3776 |         a = b(2,:,1:3)  ! {Error} Different shape for array assignment on dimension 2(5 and 3)
      |         ^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `deallocate` must be a scalar of type integer, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3787:28
+     |
+3787 |         deallocate(a, stat=r)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+     |                            ^ 
+
+semantic error: `stat` argument of `deallocate` must be a scalar of type integer, found integer(4)[:]
+    --> tests/errors/continue_compilation_1.f90:3788:28
+     |
+3788 |         deallocate(a, stat=s)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+     |                            ^ 
+
+semantic error: `errmsg` argument of `deallocate` must be a scalar of type character, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3789:30
+     |
+3789 |         deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
+     |                              ^ 

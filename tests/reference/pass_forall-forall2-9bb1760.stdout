@@ -721,6 +721,8 @@
                     (ExplicitDeallocate
                         [(Var 4 __libasr_forall_rhs)
                         (Var 4 __libasr_forall_index)]
+                        ()
+                        ()
                     )]
                     ()
                     Public

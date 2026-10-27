@@ -4497,6 +4497,7 @@ RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME deallocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME deallocate_03 LABELS gfortran llvm fortran)
 RUN(NAME dead_array_store_01 LABELS gfortran llvm)
 RUN(NAME dead_array_store_02 LABELS gfortran llvm)
 

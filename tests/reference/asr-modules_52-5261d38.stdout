@@ -154,6 +154,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(Var 3 table)]
+                                            ()
+                                            ()
                                         )]
                                         []
                                     )

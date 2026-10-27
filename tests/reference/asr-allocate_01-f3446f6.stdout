@@ -1379,6 +1379,8 @@
                                     )
                                     (ExplicitDeallocate
                                         [(Var 3 c_copy)]
+                                        ()
+                                        ()
                                     )]
                                     ()
                                     Public
@@ -1473,6 +1475,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 a)]
+                        ()
+                        ()
                     )
                     (Allocate
                         [((Var 2 b)
@@ -1562,6 +1566,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 b)]
+                        ()
+                        ()
                     )
                     (Allocate
                         [((Var 2 c)
@@ -1683,6 +1689,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 c)]
+                        ()
+                        ()
                     )
                     (Allocate
                         [((Var 2 a)

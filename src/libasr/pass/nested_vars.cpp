@@ -1409,7 +1409,7 @@ private :
             dealloc_args.reserve(al, 1);
             dealloc_args.push_back(al, LHS);
             ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-                LHS->base.loc, dealloc_args.p, dealloc_args.n));
+                LHS->base.loc, dealloc_args.p, dealloc_args.n, nullptr, nullptr));
 
             Vec<ASR::stmt_t*> inner_if_body;
             inner_if_body.reserve(al, 1);

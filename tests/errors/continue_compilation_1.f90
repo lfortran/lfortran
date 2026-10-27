@@ -3776,3 +3776,16 @@ contains
         a = b(2,:,1:3)  ! {Error} Different shape for array assignment on dimension 2(5 and 3)
     end subroutine
 end module cc1_section_scalar_subscript_shape
+
+module cc1_deallocate_stat
+contains
+    subroutine cc1_deallocate_stat_sub()
+        integer, allocatable :: a(:)
+        real :: r
+        integer :: s(2)
+        allocate(a(2))
+        deallocate(a, stat=r)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+        deallocate(a, stat=s)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+        deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
+    end subroutine
+end module cc1_deallocate_stat

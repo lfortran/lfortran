@@ -292,7 +292,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             Vec<ASR::stmt_t*> if_body;
             if_body.reserve(al, 2);
             if_body.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                al, loc, to_be_deallocated.p, to_be_deallocated.size())));
+                al, loc, to_be_deallocated.p, to_be_deallocated.size(), nullptr, nullptr)));
             if_body.push_back(al, allocate_stmt);
             ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc_, nullptr, test_expr,
                                 if_body.p, if_body.size(), else_, else_n));
