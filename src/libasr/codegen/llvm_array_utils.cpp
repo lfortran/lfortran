@@ -197,7 +197,7 @@ namespace LCompilers {
 
         llvm::Type* SimpleCMODescriptor::get_array_type
         (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
-        bool get_pointer) {
+        bool get_pointer, ASR::symbol_t* type_declaration) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_);
             if (n_dims == 0) {
                 // Assumed-rank callee parameter: use CFI_MAX_RANK (15) as
@@ -207,7 +207,8 @@ namespace LCompilers {
                 // and asr_to_llvm.cpp polymorphic descriptor handling).
                 n_dims = 15;
             }
-            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr,
+                type_declaration);
             if (ASRUtils::is_character(*m_type_)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(m_type_));
                 if (str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {

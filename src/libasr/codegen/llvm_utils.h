@@ -842,11 +842,16 @@ class ASRToLLVMVisitor;
             // Returns LLVM Type Based On String's PhysicalType
             llvm::Type* get_StringType(ASR::ttype_t* type);
 
-            llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module);
+            // The struct or union an element of type `m_type_` has is the one
+            // of `expr`, or `type_declaration` when there is no expression.
+            llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
 
-            llvm::Type* get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
 
-            llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
