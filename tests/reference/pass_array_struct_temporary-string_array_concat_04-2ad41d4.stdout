@@ -828,7 +828,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
-                                                        DescriptorArray
+                                                        PointerArray
                                                         Global
                                                     )
                                                     ()
@@ -895,7 +895,7 @@
                                                 (Integer 4)
                                                 ()
                                             ))]
-                                            DescriptorArray
+                                            PointerArray
                                             Global
                                         )
                                         Source

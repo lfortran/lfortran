@@ -13620,13 +13620,8 @@ public:
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
-                    dims.size() > 0 && is_argument && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
-                                    (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
-                                    (ASRUtils::is_fixed_size_array(dims.p, dims.n) ||
-                                     (is_argument && !ASRUtils::is_dimension_empty(dims.p, dims.n))) ?
-                                        ASR::array_physical_typeType::PointerArray :
-                                    ASR::array_physical_typeType::DescriptorArray,
-                    dims.size() > 0 ? true : false);
+                    ASR::array_physical_typeType::DescriptorArray, false,
+                    is_dimension_star);
             }
 
             if (is_pointer) {
