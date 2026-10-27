@@ -8,6 +8,8 @@ end type pair_t
 
 integer :: seen(3) = 0
 integer :: nseen = 0
+integer :: seen_indirect(3) = 0
+integer :: nseen_indirect = 0
 integer :: seen_assumed(3) = 0
 integer :: nseen_assumed = 0
 integer :: seen_class(3) = 0
@@ -81,6 +83,28 @@ contains
     end function get
 end function sum_down
 
+subroutine call_back(f)
+    interface
+        subroutine f()
+        end subroutine f
+    end interface
+    call f()
+end subroutine call_back
+
+recursive subroutine indirect(depth)
+    integer, intent(in) :: depth
+    integer :: mine
+    mine = depth
+    call call_back(inner)
+contains
+    subroutine inner()
+        if (depth > 1) call indirect(depth - 1)
+        if (mine /= depth) error stop
+        nseen_indirect = nseen_indirect + 1
+        seen_indirect(nseen_indirect) = depth
+    end subroutine inner
+end subroutine indirect
+
 recursive subroutine assumed_size(depth, a)
     integer, intent(in) :: depth
     integer, intent(in) :: a(*)
@@ -125,6 +149,9 @@ if (nseen /= 3) error stop
 if (any(seen /= [1, 2, 3])) error stop
 call arrays(3)
 if (sum_down(4) /= 10) error stop
+call indirect(3)
+if (nseen_indirect /= 3) error stop
+if (any(seen_indirect /= [1, 2, 3])) error stop
 call assumed_size(3, [4])
 if (nseen_assumed /= 3) error stop
 if (any(seen_assumed /= [2, 3, 4])) error stop

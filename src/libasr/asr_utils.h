@@ -1020,6 +1020,13 @@ static inline bool is_frame_type(ASR::symbol_t *decl) {
     return false;
 }
 
+// Whether `v` is the frame slot of a host (see nested_vars): a saved pointer
+// to a frame, which the procedures nested in the host read directly.
+static inline bool is_frame_slot(const ASR::Variable_t &v) {
+    return v.m_storage == ASR::storage_typeType::Save && v.m_type != nullptr &&
+        ASR::is_a<ASR::Pointer_t>(*v.m_type) && is_frame_type(v.m_type_declaration);
+}
+
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {
