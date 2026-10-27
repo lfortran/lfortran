@@ -3685,6 +3685,144 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
+            SET_INTRINSIC_NAME(Sqrt, "sqrt");
+            SET_INTRINSIC_NAME(Log, "log");
+            SET_INTRINSIC_NAME(Log10, "log10");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Atan2)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string y = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string xd = src;
+                headers.insert("math.h");
+                src = "(atan2(" + y + ", " + xd + "))";
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Sign)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string a = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string b = src;
+                headers.insert("math.h");
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                if (ASRUtils::is_real(*t)) {
+                    src = "(copysign(fabs(" + a + "), " + b + "))";
+                } else {
+                    headers.insert("stdlib.h");
+                    src = "(((" + b + ") >= 0) ? abs(" + a + ") : -abs(" + a + "))";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Mod)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string a = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string p = src;
+                headers.insert("math.h");
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                if (ASRUtils::is_real(*t)) {
+                    src = "(fmod(" + a + ", " + p + "))";
+                } else {
+                    src = "((" + a + ") % (" + p + "))";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Modulo)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string a = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string p = src;
+                headers.insert("math.h");
+                ASR::ttype_t *t = ASRUtils::expr_type(x.m_args[0]);
+                if (ASRUtils::is_real(*t)) {
+                    src = "((" + a + ") - floor((" + a + ")/(" + p + ")) * (" + p + "))";
+                } else {
+                    // Exact integer modulo with the sign of P (Fortran semantics),
+                    // unlike C/C++ % which takes the sign of A.
+                    src = "(((" + a + ") % (" + p + ") == 0) ? 0 : (((((" + a + ") % (" + p
+                        + ")) > 0) == ((" + p + ") > 0)) ? ((" + a + ") % (" + p
+                        + ")) : (((" + a + ") % (" + p + ")) + (" + p + "))))";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string ts = src;
+                this->visit_expr(*x.m_args[1]);
+                std::string fs = src;
+                this->visit_expr(*x.m_args[2]);
+                std::string mask = src;
+                src = "((" + mask + ") ? (" + ts + ") : (" + fs + "))";
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Floor)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string arg = src;
+                headers.insert("math.h");
+                if (is_c) { headers.insert("stdint.h"); } else { headers.insert("cstdint"); }
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                std::string int_type = (kind == 8) ? "int64_t" : "int32_t";
+                src = "((" + int_type + ")floor(" + arg + "))";
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Ceiling)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string arg = src;
+                headers.insert("math.h");
+                if (is_c) { headers.insert("stdint.h"); } else { headers.insert("cstdint"); }
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                std::string int_type = (kind == 8) ? "int64_t" : "int32_t";
+                src = "((" + int_type + ")ceil(" + arg + "))";
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Nint)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string arg = src;
+                headers.insert("math.h");
+                if (is_c) { headers.insert("stdint.h"); } else { headers.insert("cstdint"); }
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                if (kind == 8) {
+                    src = "((int64_t)llround(" + arg + "))";
+                } else {
+                    src = "((int32_t)lround(" + arg + "))";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Real)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string arg = src;
+                if (is_c) { headers.insert("stdint.h"); } else { headers.insert("cstdint"); }
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                std::string real_type = (kind == 8) ? "double" : "float";
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[0]);
+                if (arg_type && ASRUtils::is_complex(*arg_type)) {
+                    headers.insert("complex.h");
+                    if (is_c) {
+                        arg = "creal(" + arg + ")";
+                    } else {
+                        arg = "(" + arg + ").real()";
+                    }
+                }
+                src = "((" + real_type + ")(" + arg + "))";
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Int)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string arg = src;
+                if (is_c) { headers.insert("stdint.h"); } else { headers.insert("cstdint"); }
+                int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                std::string int_type = (kind == 8) ? "int64_t" : "int32_t";
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(x.m_args[0]);
+                if (arg_type && ASRUtils::is_complex(*arg_type)) {
+                    headers.insert("complex.h");
+                    if (is_c) {
+                        arg = "creal(" + arg + ")";
+                    } else {
+                        arg = "(" + arg + ").real()";
+                    }
+                }
+                src = "((" + int_type + ")(" + arg + "))";
+                return;
+            }
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");
