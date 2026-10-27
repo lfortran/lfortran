@@ -3138,6 +3138,11 @@ filename = "fixed_form_do_label1.f"
 ast_f90 = true
 
 [[test]]
+filename = "fmt_fixed_form1.f"
+fmt = true
+options = "--fixed-form"
+
+[[test]]
 filename = "../integration_tests/doloop_19.f90"
 ast = true
 ast_f90 = true

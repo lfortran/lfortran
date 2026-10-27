@@ -121,6 +121,8 @@ namespace LCompilers::CommandLineInterface {
             "Indent contents of sub / fn / prog / mod");
         parser.fmt->add_flag("--no-color", parser.opts.arg_fmt_no_color,
             "Turn off color when writing to stdout");
+        // Accept compiler options (such as --fixed-form) after the subcommand
+        parser.fmt->fallthrough();
 
         parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
         parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
@@ -141,6 +143,7 @@ namespace LCompilers::CommandLineInterface {
             "Fortran source file (*.f90)")->required();
         parser.pywrap->add_option("--array-order", parser.opts.arg_pywrap_array_order,
             "Select array order (c, f)")->capture_default_str();
+        parser.pywrap->fallthrough();
 
 #ifdef WITH_LSP
         parser.server = parser.languageServerInterface.prepare(parser.app);
@@ -418,6 +421,12 @@ namespace LCompilers::CommandLineInterface {
             app.parse(argc, argv);
         } else {
             app.parse(args);
+        }
+
+        // With fallthrough, extra positionals after fmt or pywrap land in the
+        // main input files, which these subcommands do not use
+        if ((*fmt || *pywrap) && !opts.arg_files.empty()) {
+            throw CLI::ExtrasError(opts.arg_files);
         }
 
         if (opts.disable_style_suggestions) {

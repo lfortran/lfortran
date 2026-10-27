@@ -41,6 +41,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_f90 = is_included("ast_f90")
     ast_fixed_form = is_included("ast_fixed_form")
     ast_f90_fixed_form = is_included("ast_f90_fixed_form")
+    fmt = is_included("fmt")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
@@ -308,6 +309,18 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "ast_f90_fixed_form",
             "lfortran --fixed-form --show-ast-f90 --no-indent --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if fmt:
+        # Format the file with the fmt subcommand. The source form is selected
+        # by `options`, which are passed after the subcommand.
+        run_test(
+            filename,
+            "fmt",
+            "lfortran fmt --no-color {infile}",
             filename,
             update_reference,
             verify_hash,

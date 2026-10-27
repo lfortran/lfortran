@@ -1,0 +1,13 @@
+{
+    "basename": "fmt-fmt_fixed_form1-be21dfe",
+    "cmd": "lfortran fmt --no-color {infile}",
+    "infile": "tests/fmt_fixed_form1.f",
+    "infile_hash": "dd3b0e3ef731405c0d1ce353a3004d1f8108f40697fa4b163db71794",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fmt-fmt_fixed_form1-be21dfe.stdout",
+    "stdout_hash": "06fc459f74bfb305ff45a4457ac79442b3075cb0b8c614ae4322bda7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
