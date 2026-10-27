@@ -1526,6 +1526,11 @@ RUN(NAME submodule_54 LABELS gfortran llvm)
 RUN(NAME submodule_55 LABELS gfortran llvm)
 RUN(NAME submodule_56 LABELS gfortran llvm)
 RUN(NAME submodule_57 LABELS gfortran llvm)
+# The program is compiled before the submodules (#14167)
+RUN(NAME submodule_58 FILE submodule_58d LABELS gfortran llvm_submodule llvm_single_invocation
+    EXTRAFILES submodule_58a.f90 submodule_58b.f90 submodule_58c.f90)
+RUN(NAME submodule_59 FILE submodule_59b LABELS gfortran llvm llvm_submodule llvm_single_invocation
+    EXTRAFILES submodule_59a.f90)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_14 LABELS gfortran llvm)

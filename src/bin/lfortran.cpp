@@ -1300,10 +1300,12 @@ int compile_src_to_object_file(const std::string &infile,
         if (err) return err;
     }
 
+    bool local_submodule = LCompilers::ASRUtils::local_submodule_present(*asr);
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)
-        && !LCompilers::ASRUtils::block_data_present(*asr)) {
+        && !LCompilers::ASRUtils::block_data_present(*asr)
+        && !local_submodule) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1326,19 +1328,37 @@ int compile_src_to_object_file(const std::string &infile,
 
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
     // so that they are not compiled again; the same holds for the modules
-    // that a BLOCK DATA program unit uses
+    // that a BLOCK DATA program unit or a submodule uses. A submodule
+    // compiled from this file is the exception: its code is defined in this
+    // object file, and only here.
     if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
             && (compiler_options.generate_code_for_global_procedures
-                || LCompilers::ASRUtils::block_data_present(*asr))
+                || LCompilers::ASRUtils::block_data_present(*asr)
+                || local_submodule)
             && !compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
+    // A submodule read back from a `.smod` file is defined in the object
+    // file compiled from its own source, so that it is up to date however
+    // its source and the program are compiled and in whichever order.
+    if (!compiler_options.separate_compilation) {
+        LCompilers::ASRUtils::mark_loaded_submodules_as_external(*asr);
+    }
 
+    // The object files of a submodule and of its ancestors call each other's
+    // procedures, which each of them may or may not pass arrays to by data,
+    // so both keep the procedures that take the array descriptors as well.
+    // This holds for this file only, not for the next file of the command.
+    bool skip_removal = compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data;
+    if (LCompilers::ASRUtils::submodule_or_ancestor_present(*asr)) {
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+    }
     diagnostics.diagnostics.clear();
     LCompilers::ASRObjectResult pipeline_result =
         LCompilers::compile_asr_to_object(
             *asr, infile, outfile, assembly, compiler_options, lpm,
             fe, lm, diagnostics);
+    compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = skip_removal;
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!pipeline_result.ok) {
         return pipeline_result.status;

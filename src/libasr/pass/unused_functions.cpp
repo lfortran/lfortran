@@ -6,6 +6,7 @@
 #include <libasr/pass/unused_functions.h>
 
 #include <cstring>
+#include <set>
 
 
 namespace LCompilers {
@@ -342,12 +343,43 @@ bool is_program_present(ASR::TranslationUnit_t &unit) {
     return v.program_present;
 }
 
+// A submodule can call any procedure of its ancestors, and, by host
+// association, of the modules they use, although its own object file only
+// declares them. Unless it is compiled in the same translation unit, its
+// calls are not seen here, so nothing of those modules is removed.
+std::set<const ASR::Module_t*> collect_modules_used_by_submodules(
+        const ASR::TranslationUnit_t &unit) {
+    std::set<const ASR::Module_t*> kept;
+    std::vector<const ASR::Module_t*> pending;
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            const ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+            if (m->m_has_submodules || m->m_parent_module) {
+                pending.push_back(m);
+            }
+        }
+    }
+    while (!pending.empty()) {
+        const ASR::Module_t *m = pending.back();
+        pending.pop_back();
+        if (!kept.insert(m).second) continue;
+        for (size_t i = 0; i < m->n_dependencies; i++) {
+            ASR::symbol_t *dep = unit.m_symtab->get_symbol(m->m_dependencies[i]);
+            if (dep && ASR::is_a<ASR::Module_t>(*dep)) {
+                pending.push_back(ASR::down_cast<ASR::Module_t>(dep));
+            }
+        }
+    }
+    return kept;
+}
+
 class UnusedFunctionsVisitor : public ASR::BaseWalkVisitor<UnusedFunctionsVisitor>
 {
 private:
     Allocator &al;
 public:
     std::map<uint64_t, std::string> fn_unused;
+    std::set<const ASR::Module_t*> kept_modules;
 
     UnusedFunctionsVisitor(Allocator &al) : al{al} { }
 
@@ -375,7 +407,7 @@ public:
         remove_unused_fn(x.m_symtab);
     }
     void visit_Module(const ASR::Module_t &x) {
-        if (!x.m_parent_module) {
+        if (kept_modules.find(&x) == kept_modules.end()) {
             remove_unused_fn(x.m_symtab);
         }
     }
@@ -409,6 +441,8 @@ void pass_unused_functions(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& pass_options) {
     bool always_run = pass_options.always_run;
     if (is_program_present(unit) || always_run) {
+        std::set<const ASR::Module_t*> kept_modules =
+            collect_modules_used_by_submodules(unit);
         for (int i=0; i < 4; i++)
         {
             std::map<uint64_t, std::string> fn_unused;
@@ -422,6 +456,7 @@ void pass_unused_functions(Allocator &al, ASR::TranslationUnit_t &unit,
     */
             UnusedFunctionsVisitor v(al);
             v.fn_unused = fn_unused;
+            v.kept_modules = kept_modules;
             v.visit_TranslationUnit(unit);
         }
     }

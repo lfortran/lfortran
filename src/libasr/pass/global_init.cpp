@@ -337,6 +337,18 @@ class GlobalInitVisitor {
             v->m_value = nullptr;
         }
 
+        // This translation unit only declares the variables of `m` that need
+        // executable initialization: the object file that defines them is
+        // the one that initializes them.
+        bool defined_elsewhere(ASR::Module_t *m) {
+            std::vector<ASR::Variable_t*> vars = runtime_init_vars(m->m_symtab);
+            if (vars.empty()) return false;
+            for (ASR::Variable_t *v : vars) {
+                if (v->m_abi != ASR::abiType::ExternalUndefined) return false;
+            }
+            return true;
+        }
+
         // A module compiled into an object file of its own initializes itself
         // there. Give it the same initializer name this pass would have given
         // it in that object file, as a declaration, so a call from here
@@ -442,7 +454,8 @@ class GlobalInitVisitor {
                 ASR::symbol_t *sym = unit.m_symtab->get_symbol(name);
                 if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) continue;
                 ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
-                if (separate_compilation && m->m_loaded_from_mod) {
+                if ((separate_compilation && m->m_loaded_from_mod)
+                        || defined_elsewhere(m)) {
                     // The module's own object file initializes it. Name the
                     // initializer so it can be called from here, but leave
                     // the one definition where it is.

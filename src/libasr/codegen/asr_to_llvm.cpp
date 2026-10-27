@@ -7360,6 +7360,15 @@ public:
             && x.m_abi == ASR::abiType::ExternalUndefined;
     }
 
+    // A variable of a module or a submodule is also accessed by the code of
+    // its submodules, which can be in other object files.
+    static bool is_module_variable(const ASR::Variable_t &x) {
+        return x.m_parent_symtab->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)
+            && ASR::is_a<ASR::Module_t>(
+                *ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner));
+    }
+
     void visit_Variable(const ASR::Variable_t &x) {
         if (x.m_value && x.m_storage == ASR::storage_typeType::Parameter) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -7562,7 +7571,7 @@ public:
                 } else {
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
-                    if (compiler_options.separate_compilation) {
+                    if (compiler_options.separate_compilation || is_module_variable(x)) {
                         llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
                     }
                 }
@@ -7657,7 +7666,8 @@ public:
                         initial_string_value = "";
                     }
                     llvm::GlobalValue::LinkageTypes string_linkage;
-                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation) {
+                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation
+                            || is_module_variable(x)) {
                         string_linkage = llvm::GlobalValue::ExternalLinkage;
                     } else {
                         string_linkage = llvm::GlobalValue::PrivateLinkage;
