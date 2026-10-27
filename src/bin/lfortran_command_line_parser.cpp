@@ -126,7 +126,7 @@ namespace LCompilers::CommandLineInterface {
         parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
             "The kernel connection file")->required();
         parser.kernel->add_flag("--managed", parser.opts.arg_kernel_managed,
-            "Stop when the last client disconnects (the kernel the prompt starts)");
+            "Stop the built-in kernel when its last client disconnects");
 
         parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
         parser.mod->add_option("file", parser.opts.arg_mod_file,

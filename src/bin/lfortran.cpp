@@ -443,10 +443,10 @@ int prompt(bool verbose, const std::string &connect,
     std::string connection_file = connect;
     try {
         if (connect.empty()) {
-            // The kernel stops when its last client disconnects, which may
-            // be after the prompt exits.
+            // This prompt ends the kernel on the way out, including while
+            // another client is connected.
             kernel = LCompilers::LFortran::jupyter::Client::start(
-                LCompilers::binary_executable_path, arguments, true, connection_file);
+                LCompilers::binary_executable_path, arguments, connection_file);
         } else {
             kernel = std::make_unique<LCompilers::LFortran::jupyter::Client>(connect);
         }

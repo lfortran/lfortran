@@ -2,12 +2,14 @@
 jupyter_client clients and the prompt (`lfortran --connect`)."""
 
 import argparse
+import json
 import os
 import queue
 from pathlib import Path
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -177,8 +179,10 @@ def shared_session(lfortran, cwd, connection):
 
 
 def prompt_session(lfortran, cwd):
-    """The plain prompt runs its cells in a kernel it starts, which other
-    clients can join and which outlives the prompt while they are connected."""
+    """The plain prompt runs its cells in a kernel it starts. Other clients
+    can join while that prompt is running. When the prompt exits it ends the
+    kernel and removes the connection file, including while another client
+    is connected."""
     prompt = subprocess.Popen([lfortran, "--no-color"], cwd=cwd,
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     client = None
@@ -193,6 +197,7 @@ def prompt_session(lfortran, cwd):
             if joined:
                 break
         connection = Path(joined.group(1).decode())
+        heartbeat = json.loads(connection.read_text())["hb_port"]
         client = connect(connection)
         check(run(client, "integer :: shared = 5")[0]["status"] == "ok", "declaration failed")
         rest, _ = prompt.communicate(b"shared + 1\r\x04", timeout=60)
@@ -201,13 +206,20 @@ def prompt_session(lfortran, cwd):
         check("[other client] integer :: shared = 5" in out,
             "the prompt did not show the other client's cell:\n" + out)
         check(re.search(r"^6\r?$", out, re.M), "the prompt's cell failed:\n" + out)
-        check(value(client, "shared * 2") == "10", "the kernel stopped with the prompt")
-        client.stop_channels()
-        client = None
+        # The other client is still connected. The kernel has ended, so do
+        # not evaluate through it.
         deadline = time.monotonic() + 30
         while connection.exists() and time.monotonic() < deadline:
             time.sleep(0.05)
-        check(not connection.exists(), "the kernel did not stop after its last client")
+        check(not connection.exists(), "the prompt left the connection file")
+        listening = time.monotonic() + 30
+        while True:
+            try:
+                socket.create_connection(("127.0.0.1", heartbeat), timeout=1).close()
+            except OSError:
+                break
+            check(time.monotonic() < listening, "the kernel still listens")
+            time.sleep(0.1)
     finally:
         if client:
             client.stop_channels()

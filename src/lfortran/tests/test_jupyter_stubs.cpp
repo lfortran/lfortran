@@ -23,7 +23,7 @@ int main()
     }
     std::string connection;
     try {
-        Client::start("unused", {}, true, connection);
+        Client::start("unused", {}, connection);
         return 2;
     } catch (const std::runtime_error &) {
     }

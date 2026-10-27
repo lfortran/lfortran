@@ -238,8 +238,9 @@ namespace LCompilers::LFortran {
         throw LCompilersException("run_kernel() is not available in the WASM build");
         return 1;
 #else
-        // Xeus does not tell when its last client disconnects, so the kernel
-        // the prompt starts is the built-in one.
+        // `lfortran kernel --managed` is the built-in kernel. Xeus cannot
+        // tell when its last client disconnects. The prompt does not pass
+        // this flag: it ends the kernel it started.
         if (managed) return jupyter::run_builtin_kernel(connection_filename, options, true);
 
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();

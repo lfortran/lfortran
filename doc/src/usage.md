@@ -170,25 +170,28 @@ program. STOP, ERROR STOP and a crash stop the kernel too. A kernel that stops
 ends the session of every client; the prompt that started it then exits with
 the kernel's exit status, as it did when it ran its cells itself.
 
-The kernel a prompt starts stops when its last client disconnects, even if the
-prompt has exited, and also during a cell that does not end. A running cell
-cannot be interrupted yet: Ctrl-C ends the prompt, and with it the kernel if no
-other client is connected, and Jupyter's Interrupt has no effect until the
-cell ends. Whoever can read the connection file can run code as its owner, so
-the kernel writes it readable by its owner only, and removes it when it stops.
+The prompt that starts a kernel ends that kernel when the prompt exits, and
+removes the connection file. Exiting ends the kernel while another client is
+still connected, and during a cell that does not return. Ctrl-C ends the
+prompt and the kernel. A prompt killed without a chance to clean up, such as
+with `kill -9`, leaves the kernel running. A prompt that only joins, with
+`lfortran --connect FILE`, leaves the kernel running; that session lasts
+until the kernel itself stops. The way to stop a cell that does not return
+is to end the prompt that started the kernel. Jupyter's Interrupt has no
+effect until the cell ends. Whoever can read the connection file can run
+code as its owner. The file is readable by its owner only.
 
-The kernel is LFortran's own implementation of the Jupyter messaging protocol
-(ZeroMQ over TCP with HMAC-SHA256 signatures), which needs no third-party
-library. In a build with `WITH_XEUS=yes`, `lfortran kernel` runs the Xeus
-kernel instead, but the kernel a prompt starts is still LFortran's own, as
-Xeus cannot tell when the last client disconnects; the client is always
-LFortran's own. The Xeus kernel uses Xeus's own server for every channel.
-A READ whose client has disconnected waits there, and the clients behind
-that cell wait with it. A client's `lfortran -v` does not show the cell's
-AST, ASR and LLVM IR in that kernel, because Xeus does not pass that field
-of the request to the interpreter. A cell that fails aborts the requests
-already waiting with an error reply and no idle status, so a client that
-waits for the aborted cell to become idle waits with it. See
+The client is LFortran's own. The kernel is LFortran's own implementation of
+the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
+which needs no third-party library. In a build with `WITH_XEUS=yes`,
+`lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
+still ends that kernel when it exits. The Xeus kernel uses Xeus's own server
+for every channel. A READ whose client has disconnected waits there, and the
+clients behind that cell wait with it. A client's `lfortran -v` does not show
+the cell's AST, ASR and LLVM IR in that kernel, because Xeus does not pass
+that field of the request to the interpreter. A cell that fails aborts the
+requests already waiting with an error reply and no idle status, so a client
+that waits for the aborted cell to become idle waits with it. See
 `src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.
 
 ## Invoking LFortran
