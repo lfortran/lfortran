@@ -1,4 +1,4 @@
-! Uses a private procedure of its parent and a procedure and a character
+! Uses a procedure of its parent and a procedure and a character
 ! variable of a module that its parent uses, which the program does not use.
 submodule (submodule_58_m) submodule_58_s
     implicit none
