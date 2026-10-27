@@ -353,6 +353,26 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
     UniqueSymbolVisitor(Allocator& al_,
     std::unordered_map<ASR::symbol_t*, std::string> &sn) : al(al_), sym_to_new_name(sn){}
 
+    // Renames the captured symbols of `symtab`, whose original contents are
+    // in `current_scope`. All old names are erased before any new name is
+    // added, because a new name can be the old name of another symbol of the
+    // same scope (`x` becomes `x_` while `x_` becomes `x__`).
+    void rename_symbols(SymbolTable *symtab) {
+        std::vector<ASR::symbol_t*> renamed;
+        for (auto &a: current_scope) {
+            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
+                symtab->erase_symbol(a.first);
+                renamed.push_back(a.second);
+            }
+        }
+        for (ASR::symbol_t *sym: renamed) {
+            const std::string &new_name = sym_to_new_name[sym];
+            if (symtab->get_symbol(new_name) == nullptr) {
+                symtab->add_symbol(new_name, sym);
+            }
+        }
+    }
+
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
@@ -361,15 +381,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a : xx.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
-        for (auto &a: current_scope) {
-            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
-                xx.m_symtab->erase_symbol(a.first);
-                std::string new_name = sym_to_new_name[a.second];
-                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
-                    xx.m_symtab->add_symbol(new_name, a.second);
-                }
-            }
-        }
+        rename_symbols(xx.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -393,15 +405,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
                 visit_symbol(*a.second);
         }
-        for (auto &a: current_scope) {
-            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
-                xx.m_symtab->erase_symbol(a.first);
-                std::string new_name = sym_to_new_name[a.second];
-                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
-                    xx.m_symtab->add_symbol(new_name, a.second);
-                }
-            }
-        }
+        rename_symbols(xx.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -477,15 +481,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
-        for (auto &a: current_scope) {
-            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
-                xx.m_symtab->erase_symbol(a.first);
-                std::string new_name = sym_to_new_name[a.second];
-                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
-                    xx.m_symtab->add_symbol(new_name, a.second);
-                }
-            }
-        }
+        rename_symbols(xx.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -537,15 +533,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
-        for (auto &a: current_scope) {
-            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
-                xx.m_symtab->erase_symbol(a.first);
-                std::string new_name = sym_to_new_name[a.second];
-                if (xx.m_symtab->get_symbol(new_name) == nullptr) {
-                    xx.m_symtab->add_symbol(new_name, a.second);
-                }
-            }
-        }
+        rename_symbols(xx.m_symtab);
         current_scope = current_scope_copy;
     }
 
