@@ -22,6 +22,7 @@ std::string get_dwarf_scripts_dir();
 int32_t get_exit_status(int32_t err);
 std::string get_kokkos_includedir();
 std::string get_kokkos_libdir();
+std::string get_kokkos_cxx_standard(const std::string &kokkos_includedir);
 
 // The name of a symbol the compiler declares for the user symbol `name` in
 // the role `role`, e.g. `f~fpcast` for a call-site interface of `f`. `~`

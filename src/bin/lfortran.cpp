@@ -1806,7 +1806,8 @@ int compile_to_object_file_cpp(const std::string &infile,
         }
         if (kokkos) {
             std::string kokkos_includedir = LCompilers::LFortran::get_kokkos_includedir();
-            options += "-std=c++17 -I" + kokkos_includedir;
+            options += "-std=" + LCompilers::LFortran::get_kokkos_cxx_standard(
+                kokkos_includedir) + " -I" + kokkos_includedir;
         }
         options += " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
