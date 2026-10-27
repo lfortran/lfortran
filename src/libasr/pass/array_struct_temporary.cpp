@@ -5939,10 +5939,11 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if (x.m_common_block != nullptr) {
+        if (!ASRUtils::has_own_storage(x)) {
             // The initial value of a variable in a common block is the
             // initial value of the block's static storage, which the view
-            // of the block gives.
+            // of the block gives. The symbolic value of a HostAssociated
+            // variable designates the variable it denotes.
             return;
         }
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
@@ -6430,8 +6431,9 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
-            // A variable in a common block keeps its static initial value.
-            x.m_common_block == nullptr &&
+            // A variable in a common block keeps its static initial value,
+            // and a HostAssociated variable denotes a host variable.
+            ASRUtils::has_own_storage(x) &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&

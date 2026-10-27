@@ -1877,6 +1877,33 @@ namespace LCompilers {
                 handle_llvm_pointers1()
                 break;
             }
+            case (ASR::ttypeType::Reference) : {
+                // The address of a variable of the referenced type: what
+                // llvm_symtab holds for such a variable, the pointer to its
+                // storage.
+                bool is_array_type_ = false, is_malloc_array_type_ = false;
+                bool is_list_ = false;
+                ASR::dimension_t* m_dims_ = nullptr;
+                int n_dims_ = 0, a_kind_ = 0;
+                // The member declares the interface of a procedure it
+                // refers to.
+                ASR::symbol_t* referenced_declaration = type_declaration;
+                if (referenced_declaration == nullptr && arg_expr != nullptr &&
+                        ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                    ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(arg_expr)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*member)) {
+                        referenced_declaration =
+                            ASR::down_cast<ASR::Variable_t>(member)->m_type_declaration;
+                    }
+                }
+                llvm_type = get_type_from_ttype_t(arg_expr,
+                    ASR::down_cast<ASR::Reference_t>(asr_type)->m_type,
+                    referenced_declaration, m_storage, is_array_type_,
+                    is_malloc_array_type_, is_list_, m_dims_, n_dims_, a_kind_,
+                    module, m_abi)->getPointerTo();
+                break;
+            }
             case (ASR::ttypeType::List) : {
                 is_list = true;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
