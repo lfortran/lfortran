@@ -386,22 +386,27 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
 
         // The elements are stored from the lower bounds of the variable,
-        // which need not be those of the constant
+        // which need not be those of the constant. A lower bound that is not
+        // a compile-time constant is read once from the variable, because
+        // its declared expression may have been redefined since entry.
         ASR::dimension_t* result_dims = nullptr;
         size_t n_result_dims = ASRUtils::extract_dimensions_from_ttype(
             result_type, result_dims);
         LCOMPILERS_ASSERT(n_result_dims == n_dims);
         std::vector<ASR::expr_t*> result_starts(n_dims, nullptr);
         std::vector<int64_t> result_start_values(n_dims, 1);
-        for (size_t i = 0; i < n_dims && i < n_result_dims; i++) {
+        for (size_t i = 0; i < n_dims; i++) {
             ASR::expr_t* result_start = result_dims[i].m_start;
-            if (result_start == nullptr) {
-                result_start = PassUtils::get_bound(result_expr, i + 1, "lbound", al);
+            if (result_start != nullptr && ASRUtils::extract_value(
+                    ASRUtils::expr_value(result_start), result_start_values[i])) {
+                continue;
             }
-            if (!ASRUtils::extract_value(ASRUtils::expr_value(result_start),
-                    result_start_values[i])) {
-                result_starts[i] = result_start;
-            }
+            std::string name = current_scope->get_unique_name("__libasr_lbound_");
+            ASR::stmt_t* assign_stmt = nullptr;
+            result_starts[i] = PassUtils::create_auxiliary_variable_for_expr(
+                PassUtils::get_bound(result_expr, i + 1, "lbound", al), name,
+                al, current_scope, assign_stmt);
+            pass_result.push_back(al, assign_stmt);
         }
 
         ASRUtils::ASRBuilder builder(al, loc);

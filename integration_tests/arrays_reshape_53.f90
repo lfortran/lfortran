@@ -37,6 +37,9 @@ program arrays_reshape_53
     call assumed_shape(c)
     if (any(c(:,0) /= [7,8])) error stop
     if (any(c(:,2) /= [11,12])) error stop
+    b = 0
+    call redefined_bound(b, 0)
+    if (any(b /= [11,12,13,14,15,16])) error stop
     print *, b
     print *, c
 
@@ -53,6 +56,15 @@ contains
         integer, intent(out) :: y(-1:,:)
         y = reshape([7,8,9,10,11,12], [2,3])
         if (y(-1,1) /= 7 .or. y(0,3) /= 12) error stop
+    end subroutine
+
+    subroutine redefined_bound(x, n)
+        integer, value :: n
+        integer, intent(inout) :: x(n:n+5)
+        ! The bounds of x are fixed on entry
+        n = 2
+        x = reshape([11,12,13,14,15,16], [6])
+        if (lbound(x, 1) /= 0 .or. x(0) /= 11 .or. x(5) /= 16) error stop
     end subroutine
 
 end program
