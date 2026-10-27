@@ -6848,7 +6848,39 @@ public:
             if (ast_stmt->type == AST::decl_stmtType::Entry) {
                 entry_encountered = true;
             }
-            this->visit_decl_stmt(*ast_stmt);
+            // Statements that the visitor adds before this one (temporaries,
+            // an alternate-return call and its branches) must stay in front
+            // of it in the same copy of the body, not before the dispatch.
+            // A DATA statement or a statement-function definition is not
+            // executed where it appears: the statements it adds (DATA
+            // assignments, the association of a host dummy procedure) go to
+            // `current_body`, the prologue before the dispatch, so that they
+            // run for every entry point.
+            bool is_specification_stmt =
+                ast_stmt->type == AST::decl_stmtType::DataStmt
+                || (ast_stmt->type == AST::decl_stmtType::Assignment
+                    && is_statement_function(
+                        *AST::down_cast<AST::Assignment_t>(ast_stmt)));
+            Vec<ASR::stmt_t*> hoisted; hoisted.reserve(al, 1);
+            {
+                CurrentBodyScope body_scope(*this,
+                    is_specification_stmt ? current_body : &hoisted,
+                    current_body_scope);
+                this->visit_decl_stmt(*ast_stmt);
+            }
+            if (tmp == nullptr && !this->tmp_vec.empty()) {
+                std::vector<ASR::asr_t*> stmts;
+                for (auto &s: hoisted) stmts.push_back(&s->base);
+                this->tmp_vec.insert(this->tmp_vec.begin(), stmts.begin(), stmts.end());
+            } else {
+                for (auto &s: hoisted) {
+                    if (is_main_function && return_encountered && !entry_encountered) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else if (!(is_main_function && entry_encountered && return_encountered)) {
+                        stmt_vector.push_back(s);
+                    }
+                }
+            }
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
                 tmp_stmt = ASRUtils::STMT(tmp);
@@ -7015,10 +7047,11 @@ public:
             subroutine_stmt_vector.push_back(x.m_items[i]);
         }
         Vec<ASR::stmt_t*> master_function_body; master_function_body.reserve(al, stmt_vector.size());
-        current_body = &master_function_body;
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
-        current_body_scope = current_scope;
+        // The statements added to `current_body` form a prologue that runs
+        // before the dispatch to the entry points.
+        CurrentBodyScope body_scope(*this, &master_function_body, current_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
         // The master function implements the procedure and its ENTRY points,
         // so its statements access their names like the procedure's own.
