@@ -798,7 +798,7 @@ LFORTRAN_API void _lfortran_random_number(int n, double *v)
 {
     int i;
     for (i=0; i < n; i++) {
-        v[i] = rand() / (double) RAND_MAX;
+        v[i] = rand() / ((double) RAND_MAX + 1.0);
     }
 }
 
@@ -834,7 +834,7 @@ LFORTRAN_API void _lfortran_init_random_clock()
 
 LFORTRAN_API double _lfortran_random()
 {
-    return (rand() / (double) RAND_MAX);
+    return rand() / ((double) RAND_MAX + 1.0);
 }
 
 LFORTRAN_API int _lfortran_randrange(int lower, int upper)
@@ -7092,12 +7092,16 @@ LFORTRAN_API int32_t _lfortran_values(int32_t n)
     return result;
 }
 
+// Results must be in [0, 1). Dividing by RAND_MAX + 1 (exact in double)
+// keeps the largest rand() value below 1.0; the float conversion can still
+// round up to 1.0f, so map that case to the largest float below 1.0.
 LFORTRAN_API float _lfortran_sp_rand_num() {
-    return rand() / (float) RAND_MAX;
+    float r = (float) (rand() / ((double) RAND_MAX + 1.0));
+    return r < 1.0f ? r : 1.0f - FLT_EPSILON / 2;
 }
 
 LFORTRAN_API double _lfortran_dp_rand_num() {
-    return rand() / (double) RAND_MAX;
+    return rand() / ((double) RAND_MAX + 1.0);
 }
 
 LFORTRAN_API int32_t _lfortran_int32_rand_num() {
