@@ -79,6 +79,12 @@ public:
 // running process other than this process's parent.
 bool stop_with_parent(long long parent, const std::string &connection_file);
 
+// Makes Ctrl-C end the prompt, after it ends the kernel that the prompt
+// started (Client::start), removes the kernel's connection file and restores
+// the terminal. The prompt still ends as Ctrl-C ends it by default. Does
+// nothing if Ctrl-C is ignored, as for a background job.
+void handle_interrupt();
+
 #ifndef __EMSCRIPTEN__
 
 // The built-in kernel of a connection file (see run_kernel).

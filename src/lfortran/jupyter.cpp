@@ -70,6 +70,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 extern char **environ;
@@ -1082,15 +1083,23 @@ namespace {
 // The kernel this prompt started. The destructor ends it on the way out.
 // Ctrl-C ends it too, and that handler does not run destructors, so it can
 // use only a sig_atomic_t and this fixed buffer. A client that only joined
-// leaves both empty and does not install the handler.
+// leaves both empty.
 #ifdef _WIN32
 volatile PVOID owned_process = nullptr;
 #else
 volatile std::sig_atomic_t owned_pid = 0;
-struct sigaction previous_interrupt {};
 #endif
 char owned_connection[4096] = {};
 volatile std::sig_atomic_t interrupt_installed = 0;
+// The terminal as it was when the prompt started, which the Ctrl-C handler
+// restores: Ctrl-C at `>>>` arrives while the line editor has it in raw mode.
+volatile std::sig_atomic_t terminal_saved = 0;
+#ifdef _WIN32
+HANDLE terminal_input = nullptr;
+DWORD terminal_mode = 0;
+#else
+struct termios terminal_state {};
+#endif
 
 // Removes the connection file this prompt created. Safe to call twice.
 // On POSIX it only uses unlink, so the Ctrl-C handler may call it too.
@@ -1111,7 +1120,7 @@ HANDLE take_owned_process()
     return static_cast<HANDLE>(InterlockedExchangePointer(&owned_process, nullptr));
 }
 
-BOOL WINAPI owned_console_interrupt(DWORD event)
+BOOL WINAPI interrupt_prompt(DWORD event)
 {
     if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
     HANDLE handle = take_owned_process();
@@ -1121,29 +1130,32 @@ BOOL WINAPI owned_console_interrupt(DWORD event)
         CloseHandle(handle);
     }
     release_owned_connection();
-    ExitProcess(130);
-    return TRUE;
+    if (terminal_saved) SetConsoleMode(terminal_input, terminal_mode);
+    // The default handler then ends the prompt, as without this handler.
+    return FALSE;
 }
 #else
-extern "C" void interrupt_owned_kernel(int)
+extern "C" void interrupt_prompt(int)
 {
     const pid_t pid = static_cast<pid_t>(owned_pid);
     owned_pid = 0;
     if (pid > 0) {
-        kill(pid, SIGTERM);
-        int status = 0;
         // The kernel is in another process group, so it has not seen this
-        // Ctrl-C. If it has not exited yet, it may be inside a cell that
-        // does not return.
-        if (waitpid(pid, &status, WNOHANG) == 0) {
-            kill(pid, SIGKILL);
-            waitpid(pid, &status, 0);
-        }
+        // Ctrl-C, and it may be inside a cell that does not return.
+        kill(pid, SIGKILL);
+        waitpid(pid, nullptr, 0);
     }
-    if (owned_connection[0] != '\0') {
-        unlink(owned_connection);
-        owned_connection[0] = '\0';
-    }
+    release_owned_connection();
+    // TCSANOW: the output may never drain, as when nothing reads it.
+    if (terminal_saved) tcsetattr(STDIN_FILENO, TCSANOW, &terminal_state);
+    // End by SIGINT, as without this handler, so that a shell knows that
+    // Ctrl-C ended the prompt (and, say, stops a loop that runs it).
+    signal(SIGINT, SIG_DFL);
+    sigset_t interrupt;
+    sigemptyset(&interrupt);
+    sigaddset(&interrupt, SIGINT);
+    sigprocmask(SIG_UNBLOCK, &interrupt, nullptr);
+    raise(SIGINT);
     _Exit(130);
 }
 #endif
@@ -1162,10 +1174,6 @@ void end_owned_kernel(int wait_ms)
         CloseHandle(handle);
     }
     release_owned_connection();
-    if (interrupt_installed) {
-        SetConsoleCtrlHandler(owned_console_interrupt, FALSE);
-        interrupt_installed = 0;
-    }
 #else
     sigset_t blocked, previous;
     sigemptyset(&blocked);
@@ -1190,41 +1198,49 @@ void end_owned_kernel(int wait_ms)
         }
     }
     release_owned_connection();
-    if (interrupt_installed) {
-        sigaction(SIGINT, &previous_interrupt, nullptr);
-        interrupt_installed = 0;
-    }
     sigprocmask(SIG_SETMASK, &previous, nullptr);
 #endif
 }
 
-// Records the kernel `process` (a pid, or a process handle on Windows) and
-// installs the Ctrl-C handler. `connection_file` fits in owned_connection.
+// Records the kernel `process` (a pid, or a process handle on Windows) for
+// the destructor and the Ctrl-C handler. `connection_file` fits in
+// owned_connection.
 void remember_owned_kernel(intptr_t process, const std::string &connection_file)
 {
     std::memcpy(owned_connection, connection_file.c_str(), connection_file.size() + 1);
 #ifdef _WIN32
     owned_process = reinterpret_cast<HANDLE>(process);
-    if (!interrupt_installed
-            && SetConsoleCtrlHandler(owned_console_interrupt, TRUE)) {
-        interrupt_installed = 1;
-    }
 #else
     owned_pid = static_cast<std::sig_atomic_t>(process);
-    if (!interrupt_installed) {
-        struct sigaction action {};
-        action.sa_handler = interrupt_owned_kernel;
-        sigemptyset(&action.sa_mask);
-        // The handler does not return, so a restarted read is not needed.
-        action.sa_flags = 0;
-        if (sigaction(SIGINT, &action, &previous_interrupt) == 0) {
-            interrupt_installed = 1;
-        }
-    }
 #endif
 }
 
 } // namespace
+
+void handle_interrupt()
+{
+    if (interrupt_installed) return;
+#ifdef _WIN32
+    terminal_input = GetStdHandle(STD_INPUT_HANDLE);
+    if (GetConsoleMode(terminal_input, &terminal_mode)) terminal_saved = 1;
+    if (SetConsoleCtrlHandler(interrupt_prompt, TRUE)) interrupt_installed = 1;
+#else
+    struct sigaction current {};
+    sigaction(SIGINT, nullptr, &current);
+    // Ctrl-C is ignored, as for a background job of a shell without job
+    // control. It must not end the prompt then.
+    if (current.sa_handler == SIG_IGN) return;
+    if (isatty(STDIN_FILENO) && tcgetattr(STDIN_FILENO, &terminal_state) == 0) {
+        terminal_saved = 1;
+    }
+    struct sigaction action {};
+    action.sa_handler = interrupt_prompt;
+    sigemptyset(&action.sa_mask);
+    // The handler does not return, so a restarted read is not needed.
+    action.sa_flags = 0;
+    if (sigaction(SIGINT, &action, nullptr) == 0) interrupt_installed = 1;
+#endif
+}
 
 Client::~Client()
 {
@@ -2146,6 +2162,8 @@ bool stop_with_parent(long long, const std::string &)
 {
     return true;
 }
+
+void handle_interrupt() {}
 
 } // namespace LCompilers::LFortran::jupyter
 

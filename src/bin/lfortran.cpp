@@ -439,6 +439,8 @@ int prompt(bool verbose, const std::string &connect,
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
+    // Before the line editor changes the terminal, which Ctrl-C restores
+    LCompilers::LFortran::jupyter::handle_interrupt();
     std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
     std::string connection_file = connect;
     try {

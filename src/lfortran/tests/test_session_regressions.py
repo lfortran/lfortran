@@ -406,7 +406,9 @@ def prompt_killed_in_cell(exe, cwd):
     killed."""
     endings = [("killed", lambda process: process.kill(), None)]
     if os.name == "posix":
-        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT), 130))
+        # The prompt ends by SIGINT, as without its handler.
+        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
+            -signal.SIGINT))
     for how, end, status in endings:
         process, connection = started_prompt(exe, cwd)
         kernel_pids = children_of(process.pid)
