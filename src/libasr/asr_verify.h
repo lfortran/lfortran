@@ -25,6 +25,14 @@ namespace LCompilers {
         // IntrinsicElementalFunction remains. The pass lowers each one to the
         // length of its character argument in bits.
         bool intrinsic_function = false;
+        // Set once the nested_vars pass has run: a procedure no longer
+        // refers to a variable of an enclosing procedure or main program
+        // (other than a named constant, a variable in a common block or a
+        // threadprivate variable), but to
+        // its HostAssociated alias, bound through the frame dummy argument;
+        // and no declaration of a host calls one of its internal procedures
+        // that takes the frame, which is bound only when its body starts.
+        bool nested_vars = false;
     };
 
     // Verifies that ASR is correctly constructed and contains valid Fortran

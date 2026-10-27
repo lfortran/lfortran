@@ -548,6 +548,11 @@ public:
         std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
         for (auto &item : struct_deps) {
             ASR::symbol_t* struct_sym = symtab->get_symbol(item);
+            if (struct_sym == nullptr) {
+                // A dependency declared in an enclosing scope, such as the
+                // type of a variable that a procedure's host frame captures
+                continue;
+            }
             visit_symbol(*struct_sym);
             r += src;
         }
@@ -946,6 +951,9 @@ public:
                 visit_symbol(*item.second);
                 r += src;
             }
+            // Its own derived types, such as the frame of a host (see
+            // nested_vars)
+            append_struct_definitions(x.m_symtab, r);
         }
         {
             std::string variable_declaration;
@@ -1214,6 +1222,7 @@ public:
         }
 
         dec_indent();
+        r += indent;
         r += "end type ";
         r.append(x.m_name);
         r += "\n";
@@ -1603,7 +1612,7 @@ public:
         }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
-        src = t + " => " + v + "\n";
+        src = indent + t + " => " + v + "\n";
     }
 
     // Not Fortran: binds the reference member of a host frame

@@ -3,9 +3,9 @@ source_filename = "LFortran"
 target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
+%my_module.__lcompilers_frame_my_wrapper.9 = type { float ()** }
 
 @__module___lcompilers_created__nested_context__example__target_value = global float 0.000000e+00
-@__module___lcompilers_created__nested_context__my_module__my_wrapper__fun = global float ()* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [16 x i8] c"S-DESC-K1-31,R4\00", align 1
 @string_const_data = private constant [31 x i8] c"Via wrapper (should equal .5): "
@@ -55,36 +55,45 @@ declare float @fun_interface()
 
 define float @__module_my_module_my_wrapper(float ()* %fun) {
 .entry:
+  %__lcompilers_frame = alloca %my_module.__lcompilers_frame_my_wrapper.9, align 8
+  %__lcompilers_view_fun = alloca float ()*, align 8
+  store float ()* null, float ()** %__lcompilers_view_fun, align 8
   %my_wrapper = alloca float, align 4
-  store float ()* %fun, float ()** @__module___lcompilers_created__nested_context__my_module__my_wrapper__fun, align 8
-  %0 = call float @my_wrapper.__module_my_module_wrapper_wrapper()
-  store float %0, float* %my_wrapper, align 4
+  store float ()* %fun, float ()** %__lcompilers_view_fun, align 8
+  %0 = getelementptr %my_module.__lcompilers_frame_my_wrapper.9, %my_module.__lcompilers_frame_my_wrapper.9* %__lcompilers_frame, i32 0, i32 0
+  store float ()** %__lcompilers_view_fun, float ()*** %0, align 8
+  %1 = call float @my_wrapper.__module_my_module_wrapper_wrapper(%my_module.__lcompilers_frame_my_wrapper.9* %__lcompilers_frame)
+  store float %1, float* %my_wrapper, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_my_wrapper
 
 FINALIZE_SYMTABLE_my_wrapper:                     ; preds = %return
-  %1 = load float, float* %my_wrapper, align 4
-  ret float %1
+  %2 = load float, float* %my_wrapper, align 4
+  ret float %2
 }
 
 declare float @fun()
 
-define float @my_wrapper.__module_my_module_wrapper_wrapper() {
+declare float @__lcompilers_view_fun()
+
+define float @my_wrapper.__module_my_module_wrapper_wrapper(%my_module.__lcompilers_frame_my_wrapper.9* %__lcompilers_frame) {
 .entry:
+  %0 = getelementptr %my_module.__lcompilers_frame_my_wrapper.9, %my_module.__lcompilers_frame_my_wrapper.9* %__lcompilers_frame, i32 0, i32 0
+  %1 = load float ()**, float ()*** %0, align 1
   %wrapper_wrapper = alloca float, align 4
-  %0 = load float ()*, float ()** @__module___lcompilers_created__nested_context__my_module__my_wrapper__fun, align 8
-  %1 = call float %0()
-  store float %1, float* %wrapper_wrapper, align 4
+  %2 = load float ()*, float ()** %1, align 1
+  %3 = call float %2()
+  store float %3, float* %wrapper_wrapper, align 4
   br label %return
 
 return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_wrapper_wrapper
 
 FINALIZE_SYMTABLE_wrapper_wrapper:                ; preds = %return
-  %2 = load float, float* %wrapper_wrapper, align 4
-  ret float %2
+  %4 = load float, float* %wrapper_wrapper, align 4
+  ret float %4
 }
 
 define i32 @main(i32 %0, i8** %1) {

@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-host_assoc_frame_02-187705f",
+    "cmd": "lfortran --pass=nested_vars --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/host_assoc_frame_02.f90",
+    "infile_hash": "957fff6b7e3ba6d7054f8a609e321e6f135c628df8d37bf98de43e4e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-host_assoc_frame_02-187705f.f90",
+    "stdout_hash": "4159a07624c690a703070dd66494c7f59d2f9139e734bfd5659b7768",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
