@@ -2608,8 +2608,7 @@ public:
                           ASR::is_a<ASR::CPtr_t>(*curr_arg_m_a_type)) {
                     llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                     auto do_scalar_alloc = [&]() {
-                        llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                        llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
@@ -2725,7 +2724,7 @@ public:
                             llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
                                 tmp_expr, ASRUtils::extract_type(tmp_expr_type), module.get());
                             llvm::Value* wrapper_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type,
-                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                                llvm_utils->getIntType(4));
                             llvm::Value* wrapper = get_or_allocate_class_wrapper(tmp_expr, target_addr,
                                 wrapper_type->getPointerTo(), wrapper_type, wrapper_size);
                             llvm::Value* new_wrapper = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, new_slot);
@@ -2776,8 +2775,7 @@ public:
                     }
 
                     if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
-                        llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4),
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                        llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
@@ -2819,13 +2817,11 @@ public:
                             // The value of a pointer SOURCE is that of its target.
                             dest_asr_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(m_source));
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(m_source));
-                            malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4),
-                                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            malloc_size = SizeOfTypeUtil(m_source, dest_asr_type, llvm_utils->getIntType(4));
                         } else if (curr_arg.m_sym_subclass == nullptr) {
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
                             dest_asr_type = ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc, dest_class_sym, true);
-                            malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4),
-                                ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                            malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4));
                         } else {
                             llvm::Type* llvm_type = nullptr;
                             dest_class_sym = ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass);
@@ -2833,9 +2829,8 @@ public:
                             llvm_type = llvm_utils->getStructType(dest_struct, module.get());
                             llvm::DataLayout data_layout(module->getDataLayout());
                             int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
-                            malloc_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(
-                                ASRUtils::extract_kind_from_ttype_t(ASRUtils::TYPE(
-                                    ASR::make_Integer_t(al, x.base.base.loc, 4))) * 8, type_size));
+                            malloc_size = llvm::ConstantInt::get(llvm_utils->getIntType(4),
+                                llvm::APInt(32, type_size));
                         }
 
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
@@ -2865,7 +2860,7 @@ public:
                                 ASRUtils::expr_type(tmp_expr), &src_struct_sym->base, module.get());
                             // Allocate class wrapper first
                             llvm::Value* wrapper_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type,
-                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                                llvm_utils->getIntType(4));
                             llvm::Value* wrapper_ptr = nullptr;
                             if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr))
                                     && !owns_heap_class_wrapper(tmp_expr)) {
@@ -4041,8 +4036,6 @@ public:
         llvm::Value* right = tmp;
         ptr_loads = ptr_loads_copy;
 
-        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-
         if(x.m_op == ASR::cmpopType::Eq || x.m_op == ASR::cmpopType::NotEq) {
             tmp = llvm_utils->is_equal_by_value(left, right, module.get(),
                     ASRUtils::expr_type(x.m_left));
@@ -4052,19 +4045,19 @@ public:
         }
         else if(x.m_op == ASR::cmpopType::Lt) {
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
-                    ASRUtils::expr_type(x.m_left), 0, int32_type);
+                    ASRUtils::expr_type(x.m_left), 0);
         }
         else if(x.m_op == ASR::cmpopType::LtE) {
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
-                    ASRUtils::expr_type(x.m_left), 1, int32_type);
+                    ASRUtils::expr_type(x.m_left), 1);
         }
         else if(x.m_op == ASR::cmpopType::Gt) {
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
-                    ASRUtils::expr_type(x.m_left), 2, int32_type);
+                    ASRUtils::expr_type(x.m_left), 2);
         }
         else if(x.m_op == ASR::cmpopType::GtE) {
             tmp = llvm_utils->is_ineq_by_value(left, right, module.get(),
-                    ASRUtils::expr_type(x.m_left), 3, int32_type);
+                    ASRUtils::expr_type(x.m_left), 3);
         }
     }
 
@@ -4938,8 +4931,6 @@ public:
         ASR::Tuple_t* tuple_type_right = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_right));
         std::string type_code_right = ASRUtils::get_type_code(tuple_type_right->m_type,
                                                         tuple_type_right->n_type);
-        Vec<ASR::ttype_t*> v_type;
-        v_type.reserve(al, tuple_type_left->n_type + tuple_type_right->n_type);
         std::string type_code = type_code_left + type_code_right;
         std::vector<llvm::Type*> llvm_el_types;
         ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
@@ -4951,7 +4942,6 @@ public:
             llvm_el_types.push_back(llvm_utils->get_type_from_ttype_t(x.m_left, tuple_type_left->m_type[i],
                 nullptr, m_storage, is_array_type, is_malloc_array_type,
                 is_list, m_dims, n_dims, a_kind, module.get()));
-            v_type.push_back(al, tuple_type_left->m_type[i]);
         }
         is_array_type = false; is_malloc_array_type = false;
         is_list = false;
@@ -4961,14 +4951,11 @@ public:
             llvm_el_types.push_back(llvm_utils->get_type_from_ttype_t(x.m_right, tuple_type_right->m_type[i],
                 nullptr, m_storage, is_array_type, is_malloc_array_type,
                 is_list, m_dims, n_dims, a_kind, module.get()));
-            v_type.push_back(al, tuple_type_right->m_type[i]);
         }
         llvm::Type* concat_tuple_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
         llvm::Value* concat_tuple = llvm_utils->CreateAlloca(*builder, concat_tuple_type, nullptr, "concat_tuple");
-        ASR::Tuple_t* tuple_type = (ASR::Tuple_t*)(ASR::make_Tuple_t(
-                                    al, x.base.base.loc, v_type.p, v_type.n));
         tuple_api->concat(x.m_left, left, right, tuple_type_left, tuple_type_right, concat_tuple,
-                          tuple_type, module.get());
+                          ASR::down_cast<ASR::Tuple_t>(x.m_type), module.get());
         // concat() deep-copies elements into concat_tuple. Free heap
         // resources (e.g. strings) owned by temporary operands.
         if (is_owned_tuple_temporary(x.m_left)) {
@@ -5837,13 +5824,13 @@ public:
         LCOMPILERS_ASSERT(x.n_args == 0);
     }
 
-    llvm::Value* SizeOfTypeUtil(ASR::expr_t* expr, ASR::ttype_t* m_type, llvm::Type* output_type,
-        ASR::ttype_t* output_type_asr) {
+    llvm::Value* SizeOfTypeUtil(ASR::expr_t* expr, ASR::ttype_t* m_type,
+            llvm::Type* output_type) {
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(expr, m_type, module.get());
         llvm::DataLayout data_layout(module->getDataLayout());
         int64_t type_size = data_layout.getTypeAllocSize(llvm_type);
         return llvm::ConstantInt::get(output_type, llvm::APInt(
-            ASRUtils::extract_kind_from_ttype_t(output_type_asr) * 8, type_size));
+            output_type->getIntegerBitWidth(), type_size));
     }
 
     void visit_SizeOfType(const ASR::SizeOfType_t& x) {
@@ -5956,9 +5943,9 @@ public:
         if (ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(x_m_v_type))) ) {
             if (ASRUtils::is_allocatable(x_m_v_type)) {
-                ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, x_m_v_type->base.loc,
-                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v)), true);
-                llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, wrapped_struct_type, module.get())->getPointerTo();
+                llvm::Type* wrapper_struct_llvm_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_v))),
+                    module.get())->getPointerTo();
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_m_v_type), module.get());
 
                 if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
@@ -10137,8 +10124,8 @@ public:
                     std::string key_type_code = ASRUtils::get_type_code(asr_dict->m_key_type);
                     std::string value_type_code = ASRUtils::get_type_code(asr_dict->m_value_type);
 
-                    llvm_utils->get_type_from_ttype_t_util(nullptr, ASRUtils::TYPE(ASR::make_List_t(al, asr_dict->base.base.loc, asr_dict->m_key_type)), module.get());
-                    llvm_utils->get_type_from_ttype_t_util(nullptr, ASRUtils::TYPE(ASR::make_List_t(al, asr_dict->base.base.loc, asr_dict->m_value_type)), module.get());
+                    llvm_utils->get_list_type(asr_dict->m_key_type, module.get());
+                    llvm_utils->get_list_type(asr_dict->m_value_type, module.get());
                     llvm_utils->get_type_from_ttype_t_util(nullptr, v->m_type, module.get());
 
                     if (ASRUtils::is_character(*asr_dict->m_key_type))
@@ -12719,7 +12706,7 @@ public:
                         null_cond,
                         [&]() {
                             llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, target_base_type,
-                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                                llvm_utils->getIntType(4));
                             llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
                                 x.m_target, target_llvm_type, wrapper_size);
                             builder->CreateStore(wrapper_ptr, llvm_target);
@@ -12810,8 +12797,7 @@ public:
                     x.m_target, ASRUtils::extract_type(target_type), module.get());
                 llvm::Value* const wrapper_size = SizeOfTypeUtil(
                     x.m_target, ASRUtils::type_get_past_pointer(target_type),
-                    llvm_utils->getIntType(4),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                    llvm_utils->getIntType(4));
                 // Allocate wrapper if doesn't exist.
                 llvm::Value* null_cond = builder->CreateICmpEQ(
                     llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
@@ -12881,7 +12867,7 @@ public:
                                 llvm_utils->CreateLoad2(target_llvm_type->getPointerTo(), llvm_target),
                                 llvm::ConstantPointerNull::get(target_llvm_type->getPointerTo()));
                             llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
-                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                                llvm_utils->getIntType(4));
                             llvm_utils->create_if_else(
                                 null_cond,
                                 [&]() {
@@ -12906,7 +12892,7 @@ public:
                         null_cond,
                         [&]() {
                             llvm::Value* wrapper_size = SizeOfTypeUtil(x.m_target, ASRUtils::type_get_past_pointer(target_type),
-                                llvm_utils->getIntType(4), ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
+                                llvm_utils->getIntType(4));
                             llvm::Value* wrapper_ptr = allocate_class_wrapper_storage(
                                 x.m_target, target_llvm_type, wrapper_size);
                             builder->CreateStore(wrapper_ptr, llvm_target);
@@ -14562,13 +14548,13 @@ public:
             builder->CreateStore(value_class_hash, target_class_hash_ptr);
 
             // deepcopy the class ptr
-            ASR::ttype_t* wrapped_value_struct_type = ASRUtils::make_StructType_t_util(al, asr_value_type->base.loc,
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)), true);
-            llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, wrapped_value_struct_type, module.get());
+            llvm::Type* wrapper_value_llvm_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))),
+                            module.get());
 
-            ASR::ttype_t* wrapped_target_struct_type = ASRUtils::make_StructType_t_util(al, asr_target_type->base.loc,
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)), true);
-            llvm::Type* wrapper_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, wrapped_target_struct_type, module.get());
+            llvm::Type* wrapper_target_llvm_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))),
+                            module.get());
 
 
             llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
@@ -14599,9 +14585,9 @@ public:
             is_assignment_target = is_assignment_target_copy;
 
             // Get and bitcast the wrapped struct in classtype
-            ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_target_type->base.loc,
-                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)), true);
-            llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, wrapped_struct_type, module.get())->getPointerTo();
+            llvm::Type* wrapper_struct_llvm_type = llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))),
+                            module.get())->getPointerTo();
             llvm::Value* vptr_hash = llvm_utils->create_gep2(asr_target_llvm_type, tmp, 0);
             llvm::Value* struct_type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                 llvm::APInt(64, get_class_hash(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)))));
@@ -19749,10 +19735,7 @@ public:
                     llvm::Value *rhs_data, *rhs_len;
 
                     std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(
-                                                    ASR::down_cast<ASR::String_t>(ASRUtils::TYPE(ASR::make_String_t(
-                                                        al, x.base.base.loc, 1, nullptr,
-                                                        ASR::string_length_kindType::DeferredLength,
-                                                        ASR::string_physical_typeType::DescriptorString))),
+                                                    ASRUtils::get_string_type(x.m_type),
                                                     temp_str, true, true);
                     rhs_data = tmp;
                     rhs_len = lfortran_str_len(string_descriptor, tmp);
@@ -26615,11 +26598,9 @@ public:
                     llvm_utils->i8_ptr, class_value);
             }
         } else {
-            ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
-                al, arg_type->base.loc, ASRUtils::symbol_get_past_external(
-                ASRUtils::get_struct_sym_from_struct_expr(arg)), true);
-            llvm::Type* llvm_struct_type = llvm_utils->get_type_from_ttype_t_util(
-                arg, struct_type, module.get());
+            llvm::Type* llvm_struct_type = llvm_utils->getStructType(
+                ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(arg))), module.get());
             class_value = llvm_utils->create_gep2(arg_llvm_type, class_value, 1);
             if (!LLVM::is_llvm_pointer(*dest_type)) {
                 class_value = llvm_utils->CreateLoad2(

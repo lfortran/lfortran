@@ -746,7 +746,12 @@ class ASRToLLVMVisitor;
 
             llvm::Value* is_ineq_by_value(llvm::Value* left, llvm::Value* right,
                                           llvm::Module* module, ASR::ttype_t* asr_type,
-                                          int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
+                                          int8_t overload_id);
+
+            // The signed comparison of two integers of the same type, with
+            // the overload ids of `is_ineq_by_value`.
+            llvm::Value* is_integer_ineq(llvm::Value* left, llvm::Value* right,
+                                         int8_t overload_id);
             /**
              * @brief Gets array element if array of classes
              * @param class_symbol   Symbol of the class. Used to create another class type (llvm) that holds the element + VTable.
@@ -852,6 +857,13 @@ class ASRToLLVMVisitor;
 
             llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module,
                 ASR::symbol_t* type_declaration=nullptr);
+
+            // The type of a list of `el_type` elements, laid out as
+            // `el_llvm_type` of kind `a_kind`; the second form lays the
+            // element out itself.
+            llvm::Type* get_list_type(llvm::Type* el_llvm_type, ASR::ttype_t* el_type,
+                int32_t a_kind, llvm::Module* module);
+            llvm::Type* get_list_type(ASR::ttype_t* el_type, llvm::Module* module);
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
@@ -3240,7 +3252,7 @@ class ASRToLLVMVisitor;
             llvm::Value* check_list_inequality(llvm::Value* l1, llvm::Value* l2,
                 ASR::ttype_t *item_type, llvm::LLVMContext& context,
                 llvm::IRBuilder<>* builder, llvm::Module* module,
-                int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
+                int8_t overload_id);
 
             void list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
                                   llvm::Value* num_times, llvm::Value* init_list_len,

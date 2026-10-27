@@ -922,6 +922,27 @@ namespace LCompilers {
                                         value_type_size, key_llvm_type, value_llvm_type);
     }
 
+    llvm::Type* LLVMUtils::get_list_type(llvm::Type* el_llvm_type, ASR::ttype_t* el_type,
+            int32_t a_kind, llvm::Module* module) {
+        std::string el_type_code = ASRUtils::get_type_code(el_type);
+        return list_api->get_list_type(el_llvm_type, el_type_code,
+            get_type_size(el_type, el_llvm_type, a_kind, module));
+    }
+
+    llvm::Type* LLVMUtils::get_list_type(ASR::ttype_t* el_type, llvm::Module* module) {
+        bool is_local_array_type = false, is_local_malloc_array_type = false;
+        bool is_local_list = false;
+        ASR::dimension_t* local_m_dims = nullptr;
+        int local_n_dims = 0;
+        int local_a_kind = -1;
+        ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
+        llvm::Type* el_llvm_type = get_type_from_ttype_t(nullptr, el_type, nullptr, local_m_storage,
+                                                         is_local_array_type, is_local_malloc_array_type,
+                                                         is_local_list, local_m_dims, local_n_dims,
+                                                         local_a_kind, module);
+        return get_list_type(el_llvm_type, el_type, local_a_kind, module);
+    }
+
     llvm::Type* LLVMUtils::get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module,
             ASR::symbol_t* type_declaration) {
         ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(asr_type);
@@ -1843,18 +1864,7 @@ namespace LCompilers {
                                                                  is_array_type, is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
                                                                  a_kind, module, m_abi);
-                std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
-                int32_t type_size = -1;
-                if( LLVM::is_llvm_struct(asr_list->m_type) ||
-                    ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
-                    ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
-                    ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
-                    llvm::DataLayout data_layout(module->getDataLayout());
-                    type_size = static_cast<int32_t>(data_layout.getTypeAllocSize(el_llvm_type));
-                } else {
-                    type_size = a_kind;
-                }
-                llvm_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
+                llvm_type = get_list_type(el_llvm_type, asr_list->m_type, a_kind, module);
                 break;
             }
             case (ASR::ttypeType::Dict): {
@@ -3500,9 +3510,36 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
     }
 
+    llvm::Value* LLVMUtils::is_integer_ineq(llvm::Value* left, llvm::Value* right,
+                                            int8_t overload_id) {
+        llvm::CmpInst::Predicate pred;
+        switch( overload_id ) {
+            case 0: {
+                pred = llvm::CmpInst::Predicate::ICMP_SLT;
+                break;
+            }
+            case 1: {
+                pred = llvm::CmpInst::Predicate::ICMP_SLE;
+                break;
+            }
+            case 2: {
+                pred = llvm::CmpInst::Predicate::ICMP_SGT;
+                break;
+            }
+            case 3: {
+                pred = llvm::CmpInst::Predicate::ICMP_SGE;
+                break;
+            }
+            default: {
+                throw CodeGenError("Un-recognized overload-id: " + std::to_string(overload_id));
+            }
+        }
+        return builder->CreateICmp(pred, left, right);
+    }
+
     llvm::Value* LLVMUtils::is_ineq_by_value(llvm::Value* left, llvm::Value* right,
                                              llvm::Module* module, ASR::ttype_t* asr_type,
-                                             int8_t overload_id, ASR::ttype_t* int32_type) {
+                                             int8_t overload_id) {
         /**
          * overloads:
          *  0    <
@@ -3519,28 +3556,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     left = builder->CreateZExt(left, llvm::Type::getInt32Ty(context));
                     right = builder->CreateZExt(right, llvm::Type::getInt32Ty(context));
                 }
-                switch( overload_id ) {
-                    case 0: {
-                        pred = llvm::CmpInst::Predicate::ICMP_SLT;
-                        break;
-                    }
-                    case 1: {
-                        pred = llvm::CmpInst::Predicate::ICMP_SLE;
-                        break;
-                    }
-                    case 2: {
-                        pred = llvm::CmpInst::Predicate::ICMP_SGT;
-                        break;
-                    }
-                    case 3: {
-                        pred = llvm::CmpInst::Predicate::ICMP_SGE;
-                        break;
-                    }
-                    default: {
-                        throw CodeGenError("Un-recognized overload-id: " + std::to_string(overload_id));
-                    }
-                }
-                return builder->CreateICmp(pred, left, right);
+                return is_integer_ineq(left, right, overload_id);
             }
             case ASR::ttypeType::Real: {
                 switch( overload_id ) {
@@ -3644,7 +3660,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(asr_type);
                 return list_api->check_list_inequality(left, right, list_type->m_type,
                                                      context, builder, module,
-                                                     overload_id, int32_type);
+                                                     overload_id);
             }
             default: {
                 throw LCompilersException("LLVMUtils::is_ineq_by_value isn't implemented for " +
@@ -7932,8 +7948,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                                  ASR::ttype_t* item_type,
                                                  llvm::LLVMContext& context,
                                                  llvm::IRBuilder<>* builder,
-                                                 llvm::Module* module, int8_t overload_id,
-                                                 ASR::ttype_t* int32_type) {
+                                                 llvm::Module* module, int8_t overload_id) {
         /**
          * Equivalent in C++
          *
@@ -8017,8 +8032,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                  llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), idx), b_len));
         cond = builder->CreateAnd(cond, llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds));
         llvm_utils->create_if_else(cond, [&]() {
-            LLVM::CreateStore(*builder, llvm_utils->is_ineq_by_value(a_len, b_len,
-                module, int32_type, overload_id), inequality_holds);
+            LLVM::CreateStore(*builder, llvm_utils->is_integer_ineq(a_len, b_len,
+                overload_id), inequality_holds);
         }, []() {
             // LLVM::CreateStore(*builder, llvm::ConstantInt::get(
             //     context, llvm::APInt(1, 0)), inequality_holds);
