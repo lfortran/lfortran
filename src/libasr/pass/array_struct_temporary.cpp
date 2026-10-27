@@ -1887,11 +1887,11 @@ class ElementwiseSectionCollector:
 // evaluate again.
 void get_sections_read_in_place(ASR::IntrinsicArrayFunction_t* x,
         std::set<ASR::expr_t*>& sections) {
-    ASR::expr_t *array = nullptr, *mask = nullptr;
-    ASRUtils::ElementwiseReduction::get_operands(x, array, mask);
+    ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+    ASRUtils::ElementwiseReduction::get_operands(x, array, vector_b, mask);
     std::set<ASR::expr_t*> operands;
     ElementwiseSectionCollector collector(operands);
-    for (ASR::expr_t* operand: {array, mask}) {
+    for (ASR::expr_t* operand: {array, vector_b, mask}) {
         if (operand != nullptr) {
             collector.visit_expr(*operand);
         }

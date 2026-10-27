@@ -7723,13 +7723,14 @@ namespace Transpose {
 
 /*
 A reduction with a scalar result over an elementwise array expression, such
-as `sum(a(i:j) * b(i:j))` or `count(x > 0.5)`, is lowered by array_op into
-one loop nest that accumulates the elements of the expression, so that the
-expression is never evaluated into an array temporary (array_struct_temporary
-does not create one for it). The loop has the initial value, operation and
-element order of the generated function of the reduction (see
-instantiate_ArrIntrinsic, AnyAll::instantiate_AnyAll and
-Count::instantiate_Count), so the result is the same.
+as `sum(a(i:j) * b(i:j))`, `count(x > 0.5)` or `dot_product(a * 2, b)`, is
+lowered by array_op into one loop nest that accumulates the elements of the
+expression, so that the expression is never evaluated into an array
+temporary (array_struct_temporary does not create one for it). The loop has
+the initial value, operation and element order of the generated function of
+the reduction (see instantiate_ArrIntrinsic, AnyAll::instantiate_AnyAll,
+Count::instantiate_Count and DotProduct::instantiate_DotProduct), so the
+result is the same.
 */
 namespace ElementwiseReduction {
 
@@ -7856,10 +7857,12 @@ namespace ElementwiseReduction {
 
     // The array and mask operands of the reduction `x`, if it is one with a
     // scalar result that the loop can compute. For COUNT, the elements of
-    // its mask are counted and there is no array operand.
+    // its mask are counted and there is no array operand. For DOT_PRODUCT,
+    // `array` is its first vector and `vector_b` its second one.
     static inline bool get_operands(ASR::IntrinsicArrayFunction_t* x,
-            ASR::expr_t*& array, ASR::expr_t*& mask) {
+            ASR::expr_t*& array, ASR::expr_t*& vector_b, ASR::expr_t*& mask) {
         array = nullptr;
+        vector_b = nullptr;
         mask = nullptr;
         if (ASRUtils::is_array(x->m_type) ||
                 ASRUtils::is_value_constant(x->m_value)) {
@@ -7896,6 +7899,14 @@ namespace ElementwiseReduction {
                 mask = x->m_args[0];
                 break;
             }
+            case IntrinsicArrayFunctions::DotProduct: {
+                if (x->n_args != 2) {
+                    return false;
+                }
+                array = x->m_args[0];
+                vector_b = x->m_args[1];
+                break;
+            }
             default: {
                 return false;
             }
@@ -7903,6 +7914,21 @@ namespace ElementwiseReduction {
         // The loop reads the elements whatever the physical type of the array
         if (array) {
             array = ASRUtils::get_past_array_physical_cast(array);
+        }
+        if (vector_b) {
+            vector_b = ASRUtils::get_past_array_physical_cast(vector_b);
+            // The generated function converts the elements of the second
+            // vector to the kind of the first one. The loop needs no such
+            // conversion: it accumulates only vectors whose elements have
+            // the type of the result, as the arguments of a DOT_PRODUCT
+            // that are converted to a common type do.
+            if (!ASRUtils::is_array(ASRUtils::expr_type(vector_b)) ||
+                    !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(array)),
+                        ASRUtils::extract_type(ASRUtils::expr_type(vector_b)), array, vector_b) ||
+                    !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(array)),
+                        x->m_type, array, nullptr)) {
+                return false;
+            }
         }
         if (mask) {
             mask = ASRUtils::get_past_array_physical_cast(mask);
@@ -7918,14 +7944,15 @@ namespace ElementwiseReduction {
     // elementwise operation that would otherwise be evaluated into an array
     // temporary.
     static inline bool is_lowered_to_loop(ASR::IntrinsicArrayFunction_t* x) {
-        ASR::expr_t *array = nullptr, *mask = nullptr;
-        if (!get_operands(x, array, mask)) {
+        ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+        if (!get_operands(x, array, vector_b, mask)) {
             return false;
         }
         bool has_operation = (array && is_elementwise_operation(array)) ||
+            (vector_b && is_elementwise_operation(vector_b)) ||
             (mask && is_elementwise_operation(mask));
         return has_operation && is_elementwise_operand(array) &&
-            is_elementwise_operand(mask);
+            is_elementwise_operand(vector_b) && is_elementwise_operand(mask);
     }
 
     static inline bool is_lowered_to_loop(ASR::expr_t* x) {
@@ -7962,6 +7989,10 @@ namespace ElementwiseReduction {
                 ASRBuilder b(al, loc);
                 return b.i_t(0, x->m_type);
             }
+            case IntrinsicArrayFunctions::DotProduct: {
+                // 0, (0, 0) or .false.
+                return get_constant_zero_with_given_type(al, x->m_type);
+            }
             default: {
                 LCOMPILERS_ASSERT(false);
                 return nullptr;
@@ -7969,9 +8000,11 @@ namespace ElementwiseReduction {
         }
     }
 
-    // The accumulator `acc` updated with the element `element`.
+    // The accumulator `acc` updated with the element `element`, and for
+    // DOT_PRODUCT with the element `element_b` of its second vector.
     static inline ASR::expr_t* accumulate(Allocator& al, const Location& loc,
-            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* acc, ASR::expr_t* element) {
+            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* acc, ASR::expr_t* element,
+            ASR::expr_t* element_b) {
         ASRBuilder b(al, loc);
         switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
             case IntrinsicArrayFunctions::Sum: {
@@ -7994,6 +8027,22 @@ namespace ElementwiseReduction {
             }
             case IntrinsicArrayFunctions::Count: {
                 return b.Add(acc, b.i_t(1, x->m_type));
+            }
+            case IntrinsicArrayFunctions::DotProduct: {
+                if (ASRUtils::is_logical(*x->m_type)) {
+                    return b.Or(acc, b.And(element, element_b));
+                }
+                if (ASRUtils::is_complex(*x->m_type)) {
+                    Vec<ASR::expr_t*> conjg_args;
+                    conjg_args.reserve(al, 1);
+                    conjg_args.push_back(al, element);
+                    ASR::expr_t* conjg = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                        al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Conjg),
+                        conjg_args.p, conjg_args.size(), 0, x->m_type, nullptr));
+                    return b.Add(acc, ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, loc,
+                        conjg, ASR::binopType::Mul, element_b, x->m_type, nullptr)));
+                }
+                return b.Add(acc, b.Mul(element, element_b));
             }
             default: {
                 LCOMPILERS_ASSERT(false);

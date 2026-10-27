@@ -2844,8 +2844,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         const Location& loc = x.base.base.loc;
         ASR::IntrinsicArrayFunction_t* reduction =
             ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x.m_value);
-        ASR::expr_t *array = nullptr, *mask = nullptr;
-        ASRUtils::ElementwiseReduction::get_operands(reduction, array, mask);
+        ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+        ASRUtils::ElementwiseReduction::get_operands(reduction, array, vector_b, mask);
 
         std::string acc_name = current_scope->get_unique_name("__libasr_reduction_acc");
         ASR::symbol_t* acc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
@@ -2861,15 +2861,21 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         // The operation may use the element more than once (e.g. MaxVal), so
         // it is built on a placeholder that each use then replaces with a
-        // copy of the operand.
+        // copy of the operand. The elements of both vectors of DotProduct
+        // have the type of the accumulator.
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* placeholder = array ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
+        ASR::expr_t* placeholder_b = vector_b ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
         ASR::expr_t* update = ASRUtils::ElementwiseReduction::accumulate(al, loc,
-            reduction, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)), placeholder);
-        if (array) {
-            ReplacePlaceholder replace_placeholder(al, placeholder, array);
-            replace_placeholder.current_expr = &update;
-            replace_placeholder.replace_expr(update);
+            reduction, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)), placeholder,
+            placeholder_b);
+        for (auto& [operand_placeholder, operand]: {std::make_pair(placeholder, array),
+                std::make_pair(placeholder_b, vector_b)}) {
+            if (operand) {
+                ReplacePlaceholder replace_placeholder(al, operand_placeholder, operand);
+                replace_placeholder.current_expr = &update;
+                replace_placeholder.replace_expr(update);
+            }
         }
         update = duplicator.duplicate_expr(update);
         ASR::Assignment_t* update_stmt = ASR::down_cast2<ASR::Assignment_t>(
