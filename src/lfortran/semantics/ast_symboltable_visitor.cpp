@@ -1185,6 +1185,8 @@ public:
                 ASR::symbol_t* sym = it.second;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                    // A named constant (PARAMETER) must stay a constant
+                    if (var->m_storage == ASR::storage_typeType::Parameter) continue;
                     var->m_storage = ASR::storage_typeType::Save;
                 }
             }
