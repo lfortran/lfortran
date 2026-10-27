@@ -385,6 +385,26 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
 
+        // The elements are stored from the lower bounds of the variable,
+        // which need not be those of the constant
+        ASR::dimension_t* result_dims = nullptr;
+        size_t n_result_dims = ASRUtils::extract_dimensions_from_ttype(
+            result_type, result_dims);
+        LCOMPILERS_ASSERT(n_result_dims == n_dims);
+        std::vector<ASR::expr_t*> result_starts(n_dims, nullptr);
+        std::vector<int64_t> result_start_values(n_dims, 1);
+        for (size_t i = 0; i < n_dims && i < n_result_dims; i++) {
+            ASR::expr_t* result_start = result_dims[i].m_start;
+            if (result_start == nullptr) {
+                result_start = PassUtils::get_bound(result_expr, i + 1, "lbound", al);
+            }
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(result_start),
+                    result_start_values[i])) {
+                result_starts[i] = result_start;
+            }
+        }
+
+        ASRUtils::ASRBuilder builder(al, loc);
         int64_t size = ASRUtils::get_fixed_size_of_array(x->m_type);
         int64_t repeat = 1;
         std::vector<std::vector<int64_t>> rank_indexes(n_dims, std::vector<int64_t>(size));
@@ -397,7 +417,8 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             while (c != size) {
                 for (int64_t j = start; j <= ubound; j++) {
                     for (int64_t k = 1; k <= repeat; k++) {
-                        rank_indexes[i][c++] = j;
+                        // Offset of the element from the lower bound
+                        rank_indexes[i][c++] = j - start;
                     }
                 }
             }
@@ -412,8 +433,16 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
                 ASR::array_index_t array_index_arg;
                 array_index_arg.loc = loc;
                 array_index_arg.m_left = nullptr;
-                array_index_arg.m_right = make_ConstantWithKind(
-                    make_IntegerConstant_t, make_Integer_t, rank_indexes[j][i], 4, loc);
+                if (result_starts[j] == nullptr) {
+                    array_index_arg.m_right = make_ConstantWithKind(
+                        make_IntegerConstant_t, make_Integer_t,
+                        result_start_values[j] + rank_indexes[j][i], 4, loc);
+                } else {
+                    array_index_arg.m_right = builder.Add(result_starts[j],
+                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t,
+                        rank_indexes[j][i], ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(result_starts[j])), loc));
+                }
                 array_index_arg.m_step = nullptr;
                 array_index_args.push_back(al, array_index_arg);
             }
