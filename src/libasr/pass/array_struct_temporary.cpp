@@ -2386,6 +2386,27 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // metadata is instantiated and saved by prepare_function_actuals.
     }
 
+    // `z%im = f()` is `z = cmplx(real(z), f())`, and f may change z%re, so f runs before z%re is read
+    void evaluate_imaginary_part_first(ASR::Assignment_t& x) {
+        if (!ASR::is_a<ASR::ComplexConstructor_t>(*x.m_value)) {
+            return;
+        }
+        ASR::ComplexConstructor_t* value = ASR::down_cast<ASR::ComplexConstructor_t>(x.m_value);
+        ASR::symbol_t* target_root = get_root_var(
+            ASRUtils::get_past_array_physical_cast(x.m_target));
+        if (target_root == nullptr || !contains_function_reference(value->m_im) ||
+                !ASRUtils::expr_references_symbol(value->m_re, target_root)) {
+            return;
+        }
+        visit_expr(*value->m_im);
+        std::string name_hint = "_complex_constructor_im";
+        value->m_im = ASRUtils::is_array(ASRUtils::expr_type(value->m_im))
+            ? call_create_and_allocate_temporary_variable(value->m_im, al,
+                current_body, name_hint, current_scope, exprs_with_target)
+            : create_and_declare_temporary_variable_for_scalar(value->m_im,
+                name_hint, al, current_body, current_scope, exprs_with_target);
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // Assigning to `ps(1::2)%y` walks the stride of the section and the
@@ -2411,6 +2432,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         lhs_var = lhs_array_var;
+        evaluate_imaginary_part_first(xx);
         visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
