@@ -390,7 +390,7 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         // a compile-time constant is read once from the variable, because
         // its declared expression may have been redefined since entry.
         ASR::dimension_t* result_dims = nullptr;
-        size_t n_result_dims = ASRUtils::extract_dimensions_from_ttype(
+        [[maybe_unused]] size_t n_result_dims = ASRUtils::extract_dimensions_from_ttype(
             result_type, result_dims);
         LCOMPILERS_ASSERT(n_result_dims == n_dims);
         std::vector<ASR::expr_t*> result_starts(n_dims, nullptr);
