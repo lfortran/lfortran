@@ -1,6 +1,13 @@
 module recursion_06_mod
 implicit none
 
+abstract interface
+    subroutine callback()
+    end subroutine callback
+end interface
+
+procedure(callback), pointer :: saved_proc => null()
+integer :: seen(3) = 0
 
 type :: solver
     integer :: id = 0
@@ -128,6 +135,25 @@ contains
         end if
     end subroutine inner
 end subroutine solve
+
+subroutine call_saved_proc()
+    call saved_proc()
+end subroutine call_saved_proc
+
+! A contained procedure that calls nothing is called through a pointer after the host entered itself again
+recursive subroutine pointer_after_recursion(depth)
+    integer, intent(in) :: depth
+    integer :: mine
+    mine = depth
+    call inner()
+    if (depth > 1) call pointer_after_recursion(depth - 1)
+    saved_proc => inner
+    call call_saved_proc()
+contains
+    subroutine inner()
+        seen(mine) = seen(mine) + 1
+    end subroutine inner
+end subroutine pointer_after_recursion
 
 end module recursion_06_mod
 

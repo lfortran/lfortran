@@ -318,7 +318,8 @@ cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 -- Caller-provided storage for a function result lowered to a dummy argument.
 -- A Variable of HostAssociated storage has no storage of its own: it denotes
 -- the variable designated by its symbolic_value, a StructInstanceMember of a
--- member of the frame dummy argument of its procedure, bound on entry before
+-- member of the frame dummy argument of its procedure (or of the frame slot
+-- of its host in a thunk, see nested_vars), bound on entry before
 -- any other declaration of the procedure is evaluated, like a dummy argument
 -- associated by reference. Its type is that of the designated variable.
 storage_type = Default | Save | Parameter | Threadprivate | ResultArgument | HostAssociated

@@ -8456,6 +8456,7 @@ public:
         }
 
         // Generate code for nested subroutines and functions first:
+        declare_frame_slots(x);
         procedure_host = &x.base;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -9880,6 +9881,37 @@ public:
         }
     }
 
+    // The frame slot of a host (see nested_vars) is read by the procedures
+    // nested in the host, which are generated before the host declares its
+    // variables, so its global is declared first. Declaring the variable
+    // later finds the same global.
+    template<typename T>
+    void declare_frame_slots(const T &x) {
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (!ASRUtils::is_frame_slot(*v)) {
+                continue;
+            }
+            bool is_array_type = false, is_malloc_array_type = false,
+                is_list = false;
+            ASR::dimension_t *m_dims = nullptr;
+            int n_dims = 0, a_kind = 4;
+            llvm::Type *type = llvm_utils->get_type_from_ttype_t(
+                nullptr, v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
+                is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
+            std::string global_name = save_variable_global_prefix(x) + "." +
+                std::string(v->m_name);
+            llvm::Constant *ptr = module->getOrInsertGlobal(global_name, type);
+            llvm::GlobalVariable *global = module->getNamedGlobal(global_name);
+            global->setLinkage(llvm::GlobalValue::InternalLinkage);
+            global->setInitializer(llvm::Constant::getNullValue(type));
+            llvm_symtab[get_hash((ASR::asr_t*)v)] = ptr;
+        }
+    }
+
     template<typename T>
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
         llvm::Value *target_var = nullptr;
@@ -11191,6 +11223,7 @@ public:
             current_scope = current_scope_copy;
             return;
         }
+        declare_frame_slots(x);
         visit_procedures(x);
         generate_function(x);
         procedure_host = nullptr;
