@@ -1203,6 +1203,10 @@ filename = "array_op_reduction_loop.f90"
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "array_op_reduction_sections.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "../integration_tests/array_item_in_bounds_01.f90"
 asr = true
 
