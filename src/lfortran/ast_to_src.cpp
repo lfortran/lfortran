@@ -1,5 +1,6 @@
 #include <cctype>
 #include <lfortran/ast_to_src.h>
+#include <lfortran/semantics/ast_common_visitor.h>
 #include <libasr/string_utils.h>
 #include <libasr/bigint.h>
 
@@ -2618,6 +2619,19 @@ public:
         s = r;
     }
 
+    // A legacy DO loop can end on a labelled action statement, or share its
+    // terminal label with an inner loop. The label is already printed there,
+    // so putting it on `end do` too would define it twice.
+    bool do_label_in_body(const DoLoop_t &x) {
+        if (x.n_body == 0) return false;
+        for (size_t i=0; i<x.n_body; i++) {
+            if (stmt_label(x.m_body[i]) == x.m_do_label) return true;
+        }
+        AST::decl_stmt_t *last = x.m_body[x.n_body - 1];
+        return last->type == AST::decl_stmtType::DoLoop
+            && AST::down_cast<DoLoop_t>(last)->m_do_label == x.m_do_label;
+    }
+
     void visit_DoLoop(const DoLoop_t &x) {
         std::string r = indent;
         r += print_label(x);
@@ -2657,7 +2671,7 @@ public:
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
-        if (x.m_do_label != 0) {
+        if (x.m_do_label != 0 && !do_label_in_body(x)) {
             r += std::to_string(x.m_do_label);
             r += " ";
         }

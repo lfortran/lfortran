@@ -1,0 +1,32 @@
+program doloop_22
+integer :: i, j, s
+!     (a) Nested legacy DO loops sharing a terminal action statement.
+s = 0
+do j = 1, 3
+    do i = 1, 4
+        1 s = s + 1
+    end do
+end do
+if (s /= 12) error stop
+
+!     (b) Legacy DO loop ending on a labelled action statement;
+!     `go to 2` branches to that statement.
+s = 0
+do i = 1, 5
+    if (i == 3) go to 2
+    s = s + 10
+    2 s = s + i
+end do
+if (s /= 55) error stop
+
+!     (c) Nested legacy DO loops sharing a terminal `continue`.
+s = 0
+do j = 1, 2
+    do i = 1, 5
+        if (i == 3) go to 3
+        s = s + i
+    3 end do
+end do
+if (s /= 24) error stop
+
+end program doloop_22
