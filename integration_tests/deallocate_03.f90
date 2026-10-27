@@ -14,6 +14,8 @@ program deallocate_03
     type(t), pointer :: tp
     class(t), pointer :: cp
     type(t) :: x
+    integer, allocatable :: sa
+    integer, pointer :: sp
     integer :: ierr
     integer(8) :: ierr8
     character(len=20) :: msg
@@ -97,5 +99,26 @@ program deallocate_03
     deallocate(tp, cp, stat=ierr)
     if (ierr /= 0) error stop 21
     if (associated(tp) .or. associated(cp)) error stop 22
+
+    ! The stat-variable may itself be allocatable or a pointer.
+    allocate(sa, sp)
+    allocate(rr(2))
+    sa = 7
+    deallocate(rr, stat=sa)
+    if (sa /= 0) error stop 23
+    if (allocated(rr)) error stop 24
+    sa = 0
+    deallocate(rr, stat=sa)
+    if (sa == 0) error stop 25
+
+    allocate(rr(2))
+    sp = 7
+    deallocate(rr, stat=sp)
+    if (sp /= 0) error stop 26
+    if (allocated(rr)) error stop 27
+    sp = 0
+    deallocate(rr, stat=sp)
+    if (sp == 0) error stop 28
+    deallocate(sa, sp)
     print *, "ok"
 end program

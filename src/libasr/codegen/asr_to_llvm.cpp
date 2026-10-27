@@ -3485,6 +3485,23 @@ public:
         return alloc_fun;
     }
 
+    // Returns the address of the integer that a STAT= variable designates.
+    // For an allocatable or pointer scalar the variable itself holds that
+    // address, so it is loaded once.
+    llvm::Value* get_stat_variable_address(ASR::expr_t* m_stat,
+            llvm::Type* stat_llvm_type) {
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(m_stat, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* stat_target = tmp;
+        if (ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(m_stat))) {
+            stat_target = llvm_utils->CreateLoad2(
+                stat_llvm_type->getPointerTo(), stat_target);
+        }
+        return stat_target;
+    }
+
     template <typename T>
     void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -3495,13 +3512,9 @@ public:
         llvm::Value* stat_target = nullptr;
         llvm::Type* stat_llvm_type = nullptr;
         if (m_stat) {
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
-            this->visit_expr_wrapper(m_stat, false);
-            ptr_loads = ptr_loads_copy;
-            stat_target = tmp;
             stat_llvm_type = llvm::Type::getIntNTy(context,
                 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
+            stat_target = get_stat_variable_address(m_stat, stat_llvm_type);
             builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 0), stat_target);
         }
         auto set_stat_not_allocated = [=]() {
