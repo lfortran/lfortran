@@ -60,6 +60,7 @@ namespace LCompilers::CommandLineInterface {
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
         bool arg_kernel_managed = false;
+        long long arg_kernel_parent = 0;
         std::string connect;
         std::string linker{""};
         std::string linker_path{""};

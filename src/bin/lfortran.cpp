@@ -2842,6 +2842,10 @@ int main_app(int argc, char *argv[]) {
 
     if (kernel) {
 #if defined(HAVE_LFORTRAN_XEUS) || defined(HAVE_LFORTRAN_LLVM)
+        if (opts.arg_kernel_parent > 0) {
+            LCompilers::LFortran::jupyter::stop_with_parent(opts.arg_kernel_parent,
+                opts.arg_kernel_f);
+        }
         return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
             opts.arg_kernel_managed);
 #else

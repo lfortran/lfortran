@@ -1501,7 +1501,12 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
 
     std::vector<std::string> args{executable};
     args.insert(args.end(), arguments.begin(), arguments.end());
-    args.insert(args.end(), {"kernel", "-f", connection_file});
+#ifdef _WIN32
+    const std::string parent = std::to_string(GetCurrentProcessId());
+#else
+    const std::string parent = std::to_string(getpid());
+#endif
+    args.insert(args.end(), {"kernel", "-f", connection_file, "--parent", parent});
 #ifdef _WIN32
     HANDLE child = spawn(args);
     if (!child) {
@@ -1571,6 +1576,33 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
+}
+
+void stop_with_parent(long long parent, const std::string &connection_file)
+{
+#ifdef _WIN32
+    // The parent waits for this kernel to answer, so its ID is not yet
+    // another process's. Null if the parent has already exited.
+    HANDLE handle = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(parent));
+#endif
+    std::thread([=]() {
+#ifdef _WIN32
+        if (handle) {
+            WaitForSingleObject(handle, INFINITE);
+            CloseHandle(handle);
+        }
+#else
+        // As ipykernel does: once the parent has exited, this process has
+        // another parent.
+        while (getppid() == static_cast<pid_t>(parent)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+#endif
+        std::remove(connection_file.c_str());
+        // The built-in kernel stops as it does on SIGTERM, also during a
+        // cell. The Xeus kernel does not handle SIGTERM and terminates.
+        std::raise(SIGTERM);
+    }).detach();
 }
 
 // The built-in kernel
@@ -2037,6 +2069,8 @@ std::unique_ptr<Client> Client::start(const std::string &,
 {
     throw std::runtime_error("Jupyter clients are not supported in this build");
 }
+
+void stop_with_parent(long long, const std::string &) {}
 
 } // namespace LCompilers::LFortran::jupyter
 

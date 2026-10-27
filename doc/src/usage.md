@@ -173,8 +173,9 @@ the kernel's exit status, as it did when it ran its cells itself.
 The prompt that starts a kernel ends that kernel when the prompt exits, and
 removes the connection file. Exiting ends the kernel while another client is
 still connected, and during a cell that does not return. Ctrl-C ends the
-prompt and the kernel. A prompt killed without a chance to clean up, such as
-with `kill -9`, leaves the kernel running. A prompt that only joins, with
+prompt and the kernel. The kernel also stops, removing the connection file,
+when that prompt cannot end it, such as when its terminal closes or it is
+killed with `kill -9`. A prompt that only joins, with
 `lfortran --connect FILE`, leaves the kernel running; that session lasts
 until the kernel itself stops. The way to stop a cell that does not return
 is to end the prompt that started the kernel. Jupyter's Interrupt has no

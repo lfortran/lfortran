@@ -1,9 +1,9 @@
 """A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
 that misbehave: large output, connections that stall, a client that leaves
-during a READ, a prompt that ends the kernel it started, a prompt killed
-during a cell that does not return, cells queued behind a failing one, cells
-that stop the kernel, and `lfortran -v`. Each case runs against whichever
-kernel is built."""
+during a READ, a prompt that ends the kernel it started, a prompt killed or
+hung up on, also during a cell that does not return, cells queued behind a
+failing one, cells that stop the kernel, and `lfortran -v`. Each case runs
+against whichever kernel is built."""
 
 import argparse
 import contextlib
@@ -311,8 +311,8 @@ def late_stdin(exe, cwd):
 def prompt_departure(exe, cwd):
     """The prompt that started the kernel ends it on the way out, including
     while another client is connected, and removes the connection file.
-    A prompt killed with no chance to clean up leaves the kernel running.
-    A prompt that only joined leaves the kernel alone."""
+    The kernel also stops with a prompt that is killed or hung up on, which
+    cannot end it. A prompt that only joined leaves the kernel alone."""
     process, connection = started_prompt(exe, cwd)
     client = None
     kernel_pids = []
@@ -346,40 +346,35 @@ def prompt_departure(exe, cwd):
         for pid in kernel_pids:
             kill_pid(pid)
 
+    # A prompt that cannot end the kernel itself, as when it is killed or its
+    # terminal closes: the kernel stops with it and removes the connection
+    # file, also while another client is connected.
+    endings = [("killed", lambda process: process.kill())]
     if os.name == "posix":
-        # SIGKILL does not run the prompt's cleanup. The kernel keeps running.
+        endings.append(("hung up", lambda process: process.send_signal(signal.SIGHUP)))
+    for how, end in endings:
         process, connection = started_prompt(exe, cwd)
         client = None
-        kernel_pid = None
+        kernel_pids = children_of(process.pid)
         try:
-            children = [(pid, command) for pid, command in children_of(process.pid)
-                if "kernel" in command.split()]
-            check(children, "the prompt started no kernel")
-            kernel_pid = children[0][0]
             heartbeat = json.loads(connection.read_text())["hb_port"]
             client = connect(connection)
             check(run(client, "integer :: kept = 3")[0]["status"] == "ok",
                 "declaration failed")
-            process.kill()
-            process.wait()
-            check(connection.exists(), "killing the prompt removed the connection file")
-            check(value(client, "kept + 1") == "4", "killing the prompt stopped the kernel")
-            client.shutdown()
-            check(stopped_listening(heartbeat, timeout=20), "the kernel still listens")
-            # The pid may already have been reused, so do not signal it.
-            kernel_pid = None
+            end(process)
+            process.wait(timeout=20)
+            check(wait_removed(connection), "the kernel of a prompt %s left the connection file"
+                % how)
+            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+            kernel_pids = []
         finally:
             if client:
                 client.stop_channels()
             if process.poll() is None:
                 process.kill()
                 process.wait()
-            if kernel_pid:
-                kill_pid(kernel_pid)
-            # The kernel did not create this file, and it was not asked to
-            # remove it. Drop it so later cases do not see it.
-            if connection.exists():
-                connection.unlink()
+            for pid, _ in kernel_pids:
+                kill_pid(pid)
 
     with kernel(exe, cwd) as (_, join, ports):
         client = join()
@@ -391,38 +386,35 @@ def prompt_departure(exe, cwd):
 
 
 def prompt_killed_in_cell(exe, cwd):
-    """Ctrl-C in the prompt ends the kernel during a cell that does not
-    return, and removes the connection file."""
-    if os.name != "posix":
-        # TerminateProcess does not run the Ctrl-C handler, so killing the
-        # prompt that way leaves the kernel running. Ctrl-D is covered by
-        # prompt_departure.
-        return
-    process, connection = started_prompt(exe, cwd)
-    kernel_pids = []
-    try:
-        heartbeat = json.loads(connection.read_text())["hb_port"]
-        children = [(pid, command) for pid, command in children_of(process.pid)
-            if "kernel" in command.split()]
-        kernel_pids = [pid for pid, _ in children]
-        process.stdin.write(b"do while (.true.); end do\r")
-        process.stdin.flush()
-        time.sleep(2)
-        check(process.poll() is None and connection.exists(), "the cell ended")
-        process.send_signal(signal.SIGINT)
-        process.wait(timeout=20)
-        check(process.returncode == 130, "Ctrl-C exited with %s" % process.returncode)
-        check(wait_removed(connection), "the prompt left the connection file")
-        check(stopped_listening(heartbeat), "the kernel still listens")
-        kernel_pids = []
-    finally:
-        if process.poll() is None:
-            kernel_pids.extend(pid for pid, command in children_of(process.pid)
-                if "kernel" in command.split())
-            process.kill()
-            process.wait()
-        for pid in kernel_pids:
-            kill_pid(pid)
+    """The kernel ends during a cell that does not return, and the connection
+    file is removed, when the prompt that started it gets Ctrl-C or is
+    killed."""
+    endings = [("killed", lambda process: process.kill(), None)]
+    if os.name == "posix":
+        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT), 130))
+    for how, end, status in endings:
+        process, connection = started_prompt(exe, cwd)
+        kernel_pids = children_of(process.pid)
+        try:
+            heartbeat = json.loads(connection.read_text())["hb_port"]
+            process.stdin.write(b"do while (.true.); end do\r")
+            process.stdin.flush()
+            time.sleep(2)
+            check(process.poll() is None and connection.exists(), "the cell ended")
+            end(process)
+            process.wait(timeout=20)
+            if status is not None:
+                check(process.returncode == status, "%s exited with %s"
+                    % (how, process.returncode))
+            check(wait_removed(connection), "a prompt %s left the connection file" % how)
+            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+            kernel_pids = []
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            for pid, _ in kernel_pids:
+                kill_pid(pid)
 
 
 def stop_ends_session(exe, cwd):

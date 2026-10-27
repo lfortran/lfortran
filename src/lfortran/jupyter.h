@@ -18,7 +18,8 @@ namespace LCompilers::LFortran {
 // kernel listens on free ports and writes it. A `managed` kernel
 // (`lfortran kernel --managed`) is always the built-in one: it stops when its
 // last client disconnects and removes the file. The prompt does not use that
-// flag. It ends the kernel it started.
+// flag. It ends the kernel it started, which also stops with the prompt
+// (stop_with_parent).
 int run_kernel(const std::string &connection_filename, CompilerOptions &options,
     bool managed);
 
@@ -67,6 +68,13 @@ public:
     // normally or was not started by this client.
     int kernel_status(int timeout);
 };
+
+// Stops this process, a kernel, once the process `parent` has exited, and
+// removes `connection_file`, which `parent` wrote (`lfortran kernel
+// --parent`). The prompt starts its kernel so, which then stops with the
+// prompt however the prompt ends: also if it is killed or its terminal
+// closes, when it cannot end the kernel itself.
+void stop_with_parent(long long parent, const std::string &connection_file);
 
 #ifndef __EMSCRIPTEN__
 
