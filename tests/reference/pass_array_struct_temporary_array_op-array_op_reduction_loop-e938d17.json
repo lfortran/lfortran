@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary_array_op-array_op_reduction_loop-e938d17",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_op_reduction_loop.f90",
+    "infile_hash": "bdd58b0e46779d0c2503d2978bef779d35ebcc1ffb257e264ce36506",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary_array_op-array_op_reduction_loop-e938d17.stdout",
+    "stdout_hash": "a4aaff5e96e27bdef0ba36ec41c553601c4f207fec8042022c7c5551",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

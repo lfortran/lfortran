@@ -1,0 +1,1296 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array_op_reduction_loop:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            __libasr_created__intrinsic_array_function_Any:
+                                (Variable
+                                    2
+                                    __libasr_created__intrinsic_array_function_Any
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created__intrinsic_array_function_Sum:
+                                (Variable
+                                    2
+                                    __libasr_created__intrinsic_array_function_Sum
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_binop_left_:
+                                (Variable
+                                    2
+                                    __libasr_created_real_binop_left_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_binop_right_:
+                                (Variable
+                                    2
+                                    __libasr_created_real_binop_right_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_binop_right_1:
+                                (Variable
+                                    2
+                                    __libasr_created_real_binop_right_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_compare_left_:
+                                (Variable
+                                    2
+                                    __libasr_created_real_compare_left_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_compare_left_1:
+                                (Variable
+                                    2
+                                    __libasr_created_real_compare_left_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_created_real_compare_right_:
+                                (Variable
+                                    2
+                                    __libasr_created_real_compare_right_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_:
+                                (Variable
+                                    2
+                                    __libasr_index_0_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_1:
+                                (Variable
+                                    2
+                                    __libasr_index_0_1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_2:
+                                (Variable
+                                    2
+                                    __libasr_index_0_2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_3:
+                                (Variable
+                                    2
+                                    __libasr_index_0_3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_4:
+                                (Variable
+                                    2
+                                    __libasr_index_0_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_5:
+                                (Variable
+                                    2
+                                    __libasr_index_0_5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_reduction_acc:
+                                (Variable
+                                    2
+                                    __libasr_reduction_acc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_reduction_acc1:
+                                (Variable
+                                    2
+                                    __libasr_reduction_acc1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_reduction_acc2:
+                                (Variable
+                                    2
+                                    __libasr_reduction_acc2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s:
+                                (Variable
+                                    2
+                                    s
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    array_op_reduction_loop
+                    (FunctionType
+                        [(Array
+                            (Real 4)
+                            [(()
+                            ())]
+                            DescriptorArray
+                            Global
+                        )
+                        (Array
+                            (Real 4)
+                            [(()
+                            ())]
+                            DescriptorArray
+                            Global
+                        )
+                        (Integer 4)
+                        (Integer 4)
+                        (Real 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 2 a)
+                    (Var 2 b)
+                    (Var 2 i)
+                    (Var 2 j)
+                    (Var 2 s)
+                    (Var 2 n)]
+                    [(Associate
+                        (Var 2 __libasr_created_real_binop_left_)
+                        (ArraySection
+                            (Var 2 a)
+                            [((Var 2 i)
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4) Decimal))]
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Associate
+                        (Var 2 __libasr_created_real_binop_right_)
+                        (ArraySection
+                            (Var 2 b)
+                            [((Var 2 i)
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4) Decimal))]
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Assignment
+                        (Var 2 __libasr_reduction_acc)
+                        (RealConstant
+                            0.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DebugCheckArrayBounds
+                        (Var 2 __libasr_created_real_binop_left_)
+                        [(Var 2 __libasr_created_real_binop_left_)
+                        (Var 2 __libasr_created_real_binop_right_)]
+                        [(1
+                        2
+                        1
+                        (ArraySize
+                            (Var 2 __libasr_created_real_binop_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 __libasr_created_real_binop_right_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        (0
+                        1
+                        1
+                        (ArraySize
+                            (Var 2 __libasr_created_real_binop_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 __libasr_created_real_binop_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __libasr_index_0_1)
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_binop_right_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __libasr_index_0_)
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_binop_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_binop_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        ())
+                        [(Assignment
+                            (Var 2 __libasr_reduction_acc)
+                            (RealBinOp
+                                (Var 2 __libasr_reduction_acc)
+                                Add
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 __libasr_created_real_binop_left_)
+                                        [(()
+                                        (Var 2 __libasr_index_0_)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 __libasr_created_real_binop_right_)
+                                        [(()
+                                        (Var 2 __libasr_index_0_1)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_1)
+                            (IntegerBinOp
+                                (Var 2 __libasr_index_0_1)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 __libasr_created__intrinsic_array_function_Sum)
+                        (Var 2 __libasr_reduction_acc)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 s)
+                        (RealBinOp
+                            (Var 2 __libasr_created__intrinsic_array_function_Sum)
+                            Add
+                            (Cast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 n)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Associate
+                        (Var 2 __libasr_created_real_compare_left_)
+                        (ArraySection
+                            (Var 2 a)
+                            [((Var 2 i)
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4) Decimal))]
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Associate
+                        (Var 2 __libasr_created_real_compare_right_)
+                        (ArraySection
+                            (Var 2 b)
+                            [((Var 2 i)
+                            (Var 2 j)
+                            (IntegerConstant 1 (Integer 4) Decimal))]
+                            (Array
+                                (Real 4)
+                                [(()
+                                ())]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Assignment
+                        (Var 2 __libasr_reduction_acc1)
+                        (LogicalConstant
+                            .false.
+                            (Logical 4)
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DebugCheckArrayBounds
+                        (Var 2 __libasr_created_real_compare_left_)
+                        [(Var 2 __libasr_created_real_compare_left_)
+                        (Var 2 __libasr_created_real_compare_right_)]
+                        [(1
+                        2
+                        1
+                        (ArraySize
+                            (Var 2 __libasr_created_real_compare_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 __libasr_created_real_compare_right_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        (0
+                        1
+                        1
+                        (ArraySize
+                            (Var 2 __libasr_created_real_compare_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (ArraySize
+                            (Var 2 __libasr_created_real_compare_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __libasr_index_0_3)
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_compare_right_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __libasr_index_0_2)
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_compare_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 __libasr_created_real_compare_left_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        ())
+                        [(Assignment
+                            (Var 2 __libasr_reduction_acc1)
+                            (LogicalBinOp
+                                (Var 2 __libasr_reduction_acc1)
+                                Or
+                                (RealCompare
+                                    (ArrayItem
+                                        (Var 2 __libasr_created_real_compare_left_)
+                                        [(()
+                                        (Var 2 __libasr_index_0_2)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Gt
+                                    (ArrayItem
+                                        (Var 2 __libasr_created_real_compare_right_)
+                                        [(()
+                                        (Var 2 __libasr_index_0_3)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_3)
+                            (IntegerBinOp
+                                (Var 2 __libasr_index_0_3)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 __libasr_created__intrinsic_array_function_Any)
+                        (Var 2 __libasr_reduction_acc1)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (Var 2 __libasr_created__intrinsic_array_function_Any)
+                        [(Associate
+                            (Var 2 __libasr_created_real_compare_left_1)
+                            (ArraySection
+                                (Var 2 a)
+                                [((Var 2 i)
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )
+                            NoPointerBounds
+                        )
+                        (Associate
+                            (Var 2 __libasr_created_real_binop_right_1)
+                            (ArraySection
+                                (Var 2 b)
+                                [((Var 2 i)
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4) Decimal))]
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )
+                            NoPointerBounds
+                        )
+                        (Assignment
+                            (Var 2 __libasr_reduction_acc2)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (DebugCheckArrayBounds
+                            (Var 2 __libasr_created_real_compare_left_1)
+                            [(Var 2 __libasr_created_real_compare_left_1)
+                            (Var 2 __libasr_created_real_binop_right_1)]
+                            [(1
+                            2
+                            1
+                            (ArraySize
+                                (Var 2 __libasr_created_real_compare_left_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            (ArraySize
+                                (Var 2 __libasr_created_real_binop_right_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            ))
+                            (0
+                            1
+                            1
+                            (ArraySize
+                                (Var 2 __libasr_created_real_compare_left_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            (ArraySize
+                                (Var 2 __libasr_created_real_compare_left_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            ))]
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_5)
+                            (ArrayBound
+                                (Var 2 __libasr_created_real_binop_right_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (DoLoop
+                            ()
+                            ((Var 2 __libasr_index_0_4)
+                            (ArrayBound
+                                (Var 2 __libasr_created_real_compare_left_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 __libasr_created_real_compare_left_1)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )
+                            ())
+                            [(If
+                                ()
+                                (RealCompare
+                                    (ArrayItem
+                                        (Var 2 __libasr_created_real_compare_left_1)
+                                        [(()
+                                        (Var 2 __libasr_index_0_4)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Gt
+                                    (RealBinOp
+                                        (Cast
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        Mul
+                                        (ArrayItem
+                                            (Var 2 __libasr_created_real_binop_right_1)
+                                            [(()
+                                            (Var 2 __libasr_index_0_5)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(Assignment
+                                    (Var 2 __libasr_reduction_acc2)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_reduction_acc2)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_0_5)
+                                (IntegerBinOp
+                                    (Var 2 __libasr_index_0_5)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 2 n)
+                            (Var 2 __libasr_reduction_acc2)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                )
+        })
+    []
+    ()
+)

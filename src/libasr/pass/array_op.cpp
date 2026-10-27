@@ -763,6 +763,30 @@ static bool have_same_compile_time_shape(ASR::expr_t* target,
     return true;
 }
 
+// Replaces each occurrence of the expression `placeholder` with a copy of
+// `value`.
+class ReplacePlaceholder: public ASR::BaseExprReplacer<ReplacePlaceholder> {
+
+    private:
+
+    Allocator& al;
+    ASR::expr_t* placeholder;
+    ASR::expr_t* value;
+
+    public:
+
+    ReplacePlaceholder(Allocator& al_, ASR::expr_t* placeholder_, ASR::expr_t* value_):
+        al(al_), placeholder(placeholder_), value(value_) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        if (&x->base == placeholder) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            *current_expr = duplicator.duplicate_expr(value);
+        }
+    }
+
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -2737,7 +2761,116 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
 
+    // `target = sum(e)`, where `e` is an elementwise operation (see
+    // ElementwiseReduction), is lowered into one loop nest over the elements
+    // of `e`:
+    //     acc = 0
+    //     do ...
+    //         acc = acc + e(i1, ..., in)
+    //     end do
+    //     target = acc
+    // A mask guards the update. The accumulator is a variable of its own,
+    // since `e` may reference the target.
+    void lower_reduction_to_loop(const ASR::Assignment_t& x) {
+        const Location& loc = x.base.base.loc;
+        ASR::IntrinsicArrayFunction_t* reduction =
+            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x.m_value);
+        ASR::expr_t *array = nullptr, *mask = nullptr;
+        ASRUtils::ElementwiseReduction::get_operands(reduction, array, mask);
+
+        std::string acc_name = current_scope->get_unique_name("__libasr_reduction_acc");
+        ASR::symbol_t* acc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, acc_name), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, reduction->m_type), nullptr,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+        current_scope->add_symbol(acc_name, acc_sym);
+        ASR::expr_t* acc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym));
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            acc, ASRUtils::ElementwiseReduction::get_initial_value(al, loc, reduction, array),
+            nullptr, false, false)));
+
+        // The operation may use the element more than once (e.g. MaxVal), so
+        // it is built on a placeholder that each use then replaces with a
+        // copy of the operand.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* placeholder = array ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
+        ASR::expr_t* update = ASRUtils::ElementwiseReduction::accumulate(al, loc,
+            reduction, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)), placeholder);
+        if (array) {
+            ReplacePlaceholder replace_placeholder(al, placeholder, array);
+            replace_placeholder.current_expr = &update;
+            replace_placeholder.replace_expr(update);
+        }
+        update = duplicator.duplicate_expr(update);
+        ASR::Assignment_t* update_stmt = ASR::down_cast2<ASR::Assignment_t>(
+            ASRUtils::make_Assignment_t_util(al, loc, acc, update, nullptr, false, false));
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        Vec<ASR::expr_t**> fix_type_args;
+        fix_type_args.reserve(al, 2);
+        ArrayVarAddressCollector update_collector(al, vars);
+        update_collector.current_expr = &update_stmt->m_value;
+        update_collector.call_replacer();
+        fix_type_args.push_back(al, &update_stmt->m_value);
+        ASR::If_t* mask_stmt = nullptr;
+        if (mask) {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, &update_stmt->base);
+            mask_stmt = ASR::down_cast2<ASR::If_t>(ASR::make_If_t(al, loc, nullptr,
+                duplicator.duplicate_expr(mask), body.p, body.size(), nullptr, 0));
+            ArrayVarAddressCollector mask_collector(al, vars);
+            mask_collector.current_expr = &mask_stmt->m_test;
+            mask_collector.call_replacer();
+            fix_type_args.push_back(al, &mask_stmt->m_test);
+        }
+        LCOMPILERS_ASSERT(vars.size() > 0);
+
+        // The operands are checked to conform, as when the operation is
+        // assigned to an array temporary
+        std::set<ASR::expr_t*> conforming_operands;
+        if (bounds_checking) {
+            Vec<ASR::expr_t*> components;
+            components.reserve(al, 2);
+            CollectComponentsFromElementalExpr collect_components(al, components);
+            collect_components.visit_expr(*update_stmt->m_value);
+            if (mask_stmt) {
+                collect_components.visit_expr(*mask_stmt->m_test);
+            }
+            if (components.size() > 1 && have_same_rank(components[0], components)) {
+                Vec<ASR::expr_t*> checked;
+                checked.reserve(al, components.size());
+                for (size_t i = 0; i < components.size(); i++) {
+                    checked.push_back(al, duplicator.duplicate_expr(components[i]));
+                    conforming_operands.insert(components[i]);
+                    conforming_operands.insert(
+                        ASRUtils::get_past_array_physical_cast(components[i]));
+                }
+                if (!have_same_compile_time_shape(components[0], components)) {
+                    pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al, loc,
+                        duplicator.duplicate_expr(components[0]), checked, false));
+                }
+            }
+        }
+
+        if (mask_stmt) {
+            generate_loop(*mask_stmt, vars, fix_type_args, loc, nullptr, &conforming_operands);
+        } else {
+            generate_loop(*update_stmt, vars, fix_type_args, loc, nullptr, &conforming_operands);
+        }
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            x.m_target, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)),
+            nullptr, x.m_realloc_lhs, false)));
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                ASRUtils::ElementwiseReduction::is_lowered_to_loop(x.m_value)) {
+            lower_reduction_to_loop(x);
+            return;
+        }
         // A non-elemental defined assignment is entirely carried out by the
         // overloaded subroutine call, which takes both sides as actual
         // arguments. There is no element-wise assignment to expand and no

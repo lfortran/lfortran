@@ -7721,6 +7721,289 @@ namespace Transpose {
 
 } // namespace Transpose
 
+/*
+A reduction with a scalar result over an elementwise array expression, such
+as `sum(a(i:j) * b(i:j))` or `count(x > 0.5)`, is lowered by array_op into
+one loop nest that accumulates the elements of the expression, so that the
+expression is never evaluated into an array temporary (array_struct_temporary
+does not create one for it). The loop has the initial value, operation and
+element order of the generated function of the reduction (see
+instantiate_ArrIntrinsic, AnyAll::instantiate_AnyAll and
+Count::instantiate_Count), so the result is the same.
+*/
+namespace ElementwiseReduction {
+
+    static inline bool has_elementwise_element_type(ASR::expr_t* x) {
+        ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(x));
+        return ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+            ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type);
+    }
+
+    // Whether the array `x` is a variable, or a section of one, that the
+    // loop indexes in place.
+    static inline bool is_designator(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(x))) {
+            return false;
+        }
+        switch (x->type) {
+            case ASR::exprType::Var: {
+                return true;
+            }
+            case ASR::exprType::ArraySection: {
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
+                return !ASRUtils::is_array_indexed_with_array_indices(section) &&
+                    (ASR::is_a<ASR::Var_t>(*section->m_v) ||
+                     (ASR::is_a<ASR::StructInstanceMember_t>(*section->m_v) &&
+                      !ASRUtils::is_array(ASRUtils::expr_type(
+                          ASR::down_cast<ASR::StructInstanceMember_t>(section->m_v)->m_v))));
+            }
+            case ASR::exprType::StructInstanceMember: {
+                return !ASRUtils::is_array(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v));
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    static inline bool is_elementwise_operation(ASR::expr_t* x);
+
+    // Whether `x` is a scalar, which is the same for every element, or an
+    // array that the loop reads element by element.
+    static inline bool is_elementwise_operand(ASR::expr_t* x) {
+        if (x == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(x))) {
+            return true;
+        }
+        return has_elementwise_element_type(x) &&
+            (is_designator(x) || is_elementwise_operation(x));
+    }
+
+    // Whether `x` is an array computed element by element from its operands
+    // by intrinsic operations and elemental intrinsic functions only. A
+    // reference to a function, which may have side effects or return an
+    // array, is not.
+    static inline bool is_elementwise_operation(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x)) ||
+                ASRUtils::is_simd_array(x) || !has_elementwise_element_type(x)) {
+            return false;
+        }
+        switch (x->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* op = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::RealBinOp: {
+                ASR::RealBinOp_t* op = ASR::down_cast<ASR::RealBinOp_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::ComplexBinOp: {
+                ASR::ComplexBinOp_t* op = ASR::down_cast<ASR::ComplexBinOp_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::LogicalBinOp: {
+                ASR::LogicalBinOp_t* op = ASR::down_cast<ASR::LogicalBinOp_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::IntegerCompare: {
+                ASR::IntegerCompare_t* op = ASR::down_cast<ASR::IntegerCompare_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::RealCompare: {
+                ASR::RealCompare_t* op = ASR::down_cast<ASR::RealCompare_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::ComplexCompare: {
+                ASR::ComplexCompare_t* op = ASR::down_cast<ASR::ComplexCompare_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::LogicalCompare: {
+                ASR::LogicalCompare_t* op = ASR::down_cast<ASR::LogicalCompare_t>(x);
+                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_elementwise_operand(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::RealUnaryMinus: {
+                return is_elementwise_operand(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::ComplexUnaryMinus: {
+                return is_elementwise_operand(ASR::down_cast<ASR::ComplexUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::LogicalNot: {
+                return is_elementwise_operand(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                return is_elementwise_operand(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::IntrinsicElementalFunction_t* f =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+                for (size_t i = 0; i < f->n_args; i++) {
+                    if (!is_elementwise_operand(f->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // The array and mask operands of the reduction `x`, if it is one with a
+    // scalar result that the loop can compute. For COUNT, the elements of
+    // its mask are counted and there is no array operand.
+    static inline bool get_operands(ASR::IntrinsicArrayFunction_t* x,
+            ASR::expr_t*& array, ASR::expr_t*& mask) {
+        array = nullptr;
+        mask = nullptr;
+        if (ASRUtils::is_array(x->m_type) ||
+                ASRUtils::is_value_constant(x->m_value)) {
+            return false;
+        }
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum:
+            case IntrinsicArrayFunctions::Product:
+            case IntrinsicArrayFunctions::MaxVal:
+            case IntrinsicArrayFunctions::MinVal: {
+                // Without `dim`, with an optional `mask`
+                if (x->m_overload_id == 0 && x->n_args >= 1) {
+                    array = x->m_args[0];
+                } else if (x->m_overload_id == 2 && x->n_args >= 2) {
+                    array = x->m_args[0];
+                    mask = x->m_args[1];
+                } else {
+                    return false;
+                }
+                break;
+            }
+            case IntrinsicArrayFunctions::Any:
+            case IntrinsicArrayFunctions::All: {
+                if (x->m_overload_id != 0 || x->n_args < 1) {
+                    return false;
+                }
+                array = x->m_args[0];
+                break;
+            }
+            case IntrinsicArrayFunctions::Count: {
+                if (x->m_overload_id != 0 || x->n_args < 1) {
+                    return false;
+                }
+                mask = x->m_args[0];
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+        // The loop reads the elements whatever the physical type of the array
+        if (array) {
+            array = ASRUtils::get_past_array_physical_cast(array);
+        }
+        if (mask) {
+            mask = ASRUtils::get_past_array_physical_cast(mask);
+        }
+        // A scalar mask is evaluated once, by the generated function
+        return (array == nullptr || ASRUtils::is_array(ASRUtils::expr_type(array))) &&
+            (mask == nullptr || (ASRUtils::is_array(ASRUtils::expr_type(mask)) &&
+                ASRUtils::is_logical(*ASRUtils::expr_type(mask))));
+    }
+
+    // Whether `x` is lowered into a loop that accumulates the elements of its
+    // operands: a reduction with a scalar result, an operand of which is an
+    // elementwise operation that would otherwise be evaluated into an array
+    // temporary.
+    static inline bool is_lowered_to_loop(ASR::IntrinsicArrayFunction_t* x) {
+        ASR::expr_t *array = nullptr, *mask = nullptr;
+        if (!get_operands(x, array, mask)) {
+            return false;
+        }
+        bool has_operation = (array && is_elementwise_operation(array)) ||
+            (mask && is_elementwise_operation(mask));
+        return has_operation && is_elementwise_operand(array) &&
+            is_elementwise_operand(mask);
+    }
+
+    static inline bool is_lowered_to_loop(ASR::expr_t* x) {
+        return ASR::is_a<ASR::IntrinsicArrayFunction_t>(*x) &&
+            is_lowered_to_loop(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x));
+    }
+
+    // The value of the accumulator before the first element.
+    static inline ASR::expr_t* get_initial_value(Allocator& al, const Location& loc,
+            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* array) {
+        ASR::ttype_t* element_type = array ? ASRUtils::duplicate_type_without_dims(
+            al, ASRUtils::expr_type(array), loc) : nullptr;
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum: {
+                return get_constant_zero_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::Product: {
+                return get_constant_one_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::MaxVal: {
+                return get_minimum_value_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::MinVal: {
+                return get_maximum_value_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::Any:
+            case IntrinsicArrayFunctions::All: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array));
+                return make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t,
+                    x->m_arr_intrinsic_id == static_cast<int64_t>(IntrinsicArrayFunctions::All),
+                    kind, loc);
+            }
+            case IntrinsicArrayFunctions::Count: {
+                ASRBuilder b(al, loc);
+                return b.i_t(0, x->m_type);
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    // The accumulator `acc` updated with the element `element`.
+    static inline ASR::expr_t* accumulate(Allocator& al, const Location& loc,
+            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* acc, ASR::expr_t* element) {
+        ASRBuilder b(al, loc);
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum: {
+                return b.Add(acc, element);
+            }
+            case IntrinsicArrayFunctions::Product: {
+                return b.Mul(acc, element);
+            }
+            case IntrinsicArrayFunctions::MaxVal: {
+                return b.Max(acc, element);
+            }
+            case IntrinsicArrayFunctions::MinVal: {
+                return b.Min(acc, element);
+            }
+            case IntrinsicArrayFunctions::Any: {
+                return b.Or(acc, element);
+            }
+            case IntrinsicArrayFunctions::All: {
+                return b.And(acc, element);
+            }
+            case IntrinsicArrayFunctions::Count: {
+                return b.Add(acc, b.i_t(1, x->m_type));
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+} // namespace ElementwiseReduction
+
 namespace IntrinsicArrayFunctionRegistry {
 
     inline const std::map<int64_t, std::tuple<impl_function,

@@ -1833,6 +1833,69 @@ bool is_temporary_needed(ASR::expr_t* value) {
         && !is_null_pointer;
 }
 
+// Whether the reduction `x` is the value of an assignment to a scalar that
+// array_op lowers into a loop accumulating the elements of its elementwise
+// operand (see ElementwiseReduction), so that the operand needs no array
+// temporary.
+bool is_reduction_lowered_to_loop(ASR::expr_t* x,
+        ExprsWithTargetType& exprs_with_target) {
+    if (!ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
+        return false;
+    }
+    auto target = exprs_with_target.find(x);
+    return target != exprs_with_target.end() &&
+        !ASRUtils::is_array(ASRUtils::expr_type(target->second.first));
+}
+
+// Replaces each reduction that array_op lowers into a loop, and that is an
+// operand of an expression evaluated once, using `hoist`. Only operands of
+// intrinsic operations and elemental intrinsic functions are replaced, which
+// are evaluated exactly once whenever the expression is.
+class ReductionOperandReplacer:
+    public ASR::BaseExprReplacer<ReductionOperandReplacer> {
+
+    public:
+
+    std::function<void(ASR::expr_t**)> hoist;
+
+    ReductionOperandReplacer(std::function<void(ASR::expr_t**)> hoist_):
+        hoist(hoist_) {}
+
+    void replace_expr(ASR::expr_t* x) {
+        if (x == nullptr) {
+            return;
+        }
+        switch (x->type) {
+            case ASR::exprType::IntrinsicArrayFunction: {
+                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
+                    hoist(current_expr);
+                }
+                return;
+            }
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::ComplexUnaryMinus:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::Cast:
+            case ASR::exprType::ArrayPhysicalCast:
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::BaseExprReplacer<ReductionOperandReplacer>::replace_expr(x);
+                return;
+            }
+            default: {
+                return;
+            }
+        }
+    }
+
+};
+
 class ContainsFunctionReference:
     public ASR::BaseWalkVisitor<ContainsFunctionReference> {
     public:
@@ -2386,8 +2449,50 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // metadata is instantiated and saved by prepare_function_actuals.
     }
 
+    // Evaluates each reduction of `*expr` that array_op lowers into a loop
+    // into a scalar variable before the statement, so that it is the value of
+    // an assignment to a scalar of its own, e.g. the assignment
+    // `z(i) = sum(k(i, :) * x) + b(i)` becomes `t = sum(k(i, :) * x)` and
+    // `z(i) = t + b(i)`. `*expr` is evaluated once, before the statement
+    // does anything else, as is such a reduction anyway (see
+    // ReplaceExprWithTemporary::replace_IntrinsicArrayFunction).
+    void hoist_reductions_lowered_to_loop(ASR::expr_t** expr) {
+        if (current_body == nullptr || inside_where) {
+            return;
+        }
+        ReductionOperandReplacer replacer([this](ASR::expr_t** reduction) {
+            ASR::expr_t* value = *reduction;
+            std::string name_hint = "_intrinsic_array_function_" +
+                ASRUtils::get_array_intrinsic_name(
+                    ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value)->m_arr_intrinsic_id);
+            ASR::expr_t* temporary = create_temporary_variable_for_scalar(
+                al, value, current_scope, name_hint, false);
+            exprs_with_target[value] = std::make_pair(temporary, targetType::GeneratedTarget);
+            ASR::expr_t* lhs_var_copy = lhs_var;
+            lhs_var = nullptr;
+            visit_expr(*value);
+            lhs_var = lhs_var_copy;
+            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, value->base.loc, temporary, value, nullptr, false, false)));
+            *reduction = temporary;
+        });
+        replacer.current_expr = expr;
+        replacer.replace_expr(*expr);
+    }
+
+    void visit_If(const ASR::If_t& x) {
+        hoist_reductions_lowered_to_loop(&const_cast<ASR::If_t&>(x).m_test);
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_If(x);
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        // A reduction assigned to a scalar is lowered in place
+        if (x.m_overloaded == nullptr &&
+                !(ASRUtils::ElementwiseReduction::is_lowered_to_loop(x.m_value) &&
+                  !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))) {
+            hoist_reductions_lowered_to_loop(&xx.m_value);
+        }
         // Assigning to `ps(1::2)%y` walks the stride of the section and the
         // stride of the component at once, which the element-wise lowering
         // cannot index. Binding the section to a pointer first leaves a
@@ -2931,11 +3036,33 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
+        if (is_reduction_lowered_to_loop(&xx.base, exprs_with_target)) {
+            // array_op accumulates the elements of an elementwise operand
+            // in a loop, so the operand is prepared in place, as the value
+            // of an array assignment is, not evaluated into a temporary.
+            std::string name_hint = "_intrinsic_array_function_" +
+                ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id);
+            Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i] != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i])) {
+                    // A nested reduction is a scalar operand, evaluated once
+                    hoist_reductions_lowered_to_loop(&xx.m_args[i]);
+                    visit_expr(*x.m_args[i]);
+                    x_m_args.push_back(al, x.m_args[i]);
+                } else {
+                    traverse_args(x_m_args, x.m_args + i, 1, name_hint);
+                }
+            }
+            xx.m_args = x_m_args.p;
+            xx.n_args = x_m_args.size();
+            return;
+        }
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
             visit_IntrinsicCall(x, "_intrinsic_array_function_" +
                 ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
         }
-        ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
         int dim_arg_idx = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
             static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id));
         if( dim_arg_idx >= 1 &&
@@ -5038,6 +5165,19 @@ class VerifySimplifierASROutput:
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        if (is_reduction_lowered_to_loop(const_cast<ASR::expr_t*>(&x.base),
+                exprs_with_target)) {
+            // An elementwise operand is read in place, element by element
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i] != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i])) {
+                    visit_expr(*x.m_args[i]);
+                } else {
+                    check_for_var_if_array(x.m_args[i]);
+                }
+            }
+            return;
+        }
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
             visit_IntrinsicCall(x);
         }
