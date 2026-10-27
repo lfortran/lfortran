@@ -2179,6 +2179,7 @@ RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --i
 # the passed object. Not gfortran: it treats the element of the named constant
 # as a scalar constant and rejects the call (rank mismatch).
 RUN(NAME parameter_29 LABELS llvm)
+RUN(NAME parameter_30 LABELS gfortran llvm c cpp)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
