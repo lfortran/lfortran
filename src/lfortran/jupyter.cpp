@@ -72,6 +72,9 @@
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 
 extern char **environ;
 #endif
@@ -1683,6 +1686,30 @@ HANDLE open_earlier_process(DWORD id)
     }
     return handle;
 }
+#else
+// Whether the process `id` has exited, also if its parent has not reaped it
+// yet: a zombie still takes signals.
+bool exited(pid_t id)
+{
+    if (kill(id, 0) != 0 && errno != EPERM) return true;
+#if defined(__APPLE__)
+    int name[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, id};
+    struct kinfo_proc info {};
+    size_t size = sizeof(info);
+    return sysctl(name, 4, &info, &size, nullptr, 0) == 0 && size == sizeof(info)
+        && info.kp_proc.p_stat == SZOMB;
+#elif defined(__linux__)
+    // The state follows the command, in parentheses that it may contain too
+    std::ifstream stat("/proc/" + std::to_string(id) + "/stat");
+    std::string line;
+    std::getline(stat, line);
+    const size_t command_end = line.rfind(')');
+    return command_end != std::string::npos && command_end + 2 < line.size()
+        && line[command_end + 2] == 'Z';
+#else
+    return false;
+#endif
+}
 #endif
 
 } // namespace
@@ -1697,16 +1724,20 @@ bool stop_with_parent(long long parent, const std::string &connection_file)
         CloseHandle(handle);
         return false;
     }
+    const bool gone = !handle;
 #else
     if (parent > std::numeric_limits<pid_t>::max()) return false;
-    // A process other than the parent that is still running. A parent that
-    // has exited already, before this kernel got here, is no longer the
-    // parent either.
-    if (getppid() != parent
-            && (kill(static_cast<pid_t>(parent), 0) == 0 || errno == EPERM)) {
-        return false;
-    }
+    // A parent that has exited already, before this kernel got here, is no
+    // longer the parent either. Another process that runs is an error.
+    const bool gone = getppid() != parent;
+    if (gone && !exited(static_cast<pid_t>(parent))) return false;
 #endif
+    if (gone) {
+        // Stop at once, as for a parent that exits later, before this
+        // kernel starts on the file
+        std::remove(connection_file.c_str());
+        terminate_kernel(SIGTERM);
+    }
     parent_connection_file = new std::string(connection_file);
 #ifndef _WIN32
     // Stop on SIGTERM also if the parent blocked it, which this process

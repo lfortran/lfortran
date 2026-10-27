@@ -448,7 +448,9 @@ def kernel_parent(exe, cwd):
     """`lfortran kernel --parent` takes only the process that started the
     kernel. Another running process, or what is not a process ID, is an
     error that leaves the connection file alone, as does a kernel that
-    cannot start on the file."""
+    cannot start on the file. A parent that has exited, also one not yet
+    reaped, as a prompt killed while it starts its kernel, stops the kernel
+    and removes the file."""
     connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
     write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
     content = connection.read_bytes()
@@ -477,6 +479,27 @@ def kernel_parent(exe, cwd):
     check(connection.exists() and connection.read_text() == text,
         "a kernel that did not start removed the file")
     connection.unlink()
+
+    write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
+    starter = subprocess.Popen([sys.executable, "-c",
+        "import os, subprocess, sys\n"
+        "kernel = subprocess.Popen([sys.argv[1], '--no-color', 'kernel', '-f', sys.argv[2],"
+        " '--parent', str(os.getpid())], stdin=subprocess.DEVNULL,"
+        " stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+        "print(kernel.pid, flush=True)\n"
+        "os._exit(0)\n", exe, str(connection)], stdout=subprocess.PIPE)
+    kernel_pid = int(starter.stdout.readline())
+    try:
+        # Not reaped meanwhile
+        check(wait_removed(connection, timeout=20),
+            "the kernel of a parent that has exited left the connection file")
+    finally:
+        starter.wait()
+        starter.stdout.close()
+        if os.name == "posix":
+            kill_pid(kernel_pid)
+        else:
+            subprocess.run(["taskkill", "/F", "/PID", str(kernel_pid)], capture_output=True)
 
 
 def stop_ends_session(exe, cwd):
