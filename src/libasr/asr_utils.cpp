@@ -36,11 +36,11 @@ public:
         ASR::symbol_t* sym = symbol_get_past_external(x.m_v);
         if (undefined != nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
         const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-        // COMMON storage is defined before the procedure is entered.
+        // COMMON storage and host-associated views are established on entry.
         if (v->m_parent_symtab == scope &&
                 v->m_intent == ASR::intentType::Local &&
                 v->m_storage != ASR::storage_typeType::Parameter &&
-                v->m_common_block == nullptr &&
+                has_own_storage(*v) &&
                 !is_entry_initialized_local(*v)) {
             undefined = v;
         }
@@ -59,7 +59,7 @@ public:
                 if (v->m_parent_symtab != scope ||
                         v->m_intent != ASR::intentType::Local ||
                         v->m_storage == ASR::storage_typeType::Parameter ||
-                        v->m_common_block != nullptr ||
+                        !has_own_storage(*v) ||
                         !metadata_seen.insert(v).second) return;
                 if (is_pointer(v->m_type) || is_allocatable(v->m_type)) {
                     if (is_pointer_association_initializer(v->m_symbolic_value)) {
@@ -7355,6 +7355,11 @@ std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " pointer";
         }
+        case ASR::ttypeType::Reference: {
+            return type_to_str_fortran_symbol(
+                ASR::down_cast<ASR::Reference_t>(t)->m_type, struct_sym,
+                show_kind) + " reference";
+        }
         case ASR::ttypeType::Allocatable: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
@@ -8552,6 +8557,15 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
             return "Allocatable[" + get_type_code(p->m_type, use_underscore_sep,
                                               encode_dimensions_, set_dimensional_hint) + "]";
         }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* p = ASR::down_cast<ASR::Reference_t>(t);
+            if( use_underscore_sep ) {
+                return "Reference_" + get_type_code(p->m_type, use_underscore_sep,
+                                                  encode_dimensions_, set_dimensional_hint) + "_";
+            }
+            return "Reference[" + get_type_code(p->m_type, use_underscore_sep,
+                                              encode_dimensions_, set_dimensional_hint) + "]";
+        }
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
@@ -8690,6 +8704,10 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* p = ASR::down_cast<ASR::Allocatable_t>(t);
             return "Allocatable[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* p = ASR::down_cast<ASR::Reference_t>(t);
+            return "Reference[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -9096,7 +9114,9 @@ size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Set:
         case ASR::ttypeType::CPtr:
         case ASR::ttypeType::TypeParameter:
-        case ASR::ttypeType::FunctionType: {
+        case ASR::ttypeType::FunctionType:
+        // A reference is an address, not the array it may refer to.
+        case ASR::ttypeType::Reference: {
             n_dims = 0;
             m_dims = nullptr;
             break;
@@ -9851,6 +9871,12 @@ ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
                 ASRUtils::type_get_past_allocatable(dup_type)));
         }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* ref = ASR::down_cast<ASR::Reference_t>(t);
+            return ASRUtils::TYPE(ASR::make_Reference_t(al, ref->base.base.loc,
+                duplicate_type(al, ref->m_type, dims, physical_type,
+                    override_physical_type)));
+        }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* alloc_ = ASR::down_cast<ASR::Allocatable_t>(t);
             ASR::ttype_t* dup_type = duplicate_type(al, alloc_->m_type, dims,
@@ -10080,6 +10106,11 @@ ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR::ttype_t* t, 
             ASR::ttype_t* dup_type = duplicate_type_without_dims(al, ptr->m_type, loc);
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
                 ASRUtils::type_get_past_allocatable(dup_type)));
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* ref = ASR::down_cast<ASR::Reference_t>(t);
+            return ASRUtils::TYPE(ASR::make_Reference_t(al, ref->base.base.loc,
+                duplicate_type_without_dims(al, ref->m_type, loc)));
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* alloc_ = ASR::down_cast<ASR::Allocatable_t>(t);
@@ -10380,6 +10411,11 @@ bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::exp
                 std::string right_param = right_tp->m_param;
                 return left_param == right_param;
             }
+            case (ASR::ttypeType::Reference) : {
+                return types_equal(ASR::down_cast<ASR::Reference_t>(a)->m_type,
+                    ASR::down_cast<ASR::Reference_t>(b)->m_type, a_expr, b_expr,
+                    check_for_dimensions);
+            }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
                 ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(b);
@@ -10583,6 +10619,12 @@ bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 std::string left_param = left_tp->m_param;
                 std::string right_param = right_tp->m_param;
                 return left_param == right_param;
+            }
+            case (ASR::ttypeType::Reference) : {
+                return types_equal_with_substitution(
+                    ASR::down_cast<ASR::Reference_t>(a)->m_type,
+                    ASR::down_cast<ASR::Reference_t>(b)->m_type, subs, a_expr,
+                    b_expr, check_for_dimensions);
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);

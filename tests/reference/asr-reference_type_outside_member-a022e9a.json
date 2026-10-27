@@ -1,0 +1,13 @@
+{
+    "basename": "asr-reference_type_outside_member-a022e9a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/reference_type_outside_member.asr",
+    "infile_hash": "833be1fe19300ae90d7d48462d3d62ace05db37ef008391e501b8a57",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-reference_type_outside_member-a022e9a.stderr",
+    "stderr_hash": "b13dc0c102e613a0a097e3cb76cd7a6d7dc8c0af86ded7ed3011a0dc",
+    "returncode": 2
+}
