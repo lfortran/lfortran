@@ -1218,7 +1218,14 @@ ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR::ttype_t* asr_
 
 ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::ttype_t* asr_type);
 
+// Only declares what the modules of `u` define, for a translation unit whose
+// object file does not define them. A submodule that `u` compiles from source
+// is the exception: its object file defines it, whatever else is in `u`.
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
+
+// Only declares what the submodules read back from `.smod` files define: the
+// object file of each submodule's own source defines it.
+void mark_loaded_submodules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
 
 // Returns a string as long as `string_type` with every character equal to
 // `fill`, or nullptr when that length is not known at compile time.
@@ -1288,6 +1295,32 @@ static inline bool global_function_present(const ASR::TranslationUnit_t &unit)
     }
 
     return contains_global_function;
+}
+
+// A submodule compiled from the source of this translation unit (not read
+// back from a `.smod` file) is compiled into an object file of its own.
+static inline bool local_submodule_present(const ASR::TranslationUnit_t &unit)
+{
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+            if (m->m_parent_module && !m->m_loaded_from_mod) return true;
+        }
+    }
+    return false;
+}
+
+// A submodule, or a module that has submodules, is present. The code of a
+// submodule and of its ancestors can then be in different object files.
+static inline bool submodule_or_ancestor_present(const ASR::TranslationUnit_t &unit)
+{
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+            if (m->m_parent_module || m->m_has_submodules) return true;
+        }
+    }
+    return false;
 }
 
 // A BLOCK DATA program unit is compiled into an object file of its own: it

@@ -4809,7 +4809,21 @@ void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            if (m->m_parent_module && !m->m_loaded_from_mod) continue;
             m->m_symtab->mark_all_variables_external(al);
+        }
+    }
+}
+
+void mark_loaded_submodules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
+{
+    Allocator al(4*1024);
+    for (auto &item : u.m_symtab->get_scope()) {
+        if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
+            LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
+            if (m->m_parent_module && m->m_loaded_from_mod) {
+                m->m_symtab->mark_all_variables_external(al);
+            }
         }
     }
 }
