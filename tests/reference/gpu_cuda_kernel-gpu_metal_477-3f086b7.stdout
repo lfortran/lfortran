@@ -8,7 +8,7 @@ __device__ inline void work_device_gt_gpu_28(float* a, int n, float& r, float* w
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
-    __do_loop_end = (1 + n - 1);
+    __do_loop_end = (1 + (((n > 0)) ? (n) : (0)) - 1);
     __libasr_index_0_ = (1 - 1);
     while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
@@ -16,7 +16,7 @@ __device__ inline void work_device_gt_gpu_28(float* a, int n, float& r, float* w
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = n;
+    __do_loop_end1 = (((n > 0)) ? (n) : (0));
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
         __gpu_sum_k = (__gpu_sum_k + 1);
@@ -62,7 +62,7 @@ __device__ inline void work_device_gt_gpu_29(float* a, int n, float& r, float* w
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
-    __do_loop_end = (1 + n - 1);
+    __do_loop_end = (1 + (((n > 0)) ? (n) : (0)) - 1);
     __libasr_index_0_ = (1 - 1);
     while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
@@ -70,7 +70,7 @@ __device__ inline void work_device_gt_gpu_29(float* a, int n, float& r, float* w
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = n;
+    __do_loop_end1 = (((n > 0)) ? (n) : (0));
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
         __gpu_sum_k = (__gpu_sum_k + 1);

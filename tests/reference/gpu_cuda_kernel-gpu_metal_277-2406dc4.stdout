@@ -203,7 +203,8 @@ __device__ inline void face_values_gpu_45(float* w, int __1w, float* c, int __1c
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int n;
+    int __libasr_extent_c_1;
+    int __libasr_extent_out_1;
     int __dim_c_0;
     int __dim_out_0;
     int __workspace_extent;

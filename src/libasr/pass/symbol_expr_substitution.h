@@ -46,6 +46,29 @@ public:
         }
     }
 
+    // A conditional whose test the substitution made a comparison of
+    // constants is the arm it selects, so that, for example, the extent
+    // `n > 0 ? n : 0` of an explicit-shape array is a constant again when
+    // a constant is substituted for `n`.
+    void replace_IfExp(ASR::IfExp_t *x) {
+        ASR::BaseExprReplacer<AssociateVarResolver>::replace_IfExp(x);
+        if (!ASR::is_a<ASR::IntegerCompare_t>(*x->m_test)) return;
+        ASR::IntegerCompare_t *test =
+            ASR::down_cast<ASR::IntegerCompare_t>(x->m_test);
+        ASR::expr_t *left = ASRUtils::expr_value(test->m_left);
+        ASR::expr_t *right = ASRUtils::expr_value(test->m_right);
+        if (left == nullptr || right == nullptr
+                || !ASR::is_a<ASR::IntegerConstant_t>(*left)
+                || !ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+            return;
+        }
+        ASR::expr_t *result = ASRUtils::fold_compare_constants(al, left,
+            right, test->m_op, test->base.base.loc, test->m_type);
+        if (result == nullptr) return;
+        *current_expr = ASR::down_cast<ASR::LogicalConstant_t>(result)->m_value
+            ? x->m_body : x->m_orelse;
+    }
+
     // A cast of a name converts from the representation the name has. The
     // expression substituted for it may have another one -- an inlined
     // explicit-shape dummy becomes a pointer to a descriptor -- so the cast

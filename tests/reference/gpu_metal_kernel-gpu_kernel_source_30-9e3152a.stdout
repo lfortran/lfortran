@@ -198,6 +198,8 @@ kernel void __lfortran_gpu_kernel_6(
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_7 {
+    int __libasr_extent_x_1;
+    int __libasr_extent_y_1;
     float alpha;
     int n;
     int __dim_x_0;

@@ -8149,8 +8149,41 @@ namespace Max {
     // it directly, also in the type of a procedure loaded from a module
     // file. It refers to `length` twice: a length that must be evaluated
     // once (e.g. a function reference) is passed in a variable holding it.
+    static inline bool is_zero(ASR::expr_t* e) {
+        int64_t value = -1;
+        return ASR::is_a<ASR::IntegerConstant_t>(*e)
+            && ASRUtils::extract_value(e, value) && value == 0;
+    }
+
+    // Whether `length` cannot be negative because of how it is built: the
+    // size of an array, or a maximum with zero, `x > 0 ? x : 0` (as made
+    // by create_extent) or `0 > x ? 0 : x` (as made by ASRBuilder::Max).
+    static inline bool is_extent(ASR::expr_t* length) {
+        while (ASR::is_a<ASR::Cast_t>(*length)) {
+            length = ASR::down_cast<ASR::Cast_t>(length)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArraySize_t>(*length)) {
+            return true;
+        }
+        if (!ASR::is_a<ASR::IfExp_t>(*length)) {
+            return false;
+        }
+        ASR::IfExp_t* x = ASR::down_cast<ASR::IfExp_t>(length);
+        if (!ASR::is_a<ASR::IntegerCompare_t>(*x->m_test)) {
+            return false;
+        }
+        ASR::IntegerCompare_t* test =
+            ASR::down_cast<ASR::IntegerCompare_t>(x->m_test);
+        return test->m_op == ASR::cmpopType::Gt
+            && ((is_zero(test->m_right) && is_zero(x->m_orelse))
+                || (is_zero(test->m_left) && is_zero(x->m_body)));
+    }
+
     static inline ASR::expr_t* create_extent(Allocator &al,
             ASR::expr_t* length) {
+        if (is_extent(length)) {
+            return length;
+        }
         const Location &loc = length->base.loc;
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
             ASRUtils::expr_type(length));

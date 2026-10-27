@@ -34,6 +34,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __gpu_private_shape;
+    int __libasr_extent_y_1;
     int n;
     int __dim_y_0;
     int __loop_end_0;
@@ -81,6 +82,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 
 struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __gpu_private_shape;
+    int __libasr_extent_y_1;
     int m;
     int n;
     int __dim_y_0;

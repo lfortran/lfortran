@@ -464,9 +464,11 @@ private:
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, l = 0, v = 0;
-        ASR::expr_t *length = arr->m_dims[d].m_length;
+        ASR::expr_t *length = ASRUtils::get_past_extent_clamp(
+            arr->m_dims[d].m_length);
         // A dummy that cannot change still has the value used on entry
-        // when the automatic array's shape was established.
+        // when the automatic array's shape was established. The extent is
+        // max(0, length), which a loop from 1 to `length` runs over.
         if (length && ASR::is_a<ASR::Var_t>(*length) &&
                 ASR::is_a<ASR::Variable_t>(
                     *ASR::down_cast<ASR::Var_t>(length)->m_v) &&
@@ -476,7 +478,7 @@ private:
                     ASR::down_cast<ASR::Var_t>(length)->m_v)->m_intent
                     == ASR::intentType::In &&
                 constant(arr->m_dims[d].m_start, s) && s == 1 &&
-                PassUtils::same_expression(arr->m_dims[d].m_length, e)) {
+                PassUtils::same_expression(length, e)) {
             return true;
         }
         return constant(arr->m_dims[d].m_start, s)

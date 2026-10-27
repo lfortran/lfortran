@@ -953,6 +953,41 @@ static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
         !is_value_constant(v.m_symbolic_value);
 }
 
+// The length `x` of an explicit-shape dimension whose extent `e` is
+// `x > 0 ? x : 0` (ASRUtils::Max::create_extent), either directly or as the
+// initializer of a local initialized on entry; otherwise `e`. An analysis
+// that compares an extent with the bounds of a loop over the dimension
+// compares this length, which runs the loop over the whole extent.
+static inline ASR::expr_t* get_past_extent_clamp(ASR::expr_t* e) {
+    if (e != nullptr && ASR::is_a<ASR::Var_t>(*e)) {
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*sym) && is_entry_initialized_local(
+                *ASR::down_cast<ASR::Variable_t>(sym))) {
+            ASR::expr_t* init = ASR::down_cast<ASR::Variable_t>(sym)
+                ->m_symbolic_value;
+            ASR::expr_t* length = get_past_extent_clamp(init);
+            return length == init ? e : length;
+        }
+    }
+    if (e == nullptr || !ASR::is_a<ASR::IfExp_t>(*e)) {
+        return e;
+    }
+    ASR::IfExp_t* x = ASR::down_cast<ASR::IfExp_t>(e);
+    if (!ASR::is_a<ASR::IntegerCompare_t>(*x->m_test)
+            || !ASR::is_a<ASR::IntegerConstant_t>(*x->m_orelse)
+            || ASR::down_cast<ASR::IntegerConstant_t>(x->m_orelse)->m_n != 0) {
+        return e;
+    }
+    ASR::IntegerCompare_t* test = ASR::down_cast<ASR::IntegerCompare_t>(
+        x->m_test);
+    if (test->m_op != ASR::cmpopType::Gt
+            || !ASR::is_a<ASR::IntegerConstant_t>(*test->m_right)
+            || ASR::down_cast<ASR::IntegerConstant_t>(test->m_right)->m_n != 0) {
+        return e;
+    }
+    return x->m_body;
+}
+
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {

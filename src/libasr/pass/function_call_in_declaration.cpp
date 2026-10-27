@@ -543,7 +543,7 @@ static bool is_invariant_variable(ASR::symbol_t* sym) {
     return v->m_intent == ASR::intentType::In && !ASRUtils::is_pointer(v->m_type);
 }
 
-bool bound_may_change(ASR::expr_t* e);
+static bool bound_may_change(ASR::expr_t* e);
 
 // Whether the shape and the length type parameters of the variable `sym`
 // stay the same: those of a nonallocatable, nonpointer variable, and those
@@ -589,7 +589,7 @@ static bool has_invariant_shape(ASR::expr_t* e) {
     Anything else (a variable of the procedure, of a host or of a module, a
     dummy argument that can be defined, a function reference) is captured.
 */
-bool bound_may_change(ASR::expr_t* e) {
+static bool bound_may_change(ASR::expr_t* e) {
     if (e == nullptr || ASRUtils::is_value_constant(e) ||
             ASRUtils::is_value_constant(ASRUtils::expr_value(e))) {
         return false;
@@ -1547,13 +1547,20 @@ public:
 
 };
 
+std::set<SymbolTable*> offloadable_scopes(ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    std::set<SymbolTable*> scopes;
+    if (gpu_device_capabilities(pass_options).device_selected()) {
+        OffloadableScopeCollector collector(scopes);
+        collector.collect(unit);
+    }
+    return scopes;
+}
+
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
     FunctionTypeVisitor v(al, unit);
-    if (gpu_device_capabilities(pass_options).device_selected()) {
-        OffloadableScopeCollector collector(v.uncaptured_scopes);
-        collector.collect(unit);
-    }
+    v.uncaptured_scopes = offloadable_scopes(unit, pass_options);
     PassUtils::make_new_tu_functions_private(unit, [&]() {
         v.visit_TranslationUnit(unit);
     });

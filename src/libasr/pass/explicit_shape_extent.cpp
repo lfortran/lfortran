@@ -36,8 +36,15 @@ expressions again, and redefining a variable of a bound in the body changes
 neither the bounds nor the extent. The code generators set these locals
 before they set up the dummies from their types. The only arrays that keep
 an expression, max(0, length), as their extent are the dummies and the result
-of an interface body, which has no body to evaluate it in, and temporaries
-that a pass created for a statement of the body (see visit_Variable).
+of an interface body, which has no body to evaluate it in, and the objects of
+a scope that the GPU offload passes may turn into device code, which size
+them from their declared bounds (see offloadable_scopes).
+
+The pass runs right after function_call_in_declaration, which captures each
+bound of an automatic object that the body can change in such a local (this
+pass clamps it there), and before any other pass copies the type of an array
+into a temporary, a new procedure or a loop. They all see the bounds fixed on
+entry and an extent that is never negative.
 
 An ArrayPhysicalCast of such an array (for example, to pass it to an
 assumed-shape dummy) was given a copy of the declared length by semantics. Its
@@ -60,6 +67,7 @@ class ExplicitShapeExtentVisitor:
 private:
     Allocator& al;
     std::set<const ASR::Variable_t*>& clamped;
+    const std::set<SymbolTable*>& offloadable;
 
     enum class Owner { None, Interface, Body };
 
@@ -209,8 +217,9 @@ private:
 
 public:
     ExplicitShapeExtentVisitor(Allocator& al_,
-        std::set<const ASR::Variable_t*>& clamped_): al(al_),
-        clamped(clamped_) {}
+        std::set<const ASR::Variable_t*>& clamped_,
+        const std::set<SymbolTable*>& offloadable_): al(al_),
+        clamped(clamped_), offloadable(offloadable_) {}
 
     void visit_Variable(const ASR::Variable_t& x) {
         if (!ASR::is_a<ASR::Array_t>(*x.m_type)) {
@@ -227,29 +236,22 @@ public:
         // An interface body has no body to evaluate the bounds on entry in,
         // so it keeps them with the extent max(0, length), the value that
         // the procedure computes on entry. Callers, which size the result
-        // and check the arguments with this type, then agree with it.
-        // function_call_in_declaration captured each bound of an automatic
-        // object that the body can change (outside the scopes it leaves
-        // alone), so a local with a bound that can still change is a
-        // temporary that a later pass created for a statement of the body.
-        // It is treated in the same way.
-        bool temporary = owner == Owner::Interface;
-        for (size_t i = 0; i < array->n_dims; i++) {
-            temporary = temporary || (x.m_intent == ASR::intentType::Local
-                && (bound_may_change(array->m_dims[i].m_start)
-                    || bound_may_change(array->m_dims[i].m_length)));
-        }
+        // and check the arguments with this type, then agree with it. The
+        // objects of a scope that may become device code are treated in the
+        // same way.
+        bool inline_extent = owner == Owner::Interface
+            || offloadable.find(x.m_parent_symtab) != offloadable.end();
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, array->n_dims);
         for (size_t i = 0; i < array->n_dims; i++) {
             ASR::dimension_t dim = array->m_dims[i];
-            if (is_runtime(dim.m_start) && !temporary) {
+            if (is_runtime(dim.m_start) && !inline_extent) {
                 dim.m_start = lbound_local(x.m_parent_symtab, x, i,
                     dim.m_start);
             }
             if (dim.m_length != nullptr
                     && ASRUtils::expr_value(dim.m_length) == nullptr) {
-                dim.m_length = temporary
+                dim.m_length = inline_extent
                     ? ASRUtils::Max::create_extent(al, dim.m_length)
                     : extent_local(x.m_parent_symtab, x, i, dim.m_length);
             }
@@ -318,9 +320,11 @@ public:
 };
 
 void pass_explicit_shape_extent(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &/*pass_options*/) {
+        const PassOptions &pass_options) {
     std::set<const ASR::Variable_t*> clamped;
-    ExplicitShapeExtentVisitor v(al, clamped);
+    std::set<SymbolTable*> offloadable = offloadable_scopes(unit,
+        pass_options);
+    ExplicitShapeExtentVisitor v(al, clamped, offloadable);
     v.visit_TranslationUnit(unit);
     PhysicalCastExtentVisitor c(al, clamped);
     c.visit_TranslationUnit(unit);

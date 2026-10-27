@@ -3310,6 +3310,7 @@ RUN(NAME automatic_array_05 LABELS gfortran llvm)
 RUN(NAME automatic_array_06 LABELS gfortran llvm)
 RUN(NAME automatic_array_07 LABELS gfortran llvm)
 RUN(NAME automatic_array_08 LABELS gfortran llvm)
+RUN(NAME automatic_array_09 LABELS gfortran llvm)
 
 RUN(NAME block_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME block_02 LABELS gfortran llvm fortran)

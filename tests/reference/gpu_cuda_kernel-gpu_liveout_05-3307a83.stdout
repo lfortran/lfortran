@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __libasr_extent_a_1;
     int n;
     int __dim_a_0;
     int __loop_end_0;
