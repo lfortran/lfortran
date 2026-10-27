@@ -2253,8 +2253,27 @@ namespace Shape {
             return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, m_shapes.p, 0,
                 type, ASR::arraystorageType::ColMajor));
         } else {
+            // The extent of a variable is fixed when the variable is
+            // declared, so a length that is not constant is not evaluated
+            // again here, where a variable of its bound may have been
+            // redefined: `shape(a)` is [size(a, 1), ..., size(a, n)]. The
+            // shape of any other expression is taken from its value when
+            // the program runs.
+            ASR::expr_t* var = arg_value ? nullptr
+                : ASRUtils::get_past_array_physical_cast(args[0]);
             for (size_t i = 0; i < n_dims; i++) {
-                if (m_dims[i].m_length) {
+                if (m_dims[i].m_length != nullptr
+                        && !ASRUtils::is_value_constant(
+                            ASRUtils::expr_value(m_dims[i].m_length))) {
+                    if (var == nullptr || !ASR::is_a<ASR::Var_t>(*var)) {
+                        return nullptr;
+                    }
+                    ASRUtils::ASRBuilder b(al, loc);
+                    m_shapes.push_back(al, ASRUtils::EXPR(
+                        ASRUtils::make_ArraySize_t_util(al, loc, var,
+                            b.i32(i + 1), extract_type(type), nullptr,
+                            false)));
+                } else if (m_dims[i].m_length) {
                     ASR::expr_t *e = Max::create_extent(al, m_dims[i].m_length);
                     if (extract_kind_from_ttype_t(type) != 4) {
                         ASRUtils::ASRBuilder b(al, loc);
