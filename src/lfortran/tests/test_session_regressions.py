@@ -1,9 +1,10 @@
 """A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
 that misbehave: large output, connections that stall, a client that leaves
 during a READ, a prompt that ends the kernel it started, a prompt killed or
-hung up on, also during a cell that does not return, cells queued behind a
-failing one, cells that stop the kernel, and `lfortran -v`. Each case runs
-against whichever kernel is built."""
+hung up on, also during a cell that does not return or a READ, cells queued
+behind a failing one, cells that stop the kernel, `lfortran -v`, and a kernel
+told that another process is its parent. Each case runs against whichever
+kernel is built."""
 
 import argparse
 import contextlib
@@ -16,6 +17,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import sys
 import time
 import uuid
 
@@ -148,9 +150,9 @@ def prompt(exe, cwd, arguments=(), stdin=b"", timeout=60, status=0):
     return result.stdout + result.stderr
 
 
-def started_prompt(exe, cwd):
+def started_prompt(exe, cwd, preexec_fn=None):
     """A prompt that starts its kernel, and the kernel's connection file"""
-    process = subprocess.Popen([exe, "--no-color"], cwd=cwd,
+    process = subprocess.Popen([exe, "--no-color"], cwd=cwd, preexec_fn=preexec_fn,
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out = b""
     while True:
@@ -348,12 +350,20 @@ def prompt_departure(exe, cwd):
 
     # A prompt that cannot end the kernel itself, as when it is killed or its
     # terminal closes: the kernel stops with it and removes the connection
-    # file, also while another client is connected.
-    endings = [("killed", lambda process: process.kill())]
+    # file, also while another client is connected. So does a kernel that
+    # ends by itself first, as the built-in one does in a READ whose prompt
+    # has gone.
+    kill = lambda process: process.kill()
+    endings = [("killed", None, None, kill),
+        ("killed during a READ", b"read *, kept\r", None, kill)]
     if os.name == "posix":
-        endings.append(("hung up", lambda process: process.send_signal(signal.SIGHUP)))
-    for how, end in endings:
-        process, connection = started_prompt(exe, cwd)
+        endings += [("hung up", None, None,
+                lambda process: process.send_signal(signal.SIGHUP)),
+            # The kernel inherits what the prompt ignores.
+            ("killed while ignoring SIGTERM", None,
+                lambda: signal.signal(signal.SIGTERM, signal.SIG_IGN), kill)]
+    for how, cell, preexec_fn, end in endings:
+        process, connection = started_prompt(exe, cwd, preexec_fn)
         client = None
         kernel_pids = children_of(process.pid)
         try:
@@ -361,6 +371,11 @@ def prompt_departure(exe, cwd):
             client = connect(connection)
             check(run(client, "integer :: kept = 3")[0]["status"] == "ok",
                 "declaration failed")
+            if cell:
+                process.stdin.write(cell)
+                process.stdin.flush()
+                time.sleep(2)
+                check(process.poll() is None and connection.exists(), "the cell ended")
             end(process)
             process.wait(timeout=20)
             check(wait_removed(connection), "the kernel of a prompt %s left the connection file"
@@ -415,6 +430,31 @@ def prompt_killed_in_cell(exe, cwd):
                 process.wait()
             for pid, _ in kernel_pids:
                 kill_pid(pid)
+
+
+def kernel_parent(exe, cwd):
+    """`lfortran kernel --parent` takes only the process that started the
+    kernel. Another running process, or what is not a process ID, is an
+    error that leaves the connection file alone."""
+    connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
+    write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
+    content = connection.read_bytes()
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        for parent in ["0", "-5", str(other.pid), str(2**32 + 1)]:
+            result = subprocess.run(
+                [exe, "--no-color", "kernel", "-f", str(connection), "--parent", parent],
+                capture_output=True, cwd=cwd, timeout=60)
+            check(result.returncode == 1
+                and b"is not the parent of this kernel" in result.stderr,
+                "--parent %s exited with %d:\n%s" % (parent, result.returncode,
+                    (result.stdout + result.stderr).decode(errors="replace")))
+            check(connection.read_bytes() == content,
+                "--parent %s changed the connection file" % parent)
+    finally:
+        other.kill()
+        other.wait()
+        connection.unlink()
 
 
 def stop_ends_session(exe, cwd):
@@ -504,8 +544,8 @@ def verbose(exe, cwd):
 
 
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
-    late_stdin, prompt_departure, prompt_killed_in_cell, stop_ends_session, stop_on_error,
-    implicit_typing, verbose, xeus_connection_files]}
+    late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
+    stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}
 

@@ -43,6 +43,7 @@
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <limits>
 #include <mutex>
 #include <random>
 #include <sstream>
@@ -58,6 +59,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <tlhelp32.h>
 #else
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -1581,13 +1583,92 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
     }
 }
 
-void stop_with_parent(long long parent, const std::string &connection_file)
+namespace {
+
+// The connection file that the kernel removes when it stops, also if a cell
+// ends the process (STOP, a fatal error). Never freed, as a thread may use it
+// while the process exits.
+const std::string *owned_connection_file = nullptr;
+
+void remove_owned_connection_file()
+{
+    if (owned_connection_file) std::remove(owned_connection_file->c_str());
+}
+
+void own_connection_file(const std::string &connection_file)
+{
+    if (owned_connection_file) return;
+    owned_connection_file = new std::string(connection_file);
+    std::atexit(remove_owned_connection_file);
+}
+
+#ifdef _WIN32
+// The ID of the process that created this one, which may have exited since.
+// 0 if it cannot be told.
+DWORD parent_id()
+{
+    DWORD parent = 0;
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return 0;
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(entry);
+    for (BOOL more = Process32First(snapshot, &entry); more;
+            more = Process32Next(snapshot, &entry)) {
+        if (entry.th32ProcessID == GetCurrentProcessId()) {
+            parent = entry.th32ParentProcessID;
+            break;
+        }
+    }
+    CloseHandle(snapshot);
+    return parent;
+}
+
+// The process `id` if it is running and was created before this one, which
+// its parent was; else null, also if a later process reused the ID of a
+// parent that has exited.
+HANDLE open_earlier_process(DWORD id)
+{
+    HANDLE handle = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, id);
+    if (!handle) return nullptr;
+    FILETIME created, self, unused1, unused2, unused3;
+    if (WaitForSingleObject(handle, 0) != WAIT_TIMEOUT
+            || (GetProcessTimes(handle, &created, &unused1, &unused2, &unused3)
+                && GetProcessTimes(GetCurrentProcess(), &self, &unused1, &unused2,
+                    &unused3)
+                && CompareFileTime(&created, &self) > 0)) {
+        CloseHandle(handle);
+        return nullptr;
+    }
+    return handle;
+}
+#endif
+
+} // namespace
+
+bool stop_with_parent(long long parent, const std::string &connection_file)
 {
 #ifdef _WIN32
-    // The parent waits for this kernel to answer, so its ID is not yet
-    // another process's. Null if the parent has already exited.
-    HANDLE handle = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(parent));
+    if (parent > MAXDWORD) return false;
+    HANDLE handle = open_earlier_process(static_cast<DWORD>(parent));
+    const DWORD actual = parent_id();
+    if (handle && actual != 0 && actual != parent) {
+        CloseHandle(handle);
+        return false;
+    }
+#else
+    if (parent > std::numeric_limits<pid_t>::max()) return false;
+    // A process other than the parent that is still running. A parent that
+    // has exited already, before this kernel got here, is no longer the
+    // parent either.
+    if (getppid() != parent
+            && (kill(static_cast<pid_t>(parent), 0) == 0 || errno == EPERM)) {
+        return false;
+    }
 #endif
+    own_connection_file(connection_file);
+    // Stop on SIGTERM, also if the parent ignored it, which this process
+    // inherited. The built-in kernel then handles it.
+    std::signal(SIGTERM, SIG_DFL);
     std::thread([=]() {
 #ifdef _WIN32
         if (handle) {
@@ -1606,6 +1687,7 @@ void stop_with_parent(long long parent, const std::string &connection_file)
         // cell. The Xeus kernel does not handle SIGTERM and terminates.
         std::raise(SIGTERM);
     }).detach();
+    return true;
 }
 
 // The built-in kernel
@@ -1623,16 +1705,6 @@ volatile std::sig_atomic_t stop_requested = 0;
 extern "C" void request_stop(int)
 {
     stop_requested = 1;
-}
-
-// The connection file that the kernel removes when it stops, also if a cell
-// ends the process (STOP, a fatal error). Never freed, as a thread may use it
-// while the process exits.
-const std::string *owned_connection_file = nullptr;
-
-void remove_owned_connection_file()
-{
-    if (owned_connection_file) std::remove(owned_connection_file->c_str());
 }
 
 // Whether one of `clients`, connections that the kernel does not read while
@@ -2001,10 +2073,7 @@ int run_builtin_kernel(const std::string &connection_filename, CompilerOptions &
         std::cerr << "error: " << error.what() << std::endl;
         return 1;
     }
-    if (!existing || managed) {
-        owned_connection_file = new std::string(connection_filename);
-        std::atexit(remove_owned_connection_file);
-    }
+    if (!existing || managed) own_connection_file(connection_filename);
     std::signal(SIGINT, request_stop);
     std::signal(SIGTERM, request_stop);
 
@@ -2073,7 +2142,10 @@ std::unique_ptr<Client> Client::start(const std::string &,
     throw std::runtime_error("Jupyter clients are not supported in this build");
 }
 
-void stop_with_parent(long long, const std::string &) {}
+bool stop_with_parent(long long, const std::string &)
+{
+    return true;
+}
 
 } // namespace LCompilers::LFortran::jupyter
 
