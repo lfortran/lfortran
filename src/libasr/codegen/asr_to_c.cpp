@@ -292,6 +292,37 @@ public:
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v.m_type, m_dims);
         ASR::ttype_t* v_m_type = v.m_type;
         v_m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(v_m_type));
+        if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
+            ASR::Function_t* iface = nullptr;
+            if (v.m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(v.m_type_declaration);
+                if (td && ASR::is_a<ASR::Function_t>(*td)) {
+                    iface = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+            if (!iface) {
+                diag.codegen_error_label("Procedure variable '"
+                    + std::string(v.m_name)
+                    + "' has no interface. Add explicit interface.",
+                    {v.base.base.loc}, "");
+                throw Abort();
+            }
+            std::string ret = "void ";
+            if (iface->m_return_var) {
+                ASR::Variable_t* rv = ASRUtils::EXPR2VAR(iface->m_return_var);
+                ret = get_return_var_type(rv);
+            }
+            std::string params;
+            for (size_t i=0; i<iface->n_args; i++) {
+                ASR::Variable_t* arg = ASRUtils::EXPR2VAR(iface->m_args[i]);
+                CDeclarationOptions inner_opts;
+                inner_opts.pre_initialise_derived_type = false;
+                params += convert_variable_decl(*arg, &inner_opts);
+                if (i < iface->n_args-1) params += ", ";
+            }
+            sub = ret + "(*" + std::string(v.m_name) + ")(" + params + ")";
+            return sub;
+        }
         if (ASRUtils::is_pointer(v_m_type)) {
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v_m_type)->m_type;
             t2 = ASRUtils::type_get_past_array(t2);

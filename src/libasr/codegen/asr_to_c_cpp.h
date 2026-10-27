@@ -131,6 +131,8 @@ public:
 
     std::string template_for_Kokkos;
     size_t template_number;
+    std::map<std::string, std::string> dummy_proc_template_map;
+    bool generating_dummy_proc = false;
     std::string from_std_vector_helper;
 
     std::unique_ptr<CCPPDSUtils> c_ds_api;
@@ -974,6 +976,7 @@ R"(#include <stdio.h>
     std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
         template_for_Kokkos.clear();
         template_number = 0;
+        dummy_proc_template_map.clear();
         std::string sub, inl, static_attr;
 
         // This helps to check if the function is generic.
@@ -1523,6 +1526,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
      }
 
+    static ASR::Function_t* get_dummy_procedure_interface(ASR::Variable_t* var) {
+        if (!var || !var->m_type_declaration) return nullptr;
+        ASR::symbol_t* td = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+        if (td && ASR::is_a<ASR::Function_t>(*td)) {
+            return ASR::down_cast<ASR::Function_t>(td);
+        }
+        return nullptr;
+    }
+
     std::string construct_call_args(ASR::Function_t* f, size_t n_args, ASR::call_arg_t* m_args) {
         bracket_open++;
         std::string args = "";
@@ -1574,8 +1586,29 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         CHECK_FAST_C_CPP(compiler_options, x)
-        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Variable_t>(*call_sym)) {
+            ASR::Variable_t* call_var = ASR::down_cast<ASR::Variable_t>(call_sym);
+            ASR::Function_t* iface = get_dummy_procedure_interface(call_var);
+            std::string fn_name = std::string(call_var->m_name);
+            std::string args;
+            if (iface) {
+                args = construct_call_args(iface, x.n_args, x.m_args);
+            } else {
+                bracket_open++;
+                for (size_t i=0; i<x.n_args; i++) {
+                    self().visit_expr(*x.m_args[i].m_value);
+                    args += src;
+                    if (i < x.n_args-1) args += ", ";
+                }
+                bracket_open--;
+            }
+            src = fn_name + "(" + args + ")";
+            last_expr_precedence = 2;
+            src = check_tmp_buffer() + src;
+            return;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(call_sym);
         std::string fn_name = fn->m_name;
         ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(fn);
         if (fn_type->m_abi == ASR::abiType::BindC && fn_type->m_bindc_name) {
@@ -3571,8 +3604,28 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::symbol_t* call_sym = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Variable_t>(*call_sym)) {
+            ASR::Variable_t* call_var = ASR::down_cast<ASR::Variable_t>(call_sym);
+            ASR::Function_t* iface = get_dummy_procedure_interface(call_var);
+            std::string sym_name = std::string(call_var->m_name);
+            std::string args;
+            if (iface) {
+                args = construct_call_args(iface, x.n_args, x.m_args);
+            } else {
+                bracket_open++;
+                for (size_t i=0; i<x.n_args; i++) {
+                    if (!x.m_args[i].m_value) continue;
+                    self().visit_expr(*x.m_args[i].m_value);
+                    args += src;
+                    if (i < x.n_args-1) args += ", ";
+                }
+                bracket_open--;
+            }
+            src = indent + sym_name + "(" + args + ");\n";
+            return;
+        }
+        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(call_sym);
         // TODO: use a mapping with a hash(s) instead:
         std::string sym_name = s->m_name;
         ASR::FunctionType_t *s_type = ASRUtils::get_FunctionType(s);
