@@ -213,6 +213,37 @@ object file of a module read from its module file, or by an earlier
 interactive cell, after which the block cannot grow or be given initial
 values. See [CommonBlock](asr/asr_nodes/symbol_nodes/CommonBlock.md).
 
+## Host Association
+
+An internal procedure reaches the variables of its host by host association:
+it uses the same storage as the instance of the host that invoked it, not a
+copy (F2018 19.5.1.4). A recursive host has one instance per active call, so
+that storage cannot be a global variable. The ASR that the frontend produces
+keeps the internal procedure nested in its host, and its `Var`s refer directly
+to the variables of the host.
+
+The `nested_vars` pass lowers this into ASR that every backend can emit
+without knowing about nesting. Every instance of a host gets a *frame*: a
+local variable of a derived type declared in the host, with one member per
+host variable that its internal procedures use. A member of
+[Reference](asr/asr_nodes/type_nodes/Reference.md) type holds the address of
+the host variable, which the host stores with
+[BindReference](asr/asr_nodes/statement_nodes/BindReference.md) at the start
+of its body. Nothing is copied, so allocation status, bounds, dynamic type,
+`target` identity and storage association are those of the host variable. An
+internal procedure gets the frame as its last dummy argument, and in it every
+host variable is replaced by a variable of `HostAssociated`
+[storage](asr/asr_nodes/enum_nodes/storage_type.md): an alias with the type of
+the host variable, bound on entry to the variable that its `symbolic_value`
+designates through the frame. Such a variable has no storage of its own
+(`ASRUtils::has_own_storage`), so it is never allocated, initialized,
+finalized or deallocated by the internal procedure.
+
+The ASR after this pass is not valid Fortran: a member of Reference type and
+a HostAssociated variable have no Fortran syntax, and
+`--show-fortran` prints them as `reference`, `host_associated` and
+`bind_reference(...)`.
+
 ## Notes:
 
 Information that is lost when parsing source to AST:

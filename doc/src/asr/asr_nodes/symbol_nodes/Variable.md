@@ -27,7 +27,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
 | `symbolic_value` | the initializer as written, before folding. |
 | `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
-| `storage` | a [storage_type](../enum_nodes/storage_type.md): `Default`, `Save`, `Parameter`, `Threadprivate`, or `ResultArgument` for caller-provided storage of a lowered function result. |
+| `storage` | a [storage_type](../enum_nodes/storage_type.md): `Default`, `Save`, `Parameter`, `Threadprivate`, `ResultArgument` for caller-provided storage of a lowered function result, or `HostAssociated` for a variable that stands for a variable of the host of its internal procedure. |
 | `type` | the type of the variable. |
 | `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
 | `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. A variable with a `common_block` has the `Source` ABI but no allocation of its own: its storage is that of the block, and the [CommonBlock](CommonBlock.md) view gives the ABI and the role of the block's definition. |

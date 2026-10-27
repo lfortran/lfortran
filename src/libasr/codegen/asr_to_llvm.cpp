@@ -6005,6 +6005,10 @@ public:
         }
     }
 
+    void visit_BindReference(const ASR::BindReference_t& x) {
+        throw CodeGenError("host frames are not supported yet", x.base.base.loc);
+    }
+
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);

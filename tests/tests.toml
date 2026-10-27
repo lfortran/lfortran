@@ -28,6 +28,18 @@ filename = "asr/compile/common_block_views.asr"
 asr_clojure = true
 
 [[test]]
+filename = "asr/verify/reference_type_outside_member.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/bind_reference_not_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/host_associated_not_own_frame.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
