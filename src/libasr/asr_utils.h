@@ -4256,9 +4256,10 @@ inline bool is_side_effect_free_function(ASR::Function_t &fn) {
 bool struct_needs_member_init(ASR::Struct_t* s,
         std::set<ASR::Struct_t*>& visited);
 
-// `struct_needs_member_init` for the element type of the array `type`, which
-// `expr` denotes. False for anything that is not an array of a derived type.
-bool needs_struct_array_member_init(ASR::expr_t* expr,
+// `struct_needs_member_init` for the element type of the array `type`, a
+// derived type that `type_declaration` declares. False for anything that is
+// not an array of a derived type.
+bool needs_struct_array_member_init(ASR::symbol_t* type_declaration,
         ASR::ttype_t* type);
 
 // The zero based offset, in elements, of the array element `x` names in the

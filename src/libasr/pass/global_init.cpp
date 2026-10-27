@@ -280,10 +280,8 @@ class GlobalInitVisitor {
             // statement of the body runs. Only an element that needs
             // executable code of its own — a string, array or class member —
             // becomes a statement here.
-            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(
-                al, v.base.base.loc,
-                const_cast<ASR::symbol_t*>(&v.base)));
-            return ASRUtils::needs_struct_array_member_init(var_expr, v.m_type);
+            return ASRUtils::needs_struct_array_member_init(
+                v.m_type_declaration, v.m_type);
         }
 
         // The variables of `scope` that need executable initialization, in
