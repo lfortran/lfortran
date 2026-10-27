@@ -741,6 +741,9 @@ public:
 
     std::map<uint64_t, llvm::Value*> llvm_symtab; // llvm_symtab_value
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
+    // The locals of the procedure being generated that setup_entry_values
+    // has already declared.
+    std::set<ASR::symbol_t*> locals_declared_on_entry;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     // Hashes of LLVM functions created for a bare ImplicitInterface
@@ -10215,7 +10218,8 @@ public:
             // A variable in a common block lives in the block's storage,
             // which declare_common_block_storage laid out.
             if (is_a<ASR::Variable_t>(*var_sym) &&
-                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_common_block == nullptr) {
+                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_common_block == nullptr &&
+                    locals_declared_on_entry.find(var_sym) == locals_declared_on_entry.end()) {
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
@@ -10383,14 +10387,16 @@ public:
             }
             asr_arg_idx++;
         }
+    }
 
-        // Second pass: handle array dummy arguments with VALUE attribute.
-        // We deferred this to after all arguments have been registered in
-        // llvm_symtab, so that variable-size dimension lengths (e.g. another
-        // dummy argument) can be evaluated. This emits a local buffer and
-        // memcpy of the caller's data so callee modifications do not affect
-        // the caller. Supports both fixed-size and runtime-size PointerArray
-        // (explicit-shape) arguments.
+    // Array dummy arguments with the VALUE attribute. This runs after all
+    // arguments have been registered in llvm_symtab and the locals
+    // initialized on entry have been set (setup_entry_values), so that
+    // variable-size dimension lengths can be evaluated. This emits a local
+    // buffer and memcpy of the caller's data so callee modifications do not
+    // affect the caller. Supports both fixed-size and runtime-size
+    // PointerArray (explicit-shape) arguments.
+    void copy_value_array_args(const ASR::Function_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
@@ -10749,14 +10755,20 @@ public:
     // local descriptor made of the two, so that the body uses it like any
     // other string. Its length is the declared one, which for an
     // assumed-length dummy is the hidden argument.
-    void setup_string_dummies_with_hidden_length(const ASR::Function_t& x) {
+    //
+    // The locals initialized on entry (ASRUtils::is_entry_initialized_local)
+    // are set here too, before the array dummies are set up from their
+    // types, which can refer to them (e.g. a lower bound or an extent). A
+    // local that such an initial value refers to (`work(2*size(tmp))`) is
+    // declared here before it, and declare_vars skips it.
+    void setup_entry_values(const ASR::Function_t& x) {
         struct Dummy {
             llvm::Value* desc;
             ASR::String_t* str;
-            // 0: length not set, 1: being set, 2: set.
-            int state;
         };
         std::map<ASR::symbol_t*, Dummy> dummies;
+        // 0: not set, 1: being set, 2: set.
+        std::map<ASR::symbol_t*, int> state;
         std::vector<ASR::symbol_t*> order;
         for (size_t i = 0; i < x.n_args; i++) {
             if (!ASRUtils::is_string_dummy_with_hidden_length(x, x.m_args[i])) {
@@ -10778,26 +10790,77 @@ public:
             builder->CreateStore(llvm_symtab[h],
                 llvm_utils->create_gep2(string_descriptor, desc, 0));
             llvm_symtab[h] = desc;
-            dummies[&arg->base] = {desc, str, 0};
+            dummies[&arg->base] = {desc, str};
+            state[&arg->base] = 0;
             order.push_back(&arg->base);
         }
-        // A declared length can depend on the length of another such dummy
-        // (`character(len=len(a)*2) :: b`), which can come later in the
-        // argument list, so the lengths it depends on are set first.
-        std::function<void(ASR::symbol_t*)> set_length = [&](ASR::symbol_t* s) {
-            Dummy &dummy = dummies.at(s);
-            if (dummy.state != 0) return;
-            dummy.state = 1;
-            ReferencedVariables referenced;
-            referenced.visit_expr(*dummy.str->m_len);
-            for (ASR::symbol_t* r: referenced.variables) {
-                if (dummies.find(r) != dummies.end()) set_length(r);
+        locals_declared_on_entry.clear();
+        for (auto &name: ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
+            ASR::symbol_t* s = x.m_symtab->get_symbol(name);
+            if (ASR::is_a<ASR::Variable_t>(*s) && ASRUtils::is_entry_initialized_local(
+                    *ASR::down_cast<ASR::Variable_t>(s))) {
+                state[s] = 0;
+                order.push_back(s);
             }
-            setup_string_length(dummy.desc, dummy.str, dummy.str->m_len);
-            dummy.state = 2;
+        }
+        // A declared length or an initial value can depend on the length of
+        // another such dummy (`character(len=len(a)*2) :: b`), on another
+        // such local, also through the type of a variable that it refers to
+        // (`character(len=size(a)) :: c`), or on another local
+        // (`work(2*size(tmp))`), which can come later, so those it depends on
+        // are set or declared first.
+        uint32_t debug_arg_count = 0;
+        std::set<ASR::symbol_t*> types_seen;
+        std::function<void(ASR::symbol_t*)> set;
+        std::function<void(const ReferencedVariables&)> set_referenced =
+                [&](const ReferencedVariables& referenced) {
+            for (ASR::symbol_t* r: referenced.variables) {
+                if (state.find(r) != state.end()) {
+                    set(r);
+                    continue;
+                }
+                if (!ASR::is_a<ASR::Variable_t>(*r)) continue;
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(r);
+                if (v->m_parent_symtab != x.m_symtab) continue;
+                if ((v->m_intent == ASR::intentType::Local
+                        || v->m_intent == ASR::intentType::ReturnVar)
+                        && v->m_common_block == nullptr
+                        && !is_argument(v, x.m_args, x.n_args)) {
+                    state[r] = 0;
+                    set(r);
+                } else if (types_seen.insert(r).second) {
+                    ReferencedVariables in_type;
+                    in_type.visit_ttype(*v->m_type);
+                    set_referenced(in_type);
+                }
+            }
+        };
+        set = [&](ASR::symbol_t* s) {
+            if (state.at(s) != 0) return;
+            state[s] = 1;
+            auto dummy = dummies.find(s);
+            ReferencedVariables referenced;
+            if (dummy != dummies.end()) {
+                referenced.visit_expr(*dummy->second.str->m_len);
+            } else {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+                referenced.visit_ttype(*v->m_type);
+                if (ASRUtils::is_entry_initialized_local(*v)) {
+                    referenced.visit_expr(*v->m_symbolic_value);
+                }
+            }
+            set_referenced(referenced);
+            if (dummy != dummies.end()) {
+                setup_string_length(dummy->second.desc, dummy->second.str,
+                    dummy->second.str->m_len);
+            } else {
+                process_Variable(s, x, debug_arg_count);
+                locals_declared_on_entry.insert(s);
+            }
+            state[s] = 2;
         };
         for (ASR::symbol_t* s: order) {
-            set_length(s);
+            set(s);
         }
     }
 
@@ -10924,7 +10987,8 @@ public:
             }
         }
 
-        setup_string_dummies_with_hidden_length(x);
+        setup_entry_values(x);
+        copy_value_array_args(x);
 
         for( auto& sym: x.m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ) {

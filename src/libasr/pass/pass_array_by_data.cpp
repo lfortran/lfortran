@@ -1013,8 +1013,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     return;
                 }
             }
+            ASRUtils::ExprStmtDuplicator length_duplicator(al_);
             for( int i = 0; i < n_dims; i++ ) {
                 ASR::expr_t* length = compile_time_dims[i].m_length;
+                if( length != nullptr ) {
+                    // The argument gets its own copy of the extent: later
+                    // passes rewrite it in place (inlining a call in it, for
+                    // example), and the extent must not change with it.
+                    length = length_duplicator.duplicate_expr(length);
+                }
                 if( length == nullptr ) {
                     if (ASRUtils::is_allocatable(array_type)) {
                         length = ASRUtils::get_size(array, i + 1, al_);
