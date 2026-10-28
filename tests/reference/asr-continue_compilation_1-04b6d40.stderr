@@ -1587,51 +1587,51 @@ semantic error: the asynchronous statement requires a list of entities
      |         ^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3808:15
+    --> tests/errors/continue_compilation_1.f90:3908:15
      |
-3808 |     character(len(half(text))) :: inquiry  ! {Error} character length must be a constant expression in this context
+3908 |     character(len(half(text))) :: inquiry  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3809:15
+    --> tests/errors/continue_compilation_1.f90:3909:15
      |
-3809 |     character(1 + len(half(text))) :: composite  ! {Error} character length must be a constant expression in this context
+3909 |     character(1 + len(half(text))) :: composite  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3810:23
+    --> tests/errors/continue_compilation_1.f90:3910:23
      |
-3810 |     character :: old*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+3910 |     character :: old*(len(half(text)))  ! {Error} character length must be a constant expression in this context
      |                       ^^^^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3811:33
+    --> tests/errors/continue_compilation_1.f90:3911:33
      |
-3811 |     character(1) :: overridden*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+3911 |     character(1) :: overridden*(len(half(text)))  ! {Error} character length must be a constant expression in this context
      |                                 ^^^^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3812:15
+    --> tests/errors/continue_compilation_1.f90:3912:15
      |
-3812 |     character(length_value()) :: direct  ! {Error} character length must be a constant expression in this context
+3912 |     character(length_value()) :: direct  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^ 
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3817:15
+    --> tests/errors/continue_compilation_1.f90:3917:15
      |
-3817 |     character(len(half('abcdeedcba'))) :: t  ! {Error} character length must be a constant expression in this context
+3917 |     character(len(half('abcdeedcba'))) :: t  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Variable 't' is not declared
-    --> tests/errors/continue_compilation_1.f90:3818:35
+    --> tests/errors/continue_compilation_1.f90:3918:35
      |
-3818 |     common /cc1_character_common/ t  ! {Error} Variable 't' is not declared
+3918 |     common /cc1_character_common/ t  ! {Error} Variable 't' is not declared
      |                                   ^ 't' is undeclared
 
 semantic error: character length must be a constant expression in this context
-    --> tests/errors/continue_compilation_1.f90:3826:15
+    --> tests/errors/continue_compilation_1.f90:3926:15
      |
-3826 |     character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
+3926 |     character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
