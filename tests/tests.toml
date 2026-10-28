@@ -6151,6 +6151,18 @@ filename = "errors/array_shape_06.f90"
 run = true
 
 [[test]]
+filename = "errors/array_shape_07.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_08.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_09.f90"
+run = true
+
+[[test]]
 filename = "function_call1.f90"
 asr = true
 lookup_name = true

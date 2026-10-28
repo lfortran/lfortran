@@ -2360,7 +2360,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // The MatMul operand of the value of the current assignment that is
     // computed into its target, the target, the operand that replaces the
     // MatMul, whether the target is reallocated, and the operands whose
-    // shape the target's is checked against first.
+    // shape the target's is checked against first (with that of the matmul
+    // result, see make_matmul_result_shape_check).
     ASR::expr_t* matmul_into_target;
     ASR::expr_t* matmul_target;
     ASR::expr_t* matmul_target_operand;
@@ -2832,8 +2833,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             matmul_target_realloc_lhs = xx.m_realloc_lhs;
             // Unless the target is reallocated to the shape of the matmul
             // result, its shape is checked against that of the other
-            // operands before the result is computed into it, as it would be
-            // checked against the shape of the value.
+            // operands and of the matmul result before the result is
+            // computed into it, as it would be checked against the shape of
+            // the value.
             if( !bounds_checking ||
                 (ASRUtils::is_allocatable(xx.m_target) &&
                  (realloc_lhs || xx.m_realloc_lhs)) ) {
@@ -3076,6 +3078,55 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_StringFormat(x);
     }
 
+    // Checks that the shape of `matmul_target` is that of the result of
+    // `matmul`, which is computed into it: the helper that computes it does
+    // not check that the target is not larger, and reports a smaller one as
+    // an index out of bounds of its internal result. The extents of the
+    // result are those of the operands; the target, relocated to `matmul`,
+    // stands for the result in the diagnostic.
+    ASR::stmt_t* make_matmul_result_shape_check(ASR::IntrinsicArrayFunction_t* matmul) {
+        const Location& loc = matmul->base.base.loc;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        auto extent = [&](ASR::expr_t* array, int64_t dim) {
+            return ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                duplicator.duplicate_expr(array),
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, dim, int32_type)),
+                int32_type, nullptr));
+        };
+        ASR::expr_t* matrix_a = matmul->m_args[0];
+        ASR::expr_t* matrix_b = matmul->m_args[1];
+        // The operand and its dimension that give each extent of the result
+        std::vector<std::pair<ASR::expr_t*, int64_t>> result_extents;
+        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(matrix_a)) == 2 ) {
+            result_extents.push_back({matrix_a, 1});
+        }
+        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(matrix_b)) == 2 ) {
+            result_extents.push_back({matrix_b, 2});
+        }
+        Vec<ASR::array_extent_check_t> checks;
+        checks.reserve(al, result_extents.size());
+        for( size_t i = 0; i < result_extents.size(); i++ ) {
+            ASR::array_extent_check_t check;
+            check.loc = loc;
+            check.m_left = 0;
+            check.m_right = 1;
+            check.m_dim = i + 1;
+            check.m_left_extent = extent(matmul_target, i + 1);
+            check.m_right_extent = extent(result_extents[i].first,
+                result_extents[i].second);
+            checks.push_back(al, check);
+        }
+        ASR::expr_t* result = duplicator.duplicate_expr(matmul_target);
+        result->base.loc = loc;
+        Vec<ASR::expr_t*> components;
+        components.reserve(al, 1);
+        components.push_back(al, result);
+        return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
+            duplicator.duplicate_expr(matmul_target), components.p,
+            components.size(), checks.p, checks.size(), false));
+    }
+
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (sections_read_in_place.count(expr) > 0) {
             return expr;
@@ -3097,6 +3148,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 current_body->push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
                     expr->base.loc, duplicator.duplicate_expr(matmul_target),
                     operands, false));
+                current_body->push_back(al, make_matmul_result_shape_check(
+                    ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr)));
             }
             ASR::expr_t* target = duplicator.duplicate_expr(matmul_target);
             exprs_with_target[expr] = std::make_pair(target, targetType::OriginalTarget);
