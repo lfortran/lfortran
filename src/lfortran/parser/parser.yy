@@ -665,12 +665,11 @@ script_unit
     | enum_decl
     | interactive_statement %dprec 7
     // expr sep outranks a statement, so a bare allocate(a) would be a call.
-    // These two are the statement, as they are inside a program. A call in
-    // an expression (y = allocate(n)) is still an expression.
-    | allocate_statement sep %dprec 9 {
-            $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
-    | deallocate_statement sep %dprec 9 {
-            $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
+    // These two are the statement. A call in an expression (y = allocate(n))
+    // is still an expression. Do not keep sep on the node: a blank line would
+    // become trivia, and the previous AST left that separator off.
+    | allocate_statement sep %dprec 9
+    | deallocate_statement sep %dprec 9
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     | TK_LABEL KW_END sep { $$ = LABELED_END($1, $2, @$); }
