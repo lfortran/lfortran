@@ -5,7 +5,8 @@ subroutine h(a, n)
     type(__lcompilers_frame_h) :: __lcompilers_frame
     real(4), dimension(:), pointer :: __lcompilers_view_a
     integer(4) :: n
-    real(4), dimension(n) :: a
+    integer(4) :: __libasr_extent_a_1 = Max(0, n)
+    real(4), dimension(__libasr_extent_a_1) :: a
     __lcompilers_view_a => a
     bind_reference(__lcompilers_frame%a, __lcompilers_view_a)
     call inner(__lcompilers_frame)

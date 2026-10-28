@@ -1217,7 +1217,8 @@ public:
     // A thunk of the internal procedure `p` of the host `host` (see above): a
     // procedure of the host with the interface of `p`, which calls `p`. Its
     // dummy arguments are copies of those of `p`, with the declarations they
-    // need: named constants, interfaces and use-associated entities.
+    // need: entry-evaluated bounds, named constants, interfaces and
+    // use-associated entities.
     ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p) {
         const Location &loc = p->base.base.loc;
         SymbolTable *scope = al.make_new<SymbolTable>(host);
@@ -1228,19 +1229,43 @@ public:
         if (p->m_return_var != nullptr) {
             dummies.insert(ASR::down_cast<ASR::Var_t>(p->m_return_var)->m_v);
         }
-        ASRUtils::SymbolDuplicator duplicator(al);
-        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
+        std::set<ASR::symbol_t*> declarations = dummies;
         for (auto &item: p->m_symtab->get_scope()) {
             ASR::symbol_t *sym = item.second;
-            bool needed = dummies.count(sym) ||
-                ASR::is_a<ASR::ExternalSymbol_t>(*sym) ||
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym) ||
                 (ASR::is_a<ASR::Variable_t>(*sym) &&
                     ASR::down_cast<ASR::Variable_t>(sym)->m_storage ==
                         ASR::storage_typeType::Parameter) ||
                 (ASR::is_a<ASR::Function_t>(*sym) && ASRUtils::get_FunctionType(
                     ASR::down_cast<ASR::Function_t>(sym))->m_deftype !=
-                        ASR::deftypeType::Implementation);
-            if (!needed) {
+                        ASR::deftypeType::Implementation)) {
+                declarations.insert(sym);
+            }
+        }
+        std::vector<ASR::symbol_t*> pending(declarations.begin(), declarations.end());
+        while (!pending.empty()) {
+            ASR::symbol_t *sym = pending.back();
+            pending.pop_back();
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            std::set<ASR::symbol_t*> deps;
+            collect(p->m_symtab, v->m_type, v->m_symbolic_value, deps);
+            for (ASR::symbol_t *dep: deps) {
+                if (ASR::is_a<ASR::Variable_t>(*dep) &&
+                        ASRUtils::is_entry_initialized_local(
+                            *ASR::down_cast<ASR::Variable_t>(dep)) &&
+                        declarations.insert(dep).second) {
+                    pending.push_back(dep);
+                }
+            }
+        }
+        ASRUtils::SymbolDuplicator duplicator(al);
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
+        for (auto &item: p->m_symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (!declarations.count(sym)) {
                 continue;
             }
             duplicator.duplicate_symbol(sym, scope);

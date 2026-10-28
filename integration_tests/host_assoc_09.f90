@@ -186,9 +186,10 @@ recursive subroutine imported_bound(depth, total)
     integer, intent(inout) :: total
     integer :: n
     abstract interface
-        subroutine sub(a)
+        subroutine sub(lb, a)
             import :: n
-            integer, intent(inout) :: a(n)
+            integer, intent(in) :: lb
+            integer, intent(inout) :: a(lb:lb + n - 1)
         end subroutine sub
     end interface
     procedure(sub), pointer :: ps
@@ -197,11 +198,13 @@ recursive subroutine imported_bound(depth, total)
     x = 1
     ps => twice
     if (depth > 1) call imported_bound(depth - 1, total)
-    call ps(x)
+    call ps(-depth, x)
     total = total + sum(x)
 contains
-    subroutine twice(a)
-        integer, intent(inout) :: a(n)
+    subroutine twice(lb, a)
+        integer, intent(in) :: lb
+        integer, intent(inout) :: a(lb:lb + n - 1)
+        if (lbound(a, 1) /= lb .or. size(a) /= n) error stop 23
         a = 2*a
     end subroutine twice
 end subroutine imported_bound
