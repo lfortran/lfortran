@@ -56,6 +56,13 @@ public:
 
     std::map<uint64_t, mlir::Value> mlir_symtab; // Used for variables
 
+    struct LoopBlocks {
+        std::string name;
+        mlir::Block *head;
+        mlir::Block *exit;
+    };
+    std::vector<LoopBlocks> loop_blocks;
+
 public:
     ASRToMLIRVisitor(Allocator &al)
         : al{al},
@@ -72,6 +79,24 @@ public:
         }
 
     /********************************** Utils *********************************/
+    bool block_terminated() {
+        mlir::Block *block = builder->getBlock();
+        return !block->empty()
+            && block->back().hasTrait<mlir::OpTrait::IsTerminator>();
+    }
+
+    void visit_body(ASR::stmt_t **body, size_t n_body) {
+        for (size_t i = 0; i < n_body && !block_terminated(); i++) {
+            this->visit_stmt(*body[i]);
+        }
+    }
+
+    void branch_to(mlir::Block *target) {
+        if (!block_terminated()) {
+            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, target);
+        }
+    }
+
     mlir::Type getType(ASR::ttype_t *asr_type) {
         int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
         switch (asr_type->type) {
@@ -475,6 +500,18 @@ public:
                 type, attr).getResult();
     }
 
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+            getType(x.m_type), builder->getBoolAttr(x.m_value));
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        this->visit_expr2(*x.m_arg);
+        mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(loc,
+            getType(x.m_type), builder->getBoolAttr(true));
+        tmp = builder->create<mlir::LLVM::XOrOp>(loc, tmp, one);
+    }
+
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
         mlir::Type type = getType(x.m_type);
         int unaryMinus = 0;
@@ -763,22 +800,12 @@ public:
         builder->setInsertionPointToEnd(thisBlock);
         builder->create<mlir::LLVM::CondBrOp>(loc, test, thenBlock, elseBlock);
         builder->setInsertionPointToStart(thenBlock);
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-        }
-        if (!(!thenBlock->empty() &&
-                mlir::isa<mlir::LLVM::UnreachableOp>(thenBlock->back()))) {
-            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
-        }
+        visit_body(x.m_body, x.n_body);
+        branch_to(contBlock);
 
         builder->setInsertionPointToStart(elseBlock);
-        for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
-        }
-        if (!(!elseBlock->empty() &&
-            mlir::isa<mlir::LLVM::UnreachableOp>(elseBlock->back()))) {
-            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
-        }
+        visit_body(x.m_orelse, x.n_orelse);
+        branch_to(contBlock);
 
         builder->setInsertionPointToStart(contBlock);
     }
@@ -797,12 +824,32 @@ public:
         builder->create<mlir::LLVM::CondBrOp>(loc, tmp, bodyBlock, contBlock);
 
         builder->setInsertionPointToStart(bodyBlock);
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-        }
-        builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, headBlock);
+        loop_blocks.push_back({x.m_name ? x.m_name : "", headBlock, contBlock});
+        visit_body(x.m_body, x.n_body);
+        loop_blocks.pop_back();
+        branch_to(headBlock);
 
         builder->setInsertionPointToStart(contBlock);
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) {
+        for (auto loop = loop_blocks.rbegin(); loop != loop_blocks.rend(); ++loop) {
+            if (!x.m_stmt_name || loop->name == x.m_stmt_name) {
+                branch_to(loop->exit);
+                return;
+            }
+        }
+        throw CodeGenError("exit target not found", x.base.base.loc);
+    }
+
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        for (auto loop = loop_blocks.rbegin(); loop != loop_blocks.rend(); ++loop) {
+            if (!x.m_stmt_name || loop->name == x.m_stmt_name) {
+                branch_to(loop->head);
+                return;
+            }
+        }
+        throw CodeGenError("cycle target not found", x.base.base.loc);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
