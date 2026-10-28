@@ -171,6 +171,15 @@ public:
             case ASR::exprType::GpuBlockSize:
                 ASR::BaseWalkVisitor<GpuHostEvaluableCheck>::visit_expr(e);
                 break;
+            // max(0, n), the extent of an explicit-shape array.
+            case ASR::exprType::IntrinsicElementalFunction:
+                if (ASRUtils::is_intrinsic_max(
+                        (const ASR::IntrinsicElementalFunction_t &)e)) {
+                    ASR::BaseWalkVisitor<GpuHostEvaluableCheck>::visit_expr(e);
+                    break;
+                }
+                evaluable = false;
+                break;
             default: evaluable = false;
         }
     }

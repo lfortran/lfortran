@@ -58,8 +58,6 @@ the result of a procedure from its type, also when the procedure was loaded
 from a module file (in another translation unit, the locals are never set).
 The GPU offload passes do the same in the copy of a procedure that they make
 for device code (inline_entry_initialized_locals).
-The maximum is a conditional expression (see Max::create_extent), which the
-code generators lower directly.
 */
 
 namespace LCompilers {
@@ -176,9 +174,11 @@ private:
     }
 
     // max(0, length) for the dimension `dim` of `array`, where `length` is
-    // evaluated on entry in a local of `scope`. The maximum refers to
-    // `length` twice, so a length that references a function (whose result
-    // may be finalized) is first evaluated once in a local of its own.
+    // evaluated on entry in a local of `scope`. A length that references a
+    // function is first evaluated in a local of its own, so that the
+    // maximum stays an intrinsic that the code generators lower (the
+    // intrinsic function pass makes a procedure of a MAX with a function
+    // reference as an argument).
     ASR::expr_t* clamped_length(SymbolTable* scope,
             const ASR::Variable_t& array, size_t dim, ASR::expr_t* length) {
         PassUtils::FunctionCallFinder finder;

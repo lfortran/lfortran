@@ -8141,47 +8141,55 @@ namespace Max {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-    // The extent of an explicit-shape dimension whose length `ub - lb + 1`
-    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2). It is a
-    // conditional expression rather than a reference to the MAX intrinsic,
-    // so that it can be created before the intrinsic function pass, which
-    // would turn MAX into a helper procedure, and the code generators lower
-    // it directly, also in the type of a procedure loaded from a module
-    // file. It refers to `length` twice: a length that must be evaluated
-    // once (e.g. a function reference) is passed in a variable holding it.
     static inline bool is_zero(ASR::expr_t* e) {
         int64_t value = -1;
         return ASR::is_a<ASR::IntegerConstant_t>(*e)
             && ASRUtils::extract_value(e, value) && value == 0;
     }
 
-    // Whether `length` cannot be negative because of how it is built: the
-    // size of an array, or a maximum with zero, `x > 0 ? x : 0` (as made
-    // by create_extent) or `0 > x ? 0 : x` (as made by ASRBuilder::Max).
-    static inline bool is_extent(ASR::expr_t* length) {
-        while (ASR::is_a<ASR::Cast_t>(*length)) {
-            length = ASR::down_cast<ASR::Cast_t>(length)->m_arg;
+    // The length `x` if `extent` is the extent max(0, x) that create_extent
+    // makes, possibly converted to another kind, or a local initialized on
+    // entry with it (see ASRUtils::is_entry_initialized_local); otherwise
+    // nullptr.
+    static inline ASR::expr_t* get_clamped_length(ASR::expr_t* extent) {
+        while (ASR::is_a<ASR::Cast_t>(*extent)) {
+            extent = ASR::down_cast<ASR::Cast_t>(extent)->m_arg;
         }
-        if (ASR::is_a<ASR::ArraySize_t>(*length)) {
-            return true;
+        if (ASR::is_a<ASR::Var_t>(*extent)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(extent)->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            return ASRUtils::is_entry_initialized_local(*v)
+                ? get_clamped_length(v->m_symbolic_value) : nullptr;
         }
-        if (!ASR::is_a<ASR::IfExp_t>(*length)) {
-            return false;
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*extent)) {
+            return nullptr;
         }
-        ASR::IfExp_t* x = ASR::down_cast<ASR::IfExp_t>(length);
-        if (!ASR::is_a<ASR::IntegerCompare_t>(*x->m_test)) {
-            return false;
+        ASR::IntrinsicElementalFunction_t* max =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(extent);
+        if (!ASRUtils::is_intrinsic_max(*max) || max->n_args != 2) {
+            return nullptr;
         }
-        ASR::IntegerCompare_t* test =
-            ASR::down_cast<ASR::IntegerCompare_t>(x->m_test);
-        return test->m_op == ASR::cmpopType::Gt
-            && ((is_zero(test->m_right) && is_zero(x->m_orelse))
-                || (is_zero(test->m_left) && is_zero(x->m_body)));
+        if (is_zero(max->m_args[0])) {
+            return max->m_args[1];
+        }
+        return is_zero(max->m_args[1]) ? max->m_args[0] : nullptr;
     }
 
+    // The extent of an explicit-shape dimension whose length `ub - lb + 1`
+    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2). A length that
+    // cannot be negative, the size of an array or such an extent, is the
+    // extent itself.
     static inline ASR::expr_t* create_extent(Allocator &al,
             ASR::expr_t* length) {
-        if (is_extent(length)) {
+        ASR::expr_t* past_cast = length;
+        while (ASR::is_a<ASR::Cast_t>(*past_cast)) {
+            past_cast = ASR::down_cast<ASR::Cast_t>(past_cast)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArraySize_t>(*past_cast)
+                || get_clamped_length(length) != nullptr) {
             return length;
         }
         const Location &loc = length->base.loc;
@@ -8196,15 +8204,13 @@ namespace Max {
             }
             return EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
         }
-        ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::expr_t* zero = EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
-        ASR::ttype_t* logical_type = TYPE(ASR::make_Logical_t(al, loc, 4));
-        return EXPR(ASR::make_IfExp_t(al, loc,
-            EXPR(ASR::make_IntegerCompare_t(al, loc, length,
-                ASR::cmpopType::Gt, zero, logical_type, nullptr)),
-            duplicator.duplicate_expr(length),
-            EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)),
-            type, nullptr));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)));
+        args.push_back(al, length);
+        return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+            args.p, args.size(), 0, type, nullptr));
     }
 
 }  // namespace Max

@@ -14,6 +14,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/symbol_expr_substitution.h>
 
 namespace LCompilers {
@@ -464,8 +465,9 @@ private:
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, l = 0, v = 0;
-        ASR::expr_t *length = ASRUtils::get_past_extent_clamp(
+        ASR::expr_t *length = ASRUtils::Max::get_clamped_length(
             arr->m_dims[d].m_length);
+        if (length == nullptr) length = arr->m_dims[d].m_length;
         // A dummy that cannot change still has the value used on entry
         // when the automatic array's shape was established. The extent is
         // max(0, length), which a loop from 1 to `length` runs over.

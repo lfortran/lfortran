@@ -382,6 +382,18 @@ public:
                 src << "))";
                 break;
             }
+            case GpuExtentKind::Max: {
+                src << "(((";
+                emit_derived_extent(e.children[0]);
+                src << ") > (";
+                emit_derived_extent(e.children[1]);
+                src << ")) ? (";
+                emit_derived_extent(e.children[0]);
+                src << ") : (";
+                emit_derived_extent(e.children[1]);
+                src << "))";
+                break;
+            }
             case GpuExtentKind::Product: {
                 src << "(";
                 for (size_t i = 0; i < e.children.size(); i++) {

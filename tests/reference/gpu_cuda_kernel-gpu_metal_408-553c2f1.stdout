@@ -20,7 +20,7 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
     __gpu_heap_a_base = -1;
     m = n;
     __gpu_heap_a_lb1 = 1;
-    __gpu_heap_a_n1 = (((m > 0)) ? (m) : (0));
+    __gpu_heap_a_n1 = max(0, m);
     __gpu_heap_a_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_a_n1);
     if ((__gpu_heap_a_base > (__gpu_heap_cap_r4 - __gpu_heap_a_n1))) {
         __gpu_stop_site = 1;
@@ -45,7 +45,7 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
         m = (m + 4);
     }
     __gpu_heap_a_lb1 = 1;
-    __gpu_heap_a_n1 = (((m > 0)) ? (m) : (0));
+    __gpu_heap_a_n1 = max(0, m);
     __gpu_heap_a_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_a_n1);
     if ((__gpu_heap_a_base > (__gpu_heap_cap_r4 - __gpu_heap_a_n1))) {
         __gpu_stop_site = 2;

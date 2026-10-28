@@ -7849,6 +7849,11 @@ bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
 }
 
+bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f) {
+    return f.m_intrinsic_id
+        == static_cast<int64_t>(IntrinsicElementalFunctions::Max);
+}
+
 bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;

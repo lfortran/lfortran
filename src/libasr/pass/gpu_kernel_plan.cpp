@@ -683,6 +683,13 @@ public:
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy,
                     els, ASRUtils::expr_type(bdy), nullptr));
             }
+            case GpuExtentKind::Max: {
+                ASR::expr_t *l = child(0), *r = child(1);
+                if (!l || !r) return nullptr;
+                return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.Gt(l, r), child(0), child(1), ASRUtils::expr_type(l),
+                    nullptr));
+            }
             case GpuExtentKind::Product: {
                 ASR::expr_t *out = nullptr;
                 for (size_t i = 0; i < e.children.size(); i++) {
