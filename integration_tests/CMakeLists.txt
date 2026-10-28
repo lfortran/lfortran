@@ -5750,6 +5750,7 @@ RUN(NAME openmp_107 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 # LOCAL locality spec (F2018).
 RUN(NAME openmp_108 LABELS llvm_omp)
 RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_110 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)

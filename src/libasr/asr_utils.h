@@ -3968,6 +3968,14 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt);
 
+// Matches the arguments of the call `x` with the dummy arguments of its
+// procedure again, without cast statements or implicit casting, after a pass
+// replaced some of them with expressions of another physical type.
+template <typename T>
+static inline void rematch_call_args(Allocator &al, T &x) {
+    Call_t_body(al, x.m_name, x.m_args, x.n_args, x.m_dt, nullptr, false);
+}
+
 // Insert self (a_dt) into args at the PASS position for method calls.
 // Callers must invoke this BEFORE make_*Call_t_util so that m_args
 // is in 1:1 correspondence with func_type->m_arg_types.

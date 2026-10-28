@@ -68,6 +68,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
     public:
         SymbolTable* current_scope;
         std::vector<std::string> array_variables;
+        bool replaced = false;
 
         ReplaceArrayVariable(Allocator& al_) :
             al(al_) {}
@@ -81,6 +82,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
                 ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(x->m_v)));
                 LCOMPILERS_ASSERT(sym != nullptr);
                 *current_expr = b.Var(sym);
+                replaced = true;
             }
         }
 
@@ -93,6 +95,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
                     ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(var->m_v)));
                     LCOMPILERS_ASSERT(sym != nullptr);
                     *current_expr = b.Var(sym);
+                    replaced = true;
                 }
             }
         }
@@ -100,13 +103,14 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
 
 class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
     private:
+        Allocator &al;
         SymbolTable* current_scope;
         ReplaceArrayVariable replacer;
         std::vector<std::string> array_variables;
 
     public:
         ArrayVisitor(Allocator &al_, SymbolTable* current_scope_, std::vector<std::string> array_variables_) :
-            current_scope(current_scope_), replacer(al_) , array_variables(array_variables_) {}
+            al(al_), current_scope(current_scope_), replacer(al_) , array_variables(array_variables_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -118,6 +122,32 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
         // A BLOCK's statements live in the Block symbol, not in the body.
         void visit_BlockCall(const ASR::BlockCall_t &x) {
             visit_symbol(*x.m_m);
+        }
+
+        // An array replaced by its pointer descriptor has another physical
+        // type than the actual it replaces, such as a fixed-size array passed
+        // to an explicit-shape dummy: the arguments are matched with the
+        // dummy arguments again.
+        template <typename T>
+        void rematch_call_args(const T &x, bool replaced_before) {
+            if (replacer.replaced) {
+                ASRUtils::rematch_call_args(al, const_cast<T&>(x));
+            }
+            replacer.replaced = replaced_before || replacer.replaced;
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            bool replaced_before = replacer.replaced;
+            replacer.replaced = false;
+            ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor>::visit_SubroutineCall(x);
+            rematch_call_args(x, replaced_before);
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            bool replaced_before = replacer.replaced;
+            replacer.replaced = false;
+            ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor>::visit_FunctionCall(x);
+            rematch_call_args(x, replaced_before);
         }
 };
 
