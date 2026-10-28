@@ -231,6 +231,7 @@ compilation options, output options, link options and so on.
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
 * `--target <value>`, Generate code for the given target
+* `-sSETTING[=VALUE]` or `-s SETTING[=VALUE]`, Forward a setting to the Emscripten driver when linking with an LLVM-based backend and `--target=wasm32-unknown-emscripten`. Repeat for multiple settings, for example `-sMODULARIZE -sEXPORT_ES6`. User settings follow the default stack and memory settings, so they can override them. Quote list or string values as single shell arguments, for example `"-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"`. These settings are not host linker flags; `-W` forwarding is unchanged.
 * `--march <value>`, Select the instruction-set architecture. Use `native` for the host ISA.
 * `--mcpu <value>`, Select both the CPU instruction set and scheduling model. Use `native` for the host CPU.
 * `--mtune <value>`, Select the CPU scheduling model without changing the instruction set. Use `native` for the host CPU.

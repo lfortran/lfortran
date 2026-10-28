@@ -12,6 +12,7 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 #include "cuda_link_helpers.h"
+#include "emscripten_link_options.h"
 
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
@@ -1966,6 +1967,7 @@ int link_executable(const std::vector<std::string> &infiles,
     bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
+    const std::vector<std::string> &emscripten_settings,
     CompilerOptions &compiler_options)
 {
     /*
@@ -2085,7 +2087,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 11;
                 }
                 CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
-                options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
+                options = lcli::emscripten_link_options(emscripten_settings);
                 if (!compiler_options.emcc_embed.empty()) {
                     options += " --embed-file " + compiler_options.emcc_embed;
                 }
@@ -3216,7 +3218,8 @@ int main_app(int argc, char *argv[]) {
         }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
-                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags,
+                opts.emscripten_settings, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
         
         for (const std::string &filename : temp_object_files) {

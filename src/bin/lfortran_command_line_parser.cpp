@@ -359,6 +359,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--print-c-include-dir", opts.print_c_include_dir, "Print the directory containing ISO_Fortran_binding.h")->group(group_backend_codegen_options);
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
+        app.add_option("-s", opts.emscripten_settings, "Emscripten setting (SETTING or SETTING=VALUE); repeatable, requires an Emscripten LLVM target")->allow_extra_args(false)->group(group_backend_codegen_options);
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--gpu-arch", compiler_options.gpu_arch, "GPU architecture to compile device code for with --gpu=cuda (e.g. sm_120); defaults to the GPUs of the compiling machine")->group(group_backend_codegen_options);
@@ -424,6 +425,14 @@ namespace LCompilers::CommandLineInterface {
             app.parse(argc, argv);
         } else {
             app.parse(args);
+        }
+
+        if (!opts.emscripten_settings.empty()
+                && ((opts.arg_backend != "llvm" && opts.arg_backend != "mlir")
+                    || !startswith(compiler_options.target, "wasm")
+                    || !endswith(compiler_options.target, "emscripten"))) {
+            throw lc::LCompilersException(
+                "error: -s settings require an LLVM-based backend and an emscripten target");
         }
 
         // With fallthrough, extra positionals after fmt or pywrap land in the
