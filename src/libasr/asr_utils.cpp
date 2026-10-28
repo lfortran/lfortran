@@ -9429,7 +9429,13 @@ ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
         }
     }
 
-    if( !override_physical_type ) {
+    if( !override_physical_type && type && ASRUtils::is_character(*type) &&
+            is_argument && abi == ASR::abiType::BindC &&
+            (is_dimension_star || ASRUtils::is_fixed_size_array(m_dims, n_dims)) ) {
+        // A bind(C) dummy array of strings of known or assumed size is one
+        // C character buffer.
+        physical_type = ASR::array_physical_typeType::StringArraySinglePointer;
+    } else if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) && !is_argument ) {
                 // bind(C) module/global fixed-size arrays use inline storage
