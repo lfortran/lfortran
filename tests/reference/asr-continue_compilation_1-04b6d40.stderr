@@ -4897,3 +4897,9 @@ semantic error: delim in inquire must be a scalar character(kind=1) variable
      |
 3946 |         inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
      |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3947:26
+     |
+3947 |         inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^ 

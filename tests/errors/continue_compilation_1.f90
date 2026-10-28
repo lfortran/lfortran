@@ -3944,5 +3944,6 @@ contains
         inquire(6, delim=number)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
         inquire(6, delim=delim_array)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
         inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
     end subroutine
 end module cc1_inquire_delim

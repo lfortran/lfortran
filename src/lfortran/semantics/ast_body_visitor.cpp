@@ -3795,6 +3795,18 @@ public:
 
     void visit_Inquire(const AST::Inquire_t& x) {
         mark_IO_side_effect();
+        for (size_t i = 0; i < x.n_kwargs; i++) {
+            const auto &kw = x.m_kwargs[i];
+            // Parentheses turn a variable into an expression, but ASR drops them.
+            if (to_lower(kw.m_arg) == "delim" && kw.m_value
+                    && AST::is_a<AST::Parenthesis_t>(*kw.m_value)) {
+                diag.add(Diagnostic("delim in inquire must be a definable variable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {kw.m_value->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         std::map<std::string, size_t> argname2idx = {
             {"unit", 0}, {"file", 1}, {"iostat", 2}, {"err", 3},
             {"exist", 4}, {"opened", 5}, {"number", 6}, {"named", 7},
