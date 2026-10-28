@@ -4,9 +4,11 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/explicit_shape_extent.h>
-#include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 
+#include <map>
 #include <set>
+#include <vector>
 
 /*
 The extent of an explicit-shape dimension is max(0, ub - lb + 1)
@@ -36,9 +38,7 @@ expressions again, and redefining a variable of a bound in the body changes
 neither the bounds nor the extent. The code generators set these locals
 before they set up the dummies from their types. The only arrays that keep
 an expression, max(0, length), as their extent are the dummies and the result
-of an interface body, which has no body to evaluate it in, and the objects of
-a scope that the GPU offload passes may turn into device code, which size
-them from their declared bounds (see offloadable_scopes).
+of an interface body, which has no body to evaluate it in.
 
 The pass runs right after function_call_in_declaration, which captures each
 bound of an automatic object that the body can change in such a local (this
@@ -56,6 +56,8 @@ from the types of the dummies substitutes the initializer of the local
 (ASRUtils::ReplaceWithFunctionParamVisitor). This includes a caller that sizes
 the result of a procedure from its type, also when the procedure was loaded
 from a module file (in another translation unit, the locals are never set).
+The GPU offload passes do the same in the copy of a procedure that they make
+for device code (inline_entry_initialized_locals).
 The maximum is a conditional expression (see Max::create_extent), which the
 code generators lower directly.
 */
@@ -67,7 +69,6 @@ class ExplicitShapeExtentVisitor:
 private:
     Allocator& al;
     std::set<const ASR::Variable_t*>& clamped;
-    const std::set<SymbolTable*>& offloadable;
 
     enum class Owner { None, Interface, Body };
 
@@ -217,9 +218,8 @@ private:
 
 public:
     ExplicitShapeExtentVisitor(Allocator& al_,
-        std::set<const ASR::Variable_t*>& clamped_,
-        const std::set<SymbolTable*>& offloadable_): al(al_),
-        clamped(clamped_), offloadable(offloadable_) {}
+        std::set<const ASR::Variable_t*>& clamped_): al(al_),
+        clamped(clamped_) {}
 
     void visit_Variable(const ASR::Variable_t& x) {
         if (!ASR::is_a<ASR::Array_t>(*x.m_type)) {
@@ -236,11 +236,8 @@ public:
         // An interface body has no body to evaluate the bounds on entry in,
         // so it keeps them with the extent max(0, length), the value that
         // the procedure computes on entry. Callers, which size the result
-        // and check the arguments with this type, then agree with it. The
-        // objects of a scope that may become device code are treated in the
-        // same way.
-        bool inline_extent = owner == Owner::Interface
-            || offloadable.find(x.m_parent_symtab) != offloadable.end();
+        // and check the arguments with this type, then agree with it.
+        bool inline_extent = owner == Owner::Interface;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, array->n_dims);
         for (size_t i = 0; i < array->n_dims; i++) {
@@ -319,12 +316,115 @@ public:
     }
 };
 
+// The locals initialized on entry of `scope`, of the procedures it contains
+// and of its BLOCKs, with their initializers, and those scopes. Each local
+// of the same name in the same place of `original`, of which `scope` is a
+// copy, is given the same initializer.
+static void collect_entry_initialized_locals(SymbolTable* scope,
+        SymbolTable* original, std::map<ASR::symbol_t*, ASR::expr_t*>& locals,
+        std::vector<SymbolTable*>& scopes) {
+    scopes.push_back(scope);
+    for (auto& item : scope->get_scope()) {
+        ASR::symbol_t* sym = item.second;
+        ASR::symbol_t* original_sym = original != nullptr
+            ? original->get_symbol(item.first) : nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::is_entry_initialized_local(*v)) {
+                locals[sym] = v->m_symbolic_value;
+                if (original_sym != nullptr && original_sym != sym) {
+                    locals[original_sym] = v->m_symbolic_value;
+                }
+            }
+        } else if (ASR::is_a<ASR::Function_t>(*sym)
+                || ASR::is_a<ASR::Block_t>(*sym)) {
+            SymbolTable* original_scope = original_sym != nullptr
+                    && original_sym->type == sym->type
+                ? ASRUtils::symbol_symtab(original_sym) : nullptr;
+            collect_entry_initialized_locals(ASRUtils::symbol_symtab(sym),
+                original_scope, locals, scopes);
+        }
+    }
+}
+
+void inline_entry_initialized_locals(Allocator &al, ASR::symbol_t* owner,
+        ASR::symbol_t* original) {
+    std::map<ASR::symbol_t*, ASR::expr_t*> locals;
+    std::vector<SymbolTable*> scopes;
+    collect_entry_initialized_locals(ASRUtils::symbol_symtab(owner),
+        original != nullptr ? ASRUtils::symbol_symtab(original) : nullptr,
+        locals, scopes);
+    if (locals.empty()) {
+        return;
+    }
+    // An initializer can refer to another such local (an extent to the
+    // length it clamps), which each round replaces one level deeper.
+    AssociateVarResolver resolver(al, locals);
+    for (size_t round = 0; round < locals.size(); round++) {
+        for (auto& item : locals) {
+            resolver.current_expr = &item.second;
+            resolver.replace_expr(item.second);
+        }
+    }
+    AssociateVarResolverVisitor visitor(al, locals);
+    visitor.visit_symbol(*owner);
+    for (SymbolTable* scope : scopes) {
+        std::vector<std::string> names;
+        for (auto& item : scope->get_scope()) {
+            if (locals.find(item.second) != locals.end()) {
+                names.push_back(item.first);
+            }
+        }
+        for (const std::string& name : names) {
+            scope->erase_symbol(name);
+        }
+    }
+    for (SymbolTable* scope : scopes) {
+        for (auto& item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            SetChar dependencies;
+            dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies,
+                v->m_type, v->m_symbolic_value, v->m_value, v->m_name);
+            v->m_dependencies = dependencies.p;
+            v->n_dependencies = dependencies.size();
+        }
+    }
+}
+
+void substitute_entry_initialized_locals(Allocator &al, ASR::Function_t &fn,
+        std::map<ASR::symbol_t*, ASR::expr_t*> &substitutions) {
+    std::map<ASR::symbol_t*, ASR::expr_t*> locals;
+    std::vector<SymbolTable*> scopes;
+    collect_entry_initialized_locals(fn.m_symtab, nullptr, locals, scopes);
+    if (locals.empty()) {
+        return;
+    }
+    std::map<ASR::symbol_t*, ASR::expr_t*> values = substitutions;
+    for (auto& item : locals) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        values[item.first] = duplicator.duplicate_expr(item.second);
+    }
+    // As in inline_entry_initialized_locals, one level per round.
+    AssociateVarResolver resolver(al, values);
+    for (size_t round = 0; round <= locals.size(); round++) {
+        for (auto& item : locals) {
+            resolver.current_expr = &values[item.first];
+            resolver.replace_expr(values[item.first]);
+        }
+    }
+    for (auto& item : locals) {
+        substitutions[item.first] = values[item.first];
+    }
+}
+
 void pass_explicit_shape_extent(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &pass_options) {
+        const PassOptions &/*pass_options*/) {
     std::set<const ASR::Variable_t*> clamped;
-    std::set<SymbolTable*> offloadable = offloadable_scopes(unit,
-        pass_options);
-    ExplicitShapeExtentVisitor v(al, clamped, offloadable);
+    ExplicitShapeExtentVisitor v(al, clamped);
     v.visit_TranslationUnit(unit);
     PhysicalCastExtentVisitor c(al, clamped);
     c.visit_TranslationUnit(unit);

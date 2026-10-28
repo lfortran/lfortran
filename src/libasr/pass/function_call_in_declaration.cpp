@@ -1547,20 +1547,13 @@ public:
 
 };
 
-std::set<SymbolTable*> offloadable_scopes(ASR::TranslationUnit_t &unit,
-        const PassOptions &pass_options) {
-    std::set<SymbolTable*> scopes;
-    if (gpu_device_capabilities(pass_options).device_selected()) {
-        OffloadableScopeCollector collector(scopes);
-        collector.collect(unit);
-    }
-    return scopes;
-}
-
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
     FunctionTypeVisitor v(al, unit);
-    v.uncaptured_scopes = offloadable_scopes(unit, pass_options);
+    if (gpu_device_capabilities(pass_options).device_selected()) {
+        OffloadableScopeCollector collector(v.uncaptured_scopes);
+        collector.collect(unit);
+    }
     PassUtils::make_new_tu_functions_private(unit, [&]() {
         v.visit_TranslationUnit(unit);
     });

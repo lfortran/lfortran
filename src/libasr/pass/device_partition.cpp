@@ -3,6 +3,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_partition.h>
+#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <deque>
@@ -118,6 +119,9 @@ public:
             ASRUtils::get_FunctionType(fn)->m_exec_space =
                 host.count(fn) > 0 ? ASR::exec_spaceType::HostDevice
                                    : ASR::exec_spaceType::Device;
+            if (host.count(fn) == 0) {
+                inline_entry_initialized_locals(al, &fn->base, nullptr);
+            }
         }
         retarget_device_calls(al, device, clones);
     }
@@ -195,6 +199,7 @@ private:
             clone->m_name = s2c(al, name);
             destination->add_symbol(name, clone_sym);
             mark_device(clone);
+            inline_entry_initialized_locals(al, clone_sym, &fn->base);
             clones[&fn->base] = clone_sym;
             device.insert(clone);
         }

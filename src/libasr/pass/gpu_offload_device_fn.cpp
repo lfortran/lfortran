@@ -8,6 +8,7 @@
 #include <libasr/containers.h>
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
+#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
@@ -642,6 +643,9 @@ ASR::stmt_t* GpuOffloadVisitor::splice_device_function(ASR::Function_t *fn,
         subst[d] = gathered ? gathered : actual;
     }
 
+    // Device code sizes the callee's explicit-shape objects from their
+    // declared bounds (see inline_entry_initialized_locals).
+    substitute_entry_initialized_locals(al, *fn, subst);
     ASR::stmt_t *call = PassUtils::inline_in_block(al, loc, *fn,
         block_scope, std::move(subst), target, arg_gathers, arg_scatters);
     if (!call) return nullptr;
