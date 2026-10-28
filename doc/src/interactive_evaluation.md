@@ -45,11 +45,16 @@ The interrupt returns normally through generated callers, then raises
 guards. No signal handler unwinds generated or C++ frames.
 
 `FortranEvaluator::request_interrupt()` is lock-free and may be called by the
-kernel's SIGINT handler or Xeus's separate control thread. The built-in
-kernel services its control socket through `CellIO::poll_interrupt`, retaining
-other control requests for dispatch after execution rather than dropping them
-or executing queued cells reentrantly. Runtime callback installation lasts only
-for the cell. `execute_command_line` polls the same callback while waiting;
+kernel's SIGINT handler. Both native connection-file kernels service control
+through `CellIO::poll_interrupt` on the calling thread, even for silent loops.
+The evaluation worker's runtime checks only observe the atomic interrupt flag;
+no frontend callback or socket moves to it. Noninterrupt control requests are
+retained for dispatch after execution rather than dropped or executed
+reentrantly. Shutdown requests cancel the active cell before shutdown.
+Pending hooks and output are drained and the worker is joined before an
+interruption reaches the cell's error boundary or runtime hooks are removed.
+Runtime callback installation lasts only for the cell.
+`execute_command_line` polls the runtime callback while waiting;
 on interruption it terminates the owned process group (a job on Windows) and
 reaps the command before returning. Ordinary compiled programs retain their
 existing `system()` execution path.
@@ -100,8 +105,16 @@ than silently dropping stream or idle messages at the high-water mark. This
 bypasses Xeus-ZMQ's internal PUB/SUB publisher hop, which is also lossy;
 coalescing adjacent stdout writes alone cannot protect alternating stdout and
 stderr writes without changing their order. The other Xeus channels and
-request handling are unchanged. A connected subscriber that stops reading can
-therefore hold up evaluation until it resumes or disconnects. Xeus registration
+request sockets stay on that same caller, which polls control while waiting
+for publication space. A connected subscriber that stops reading holds up
+evaluation until it resumes, disconnects, or execution is interrupted. In the
+last case, an already backpressured XPUB is closed with zero linger and
+rebound: subscribers reconnect, but their undelivered backlog is explicitly
+abandoned. Complete output/error/idle delivery is not promised to a stalled
+subscriber on that cancellation path. The execute reply still completes and
+a healthy reader can run the next cell in the same session.
+The built-in kernel retains its bounded nonblocking subscriber queues;
+a stalled subscriber never holds up control or evaluation. Xeus registration
 configurations retain its default server; WASM uses its own transport.
 The same native streaming transport supports Xeus 5 with xeus-zmq 3 and
 Xeus 6 with xeus-zmq 4; older supported versions do not fall back to lossy
@@ -110,8 +123,8 @@ publication.
 WASM, where native threads are unavailable, retains synchronous capture:
 output is delivered at runtime writes, hooks and cell completion. Jupyter
 messages must be UTF-8; the kernel preserves characters split between chunks
-and shows invalid bytes as U+FFFD. Running a cell still blocks other execution requests; streaming
-does not implement interruption or cancellation.
+and shows invalid bytes as U+FFFD. Running a cell still serializes other
+execution requests.
 
 ## Runtime input
 
@@ -152,3 +165,9 @@ UTF-8 streams, stream labels and cross-stream order, and session cleanup. Its
 `--streaming-only` selector runs these checks directly; `--ordering-only`
 selects just the live ordering cases. `--compiler-arg=--fast` selects the
 kernel's compilation mode.
+
+The registered `test_kernel_stream_interrupt` combines live output and
+cancellation on the built-in and real Xeus adapters in normal, `--fast` and
+`--std=f23` modes. It checks silent loops, alternating output before the error
+and idle, retained control requests, stalled subscribers, allocation/finalizer
+cleanup, state recovery, next cells and active-cell shutdown.

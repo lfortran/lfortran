@@ -3079,6 +3079,55 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
 // Like test_runtime_input, the stdin cases run natively only; the WASM test
 // build also cannot read the integration test sources.
 #ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: control polling joins on the caller") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    REQUIRE(e.execute("integer :: saved = 42").ok);
+    REQUIRE(e.execute("use lfortran_display").ok);
+    REQUIRE(e.execute("subroutine emit_pair(i)\ninteger,intent(in)::i\n"
+        "print '(i0)',i\nwrite(0,'(i0)')i\nend subroutine").ok);
+    const auto caller = std::this_thread::get_id();
+    for (bool streaming : {false, true}) {
+        CAPTURE(streaming);
+        bool on_caller = true;
+        int polls = 0;
+        int hooks = 0;
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.poll_interrupt = [&]() {
+            on_caller = on_caller && std::this_thread::get_id() == caller;
+            if (++polls >= 50 && hooks == 3) FortranEvaluator::request_interrupt();
+        };
+        auto called = [&]() {
+            on_caller = on_caller && std::this_thread::get_id() == caller;
+            hooks++;
+        };
+        io.display = [&](const std::string &, const std::string &) { called(); };
+        io.clear_output = called;
+        io.input = [&](std::string &record) { called(); record = "42"; return 0; };
+        if (streaming) {
+            io.output = [&](int, const std::string &text) {
+                on_caller = on_caller && std::this_thread::get_id() == caller;
+                output += text;
+            };
+        }
+        std::string code = "call display_data('text/plain','ready')\n"
+            "call clear_output()\nread(*,*)saved\n";
+        code += streaming
+            ? "block\ninteger i\nprint '(a)', 'before-interrupt'\ni=0\n"
+              "do\ni=i+1\ncall emit_pair(i)\nend do\nend block\nsaved=0"
+            : "do\nend do\nsaved=0";
+        auto cell = e.execute(code, false, io);
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "KeyboardInterrupt");
+        CHECK(on_caller);
+        CHECK(polls >= 50);
+        CHECK(hooks == 3);
+        if (streaming) CHECK(output.rfind("before-interrupt\n1\n", 0) == 0);
+        CHECK(e.execute("saved+1").value.text() == "43");
+    }
+}
+
 TEST_CASE("FortranEvaluator execute: output hook ordering and cleanup") {
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);

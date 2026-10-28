@@ -369,6 +369,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             )
             set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)
+            add_test(
+                NAME test_kernel_stream_interrupt
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
+                    --lfortran $<TARGET_FILE:lfortran> --combined-only
+            )
+            set_tests_properties(test_kernel_stream_interrupt PROPERTIES TIMEOUT 420
+                SKIP_RETURN_CODE 77)
         endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"

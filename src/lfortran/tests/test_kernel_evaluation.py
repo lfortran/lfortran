@@ -64,6 +64,15 @@ def check(client, code, expected):
     return messages
 
 
+def pending_messages(client):
+    for channel in ("shell", "control", "iopub"):
+        for _ in range(128):
+            try:
+                yield getattr(client, channel + "_channel").get_msg(timeout=0)
+            except queue.Empty:
+                break
+
+
 def check_live_output(client):
     started = time.monotonic()
     arrivals = []
@@ -117,8 +126,15 @@ def main():
     parser.add_argument("--compiler-arg", action="append", default=[])
     parser.add_argument("--streaming-only", action="store_true")
     parser.add_argument("--interrupt-only", action="store_true")
+    parser.add_argument("--combined-only", action="store_true")
     parser.add_argument("--kernel-arg", action="append", default=[])
     args = parser.parse_args()
+    if args.combined_only:
+        for mode in ([], ["--fast"], ["--std=f23"]):
+            check_interrupts(args.lfortran, mode)
+            check_backpressure_interrupt(args.lfortran, mode)
+            check_interrupt_cleanup(args.lfortran, mode)
+        return
     if args.interrupt_only:
         check_interrupts(args.lfortran, args.kernel_arg)
         check_interrupt_cleanup(args.lfortran, args.kernel_arg)
@@ -253,36 +269,58 @@ def check_interrupts(lfortran, arguments=()):
                 client.wait_for_ready(timeout=30)
                 check(client, "integer :: saved\nsaved=42", [])
                 check(client, "subroutine spin()\ndo\nend do\nend subroutine", [])
-                codes = ["print '(a)', 'before-interrupt'\ndo\nend do",
-                         "call spin()\nsaved=0"]
+                check(client, "subroutine emit_pair(i)\ninteger,intent(in)::i\n"
+                      "print '(i0)',i\nwrite(0,'(i0)')i\nend subroutine", [])
+                codes = [
+                    ("do\nend do\nsaved=0", True),
+                    ("block\nprint '(a)', 'before-interrupt'\ndo\nend do\nend block", False),
+                    ("block\ninteger i\ni=0\ndo\ni=i+1\n"
+                     "call emit_pair(i)\nend do\nend block", False),
+                    ("call spin()\nsaved=0", False)]
                 if os.name == "posix":
                     child_pid = directory / "child.pid"
-                    codes.append('call execute_command_line("sleep 30 & echo $! > '
-                                 + shlex.quote(str(child_pid)) + '; wait")\nsaved=0')
+                    codes.append(('call execute_command_line("sleep 30 & echo $! > '
+                                 + shlex.quote(str(child_pid)) + '; wait")\nsaved=0', False))
                 elif os.name == "nt":
-                    codes.append('call execute_command_line("ping -n 31 127.0.0.1 > NUL")\nsaved=0')
-                for code in codes:
-                    running = client.execute(code, stop_on_error=False)
+                    codes.append(('call execute_command_line("ping -n 31 127.0.0.1 > NUL")\nsaved=0', False))
+                for code, silent in codes:
+                    running = client.execute(code, stop_on_error=False, silent=silent)
                     deadline = time.monotonic() + 10
                     while True:
                         msg = client.get_iopub_msg(timeout=max(.1, deadline-time.monotonic()))
                         if (msg["parent_header"].get("msg_id") == running
-                                and msg["msg_type"] == "execute_input"):
+                                and (msg["msg_type"] == "execute_input"
+                                     or (silent and msg["msg_type"] == "status"
+                                         and msg["content"]["execution_state"] == "busy"))):
                             break
                         assert time.monotonic() < deadline, "cell did not start"
-                    time.sleep(.5)
+                    early_events = []
+
+                    def receive_while_running(seconds):
+                        deadline = time.monotonic() + seconds
+                        while time.monotonic() < deadline:
+                            try:
+                                msg = client.get_iopub_msg(timeout=.01)
+                            except queue.Empty:
+                                continue
+                            if (msg["parent_header"].get("msg_id") == running
+                                    and msg["msg_type"] == "stream"):
+                                early_events.append((msg["content"]["name"],
+                                                     msg["content"]["text"]))
+
+                    receive_while_running(.5)
                     info_id = ""
                     control_execute_id = ""
-                    if managed:
-                        info = client.session.msg("kernel_info_request", content={})
-                        info_id = info["header"]["msg_id"]
-                        client.control_channel.send(info)
-                        deferred = client.session.msg("execute_request", content={
-                            "code": "saved+3", "stop_on_error": False})
-                        control_execute_id = deferred["header"]["msg_id"]
-                        client.control_channel.send(deferred)
-                        # Give the running cell's safepoint pump time to read it.
-                        time.sleep(.1)
+                    info = client.session.msg("kernel_info_request", content={})
+                    info_id = info["header"]["msg_id"]
+                    client.control_channel.send(info)
+                    deferred = client.session.msg("execute_request", content={
+                        "code": "saved+3", "stop_on_error": False})
+                    control_execute_id = deferred["header"]["msg_id"]
+                    client.control_channel.send(deferred)
+                    # The caller must retain these, not re-enter the evaluator.
+                    receive_while_running(.1)
+                    assert not client.control_channel.msg_ready(), "nonurgent control re-entered a cell"
                     if "sleep 30" in code:
                         deadline = time.monotonic() + 10
                         while not child_pid.exists() and time.monotonic() < deadline:
@@ -297,18 +335,16 @@ def check_interrupts(lfortran, arguments=()):
                         interrupt_id = interrupt["header"]["msg_id"]
                         client.control_channel.send(interrupt)
                     queued = client.execute("saved+1", stop_on_error=False)
-                    replies, idle, values, streams = {}, set(), [], []
+                    replies, idle, values = {}, set(), []
+                    streams = [text for _, text in early_events]
                     acknowledged = by_signal
-                    info_replied = not managed
-                    control_executed = not managed
+                    info_replied = False
+                    control_executed = False
                     control_values = []
+                    events = early_events
                     deadline = time.monotonic() + 8
                     while time.monotonic() < deadline:
-                        for channel in ("shell", "control", "iopub"):
-                            try:
-                                msg = getattr(client, channel + "_channel").get_msg(timeout=.01)
-                            except queue.Empty:
-                                continue
+                        for msg in pending_messages(client):
                             parent = msg["parent_header"].get("msg_id")
                             kind, content = msg["msg_type"], msg["content"]
                             if parent == interrupt_id and kind == "interrupt_reply":
@@ -326,18 +362,25 @@ def check_interrupts(lfortran, arguments=()):
                                 replies[parent] = content
                             elif kind == "status" and content["execution_state"] == "idle":
                                 idle.add(parent)
+                                if parent == running:
+                                    events.append(("idle", ""))
                             elif kind == "execute_result" and parent == queued:
                                 values.append(content["data"]["text/plain"])
                             elif kind == "stream" and parent == running:
                                 streams.append(content["text"])
+                                events.append((content["name"], content["text"]))
+                            elif kind == "error" and parent == running:
+                                events.append(("error", content["ename"]))
                         if (acknowledged and info_replied and control_executed
-                                and (not managed or control_values == ["45"])
+                                and control_values == ["45"]
                                 and len(replies) == len(idle) == 2):
                             break
-                    assert info_replied, ("control request lost during execution", managed, code)
+                        time.sleep(.001)
+                    assert info_replied, ("control request lost during execution", managed, code,
+                                          replies, idle, acknowledged, len(streams), events[-3:],
+                                          process.poll())
                     assert control_executed, ("deferred control execution lost", managed, code)
-                    if managed:
-                        assert control_values == ["45"], control_values
+                    assert control_values == ["45"], control_values
                     assert acknowledged, ("interrupt not serviced", managed, code, replies)
                     assert replies.get(running, {}).get("ename") == "KeyboardInterrupt", replies
                     assert replies.get(queued, {}).get("status") == "ok", replies
@@ -345,6 +388,22 @@ def check_interrupts(lfortran, arguments=()):
                     assert len(idle) == 2 and process.poll() is None
                     if "before-interrupt" in code:
                         assert "before-interrupt" in "".join(streams), streams
+                    assert events[-1:] == [("idle", "")], events[-3:]
+                    if not silent:
+                        diagnostic = ("stderr", "execution interrupted\n")
+                        index = events.index(diagnostic)
+                        expected_tail = [diagnostic, ("idle", "")]
+                        assert events[index:] == expected_tail, events[-4:]
+                    if "integer i" in code:
+                        actual = [(name, char) for name, text in events[:index]
+                                  if name in ("stdout", "stderr") for char in text]
+                        expected = []
+                        i = 1
+                        while len(expected) < len(actual):
+                            expected.extend((name, char) for name in ("stdout", "stderr")
+                                            for char in f"{i}\n")
+                            i += 1
+                        assert actual and actual == expected[:len(actual)], (actual[:30], actual[-30:])
                     if "sleep 30" in code:
                         child = int(child_pid.read_text())
                         deadline = time.monotonic() + 3
@@ -357,7 +416,18 @@ def check_interrupts(lfortran, arguments=()):
                         else:
                             raise AssertionError("interrupted command left its child running")
                     check(client, "saved+2", ["44"])
+                running = client.execute("do\nend do", silent=True, stop_on_error=False)
+                while True:
+                    msg = client.get_iopub_msg(timeout=10)
+                    if (msg["parent_header"].get("msg_id") == running
+                            and msg["msg_type"] == "status"
+                            and msg["content"]["execution_state"] == "busy"):
+                        break
+                time.sleep(.2)
                 client.shutdown()
+                reply = client.get_shell_msg(timeout=10)
+                assert reply["parent_header"]["msg_id"] == running, reply
+                assert reply["content"].get("ename") == "KeyboardInterrupt", reply
                 assert process.wait(timeout=10) == 0
                 print("interrupts: %s %s passed" %
                       ("builtin" if managed else "default", list(arguments)), flush=True)
@@ -382,6 +452,95 @@ def check_interrupts(lfortran, arguments=()):
                 except ProcessLookupError:
                     pass
             (directory / "child.pid").unlink(missing_ok=True)
+            directory.rmdir()
+
+
+def check_backpressure_interrupt(lfortran, arguments=()):
+    """A subscriber that stops reading must not strand cancellation/join."""
+    import zmq
+
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-pressure-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection, log = directory / "connection.json", directory / "kernel.log"
+        context = zmq.Context()
+        context.setsockopt(zmq.RCVHWM, 1)
+        context.setsockopt(zmq.RCVBUF, 1024)
+        client = process = None
+        clients, contexts = [], [context]
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection), context=context)
+                clients.append(client)
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, "integer :: saved=42", [])
+                check(client, "subroutine pressure_pair(i)\ninteger,intent(in)::i\n"
+                      "print '(a)',repeat('x',4096)\nwrite(0,'(i0)')i\nend subroutine", [])
+                running = client.execute("block\ninteger i\ni=0\ndo\n"
+                    "i=i+1\ncall pressure_pair(i)\nend do\nend block", stop_on_error=False)
+                # Withhold IOPub throughout cancellation, not merely while
+                # sending the request. Xeus's finite XPUB queue fills here.
+                time.sleep(2)
+                interrupt = client.session.msg("interrupt_request", content={})
+                client.control_channel.send(interrupt)
+                reply = client.get_control_msg(timeout=8)
+                assert reply["parent_header"]["msg_id"] == interrupt["header"]["msg_id"], reply
+                assert reply["msg_type"] == "interrupt_reply", reply
+                reply = client.get_shell_msg(timeout=8)
+                assert reply["parent_header"]["msg_id"] == running, reply
+                assert reply["content"].get("ename") == "KeyboardInterrupt", reply
+                assert process.poll() is None
+
+                # Interrupted backpressure explicitly abandons undelivered
+                # output to the stalled subscriber. A fresh reader must recover
+                # the same state and receive complete output through idle.
+                stalled, stalled_context = client, context
+                context = zmq.Context()
+                contexts.append(context)
+                client = BlockingKernelClient(connection_file=str(connection), context=context)
+                clients.append(client)
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                stalled.stop_channels()
+                clients.remove(stalled)
+                stalled_context.destroy(linger=0)
+                contexts.remove(stalled_context)
+                check(client, "saved+1", ["43"])
+                reply, messages = execute(client,
+                    "block\nprint '(a)','after-pressure'\nwrite(0,'(a)')'tail'\nend block")
+                assert reply["status"] == "ok", reply
+                streams = [(m["content"]["name"], m["content"]["text"])
+                           for m in messages if m["msg_type"] == "stream"]
+                assert streams == [("stdout", "after-pressure\n"), ("stderr", "tail\n")], streams
+                client.shutdown()
+                assert process.wait(timeout=10) == 0
+                print("backpressure cancellation/recovery:", managed, list(arguments), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            for connected in clients:
+                connected.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            for owned_context in contexts:
+                owned_context.destroy(linger=0)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
             directory.rmdir()
 
 

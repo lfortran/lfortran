@@ -332,11 +332,11 @@ public:
         std::thread worker([&]() {
             try {
                 evaluate();
-                fflush(stdout);
-                fflush(stderr);
             } catch (...) {
                 evaluation_error = std::current_exception();
             }
+            fflush(stdout);
+            fflush(stderr);
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 done = true;
@@ -837,7 +837,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     std::optional<OutputCapture> capture;
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
     std::optional<CellRunner> runner;
-    if (io.output) runner.emplace();
+    if (io.output || io.poll_interrupt) runner.emplace();
 #endif
     auto on_caller = [&](std::function<void()> call) {
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
@@ -868,34 +868,39 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
     std::optional<FlushAtExit> flush_at_exit_guard;
     CellIO hooks_io = io;
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+    // The JIT safepoint only observes the atomic cancellation flag. Socket
+    // polling belongs to the caller, including for cells that write nothing.
+    if (runner) hooks_io.poll_interrupt = {};
+#endif
     if (io.output) {
         flush_at_exit_guard.emplace(&flush_output);
-        if (io.display) {
-            hooks_io.display = [&](const std::string &mime, const std::string &data) {
-                on_caller([&]() {
-                    flush_output();
-                    io.display(mime, data);
-                });
-            };
-        }
-        if (io.clear_output) {
-            hooks_io.clear_output = [&]() {
-                on_caller([&]() {
-                    flush_output();
-                    io.clear_output();
-                });
-            };
-        }
-        if (io.input) {
-            hooks_io.input = [&](std::string &record) {
-                int status = 0;
-                on_caller([&]() {
-                    flush_output();
-                    status = io.input(record);
-                });
-                return status;
-            };
-        }
+    }
+    if (io.display) {
+        hooks_io.display = [&](const std::string &mime, const std::string &data) {
+            on_caller([&]() {
+                flush_output();
+                io.display(mime, data);
+            });
+        };
+    }
+    if (io.clear_output) {
+        hooks_io.clear_output = [&]() {
+            on_caller([&]() {
+                flush_output();
+                io.clear_output();
+            });
+        };
+    }
+    if (io.input) {
+        hooks_io.input = [&](std::string &record) {
+            int status = 0;
+            on_caller([&]() {
+                flush_output();
+                status = io.input(record);
+            });
+            return status;
+        };
     }
     DisplayContext display{hooks_io, ""};
     InputContext input{hooks_io, ""};
@@ -974,7 +979,14 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         };
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
         if (runner) {
-            runner->run(evaluate_cell, [&]() { capture->flush(io.output); });
+            runner->run(evaluate_cell, [&]() {
+                try {
+                    if (io.poll_interrupt) io.poll_interrupt();
+                } catch (...) {
+                    request_interrupt();
+                }
+                if (capture) capture->flush(io.output);
+            });
         } else
 #endif
         {
@@ -1004,6 +1016,11 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
 void FortranEvaluator::request_interrupt()
 {
     interrupt_requested.store(true, std::memory_order_relaxed);
+}
+
+bool FortranEvaluator::is_interrupt_requested()
+{
+    return interrupt_requested.load(std::memory_order_relaxed);
 }
 
 Result<std::string> FortranEvaluator::get_ast(const std::string &code,

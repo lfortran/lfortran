@@ -45,6 +45,7 @@ public:
     ~FortranEvaluator();
     // Lock-free: also used by the kernel's SIGINT handler.
     static void request_interrupt();
+    static bool is_interrupt_requested();
 
     struct EvalResult {
         enum {
@@ -91,7 +92,8 @@ public:
         // foreign writes to independent descriptors have no common ordering.
         // Unset, the cell writes to the process's stdout and stderr.
         std::function<void(int stream, const std::string &text)> output;
-        // Services an adapter's control channel at cooperative safepoints.
+        // Services the control channel on the caller while native evaluation
+        // runs, even without output. Runtime safepoints only observe cancellation.
         std::function<void()> poll_interrupt;
     };
 
