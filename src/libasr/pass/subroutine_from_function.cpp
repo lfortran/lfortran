@@ -991,6 +991,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
                 return false;
             }
+            if (expr_has_pointer_or_target(target)) {
+                return true;
+            }
             ASR::symbol_t *root = designator_base_symbol(target);
             if (root == nullptr) {
                 return false;
