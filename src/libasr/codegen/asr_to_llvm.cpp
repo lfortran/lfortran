@@ -28820,6 +28820,16 @@ public:
         }
     }
 
+    // SIZE of `array` needs the extent of its dimension `i`, which ASR may
+    // not have, as for the last dimension of an assumed-size array.
+    void check_array_size_extent(ASR::expr_t* length, int i, ASR::expr_t* array) {
+        if( length == nullptr ) {
+            throw CodeGenError("the extent of dimension " + std::to_string(i + 1)
+                + " of this array is not available here, so its size cannot "
+                "be computed", array->base.loc);
+        }
+    }
+
     void load_array_size_deep_copy(ASR::expr_t* x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 2;
@@ -28905,6 +28915,7 @@ public:
                 break;
             }
             case ASR::array_physical_typeType::PointerArray:
+            case ASR::array_physical_typeType::UnboundedPointerArray:
             case ASR::array_physical_typeType::SIMDArray:
             case ASR::array_physical_typeType::FixedSizeArray: {
                     llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_v,
@@ -28918,7 +28929,19 @@ public:
                     llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                         target_type, nullptr, "array_size");
                     llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                    bool is_assumed_size = ASRUtils::is_assumed_size_array(x_mv_type);
+                    if( is_assumed_size ) {
+                        // DIM shall be less than the rank of an assumed-size
+                        // array (Fortran 2023, 16.9.194); give a nonconforming
+                        // run-time DIM equal to the rank a defined result.
+                        builder->CreateStore(llvm::ConstantInt::get(target_type, 0), target);
+                    }
                     for( int i = 0; i < n_dims; i++ ) {
+                        if( is_assumed_size && i == n_dims - 1 ) {
+                            // The last extent of an assumed-size array is
+                            // not known.
+                            continue;
+                        }
                         llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
@@ -28929,6 +28952,7 @@ public:
                         builder->CreateCondBr(cond, thenBB, elseBB);
                         builder->SetInsertPoint(thenBB);
                         {
+                            check_array_size_extent(m_dims[i].m_length, i, m_v);
                             load_array_size_deep_copy(m_dims[i].m_length);
 
                             // Make dimension length and return size compatible.
@@ -28956,6 +28980,7 @@ public:
                         int64_t ptr_loads_copy = ptr_loads;
                         ptr_loads = 2;
                         for( int i = 0; i < n_dims; i++ ) {
+                            check_array_size_extent(m_dims[i].m_length, i, m_v);
                             load_array_size_deep_copy(m_dims[i].m_length);
 
                             // Make dimension length and return size compatible.
