@@ -10491,7 +10491,8 @@ public:
             && !arg.m_is_volatile
             && !arg.m_is_asynchronous
             && arg.n_codims == 0
-            && !ASRUtils::is_pointer(arg.m_type);
+            && !ASRUtils::is_pointer(arg.m_type)
+            && !LLVM::is_cptr_dummy_passed_by_value(arg);
     }
 
     // Under --fast the loads and stores of the procedures for which

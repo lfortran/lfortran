@@ -3781,6 +3781,7 @@ RUN(NAME noalias_dummy_05 LABELS gfortran llvm
         EXTRAFILES noalias_dummy_05_pending.f90)
 RUN(NAME noalias_dummy_06 LABELS gfortran llvm
         EXTRAFILES noalias_dummy_06_pending.f90)
+RUN(NAME noalias_dummy_08 LABELS gfortran llvm)
 RUN(NAME noalias_dummy_07 LABELS gfortran llvm
         EXTRA_ARGS --legacy-array-sections)
 RUN(NAME tbaa_01 LABELS gfortran llvm)

@@ -748,6 +748,7 @@ std::string tbaa_accesses(const std::string &source, bool fast,
 
 TEST_CASE("LLVM noalias dummy arguments under --fast") {
     std::string source = R"(module noalias_ir_m
+use iso_c_binding, only: c_ptr, c_f_pointer
 implicit none
 type :: t
     real, allocatable :: c(:)
@@ -786,6 +787,17 @@ subroutine last_inout(x, y)
     y(2) = x(2)
 end subroutine
 
+subroutine cptr(p, q, r)
+    type(c_ptr), intent(in) :: p, q
+    real, intent(out) :: r
+    real, pointer :: a, b
+    call c_f_pointer(p, a)
+    call c_f_pointer(q, b)
+    a = 1
+    b = 2
+    r = a
+end subroutine
+
 function f(x) result(res)
     real, intent(in) :: x(3)
     real :: res(3)
@@ -816,6 +828,7 @@ end module
         {"assumed", "_m_assumed_real____0_real____1"},
         {"attributes", "_m_attributes"},
         {"last_inout", "_m_last_inout"},
+        {"cptr", "_m_cptr"},
         {"f", "_m_f"},
         {"self_first", "_m_self_first"},
         {"bits", "_m_bits"},
@@ -830,6 +843,8 @@ end module
         "attributes:r "
         // Not y, which could be a function result.
         "last_inout:x "
+        // C addresses may designate the same storage.
+        "cptr:r "
         // Not res, the function result.
         "f:x "
         "self_first:self self_first:i self_first:v "
