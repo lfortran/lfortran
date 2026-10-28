@@ -139,6 +139,7 @@ public:
     std::string const_name;
     size_t const_vars_count;
     size_t loop_end_count;
+    size_t array_temp_count;
 
     // This is used to track if during the codegeneration whether or not
     // the source is inside any bracket. bracket_open is always >= 0. We
@@ -202,7 +203,8 @@ public:
         c_utils_functions{std::make_unique<CUtils::CUtilFunctions>()},
         bind_py_utils_functions{std::make_unique<BindPyUtils::BindPyUtilFunctions>()},
         const_name{"constname"},
-        const_vars_count{0}, loop_end_count{0}, bracket_open{0},
+        const_vars_count{0}, loop_end_count{0}, array_temp_count{0},
+        bracket_open{0},
         is_string_concat_present{false} {
         }
 
@@ -1537,11 +1539,187 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return value;
     }
 
-    std::string construct_call_args(ASR::Function_t* f, size_t n_args, ASR::call_arg_t* m_args) {
+    // First array operand reference in an elementwise expression,
+    // visited, for sizing a call temporary. Empty when there is none.
+    bool find_array_leaf(ASR::expr_t* e, std::string &ref) {
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, ref);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, ref);
+        }
+        if (ASR::is_a<ASR::Var_t>(*e) &&
+                ASRUtils::is_array(ASRUtils::expr_type(e))) {
+            self().visit_Var(*ASR::down_cast<ASR::Var_t>(e));
+            ref = src;
+            return true;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e) && is_whole_array_ref(e)) {
+            self().visit_expr(
+                *ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+            ref = src;
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::Cast_t>(e)->m_arg, ref);
+        }
+        ASR::expr_t *l = nullptr, *r = nullptr;
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            l = b->m_left; r = b->m_right;
+        } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+            ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+            l = b->m_left; r = b->m_right;
+        } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+            ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+            l = b->m_left; r = b->m_right;
+        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*e)) {
+            ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+            l = b->m_left; r = b->m_right;
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+            ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+            l = b->m_left; r = b->m_right;
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+            ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+            l = c->m_left; r = c->m_right;
+        } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+            ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+            l = c->m_left; r = c->m_right;
+        } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+            ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+            l = c->m_left; r = c->m_right;
+        } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+            ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+            l = c->m_left; r = c->m_right;
+        } else if (ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+            l = c->m_left; r = c->m_right;
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg, ref);
+        } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg, ref);
+        } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg, ref);
+        } else if (ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg, ref);
+        } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            return find_array_leaf(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg, ref);
+        } else {
+            return false;
+        }
+        return find_array_leaf(l, ref) || find_array_leaf(r, ref);
+    }
+
+    // Materializes an array-valued elementwise actual argument into a
+    // fresh descriptor temporary (declared and filled in the buffered
+    // preamble flushed before the call) and returns its name. Empty
+    // when the argument cannot be materialized here.
+    std::string materialize_call_temp(ASR::expr_t* e) {
+        ASR::ttype_t* t = ASRUtils::expr_type(e);
+        if (!ASR::is_a<ASR::Array_t>(*t)) {
+            return "";
+        }
+        ASR::ttype_t* el = ASRUtils::type_get_past_array(t);
+        std::string type_name, encoded_type_name;
+        if (ASR::is_a<ASR::Integer_t>(*el)) {
+            int kind = ASR::down_cast<ASR::Integer_t>(el)->m_kind;
+            type_name = "int" + std::to_string(kind * 8) + "_t";
+            encoded_type_name = "i" + std::to_string(kind * 8);
+        } else if (ASR::is_a<ASR::Real_t>(*el)) {
+            int kind = ASR::down_cast<ASR::Real_t>(el)->m_kind;
+            if (kind != 4 && kind != 8) {
+                return "";
+            }
+            type_name = (kind == 4) ? "float" : "double";
+            encoded_type_name = "f" + std::to_string(kind * 8);
+        } else if (ASR::is_a<ASR::Complex_t>(*el)) {
+            int kind = ASR::down_cast<ASR::Complex_t>(el)->m_kind;
+            if (kind != 4 && kind != 8) {
+                return "";
+            }
+            type_name = (kind == 4) ? "std::complex<float>" : "std::complex<double>";
+            encoded_type_name = "c" + std::to_string(kind * 8);
+        } else {
+            return "";
+        }
+        std::string opref;
+        if (!find_array_leaf(e, opref)) {
+            return "";
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
+        if (n_dims == 0) {
+            return "";
+        }
+        std::string total;
+        for (size_t d = 0; d < n_dims; d++) {
+            if (d > 0) total += " * ";
+            total += opref + "->dims[" + std::to_string(d) + "].length";
+        }
+        std::string tmp = "arrtmp" + std::to_string(array_temp_count++);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string indent1 = indent + std::string(indentation_spaces, ' ');
+        std::string idx = "__lfortran_broadcast_idx";
+        headers.insert("type_traits");
+        std::string decl = indent + "Kokkos::View<" + type_name + "*> "
+            + tmp + "_data(\"" + tmp + "_data\", " + total + ");\n";
+        decl += indent + "std::remove_pointer_t<decltype(" + opref + ")> "
+            + tmp + "_value(&" + tmp + "_data);\n";
+        decl += indent + "std::remove_pointer_t<decltype(" + opref + ")>" + "* "
+            + tmp + " = &" + tmp + "_value;\n";
+        for (size_t d = 0; d < n_dims; d++) {
+            decl += indent + tmp + "->dims[" + std::to_string(d)
+                + "].lower_bound = 1;\n";
+            decl += indent + tmp + "->dims[" + std::to_string(d)
+                + "].length = " + opref + "->dims[" + std::to_string(d)
+                + "].length;\n";
+        }
+        decl += indent + "for (size_t " + idx + " = 0; " + idx + " < "
+            + total + "; " + idx + "++) {\n"
+            + indent1 + tmp + "->data->operator[](" + idx + ") = "
+            + elementwise_src(e, idx) + ";\n" + indent + "}\n";
+        tmp_buffer_src.push_back(decl);
+        return tmp;
+    }
+
+    std::string construct_call_args(ASR::Function_t* f, size_t n_args, ASR::call_arg_t* m_args,
+            bool allow_temps = false) {
         bracket_open++;
         std::string args = "";
         for (size_t i=0; i<n_args; i++) {
             ASR::expr_t* call_arg = m_args[i].m_value;
+            std::string temp_arg;
+            bool use_temp = false;
+            if (!is_c && allow_temps && call_arg) {
+                // See through physical casts: a (possibly wrapped) plain
+                // variable or whole-array section is passed directly, so
+                // that intent(out/inout) writes reach the caller; only
+                // computed expressions are materialized into a temp.
+                ASR::expr_t* eff_arg =
+                    ASRUtils::get_past_array_physical_cast(call_arg);
+                if (ASRUtils::is_array(ASRUtils::expr_type(eff_arg)) &&
+                        !is_whole_array_ref(eff_arg)) {
+                    if (is_elementwise_assignable(eff_arg)) {
+                        temp_arg = materialize_call_temp(eff_arg);
+                        use_temp = !temp_arg.empty();
+                    } else if (ASR::is_a<ASR::ArrayConstant_t>(*eff_arg) ||
+                            ASR::is_a<ASR::ArrayConstructor_t>(*eff_arg)) {
+                        throw CodeGenError("array constructors as procedure arguments are not supported by the C++ backend yet",
+                            call_arg->base.loc);
+                    }
+                }
+            }
+            if (use_temp) {
+                args += temp_arg;
+            } else {
             check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
             self().visit_expr(*call_arg);
             src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
@@ -1580,6 +1758,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 } else {
                     args += src;
                 }
+            }
             }
             if (i < n_args-1) args += ", ";
         }
@@ -1879,6 +2058,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // Anything else (calls, partial sections, ...) falls back to the
     // generic path.
     bool is_elementwise_assignable(ASR::expr_t* e) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return is_elementwise_assignable(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
             return is_whole_array_ref(e);
         }
@@ -1984,6 +2167,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
             return elementwise_src(
                 ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, idx);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return elementwise_src(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, idx);
         }
         if (ASR::is_a<ASR::Var_t>(*e) ||
             ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -4090,7 +4277,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         if (sym_name == "main") {
             sym_name = "_xx_lcompilers_changed_main_xx";
         }
-        src = indent + sym_name + "(" + construct_call_args(s, x.n_args, x.m_args) + ");\n";
+        src = indent + sym_name + "(" + construct_call_args(s, x.n_args, x.m_args, !is_c) + ");\n";
+        src = check_tmp_buffer() + src;
     }
 
     #define SET_INTRINSIC_NAME(X, func_name)                                    \

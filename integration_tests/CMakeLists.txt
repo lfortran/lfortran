@@ -1123,6 +1123,7 @@ RUN(NAME arrays_136 LABELS gfortran llvm cpp)
 RUN(NAME arrays_145 LABELS gfortran llvm cpp)
 RUN(NAME arrays_146 LABELS gfortran llvm cpp)
 RUN(NAME arrays_135 LABELS gfortran llvm cpp)
+RUN(NAME arrays_138 LABELS gfortran llvm c cpp)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
