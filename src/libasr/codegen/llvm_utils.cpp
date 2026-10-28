@@ -37,6 +37,26 @@ namespace LCompilers {
 #endif
         }
 
+        void align_stack_array(llvm::Value *ptr,
+                const llvm::DataLayout &data_layout) {
+            llvm::AllocaInst *alloca = llvm::dyn_cast<llvm::AllocaInst>(ptr);
+            if (alloca == nullptr) {
+                return;
+            }
+            constexpr uint64_t stack_array_alignment = 16;
+            uint64_t size = data_layout.getTypeAllocSize(
+                alloca->getAllocatedType());
+#if LLVM_VERSION_MAJOR >= 11
+            uint64_t alignment = alloca->getAlign().value();
+#else
+            uint64_t alignment = alloca->getAlignment();
+#endif
+            if (size >= stack_array_alignment
+                    && alignment < stack_array_alignment) {
+                alloca->setAlignment(llvm::Align(stack_array_alignment));
+            }
+        }
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
             if (llvm::MaybeAlign alignment = known_underalignment(x->getType(), y,
