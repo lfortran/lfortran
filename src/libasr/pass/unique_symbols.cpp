@@ -94,6 +94,25 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
     }
 
+    // An interface of an external procedure (an interface body, an
+    // `external` statement or an implicit interface) refers to a global
+    // procedure, so it is named like the global procedure itself, whatever
+    // module or procedure declares the interface.
+    bool is_external_procedure_interface(const ASR::FunctionType_t *f_type) {
+        return ASRUtils::is_declaration_deftype(f_type->m_deftype)
+            && f_type->m_abi != ASR::abiType::Intrinsic
+            && f_type->m_abi != ASR::abiType::BindC
+            && !f_type->m_module;
+    }
+
+    std::string update_global_name(const std::string &curr_name) {
+        if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran")
+                || startswith(curr_name, "_lcompilers_")) {
+            return update_name(curr_name);
+        }
+        return curr_name + "_" + lcompilers_unique_ID_separate_compilation;
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
         current_scope = xx.m_symtab;
@@ -165,7 +184,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if (bindc_mangling || f_type->m_abi != ASR::abiType::BindC) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             if (all_symbols_mangling || should_mangle) {
-                sym_to_renamed[sym] = update_name(x.m_name);
+                sym_to_renamed[sym] = is_external_procedure_interface(f_type)
+                    ? update_global_name(x.m_name) : update_name(x.m_name);
             }
             if ( fortran_mangling ) {
                 if ( sym_to_renamed.find(sym) != sym_to_renamed.end()
