@@ -3130,7 +3130,7 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name,
         llvm::GlobalValue::LinkageTypes linkage,
-        std::string data_name){
+        std::string data_name, bool external_data){
         if (data_name.empty()) {
             data_name = name + "_data";
         }
@@ -3192,8 +3192,8 @@ namespace LCompilers {
                     *module,
                     char_array_type,
                     is_const,
-                    linkage,
-                    const_data_as_array,
+                    external_data ? llvm::GlobalValue::ExternalLinkage : linkage,
+                    external_data ? nullptr : const_data_as_array,
                     data_name
                 );
                 llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
@@ -3217,7 +3217,7 @@ namespace LCompilers {
                 llvm::GlobalVariable* global_string_desc = new llvm::GlobalVariable(
                         *module,
                         string_descriptor, false,
-                        linkage,
+                        external_data ? llvm::GlobalValue::PrivateLinkage : linkage,
                         string_descriptor_constant,
                         name);
                 return global_string_desc;
@@ -3233,7 +3233,8 @@ namespace LCompilers {
 llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     Allocator& /*al*/, ASR::Array_t* array_t, 
     ASR::ArrayConstant_t* arrayConst_t, std::string name,
-    std::string data_name, llvm::GlobalValue::LinkageTypes data_linkage)
+    std::string data_name, llvm::GlobalValue::LinkageTypes data_linkage,
+    bool external_data)
 {
     LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerArray)
 
@@ -3284,7 +3285,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module, char_array_type, false, 
-                data_linkage, const_data_as_array, data_name
+                external_data ? llvm::GlobalValue::ExternalLinkage : data_linkage,
+                external_data ? nullptr : const_data_as_array, data_name
             );
 
             llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);

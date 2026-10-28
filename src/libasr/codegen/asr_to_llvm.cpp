@@ -7461,7 +7461,8 @@ public:
     // setting it up again would overwrite whatever it holds by now.
     bool is_earlier_cell_global(const ASR::Variable_t &x) {
         return compiler_options.interactive
-            && x.m_abi == ASR::abiType::ExternalUndefined;
+            && (x.m_abi == ASR::abiType::ExternalUndefined ||
+                x.m_storage == ASR::storage_typeType::ExternalStorage);
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -7482,10 +7483,12 @@ public:
         // translation unit, just referenced).
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
-        bool external = (x.m_abi != ASR::abiType::Source);
+        bool external = x.m_abi != ASR::abiType::Source ||
+            x.m_storage == ASR::storage_typeType::ExternalStorage;
         // BindC variables defined in this module (intent local) are
         // definitions, not external declarations
         if (x.m_abi == ASR::abiType::BindC &&
+                x.m_storage != ASR::storage_typeType::ExternalStorage &&
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
@@ -7659,7 +7662,7 @@ public:
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr,
                         llvm_var_name + "__desc", llvm_var_name,
                         needs_common_linkage_for_global(x) ? llvm::GlobalValue::CommonLinkage
-                            : llvm::GlobalValue::ExternalLinkage));
+                            : llvm::GlobalValue::ExternalLinkage, external));
                 } else if (external) {
                     ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 } else {
@@ -7748,7 +7751,7 @@ public:
             ASR::String_t* str = ASRUtils::get_string_type(x.m_type);
             llvm::Value *ptr{};
                 bool is_const = (x.m_storage == ASR::storage_typeType::Parameter);
-                if (!external) {
+                if (!external || x.m_abi == ASR::abiType::BindC) {
                     std::string initial_string_value;
                     if (x.m_symbolic_value) {
                         ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_symbolic_value));
@@ -7773,8 +7776,8 @@ public:
                         data_name = llvm_var_name;
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
-                        is_const, desc_name, string_linkage, data_name);
-                    if (needs_common_linkage_for_global(x)) {
+                        is_const, desc_name, string_linkage, data_name, external);
+                    if (!external && needs_common_linkage_for_global(x)) {
                         llvm::GlobalVariable* data = module->getNamedGlobal(data_name);
                         // Common linkage applies to the C-visible storage, not
                         // the descriptor, and requires a zero initializer.

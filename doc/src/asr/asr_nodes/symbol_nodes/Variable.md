@@ -27,7 +27,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
 | `symbolic_value` | the initializer as written, before folding. |
 | `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
-| `storage` | `Default`, `Save` for a variable that keeps its value between calls, or `Parameter` for a named constant. |
+| `storage` | `Default`, `Save` for a variable that keeps its value between calls, `Parameter` for a named constant, `Threadprivate`, or `ExternalStorage` for a global whose storage is defined in another translation unit. |
 | `type` | the type of the variable. |
 | `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
 | `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. A variable with a `common_block` has the `Source` ABI but no allocation of its own: its storage is that of the block, and the [CommonBlock](CommonBlock.md) view gives the ABI and the role of the block's definition. |
@@ -64,6 +64,12 @@ the symbol itself.
 initializer as the user wrote it, and `value` is what it folds to.
 `storage=Parameter` requires `value`, since a named constant is substituted
 wherever it is used.
+
+`storage=ExternalStorage` is a declaration, not a second definition of the global.
+It preserves the variable's ABI, binding label and type. In particular, a
+`BindC` global from an earlier interactive cell keeps its C name and layout,
+but later cells must neither allocate nor initialize its storage again.
+Character descriptors may be local views of the externally defined C storage.
 
 A variable in a COMMON block has no storage of its own. Its `common_block`
 names the view of the block that its own scoping unit declares, and its

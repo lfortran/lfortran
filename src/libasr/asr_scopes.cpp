@@ -45,8 +45,16 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
                 // A variable in a common block has no storage of its own to
                 // refer to; its block becomes External below.
-                if ( v->m_abi == ASR::abiType::BindC ||
-                        v->m_common_block != nullptr ) {
+                if (v->m_common_block != nullptr) {
+                    break;
+                }
+                if (v->m_abi == ASR::abiType::BindC) {
+                    if (ASRUtils::is_tu_scope(this) ||
+                            (asr_owner && ASR::is_a<ASR::symbol_t>(*asr_owner) &&
+                             ASR::is_a<ASR::Module_t>(
+                                 *ASR::down_cast<ASR::symbol_t>(asr_owner)))) {
+                        v->m_storage = ASR::storage_typeType::ExternalStorage;
+                    }
                     break;
                 }
                 v->m_abi = ASR::abiType::ExternalUndefined;

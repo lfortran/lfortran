@@ -2842,6 +2842,90 @@ end program
     REQUIRE(r.result.i32 == 15);
 }
 
+TEST_CASE("FortranEvaluator initialized bind(c) global across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    SUBCASE("normal") {}
+    SUBCASE("fast") { cu.po.fast = true; }
+    SUBCASE("Fortran 2023") { cu.std_f23_conformance = true; }
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(module zb
+integer, bind(c) :: gi = 7
+end module
+)").ok);
+    REQUIRE(e.evaluate2("use zb\n").ok);
+    auto r = e.evaluate2("gi\n");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 7);
+    REQUIRE(e.evaluate2("gi = 19\n").ok);
+    REQUIRE(e.evaluate2("1+1\n").ok);
+    r = e.evaluate2("gi\n");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 19);
+}
+
+TEST_CASE("FortranEvaluator bind(c) global storage persists across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    SUBCASE("normal") {}
+    SUBCASE("fast") { cu.po.fast = true; }
+    SUBCASE("Fortran 2023") { cu.std_f23_conformance = true; }
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(module zb2
+use iso_c_binding
+implicit none
+type, bind(c) :: t
+    integer(c_int) :: z
+end type
+type(t), bind(c) :: gx = t(7)
+integer(c_int), bind(c, name="cell_named") :: named = 8
+integer(c_int), bind(c, name="") :: unnamed = 9
+integer(c_int), bind(c) :: uninitialized
+integer(c_int), bind(c), target :: target_value = 42
+type(c_ptr), bind(c) :: gp = c_null_ptr
+integer :: regular = 11
+real(c_double), bind(c) :: gr = 1.5
+complex(c_double_complex), bind(c) :: gz = (2.0, 3.0)
+logical(c_bool), bind(c) :: gl = .true.
+character(c_char), bind(c) :: gc = 'a'
+integer(c_int), bind(c) :: ga(2) = [4, 5]
+character(c_char), bind(c) :: gca(2) = ['b', 'c']
+end module
+)").ok);
+    REQUIRE(e.evaluate2("use zb2\n").ok);
+    REQUIRE(e.evaluate2(R"(if (gx%z /= 7 .or. named /= 8 .or. unnamed /= 9) error stop
+if (gr /= 1.5 .or. gz /= (2.0, 3.0) .or. .not. gl) error stop
+if (gc /= 'a' .or. any(ga /= [4, 5]) .or. any(gca /= ['b', 'c'])) error stop
+if (c_associated(gp) .or. regular /= 11) error stop
+gx%z = 17
+named = 18
+unnamed = 19
+uninitialized = 20
+gr = 2.5
+gz = (3.0, 4.0)
+gl = .false.
+gc = 'z'
+ga = [6, 7]
+gca = ['x', 'y']
+gp = c_loc(target_value)
+regular = 21
+)").ok);
+    REQUIRE(e.evaluate2(R"(program p
+use zb2
+implicit none
+if (gx%z /= 17 .or. named /= 18 .or. unnamed /= 19) error stop
+if (uninitialized /= 20 .or. gr /= 2.5 .or. gz /= (3.0, 4.0) .or. gl) error stop
+if (gc /= 'z' .or. any(ga /= [6, 7]) .or. any(gca /= ['x', 'y'])) error stop
+if (.not. c_associated(gp, c_loc(target_value)) .or. regular /= 21) error stop
+end program
+)").ok);
+    auto r = e.evaluate2("gx%z + uninitialized\n");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 37);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;

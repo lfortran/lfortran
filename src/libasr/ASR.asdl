@@ -299,7 +299,9 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter | Threadprivate
+-- ExternalStorage refers to a global's storage defined in another translation unit,
+-- independently of its ABI (in particular, a BindC variable keeps its C ABI).
+storage_type = Default | Save | Parameter | Threadprivate | ExternalStorage
 -- How a CommonBlock view provides the block's storage: a Tentative view
 -- gives no initial value, an Initialized one gives initial values (even all
 -- zero ones) through its variables, and an External one (in a module read
