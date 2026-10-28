@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-elemental_28-81af385",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/../integration_tests/elemental_28.f90",
+    "infile_hash": "d2dce16dd99c2db9ef190a7fd09e62b54e545748a4b74da2f96df191",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-elemental_28-81af385.f90",
+    "stdout_hash": "824ecdfcc5ec8a5b902334eeb64b6b3e8b7aafcd5ce92b7b74649360",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

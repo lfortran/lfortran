@@ -581,6 +581,13 @@ void set_allocation_dims_elemental_function(
     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(elemental_function->m_type);
     allocate_dims.reserve(al, n_dims);
     ASR::expr_t* first_array_arg = get_first_array_function_args(elemental_function);
+    // A fused argument is scalarized later; size its array operand, not
+    // the elemental expression that will become a scalar function call.
+    ASR::expr_t* shape_arg = ASRUtils::get_expr_size_expr(
+        ASRUtils::get_past_array_physical_cast(first_array_arg));
+    if (shape_arg != nullptr) {
+        first_array_arg = shape_arg;
+    }
     // Set allocate_dims
     for( size_t i = 0; i < n_dims; i++ ) {
         ASR::dimension_t allocate_dim;
@@ -2400,8 +2407,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // Section operands of reductions that array_op lowers into a loop, read
     // in place (see get_sections_read_in_place)
     std::set<ASR::expr_t*>& sections_read_in_place;
-    // Operations in arguments of elemental intrinsic functions in those
-    // operands, read in place too
+    // Operations in arguments of elemental intrinsic functions, read in place
     std::set<ASR::expr_t*> operations_read_in_place;
     // The MatMul operand of the value of the current assignment that is
     // computed into its target, the target, the operand that replaces the
@@ -3485,6 +3491,30 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
+            // array_op indexes an elemental intrinsic's operands alongside
+            // its result. Leave intrinsic array expressions in place, just
+            // as for reduction operands, but keep function calls materialized.
+            // WHERE has its own rules for evaluating masked operands.
+            // LHS reallocation must still be able to recover the operand's shape.
+            // A pointer or storage-associated target may overlap another name
+            // in the value, which the ordinary self-reference check cannot see.
+            bool unaliased_target = lhs_var == nullptr ||
+                (ASR::is_a<ASR::Var_t>(*lhs_var) && is_unaliased_variable(
+                    ASR::down_cast<ASR::Var_t>(lhs_var)->m_v));
+            // Mutating list intrinsics have no result type to inspect.
+            if (!inside_where && unaliased_target && x.m_type != nullptr &&
+                    ASRUtils::ElementwiseReduction::is_elementwise_operation(
+                    const_cast<ASR::expr_t*>(&x.base))) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (x.m_args[i] != nullptr &&
+                            ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i]) &&
+                            ASRUtils::get_expr_size_expr(
+                                ASRUtils::get_past_array_physical_cast(x.m_args[i])) != nullptr) {
+                        operations_read_in_place.insert(
+                            ASRUtils::get_past_array_physical_cast(x.m_args[i]));
+                    }
+                }
+            }
             visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
                 ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
             auto& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
@@ -5654,8 +5684,13 @@ class VerifySimplifierASROutput:
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
+            bool elementwise = x.m_type != nullptr &&
+                ASRUtils::ElementwiseReduction::is_elementwise_operation(
+                    const_cast<ASR::expr_t*>(&x.base));
             for (size_t i = 0; i < x.n_args; i++) {
-                if (operations_read_in_place.count(x.m_args[i]) > 0) {
+                if (operations_read_in_place.count(x.m_args[i]) > 0 ||
+                        (elementwise && x.m_args[i] != nullptr &&
+                         ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i]))) {
                     visit_expr(*x.m_args[i]);
                 } else {
                     check_for_var_if_array(x.m_args[i]);
