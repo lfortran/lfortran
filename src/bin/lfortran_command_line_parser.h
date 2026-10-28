@@ -94,6 +94,7 @@ namespace LCompilers::CommandLineInterface {
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
         std::vector<std::string> linker_flags;
+        std::vector<std::string> emscripten_settings;
         std::vector<std::string> f_flags;
         std::vector<std::string> O_flags;
 

@@ -63,6 +63,8 @@ set(SRC
     test_gpu.cpp
     ../../bin/cuda_link_helpers.cpp
     ../../tests/test_cuda_link_helpers.cpp
+    ../../bin/lfortran_command_line_parser.cpp
+    ../../tests/test_emscripten_options.cpp
 )
 
 if (WITH_JSON)
