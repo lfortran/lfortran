@@ -336,6 +336,12 @@ public:
             case ASR::exprType::ArraySection: {
                 return extract_assignment_base_symbol(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
             }
+            case ASR::exprType::StringItem: {
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+            }
+            case ASR::exprType::StringSection: {
+                return extract_assignment_base_symbol(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+            }
             case ASR::exprType::ArrayPhysicalCast: {
                 return extract_assignment_base_symbol(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
             }
@@ -409,9 +415,60 @@ public:
         return false;
     }
 
+    void check_pure_assignment_target(ASR::expr_t* target,
+            const Location& assignment_loc) {
+        SymbolTable *procedure_scope = current_scope;
+        while (procedure_scope) {
+            ASR::asr_t *owner = procedure_scope->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+                ASR::Function_t *procedure = ASR::down_cast<ASR::Function_t>(
+                    ASR::down_cast<ASR::symbol_t>(owner));
+                if (!ASRUtils::get_FunctionType(procedure)->m_pure) {
+                    return;
+                }
+                break;
+            }
+            procedure_scope = procedure_scope->parent;
+        }
+        if (!procedure_scope) {
+            return;
+        }
+        ASR::symbol_t *base = extract_assignment_base_symbol(target);
+        if (!base) {
+            return;
+        }
+        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(base);
+        if (!ASR::is_a<ASR::Variable_t>(*resolved)) {
+            return;
+        }
+        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(resolved);
+        // BLOCK locals and the procedure's own result are local definitions.
+        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
+            if (scope == variable->m_parent_symtab) {
+                return;
+            }
+            if (scope == procedure_scope) {
+                break;
+            }
+        }
+        std::string association = ASR::is_a<ASR::ExternalSymbol_t>(*base)
+            ? "use-associated" : "host-associated";
+        diag.add(diag::Diagnostic(
+            "cannot assign to " + association + " variable '" +
+            std::string(variable->m_name) + "' in a pure procedure",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("", {assignment_loc})
+            }));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
+
     // Checks that depend only on the target of an assignment, not its value.
     void check_assignment_target(ASR::expr_t* target,
             const Location& assignment_loc) {
+        check_pure_assignment_target(target, assignment_loc);
         check_assignment_to_constant_variable(
             extract_assignment_base_symbol(target), assignment_loc);
         // A complex part (`z%re = y`) is assigned through its complex base.
