@@ -2612,6 +2612,20 @@ public:
                 ASRUtils::is_pointer(expr_type(tmp_expr)));
             visit_expr_load_wrapper(tmp_expr, 0);
             llvm::Value* x_arr = tmp;
+            // Allocating an associated pointer is not an error: it creates a
+            // new target and breaks the previous association (F2023 9.7.1.4).
+            // Only an allocatable must not be allocated already. A
+            // character-array pointer is still checked: after `p => t` it
+            // shares the string descriptor of `t`, which allocating in place
+            // would overwrite.
+            ASR::ttype_t* alloc_arg_type = ASRUtils::expr_type(tmp_expr);
+            bool is_pointer_arg = ASRUtils::is_pointer(alloc_arg_type);
+            bool shares_string_descriptor = is_pointer_arg
+                && ASRUtils::is_array(alloc_arg_type)
+                && ASRUtils::is_character(*alloc_arg_type)
+                && ASRUtils::extract_physical_type(alloc_arg_type)
+                    == ASR::array_physical_typeType::DescriptorArray;
+            bool check_allocated = !realloc && (!is_pointer_arg || shares_string_descriptor);
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
@@ -2630,7 +2644,8 @@ public:
                     } else {
                         amount_to_allocate = nullptr;
                     }
-                    llvm_utils->allocate_allocatable_string(str, x_arr, amount_to_allocate);
+                    llvm_utils->allocate_allocatable_string(str, x_arr, amount_to_allocate,
+                        !is_pointer_arg);
                 } else if(ASR::is_a<ASR::Integer_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Real_t>(*curr_arg_m_a_type) ||
                           ASR::is_a<ASR::Complex_t>(*curr_arg_m_a_type) ||
@@ -2645,7 +2660,7 @@ public:
                         builder->CreateStore(builder->CreateBitCast(
                             malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
                     };
-                    if (!realloc && compiler_options.po.bounds_checking) {
+                    if (check_allocated && compiler_options.po.bounds_checking) {
                         llvm::Value* current_ptr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         llvm::Value* is_allocated = builder->CreateICmpNE(
                             builder->CreatePtrToInt(current_ptr, llvm::Type::getInt64Ty(context)),
@@ -3023,10 +3038,11 @@ public:
                 }
                 llvm::Value* is_allocated = nullptr;
                 std::string var_name = "";
-                if (m_stat) {
+                if (check_allocated && m_stat) {
                     handle_allocated(tmp_expr);
                     is_allocated = tmp;
-                } else if (!realloc && compiler_options.po.bounds_checking && x_arr && x_arr->getType() != nullptr) {
+                } else if (check_allocated && compiler_options.po.bounds_checking
+                        && x_arr && x_arr->getType() != nullptr) {
                     llvm::Value* desc_ptr = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
                     is_allocated = arr_descr->get_is_allocated_flag(desc_ptr, tmp_expr);
                     if (ASR::is_a<ASR::Var_t>(*tmp_expr)) {
@@ -3035,7 +3051,7 @@ public:
                         var_name = ASRUtils::symbol_name(sym);
                     }
                 }
-                if (!realloc && compiler_options.po.bounds_checking && is_allocated != nullptr && !m_stat) {
+                if (check_allocated && compiler_options.po.bounds_checking && is_allocated != nullptr && !m_stat) {
                     llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var_name);
                     llvm_utils->generate_runtime_error(is_allocated,
                         "Attempting to allocate already allocated variable '%s'",
@@ -3059,6 +3075,19 @@ public:
                             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
                             is_dummy_arg = ASRUtils::is_arg_dummy(v->m_intent);
                         }
+                    }
+                    if (is_pointer_arg && owns_class_array_wrapper(alloc_arg_type)) {
+                        // The pointer owns its class wrapper (pointer assignment
+                        // copies it), and the new target gets a new one: free
+                        // the old wrapper, but not the old target it refers to.
+                        llvm::Value* desc = llvm_utils->CreateLoad2(type->getPointerTo(),
+                            (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
+                        llvm_utils->create_if_else(builder->CreateIsNotNull(desc), [&]() {
+                            free_owned_class_array_wrapper(tmp_expr,
+                                arr_descr->get_pointer_to_data(type, desc));
+                            arr_descr->reset_is_allocated_flag(type, desc, llvm_utils->get_el_type(
+                                tmp_expr, ASRUtils::extract_type(alloc_arg_type), module.get()));
+                        }, []() {});
                     }
                     if (is_struct_member || is_dummy_arg || compiler_options.po.strict_bounds_checking) {
                         llvm_utils->create_if_else(
@@ -3216,7 +3245,7 @@ public:
                             ASRUtils::expr_type(tmp_expr), allocated_subclass);
                     }
                 };
-                if (m_stat && !realloc && is_allocated != nullptr) {
+                if (m_stat && check_allocated && is_allocated != nullptr) {
                     llvm_utils->create_if_else(
                         is_allocated,
                         [&]() {

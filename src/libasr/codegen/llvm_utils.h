@@ -627,8 +627,11 @@ class ASRToLLVMVisitor;
                 - If not deferred length, Use length set by user while declaration.
                 - If deferred length, set the desired amount as the current length.
                 - If not deferred length, Keep the length set by the user while declaration.
+                - If `check_allocated` (an allocatable, not a pointer), stop with a runtime
+                  error when the string is already allocated.
             */
-            void allocate_allocatable_string(ASR::String_t* str_type,llvm::Value* str, llvm::Value* amount_to_allocate);
+            void allocate_allocatable_string(ASR::String_t* str_type,llvm::Value* str, llvm::Value* amount_to_allocate,
+                bool check_allocated);
 
             /*
                 Corresponds to the process of allocating an array of strings.
