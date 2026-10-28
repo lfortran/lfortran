@@ -15,6 +15,89 @@
 
 namespace LCompilers {
 
+// Whether another variable may share the storage of `var` by storage
+// association: `var` lives in a common block, as a member or placed there by
+// EQUIVALENCE (the view of the same block in another scoping unit, accessible
+// by host or use association, is a different variable), or `var` is an
+// EQUIVALENCE alias whose initializer is the address of the storage of
+// another variable (a module variable, which is not of pointer type; other
+// EQUIVALENCE aliases are pointers).
+bool is_storage_associated(const ASR::Variable_t* var) {
+    if( var->m_common_block != nullptr ) {
+        return true;
+    }
+    ASR::expr_t* init = var->m_symbolic_value;
+    if( init && ASR::is_a<ASR::BitCast_t>(*init) ) {
+        init = ASR::down_cast<ASR::BitCast_t>(init)->m_source;
+    }
+    return init && ASR::is_a<ASR::GetPointer_t>(*init);
+}
+
+// Whether `x` is a variable, or a component or an element of one, through
+// which no pointer can reach its storage and that shares it with no other
+// variable: the variable is neither a pointer (which includes an associate
+// name), nor a target, nor a named constant, nor storage associated (see
+// is_storage_associated), no component on the way is a pointer, every
+// component is selected out of a scalar and every subscript is a constant or
+// such a scalar integer variable, e.g. `a`, `o%in`, `arr(i)` or `arr(2)%in`.
+bool is_unaliased_designator(ASR::expr_t* x) {
+    switch( x->type ) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x)->m_v);
+            if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                return false;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            return !ASRUtils::is_pointer(var->m_type) && !var->m_target_attr &&
+                var->m_storage != ASR::storage_typeType::Parameter &&
+                !is_storage_associated(var);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* member =
+                ASR::down_cast<ASR::StructInstanceMember_t>(x);
+            return !ASRUtils::is_pointer(ASRUtils::symbol_type(
+                    ASRUtils::symbol_get_past_external(member->m_m))) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) &&
+                is_unaliased_designator(member->m_v);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
+            if( ASRUtils::is_array(item->m_type) ) {
+                return false;
+            }
+            for( size_t i = 0; i < item->n_args; i++ ) {
+                ASR::expr_t* index = item->m_args[i].m_right;
+                if( item->m_args[i].m_left || item->m_args[i].m_step ||
+                    index == nullptr ) {
+                    return false;
+                }
+                if( ASRUtils::is_value_constant(ASRUtils::expr_value(index)) ) {
+                    continue;
+                }
+                if( !ASR::is_a<ASR::Var_t>(*index) ) {
+                    return false;
+                }
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(index)->m_v);
+                if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                    return false;
+                }
+                ASR::ttype_t* type = ASRUtils::symbol_type(sym);
+                if( !ASRUtils::is_integer(*type) || ASRUtils::is_array(type) ||
+                    ASRUtils::is_pointer(type) || is_storage_associated(
+                        ASR::down_cast<ASR::Variable_t>(sym)) ) {
+                    return false;
+                }
+            }
+            return is_unaliased_designator(item->m_v);
+        }
+        default: {
+            return false;
+        }
+    }
+}
+
 bool is_vectorise_able(ASR::expr_t* x) {
     switch( x->type ) {
         case ASR::exprType::FunctionCall: {
@@ -39,6 +122,11 @@ bool is_vectorise_able(ASR::expr_t* x) {
         case ASR::exprType::ComplexUnaryMinus:
         case ASR::exprType::Var: {
             return true;
+        }
+        // An array component, such as `a%x`, `o%in%x` or `arr(i)%x`, that
+        // no pointer can reach is read element by element like a variable.
+        case ASR::exprType::StructInstanceMember: {
+            return is_unaliased_designator(x);
         }
         default: {
             return false;

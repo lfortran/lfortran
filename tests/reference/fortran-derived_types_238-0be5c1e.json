@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-derived_types_238-0be5c1e",
+    "cmd": "lfortran --pass=array_struct_temporary --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/../integration_tests/derived_types_238.f90",
+    "infile_hash": "1efb7754a7f91117290298dd7ff79e3791c641880fed2682720f390d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-derived_types_238-0be5c1e.f90",
+    "stdout_hash": "8b88b7f57d9be1ca99d31134f636e35c25e685968385e35b0ed5460d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
