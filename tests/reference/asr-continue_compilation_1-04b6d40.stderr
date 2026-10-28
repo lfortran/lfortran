@@ -1581,6 +1581,12 @@ semantic error: the volatile statement requires a list of entities
 3811 |         volatile  ! {Error} the volatile statement requires a list of entities
      |         ^^^^^^^^ 
 
+semantic error: the asynchronous statement requires a list of entities
+    --> tests/errors/continue_compilation_1.f90:3820:9
+     |
+3820 |         asynchronous  ! {Error} the asynchronous statement requires a list of entities
+     |         ^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

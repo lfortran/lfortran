@@ -31,9 +31,10 @@ removes such an assignment, `x = v`, when all of this holds:
 * `x` is a whole array of an intrinsic type, named without subscripts: a
   variable, a chain of components, or an associate name, but not another
   pointer, nor a component through a pointer, nor a member of a common
-  block. Its shape stays: if it is allocatable, `v` is a scalar. `v` calls
-  no procedure and no impure intrinsic, and the assignment is not a defined
-  assignment.
+  block, nor volatile or asynchronous (another agent or a pending
+  asynchronous operation may read it at any call). Its shape stays: if it
+  is allocatable, `v` is a scalar. `v` calls no procedure and no impure
+  intrinsic, and the assignment is not a defined assignment.
 * A later assignment `x = w` of the same list of statements, or of a
   `block` or `associate` construct that list runs unconditionally, assigns
   every element again: it names `x` in the same way and is not a defined
@@ -207,7 +208,10 @@ private:
             return nullptr;
         }
         ASR::Variable_t *root = ASR::down_cast<ASR::Variable_t>(chain[0]);
-        if (root->m_common_block || root->m_is_volatile) return nullptr;
+        if (root->m_common_block || root->m_is_volatile
+                || root->m_is_asynchronous) {
+            return nullptr;
+        }
         // An associate name is bound once; another pointer may be
         // associated with something else in between.
         if (is_pointer_variable(chain[0])) {

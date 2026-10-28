@@ -3880,3 +3880,12 @@ contains
         x = 1
     end subroutine
 end module cc1_volatile_no_entities
+
+module cc1_asynchronous_no_entities
+contains
+    subroutine cc1_asynchronous_no_entities_sub(x)
+        integer :: x
+        asynchronous  ! {Error} the asynchronous statement requires a list of entities
+        x = 1
+    end subroutine
+end module cc1_asynchronous_no_entities

@@ -1979,7 +1979,8 @@ bool gpu_may_be_aliased(ASR::symbol_t *s,
     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
     if (v->m_storage == ASR::storage_typeType::Parameter) return false;
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
-        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+        || v->m_common_block || v->m_is_volatile || v->m_is_asynchronous
+        || address_taken.count(s);
 }
 
 } // namespace LCompilers

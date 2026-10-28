@@ -8288,6 +8288,11 @@ public:
                             // TODO: Implement it for CPP backend
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrAsynchronous) {
+                            diag.add(Diagnostic(
+                                "the asynchronous statement requires a list of entities",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrVolatile) {
                             diag.add(Diagnostic(
