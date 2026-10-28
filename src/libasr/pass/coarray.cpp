@@ -3177,7 +3177,7 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Assignment_t(
                 replacer.al, loc, a, tmp_var, nullptr, false, false, false, false)));
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                replacer.al, loc, dealloc_vars.p, dealloc_vars.n)));
+                replacer.al, loc, dealloc_vars.p, dealloc_vars.n, nullptr, nullptr)));
 
             Vec<ASR::stmt_t*> else_body; else_body.reserve(replacer.al, 1);
             else_body.push_back(replacer.al, call_orig);
@@ -3450,14 +3450,14 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                             }
                             if (is_co) {
                                 replacer.prif.make_deallocate_coarray_stmts(
-                                    x->base.base.loc, a, nullptr, nullptr, body);
+                                    x->base.base.loc, a, x->m_stat, x->m_errmsg, body);
                             } else {
                                 non_coarray_vars.push_back(replacer.al, a);
                             }
                         }
                         if (non_coarray_vars.size() > 0) {
                             ASR::stmt_t *new_dealloc = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                                replacer.al, x->base.base.loc, non_coarray_vars.p, non_coarray_vars.size()));
+                                replacer.al, x->base.base.loc, non_coarray_vars.p, non_coarray_vars.size(), x->m_stat, x->m_errmsg));
                             body.push_back(replacer.al, new_dealloc);
                         }
                     } else {

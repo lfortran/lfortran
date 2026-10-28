@@ -5340,8 +5340,32 @@ public:
             }
             arg_vec.push_back(al, tmp_expr);
         }
+        ASR::expr_t *stat = nullptr, *errmsg = nullptr;
+        for (size_t i = 0; i < x.n_keywords; i++) {
+            std::string name = to_lower(x.m_keywords[i].m_arg);
+            if (name != "stat" && name != "errmsg") {
+                continue;
+            }
+            this->visit_expr(*(x.m_keywords[i].m_value));
+            ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            bool is_stat = name == "stat";
+            if (ASRUtils::is_array(value_type) || (is_stat ?
+                    !ASRUtils::is_integer(*value_type) :
+                    !ASRUtils::is_character(*value_type))) {
+                diag.add(Diagnostic(
+                    "`" + name + "` argument of `deallocate` must be a scalar of type " +
+                    (is_stat ? "integer" : "character") + ", found " +
+                    ASRUtils::type_to_str_with_kind(value_type, value),
+                    Level::Error, Stage::Semantic, {
+                        Label("", {value->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            (is_stat ? stat : errmsg) = value;
+        }
         tmp = ASR::make_ExplicitDeallocate_t(al, x.base.base.loc,
-                                            arg_vec.p, arg_vec.size());
+                                            arg_vec.p, arg_vec.size(), stat, errmsg);
     }
 
     void visit_Return(const AST::Return_t& x) {

@@ -330,7 +330,7 @@ public:
             release.push_back(copy_elements(temporary, e, temporary));
         }
         release.push_back(ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-            al, loc, vars.p, vars.size())));
+            al, loc, vars.p, vars.size(), nullptr, nullptr)));
         if (ASR::is_a<ASR::Var_t>(*e) || ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
             // The release is chosen by the same test as the acquisition,
             // even if the statement re-associates `e`.

@@ -7,7 +7,7 @@ The `deallocate` statement written by the user.
 ### Syntax
 
 ```text
-ExplicitDeallocate(expr* vars)
+ExplicitDeallocate(expr* vars, expr? stat, expr? errmsg)
 ```
 
 ### Arguments
@@ -15,6 +15,8 @@ ExplicitDeallocate(expr* vars)
 | Argument | Description |
 |----------|-------------|
 | `vars` | the allocatables and pointers to deallocate. |
+| `stat` | a variable receiving the status: zero on success, non-zero if an object is not allocated. With `stat` the program continues after a failed deallocation. |
+| `errmsg` | a character variable receiving the error message. |
 
 ### Return values
 
@@ -35,6 +37,10 @@ compiler inserts and which does nothing in that case.
       :v (SymbolRef 1 "a")
     )
   ]
+  :stat (Var
+    :v (SymbolRef 1 "stat")
+  )
+  :errmsg nil
 )
 ```
 

@@ -709,7 +709,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     dealloc_args.push_back(al, member_expr);
                     ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(
                         ASR::make_ExplicitDeallocate_t(al, loc,
-                            dealloc_args.p, dealloc_args.n));
+                            dealloc_args.p, dealloc_args.n, nullptr, nullptr));
 
                     Vec<ASR::stmt_t*> if_body;
                     if_body.reserve(al, 1);
@@ -944,7 +944,7 @@ public:
                 dealloc_args.reserve(al, 1);
                 dealloc_args.push_back(al, var_expr);
                 ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                    al, loc, dealloc_args.p, dealloc_args.n));
+                    al, loc, dealloc_args.p, dealloc_args.n, nullptr, nullptr));
 
                 // Create If statement: if (allocated(arg)) deallocate(arg)
                 Vec<ASR::stmt_t*> if_body;

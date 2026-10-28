@@ -5029,6 +5029,11 @@ public:
         }
     }
 
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        verify_sync_stat_list("ExplicitDeallocate", x.base.base.loc, x.m_stat, x.m_errmsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_ExplicitDeallocate(x);
+    }
+
     void visit_SyncAll(const SyncAll_t &x) {
         verify_sync_stat_list("SyncAll", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);

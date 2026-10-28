@@ -1409,7 +1409,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
                     temporary_var->base.loc, 4))))));
     } else if( !add_allocated_check ) {
         current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-            temporary_var->base.loc, dealloc_args.p, dealloc_args.size())));
+            temporary_var->base.loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)));
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
             temporary_var->base.loc, alloc_args.p, alloc_args.size(),
             nullptr, nullptr, nullptr)));
@@ -1423,7 +1423,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
                 allocated_args.p, allocated_args.size(), 0,
                 ASRUtils::TYPE(ASR::make_Logical_t(al, value->base.loc, 4)), nullptr))),
             {ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-                temporary_var->base.loc, dealloc_args.p, dealloc_args.size())),
+                temporary_var->base.loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)),
              ASRUtils::STMT(ASR::make_Allocate_t(al,
                 temporary_var->base.loc, alloc_args.p, alloc_args.size(),
                 nullptr, nullptr, nullptr))},

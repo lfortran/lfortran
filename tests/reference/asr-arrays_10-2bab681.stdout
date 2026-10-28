@@ -77,6 +77,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 x)]
+                        ()
+                        ()
                     )]
                     ()
                 )

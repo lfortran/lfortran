@@ -928,7 +928,7 @@ public:
                     current_body->push_back(al,
                         b.If(not_is_contiguous, {
                             ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-                                array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size())),
+                                array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)),
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
                                 array_var_temporary->base.loc, alloc_args.p, alloc_args.size(),
                                 nullptr, nullptr, nullptr)),
@@ -952,7 +952,7 @@ public:
                     body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                         ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
                     }, {
-                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr))
                     }));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);

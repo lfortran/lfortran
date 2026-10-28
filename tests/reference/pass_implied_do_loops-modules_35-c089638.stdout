@@ -295,6 +295,8 @@
                                             )]
                                             [(ExplicitDeallocate
                                                 [(Var 3 __libasr__created__var__0__array_constructor_)]
+                                                ()
+                                                ()
                                             )
                                             (Allocate
                                                 [((Var 3 __libasr__created__var__0__array_constructor_)
@@ -350,6 +352,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(Var 3 __libasr__created__var__1__array_constructor_)]
+                                            ()
+                                            ()
                                         )
                                         (Allocate
                                             [((Var 3 __libasr__created__var__1__array_constructor_)

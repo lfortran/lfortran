@@ -1702,7 +1702,7 @@ namespace MoveAlloc {
         Vec<ASR::expr_t*> deallocate_to_args; deallocate_to_args.reserve(al, 1);
         deallocate_to_args.push_back(al, args[1]);
         ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-            al, loc, deallocate_to_args.p, deallocate_to_args.n));
+            al, loc, deallocate_to_args.p, deallocate_to_args.n, nullptr, nullptr));
         std::vector<ASR::stmt_t*> deallocate_to_body;
         deallocate_to_body.push_back(deallocate_to);
         body.push_back(al, b.If(is_to_allocated, deallocate_to_body, {}));
@@ -1760,7 +1760,7 @@ namespace MoveAlloc {
             Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
             explicit_deallocate_args.push_back(al, args[0]);
             ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+                al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n, nullptr, nullptr));
             if_body.push_back(explicit_deallocate);
         }
 

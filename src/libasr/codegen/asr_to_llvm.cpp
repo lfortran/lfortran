@@ -3492,11 +3492,43 @@ public:
         return alloc_fun;
     }
 
+    // Returns the address of the integer that a STAT= variable designates.
+    // For an allocatable or pointer scalar the variable itself holds that
+    // address, so it is loaded once.
+    llvm::Value* get_stat_variable_address(ASR::expr_t* m_stat,
+            llvm::Type* stat_llvm_type) {
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(m_stat, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* stat_target = tmp;
+        if (ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(m_stat))) {
+            stat_target = llvm_utils->CreateLoad2(
+                stat_llvm_type->getPointerTo(), stat_target);
+        }
+        return stat_target;
+    }
+
     template <typename T>
-    void visit_Deallocate(const T& x) {
+    void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Function* free_fn = llvm_utils->_Deallocate();
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
+        // STAT= becomes zero on success and nonzero if an object is not
+        // allocated (F2023 9.7.4).
+        llvm::Value* stat_target = nullptr;
+        llvm::Type* stat_llvm_type = nullptr;
+        if (m_stat) {
+            stat_llvm_type = llvm::Type::getIntNTy(context,
+                8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
+            stat_target = get_stat_variable_address(m_stat, stat_llvm_type);
+            builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 0), stat_target);
+        }
+        auto set_stat_not_allocated = [=]() {
+            if (stat_target) {
+                builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+            }
+        };
         for( size_t i = 0; i < x.n_vars; i++ ) {
             ASR::expr_t* tmp_expr = x.m_vars[i];
             ASR::symbol_t* curr_obj = nullptr;
@@ -3659,7 +3691,7 @@ public:
                         }
                         builder->CreateStore(
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_); // Store NULL as identifier for deallocated variable.
-                    }, [](){});
+                    }, set_stat_not_allocated);
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
                         llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
@@ -3693,7 +3725,7 @@ public:
                         } else {
                             call_lfortran_free(free_fn, typ,  llvm_data_type);
                         }
-                    }, [](){});
+                    }, set_stat_not_allocated);
                 }
             }
         }
@@ -3704,7 +3736,7 @@ public:
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        visit_Deallocate(x);
+        visit_Deallocate(x, x.m_stat);
     }
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {

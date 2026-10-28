@@ -82,7 +82,7 @@ stmt
     -- F2018 10.2.2.3). Every other association has NoPointerBounds.
     | Associate(expr target, expr value, pointer_bounds_form form)
     | Cycle(identifier? stmt_name)
-    | ExplicitDeallocate(expr* vars)
+    | ExplicitDeallocate(expr* vars, expr? stat, expr? errmsg)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)

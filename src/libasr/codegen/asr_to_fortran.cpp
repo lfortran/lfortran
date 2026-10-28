@@ -1580,6 +1580,14 @@ public:
             r += src;
             if (i < x.n_vars-1) r += ", ";
         }
+        if (x.m_stat) {
+            visit_expr(*x.m_stat);
+            r += ", stat=" + src;
+        }
+        if (x.m_errmsg) {
+            visit_expr(*x.m_errmsg);
+            r += ", errmsg=" + src;
+        }
         r += ")";
         handle_line_truncation(r, 2);
         r += "\n";

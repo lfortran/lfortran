@@ -206,6 +206,10 @@
                 :v (SymbolRef 1 "a")
               )
             ]
+            :stat (Var
+              :v (SymbolRef 1 "stat")
+            )
+            :errmsg nil
           )
           (Nullify
             :vars [
