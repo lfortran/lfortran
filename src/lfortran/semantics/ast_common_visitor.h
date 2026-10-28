@@ -8160,6 +8160,31 @@ public:
         }
     }
 
+    // A `dimension` statement before the type declaration of a variable
+    // gives it an array type before its element type is known. Once the
+    // element type is known, choose the physical type again, as for a single
+    // declaration of the variable: an array of strings can differ from an
+    // array of numbers of the same shape.
+    ASR::ttype_t* make_array_of_declared_element_type(const Location& loc,
+            ASR::Array_t* array_type, ASR::ttype_t* element_type,
+            ASR::abiType abi, bool is_argument) {
+        if (array_type->m_physical_type ==
+                ASR::array_physical_typeType::AssumedRankArray) {
+            return ASRUtils::TYPE(ASR::make_Array_t(al, loc, element_type,
+                nullptr, 0, ASR::array_physical_typeType::AssumedRankArray,
+                array_type->m_memory_space));
+        }
+        // An assumed-size array is the only array without its last extent
+        // that is not a descriptor.
+        bool is_dimension_star = array_type->m_physical_type !=
+                ASR::array_physical_typeType::DescriptorArray &&
+            array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
+        return ASRUtils::make_Array_t_util(al, loc, element_type,
+            array_type->m_dims, array_type->n_dims, abi, is_argument,
+            ASR::array_physical_typeType::DescriptorArray, false,
+            is_dimension_star, true, array_type->m_memory_space);
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -10649,11 +10674,9 @@ public:
                                 if (is_argument && is_dimension_star) {
                                     symbol_variable->m_type = type;
                                 } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
-                                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
-                                    if(ASRUtils::is_string_only(type)){
-                                        array_type->m_physical_type = ASR::PointerArray; // Making sure it's PointerArray
-                                    }
-                                    array_type->m_type = type;
+                                    symbol_variable->m_type = make_array_of_declared_element_type(
+                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
                                 }
@@ -10752,11 +10775,9 @@ public:
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
                         } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
-                            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
-                            array_type->m_type = type;
-                            if ( ASR::is_a<ASR::String_t>(*type)) {
-                                array_type->m_physical_type = ASRUtils::is_fixed_size_array(array_type->m_dims, array_type->n_dims) ? ASR::array_physical_typeType::PointerArray : ASR::array_physical_typeType::DescriptorArray;
-                            }
+                            symbol_variable->m_type = make_array_of_declared_element_type(
+                                s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                         } else {
                             symbol_variable->m_type = type;
                         }
@@ -11999,8 +12020,9 @@ public:
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             if ( symbol_variable->m_type ) {
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
-                                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(symbol_variable->m_type);
-                                    array_type->m_type = type;
+                                    symbol_variable->m_type = make_array_of_declared_element_type(
+                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
                                 }
