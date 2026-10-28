@@ -6308,6 +6308,16 @@ public:
                     elements.push_back(get_inline_char_member_constant(member_type, value));
                     continue;
                 }
+                // A scalar character member of fixed length gets storage of
+                // its declared length, not of the constant's.
+                if (value == nullptr || ASR::is_a<ASR::StringConstant_t>(*value)) {
+                    llvm::Constant* string_member =
+                        get_fixed_length_string_member_constant(member_type, value);
+                    if (string_member != nullptr) {
+                        elements.push_back(string_member);
+                        continue;
+                    }
+                }
             }
             if (value == nullptr) {
                 auto member2sym = struct_->m_symtab->get_scope();
@@ -9223,6 +9233,53 @@ public:
         return llvm::ConstantDataArray::getString(context, bytes, false);
     }
 
+    // The static value of a scalar CHARACTER member of fixed length that is
+    // neither allocatable nor pointer: a string descriptor pointing at
+    // writable storage of the member's declared length, holding `value_expr`
+    // blank padded or truncated to that length (all blanks when there is no
+    // initializer). The storage belongs to the global the struct constant
+    // initializes, so a write of the full declared length through the member
+    // stays inside it even when no executable code ever sets the member up:
+    // under separate compilation that code runs only in a program that sees
+    // the module. Returns nullptr for any other member, or when the value is
+    // not a string constant.
+    llvm::Constant* get_fixed_length_string_member_constant(
+            ASR::ttype_t* member_type, ASR::expr_t* value_expr) {
+        if (!ASR::is_a<ASR::String_t>(*member_type)) {
+            return nullptr;
+        }
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(member_type);
+        if (str->m_physical_type != ASR::string_physical_typeType::DescriptorString
+                || str->m_len_kind != ASR::string_length_kindType::ExpressionLength
+                || str->m_len == nullptr
+                || !ASRUtils::is_value_constant(str->m_len)) {
+            return nullptr;
+        }
+        std::string data;
+        if (value_expr != nullptr) {
+            ASR::expr_t* value = ASRUtils::expr_value(value_expr);
+            if (value == nullptr || !ASR::is_a<ASR::StringConstant_t>(*value)) {
+                return nullptr;
+            }
+            ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(value);
+            ASR::String_t* sc_type = ASRUtils::get_string_type(sc->m_type);
+            if (sc_type->m_kind != str->m_kind) {
+                return nullptr;
+            }
+            if (sc_type->m_kind > 1) {
+                data = std::string(sc->m_s);
+            } else {
+                int64_t sc_len = 0;
+                ASRUtils::extract_value(sc_type->m_len, sc_len);
+                data = std::string(sc->m_s, (size_t)sc_len);
+            }
+        }
+        llvm::GlobalVariable* gv = llvm::dyn_cast<llvm::GlobalVariable>(
+            llvm_utils->declare_global_string(str, data, false, "string_const"));
+        LCOMPILERS_ASSERT(gv && gv->hasInitializer());
+        return gv->getInitializer();
+    }
+
     void get_type_default_field_values(ASR::symbol_t* struct_sym,
             std::vector<llvm::Constant*>& field_values, ASR::symbol_t* orig_struct_sym) {
         struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
@@ -9242,11 +9299,16 @@ public:
             if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
                 continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            llvm::Constant* string_member = nullptr;
             if (ASRUtils::is_inline_character_struct_member(
                     struct_t, var->m_type)) {
                 // Inline character member is a flat [count*len x i8] byte blob;
                 // build a matching byte constant (space-padded) from its DATA value.
                 field_values.push_back(get_inline_char_member_constant(var->m_type, var->m_value));
+            } else if ((string_member = get_fixed_length_string_member_constant(
+                    var->m_type, var->m_value ? var->m_value
+                        : var->m_symbolic_value)) != nullptr) {
+                field_values.push_back(string_member);
             } else if (ASRUtils::has_static_pointer_target(*var)) {
                 field_values.push_back(llvm::ConstantExpr::getPointerCast(
                     get_static_pointer_target(*var),
