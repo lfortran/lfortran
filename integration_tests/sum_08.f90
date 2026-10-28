@@ -173,5 +173,6 @@ j = any(ip > 4)
 if (i /= 42) error stop 43
 if (j /= -1) error stop 44
 
+deallocate(lp, g%x)
 print *, "ok"
 end program

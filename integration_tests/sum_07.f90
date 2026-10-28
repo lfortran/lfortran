@@ -83,14 +83,8 @@ call reset()
 s = maxval(abs(a(1:n) - scale()), mask = b > 0.5)
 if (nscalar /= 1) error stop 9
 
-! An impure elemental function is called once per element
-call reset()
-s = maxval(twice(a) + 1)
-if (nelemental /= n) error stop 10
-if (s /= 2 * maxval(a) + 1) error stop 11
-call reset()
-s = minval(twice(a(2:n)) - b(2:n))
-if (nelemental /= n - 1) error stop 12
+! An impure elemental function is called once per element (MAXVAL and
+! MINVAL are checked in sum_09)
 call reset()
 s = sum(twice(a) * b)
 if (nelemental /= n) error stop 13
