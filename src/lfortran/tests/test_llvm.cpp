@@ -640,7 +640,7 @@ void inspect_definitions(const std::string &source, bool fast,
     Allocator al(64*1024);
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions co;
-    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
@@ -883,7 +883,7 @@ end module
         {"forward", "_m_forward_real____1"},
         {"pun", "_m_pun"},
         {"bind_c", "bind_c"}};
-    // Nothing in pun (TRANSFER) or in the bind(c) procedure.
+    // Nothing in the bind(c) procedure.
     std::string expected =
         // Elements of self%out and self%w.
         "forward:load float:data; "
@@ -892,9 +892,184 @@ end module
         // The class wrapper (self), the descriptor pointers of the
         // components and the base addresses of their data.
         "forward:load pointer:descriptor; "
-        "forward:store float:data; ";
+        "forward:store float:data; "
+        // TRANSFER reinterprets each element through an untagged scalar;
+        // only the integer elements of the local fixed-size temporary that
+        // holds its result are tagged.
+        "pun:load i32:data; "
+        "pun:store i32:data; ";
     CHECK(tbaa_accesses(source, true, procedures) == expected);
     CHECK(tbaa_accesses(source, false, procedures).empty());
+}
+
+// The runtime allocation functions whose declarations in the module of the
+// LLVM definition of `procedure` have a noalias return value, as
+// "name name ...".
+std::string noalias_allocators(const std::string &source, bool fast,
+        const std::pair<std::string, std::string> &procedure) {
+    std::string result;
+    inspect_definitions(source, fast, {procedure},
+        [&](const std::string &, llvm::Function &fn) {
+            for (const char *name: {"_lfortran_malloc_alloc",
+                    "_lfortran_realloc_alloc",
+                    "_lfortran_get_default_allocator"}) {
+                llvm::Function *f = fn.getParent()->getFunction(name);
+                if (f != nullptr && f->returnDoesNotAlias()) {
+                    result += std::string(name) + " ";
+                }
+            }
+        });
+    return result;
+}
+
+TEST_CASE("LLVM TBAA of local arrays and noalias allocations under --fast") {
+    std::string source = R"(module tbaa_local_ir_m
+use iso_c_binding, only: c_loc, c_ptr
+implicit none
+contains
+
+subroutine automatic(x, n, s)
+    integer, intent(in) :: n
+    real, intent(in) :: x(n)
+    real, intent(out) :: s
+    real :: a(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        a(i) = 2*x(i)
+        s = s + a(i)
+    end do
+end subroutine
+
+subroutine fixed(s)
+    integer, intent(out) :: s
+    integer :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine equivalenced(s)
+    integer, intent(out) :: s
+    real :: r(8)
+    integer :: k(8)
+    equivalence (r, k)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine in_common(s)
+    integer, intent(out) :: s
+    integer :: k(8)
+    common /tbaa_local_blk/ k
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine address_taken(n, s, p)
+    integer, intent(in) :: n
+    integer, intent(out) :: s
+    type(c_ptr), intent(out) :: p
+    integer, target :: k(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        k(i) = i
+        s = s + k(i)
+    end do
+    p = c_loc(k)
+end subroutine
+
+subroutine bind_c(n, s) bind(c)
+    integer, value :: n
+    integer, intent(out) :: s
+    integer :: k(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine volatile_local(s)
+    integer, intent(out) :: s
+    integer, volatile :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine asynchronous_local(s)
+    integer, intent(out) :: s
+    integer, asynchronous :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine saved_local(s)
+    integer, intent(out) :: s
+    integer, save :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        {"automatic", "_m_automatic"},
+        {"fixed", "_m_fixed"},
+        {"equivalenced", "_m_equivalenced"},
+        {"in_common", "_m_in_common"},
+        {"address_taken", "_m_address_taken"},
+        {"bind_c", "bind_c"},
+        {"volatile_local", "_m_volatile_local"},
+        {"asynchronous_local", "_m_asynchronous_local"},
+        {"saved_local", "_m_saved_local"}};
+    // The elements of the automatic array a and of the fixed-size array k
+    // are data. The elements of an array of EQUIVALENCE (k, the storage of
+    // r), of a common block or whose address C_LOC takes are not tagged,
+    // nor is anything in a bind(c) procedure. In equivalenced only the
+    // setup of the descriptor of r, a pointer to k, is tagged, with the
+    // shape [8] that it stores in a local temporary array.
+    std::string expected =
+        "automatic:load float:data; "
+        "automatic:store float:data; "
+        "equivalenced:store i32:data; "
+        "equivalenced:store i64:descriptor; "
+        "equivalenced:store i8:descriptor; "
+        "equivalenced:store pointer:descriptor; "
+        "fixed:load i32:data; "
+        "fixed:store i32:data; ";
+    CHECK(tbaa_accesses(source, true, procedures) == expected);
+    CHECK(tbaa_accesses(source, false, procedures).empty());
+    // The storage of an automatic array comes from _lfortran_malloc_alloc,
+    // which returns fresh memory; realloc may return its argument.
+    CHECK(noalias_allocators(source, true, procedures[0]) ==
+        "_lfortran_malloc_alloc ");
+    CHECK(noalias_allocators(source, false, procedures[0]).empty());
 }
 
 #endif // __EMSCRIPTEN__

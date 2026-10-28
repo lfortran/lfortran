@@ -10243,6 +10243,9 @@ public:
                 }
             }
             llvm_symtab[h] = ptr;
+            if (alias_info_enabled() && is_local_array_storage(*v, ptr)) {
+                local_array_storage.insert(ptr);
+            }
             if( (ASRUtils::is_array(v->m_type) &&
                 ((ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::DescriptorArray) ||
                 (ASRUtils::extract_physical_type(v->m_type) == ASR::array_physical_typeType::StringArraySinglePointer &&
@@ -10402,6 +10405,16 @@ public:
         return is_function_variable(*ASR::down_cast<ASR::Variable_t>(v));
     }
 
+    // Whether the LLVM backend gives LLVM alias information (noalias
+    // parameters and return values, TBAA): under --fast, and not for OpenMP,
+    // coarray or GPU code (see dummies_may_be_noalias).
+    bool alias_info_enabled() const {
+        return compiler_options.po.fast && !compiler_options.openmp &&
+            !compiler_options.po.coarray &&
+            !compiler_options.po.gpu_offload_metal &&
+            !compiler_options.po.gpu_offload_cuda;
+    }
+
     // Under --fast the pointer parameters of the dummy arguments of a
     // Fortran procedure are marked noalias. While a procedure runs, an
     // entity associated with a dummy argument without the POINTER or TARGET
@@ -10416,10 +10429,7 @@ public:
     // OpenMP, coarray or GPU code, where other threads, images or the
     // device access the storage of a dummy argument through the runtime.
     bool dummies_may_be_noalias(const ASR::Function_t &x) {
-        if (!compiler_options.po.fast || compiler_options.openmp ||
-                compiler_options.po.coarray ||
-                compiler_options.po.gpu_offload_metal ||
-                compiler_options.po.gpu_offload_cuda) {
+        if (!alias_info_enabled()) {
             return false;
         }
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
@@ -10506,11 +10516,84 @@ public:
     // Only accesses whose class follows from the form of their address are
     // tagged. Accesses directly through a bitcast pointer (TRANSFER,
     // EQUIVALENCE, unions, select type on class(*)), of other struct
-    // fields, of whole structs, of bytes, of array elements not reached
-    // from a descriptor (explicit-shape and fixed-size arrays), memcpy and
-    // memset and everything inside calls stay untagged, so they may alias
-    // anything.
+    // fields, of whole structs, of bytes, of array elements reached neither
+    // from a descriptor nor from the storage of a local array (see
+    // local_array_storage), such as explicit-shape dummy arguments, memcpy
+    // and memset and everything inside calls stay untagged, so they may
+    // alias anything.
     std::set<llvm::Function*> tbaa_functions;
+
+    // The storage of the local automatic and fixed-size arrays of numeric or
+    // logical type (an alloca, or the result of an allocation call, which
+    // the variable owns) whose elements are "data": the array is not in a
+    // common block, not SAVE, not a named constant, not VOLATILE or
+    // ASYNCHRONOUS or a coarray, and its address is not taken with GetPointer
+    // or PointerToCPtr (EQUIVALENCE, C_LOC), which may reinterpret the storage
+    // (see note_address_taken). The elements are reached by GEPs from this
+    // value (local allocatable arrays are reached through their descriptor,
+    // like any descriptor array).
+    std::set<llvm::Value*> local_array_storage;
+
+    static bool is_local_array_storage(const ASR::Variable_t &v,
+            llvm::Value *ptr) {
+        if (v.m_intent != ASR::intentType::Local ||
+                v.m_storage != ASR::storage_typeType::Default ||
+                v.m_common_block != nullptr ||
+                v.m_is_volatile || v.m_is_asynchronous || v.n_codims != 0 ||
+                !ASRUtils::is_array(v.m_type) ||
+                LLVM::is_llvm_pointer(*v.m_type)) {
+            return false;
+        }
+        ASR::array_physical_typeType physical_type =
+            ASRUtils::extract_physical_type(v.m_type);
+        if (physical_type != ASR::array_physical_typeType::PointerArray &&
+                physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+            return false;
+        }
+        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(v.m_type);
+        if (!ASR::is_a<ASR::Integer_t>(*element_type) &&
+                !ASR::is_a<ASR::UnsignedInteger_t>(*element_type) &&
+                !ASR::is_a<ASR::Real_t>(*element_type) &&
+                !ASR::is_a<ASR::Complex_t>(*element_type) &&
+                !ASR::is_a<ASR::Logical_t>(*element_type)) {
+            return false;
+        }
+        if (llvm::isa<llvm::AllocaInst>(ptr)) {
+            return true;
+        }
+        if (llvm::BitCastInst *cast = llvm::dyn_cast<llvm::BitCastInst>(ptr)) {
+            ptr = cast->getOperand(0);
+        }
+        // With opaque pointers the allocator result needs no bitcast.
+        llvm::CallInst *allocation = llvm::dyn_cast<llvm::CallInst>(ptr);
+        return allocation != nullptr &&
+            allocation->getCalledFunction() != nullptr &&
+            allocation->getCalledFunction()->getName() ==
+                "_lfortran_malloc_alloc";
+    }
+
+    // The storage of a local array whose address `ptr` (or the address of
+    // one of its elements) is taken no longer qualifies for
+    // local_array_storage.
+    void note_address_taken(llvm::Value *ptr) {
+        if (local_array_storage.empty()) {
+            return;
+        }
+        while (true) {
+            if (llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr)) {
+                ptr = gep->getPointerOperand();
+            } else if (llvm::BitCastOperator *cast =
+                    llvm::dyn_cast<llvm::BitCastOperator>(ptr)) {
+                if (local_array_storage.find(ptr) != local_array_storage.end()) {
+                    break;
+                }
+                ptr = cast->getOperand(0);
+            } else {
+                break;
+            }
+        }
+        local_array_storage.erase(ptr);
+    }
 
     // The struct type whose field `gep` selects last and that field, or
     // nullptr if it selects no field.
@@ -10530,8 +10613,9 @@ public:
 
     // Whether `ptr` is the address of an array element (or of a part of a
     // complex element) computed only by GEPs from the base address loaded
-    // from an array descriptor, without selecting a field of any struct
-    // other than a complex number.
+    // from an array descriptor or from the storage of a local array (see
+    // local_array_storage), without selecting a field of any struct other
+    // than a complex number.
     bool is_array_element_address(llvm::Value *ptr) {
         llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr);
         if (gep == nullptr) {
@@ -10548,6 +10632,9 @@ public:
         llvm::Value *base = gep->getPointerOperand();
         if (llvm::isa<llvm::GEPOperator>(base)) {
             return is_array_element_address(base);
+        }
+        if (local_array_storage.find(base) != local_array_storage.end()) {
+            return true;
         }
         llvm::LoadInst *base_addr = llvm::dyn_cast<llvm::LoadInst>(base);
         if (base_addr == nullptr) {
@@ -10584,6 +10671,21 @@ public:
             return data;
         }
         return nullptr;
+    }
+
+    // Under --fast (alias_info_enabled) the result of
+    // _lfortran_malloc_alloc, which allocates the storage of automatic and
+    // allocatable arrays among others, is marked noalias: like malloc, which
+    // it calls through the default or the memory-debugging allocator of the
+    // runtime, it returns storage that no other live pointer reaches.
+    // _lfortran_realloc_alloc may return its argument and is not marked.
+    void mark_fresh_allocations_noalias() {
+        if (!alias_info_enabled()) {
+            return;
+        }
+        if (llvm::Function *f = module->getFunction("_lfortran_malloc_alloc")) {
+            f->setReturnDoesNotAlias();
+        }
     }
 
     void add_tbaa_metadata() {
@@ -11958,6 +12060,7 @@ public:
         ptr_loads = 0;
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
+        note_address_taken(tmp);
         tmp = GetPointerCPtrUtil(tmp, x.m_arg);
     }
 
@@ -11967,6 +12070,7 @@ public:
         this->visit_expr(*x.m_arg);
         ptr_loads = ptr_loads_copy;
         if( !ASR::is_a<ASR::GetPointer_t>(*x.m_arg) ) {
+            note_address_taken(tmp);
             tmp = GetPointerCPtrUtil(tmp, x.m_arg);
         } else if(ASRUtils::is_character(*expr_type(x.m_arg))
                 // An inline bind(C)/SEQUENCE member already points to its bytes
@@ -30047,6 +30151,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     try {
         v.visit_asr((ASR::asr_t&)asr);
         v.add_tbaa_metadata();
+        v.mark_fresh_allocations_noalias();
     } catch (const CodeGenError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
