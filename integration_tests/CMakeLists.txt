@@ -3694,6 +3694,7 @@ RUN(NAME host_assoc_10 LABELS gfortran llvm)
 RUN(NAME host_assoc_11 LABELS gfortran llvm)
 RUN(NAME host_assoc_12 LABELS gfortran llvm)
 RUN(NAME host_assoc_13 LABELS gfortran llvm)
+RUN(NAME host_assoc_15 LABELS gfortran llvm)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
 

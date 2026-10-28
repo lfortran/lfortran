@@ -10304,8 +10304,14 @@ public:
                     // An initializer already laid out as static data describes
                     // every element completely, and the component defaults
                     // this would apply would overwrite it.
+                    //
+                    // An assumed-size array (the pointer view of one, see
+                    // nested_vars) only holds the address of elements that
+                    // it does not own.
                     if (ASRUtils::extract_physical_type(v->m_type) !=
                             ASR::array_physical_typeType::DescriptorArray
+                            && ASRUtils::extract_physical_type(v->m_type) !=
+                            ASR::array_physical_typeType::UnboundedPointerArray
                             && !has_static_struct_array_initializer(v)) {
                         allocate_array_members_of_struct_arrays(v->m_type_declaration, ptr, v->m_type);
                     }
