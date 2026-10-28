@@ -6308,16 +6308,6 @@ public:
                     elements.push_back(get_inline_char_member_constant(member_type, value));
                     continue;
                 }
-                // A scalar character member of fixed length gets storage of
-                // its declared length, not of the constant's.
-                if (value == nullptr || ASR::is_a<ASR::StringConstant_t>(*value)) {
-                    llvm::Constant* string_member =
-                        get_fixed_length_string_member_constant(member_type, value);
-                    if (string_member != nullptr) {
-                        elements.push_back(string_member);
-                        continue;
-                    }
-                }
             }
             if (value == nullptr) {
                 auto member2sym = struct_->m_symtab->get_scope();
@@ -7755,7 +7745,9 @@ public:
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             bool is_class = !struct_t->m_is_cstruct;
-            if (init_value == nullptr) {
+            // Only a definition has an initializer: an external declaration
+            // would just carry the static data its members point to.
+            if (init_value == nullptr && !external) {
                 std::vector<llvm::Constant*> field_values;
                 if (is_class) {
                     // for class types, first field is vtable ptr
