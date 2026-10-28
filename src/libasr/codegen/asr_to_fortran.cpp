@@ -685,9 +685,15 @@ public:
             strcmp(x.m_name, "lfortran_intrinsic_iso_fortran_env") == 0)) {
             return;
         }
-        r = "module";
-        r += " ";
-        r.append(x.m_name);
+        std::string name = x.m_name;
+        if (x.m_parent_module) {
+            name = name.substr(name.find('@') + 1);
+            std::string parent = x.m_parent_module;
+            std::replace(parent.begin(), parent.end(), '@', ':');
+            r = "submodule (" + parent + ") " + name;
+        } else {
+            r = "module " + name;
+        }
         handle_line_truncation(r, 2);
         r += "\n";
         for (auto &item : x.m_symtab->get_scope()) {
@@ -759,9 +765,9 @@ public:
             r += src;
             if (i < func_name.size()) r += "\n";
         }
-        r += "end module";
+        r += x.m_parent_module ? "end submodule" : "end module";
         r += " ";
-        r.append(x.m_name);
+        r += name;
         r += "\n";
         src = r;
     }
@@ -822,6 +828,12 @@ public:
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
+        bool module_procedure = type->m_module && parent_symtab
+            && parent_symtab->asr_owner
+            && ASR::is_a<ASR::Module_t>(*parent_symtab->asr_owner)
+            && (type->m_deftype == ASR::deftypeType::Interface
+                || ASR::down_cast<ASR::Module_t>(
+                    parent_symtab->asr_owner)->m_parent_module);
         if (parent_symtab) {
             for (auto &item : parent_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Struct_t>(*item.second)) {
@@ -857,6 +869,9 @@ public:
         }
         if (type->m_elemental) {
             r += "elemental ";
+        }
+        if (module_procedure) {
+            r += "module ";
         }
         bool is_return_var_declared = false;
         if (x.m_return_var) {
@@ -935,7 +950,7 @@ public:
             }
             append_common_block_declarations(x.m_symtab, variable_declaration);
             append_namelist_declarations(x.m_symtab, variable_declaration);
-            for (size_t i = 0; i < import_struct_type.size(); i ++) {
+            for (size_t i = 0; i < import_struct_type.size() && !module_procedure; i ++) {
                 if (i == 0) {
                     r += indent;
                     r += "import ";
@@ -1075,6 +1090,16 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         // Ensure no stale output leaks when this symbol does not emit a use line.
         src.clear();
+        ASR::Module_t *host = ASRUtils::get_sym_module0(&x.base);
+        while (host && host->m_parent_module) {
+            host = ASR::down_cast<ASR::Module_t>(
+                host->m_symtab->parent->resolve_symbol(host->m_parent_module));
+            ASR::symbol_t *inherited = host->m_symtab->get_symbol(x.m_name);
+            if (inherited && ASRUtils::symbol_get_past_external(inherited)
+                    == ASRUtils::symbol_get_past_external(x.m_external)) {
+                return;
+            }
+        }
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if ((std::string(x.m_name).find('@') != std::string::npos && !is_specific_import(x)) ||
             std::string(x.m_original_name).find('@') != std::string::npos) {
