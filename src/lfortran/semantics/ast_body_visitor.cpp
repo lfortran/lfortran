@@ -7856,12 +7856,30 @@ public:
                         if (dim_b.m_length) {
                             ASRUtils::extract_value(ASRUtils::expr_value(dim_b.m_length), dim_b_int);
                         } else if (ASR::is_a<ASR::ArraySection_t>(*value)) {
-                            // Try to compute array section dimension size
+                            // Try to compute array section dimension size.
+                            // A scalar subscript does not give the section a
+                            // dimension, so dimension `i` of the section comes
+                            // from its `i`-th subscript triplet or vector
+                            // subscript, not from its `i`-th subscript.
                             ASR::ArraySection_t* arr_sec = ASR::down_cast<ASR::ArraySection_t>(value);
-                            if (i < arr_sec->n_args) {
-                                ASR::expr_t* start = arr_sec->m_args[i].m_left;
-                                ASR::expr_t* end = arr_sec->m_args[i].m_right;
-                                ASR::expr_t* step = arr_sec->m_args[i].m_step;
+                            ASR::array_index_t* sec_arg = nullptr;
+                            size_t sec_dim = 0;
+                            for (size_t j = 0; j < arr_sec->n_args; j++) {
+                                ASR::array_index_t &arg = arr_sec->m_args[j];
+                                if (!arg.m_left && !arg.m_step && arg.m_right &&
+                                        !ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                                    continue;
+                                }
+                                if (sec_dim == i) {
+                                    sec_arg = &arg;
+                                    break;
+                                }
+                                sec_dim++;
+                            }
+                            if (sec_arg) {
+                                ASR::expr_t* start = sec_arg->m_left;
+                                ASR::expr_t* end = sec_arg->m_right;
+                                ASR::expr_t* step = sec_arg->m_step;
                                 if (start && end && step) {
                                     int64_t step_val = 0;
                                     if (ASRUtils::extract_value(ASRUtils::expr_value(step), step_val) && step_val != 0) {

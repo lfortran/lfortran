@@ -3767,3 +3767,12 @@ contains
         z = matmul(c, u)  ! {Error} integer overflow in `matmul`
     end subroutine
 end module cc1_matmul_overflow
+
+module cc1_section_scalar_subscript_shape
+contains
+    subroutine cc1_section_scalar_subscript_shape_sub()
+        real :: a(2,5), b(4,2,5)
+        b = 1.0
+        a = b(2,:,1:3)  ! {Error} Different shape for array assignment on dimension 2(5 and 3)
+    end subroutine
+end module cc1_section_scalar_subscript_shape
