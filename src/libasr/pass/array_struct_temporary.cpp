@@ -2156,6 +2156,187 @@ bool can_rhs_refer_to_lhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
     return false;
 }
 
+// Whether `x` is an array of integer, real or complex numbers whose element
+// type is that of `y`.
+bool is_numeric_array_of_element_type(ASR::ttype_t* x, ASR::ttype_t* y) {
+    ASR::ttype_t* x_element = ASRUtils::extract_type(x);
+    ASR::ttype_t* y_element = ASRUtils::extract_type(y);
+    return ASRUtils::is_array(x) &&
+        (ASR::is_a<ASR::Integer_t>(*x_element) ||
+         ASR::is_a<ASR::Real_t>(*x_element) ||
+         ASR::is_a<ASR::Complex_t>(*x_element)) &&
+        x_element->type == y_element->type &&
+        ASRUtils::extract_kind_from_ttype_t(x_element) ==
+            ASRUtils::extract_kind_from_ttype_t(y_element);
+}
+
+// A variable that no pointer can point at and that does not name the
+// storage of another variable.
+bool is_unaliased_variable(ASR::symbol_t* sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+        return false;
+    }
+    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+    ASR::asr_t* owner = var->m_parent_symtab->asr_owner;
+    return !var->m_target_attr && !ASRUtils::is_pointer(var->m_type) &&
+        !(owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+          ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner)));
+}
+
+// Whether evaluating an expression may read the storage of an assignment
+// target `v` or `s%c` (`root` is `v` or `s`, `component` is `c`), under the
+// conservative assumption that any pointer and any function referenced at
+// run time may do so.
+class MayReadAssignmentTarget:
+    public ASR::BaseWalkVisitor<MayReadAssignmentTarget> {
+    public:
+
+    ASR::symbol_t* root;
+    ASR::symbol_t* component;
+    bool found = false;
+
+    MayReadAssignmentTarget(ASR::symbol_t* root_, ASR::symbol_t* component_):
+        root(root_), component(component_) {
+        visit_compile_time_value = false;
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if( get_associated_symbol(sym) == root ||
+            (ASR::is_a<ASR::Variable_t>(*sym) &&
+             ASRUtils::is_pointer(ASRUtils::symbol_type(sym))) ) {
+            found = true;
+        }
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(x.m_m);
+        if( member == component ||
+            ASRUtils::is_pointer(ASRUtils::symbol_type(member)) ) {
+            found = true;
+            return;
+        }
+        // Another component of the target's root, e.g. `s%b` for `s%c`.
+        if( component != nullptr && ASR::is_a<ASR::Var_t>(*x.m_v) &&
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_v)->m_v) == root ) {
+            return;
+        }
+        visit_expr(*x.m_v);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        if( x.m_value == nullptr ) {
+            found = true;
+        }
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {}
+};
+
+// In `z = matmul(x, w) + b`, the matmul result has the shape of the value
+// and is read once per element, at the position of that element, so it can be
+// computed into `z` itself (`z = matmul(x, w); z = z + b`) instead of into a
+// temporary, unless the value may read `z`. Returns the MatMul operand of the
+// element-wise operations of `value` that can be computed into `target`, or
+// nullptr. `target` is a whole numeric array `v` or `s%c`, where `s` is a
+// scalar, neither of them a pointer, target or associate name. The variables
+// among the other operands, which have the shape of `value`, are appended to
+// `shape_operands`.
+ASR::expr_t* find_matmul_computable_into_target(ASR::expr_t* target,
+        ASR::expr_t* value, std::vector<ASR::expr_t*>& shape_operands) {
+    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+    if( !is_numeric_array_of_element_type(target_type, target_type) ||
+        ASRUtils::is_simd_array(target) ) {
+        return nullptr;
+    }
+    ASR::symbol_t* root = nullptr;
+    ASR::symbol_t* component = nullptr;
+    if( ASR::is_a<ASR::Var_t>(*target) ) {
+        root = ASR::down_cast<ASR::Var_t>(target)->m_v;
+    } else if( ASR::is_a<ASR::StructInstanceMember_t>(*target) ) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(target);
+        component = ASRUtils::symbol_get_past_external(member->m_m);
+        if( !ASR::is_a<ASR::Var_t>(*member->m_v) ||
+            ASRUtils::is_array(ASRUtils::expr_type(member->m_v)) ||
+            ASRUtils::is_pointer(ASRUtils::symbol_type(component)) ) {
+            return nullptr;
+        }
+        root = ASR::down_cast<ASR::Var_t>(member->m_v)->m_v;
+    } else {
+        return nullptr;
+    }
+    if( !is_unaliased_variable(root) ) {
+        return nullptr;
+    }
+    root = ASRUtils::symbol_get_past_external(root);
+    int rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+    ASR::expr_t* matmul = nullptr;
+    std::vector<ASR::expr_t*> operands = {value};
+    while( !operands.empty() ) {
+        ASR::expr_t* operand = operands.back();
+        operands.pop_back();
+        if( !is_numeric_array_of_element_type(ASRUtils::expr_type(operand),
+                target_type) ||
+            ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(operand)) != rank ||
+            ASRUtils::expr_value(operand) != nullptr ) {
+            continue;
+        }
+        switch( operand->type ) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(operand);
+                operands.push_back(binop->m_right);
+                operands.push_back(binop->m_left);
+                break;
+            }
+            case ASR::exprType::RealBinOp: {
+                ASR::RealBinOp_t* binop = ASR::down_cast<ASR::RealBinOp_t>(operand);
+                operands.push_back(binop->m_right);
+                operands.push_back(binop->m_left);
+                break;
+            }
+            case ASR::exprType::ComplexBinOp: {
+                ASR::ComplexBinOp_t* binop = ASR::down_cast<ASR::ComplexBinOp_t>(operand);
+                operands.push_back(binop->m_right);
+                operands.push_back(binop->m_left);
+                break;
+            }
+            case ASR::exprType::IntrinsicArrayFunction: {
+                if( matmul == nullptr && operand != value &&
+                    ASR::down_cast<ASR::IntrinsicArrayFunction_t>(operand)->m_arr_intrinsic_id ==
+                        static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul) ) {
+                    matmul = operand;
+                }
+                break;
+            }
+            case ASR::exprType::Var: {
+                shape_operands.push_back(operand);
+                break;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(operand)->m_v;
+                if( ASR::is_a<ASR::Var_t>(*base) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(base)) ) {
+                    shape_operands.push_back(operand);
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+    if( matmul == nullptr ) {
+        return nullptr;
+    }
+    MayReadAssignmentTarget may_read(root, component);
+    may_read.visit_expr(*value);
+    return may_read.found ? nullptr : matmul;
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -2176,17 +2357,30 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // Operations in arguments of elemental intrinsic functions in those
     // operands, read in place too
     std::set<ASR::expr_t*> operations_read_in_place;
+    // The MatMul operand of the value of the current assignment that is
+    // computed into its target, the target, the operand that replaces the
+    // MatMul, whether the target is reallocated, and the operands whose
+    // shape the target's is checked against first.
+    ASR::expr_t* matmul_into_target;
+    ASR::expr_t* matmul_target;
+    ASR::expr_t* matmul_target_operand;
+    bool matmul_target_realloc_lhs;
+    std::vector<ASR::expr_t*> matmul_target_shape_check;
+    bool bounds_checking;
 
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
-            std::set<ASR::expr_t*>& sections_read_in_place_) :
+            std::set<ASR::expr_t*>& sections_read_in_place_, bool bounds_checking_) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
             inside_where(false), call_preparation(call_preparation_),
-            sections_read_in_place(sections_read_in_place_) {}
+            sections_read_in_place(sections_read_in_place_),
+            matmul_into_target(nullptr), matmul_target(nullptr),
+            matmul_target_operand(nullptr), matmul_target_realloc_lhs(false),
+            bounds_checking(bounds_checking_) {}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
@@ -2630,6 +2824,24 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         lhs_var = lhs_array_var;
+        if( !inside_where && xx.m_overloaded == nullptr && !xx.m_move_allocation ) {
+            matmul_target_shape_check.clear();
+            matmul_into_target = find_matmul_computable_into_target(
+                xx.m_target, xx.m_value, matmul_target_shape_check);
+            matmul_target = xx.m_target;
+            matmul_target_realloc_lhs = xx.m_realloc_lhs;
+            // Unless the target is reallocated to the shape of the matmul
+            // result, its shape is checked against that of the other
+            // operands before the result is computed into it, as it would be
+            // checked against the shape of the value.
+            if( !bounds_checking ||
+                (ASRUtils::is_allocatable(xx.m_target) &&
+                 (realloc_lhs || xx.m_realloc_lhs)) ) {
+                matmul_target_shape_check.clear();
+            } else if( matmul_target_shape_check.empty() ) {
+                matmul_into_target = nullptr;
+            }
+        }
         visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
@@ -2747,6 +2959,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
+        matmul_into_target = nullptr;
+        matmul_target = nullptr;
+        matmul_target_operand = nullptr;
     }
 
     void visit_Where(const ASR::Where_t &x) {
@@ -2864,6 +3079,33 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (sections_read_in_place.count(expr) > 0) {
             return expr;
+        }
+        if( expr == matmul_target_operand ) {
+            return expr;
+        }
+        if( expr == matmul_into_target ) {
+            // `z = matmul(x, w) + b` becomes `z = matmul(x, w); z = z + b`,
+            // see find_matmul_computable_into_target.
+            visit_expr(*expr);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            if( !matmul_target_shape_check.empty() ) {
+                Vec<ASR::expr_t*> operands;
+                operands.reserve(al, matmul_target_shape_check.size());
+                for( ASR::expr_t* operand: matmul_target_shape_check ) {
+                    operands.push_back(al, duplicator.duplicate_expr(operand));
+                }
+                current_body->push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
+                    expr->base.loc, duplicator.duplicate_expr(matmul_target),
+                    operands, false));
+            }
+            ASR::expr_t* target = duplicator.duplicate_expr(matmul_target);
+            exprs_with_target[expr] = std::make_pair(target, targetType::OriginalTarget);
+            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, expr->base.loc, target, expr, nullptr,
+                matmul_target_realloc_lhs, false)));
+            matmul_into_target = nullptr;
+            matmul_target_operand = duplicator.duplicate_expr(matmul_target);
+            return matmul_target_operand;
         }
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !(reads_elementwise_operands_in_place(allowed_expr) &&
@@ -5559,7 +5801,7 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     FunctionCallPreparation call_preparation;
     std::set<ASR::expr_t*> sections_read_in_place;
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
-        call_preparation, sections_read_in_place);
+        call_preparation, sections_read_in_place, pass_options.bounds_checking);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place);

@@ -5384,6 +5384,10 @@ filename = "../integration_tests/matmul_11.f90"
 pass = "intrinsic_function"
 
 [[test]]
+filename = "../integration_tests/matmul_13.f90"
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "errors/external1.f90"
 asr = true
 
