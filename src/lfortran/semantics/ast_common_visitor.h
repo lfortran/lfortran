@@ -19046,7 +19046,7 @@ public:
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
                         intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
-                        diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
+                        diag.semantic_error_label("assumed-rank arguments are not supported for intrinsic `" + intrinsic_name + "`",
                             {arg_expr->base.loc}, "");
                         throw SemanticAbort();
                     }
