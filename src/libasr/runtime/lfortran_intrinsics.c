@@ -1250,17 +1250,18 @@ static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
         return false;
     }
     char e[64];
-    bool directed = rounding_mode == 'u' || rounding_mode == 'd' || rounding_mode == 'z';
-    fmt_snprintf_e(e, sizeof(e), directed ? 40 : sig - 1, fmt_fabs(x), extended);
+    bool round_digits = rounding_mode == 'u' || rounding_mode == 'd' ||
+        rounding_mode == 'z' || rounding_mode == 'c';
+    fmt_snprintf_e(e, sizeof(e), round_digits ? 40 : sig - 1, fmt_fabs(x), extended);
     char digits[48];
     int n = 0;
     const char* p = e;
     for (; *p != '\0' && *p != 'e'; p++) {
         if (isdigit((unsigned char)*p)) digits[n++] = *p;
     }
-    if (*p != 'e' || (!directed && n != sig)) return false;
+    if (*p != 'e' || (!round_digits && n != sig)) return false;
     int exponent = atoi(p + 1) + 1 - scale;
-    if (directed) {
+    if (round_digits) {
         digits[n] = '\0';
         if (should_round_up_digits(digits, sig, rounding_mode, signbit(x))) {
             int i = sig - 1;
@@ -1711,9 +1712,10 @@ static bool should_round_up_digits(const char *digits, int round_pos,
 
 static char* fmt_g_fixed(fmt_real x, int decimals, bool extended,
                          char rounding_mode) {
-    bool directed = rounding_mode == 'u' || rounding_mode == 'd' || rounding_mode == 'z';
+    bool round_digits = rounding_mode == 'u' || rounding_mode == 'd' ||
+        rounding_mode == 'z' || rounding_mode == 'c';
     int conversion_decimals = decimals;
-    if (directed) {
+    if (round_digits) {
         // A nonzero value selected for G's fixed form is at least 0.05 in
         // magnitude. At most mantissa_bits + 4 fractional decimal digits
         // therefore give its exact binary value, retaining every sticky digit.
@@ -1723,7 +1725,7 @@ static char* fmt_g_fixed(fmt_real x, int decimals, bool extended,
     int len = fmt_snprintf_f(NULL, 0, true, conversion_decimals, fmt_fabs(x), extended);
     char* number = (char*)internal_malloc(len + 2);
     fmt_snprintf_f(number, len + 1, true, conversion_decimals, fmt_fabs(x), extended);
-    if (directed && conversion_decimals > decimals) {
+    if (round_digits && conversion_decimals > decimals) {
         int end = (int)(strchr(number, '.') - number) + 1 + decimals;
         bool round_up = should_round_up_digits(number, end, rounding_mode, signbit(x));
         number[end] = '\0';
@@ -4424,7 +4426,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
         case 2: rounding_mode = 'd'; break;  // DOWN
         case 3: rounding_mode = 'z'; break;  // ZERO
         case 4: rounding_mode = 'n'; break;  // NEAREST
-        case 5: rounding_mode = 'n'; break;  // COMPATIBLE (treated as nearest)
+        case 5: rounding_mode = 'c'; break;  // COMPATIBLE
         default: rounding_mode = 'n'; break; // PROCESSOR_DEFINED -> nearest
     }
     int scale = 0;
@@ -4560,7 +4562,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 'r') {
-                // Rounding mode descriptors (RU, RD, RN, RZ)
+                // Rounding mode descriptors (RU, RD, RN, RZ, RC)
                 if (strlen(value) >= 2) {
                     char mode = tolower(value[1]);
                     if (mode == 'u') {
@@ -4571,6 +4573,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         rounding_mode = 'n';
                     } else if (mode == 'z') {
                         rounding_mode = 'z';
+                    } else if (mode == 'c') {
+                        rounding_mode = 'c';
                     }
                 }
             } else if (tolower(value[0]) == 'd' && strlen(value) == 2 &&
