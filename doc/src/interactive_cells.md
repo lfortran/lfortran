@@ -52,6 +52,21 @@ way to name it once it is shadowed. The same holds for variables and modules;
 a module redefined in a later cell leaves procedures compiled against the
 earlier one using the earlier one.
 
+## Implicit typing in cells
+
+A cell containing `implicit none` (or `implicit none(type)`) disables implicit
+typing for later cells in that session, including when LFortran was started
+with `--implicit-typing`. Previously declared names remain available, and new
+names can still be declared explicitly. Re-running the statement is allowed.
+The default session already requires explicit declarations.
+
+The evaluator retains the implicit type dictionary with each committed cell's
+symbol-table snapshot. Inspection cells (`%%showasr`, `%%showllvm`, etc.) do
+not change this policy, and a program unit's local implicit rules do not change
+the session's policy. Separate evaluators have independent policies.
+`implicit none(external)` is not yet supported as a cell and produces a
+semantic diagnostic rather than changing the implicit type dictionary.
+
 ## Walking the chain
 
 Before cells were chained, a scope chain ended at the one and only

@@ -727,6 +727,14 @@ public:
         items.reserve(al, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             tmp = nullptr;
+            if (x.m_items[i]->type == AST::astType::decl_stmt
+                    && AST::is_a<AST::ImplicitNone_t>(
+                        *AST::down_cast<AST::decl_stmt_t>(x.m_items[i]))) {
+                continue;
+            }
+            if (compiler_options.interactive) {
+                implicit_dictionary = implicit_mapping[get_hash(asr)];
+            }
             try {
                 visit_ast(*x.m_items[i]);
             } catch (const SemanticAbort &a) {

@@ -2,6 +2,7 @@
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
 
@@ -208,6 +209,9 @@ private:
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;
 #endif
     SymbolTable *symbol_table;
+    // Keyed by the committed cell scope so inspection's scope restoration
+    // also restores the implicit typing policy.
+    std::map<SymbolTable*, std::map<std::string, ASR::ttype_t*>> cell_implicit_types;
     std::string run_fn;
     // One entry per cell evaluated so far, each covering a range of its own,
     // so that a location taken from an earlier cell still points at that
