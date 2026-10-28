@@ -47,7 +47,8 @@ class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
         const Location &loc = x.base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
         ASR::expr_t *var = x.m_head.m_v;
-        ASR::ttype_t *type = ASRUtils::expr_type(var);
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(var));
         auto capture = [&](ASR::expr_t *expr, const std::string &prefix) {
             std::string name = current_scope->get_unique_name(prefix);
             ASR::stmt_t *assign;
