@@ -3433,3 +3433,60 @@ end program
     CHECK(forbidden.calls == 0);
 }
 #endif
+
+TEST_CASE("FortranEvaluator allocate in an interactive cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The notebook cell from issue 13455. A bare allocate is the statement,
+    // so the cell runs and the sum is 6. deallocate is the same parse.
+    const char *cell = R"(integer, allocatable :: a(:)
+allocate(a(3))
+a = [1, 2, 3]
+print *, sum(a)
+)";
+    REQUIRE(e.evaluate2(cell).ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("sum(a)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+    REQUIRE(e.evaluate2("deallocate(a)").ok);
+    r = e.evaluate2("allocated(a)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
+
+    // A call in an expression is still a user function named allocate.
+    // A bare allocate() stays the statement, as it does in a program.
+    FortranEvaluator e2(cu);
+    REQUIRE(e2.evaluate2(R"(integer function allocate(n)
+integer, intent(in) :: n
+allocate = n + 1
+end function
+integer :: y
+y = allocate(2)
+y
+)").ok);
+    r = e2.evaluate2("y");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 3);
+    REQUIRE(e2.evaluate2(R"(integer, allocatable :: b(:)
+allocate(b(1))
+b(1) = 4
+)").ok);
+    r = e2.evaluate2("sum(b)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 4);
+    REQUIRE(e2.evaluate2(R"(subroutine deallocate(n)
+integer, intent(inout) :: n
+n = n + 7
+end subroutine
+integer :: n
+n = 1
+call deallocate(n)
+)").ok);
+    r = e2.evaluate2("n");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 8);
+}
