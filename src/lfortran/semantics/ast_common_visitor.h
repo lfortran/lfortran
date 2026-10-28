@@ -3517,6 +3517,13 @@ public:
             return true;
         }
         switch (expr->type) {
+            case ASR::exprType::ArraySize:
+            case ASR::exprType::ArrayBound:
+            case ASR::exprType::ArrayRank: {
+                // Inquiries about constant properties need not read a
+                // constant array, just as LEN need not read a constant string.
+                return ASRUtils::is_value_constant(ASRUtils::expr_value(expr));
+            }
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
                 return is_named_constant_expr(binop->m_left) &&
@@ -3561,6 +3568,43 @@ public:
             default: {
                 return false;
             }
+        }
+    }
+
+    // Fortran 2023 10.1.11 permits nonconstant specification expressions in
+    // subprograms, interface bodies, derived types and BLOCK constructs.
+    bool character_length_requires_constant() {
+        if (!_declaring_variable || is_derived_type || in_Subroutine) {
+            return false;
+        }
+        for (SymbolTable* scope = current_scope; scope; scope = scope->parent) {
+            if (scope->asr_owner == nullptr ||
+                    !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                continue;
+            }
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) ||
+                    ASR::is_a<ASR::Block_t>(*owner) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*owner) ||
+                    ASR::is_a<ASR::Struct_t>(*owner)) {
+                return false;
+            }
+            if (ASR::is_a<ASR::Program_t>(*owner) ||
+                    ASR::is_a<ASR::Module_t>(*owner)) {
+                break;
+            }
+        }
+        return true;
+    }
+
+    void check_character_length_expr(ASR::expr_t* expr, bool require_constant) {
+        if (require_constant && !is_named_constant_expr(expr)) {
+            diag.add(Diagnostic(
+                "character length must be a constant expression in this context",
+                Level::Error, Stage::Semantic, {
+                    Label("", {expr->base.loc})
+                }));
+            throw SemanticAbort();
         }
     }
 
@@ -10741,6 +10785,8 @@ public:
                     ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                         ASRUtils::type_get_past_array(type));
                     char_length = ASRUtils::EXPR(tmp);
+                    check_character_length_expr(char_length,
+                        character_length_requires_constant());
                     ASR::expr_t* c_length = ASRUtils::expr_value(char_length);
                     if (c_length != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*c_length)) {
                         // a negative length specifier declares a zero length string
@@ -28724,6 +28770,9 @@ public:
         }
         // Handle length
         bool in_signature = is_argument || is_procedure_result(sym.c_str());
+        // Delayed generic calls are resolved with in_Subroutine temporarily
+        // set, so keep the requirement of the original declaration.
+        bool require_constant_length = character_length_requires_constant();
         if(len_item){ // Standard Fortran Declaration. `character(len=10) :: str`
             // Set length of the string -> [`:`, `*`, `expr`]
             switch (len_item->m_type) {
@@ -28731,7 +28780,10 @@ public:
                     LCOMPILERS_ASSERT(len_item->m_value != nullptr);
                     if(is_funcCall_to_unresolved_genereicProcedure(len_item->m_value)){ // Postpone the evaluation
                         postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
-                        len_item->m_value, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
+                        len_item->m_value, s2c(al, sym),
+                        [this, require_constant_length](ASR::expr_t* x) {
+                            check_character_length_expr(x, require_constant_length);
+                        });
                     } else { // Evaluate normally
                         _processing_char_len = true;
                         visit_restricted_expr(*len_item->m_value,
@@ -28739,41 +28791,14 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         check_specification_expr(len_expr,
                             RestrictedExprContext::CharacterLength);
+                        _processing_char_len = false;
+                        check_character_length_expr(len_expr, require_constant_length);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
                         } else {
                             str->m_len = in_signature
                                 ? read_variables_through_getters(len_expr, true) : len_expr;
-                        }
-                        _processing_char_len = false;
-                        if (var_sym != nullptr &&
-                                ASR::is_a<ASR::Var_t>(*str->m_len) &&
-                                !ASRUtils::is_const(str->m_len)) {
-                            bool in_function_scope = in_Subroutine;
-                            if (!in_function_scope) {
-                                SymbolTable* scope = current_scope;
-                                while (scope != nullptr && !in_function_scope) {
-                                    if (scope->asr_owner != nullptr &&
-                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
-                                                ASR::is_a<ASR::Block_t>(*owner) ||
-                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                                            in_function_scope = true;
-                                        }
-                                    }
-                                    scope = scope->parent;
-                                }
-                            }
-                            if (!in_function_scope) {
-                                diag.add(Diagnostic(
-                                    "variable cannot appear in character length expression",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("", {len_expr->base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
                         }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
@@ -28808,7 +28833,10 @@ public:
                 LCOMPILERS_ASSERT(var_sym->m_length != nullptr);
                     if(is_funcCall_to_unresolved_genereicProcedure(var_sym->m_length)){ // Postpone the evaluation
                         postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
-                        var_sym->m_length, s2c(al, sym), [](ASR::expr_t* x){(void)x;});
+                        var_sym->m_length, s2c(al, sym),
+                        [this, require_constant_length](ASR::expr_t* x) {
+                            check_character_length_expr(x, require_constant_length);
+                        });
                     } else { // Evaluate normally
                         _processing_char_len = true;
                         visit_restricted_expr(*var_sym->m_length,
@@ -28816,40 +28844,14 @@ public:
                         ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
                         check_specification_expr(len_expr,
                             RestrictedExprContext::CharacterLength);
+                        _processing_char_len = false;
+                        check_character_length_expr(len_expr, require_constant_length);
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
                         } else {
                             str->m_len = in_signature
                                 ? read_variables_through_getters(len_expr, true) : len_expr;
-                        }
-                        _processing_char_len = false;
-                        if (ASR::is_a<ASR::Var_t>(*str->m_len) &&
-                                !ASRUtils::is_const(str->m_len)) {
-                            bool in_function_scope = in_Subroutine;
-                            if (!in_function_scope) {
-                                SymbolTable* scope = current_scope;
-                                while (scope != nullptr && !in_function_scope) {
-                                    if (scope->asr_owner != nullptr &&
-                                            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-                                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-                                        if (ASR::is_a<ASR::Function_t>(*owner) ||
-                                                ASR::is_a<ASR::Block_t>(*owner) ||
-                                                ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-                                            in_function_scope = true;
-                                        }
-                                    }
-                                    scope = scope->parent;
-                                }
-                            }
-                            if (!in_function_scope) {
-                                diag.add(Diagnostic(
-                                    "variable cannot appear in character length expression",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("", {len_expr->base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
                         }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
