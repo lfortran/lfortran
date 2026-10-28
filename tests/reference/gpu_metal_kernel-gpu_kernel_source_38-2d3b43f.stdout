@@ -1,0 +1,96 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int n;
+    int __workspace_extent;
+    int __gpu_lanes;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* out [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    device int* __workspace_2 [[buffer(2)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int n = __scalar_args.n;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
+    int __flat_idx;
+    int __gpu_bc_i;
+    int i__dc;
+    if ((((0 * 0) + __thread_id) >= 4)) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i__dc = (__flat_idx + 1);
+    {
+        {
+            int __do_loop_end;
+            int __do_loop_inc;
+            int __gpu_loop_end;
+            int __gpu_loop_group;
+            int __gpu_sum_k;
+            int __gpu_sum_res;
+            device int* work = __workspace_2 + __thread_id * __workspace_extent;
+            __do_loop_end = max(0, n);
+            __do_loop_inc = (1 * ((int)__gpu_lanes));
+            __gpu_bc_i = ((1 + (((int)__gpu_lane) * 1)) - __do_loop_inc);
+            while (((int)(((int)((__do_loop_inc > 0) && ((__gpu_bc_i + __do_loop_inc) <= __do_loop_end))) || ((int)((__do_loop_inc <= 0) && ((__gpu_bc_i + __do_loop_inc) >= __do_loop_end)))))) {
+                __gpu_bc_i = (__gpu_bc_i + __do_loop_inc);
+                work[((int)(__gpu_bc_i) - (1))] = 2;
+            }
+            if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+            __gpu_sum_res = 0;
+            __gpu_loop_end = max(0, n);
+            __gpu_sum_k = 1;
+            if ((__gpu_loop_end >= 1)) {
+                for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
+                    __gpu_sum_k = __gpu_loop_group;
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 1);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 2);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 3);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 4);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 5);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 6);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 7);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 8);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 9);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 10);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 11);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 12);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 13);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 14);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                    __gpu_sum_k = (__gpu_loop_group + 15);
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                }
+                for (__gpu_sum_k = __gpu_loop_group; __gpu_sum_k <= __gpu_loop_end; __gpu_sum_k++) {
+                    __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+                }
+            }
+            if ((__gpu_lane == 0)) {
+                out[((int)(i__dc) - (1))] = __gpu_sum_res;
+            }
+            if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        }
+    }
+}
+
