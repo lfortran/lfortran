@@ -45,8 +45,8 @@ operation, including format reversion; it does not affect `EN`, `ES`, `EX`,
 or input conversion. The related `OPEN`/`WRITE` `LEADING_ZERO=` specifiers
 are not implemented by these FORMAT controls. Embedded blanks in these
 controls are insignificant, including on input, where no target is consumed.
-Leading-zero selection does not change the significant digits of real `G`
-output. The regression
+Leading-zero selection does not change the significant digits or rounding
+of real `G` output, in either fixed or exponential form. The regression
 `integration_tests/format_leading_zero.f90` currently runs only with LLVM:
 GFortran 16 rejects these valid Fortran 2023 descriptors, so independent
 reference validation remains unavailable.

@@ -1709,6 +1709,45 @@ static bool should_round_up_digits(const char *digits, int round_pos,
     return digits[round_pos] >= '5';
 }
 
+static char* fmt_g_fixed(fmt_real x, int decimals, bool extended,
+                         char rounding_mode) {
+    bool directed = rounding_mode == 'u' || rounding_mode == 'd' || rounding_mode == 'z';
+    int conversion_decimals = decimals;
+    if (directed) {
+        // A nonzero value selected for G's fixed form is at least 0.05 in
+        // magnitude. At most mantissa_bits + 4 fractional decimal digits
+        // therefore give its exact binary value, retaining every sticky digit.
+        int exact_decimals = (extended ? LDBL_MANT_DIG : DBL_MANT_DIG) + 4;
+        if (conversion_decimals < exact_decimals) conversion_decimals = exact_decimals;
+    }
+    int len = fmt_snprintf_f(NULL, 0, true, conversion_decimals, fmt_fabs(x), extended);
+    char* number = (char*)internal_malloc(len + 2);
+    fmt_snprintf_f(number, len + 1, true, conversion_decimals, fmt_fabs(x), extended);
+    if (directed && conversion_decimals > decimals) {
+        int end = (int)(strchr(number, '.') - number) + 1 + decimals;
+        bool round_up = should_round_up_digits(number, end, rounding_mode, signbit(x));
+        number[end] = '\0';
+        if (round_up) {
+            int i = end - 1;
+            while (i >= 0) {
+                if (number[i] == '.') {
+                    i--;
+                } else if (number[i] == '9') {
+                    number[i--] = '0';
+                } else {
+                    number[i]++;
+                    break;
+                }
+            }
+            if (i < 0) {
+                memmove(number + 1, number, strlen(number) + 1);
+                number[0] = '1';
+            }
+        }
+    }
+    return number;
+}
+
 static int fmt_directed_decimal_exponent(fmt_real x, int digits, bool extended,
                                          char rounding_mode) {
     char buf[64];
@@ -5012,10 +5051,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             } else {
                                 int k = real_val == 0.0 ? 1 : rounded_exp;
                                 int decimals = precision > k ? precision - k : 0;
-                                char f_format[64];
-                                snprintf(f_format, sizeof(f_format), "f%d.%d", width - trailing, decimals);
-                                handle_float(FLOAT_FORMAT_CUSTOM, f_format, real_val, extended, 0,
-                                    &field, is_SP_specifier, rounding_mode, leading_zero);
+                                char* number = fmt_g_fixed(real_val, decimals, extended, rounding_mode);
+                                if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(number);
+                                const char* sign = signbit(real_val) ? "-" : (is_SP_specifier ? "+" : "");
+                                int len = (int)strlen(number) + (int)strlen(sign);
+                                int core_width = width > 0 ? width - trailing : len;
+                                if (len > core_width) {
+                                    for (int j = 0; j < core_width; j++) field = append_to_string(field, "*");
+                                } else {
+                                    for (int j = len; j < core_width; j++) field = append_to_string(field, " ");
+                                    field = append_to_string(field, sign);
+                                    field = append_to_string(field, number);
+                                }
+                                internal_free(number);
                             }
                             if (strchr(field, '*') != NULL) {
                                 for (int j = 0; j < trailing; j++) field = append_to_string(field, "*");
