@@ -85,8 +85,7 @@ bool is_unaliased_designator(ASR::expr_t* x) {
                 }
                 ASR::ttype_t* type = ASRUtils::symbol_type(sym);
                 if( !ASRUtils::is_integer(*type) || ASRUtils::is_array(type) ||
-                    ASRUtils::is_pointer(type) || is_storage_associated(
-                        ASR::down_cast<ASR::Variable_t>(sym)) ) {
+                    !is_unaliased_designator(index) ) {
                     return false;
                 }
             }

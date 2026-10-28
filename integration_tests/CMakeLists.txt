@@ -3140,6 +3140,7 @@ RUN(NAME derived_types_240 LABELS llvm flang) # not gfortran: GFortran 16.2 misc
 RUN(NAME derived_types_241 LABELS gfortran llvm) # same component of different variables read in place (#16215)
 RUN(NAME derived_types_242 LABELS llvm flang) # not gfortran: GFortran 16.2 miscompiles a component overlapping through an associate name (#16215)
 RUN(NAME derived_types_243 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # same component of different variables with a reallocated target (#16215)
+RUN(NAME derived_types_244 LABELS gfortran llvm) # TARGET component subscript aliases the assignment target (#16215)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
