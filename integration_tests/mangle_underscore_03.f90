@@ -9,6 +9,15 @@ module mangle_underscore_03_m
             integer, intent(inout) :: k
         end subroutine
     end interface
+    ! A specific procedure with the name of its generic interface
+    interface mu03_gen
+        subroutine mu03_gen(k)
+            integer, intent(inout) :: k
+        end subroutine
+        subroutine mu03_genr(x)
+            real, intent(inout) :: x
+        end subroutine
+    end interface
 contains
     subroutine drv(k)
         integer, intent(inout) :: k
@@ -39,12 +48,20 @@ contains
         call t(k)
         k = k + x
     end subroutine
+
+    subroutine gen(k, x)
+        integer, intent(inout) :: k
+        real, intent(inout) :: x
+        call mu03_gen(k)
+        call mu03_gen(x)
+    end subroutine
 end module
 
 program mangle_underscore_03
-    use mangle_underscore_03_m, only: drv, clash
+    use mangle_underscore_03_m, only: drv, clash, gen
     implicit none
     integer :: k
+    real :: x
     k = 2
     call drv(k)
     print '(I0)', k
@@ -53,4 +70,10 @@ program mangle_underscore_03
     call clash(k)
     print '(I0)', k
     if (k /= 1116) error stop
+    k = 1
+    x = 1.0
+    call gen(k, x)
+    print '(I0, 1X, F4.1)', k, x
+    if (k /= 2) error stop
+    if (abs(x - 3.0) > 1e-6) error stop
 end program

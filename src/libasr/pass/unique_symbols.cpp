@@ -80,7 +80,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     }
 
     // A `global` name is that of a global procedure, which does not depend
-    // on the module or the procedures that declare its interface.
+    // on the module or the procedures that declare its interface. A specific
+    // procedure that shares the name of its generic interface is stored
+    // under a disambiguated name, from which its own name is recovered.
     std::string update_name(std::string curr_name, bool global = false) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
@@ -89,7 +91,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             uint64_t hash = get_hash(current_scope->asr_owner);
             return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
         } else if (global) {
-            return curr_name + "_" + lcompilers_unique_ID_separate_compilation;
+            return ASRUtils::strip_genericprocedure_suffix(curr_name) + "_"
+                + lcompilers_unique_ID_separate_compilation;
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";
