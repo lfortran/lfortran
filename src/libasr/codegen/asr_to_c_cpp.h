@@ -1741,6 +1741,36 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_c && ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) &&
+                ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+            // Scalar-to-array broadcast (`a = 1.0`): fill the flat data
+            // view underlying the C++ array descriptor. The element count
+            // comes from the descriptor so runtime-sized arrays work too.
+            ASR::ArrayBroadcast_t *b =
+                ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
+            ASR::Var_t *target_var = ASR::down_cast<ASR::Var_t>(x.m_target);
+            self().visit_Var(*target_var);
+            std::string arr = src;
+            self().visit_expr(*b->m_array);
+            std::string scalar = src;
+            ASR::dimension_t *m_dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(x.m_target), m_dims);
+            std::string total;
+            for (size_t d = 0; d < n_dims; d++) {
+                if (d > 0) total += " * ";
+                total += arr + "->dims[" + std::to_string(d) + "].length";
+            }
+            std::string indent(indentation_level*indentation_spaces, ' ');
+            std::string idx = "__lfortran_broadcast_idx";
+            src = indent + "for (size_t " + idx + " = 0; " + idx + " < "
+                + total + "; " + idx + "++) {\n"
+                + indent + std::string(indentation_spaces, ' ')
+                + arr + "->data->operator[](" + idx + ") = "
+                + scalar + ";\n" + indent + "}\n";
+            return;
+        }
         std::string target;
         ASR::ttype_t* m_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* m_value_type = ASRUtils::expr_type(x.m_value);
