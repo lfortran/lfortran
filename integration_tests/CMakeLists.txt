@@ -554,6 +554,7 @@ RUN(NAME volatile_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_05 LABELS gfortran llvm)
 RUN(NAME volatile_06 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME volatile_07 LABELS gfortran llvm)
 
 
 RUN(NAME cond_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)

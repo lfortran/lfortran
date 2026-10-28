@@ -9631,9 +9631,10 @@ public:
     // Whether the global of the SAVE variable `v` is created with its initial
     // value as the static initializer.
     static bool save_value_in_global_initializer(ASR::Variable_t* v) {
+        // VOLATILE governs accesses, not the lifetime of declaration
+        // initialization: the SAVE global already contains this value.
         return v->m_storage == ASR::storage_typeType::Save
-            && is_static_save_initial_value(v)
-            && !v->m_is_volatile;
+            && is_static_save_initial_value(v);
     }
 
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){

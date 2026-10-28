@@ -957,6 +957,55 @@ end module
     CHECK(tbaa_accesses(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
+    std::string source = R"(module saved_volatile_m
+implicit none
+contains
+subroutine accumulate(result)
+    integer, intent(out) :: result
+    block
+        integer, save :: counter = 7
+        volatile :: counter
+        counter = counter + 1
+        result = counter
+    end block
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"accumulate", "_m_accumulate"}},
+            [&](const std::string &, llvm::Function &fn) {
+                unsigned saved_stores = 0;
+                unsigned saved_loads = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        if (auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                            auto *global = llvm::dyn_cast<llvm::GlobalVariable>(
+                                store->getPointerOperand());
+                            if (!global) continue;
+                            auto *initial = llvm::dyn_cast<llvm::ConstantInt>(
+                                global->getInitializer());
+                            REQUIRE(initial != nullptr);
+                            CHECK(initial->getSExtValue() == 7);
+                            CHECK(!llvm::isa<llvm::Constant>(store->getValueOperand()));
+                            CHECK(store->getMetadata(llvm::LLVMContext::MD_tbaa)
+                                == nullptr);
+                            saved_stores++;
+                        } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst)) {
+                            if (!llvm::isa<llvm::GlobalVariable>(
+                                    load->getPointerOperand())) continue;
+                            CHECK(load->getMetadata(llvm::LLVMContext::MD_tbaa)
+                                == nullptr);
+                            saved_loads++;
+                        }
+                    }
+                }
+                CHECK(saved_stores == 1);
+                CHECK(saved_loads == 2);
+            });
+    }
+}
+
 // The runtime allocation functions whose declarations in the module of the
 // LLVM definition of `procedure` have a noalias return value, as
 // "name name ...".

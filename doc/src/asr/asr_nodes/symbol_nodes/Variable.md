@@ -37,7 +37,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `target_attr` | `true` for the `target` attribute, so a pointer may be associated with this variable. |
 | `contiguous_attr` | `true` for the `contiguous` attribute. |
 | `bindc_name` | the linker name given by `bind(c, name=...)`. |
-| `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. |
+| `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. It does not change `Save` storage or cause declaration initialization to repeat on entry to a procedure or `BLOCK`. |
 | `is_asynchronous` | `true` for the `asynchronous` attribute: the variable may be subject to a pending asynchronous input/output or communication, which can read or change it at a call or a `wait` that does not name it. |
 | `is_protected` | `true` for the `protected` attribute: the variable is readable but not writable outside its module. |
 | `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
