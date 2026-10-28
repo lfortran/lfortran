@@ -168,7 +168,12 @@ The shared native compiler workflow has two explicit coverage roles:
 | Role | Caller | Native LLVM matrix |
 | --- | --- | --- |
 | `quick` | Quick on every event | Linux 7/11/23 |
-| `exhaustive` | Exhaustive on every event | Linux 7/8/10/11/15/17/18/19/21/22/23 and macOS 22 |
+| `exhaustive` | Exhaustive on every event | Linux 7/8/10/11/15/17/18/19/21/22/23, Linux ARM 23 and macOS 22 |
+
+The Linux ARM job uses `ubuntu-24.04-arm`, LLVM 23 and Python 3.10, with the
+existing build, unit and full integration-test sequence. Only this entry is
+temporarily non-blocking (`continue-on-error`) while its integration-test
+baseline is established; Quick's required jobs are unchanged.
 
 Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
