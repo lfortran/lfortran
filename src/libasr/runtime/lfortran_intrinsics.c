@@ -4562,14 +4562,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 'r') {
-                // Rounding mode descriptors (RU, RD, RN, RZ, RC)
+                // Rounding mode descriptors (RU, RD, RN, RZ, RC, RP)
                 if (strlen(value) >= 2) {
                     char mode = tolower(value[1]);
                     if (mode == 'u') {
                         rounding_mode = 'u';
                     } else if (mode == 'd') {
                         rounding_mode = 'd';
-                    } else if (mode == 'n') {
+                    } else if (mode == 'n' || mode == 'p') {
                         rounding_mode = 'n';
                     } else if (mode == 'z') {
                         rounding_mode = 'z';

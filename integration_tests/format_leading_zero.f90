@@ -48,6 +48,9 @@ program format_leading_zero
     call check(s, '    0.13        -.12')
     write(s, '(LZP,RC,RN,G26.4,LZS,G26.4)') 0.015625_8, -0.015625_8
     call check(s, '                0.1562E-01                -.1562E-01')
+    write(default_s, '(LZP,G12.2,LZS,G26.4)') 0.125_8, -0.015625_8
+    write(s, '(LZP,RC,RP,G12.2,LZS,G26.4)') 0.125_8, -0.015625_8
+    call check(s, trim(default_s))
     write(s, '(LZP,DC,G0.17,LZS,G0.17)') 0.12345678901234564_8, -0.12345678901234564_8
     call check(s, '0,12345678901234564-,12345678901234564')
     write(s, '(LZP,G21.16,LZS,G21.16)') 0.12345678901234564_8, 0.12345678901234564_8
