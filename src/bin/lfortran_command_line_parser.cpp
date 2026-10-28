@@ -121,6 +121,8 @@ namespace LCompilers::CommandLineInterface {
             "Indent contents of sub / fn / prog / mod");
         parser.fmt->add_flag("--no-color", parser.opts.arg_fmt_no_color,
             "Turn off color when writing to stdout");
+        // Accept compiler options (such as --fixed-form) after the subcommand
+        parser.fmt->fallthrough();
 
         parser.kernel = parser.app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
         parser.kernel->add_option("-f", parser.opts.arg_kernel_f,
@@ -141,6 +143,7 @@ namespace LCompilers::CommandLineInterface {
             "Fortran source file (*.f90)")->required();
         parser.pywrap->add_option("--array-order", parser.opts.arg_pywrap_array_order,
             "Select array order (c, f)")->capture_default_str();
+        parser.pywrap->fallthrough();
 
 #ifdef WITH_LSP
         parser.server = parser.languageServerInterface.prepare(parser.app);
@@ -420,6 +423,12 @@ namespace LCompilers::CommandLineInterface {
             app.parse(args);
         }
 
+        // With fallthrough, extra positionals after fmt or pywrap land in the
+        // main input files, which these subcommands do not use
+        if ((*fmt || *pywrap) && !opts.arg_files.empty()) {
+            throw CLI::ExtrasError(opts.arg_files);
+        }
+
         if (opts.disable_style_suggestions) {
             compiler_options.show_style_suggestions = false;
         }
@@ -648,9 +657,18 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException("Cannot use --disable-implicit-argument-casting and --implicit-argument-casting at the same time");
         }
 
+        // The source file whose extension selects the fixed form and
+        // preprocessing below: fmt and pywrap take their own file
+        std::string source_file = opts.arg_file;
+        if (*fmt) {
+            source_file = opts.arg_fmt_file;
+        } else if (*pywrap) {
+            source_file = opts.arg_pywrap_file;
+        }
+
         // Decide if a file is fixed format based on the extension
         // Gfortran does the same thing
-        if (opts.fixed_form_infer && (endswith(opts.arg_file, ".f") || endswith(opts.arg_file, ".F"))) {
+        if (opts.fixed_form_infer && (endswith(source_file, ".f") || endswith(source_file, ".F"))) {
             compiler_options.fixed_form = true;
         }
 
@@ -670,7 +688,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.c_preprocessor = false;
         // Decide if a file gets preprocessing based on the extension
         // Gfortran does the same thing
-        } else if (opts.cpp_infer && (endswith(opts.arg_file, ".F90") || endswith(opts.arg_file, ".F"))) {
+        } else if (opts.cpp_infer && (endswith(source_file, ".F90") || endswith(source_file, ".F"))) {
             compiler_options.c_preprocessor = true;
         } else {
             compiler_options.c_preprocessor = false;

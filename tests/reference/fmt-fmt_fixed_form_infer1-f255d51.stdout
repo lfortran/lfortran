@@ -1,0 +1,5 @@
+program fmt_fixed_form_infer1
+integer :: i
+i = 1 + 2
+print *, i
+end program fmt_fixed_form_infer1

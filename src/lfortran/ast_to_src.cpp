@@ -115,6 +115,10 @@ public:
     // The precedence of the last expression, using the table
     // 10.1 in the Fortran 2018 standard:
     int last_expr_precedence;
+    // The statement label printed last, so that visit_DoLoop does not
+    // print a DO terminal label again on `end do` when the loop body
+    // already printed it
+    int64_t last_label = 0;
 
     // Syntax highlighting groups
     enum gr {
@@ -2650,6 +2654,7 @@ public:
             r.append("\n");
         }
         inc_indent();
+        last_label = 0;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_decl_stmt(*x.m_body[i]);
             r.append(s);
@@ -2657,9 +2662,14 @@ public:
         dec_indent();
         r += indent;
         r += syn(gr::Repeat);
-        if (x.m_do_label != 0) {
+        // The terminal label is printed only once: on the terminal action
+        // statement (`10 x = x + 1`) if there is one, otherwise on the
+        // `end do` of the innermost loop that shares it, as a branch to the
+        // label ends an iteration of that loop
+        if (x.m_do_label != 0 && last_label != x.m_do_label) {
             r += std::to_string(x.m_do_label);
             r += " ";
+            last_label = x.m_do_label;
         }
         r.append("end do");
         r += syn();
@@ -3603,6 +3613,7 @@ public:
         if (x.m_label == 0) {
             return "";
         } else {
+            last_label = x.m_label;
             return std::to_string(x.m_label) + " ";
         }
     }
