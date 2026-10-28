@@ -532,6 +532,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 decl += indent1;
                 decl += convert_variable_decl(*v) + ";\n";
+                decl += scalar_alloc_flag_decl(v, indent1);
             }
         }
 
