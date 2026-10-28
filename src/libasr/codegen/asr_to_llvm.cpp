@@ -25,6 +25,9 @@
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/MDBuilder.h>
+#include <llvm/IR/Operator.h>
+#include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Type.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/ManagedStatic.h>
@@ -10481,6 +10484,149 @@ public:
             && !ASRUtils::is_pointer(arg.m_type);
     }
 
+    // Under --fast the loads and stores of the procedures for which
+    // dummies_may_be_noalias holds get TBAA metadata with two classes of
+    // memory, so that LLVM knows that a store to an array element does not
+    // change array descriptors or the pointers that lead to them:
+    // - "descriptor": the fields of array descriptors and the pointers
+    //   stored in structs (the descriptor or data pointers of allocatable
+    //   and pointer components, class wrappers, string descriptors). This
+    //   memory is accessed only by code the compiler generates for the
+    //   pointer or the descriptor.
+    // - "data": the elements of arrays (and parts of complex elements),
+    //   reached through the base address in an array descriptor.
+    // A conforming program cannot make an array element share storage with
+    // a pointer or a descriptor: EQUIVALENCE does not allow pointers or
+    // objects with pointer or allocatable components, a pointer in COMMON
+    // can be storage associated only with a pointer of the same type and
+    // rank (F2018 8.10, 19.5.3), and C_F_POINTER cannot associate an
+    // array of another type with a noninteroperable object (F2018
+    // 18.2.3.3). TRANSFER copies with memcpy and through bitcast
+    // pointers, which stay untagged.
+    // Only accesses whose class follows from the form of their address are
+    // tagged. Accesses directly through a bitcast pointer (TRANSFER,
+    // EQUIVALENCE, unions, select type on class(*)), of other struct
+    // fields, of whole structs, of bytes, of array elements not reached
+    // from a descriptor (explicit-shape and fixed-size arrays), memcpy and
+    // memset and everything inside calls stay untagged, so they may alias
+    // anything.
+    std::set<llvm::Function*> tbaa_functions;
+
+    // The struct type whose field `gep` selects last and that field, or
+    // nullptr if it selects no field.
+    static llvm::StructType* last_selected_field(llvm::GEPOperator &gep,
+            uint64_t &field) {
+        llvm::StructType *last = nullptr;
+        for (auto it = llvm::gep_type_begin(gep), end = llvm::gep_type_end(gep);
+                it != end; ++it) {
+            if (llvm::StructType *st = it.getStructTypeOrNull()) {
+                last = st;
+                field = llvm::cast<llvm::ConstantInt>(it.getOperand())
+                    ->getZExtValue();
+            }
+        }
+        return last;
+    }
+
+    // Whether `ptr` is the address of an array element (or of a part of a
+    // complex element) computed only by GEPs from the base address loaded
+    // from an array descriptor, without selecting a field of any struct
+    // other than a complex number.
+    bool is_array_element_address(llvm::Value *ptr) {
+        llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr);
+        if (gep == nullptr) {
+            return false;
+        }
+        for (auto it = llvm::gep_type_begin(*gep), end = llvm::gep_type_end(*gep);
+                it != end; ++it) {
+            llvm::StructType *st = it.getStructTypeOrNull();
+            if (st != nullptr && st != llvm_utils->complex_type_4 &&
+                    st != llvm_utils->complex_type_8) {
+                return false;
+            }
+        }
+        llvm::Value *base = gep->getPointerOperand();
+        if (llvm::isa<llvm::GEPOperator>(base)) {
+            return is_array_element_address(base);
+        }
+        llvm::LoadInst *base_addr = llvm::dyn_cast<llvm::LoadInst>(base);
+        if (base_addr == nullptr) {
+            return false;
+        }
+        llvm::GEPOperator *field_gep = llvm::dyn_cast<llvm::GEPOperator>(
+            base_addr->getPointerOperand());
+        uint64_t field = 0;
+        return field_gep != nullptr && arr_descr->is_array_descriptor_type(
+            last_selected_field(*field_gep, field)) && field == 0;
+    }
+
+    // The TBAA access tag of a simple load or store of `type` at `ptr`:
+    // `descriptor` for a field of an array or dimension descriptor and for
+    // a pointer in a struct, `data` for an array element that is not a
+    // byte (bytes can be used to copy any storage), nullptr otherwise.
+    llvm::MDNode* tbaa_access_tag(llvm::Value *ptr, llvm::Type *type,
+            llvm::MDNode *descriptor, llvm::MDNode *data) {
+        if (!type->isIntegerTy() && !type->isFloatingPointTy() &&
+                !type->isPointerTy()) {
+            return nullptr;
+        }
+        if (llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr)) {
+            uint64_t field = 0;
+            llvm::StructType *st = last_selected_field(*gep, field);
+            if (st != nullptr && (type->isPointerTy() ||
+                    arr_descr->is_array_descriptor_type(st) ||
+                    st == arr_descr->get_dimension_descriptor_type())) {
+                return descriptor;
+            }
+        }
+        if (!type->isPointerTy() && !type->isIntegerTy(8) &&
+                is_array_element_address(ptr)) {
+            return data;
+        }
+        return nullptr;
+    }
+
+    void add_tbaa_metadata() {
+        if (tbaa_functions.empty()) {
+            return;
+        }
+        llvm::MDBuilder mdb(context);
+        llvm::MDNode *root = mdb.createTBAARoot("LFortran TBAA");
+        llvm::MDNode *descriptor_type = mdb.createTBAAScalarTypeNode(
+            "descriptor", root);
+        llvm::MDNode *data_type = mdb.createTBAAScalarTypeNode("data", root);
+        llvm::MDNode *descriptor = mdb.createTBAAStructTagNode(
+            descriptor_type, descriptor_type, 0);
+        llvm::MDNode *data = mdb.createTBAAStructTagNode(
+            data_type, data_type, 0);
+        for (llvm::Function &F: *module) {
+            if (tbaa_functions.find(&F) == tbaa_functions.end()) {
+                continue;
+            }
+            for (llvm::BasicBlock &BB: F) {
+                for (llvm::Instruction &I: BB) {
+                    llvm::MDNode *tag = nullptr;
+                    if (llvm::LoadInst *load = llvm::dyn_cast<llvm::LoadInst>(&I)) {
+                        if (load->isSimple()) {
+                            tag = tbaa_access_tag(load->getPointerOperand(),
+                                load->getType(), descriptor, data);
+                        }
+                    } else if (llvm::StoreInst *store =
+                            llvm::dyn_cast<llvm::StoreInst>(&I)) {
+                        if (store->isSimple()) {
+                            tag = tbaa_access_tag(store->getPointerOperand(),
+                                store->getValueOperand()->getType(),
+                                descriptor, data);
+                        }
+                    }
+                    if (tag != nullptr) {
+                        I.setMetadata(llvm::LLVMContext::MD_tbaa, tag);
+                    }
+                }
+            }
+        }
+    }
+
     // F is the function that we are generating and we go over all arguments
     // (F.args()) and handle three cases:
     //     * Variable (`integer :: x`)
@@ -11154,6 +11300,9 @@ public:
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         declare_args(x, *F);
+        if (dummies_may_be_noalias(x)) {
+            tbaa_functions.insert(F);
+        }
 
         // For bind(C) functions, convert incoming CFI descriptor parameters
         // to internal descriptor layout (which has an extra offset field
@@ -29897,6 +30046,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     t1 = std::chrono::high_resolution_clock::now();
     try {
         v.visit_asr((ASR::asr_t&)asr);
+        v.add_tbaa_metadata();
     } catch (const CodeGenError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);

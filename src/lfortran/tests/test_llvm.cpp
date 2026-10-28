@@ -6,6 +6,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
+#include <functional>
+#include <set>
 #include <vector>
 
 #include <lfortran/fortran_evaluator.h>
@@ -28,7 +30,9 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
@@ -625,12 +629,14 @@ end function)";
 
 namespace {
 
-// The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
-// backend marks noalias when it compiles `source`, before any LLVM pass
-// runs. Each procedure is given as {name, end of the name of its LLVM
-// definition}.
-std::string noalias_parameters(const std::string &source, bool fast,
-        const std::vector<std::pair<std::string, std::string>> &procedures) {
+// Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
+// `inspect` with each of the given procedures and its LLVM definition, before
+// any LLVM pass runs. Each procedure is given as {name, end of the name of its
+// LLVM definition}.
+void inspect_definitions(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures,
+        const std::function<void(const std::string &, llvm::Function &)>
+            &inspect) {
     Allocator al(64*1024);
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions co;
@@ -641,7 +647,7 @@ std::string noalias_parameters(const std::string &source, bool fast,
         LCompilers::LFortran::parse(al, source, diagnostics, co));
     LCompilers::LocationManager lm;
     LCompilers::LocationManager::FileLocations file;
-    file.in_filename = "noalias.f90";
+    file.in_filename = "inspect.f90";
     lm.files.push_back(file);
     lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     LCompilers::ASR::TranslationUnit_t* asr = TRY(
@@ -654,7 +660,6 @@ std::string noalias_parameters(const std::string &source, bool fast,
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
             e.get_target_config(), al, lpm, co, "", "", "", lm);
     REQUIRE(res.ok);
-    std::string result;
     for (const auto &[procedure, suffix]: procedures) {
         llvm::Function *fn = nullptr;
         for (llvm::Function &f: *res.result->m_m) {
@@ -666,13 +671,77 @@ std::string noalias_parameters(const std::string &source, bool fast,
             }
         }
         REQUIRE(fn != nullptr);
-        for (llvm::Argument &arg: fn->args()) {
-            if (arg.hasNoAliasAttr()) {
-                result += procedure + ":" + arg.getName().str() + " ";
-            }
-        }
+        inspect(procedure, *fn);
     }
+}
+
+// The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
+// backend marks noalias when it compiles `source`.
+std::string noalias_parameters(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures) {
+    std::string result;
+    inspect_definitions(source, fast, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            for (llvm::Argument &arg: fn.args()) {
+                if (arg.hasNoAliasAttr()) {
+                    result += procedure + ":" + arg.getName().str() + " ";
+                }
+            }
+        });
     return result;
+}
+
+// The kinds of loads and stores with TBAA metadata in the LLVM definitions
+// of `procedures`, as sorted "procedure:load|store pointer|<type>:<TBAA
+// type>; ...".
+std::string tbaa_accesses(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures) {
+    std::set<std::string> result;
+    inspect_definitions(source, fast, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            for (llvm::BasicBlock &bb: fn) {
+                for (llvm::Instruction &inst: bb) {
+                    llvm::MDNode *tag = inst.getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (tag == nullptr) {
+                        continue;
+                    }
+                    llvm::Type *type = nullptr;
+                    std::string access;
+                    if (llvm::LoadInst *load =
+                            llvm::dyn_cast<llvm::LoadInst>(&inst)) {
+                        type = load->getType();
+                        access = "load";
+                    } else if (llvm::StoreInst *store =
+                            llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                        type = store->getValueOperand()->getType();
+                        access = "store";
+                    }
+                    REQUIRE(type != nullptr);
+                    std::string type_name = "pointer";
+                    if (!type->isPointerTy()) {
+                        llvm::raw_string_ostream os(type_name);
+                        type_name.clear();
+                        type->print(os);
+                        os.flush();
+                    }
+                    llvm::MDNode *access_type = llvm::cast<llvm::MDNode>(
+                        tag->getOperand(1));
+                    llvm::MDNode *root = llvm::cast<llvm::MDNode>(
+                        access_type->getOperand(1));
+                    REQUIRE(llvm::cast<llvm::MDString>(root->getOperand(0))
+                        ->getString() == "LFortran TBAA");
+                    result.insert(procedure + ":" + access + " " + type_name
+                        + ":" + llvm::cast<llvm::MDString>(
+                            access_type->getOperand(0))->getString().str());
+                }
+            }
+        });
+    std::string joined;
+    for (const std::string &access: result) {
+        joined += access + "; ";
+    }
+    return joined;
 }
 
 }
@@ -770,6 +839,62 @@ end module
         "mvbits:frompos mvbits:len mvbits:topos ";
     CHECK(noalias_parameters(source, true, procedures) == expected);
     CHECK(noalias_parameters(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM TBAA metadata under --fast") {
+    std::string source = R"(module tbaa_ir_m
+implicit none
+type :: layer_t
+    real, allocatable :: w(:,:)
+    real, allocatable :: out(:)
+end type
+contains
+
+subroutine forward(self, x)
+    class(layer_t), intent(inout) :: self
+    real, intent(in) :: x(:)
+    integer :: i, j
+    do j = 1, size(self%w, 2)
+        do i = 1, size(self%w, 1)
+            self%out(i) = self%out(i) + self%w(i, j)*x(j)
+        end do
+    end do
+end subroutine
+
+subroutine pun(x, k)
+    real, intent(in) :: x(4)
+    integer, intent(out) :: k(4)
+    k = transfer(x, k)
+end subroutine
+
+subroutine bind_c(x, n) bind(c)
+    integer, value :: n
+    real, intent(out) :: x
+    real, allocatable :: a(:)
+    allocate(a(n))
+    a(n) = 1
+    x = a(n)
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        // pass_array_by_data passes the data and the extent of x.
+        {"forward", "_m_forward_real____1"},
+        {"pun", "_m_pun"},
+        {"bind_c", "bind_c"}};
+    // Nothing in pun (TRANSFER) or in the bind(c) procedure.
+    std::string expected =
+        // Elements of self%out and self%w.
+        "forward:load float:data; "
+        // Offsets, lower bounds and strides of the descriptors.
+        "forward:load i64:descriptor; "
+        // The class wrapper (self), the descriptor pointers of the
+        // components and the base addresses of their data.
+        "forward:load pointer:descriptor; "
+        "forward:store float:data; ";
+    CHECK(tbaa_accesses(source, true, procedures) == expected);
+    CHECK(tbaa_accesses(source, false, procedures).empty());
 }
 
 #endif // __EMSCRIPTEN__
