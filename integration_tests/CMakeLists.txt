@@ -715,6 +715,13 @@ RUN(NAME doloop_18 LABELS gfortran llvm)
 RUN(NAME doloop_19 LABELS gfortran llvm)
 RUN(NAME doloop_20 LABELS gfortran llvm)
 RUN(NAME doloop_21 LABELS gfortran llvm)
+# Real DO is a deleted feature, tested only in legacy mode.
+RUN(NAME doloop_real_01 LABELS gfortran llvm NO_STD_F23
+    EXTRA_ARGS --std=legacy GFORTRAN_ARGS -std=legacy)
+RUN(NAME doloop_real_02 LABELS gfortran llvm NO_STD_F23
+    EXTRA_ARGS --std=legacy GFORTRAN_ARGS -std=legacy)
+RUN(NAME doloop_real_03 LABELS gfortran llvm NO_STD_F23
+    EXTRA_ARGS --std=legacy GFORTRAN_ARGS -std=legacy)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1535,6 +1542,8 @@ RUN(NAME submodule_54 LABELS gfortran llvm)
 RUN(NAME submodule_55 LABELS gfortran llvm)
 RUN(NAME submodule_56 LABELS gfortran llvm)
 RUN(NAME submodule_57 LABELS gfortran llvm)
+RUN(NAME submodule_58 LABELS gfortran llvm fortran)
+RUN(NAME submodule_59a LABELS gfortran llvm llvm_submodule EXTRAFILES submodule_59b.f90 submodule_59c.f90 submodule_59d.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_14 LABELS gfortran llvm)

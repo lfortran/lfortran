@@ -6349,9 +6349,9 @@ public:
     }
 
     template <typename T>
-    void visit_SubmoduleModuleCommon(const T& x) {
+    void visit_SubmoduleModuleCommon(const T& x, const std::string &sym_name) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        ASR::symbol_t *t = current_scope->get_symbol(sym_name);
         if (t == nullptr) {
             // The symbol table visitor skipped this program unit, which is only
             // possible with `--continue-compilation` and after it reported an
@@ -6412,11 +6412,11 @@ public:
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
-        visit_SubmoduleModuleCommon(x);
+        visit_SubmoduleModuleCommon(x, to_lower(x.m_id) + "@" + to_lower(x.m_name));
     }
 
     void visit_Module(const AST::Module_t &x) {
-        visit_SubmoduleModuleCommon(x);
+        visit_SubmoduleModuleCommon(x, to_lower(x.m_name));
     }
 
     void visit_Use(const AST::Use_t &x) {
@@ -10541,6 +10541,18 @@ public:
         };
         if (var) {
             check_loop_control_type(var, "DO variable");
+            if (ASRUtils::is_real(*ASRUtils::expr_type(var))) {
+                diag.message_label(
+                    "real do loop variable is a deleted feature (deleted in fortran 95)",
+                    {var->base.loc}, "use an integer loop counter instead",
+                    compiler_options.std_f23_conformance ? Level::Error : Level::Warning,
+                    Stage::Semantic);
+                if (compiler_options.std_f23_conformance) {
+                    all_loops_blocks_nesting -= 1;
+                    all_blocks_nesting--;
+                    throw SemanticAbort();
+                }
+            }
         }
         if (x.m_start) {
             visit_expr(*x.m_start);

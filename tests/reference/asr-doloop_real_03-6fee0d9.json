@@ -1,0 +1,13 @@
+{
+    "basename": "asr-doloop_real_03-6fee0d9",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/doloop_real_03.f90",
+    "infile_hash": "ab9f8301e24aec79a72b125ac2210a656adeaa2ea1a0c3f435136000",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-doloop_real_03-6fee0d9.stderr",
+    "stderr_hash": "bf75d43060b4e4399be8f0860011ecde6681e4ec4948ad6517ad73e2",
+    "returncode": 1
+}

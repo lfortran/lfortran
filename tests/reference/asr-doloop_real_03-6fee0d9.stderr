@@ -1,0 +1,5 @@
+semantic error: real do loop variable is a deleted feature (deleted in fortran 95)
+ --> tests/../integration_tests/doloop_real_03.f90:6:10
+  |
+6 |       do x = 1, 3
+  |          ^ use an integer loop counter instead

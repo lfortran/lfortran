@@ -3789,3 +3789,9 @@ contains
         deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
     end subroutine
 end module cc1_deallocate_stat
+
+subroutine cc1_real_do_variable()
+    real :: x
+    do x = 1, 3
+    end do
+end subroutine cc1_real_do_variable

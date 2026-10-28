@@ -3550,6 +3550,11 @@ filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "../integration_tests/doloop_real_03.f90"
+semantics_only_cc = true
+options = "--std=f23 --fixed-form"
+
+[[test]]
 filename = "errors/conditional_expr_syntax_1.f90"
 syntax_only_cc = true
 semantics_only_cc = true

@@ -30,6 +30,10 @@ Supported Standards:
 * Legacy Mode (`--std=legacy`): Allows compilation of older Fortran codebases that use non-standard or deprecated syntax.
 * LFortran Mode (`--std=lf`): Default mode focusing on modern Fortran features, including experimental extensions beyond the current standards.
 
+Real-valued DO loop variables, deleted in Fortran 95, are accepted with a
+warning in default and legacy modes and rejected with `--std=f23`. Use an
+integer loop counter in modern Fortran code.
+
 ## Extensions
 
 The extensions are currently in development and are planned to include:
