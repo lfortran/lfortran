@@ -9364,7 +9364,7 @@ public:
                 }
             }
         }
-        original_sym = external_procedure_reference(original_sym);
+        original_sym = external_procedure_reference(original_sym, x.base.base.loc);
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);
         ASR::Function_t *f = nullptr;
         if (ASR::is_a<ASR::Function_t>(*sym)) {

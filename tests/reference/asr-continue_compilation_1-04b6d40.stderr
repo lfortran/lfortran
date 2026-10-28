@@ -4759,3 +4759,9 @@ semantic error: the extent of the last dimension of an assumed-size array is not
      |
 3825 |         print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
      |                  ^^^^^^^^^^ 
+
+semantic error: referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+    --> tests/errors/continue_compilation_1.f90:3811:9
+     |
+3811 |         call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
