@@ -1814,7 +1814,9 @@ R"(    // Initialise Numpy
         std::string idx = std::move(src);
         this->visit_expr(*x.m_arg);
         std::string str = std::move(src);
-        src = "_lfortran_str_item_alloc(_lfortran_get_default_allocator(), " + str + ", " + idx + ")";
+        headers.insert("string.h");
+        src = "_lfortran_str_item_alloc(_lfortran_get_default_allocator(), "
+            + str + ", strlen(" + str + "), " + idx + ")";
     }
 
     std::string generate_map_clauses(ASR::OMPMap_t* m) {

@@ -3633,6 +3633,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");
             SET_INTRINSIC_NAME(Char, "char");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Ichar)) : {
+                // Code of the first character, zero-extended to the
+                // result kind. C strings and C++ std::string alike
+                // expose it as index zero.
+                if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                    throw CodeGenError("ichar() on arrays is not supported by the C/C++ backends yet",
+                        x.base.base.loc);
+                }
+                this->visit_expr(*x.m_args[0]);
+                std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+                src = "((" + result_type + ")(unsigned char)(" + src + ")[0])";
+                return;
+            }
             SET_INTRINSIC_NAME(StringContainsSet, "verify");
             SET_INTRINSIC_NAME(StringFindSet, "scan");
             SET_INTRINSIC_NAME(SubstrIndex, "index");
@@ -3692,6 +3705,22 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         this->visit_expr(*x.m_args[0]);
         out += "(" + src + ")";
         src = out;
+    }
+
+    void visit_Ichar(const ASR::Ichar_t &x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        if (x.m_value) {
+            self().visit_expr(*x.m_value);
+            return;
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_arg))) {
+            throw CodeGenError("ichar() on arrays is not supported by the C/C++ backends yet",
+                x.base.base.loc);
+        }
+        self().visit_expr(*x.m_arg);
+        std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+        src = "((" + result_type + ")(unsigned char)(" + src + ")[0])";
+        last_expr_precedence = 2;
     }
 
     void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
