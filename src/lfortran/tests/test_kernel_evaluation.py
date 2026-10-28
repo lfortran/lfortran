@@ -161,7 +161,9 @@ def main():
         connection.unlink(missing_ok=True)
         log.unlink(missing_ok=True)
         directory.rmdir()
-    check_stop_flushes(args.lfortran)
+    for code, status, shown in [("if (.true.) stop", 0, ""), ("stop 3", 3, "STOP 3"),
+            ("error stop", 1, "ERROR STOP")]:
+        check_stop_flushes(args.lfortran, code, status, shown)
 
 
 def builtin_stop_kernel(lfortran):
@@ -179,10 +181,10 @@ def builtin_stop_kernel(lfortran):
     return "--managed" in help_text
 
 
-def check_stop_flushes(lfortran):
-    """A cell's STOP ends the kernel with status 0. On the built-in kernel,
-    stdout written before it is delivered. On Windows, STOP must call the
-    host exit() so the flush registered with atexit runs."""
+def check_stop_flushes(lfortran, stop, status, shown):
+    """STOP and ERROR STOP end the kernel with their exit status. On the
+    built-in kernel, preceding output and STOP diagnostics are delivered.
+    On Windows, STOP must call the host exit() so the atexit flush runs."""
     directory = Path.cwd() / ("kernel-stop-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -205,7 +207,7 @@ def check_stop_flushes(lfortran):
             client.start_channels()
             client.wait_for_ready(timeout=30)
             msg_id = client.execute(
-                "print *, 'before-stop'\nif (.true.) stop\nprint *, 'after-stop'")
+                "print *, 'before-stop'\n" + stop + "\nprint *, 'after-stop'")
             texts = []
             deadline = time.monotonic() + 20
             exited = None
@@ -230,9 +232,10 @@ def check_stop_flushes(lfortran):
                 texts.append(msg["content"].get("text", ""))
             code = process.wait(timeout=10)
             blob = "".join(texts)
-            assert code == 0, (code, blob, log.read_text(errors="replace"))
+            assert code == status, (code, status, blob, log.read_text(errors="replace"))
             if managed:
                 assert "before-stop" in blob, blob
+                assert shown in blob, (stop, blob)
                 assert "after-stop" not in blob, blob
     except BaseException:
         if log.exists():
