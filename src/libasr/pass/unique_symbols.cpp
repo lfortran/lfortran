@@ -52,6 +52,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool should_mangle = false;
     std::vector<std::string> parent_function_name;
     std::string module_name = "";
+    // The symbols renamed to the global name of a procedure, which is fixed
+    // by the link.
+    std::unordered_set<ASR::symbol_t*> global_symbols;
     SymbolTable* current_scope = nullptr;
 
     SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm, bool mue) :
@@ -98,6 +101,46 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
     }
 
+    // Gives the symbols of `symtab` distinct new names. A global name can
+    // be the new name of another symbol of the same scope: in module `m`,
+    // `external :: m_x` and a local `x` both become `m_x_`. The global name
+    // is fixed by the link, so the other symbol gets a new unique name
+    // instead. A symbol that is not renamed keeps its name if it can.
+    void make_new_names_unique(SymbolTable *symtab) {
+        std::unordered_set<std::string> taken;
+        // The symbols that may get another name, with their name so far
+        std::vector<std::pair<ASR::symbol_t*, std::string>> not_renamed, renamed;
+        for (auto &a: symtab->get_scope()) {
+            auto it = sym_to_renamed.find(a.second);
+            if (it == sym_to_renamed.end()) {
+                not_renamed.push_back({a.second, a.first});
+            } else if (global_symbols.find(a.second) != global_symbols.end()) {
+                taken.insert(it->second);
+            } else {
+                renamed.push_back({a.second, it->second});
+            }
+        }
+        std::vector<std::pair<ASR::symbol_t*, std::string>> clashing;
+        for (auto &a: not_renamed) {
+            if (!taken.insert(a.second).second) {
+                clashing.push_back(a);
+            }
+        }
+        for (auto &a: renamed) {
+            if (!taken.insert(a.second).second) {
+                clashing.push_back(a);
+            }
+        }
+        for (auto &a: clashing) {
+            std::string new_name;
+            int counter = 1;
+            do {
+                new_name = a.second + std::to_string(counter++);
+            } while (!taken.insert(new_name).second);
+            sym_to_renamed[a.first] = new_name;
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
         current_scope = xx.m_symtab;
@@ -105,6 +148,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : xx.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
+        make_new_names_unique(xx.m_symtab);
     }
 
     void visit_Program(const ASR::Program_t &x) {
@@ -113,6 +157,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
+        make_new_names_unique(x.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -141,6 +186,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             }
             visit_symbol(*a.second);
         }
+        make_new_names_unique(x.m_symtab);
         should_mangle = should_mangle_copy;
         module_name = mod_name_copy;
         current_scope = current_scope_copy;
@@ -178,6 +224,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 bool global = ASRUtils::is_external_procedure_interface(f_type)
                     && f_type->m_abi != ASR::abiType::BindC;
                 sym_to_renamed[sym] = update_name(x.m_name, global);
+                if (global) {
+                    global_symbols.insert(sym);
+                }
             }
             if ( fortran_mangling ) {
                 if ( sym_to_renamed.find(sym) != sym_to_renamed.end()
@@ -221,6 +270,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 if (!has_reserved_prefix && !name.empty() && name.back() != '_') {
                     ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                     sym_to_renamed[sym] = name + "_";
+                    global_symbols.insert(sym);
                 }
             }
         }
@@ -234,6 +284,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 parent_function_name.pop_back();
             }
         }
+        make_new_names_unique(x.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -289,6 +340,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        make_new_names_unique(x.m_symtab);
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
@@ -329,6 +381,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        make_new_names_unique(x.m_symtab);
     }
 
     void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
@@ -375,10 +428,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
             }
         }
         for (ASR::symbol_t *sym: renamed) {
-            const std::string &new_name = sym_to_new_name[sym];
-            if (symtab->get_symbol(new_name) == nullptr) {
-                symtab->add_symbol(new_name, sym);
-            }
+            symtab->add_symbol(sym_to_new_name[sym], sym);
         }
     }
 
