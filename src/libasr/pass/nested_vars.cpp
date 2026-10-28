@@ -51,7 +51,10 @@ constant of the host is replaced by a copy.
 A member refers to the variable itself, except for a variable whose
 representation is fixed at run time by the host (a non-allocatable,
 non-pointer array or character) or that is a procedure: the host associates
-a pointer "view" with it on entry, and the member refers to the view.
+a pointer "view" with it on entry, and the member refers to the view. The
+view of an assumed-size array only holds the address of its data, so its
+aliases keep its declared bounds, which refer to the aliases of the host
+variables they use.
 
 An internal procedure of an internal procedure (an extension) reaches a
 variable of a more distant host through the aliases of the procedures in
@@ -255,6 +258,20 @@ public:
     }
 };
 
+// Whether the array type `t` is that of an assumed-size dummy argument,
+// represented by its data alone: an UnboundedPointerArray, or for a bind(c)
+// procedure a PointerArray whose last dimension has no extent
+static bool is_assumed_size(ASR::ttype_t *t) {
+    ASR::array_physical_typeType physical_type = ASRUtils::extract_physical_type(t);
+    if (physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
+        return true;
+    }
+    ASR::dimension_t *dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, dims);
+    return physical_type == ASR::array_physical_typeType::PointerArray &&
+        n_dims > 0 && dims[n_dims - 1].m_length == nullptr;
+}
+
 // Whether a host variable is reached through a pointer view (see above)
 static bool reached_through_view(ASR::symbol_t *sym) {
     if (ASR::is_a<ASR::Function_t>(*sym)) {
@@ -277,6 +294,15 @@ static bool reached_through_view(ASR::symbol_t *sym) {
     return ASRUtils::is_character(*t);
 }
 
+// Whether a host variable is an assumed-size array reached through a view.
+// Its view only holds the address of its data: its aliases are declared with
+// its own bounds, which refer to the aliases of the host variables they use.
+static bool is_assumed_size_view(ASR::symbol_t *sym) {
+    return reached_through_view(sym) && ASR::is_a<ASR::Variable_t>(*sym) &&
+        ASRUtils::is_array(ASR::down_cast<ASR::Variable_t>(sym)->m_type) &&
+        is_assumed_size(ASR::down_cast<ASR::Variable_t>(sym)->m_type);
+}
+
 // The type of the pointer view of a host variable
 static ASR::ttype_t *view_type(Allocator &al, ASR::symbol_t *sym) {
     const Location &loc = sym->base.loc;
@@ -293,8 +319,7 @@ static ASR::ttype_t *view_type(Allocator &al, ASR::symbol_t *sym) {
             duplicator.duplicate_ttype(t)));
     }
     if (ASRUtils::is_array(t)) {
-        if (ASRUtils::extract_physical_type(t) ==
-                ASR::array_physical_typeType::UnboundedPointerArray) {
+        if (is_assumed_size(t)) {
             // An assumed-size array has no upper bound to describe
             return ASRUtils::duplicate_type_with_empty_dims(al, t,
                 ASR::array_physical_typeType::UnboundedPointerArray, true);
@@ -1150,8 +1175,15 @@ public:
             ASR::symbol_t *sym, ASR::Variable_t *member) {
         const Location &loc = sym->base.loc;
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::ttype_t *type = duplicator.duplicate_ttype(
-            ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type);
+        ASR::ttype_t *type = duplicator.duplicate_ttype(is_assumed_size_view(sym)
+            ? ASR::down_cast<ASR::Variable_t>(sym)->m_type
+            : ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type);
+        if (is_assumed_size_view(sym)) {
+            // The alias has the representation of the view (the data alone),
+            // also for the PointerArray of a bind(c) host
+            ASR::down_cast<ASR::Array_t>(type)->m_physical_type =
+                ASR::array_physical_typeType::UnboundedPointerArray;
+        }
         bool target = false, is_volatile = false;
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -1383,7 +1415,8 @@ public:
         while (!worklist.empty()) {
             ASR::symbol_t *e = worklist.back();
             worklist.pop_back();
-            if (!ASR::is_a<ASR::Variable_t>(*e) || reached_through_view(e)) {
+            if (!ASR::is_a<ASR::Variable_t>(*e) ||
+                    (reached_through_view(e) && !is_assumed_size_view(e))) {
                 continue;
             }
             std::set<ASR::symbol_t*> deps;

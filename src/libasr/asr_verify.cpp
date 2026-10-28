@@ -3419,7 +3419,11 @@ public:
             if (x.m_old == ASR::array_physical_typeType::AssumedRankArray) {
                 _processing_assumed_rank_array = true;
             }
-            if (x.m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+            if (x.m_old == ASR::array_physical_typeType::UnboundedPointerArray ||
+                    x.m_new == ASR::array_physical_typeType::UnboundedPointerArray) {
+                // An UnboundedPointerArray has no extent, so neither does a
+                // cast from or to one (as from the PointerArray of an
+                // assumed-size dummy of a bind(c) procedure)
                 _processing_unbounded_pointer_array = true;
             }
             visit_ttype(*x.m_type);
