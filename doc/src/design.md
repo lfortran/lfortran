@@ -102,6 +102,12 @@ compiler-managed descriptors and struct pointer fields using TBAA. Numeric
 and logical elements share one data class, so this metadata does not claim
 that two data arrays cannot overlap.
 
+Scoped ASYNCHRONOUS/VOLATILE redeclarations are
+represented by `ScopedVariableAttribute`, referring to the canonical
+host/use-associated variable without changing its declaration. Such regions
+also exclude the variable from whole-procedure alias promises and dead
+whole-array store elimination.
+
 The data class includes owned local automatic and fixed-size arrays, but not
 raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
 storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,

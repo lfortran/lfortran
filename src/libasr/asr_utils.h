@@ -630,6 +630,10 @@ std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym, bool show_kind = false);
 
 char *symbol_name(const ASR::symbol_t *f);
+// Includes contained scopes: whole-routine restrictions must also respect
+// regions granting asynchronous/volatile access to the canonical entity.
+bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
+    const SymbolTable *scope);
 
 std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers);
 

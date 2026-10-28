@@ -1695,6 +1695,21 @@ public:
         visit_UserDefinedType(x);
     }
 
+    void visit_ScopedVariableAttribute(const ScopedVariableAttribute_t &x) {
+        require(x.m_parent_symtab == current_symtab,
+            "scoped attribute must belong to its declaring scope");
+        require(x.m_is_volatile || x.m_is_asynchronous,
+            "scoped attribute must specify volatile or asynchronous");
+        symbol_t *symbol = ASRUtils::symbol_get_past_external(
+            x.m_variable);
+        require(is_a<Variable_t>(*symbol),
+            "scoped attribute must reference a variable entity");
+        require(ASRUtils::symbol_parent_symtab(symbol) != current_symtab,
+            "local attributes must be recorded on the local variable");
+        require(symtab_in_scope(current_symtab, x.m_variable),
+            "scoped attribute's variable must be visible in its scope");
+    }
+
     void visit_Variable(const Variable_t &x) {
         std::string current_name_copy = current_name;
         current_name = x.m_name;

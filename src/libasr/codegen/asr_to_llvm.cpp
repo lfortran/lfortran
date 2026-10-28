@@ -6639,6 +6639,7 @@ public:
     // The storage a view of a common block describes is laid out once for
     // the whole translation unit by declare_common_block_storage.
     void visit_CommonBlock(const ASR::CommonBlock_t &/*x*/) {}
+    void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &/*x*/) {}
 
     // The views of every common block of `scope` and of the scopes nested in
     // it, by the link name of their storage.
@@ -10492,7 +10493,8 @@ public:
             && !arg.m_is_asynchronous
             && arg.n_codims == 0
             && !ASRUtils::is_pointer(arg.m_type)
-            && !LLVM::is_cptr_dummy_passed_by_value(arg);
+            && !LLVM::is_cptr_dummy_passed_by_value(arg)
+            && !ASRUtils::has_scoped_variable_attribute(arg, arg.m_parent_symtab);
     }
 
     // Under --fast the loads and stores of the procedures for which
@@ -10541,6 +10543,7 @@ public:
                 v.m_storage != ASR::storage_typeType::Default ||
                 v.m_common_block != nullptr ||
                 v.m_is_volatile || v.m_is_asynchronous || v.n_codims != 0 ||
+                ASRUtils::has_scoped_variable_attribute(v, v.m_parent_symtab) ||
                 !ASRUtils::is_array(v.m_type) ||
                 LLVM::is_llvm_pointer(*v.m_type)) {
             return false;

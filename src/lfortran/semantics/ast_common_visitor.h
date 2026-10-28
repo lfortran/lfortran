@@ -8229,6 +8229,30 @@ public:
             is_dimension_star, true, array_type->m_memory_space);
     }
 
+    void set_scoped_variable_attribute(const std::string &name,
+            bool asynchronous, const Location &loc) {
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+        if (symbol == nullptr) return;
+        ASR::symbol_t *canonical = ASRUtils::symbol_get_past_external(symbol);
+        if (!ASR::is_a<ASR::Variable_t>(*canonical)) return;
+        auto *variable = ASR::down_cast<ASR::Variable_t>(canonical);
+        if (variable->m_parent_symtab == current_scope) {
+            if (asynchronous) {
+                variable->m_is_asynchronous = true;
+            } else {
+                variable->m_is_volatile = true;
+            }
+            return;
+        }
+        std::string attribute_name = current_scope->get_unique_name(
+            "__scoped_attribute_" + name);
+        current_scope->add_symbol(attribute_name,
+            ASR::down_cast<ASR::symbol_t>(ASR::make_ScopedVariableAttribute_t(
+                al, loc, current_scope, s2c(al, attribute_name),
+                symbol,
+                !asynchronous, asynchronous)));
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -8743,27 +8767,11 @@ public:
                                         assgnd_target.insert(to_lower(sym));
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
-                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
-                                    if (sym_) {
-                                        ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
-                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
-                                            v->m_is_asynchronous = true;
-                                        }
-                                    } else {
-                                        assgnd_asynchronous.insert(to_lower(sym));
-                                    }
+                                    assgnd_asynchronous.insert(to_lower(sym));
+                                    set_scoped_variable_attribute(sym, true, x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
-                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
-                                    if (sym_) {
-                                        ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
-                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
-                                            v->m_is_volatile = true;
-                                        }
-                                    } else {
-                                        assgnd_volatile.insert(to_lower(sym));
-                                    }
+                                    assgnd_volatile.insert(to_lower(sym));
+                                    set_scoped_variable_attribute(sym, false, x.base.base.loc);
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -10053,6 +10061,16 @@ public:
                 if (assgnd_asynchronous.count(sym)) {
                     is_asynchronous = true;
                 }
+                std::vector<std::string> shadowed_attributes;
+                for (auto &item: current_scope->get_scope()) {
+                    if (!ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) continue;
+                    auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(item.second);
+                    ASR::symbol_t *entity = attribute->m_variable;
+                    if (sym == ASRUtils::symbol_name(entity)) {
+                        shadowed_attributes.push_back(item.first);
+                    }
+                }
+                for (const auto &name: shadowed_attributes) current_scope->erase_symbol(name);
                 // A procedure declaration statement without an interface,
                 // `procedure() :: f`, gives no type: a type declaration
                 // statement may give the type of `f`, before or after it.

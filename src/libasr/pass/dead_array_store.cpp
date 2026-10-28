@@ -209,7 +209,8 @@ private:
         }
         ASR::Variable_t *root = ASR::down_cast<ASR::Variable_t>(chain[0]);
         if (root->m_common_block || root->m_is_volatile
-                || root->m_is_asynchronous) {
+                || root->m_is_asynchronous
+                || ASRUtils::has_scoped_variable_attribute(*root, routine)) {
             return nullptr;
         }
         // An associate name is bound once; another pointer may be

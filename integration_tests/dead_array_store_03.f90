@@ -27,12 +27,36 @@ subroutine send_volatile(x, n)
     x = 4
 end subroutine
 
+subroutine send_scoped(x, n)
+    integer, intent(in) :: n
+    real :: x(n)
+    block
+        asynchronous :: x
+        x = 5
+        call dead_array_store_03_send()
+        x = 6
+    end block
+end subroutine
+
+subroutine send_contained(x, n)
+    integer, intent(in) :: n
+    real :: x(n)
+    call inner()
+contains
+    subroutine inner()
+        volatile :: x
+        x = 7
+        call dead_array_store_03_send()
+        x = 8
+    end subroutine
+end subroutine
+
 end module
 
 program dead_array_store_03
 use iso_c_binding, only: c_loc
 use dead_array_store_03_pending, only: pending_buffer, sent
-use dead_array_store_03_m, only: send_async, send_volatile
+use dead_array_store_03_m, only: send_async, send_volatile, send_scoped, send_contained
 implicit none
 real, target, asynchronous :: a(4)
 real, target, volatile :: v(4)
@@ -48,4 +72,12 @@ call send_volatile(v, 4)
 print *, sent, v(1)
 if (abs(sent - 3) > 1e-6) error stop
 if (abs(v(1) - 4) > 1e-6) error stop
+pending_buffer = c_loc(a)
+call send_scoped(a, 4)
+if (abs(sent - 5) > 1e-6) error stop
+if (abs(a(1) - 6) > 1e-6) error stop
+pending_buffer = c_loc(v)
+call send_contained(v, 4)
+if (abs(sent - 7) > 1e-6) error stop
+if (abs(v(1) - 8) > 1e-6) error stop
 end program

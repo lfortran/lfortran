@@ -6632,6 +6632,7 @@ std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Enum: return "Enum";
         case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
+        case ASR::symbolType::ScopedVariableAttribute: return "ScopedVariableAttribute";
         case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
@@ -6991,6 +6992,9 @@ char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_name;
+        }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return ASR::down_cast<ASR::ScopedVariableAttribute_t>(f)->m_name;
         }
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_name;
@@ -7477,6 +7481,9 @@ SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_parent_symtab;
         }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return ASR::down_cast<ASR::ScopedVariableAttribute_t>(f)->m_parent_symtab;
+        }
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_parent_symtab;
         }
@@ -7561,6 +7568,9 @@ SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
             //throw LCompilersException("Variable does not have a symtab");
         }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return nullptr;
+        }
         case ASR::symbolType::ExternalSymbol: {
             return nullptr;
             //throw LCompilersException("ExternalSymbol does not have a symtab");
@@ -7601,6 +7611,25 @@ std::string cell_prefix(const SymbolTable *s) {
     }
     if (depth == 1) return "";
     return "__cell" + std::to_string(depth) + "_";
+}
+
+bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
+        const SymbolTable *scope) {
+    for (const auto &item: scope->get_scope()) {
+        ASR::symbol_t *s = item.second;
+        if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*s)) {
+            auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(s);
+            if (ASRUtils::symbol_get_past_external(
+                    attribute->m_variable)
+                    == &variable.base &&
+                    (attribute->m_is_volatile || attribute->m_is_asynchronous)) {
+                return true;
+            }
+        } else if (SymbolTable *nested = symbol_symtab(s)) {
+            if (has_scoped_variable_attribute(variable, nested)) return true;
+        }
+    }
+    return false;
 }
 
 ASR::symbol_t *import_type_bound_specific(Allocator &al, SymbolTable *scope,
@@ -14150,6 +14179,16 @@ void SymbolDuplicator::duplicate_symbol(ASR::symbol_t* symbol,
         return;
     }
     switch( symbol->type ) {
+        case ASR::symbolType::ScopedVariableAttribute: {
+            auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(symbol);
+            new_symbol = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ScopedVariableAttribute_t(al, symbol->base.loc,
+                    destination_symtab, attribute->m_name,
+                    attribute->m_variable,
+                    attribute->m_is_volatile, attribute->m_is_asynchronous));
+            new_symbol_name = attribute->m_name;
+            break;
+        }
         case ASR::symbolType::Variable: {
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
             new_symbol = duplicate_Variable(variable, destination_symtab);
@@ -14336,10 +14375,26 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
                 return;
             }
         }
+        void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &x) {
+            SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_variable);
+            for (auto &s: scopes) {
+                if (parent != s.first) continue;
+                ASR::symbol_t *copy = s.second->get_symbol(
+                    ASRUtils::symbol_name(x.m_variable));
+                if (copy != nullptr && copy->type == x.m_variable->type) {
+                    const_cast<ASR::ScopedVariableAttribute_t&>(x).m_variable = copy;
+                }
+                return;
+            }
+        }
     };
     copied_scopes.push_back({orig_scope, new_scope});
     RetargetToCopies retarget(copied_scopes);
     for (auto &item : new_scope->get_scope()) {
+        if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+            retarget.visit_symbol(*item.second);
+            continue;
+        }
         if (ASR::is_a<ASR::Variable_t>(*item.second)) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
             if (copied_scopes.size() > 1) {

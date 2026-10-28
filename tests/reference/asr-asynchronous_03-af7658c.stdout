@@ -7,6 +7,14 @@
                     (SymbolTable
                         2
                         {
+                            __scoped_attribute_a3:
+                                (ScopedVariableAttribute
+                                    2
+                                    __scoped_attribute_a3
+                                    2 a3
+                                    .false.
+                                    .true.
+                                ),
                             a1:
                                 (ExternalSymbol
                                     2
@@ -435,7 +443,7 @@
                                     .false.
                                     ()
                                     .false.
-                                    .true.
+                                    .false.
                                     .false.
                                     NotMethod
                                     ()

@@ -798,6 +798,42 @@ subroutine cptr(p, q, r)
     r = a
 end subroutine
 
+subroutine scoped_async(a)
+    real :: a(4)
+    block
+        asynchronous :: a
+        a = 1
+    end block
+end subroutine
+
+subroutine scoped_volatile(a)
+    real :: a(4)
+    block
+        volatile :: a
+        a = 1
+    end block
+end subroutine
+
+subroutine scoped_contained(a)
+    real :: a(4)
+    call inner()
+contains
+    subroutine inner()
+        asynchronous :: a
+        a = 1
+    end subroutine
+end subroutine
+
+subroutine shadow(a)
+    real :: a(4)
+    block
+        asynchronous :: a
+        real :: a(4)
+        a = 1
+    end block
+    a = 2
+end subroutine
+
 function f(x) result(res)
     real, intent(in) :: x(3)
     real :: res(3)
@@ -829,6 +865,10 @@ end module
         {"attributes", "_m_attributes"},
         {"last_inout", "_m_last_inout"},
         {"cptr", "_m_cptr"},
+        {"scoped_async", "_m_scoped_async"},
+        {"scoped_volatile", "_m_scoped_volatile"},
+        {"scoped_contained", "_m_scoped_contained"},
+        {"shadow", "_m_shadow"},
         {"f", "_m_f"},
         {"self_first", "_m_self_first"},
         {"bits", "_m_bits"},
@@ -843,8 +883,9 @@ end module
         "attributes:r "
         // Not y, which could be a function result.
         "last_inout:x "
-        // C addresses may designate the same storage.
-        "cptr:r "
+        // C addresses may designate the same storage. Scoped attributes
+        // exclude a, but a locally redeclared name does not affect its host.
+        "cptr:r shadow:a "
         // Not res, the function result.
         "f:x "
         "self_first:self self_first:i self_first:v "
