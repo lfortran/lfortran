@@ -4798,21 +4798,25 @@ public:
         }
 
         bool cond = x.n_keywords == 0;
-        bool stat_cond = false, errmsg_cond = false, source_cond = false, mold_cond = false;
+        // `source_cond` and `mold_cond` record whether the keyword appears
+        // anywhere in the statement, in any order among the other alloc-opts.
+        bool source_cond = false, mold_cond = false;
         ASR::expr_t *stat = nullptr, *errmsg = nullptr, *source = nullptr, *mold = nullptr;
         for ( size_t i=0; i<x.n_keywords; i++ ) {
-            stat_cond = !stat_cond && (to_lower(x.m_keywords[i].m_arg) == "stat");
-            errmsg_cond = !errmsg_cond && (to_lower(x.m_keywords[i].m_arg) == "errmsg");
-            source_cond = !source_cond && (to_lower(x.m_keywords[i].m_arg) == "source");
-            mold_cond = !mold_cond && (to_lower(x.m_keywords[i].m_arg) == "mold");
-            cond = cond || (stat_cond || errmsg_cond || source_cond || mold_cond);
-            if( stat_cond ) {
+            std::string keyword = to_lower(x.m_keywords[i].m_arg);
+            bool is_stat = keyword == "stat";
+            bool is_errmsg = keyword == "errmsg";
+            bool is_source = keyword == "source";
+            bool is_mold = keyword == "mold";
+            cond = cond || (is_stat || is_errmsg || is_source || is_mold);
+            if( is_stat ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
-            } else if( errmsg_cond ) {
+            } else if( is_errmsg ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 errmsg = ASRUtils::EXPR(tmp);
-            } else if( source_cond ) {
+            } else if( is_source ) {
+                source_cond = true;
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 source = ASRUtils::EXPR(tmp);
                 if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(source)) &&
@@ -4828,7 +4832,8 @@ public:
                     }
                 }
                 set_string_len_if_needed(x, alloc_args_vec, source_cond, source);
-            } else if ( mold_cond ) {
+            } else if ( is_mold ) {
+                mold_cond = true;
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 mold = ASRUtils::EXPR(tmp);
                 set_string_len_if_needed(x, alloc_args_vec, mold_cond, mold);
