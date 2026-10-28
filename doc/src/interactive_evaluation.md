@@ -24,7 +24,12 @@ trace as the `traceback`.
 ## Native cell interruption
 
 The native evaluator inserts cooperative checks into interactive LLVM code
-before optimization: at basic-block entries and after calls. A pending
+only when preparing it for JIT execution. File compilation and LLVM/assembly
+inspection (including `--interactive-parse` and `%%showllvm`) do not add these
+checks. Executed cells receive them before LLVM optimization, including in
+`--fast` mode.
+
+The checks poll at basic-block entries and after calls. A pending
 interrupt returns normally through generated callers, then raises
 `EvaluationInterrupted` at the C++ JIT invocation boundary. `execute()` reports
 `KeyboardInterrupt` and unwinds its ordinary output-capture and runtime-hook

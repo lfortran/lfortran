@@ -601,7 +601,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // against is the snapshot taken in get_asr3().
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
-        nullptr);
+        nullptr, compiler_options.interactive);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -1464,7 +1464,8 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
-  [[maybe_unused]] int64_t* time_opt=nullptr)
+  [[maybe_unused]] int64_t* time_opt,
+  [[maybe_unused]] bool enable_cancellation)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
@@ -1505,7 +1506,9 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     }
 
 #ifndef __EMSCRIPTEN__
-    if (compiler_options.interactive) {
+    // Interactive parsing is also used to inspect and compile files. Only
+    // code being prepared for JIT execution needs cancellation safepoints.
+    if (enable_cancellation) {
         get_llvm_evaluator().instrument_interrupts(*m->m_m);
     }
 #endif

@@ -2933,6 +2933,28 @@ static CompilerOptions execute_options() {
     return cu;
 }
 
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: cancellation is execution-only") {
+    for (bool fast : {false, true}) {
+        CAPTURE(fast);
+        CompilerOptions cu = execute_options();
+        cu.po.fast = fast;
+        FortranEvaluator e(cu);
+        auto cell = e.execute("%%showllvm\n42");
+        REQUIRE(cell.ok);
+        CHECK(cell.output.find("_lfortran_check_interrupt") == std::string::npos);
+        cell = e.execute("integer :: n = 41\nn + 1", true);
+        REQUIRE(cell.ok);
+        CHECK(cell.value.text() == "42");
+        CHECK(cell.value.llvm_ir.find("_lfortran_check_interrupt") != std::string::npos);
+        cell = e.execute("%%showllvm\nn + 1");
+        REQUIRE(cell.ok);
+        CHECK(cell.output.find("_lfortran_check_interrupt") == std::string::npos);
+        CHECK(e.execute("n").value.text() == "41");
+    }
+}
+#endif
+
 TEST_CASE("FortranEvaluator execute: results and cells") {
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
