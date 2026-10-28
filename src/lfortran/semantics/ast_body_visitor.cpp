@@ -9899,77 +9899,13 @@ public:
                             // is cast to the dummy's type.
                             passed_arg = cast_procedure_actual(passed_arg, f->m_args[i + offset]);
                             args.p[i].m_value = passed_arg;
-                            passed_type = ASRUtils::expr_type(passed_arg);
                         } else if (ASR::is_a<ASR::FunctionType_t>(
                                 *ASRUtils::type_get_past_pointer(param_type))) {
                             check_procedure_component_of_constant(passed_arg,
                                 "an actual argument");
                         }
-                        // Skip type checking for function types (procedure dummy
-                        // arguments are validated separately above).
-                        bool is_function_type_arg = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
-                        // For polymorphic (class) types, don't unconditionally skip —
-                        // verify actual compatibility instead. A genuinely incompatible
-                        // actual argument (e.g. an integer passed to a class(T) dummy)
-                        // must be reported here, otherwise it silently reaches codegen
-                        // and crashes there.
-                        bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
-                                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
-                        bool self_passing_call = v_expr != nullptr && !nopass; // `pass` attributed method, has offset that's not properly handled for now.
-                        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
-                        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
-                                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(f->m_args[i + offset], passed_arg) : false);
-                        // For implicit_argument_casting, skip type checking for
-                        // compatible type families (e.g., numeric↔numeric, string↔string)
-                        // but reject fundamentally incompatible types (e.g., string→integer)
-                        // that would cause an ICE in Call_t_body.
-                        // Also reject arrays of integers with different kinds, which
-                        // Call_t_body cannot handle.
-                        if (compiler_options.implicit_argument_casting && !skip_check) {
-                            ASR::ttype_t* passed_elem = ASRUtils::type_get_past_array(passed_type);
-                            ASR::ttype_t* param_elem = ASRUtils::type_get_past_array(param_type);
-                            auto is_numeric = [](ASR::ttype_t* t) {
-                                return ASR::is_a<ASR::Integer_t>(*t) ||
-                                       ASR::is_a<ASR::Real_t>(*t) ||
-                                       ASR::is_a<ASR::Complex_t>(*t);
-                            };
-                            bool both_numeric = is_numeric(passed_elem) && is_numeric(param_elem);
-                            // `same_type_class` is only meaningful for scalar
-                            // built-in types where the AST-level Cast node can
-                            // paper over differences in kind/length. Structs,
-                            // classes, pointers, and function types must still
-                            // be checked strictly — otherwise e.g. passing
-                            // type(foo) where type(bar) is expected would be
-                            // silently accepted.
-                            bool same_type_class = (passed_elem->type == param_elem->type)
-                                && !ASR::is_a<ASR::StructType_t>(*passed_elem)
-                                && !ASR::is_a<ASR::Pointer_t>(*passed_elem)
-                                && !ASR::is_a<ASR::FunctionType_t>(*passed_elem)
-                                && !ASRUtils::is_class_type(passed_elem);
-                            bool compatible_types = both_numeric || same_type_class;
-                            bool both_are_arrays = ASRUtils::is_array(passed_type) && ASRUtils::is_array(param_type);
-                            bool both_are_integers = ASR::is_a<ASR::Integer_t>(*passed_elem) &&
-                                                     ASR::is_a<ASR::Integer_t>(*param_elem);
-                            bool different_kinds = ASRUtils::extract_kind_from_ttype_t(passed_elem) !=
-                                                   ASRUtils::extract_kind_from_ttype_t(param_elem);
-                            if (compatible_types && !(both_are_arrays && both_are_integers && different_kinds)) {
-                                skip_check = true;
-                            }
-                        }
-                        // Check if types are equal
-                        if (!skip_check && (ASRUtils::is_unlimited_polymorphic_to_specific_type(param_type, passed_type) ||
-                                !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, f->m_args[i+offset]))) {
-                            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
-                            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, f->m_args[i+offset]);
-                            diag.add(diag::Diagnostic(
-                                "Type mismatch in argument `" + std::string(v->m_name) +
-                                "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                        diag::Label("", {passed_arg->base.loc})
-                                }));
-                            throw SemanticAbort();
-                        }
+                        check_call_actual_type(passed_arg, f->m_args[i + offset],
+                            v_expr != nullptr && !nopass);
                     }
                 } else if (ASR::is_a<ASR::Function_t>(*var->m_v)) {
                     // A procedure actual of another type than the dummy
