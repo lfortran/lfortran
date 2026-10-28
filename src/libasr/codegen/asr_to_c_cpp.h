@@ -132,6 +132,7 @@ public:
     std::string template_for_Kokkos;
     size_t template_number;
     std::string from_std_vector_helper;
+    size_t array_const_count;
 
     std::unique_ptr<CCPPDSUtils> c_ds_api;
     std::unique_ptr<CUtils::CUtilFunctions> c_utils_functions;
@@ -198,7 +199,7 @@ public:
             platform{platform}, compiler_options{_compiler_options}, array_types_decls{std::string("")},
         gen_stdstring{gen_stdstring}, gen_stdcomplex{gen_stdcomplex},
         is_c{is_c}, global_scope{nullptr}, lower_bound{default_lower_bound},
-        template_number{0}, c_ds_api{std::make_unique<CCPPDSUtils>(is_c, platform)},
+        template_number{0}, array_const_count{0}, c_ds_api{std::make_unique<CCPPDSUtils>(is_c, platform)},
         c_utils_functions{std::make_unique<CUtils::CUtilFunctions>()},
         bind_py_utils_functions{std::make_unique<BindPyUtils::BindPyUtilFunctions>()},
         const_name{"constname"},
@@ -1528,6 +1529,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string args = "";
         for (size_t i=0; i<n_args; i++) {
             ASR::expr_t* call_arg = m_args[i].m_value;
+            if (!is_c && (ASR::is_a<ASR::ArrayConstant_t>(
+                    *ASRUtils::get_past_array_physical_cast(call_arg)) ||
+                    ASR::is_a<ASR::ArrayConstructor_t>(
+                    *ASRUtils::get_past_array_physical_cast(call_arg)))) {
+                // Array temporaries need a descriptor to live in, which
+                // cannot be built inside a call; report it with a location
+                // instead of emitting an undeclared helper.
+                throw CodeGenError("array constructors as procedure arguments are not supported by the C++ backend yet",
+                    call_arg->base.loc);
+            }
             check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
             self().visit_expr(*call_arg);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
@@ -1705,6 +1716,31 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
+        if (!is_c && ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) &&
+                ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+            // Array-constructor assignment (`a = [1.0, 2.0, 3.0]`):
+            // store each element into the flat data view underlying the
+            // C++ array descriptor. This avoids the `from_std_vector`
+            // temporary, which has no statement to live in here, and is
+            // exact for every element type.
+            ASR::ArrayConstant_t *c =
+                ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+            ASR::Var_t *target_var = ASR::down_cast<ASR::Var_t>(x.m_target);
+            self().visit_Var(*target_var);
+            std::string arr = src;
+            std::string indent(indentation_level*indentation_spaces, ' ');
+            std::string out = "";
+            size_t n = (size_t) ASRUtils::get_fixed_size_of_array(
+                ASRUtils::expr_type(x.m_value));
+            for (size_t i = 0; i < n; i++) {
+                out += indent + arr + "->data->operator[]("
+                    + std::to_string(i) + ") = "
+                    + ASRUtils::fetch_ArrayConstant_value(c, i) + ";\n";
+            }
+            src = out;
+            return;
+        }
         std::string target;
         ASR::ttype_t* m_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* m_value_type = ASRUtils::expr_type(x.m_value);
@@ -1833,7 +1869,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else {
             src.clear();
         }
-        src = check_tmp_buffer();
+        src = check_tmp_buffer() + src;
         if( is_target_list && is_value_list ) {
             ASR::List_t* list_target = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_target));
             std::string list_dc_func = c_ds_api->get_list_deepcopy_func(list_target);
