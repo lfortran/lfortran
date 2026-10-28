@@ -1,0 +1,493 @@
+(TranslationUnit
+  :symtab (SymbolTable
+    :id 0
+    :symbols {
+      "scoped_attributes" (Program
+        :symtab (SymbolTable
+          :id 1
+          :symbols {
+            "a" (Variable
+              :parent_symtab 1
+              :name "a"
+              :dependencies []
+              :intent :Local
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Real
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 4
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :FixedSizeArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_asynchronous false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block nil
+            )
+          }
+        )
+        :name "scoped_attributes"
+        :dependencies []
+        :body [
+          (SubroutineCall
+            :name (SymbolRef 0 "scoped_roundtrip")
+            :original_name nil
+            :args [
+              (call_arg
+                :value (ArrayPhysicalCast
+                  :arg (Var
+                    :v (SymbolRef 1 "a")
+                  )
+                  :old :FixedSizeArray
+                  :new :PointerArray
+                  :type (Array
+                    :type (Real
+                      :kind 4
+                    )
+                    :dims [
+                      (dimension
+                        :start (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :length (IntegerConstant
+                          :n 4
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                      )
+                    ]
+                    :physical_type :PointerArray
+                    :memory_space :Global
+                  )
+                  :value nil
+                )
+              )
+            ]
+            :dt nil
+            :strict_bounds_checking false
+          )
+          (If
+            :name nil
+            :test (IntrinsicArrayFunction
+              :arr_intrinsic_id 0
+              :args [
+                (ArrayPhysicalCast
+                  :arg (RealCompare
+                    :left (Var
+                      :v (SymbolRef 1 "a")
+                    )
+                    :op :NotEq
+                    :right (Cast
+                      :arg (IntegerConstant
+                        :n 1
+                        :type (Integer
+                          :kind 4
+                        )
+                        :intboz_type :Decimal
+                      )
+                      :kind :IntegerToReal
+                      :type (Real
+                        :kind 4
+                      )
+                      :value (RealConstant
+                        :r 1.0
+                        :type (Real
+                          :kind 4
+                        )
+                      )
+                      :dest nil
+                    )
+                    :type (Array
+                      :type (Logical
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (IntegerConstant
+                            :n 4
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                        )
+                      ]
+                      :physical_type :FixedSizeArray
+                      :memory_space :Global
+                    )
+                    :value nil
+                  )
+                  :old :FixedSizeArray
+                  :new :DescriptorArray
+                  :type (Array
+                    :type (Logical
+                      :kind 4
+                    )
+                    :dims [
+                      (dimension
+                        :start (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :length (IntegerConstant
+                          :n 4
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                      )
+                    ]
+                    :physical_type :DescriptorArray
+                    :memory_space :Global
+                  )
+                  :value nil
+                )
+              ]
+              :overload_id 0
+              :type (Logical
+                :kind 4
+              )
+              :value nil
+            )
+            :body [
+              (ErrorStop
+                :code nil
+              )
+            ]
+            :orelse []
+          )
+        ]
+        :global_init nil
+      )
+      "scoped_roundtrip" (Function
+        :symtab (SymbolTable
+          :id 2
+          :symbols {
+            "a" (Variable
+              :parent_symtab 2
+              :name "a"
+              :dependencies []
+              :intent :Unspecified
+              :symbolic_value nil
+              :value nil
+              :storage :Default
+              :type (Array
+                :type (Real
+                  :kind 4
+                )
+                :dims [
+                  (dimension
+                    :start (IntegerConstant
+                      :n 1
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                    :length (IntegerConstant
+                      :n 4
+                      :type (Integer
+                        :kind 4
+                      )
+                      :intboz_type :Decimal
+                    )
+                  )
+                ]
+                :physical_type :PointerArray
+                :memory_space :Global
+              )
+              :type_declaration nil
+              :abi :Source
+              :access :Public
+              :presence :Required
+              :value_attr false
+              :target_attr false
+              :contiguous_attr false
+              :bindc_name nil
+              :is_volatile false
+              :is_asynchronous false
+              :is_protected false
+              :pass_attr :NotMethod
+              :self_argument nil
+              :codims []
+              :common_block nil
+            )
+            "block" (Block
+              :symtab (SymbolTable
+                :id 3
+                :symbols {
+                  "__scoped_attribute_a" (ScopedVariableAttribute
+                    :parent_symtab 3
+                    :name "__scoped_attribute_a"
+                    :variable (SymbolRef 2 "a")
+                    :is_volatile false
+                    :is_asynchronous true
+                  )
+                }
+              )
+              :name "block"
+              :body [
+                (Assignment
+                  :target (Var
+                    :v (SymbolRef 2 "a")
+                  )
+                  :value (ArrayPhysicalCast
+                    :arg (ArrayBroadcast
+                      :array (Cast
+                        :arg (IntegerConstant
+                          :n 1
+                          :type (Integer
+                            :kind 4
+                          )
+                          :intboz_type :Decimal
+                        )
+                        :kind :IntegerToReal
+                        :type (Real
+                          :kind 4
+                        )
+                        :value (RealConstant
+                          :r 1.0
+                          :type (Real
+                            :kind 4
+                          )
+                        )
+                        :dest nil
+                      )
+                      :shape (ArrayConstant
+                        :n_data 4
+                        :data #asr/bytes "04000000"
+                        :type (Array
+                          :type (Integer
+                            :kind 4
+                          )
+                          :dims [
+                            (dimension
+                              :start (IntegerConstant
+                                :n 1
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :intboz_type :Decimal
+                              )
+                              :length (IntegerConstant
+                                :n 1
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :intboz_type :Decimal
+                              )
+                            )
+                          ]
+                          :physical_type :FixedSizeArray
+                          :memory_space :Global
+                        )
+                        :storage_format :ColMajor
+                      )
+                      :type (Array
+                        :type (Real
+                          :kind 4
+                        )
+                        :dims [
+                          (dimension
+                            :start (IntegerConstant
+                              :n 1
+                              :type (Integer
+                                :kind 4
+                              )
+                              :intboz_type :Decimal
+                            )
+                            :length (IntegerConstant
+                              :n 4
+                              :type (Integer
+                                :kind 4
+                              )
+                              :intboz_type :Decimal
+                            )
+                          )
+                        ]
+                        :physical_type :FixedSizeArray
+                        :memory_space :Global
+                      )
+                      :value (ArrayConstant
+                        :n_data 16
+                        :data #asr/bytes "0000803f0000803f0000803f0000803f"
+                        :type (Array
+                          :type (Real
+                            :kind 4
+                          )
+                          :dims [
+                            (dimension
+                              :start (IntegerConstant
+                                :n 1
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :intboz_type :Decimal
+                              )
+                              :length (IntegerConstant
+                                :n 4
+                                :type (Integer
+                                  :kind 4
+                                )
+                                :intboz_type :Decimal
+                              )
+                            )
+                          ]
+                          :physical_type :FixedSizeArray
+                          :memory_space :Global
+                        )
+                        :storage_format :ColMajor
+                      )
+                    )
+                    :old :FixedSizeArray
+                    :new :PointerArray
+                    :type (Array
+                      :type (Real
+                        :kind 4
+                      )
+                      :dims [
+                        (dimension
+                          :start (IntegerConstant
+                            :n 1
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                          :length (IntegerConstant
+                            :n 4
+                            :type (Integer
+                              :kind 4
+                            )
+                            :intboz_type :Decimal
+                          )
+                        )
+                      ]
+                      :physical_type :PointerArray
+                      :memory_space :Global
+                    )
+                    :value nil
+                  )
+                  :overloaded nil
+                  :realloc_lhs false
+                  :move_allocation false
+                  :new_target false
+                  :new_allocation false
+                )
+              ]
+            )
+          }
+        )
+        :name "scoped_roundtrip"
+        :function_signature (FunctionType
+          :arg_types [
+            (Array
+              :type (Real
+                :kind 4
+              )
+              :dims [
+                (dimension
+                  :start (IntegerConstant
+                    :n 1
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                  :length (IntegerConstant
+                    :n 4
+                    :type (Integer
+                      :kind 4
+                    )
+                    :intboz_type :Decimal
+                  )
+                )
+              ]
+              :physical_type :PointerArray
+              :memory_space :Global
+            )
+          ]
+          :return_var_type nil
+          :abi :Source
+          :deftype :Implementation
+          :bindc_name nil
+          :elemental false
+          :pure false
+          :module false
+          :inline false
+          :static false
+          :restrictions []
+          :is_restriction false
+          :exec_space :Host
+        )
+        :dependencies []
+        :args [
+          (Var
+            :v (SymbolRef 2 "a")
+          )
+        ]
+        :body [
+          (BlockCall
+            :label -1
+            :m (SymbolRef 2 "block")
+          )
+        ]
+        :return_var nil
+        :access :Public
+        :deterministic true
+        :side_effect_free true
+        :module_file nil
+      )
+    }
+  )
+  :items []
+  :global_init nil
+)
