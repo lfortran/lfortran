@@ -1316,6 +1316,20 @@ Result<std::string> FortranEvaluator::get_cpp(const std::string &code,
 Result<std::string> FortranEvaluator::get_cpp2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
+    // Lower optional dummy arguments (and PRESENT() queries on them) to
+    // explicit presence flags, which the C++ backend emits directly.
+    // Without this, calls with absent arguments and PRESENT() cannot be
+    // expressed in the generated C++ signatures. The pass must allocate
+    // from the evaluator allocator so its nodes outlive codegen.
+    {
+        compiler_options.po.always_run = false;
+        std::vector<std::string> cpp_passes = {"transform_optional_argument_functions"};
+        LCompilers::PassManager pass_manager;
+        double cpp_pass_time = 0.0;
+        pass_manager.apply_passes(al, &asr, cpp_passes,
+            compiler_options.po, diagnostics, cpp_pass_time);
+        if (diagnostics.has_error()) return Error();
+    }
     // ASR -> C++
     return asr_to_cpp(al, asr, diagnostics, compiler_options,
                       default_lower_bound);
