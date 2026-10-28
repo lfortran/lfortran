@@ -22826,6 +22826,8 @@ public:
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
             ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
         check_implicit_procedure_kind(loc, name, source, return_type != nullptr);
+        check_actuals_against_external_definition(loc, source, args,
+            return_type != nullptr);
         ASR::symbol_t* iface = get_callsite_interface(loc, name, args, return_type);
         // Nothing is known about the called procedure.
         current_function_deterministic = false;
@@ -23193,8 +23195,11 @@ public:
             &cyclic_module);
         if (iface == nullptr) {
             if (compiler_options.implicit_interface) {
-                // As if the procedure were defined in another file.
-                return get_or_create_opaque_procedure(fn->m_name, loc);
+                // As if the procedure were defined in another file, but
+                // the references are still checked against the definition.
+                ASR::symbol_t* opaque = get_or_create_opaque_procedure(fn->m_name, loc);
+                external_procedure_definitions[opaque] = proc;
+                return opaque;
             }
             std::string module_name = enclosing_module(current_scope)->m_name;
             std::string reason = cyclic_module.empty()
@@ -23285,6 +23290,49 @@ public:
                         diag::Label("", {passed_arg->base.loc})
                 }));
             throw SemanticAbort();
+        }
+    }
+
+    // With --implicit-interface, a reference made in a module to an external
+    // procedure defined in this file whose interface cannot be copied names
+    // an opaque procedure `source` (see external_procedure_reference). The
+    // definition is in this file, though, so the actuals `args` of a
+    // reference to `source` are checked against it, as those of a reference
+    // to the definition or to a copy of its interface are.
+    void check_actuals_against_external_definition(const Location &loc,
+            ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, bool is_function) {
+        if (!ASRUtils::is_bare_implicit_interface(source)) {
+            return;
+        }
+        auto definition = external_procedure_definitions.find(source);
+        if (definition == external_procedure_definitions.end()) {
+            return;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(definition->second);
+        validate_function_call_argument_count(loc, args, fn);
+        // The interface built from the actuals has no dummy for an absent
+        // optional argument, so the definition would not receive it.
+        for (size_t i = args.size(); i < fn->n_args; i++) {
+            ASR::symbol_t* dummy = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*dummy)) {
+                std::string dummy_name = ASRUtils::symbol_name(dummy);
+                diag.add(Diagnostic("the external procedure '" + std::string(fn->m_name)
+                    + "' is referenced through an implicit interface, so its optional "
+                    "dummy argument '" + dummy_name + "' cannot be absent",
+                    Level::Error, Stage::Semantic, {Label("help: pass an actual "
+                        "argument for '" + dummy_name + "'", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (is_function) {
+            validate_create_function_arguments(args, definition->second);
+            return;
+        }
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i].m_value != nullptr && ASR::is_a<ASR::Variable_t>(
+                    *ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v)) {
+                check_call_actual_type(args[i].m_value, fn->m_args[i], false);
+            }
         }
     }
 
