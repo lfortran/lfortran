@@ -3821,6 +3821,63 @@ public:
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
         ASR::expr_t *stream = args[35], *iomsg = args[36], *round = args[37];
         ASR::expr_t *pending = args[38], *asynchronous = args[39];
+        if (delim) {
+            ASR::ttype_t *type = ASRUtils::expr_type(delim);
+            if (!ASRUtils::is_character(*type) || ASRUtils::is_array(type)
+                    || ASRUtils::extract_kind_from_ttype_t(type) != 1) {
+                diag.add(Diagnostic(
+                    "delim in inquire must be a scalar character(kind=1) variable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {delim->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            auto is_definable = [&](auto &&self, ASR::expr_t *expr) -> bool {
+                switch (expr->type) {
+                    case ASR::exprType::Var: {
+                        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+                        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
+                        if (!ASR::is_a<ASR::Variable_t>(*resolved)) return false;
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(resolved);
+                        return v->m_storage != ASR::storage_typeType::Parameter
+                            && !selector_has_constant_or_non_definable_base(expr)
+                            && (v->m_intent != ASR::intentType::In
+                                || ASRUtils::is_pointer(v->m_type))
+                            && !(sym != resolved && v->m_is_protected
+                                && !ASRUtils::is_pointer(v->m_type));
+                    }
+                    case ASR::exprType::StringItem:
+                        return self(self, ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+                    case ASR::exprType::StringSection:
+                        return self(self, ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+                    case ASR::exprType::ArrayItem:
+                        return self(self, ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+                    case ASR::exprType::ArraySection:
+                        return self(self, ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+                    case ASR::exprType::ArrayPhysicalCast:
+                        return self(self, ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+                    case ASR::exprType::StructInstanceMember: {
+                        auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                        // Defining a pointer's target does not define its containing object.
+                        return ASRUtils::is_pointer(member->m_type)
+                            || self(self, member->m_v);
+                    }
+                    case ASR::exprType::CoarrayRef:
+                        return self(self, ASR::down_cast<ASR::CoarrayRef_t>(expr)->m_var);
+                    case ASR::exprType::FunctionCall:
+                        return ASRUtils::is_pointer(ASRUtils::expr_type(expr));
+                    default:
+                        return false;
+                }
+            };
+            if (!is_definable(is_definable, delim)) {
+                diag.add(Diagnostic("delim in inquire must be a definable variable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {delim->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         bool is_iolength_present = iolength != nullptr;
         for( size_t i = 0; i < args.size() - 1; i++ ) {
             if( is_iolength_present && i!=32 && args[i] ) {
