@@ -11,14 +11,21 @@ program intrinsics_152
 
     integer, parameter :: sp = selected_real_kind(6,37)
     integer, parameter :: dp = selected_real_kind(15,307)
+    integer, parameter :: p_only = selected_real_kind(p=6)
+    integer, parameter :: r_only = selected_real_kind(r=30)
+    integer, parameter :: radix_only = selected_real_kind(radix=2)
 
     print*, sp
     if (sp /= 4) error stop
     print*, dp
     if (dp /= 8) error stop
 
-    print*, selected_real_kind()
-    if (selected_real_kind() /= 4) error stop
+    if (p_only /= 4 .or. r_only /= 4 .or. radix_only /= 4) error stop
+    print*, selected_real_kind(radix=2)
+    if (selected_real_kind(radix=2) /= 4) error stop
+    if (selected_real_kind(p=k1) /= 4) error stop
+    if (selected_real_kind(r=k3) /= 8) error stop
+    if (selected_real_kind(radix=k6) /= 4) error stop
     print*, selected_real_kind(1, 5)
     if (selected_real_kind(1, 5) /= 4) error stop
     print*, selected_real_kind(3, 32)

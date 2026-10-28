@@ -21358,6 +21358,12 @@ public:
         ASR::ttype_t *bool_type = ASRUtils::TYPE(
                     ASR::make_Logical_t(al, loc, 4));
         if (intrinsic_name == "selected_real_kind") {
+            if (args[0] == nullptr && args[1] == nullptr && args[2] == nullptr) {
+                diag.semantic_error_label(
+                    "selected_real_kind requires at least one of p, r or radix",
+                    {loc}, "");
+                throw SemanticAbort();
+            }
             ASR::expr_t* zero = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, 0,
                                                 int_type));

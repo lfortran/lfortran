@@ -1568,6 +1568,12 @@ semantic error: integer overflow in `matmul`: the result does not fit in integer
 3761 |         integer, parameter :: p(1) = matmul(a, x)  ! {Error} integer overflow in `matmul`
      |                                      ^^^^^^^^^^^^ 
 
+semantic error: selected_real_kind requires at least one of p, r or radix
+    --> tests/errors/continue_compilation_1.f90:3872:31
+     |
+3872 |     integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+     |                               ^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4771,3 +4777,9 @@ semantic error: referencing the external procedure 'cc1_file_fn_iface_ext' in th
      |
 3852 |         call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: give 'cc1_file_fn_iface_len' an explicit interface in 'cc1_file_fn_iface_ext', or use --implicit-interface
+
+semantic error: selected_real_kind requires at least one of p, r or radix
+    --> tests/errors/continue_compilation_1.f90:3868:14
+     |
+3868 |     print *, selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+     |              ^^^^^^^^^^^^^^^^^^^^ 
