@@ -363,7 +363,7 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
 // The type of a temporary that is sized with the lengths `ub - lb + 1`
 // that semantics gave the type of an expression, which may be negative.
 // Its extents are max(0, length), as those of the explicit-shape arrays
-// the lengths were taken from (see explicit_shape_extent).
+// the lengths were taken from (see function_call_in_declaration).
 static ASR::ttype_t* clamp_extents(Allocator& al, ASR::ttype_t* type) {
     ASR::dimension_t* dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);

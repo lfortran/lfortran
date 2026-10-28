@@ -3,7 +3,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/device_partition.h>
-#include <libasr/pass/explicit_shape_extent.h>
+#include <libasr/pass/entry_initialized_locals.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <deque>

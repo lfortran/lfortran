@@ -52,7 +52,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
 
     public:
 
-    // Device code keeps the declared extents (see explicit_shape_extent).
+    // Device code keeps the declared extents (see entry_initialized_locals).
     bool zero_extent_bounds = true;
 
     ReplaceArrayDimIntrinsicCalls(Allocator& al_) : al(al_)

@@ -6,7 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
-#include <libasr/pass/explicit_shape_extent.h>
+#include <libasr/pass/entry_initialized_locals.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_designator.h>

@@ -34,6 +34,7 @@
                                     .false.
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -278,6 +279,36 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __libasr_extent_yy_1:
+                                                (Variable
+                                                    3
+                                                    __libasr_extent_yy_1
+                                                    [xx]
+                                                    Local
+                                                    (ArraySize
+                                                        (Var 3 xx)
+                                                        ()
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             xx:
                                                 (Variable
                                                     3
@@ -314,7 +345,8 @@
                                                 (Variable
                                                     3
                                                     yy
-                                                    [xx]
+                                                    [xx
+                                                    __libasr_extent_yy_1]
                                                     ReturnVar
                                                     ()
                                                     ()
@@ -326,12 +358,7 @@
                                                             ()
                                                         ) ExpressionLength DescriptorString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (ArraySize
-                                                            (Var 3 xx)
-                                                            ()
-                                                            (Integer 4)
-                                                            ()
-                                                        ))]
+                                                        (Var 3 __libasr_extent_yy_1))]
                                                         PointerArray
                                                         Global
                                                     )

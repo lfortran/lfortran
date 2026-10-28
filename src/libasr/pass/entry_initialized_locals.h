@@ -1,5 +1,5 @@
-#ifndef LIBASR_PASS_EXPLICIT_SHAPE_EXTENT_H
-#define LIBASR_PASS_EXPLICIT_SHAPE_EXTENT_H
+#ifndef LIBASR_PASS_ENTRY_INITIALIZED_LOCALS_H
+#define LIBASR_PASS_ENTRY_INITIALIZED_LOCALS_H
 
 #include <libasr/asr.h>
 #include <libasr/utils.h>
@@ -7,9 +7,6 @@
 #include <map>
 
 namespace LCompilers {
-
-    void pass_explicit_shape_extent(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options);
 
     // Replaces each reference to a local initialized on entry in the
     // procedure or BLOCK `owner`, the procedures it contains and its BLOCKs
@@ -32,4 +29,4 @@ namespace LCompilers {
 
 } // namespace LCompilers
 
-#endif // LIBASR_PASS_EXPLICIT_SHAPE_EXTENT_H
+#endif // LIBASR_PASS_ENTRY_INITIALIZED_LOCALS_H

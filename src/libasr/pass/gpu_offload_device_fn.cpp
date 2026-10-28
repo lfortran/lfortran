@@ -8,7 +8,7 @@
 #include <libasr/containers.h>
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
-#include <libasr/pass/explicit_shape_extent.h>
+#include <libasr/pass/entry_initialized_locals.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>

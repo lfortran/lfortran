@@ -13,7 +13,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/string_utils.h>
-#include <libasr/pass/explicit_shape_extent.h>
+#include <libasr/pass/entry_initialized_locals.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
