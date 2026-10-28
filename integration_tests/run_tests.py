@@ -175,7 +175,9 @@ def check_module_names():
     from glob import glob
     import re
     mod = re.compile(
-        r'(?im)^\s*(?:module|submodule)\b\s*(?:\([^)]+\))?\s*(?!\bprocedure\b)(\w+)'
+        r'(?im)^\s*(?:module\b\s*(?!\bprocedure\b)(?P<module>\w+)'
+        r'|submodule\b\s*\(\s*(?P<ancestor>\w+)(?:\s*:\s*\w+)?\s*\)'
+        r'\s*(?P<submodule>\w+))'
     )
     files = glob("*.f90")
     module_names = []
@@ -185,7 +187,11 @@ def check_module_names():
             content = f.read()
         s = mod.search(content)
         if s:
-            module_names.append(s.group(1).lower())
+            # Submodule names are local to the ancestor, including descendants.
+            name = s.group("module")
+            if name is None:
+                name = s.group("ancestor") + "@" + s.group("submodule")
+            module_names.append(name.lower())
             file_names.append(file)
     for i in range(len(module_names)):
         name = module_names[i]

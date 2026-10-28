@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -270,6 +271,32 @@ class MacOSEnvironmentTests(unittest.TestCase):
 
 
 class RunnerTests(unittest.TestCase):
+    def test_module_name_check_uses_ancestor_for_submodules(self):
+        spec = importlib.util.spec_from_file_location(
+            "integration_runner", INTEGRATION / "run_tests.py"
+        )
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        cases = (
+            (("module parent", "submodule (parent) parent"), False),
+            (("submodule (first) child", "submodule (second) child"), False),
+            (("module parent", "MODULE PARENT"), True),
+            (("submodule (parent) child", "SUBMODULE (PARENT) CHILD"), True),
+            (("submodule (parent:first) child",
+              "submodule (parent:second) child"), True),
+        )
+        for declarations, duplicate in cases:
+            with self.subTest(declarations=declarations):
+                sources = dict(zip(("first.f90", "second.f90"), declarations))
+                with patch("glob.glob", return_value=list(sources)), \
+                        patch("builtins.open", side_effect=lambda name: io.StringIO(sources[name])), \
+                        patch("builtins.print"):
+                    if duplicate:
+                        with self.assertRaisesRegex(Exception, "Duplicate module names"):
+                            runner.check_module_names()
+                    else:
+                        runner.check_module_names()
+
     def test_quick_has_no_status_aggregate(self):
         # Branch protection requires every Quick job directly. Repository
         # variables are not passed to PRs from forks, so a vars-gated
