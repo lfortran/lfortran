@@ -25,6 +25,12 @@ program format_leading_zero
     call check(s, '   0.500        .500    ')
     write(s, '(LZP,G12.3,LZS,G12.3)') .0625, .0625
     call check(s, '   0.625E-01    .625E-01')
+    write(default_s, '(G26.15)') 0.01234567890123456_8
+    call check(default_s, '     0.123456789012346E-01')
+    write(s, '(LZP,G26.15,LZS,G26.15)') 0.01234567890123456_8, 0.01234567890123456_8
+    call check(s, '     0.123456789012346E-01      .123456789012346E-01')
+    write(s, '(LZS,LZ,G26.15)') 0.01234567890123456_8
+    call check(s, trim(default_s))
     write(s, '(LZP,RU,G12.2,LZS,RD,G12.2)') .0999, .0999
     call check(s, '    0.10         .99E-01')
     write(s, '(LZP,SP,G0,LZS,G0)') .5, .5

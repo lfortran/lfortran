@@ -1232,6 +1232,9 @@ static int fmt_snprintf_e(char* buf, size_t size, int prec, fmt_real val,
                     : snprintf(buf, size, "%.*e", prec, (double)val);
 }
 
+static bool should_round_up_digits(const char *digits, int round_pos,
+                                   char rounding_mode, bool is_negative);
+
 // The mantissa of the E editing of G editing for the nonzero `x`, with the
 // scale factor `scale` and `decimals` digits after the decimal point, and
 // its exponent in `*exp`. The digits come from a single conversion of `x`
@@ -1239,21 +1242,38 @@ static int fmt_snprintf_e(char* buf, size_t size, int prec, fmt_real val,
 // the exponent (0.99999 is 0.1000E+01, not 1.0000E+00). Returns false,
 // leaving `buf` and `*exp` unchanged, when no significant digit is shown.
 static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
-                             int decimals, bool extended, int* exp) {
+                             int decimals, bool extended, int* exp,
+                             char rounding_mode) {
     int sig = scale > 0 ? scale + decimals : decimals + scale;
     int needed = scale > 0 ? sig + 3 : decimals + 4;
     if (sig < 1 || sig > 40 || (size_t)needed > size) {
         return false;
     }
     char e[64];
-    fmt_snprintf_e(e, sizeof(e), sig - 1, fmt_fabs(x), extended);
+    bool directed = rounding_mode == 'u' || rounding_mode == 'd' || rounding_mode == 'z';
+    fmt_snprintf_e(e, sizeof(e), directed ? 40 : sig - 1, fmt_fabs(x), extended);
     char digits[48];
     int n = 0;
     const char* p = e;
     for (; *p != '\0' && *p != 'e'; p++) {
         if (isdigit((unsigned char)*p)) digits[n++] = *p;
     }
-    if (*p != 'e' || n != sig) return false;
+    if (*p != 'e' || (!directed && n != sig)) return false;
+    int exponent = atoi(p + 1) + 1 - scale;
+    if (directed) {
+        digits[n] = '\0';
+        if (should_round_up_digits(digits, sig, rounding_mode, signbit(x))) {
+            int i = sig - 1;
+            while (i >= 0 && digits[i] == '9') digits[i--] = '0';
+            if (i >= 0) {
+                digits[i]++;
+            } else {
+                digits[0] = '1';
+                exponent++;
+            }
+        }
+        n = sig;
+    }
     int pos = 0;
     if (x < 0) buf[pos++] = '-';
     if (scale > 0) {
@@ -1267,7 +1287,7 @@ static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
         for (int i = 0; i < n; i++) buf[pos++] = digits[i];
     }
     buf[pos] = '\0';
-    *exp = atoi(p + 1) + 1 - scale;
+    *exp = exponent;
     return true;
 }
 
@@ -4979,31 +4999,23 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             }
                         }
                         if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED && has_dot &&
-                                isfinite(real_val)) {
-                            // Explicit modes use the same rounded F/E fields as those
-                            // descriptors; G's fixed form additionally reserves exponent blanks.
-                            bool fixed = real_val == 0.0 ||
-                                (rounded_exp >= 0 && rounded_exp <= precision);
-                            int trailing = fixed && width > 0 ?
+                                isfinite(real_val) && (real_val == 0.0 ||
+                                (rounded_exp >= 0 && rounded_exp <= precision))) {
+                            // G's fixed form reserves exponent blanks after the F field.
+                            int trailing = width > 0 ?
                                 (exp_digits > 0 ? exp_digits + 2 : 4) : 0;
                             char* field = (char*)internal_malloc(1);
                             field[0] = '\0';
-                            if (fixed && width > 0 && width <= trailing) {
+                            if (width > 0 && width <= trailing) {
                                 for (int j = 0; j < width; j++) field = append_to_string(field, "*");
                                 trailing = 0;
-                            } else if (fixed) {
+                            } else {
                                 int k = real_val == 0.0 ? 1 : rounded_exp;
                                 int decimals = precision > k ? precision - k : 0;
                                 char f_format[64];
                                 snprintf(f_format, sizeof(f_format), "f%d.%d", width - trailing, decimals);
                                 handle_float(FLOAT_FORMAT_CUSTOM, f_format, real_val, extended, 0,
                                     &field, is_SP_specifier, rounding_mode, leading_zero);
-                            } else {
-                                char* e_format = substring(value, 0, strlen(value));
-                                e_format[0] = 'e';
-                                handle_decimal(e_format, real_val, extended, scale,
-                                    &field, "E", is_SP_specifier, rounding_mode, leading_zero);
-                                internal_free(e_format);
                             }
                             if (strchr(field, '*') != NULL) {
                                 for (int j = 0; j < trailing; j++) field = append_to_string(field, "*");
@@ -5073,7 +5085,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             if (adjusted_precision < 0) adjusted_precision = 0;
                             char mantissa[64], exponent[16];
                             if (!fmt_g_e_mantissa(mantissa, sizeof(mantissa), real_val,
-                                    scale, adjusted_precision, extended, &exp)) {
+                                    scale, adjusted_precision, extended, &exp,
+                                    leading_zero == LEADING_ZERO_PROCESSOR_DEFINED ? 'n' : rounding_mode)) {
                                 fmt_real final_val = fmt_mul_pow10(real_val, -exp, extended);
                                 fmt_snprintf_f(mantissa, sizeof(mantissa), false, adjusted_precision, final_val, extended);
                             }
@@ -5083,12 +5096,21 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 if (exp_width < 2) exp_width = 2;
                                 if (exp_width > 9) exp_width = 9;
                                 snprintf(exponent, sizeof(exponent), "E%+0*d", exp_width, exp);
+                            } else if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (exp >= 100 || exp <= -100)) {
+                                snprintf(exponent, sizeof(exponent), "%+04d", exp);
                             } else if (width > 0) {
                                 snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                            if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(formatted);
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    is_SP_specifier && !signbit(real_val)) {
+                                memmove(formatted + 1, formatted, strlen(formatted) + 1);
+                                formatted[0] = '+';
+                            }
                             if (exp_digits <= 0 && width > 0 && (exp >= 1000 || exp <= -1000)) {
                                 // Without Ee the exponent has at most three digits;
                                 // only a real(10) value can need more.
@@ -5098,19 +5120,28 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             }
                             // Strip leading zero if result overflows field width
                             // e.g., "0.85734E+08" (11 chars) -> ".85734E+08" (10 chars)
-                            if (width > 0 && (int)strlen(formatted) > width) {
+                            if (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (int)strlen(formatted) > width) {
                                 if (formatted[0] == '0' && formatted[1] == '.') {
                                     memmove(formatted, formatted + 1, strlen(formatted));
                                 } else if (formatted[0] == '-' && formatted[1] == '0' && formatted[2] == '.') {
                                     memmove(formatted + 1, formatted + 2, strlen(formatted) - 1);
                                 }
                             }
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (int)strlen(formatted) > width) {
+                                int stars = width < (int)sizeof(formatted) ? width : (int)sizeof(formatted) - 1;
+                                memset(formatted, '*', stars);
+                                formatted[stars] = '\0';
+                            }
                         }
                         int len = (int)strlen(formatted);
                         int effective_width = width;
                         // For G format F-mode, reduce effective width by n blanks
                         // n = e+2 if explicit Ee, otherwise n = 4
-                        bool is_f_mode = (strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL);
+                        bool is_f_mode = (strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL) &&
+                            (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED || real_val == 0.0 ||
+                             (rounded_exp >= 0 && rounded_exp <= precision));
                         if (is_f_mode && width > 0) {
                             int n_blanks = (exp_digits > 0) ? exp_digits + 2 : 4;
                             if (width > n_blanks) {
