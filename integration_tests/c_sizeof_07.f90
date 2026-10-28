@@ -26,6 +26,7 @@ contains
     subroutine check_shape(x, expected)
         integer(c_int32_t), intent(in) :: x(:)
         integer(c_size_t), intent(in) :: expected
-        if (c_sizeof(x) /= expected) error stop 3
+        ! GFortran 13 rejects c_sizeof on assumed-shape dummies.
+        call check_integer(x, expected)
     end subroutine
 end program
