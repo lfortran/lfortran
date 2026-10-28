@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
+#include <vector>
 
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -620,6 +621,155 @@ end function)";
     // LLVM -> Machine code -> Execution
     e.add_module(std::move(m));
     CHECK(e.execfn<int32_t>("f") == 4);
+}
+
+namespace {
+
+// The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
+// backend marks noalias when it compiles `source`, before any LLVM pass
+// runs. Each procedure is given as {name, end of the name of its LLVM
+// definition}.
+std::string noalias_parameters(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures) {
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.platform = LCompilers::get_platform();
+    co.po.fast = fast;
+    LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
+        LCompilers::LFortran::parse(al, source, diagnostics, co));
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "noalias.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    LCompilers::ASR::TranslationUnit_t* asr = TRY(
+        LCompilers::LFortran::ast_to_asr(al, *tu, diagnostics, nullptr, false,
+            co, lm));
+    LCompilers::LLVMEvaluator e;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    REQUIRE(res.ok);
+    std::string result;
+    for (const auto &[procedure, suffix]: procedures) {
+        llvm::Function *fn = nullptr;
+        for (llvm::Function &f: *res.result->m_m) {
+            std::string name = f.getName().str();
+            if (!f.isDeclaration() && name.size() >= suffix.size() &&
+                    name.compare(name.size() - suffix.size(),
+                        suffix.size(), suffix) == 0) {
+                fn = &f;
+            }
+        }
+        REQUIRE(fn != nullptr);
+        for (llvm::Argument &arg: fn->args()) {
+            if (arg.hasNoAliasAttr()) {
+                result += procedure + ":" + arg.getName().str() + " ";
+            }
+        }
+    }
+    return result;
+}
+
+}
+
+TEST_CASE("LLVM noalias dummy arguments under --fast") {
+    std::string source = R"(module noalias_ir_m
+implicit none
+type :: t
+    real, allocatable :: c(:)
+end type
+contains
+
+subroutine plain(y, x, n, s)
+    integer, intent(in) :: n
+    real, intent(inout) :: y(n)
+    real, intent(in) :: x(n)
+    real, intent(out) :: s
+    y(1) = x(1) + n
+    s = y(1)
+end subroutine
+
+subroutine assumed(x, y, str)
+    real, intent(in) :: x(:)
+    real, intent(inout) :: y(:)
+    character(len=*), intent(in) :: str
+    y(1) = x(1) + len(str)
+end subroutine
+
+subroutine attributes(p, tg, v, as, k, r)
+    real, pointer, intent(in) :: p
+    real, target, intent(in) :: tg
+    real, volatile :: v
+    real, asynchronous :: as
+    integer, value :: k
+    real, intent(out) :: r
+    r = p + tg + v + as + k
+end subroutine
+
+subroutine last_inout(x, y)
+    real, intent(in) :: x(3)
+    real, intent(inout) :: y(3)
+    y(2) = x(2)
+end subroutine
+
+function f(x) result(res)
+    real, intent(in) :: x(3)
+    real :: res(3)
+    res = x + 1
+end function
+
+subroutine self_first(self, i, v)
+    class(t), intent(inout) :: self
+    integer, intent(in) :: i
+    real, intent(out) :: v
+    v = self%c(i)
+end subroutine
+
+subroutine bits(i, j)
+    integer, intent(inout) :: i, j
+    call mvbits(i, 0, 4, j, 4)
+end subroutine
+
+subroutine bind_c(x) bind(c)
+    real, intent(inout) :: x
+    x = 1
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        {"plain", "_m_plain"},
+        {"assumed", "_m_assumed_real____0_real____1"},
+        {"attributes", "_m_attributes"},
+        {"last_inout", "_m_last_inout"},
+        {"f", "_m_f"},
+        {"self_first", "_m_self_first"},
+        {"bits", "_m_bits"},
+        {"mvbits", "_lcompilers_mvbits_integer"},
+        {"bind_c", "bind_c"}};
+    std::string expected =
+        "plain:y plain:x plain:n plain:s "
+        // pass_array_by_data passes the data and the extents of x and y.
+        "assumed:x assumed:__1x assumed:y assumed:__1y "
+        "assumed:str "
+        // Not POINTER p, TARGET tg, VOLATILE v, ASYNCHRONOUS as or VALUE k.
+        "attributes:r "
+        // Not y, which could be a function result.
+        "last_inout:x "
+        // Not res, the function result.
+        "f:x "
+        "self_first:self self_first:i self_first:v "
+        "bits:i bits:j "
+        // Not FROM and TO of MVBITS, which can be the same variable; nor
+        // the dummy argument of the bind(c) procedure.
+        "mvbits:frompos mvbits:len mvbits:topos ";
+    CHECK(noalias_parameters(source, true, procedures) == expected);
+    CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
 #endif // __EMSCRIPTEN__

@@ -1812,6 +1812,11 @@ namespace Mvbits {
         fill_func_arg_sub("len", arg_types[2], In);
         fill_func_arg_sub("to", arg_types[3], InOut);
         fill_func_arg_sub("topos", arg_types[4], In);
+        // TO may be the same variable as FROM (F2018 16.9.135), which
+        // other dummy arguments may not be when one of them is modified
+        // (F2018 15.5.2.13) unless they have the TARGET attribute.
+        ASRUtils::EXPR2VAR(args[0])->m_target_attr = true;
+        ASRUtils::EXPR2VAR(args[3])->m_target_attr = true;
         {
             SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
             Vec<ASR::expr_t*> args_1;

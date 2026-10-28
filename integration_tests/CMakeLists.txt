@@ -3773,6 +3773,16 @@ RUN(NAME asynchronous_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME asynchronous_02 LABELS gfortran llvm)
 RUN(NAME asynchronous_03 LABELS gfortran llvm
         EXTRAFILES asynchronous_03_module.f90)
+RUN(NAME noalias_dummy_01 LABELS gfortran llvm)
+RUN(NAME noalias_dummy_02 LABELS gfortran llvm)
+RUN(NAME noalias_dummy_03 LABELS gfortran llvm)
+RUN(NAME noalias_dummy_04 LABELS gfortran llvm)
+RUN(NAME noalias_dummy_05 LABELS gfortran llvm
+        EXTRAFILES noalias_dummy_05_pending.f90)
+RUN(NAME noalias_dummy_06 LABELS gfortran llvm
+        EXTRAFILES noalias_dummy_06_pending.f90)
+RUN(NAME noalias_dummy_07 LABELS gfortran llvm
+        EXTRA_ARGS --legacy-array-sections)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME test_backspace_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc COPY_TO_BIN file_01_data.txt)
 RUN(NAME backspace_iomsg_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

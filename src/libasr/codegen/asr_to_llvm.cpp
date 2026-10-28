@@ -59,6 +59,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_llvm.h>
 #include <libasr/pass/pass_manager.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/llvm_utils.h>
@@ -10398,6 +10399,88 @@ public:
         return is_function_variable(*ASR::down_cast<ASR::Variable_t>(v));
     }
 
+    // Under --fast the pointer parameters of the dummy arguments of a
+    // Fortran procedure are marked noalias. While a procedure runs, an
+    // entity associated with a dummy argument without the POINTER or TARGET
+    // attribute that is modified is accessed only through that dummy
+    // argument (F2018 15.5.2.13), which is what noalias tells LLVM:
+    // memory that the procedure modifies and accesses through the parameter
+    // is not accessed through any pointer that is not derived from it. Two
+    // dummy arguments may still share storage that neither modifies.
+    //
+    // Only procedures with the Fortran ABI whose callers all follow these
+    // rules qualify: not bind(c) procedures, which C can call, and not
+    // OpenMP, coarray or GPU code, where other threads, images or the
+    // device access the storage of a dummy argument through the runtime.
+    bool dummies_may_be_noalias(const ASR::Function_t &x) {
+        if (!compiler_options.po.fast || compiler_options.openmp ||
+                compiler_options.po.coarray ||
+                compiler_options.po.gpu_offload_metal ||
+                compiler_options.po.gpu_offload_cuda) {
+            return false;
+        }
+        ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
+        return ft->m_abi == ASR::abiType::Source &&
+            ft->m_deftype == ASR::deftypeType::Implementation &&
+            ft->m_exec_space == ASR::exec_spaceType::Host &&
+            x.m_gpu == nullptr;
+    }
+
+    // The dummy argument of `x` that may hold what used to be a function
+    // result, or nullptr. The subroutine_from_function pass makes an array,
+    // derived-type, string or allocatable result the last such dummy
+    // argument, with intent(out) or intent(inout), and leaves no other mark
+    // of it in ASR. The passes after it only append integer dummy arguments
+    // (array extents, string lengths). The caller passes the variable that
+    // the result is assigned to, which the procedure can also access by use
+    // or host association (#16191). So the last dummy argument of this kind
+    // is never marked noalias, whether or not the procedure was a function,
+    // unless it cannot be a function result: a scalar polymorphic dummy
+    // argument without the ALLOCATABLE or POINTER attribute, such as the
+    // passed-object dummy argument of a type-bound procedure (an entity
+    // declared with CLASS that is not a dummy argument is allocatable or a
+    // pointer, F2018 7.3.2.1).
+    static const ASR::Variable_t* possible_function_result_dummy(
+            const ASR::Function_t &x) {
+        for (size_t i = x.n_args; i-- > 0;) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*s)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (!PassUtils::is_result_returned_through_argument(v->m_type)) {
+                continue;
+            }
+            if ((v->m_intent == ASR::intentType::Out ||
+                    v->m_intent == ASR::intentType::InOut) &&
+                    !ASRUtils::is_class_type(v->m_type)) {
+                return v;
+            }
+            return nullptr;
+        }
+        return nullptr;
+    }
+
+    // Whether the parameter of dummy argument `arg` can be noalias (see
+    // dummies_may_be_noalias). Excluded are dummy arguments that can share
+    // storage that is modified with another name: POINTER and TARGET (F2018
+    // 15.5.2.13), VOLATILE and ASYNCHRONOUS (changed by means the procedure
+    // does not see, such as a pending asynchronous transfer that a call
+    // completes), coarrays (defined by other images),
+    // the possible function result, and VALUE, whose parameter is the
+    // actual argument that the procedure copies on entry.
+    bool is_noalias_dummy(const ASR::Variable_t &arg,
+            const ASR::Variable_t *function_result) {
+        return &arg != function_result
+            && !arg.m_value_attr
+            && !arg.m_target_attr
+            && !arg.m_is_volatile
+            && !arg.m_is_asynchronous
+            && arg.n_codims == 0
+            && !ASRUtils::is_pointer(arg.m_type);
+    }
+
     // F is the function that we are generating and we go over all arguments
     // (F.args()) and handle three cases:
     //     * Variable (`integer :: x`)
@@ -10406,6 +10489,9 @@ public:
     void declare_args(const ASR::Function_t &x, llvm::Function &F) {
         size_t asr_arg_idx = 0;
         auto arg_it = F.arg_begin();
+        const bool noalias_dummies = dummies_may_be_noalias(x);
+        const ASR::Variable_t *function_result = noalias_dummies
+            ? possible_function_result_dummy(x) : nullptr;
 
         // Windows complex(kind=8) uses "pass-as-subroutine" (sret-style) ABI:
         // the LLVM function has an extra hidden first argument to store the
@@ -10530,6 +10616,10 @@ public:
                     std::string arg_s = arg->m_name;
                     llvm_arg.setName(arg_s);
                     llvm_symtab[h] = llvm_sym;
+                    if (noalias_dummies && llvm_arg.getType()->isPointerTy() &&
+                            is_noalias_dummy(*arg, function_result)) {
+                        llvm_arg.addAttr(llvm::Attribute::NoAlias);
+                    }
                 }
             }
             if (is_a<ASR::Function_t>(*s)) {
