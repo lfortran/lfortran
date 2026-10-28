@@ -3222,7 +3222,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
+                // Resolve use-associated (possibly renamed) variables to
+                // the ultimate symbol, matching what visit_Var emits for
+                // all other references to the same variable.
+                tmp_sym = ASRUtils::symbol_get_past_external(tmp_var->m_v);
                 type = ASRUtils::expr_type(tmp_expr);
             } else {
                 throw CodeGenError("Cannot deallocate variables in expression " +
