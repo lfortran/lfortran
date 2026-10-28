@@ -7,9 +7,9 @@
 namespace LCompilers {
 
 // The locals initialized on entry of `scope`, of the procedures it contains
-// and of its BLOCKs, with their initializers, and those scopes. Each local
-// of the same name in the same place of `original`, of which `scope` is a
-// copy, is given the same initializer.
+// and of its BLOCKs and ASSOCIATEs, with their initializers, and those scopes.
+// Each local of the same name in the same place of `original`, of which
+// `scope` is a copy, is given the same initializer.
 static void collect_entry_initialized_locals(SymbolTable* scope,
         SymbolTable* original, std::map<ASR::symbol_t*, ASR::expr_t*>& locals,
         std::vector<SymbolTable*>& scopes) {
@@ -27,7 +27,8 @@ static void collect_entry_initialized_locals(SymbolTable* scope,
                 }
             }
         } else if (ASR::is_a<ASR::Function_t>(*sym)
-                || ASR::is_a<ASR::Block_t>(*sym)) {
+                || ASR::is_a<ASR::Block_t>(*sym)
+                || ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
             SymbolTable* original_scope = original_sym != nullptr
                     && original_sym->type == sym->type
                 ? ASRUtils::symbol_symtab(original_sym) : nullptr;

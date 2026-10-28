@@ -396,6 +396,7 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
         ASR::AssociateBlock_t *ab =
             ASR::down_cast<ASR::AssociateBlock_t>(copy);
         remap_associate_to_own_scope(ab);
+        inline_entry_initialized_locals(al, copy, &orig->base);
         std::string name = current_scope->get_unique_name(
             std::string(orig->m_name) + "_gpu");
         ab->m_name = s2c(al, name);
