@@ -60,6 +60,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent8;
     int __workspace_extent9;
     int __workspace_extent10;
+    int __workspace_extent11;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -85,7 +86,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ __workspace_19,
     float* __restrict__ __workspace_20,
     float* __restrict__ __workspace_21,
-    float* __restrict__ __workspace_22)
+    float* __restrict__ __workspace_22,
+    float* __restrict__ __workspace_23)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -99,6 +101,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __workspace_extent8 = __scalar_args.__workspace_extent8;
     int __workspace_extent9 = __scalar_args.__workspace_extent9;
     int __workspace_extent10 = __scalar_args.__workspace_extent10;
+    int __workspace_extent11 = __scalar_args.__workspace_extent11;
     int __flat_idx;
     float __gpu_mm_acc;
     int __gpu_mm_i;
@@ -194,19 +197,31 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     {
         int __do_loop_end;
+        int __do_loop_end1;
         float* __gpu_call_result = __workspace_21 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent9;
         float* __libasr_created__function_call_twice;
         float* __libasr_created__function_call_twice1 = __workspace_22 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent10;
         int __libasr_created__result_metadata_;
+        float* __libasr_created__subroutine_from_function_ = __workspace_23 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent11;
         int __libasr_index_0_;
         int __libasr_index_0_1;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
         __libasr_created__result_metadata_ = (1 * (((0 > (((n - 1) + 1) / 1))) ? (0) : ((((n - 1) + 1) / 1))));
         __libasr_created__function_call_twice = a + ((int)(1) - (1)) + (3 * ((int)(p__dc) - (1)));
-        twice_gpu_44(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__function_call_twice1);
+        twice_gpu_44(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = 1;
+        __do_loop_end = (1 + (1 * (((0 > (((3 - 1) + 1) / 1))) ? (0) : ((((3 - 1) + 1) / 1)))) - 1);
+        __libasr_index_0_2 = (1 - 1);
+        while (((__libasr_index_0_2 + 1) <= __do_loop_end)) {
+            __libasr_index_0_2 = (__libasr_index_0_2 + 1);
+            __libasr_created__function_call_twice1[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
         __libasr_index_0_1 = 1;
-        __do_loop_end = (1 + ((int)((((((((int)3) - ((int)1)) + ((int)1)) / ((int)1)) > 0)) ? ((((((int)3) - ((int)1)) + ((int)1)) / ((int)1))) : (0))) - 1);
+        __do_loop_end1 = (1 + ((int)((((((((int)3) - ((int)1)) + ((int)1)) / ((int)1)) > 0)) ? ((((((int)3) - ((int)1)) + ((int)1)) / ((int)1))) : (0))) - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_twice1[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -226,22 +241,34 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __do_loop_end;
         int __do_loop_end1;
+        int __do_loop_end2;
         point_t __gpu_call_result[3];
         point_t __libasr_created__function_call_points[3];
+        point_t __libasr_created__subroutine_from_function_[3];
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        points_device_t_gpu_62(p__dc, 3, __libasr_created__function_call_points);
-        __libasr_index_0_1 = 1;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
+        points_device_t_gpu_62(p__dc, 3, __libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = 1;
         __do_loop_end = (1 + 3 - 1);
+        __libasr_index_0_2 = (1 - 1);
+        while (((__libasr_index_0_2 + 1) <= __do_loop_end)) {
+            __libasr_index_0_2 = (__libasr_index_0_2 + 1);
+            __libasr_created__function_call_points[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
+        __libasr_index_0_1 = 1;
+        __do_loop_end1 = (1 + 3 - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_points[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
-        __do_loop_end1 = n;
+        __do_loop_end2 = n;
         __gpu_sec_i2 = (1 - 1);
-        while (((__gpu_sec_i2 + 1) <= __do_loop_end1)) {
+        while (((__gpu_sec_i2 + 1) <= __do_loop_end2)) {
             __gpu_sec_i2 = (__gpu_sec_i2 + 1);
             q[((int)(__gpu_sec_i2) - (1)) + (3 * ((int)(p__dc) - (1)))] = __gpu_call_result[((int)(__gpu_sec_i2) - (1))];
         }
