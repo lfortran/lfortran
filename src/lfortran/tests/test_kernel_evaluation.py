@@ -28,7 +28,7 @@ def limit_open_files():
     resource.setrlimit(resource.RLIMIT_NOFILE, (MAX_OPEN_FILES, hard))
 
 
-def execute(client, code, *, silent=False):
+def execute(client, code, *, silent=False, on_message=None):
     msg_id = client.execute(code, silent=silent, allow_stdin=False)
     messages = []
     deadline = time.monotonic() + 30
@@ -39,6 +39,8 @@ def execute(client, code, *, silent=False):
         if msg["parent_header"].get("msg_id") != msg_id:
             continue
         messages.append(msg)
+        if on_message:
+            on_message(msg)
         if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
             break
     deadline = time.monotonic() + 30
@@ -60,9 +62,58 @@ def check(client, code, expected):
     return messages
 
 
+def check_live_output(client):
+    started = time.monotonic()
+    arrivals = []
+
+    def received(msg):
+        if msg["msg_type"] == "stream":
+            arrivals.append((time.monotonic() - started, msg["content"]))
+
+    delay = ("call execute_command_line('sleep 2')\n" if os.name == "posix" else
+             "block\ninteger(8) :: start, now, rate\ncall system_clock(start, rate)\n"
+             "do\ncall system_clock(now)\nif(now-start>=2*rate) exit\nend do\nend block\n")
+    reply, messages = execute(client,
+        "program live_burst\ninteger :: i\nprint '(a)', 'first'\n"
+        "print '(a)', 'tail'\n" + delay +
+        "do i=1,3000\nprint '(i0)', i\nend do\n"
+        "write(0,'(a)') 'stderr'\nprint '(a)', 'last'\nend program",
+        on_message=received)
+    assert reply["status"] == "ok", reply
+    prefix = "first\ntail\n" + "".join(f"{i}\n" for i in range(1, 3001))
+    expected = prefix + "last\n"
+    stdout = "".join(c["text"] for _, c in arrivals if c["name"] == "stdout")
+    assert stdout == expected, (len(stdout), len(expected))
+    early = "".join(c["text"] for t, c in arrivals if t < 1.5)
+    assert early == "first\ntail\n", arrivals[:2]
+    events = [(c["name"], char) for _, c in arrivals for char in c["text"]]
+    wanted = [(name, char) for name, text in [
+        ("stdout", prefix), ("stderr", "stderr\n"), ("stdout", "last\n")]
+        for char in text]
+    assert events == wanted, (len(events), len(wanted))
+    assert messages[-1]["content"]["execution_state"] == "idle", messages[-1]
+    print("live output: first/tail", arrivals[:2], "burst bytes", len(stdout),
+          "messages", len(arrivals), flush=True)
+
+    # Coalescing stdout alone is insufficient: alternating streams cannot
+    # be merged without destroying their labels and chronological order.
+    reply, messages = execute(client,
+        "program alternating_burst\ninteger :: i\ndo i=1,3000\n"
+        "print '(i0)', i\nwrite(0,'(i0)') i\nend do\nend program")
+    assert reply["status"] == "ok", reply
+    actual = [(m["content"]["name"], char) for m in messages
+              if m["msg_type"] == "stream" for char in m["content"]["text"]]
+    expected = [(name, char) for i in range(1, 3001)
+                for name in ("stdout", "stderr") for char in f"{i}\n"]
+    assert actual == expected, (len(actual), len(expected))
+    print("alternating output: ordered bytes", len(actual), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
+    parser.add_argument("--compiler-arg", action="append", default=[])
+    parser.add_argument("--streaming-only", action="store_true")
     args = parser.parse_args()
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
@@ -74,7 +125,7 @@ def main():
         write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
         with log.open("wb") as output:
             process = subprocess.Popen(
-                [args.lfortran, "kernel", "-f", str(connection)],
+                [args.lfortran, *args.compiler_arg, "kernel", "-f", str(connection)],
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
                 preexec_fn=limit_open_files if os.name == "posix" else None,
             )
@@ -82,6 +133,12 @@ def main():
             client.load_connection_file()
             client.start_channels()
             client.wait_for_ready(timeout=30)
+            check_live_output(client)
+            if args.streaming_only:
+                client.shutdown()
+                process.wait(timeout=15)
+                assert process.returncode == 0, process.returncode
+                return
             check(client, "integer :: n\nn=41", [])
             check(client, "n+1", ["42"])
             check(client, ".true.", ["True"])

@@ -56,6 +56,16 @@ are unaffected. Foreign code and child processes still write directly to the
 captured descriptors; their bytes are streamed, but cross-stream order cannot
 be reconstructed from two independent pipes without producer-side boundaries.
 
+For native Xeus connection-file kernels, IOPub uses a caller-owned XPUB socket
+with `XPUB_NODROP`. Its bounded queues apply backpressure to evaluation rather
+than silently dropping stream or idle messages at the high-water mark. This
+bypasses Xeus-ZMQ's internal PUB/SUB publisher hop, which is also lossy;
+coalescing adjacent stdout writes alone cannot protect alternating stdout and
+stderr writes without changing their order. The other Xeus channels and
+request handling are unchanged. A connected subscriber that stops reading can
+therefore hold up evaluation until it resumes or disconnects. Xeus registration
+configurations retain its default server; WASM uses its own transport.
+
 WASM, where native threads are unavailable, retains synchronous capture:
 output is delivered at runtime writes, hooks and cell completion. Jupyter
 messages must be UTF-8; the kernel preserves characters split between chunks
