@@ -2761,6 +2761,87 @@ end program
     CHECK(r.result.i32 == 7);
 }
 
+TEST_CASE("FortranEvaluator a module allocatable array across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // The descriptor of an allocatable module array has to outlive the
+    // program cell that allocates it. A later cell, including another
+    // program, sees that allocation and its size.
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(module m_alloc_arr_cell
+implicit none
+integer, allocatable :: x(:)
+end module
+program p_alloc_arr_cell
+use m_alloc_arr_cell
+implicit none
+allocate(x(1))
+x = 5
+end program
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "use m_alloc_arr_cell\nallocated(x)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    REQUIRE(r.result.b);
+    r = e.evaluate2("size(x)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 1);
+    r = e.evaluate2("sum(x)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 5);
+    REQUIRE(e.evaluate2(R"(program q_alloc_arr_cell
+use m_alloc_arr_cell
+implicit none
+if (.not. allocated(x)) error stop
+if (size(x) /= 1) error stop
+if (sum(x) /= 5) error stop
+end program
+)").ok);
+
+    // The allocation is made by a later program than the module, then
+    // observed by a statement cell and by another program. The size stays
+    // the one allocate() set.
+    FortranEvaluator e2(cu);
+    REQUIRE(e2.evaluate2(R"(module m_alloc_arr_size
+implicit none
+integer, allocatable :: y(:)
+end module
+)").ok);
+    REQUIRE(e2.evaluate2(R"(program p_alloc_arr_size
+use m_alloc_arr_size
+implicit none
+allocate(y(3))
+y = 5
+end program
+)").ok);
+    r = e2.evaluate2("use m_alloc_arr_size\nallocated(y)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    REQUIRE(r.result.b);
+    r = e2.evaluate2("size(y)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 3);
+    r = e2.evaluate2("sum(y)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 15);
+    REQUIRE(e2.evaluate2(R"(program p_alloc_arr_size2
+use m_alloc_arr_size
+implicit none
+if (.not. allocated(y)) error stop
+if (size(y) /= 3) error stop
+if (sum(y) /= 15) error stop
+end program
+)").ok);
+    r = e2.evaluate2("size(y)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 3);
+    r = e2.evaluate2("sum(y)\n");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.i32 == 15);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;
