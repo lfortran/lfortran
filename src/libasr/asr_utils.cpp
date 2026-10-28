@@ -13433,16 +13433,18 @@ ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype
     if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
-        // A pointer to an array must have deferred shape, so drop the
-        // dimensions if any of them still carries a length. Checking only
-        // whether some dimension is empty is not enough: an assumed-size
-        // array such as `a(1, *)` has an empty last dimension but an
-        // explicit first one.
-        for( size_t i = 0; i < n_dims; i++ ) {
-            if( m_dims[i].m_length != nullptr ) {
-                type = ASRUtils::duplicate_type_with_empty_dims(al, type);
-                break;
-            }
+        // A pointer to an array must be a descriptor with deferred shape,
+        // so drop the dimensions if any of them still carries a length or
+        // if the array is not a descriptor. Checking only whether some
+        // dimension is empty is not enough: an assumed-size array such as
+        // `a(1, *)` has an empty last dimension but an explicit first one,
+        // and `a(*)` has no length at all but is not a descriptor.
+        bool needs_descriptor = !ASRUtils::is_array_physically_descriptor(type);
+        for( size_t i = 0; i < n_dims && !needs_descriptor; i++ ) {
+            needs_descriptor = m_dims[i].m_length != nullptr;
+        }
+        if( needs_descriptor ) {
+            type = ASRUtils::duplicate_type_with_empty_dims(al, type);
         }
     }
 
