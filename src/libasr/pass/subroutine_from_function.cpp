@@ -979,7 +979,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         // assignment target `target` other than through its arguments, by use
         // or host association: the target is rooted at a module variable, a
         // variable of a host, a variable in a common block or what a pointer
-        // may point to, or the function, or a procedure passed to it, is
+        // may point to, or the function, or a procedure passed to it, may be
         // contained in the procedure of the assignment and so may access
         // its locals and dummy arguments. The result must then not be
         // returned into the target: the function would see the target
@@ -1007,11 +1007,27 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
             for (size_t i = 0; i < fc->n_args; i++) {
                 ASR::expr_t *arg = fc->m_args[i].m_value;
-                if (arg != nullptr && ASR::is_a<ASR::Var_t>(*arg) &&
-                        is_internal_procedure_of(ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(arg)->m_v), routine)) {
-                    return true;
+                if (arg == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::extract_type(ASRUtils::expr_type(arg)))) {
+                    continue;
                 }
+                while (ASR::is_a<ASR::FunctionPointerCast_t>(*arg)) {
+                    arg = ASR::down_cast<ASR::FunctionPointerCast_t>(arg)->m_arg;
+                }
+                if (ASR::is_a<ASR::Var_t>(*arg)) {
+                    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(arg)->m_v);
+                    if (ASR::is_a<ASR::Function_t>(*sym) &&
+                            ASRUtils::get_FunctionType(
+                                ASR::down_cast<ASR::Function_t>(sym))->m_deftype ==
+                                    ASR::deftypeType::Implementation &&
+                            !is_internal_procedure_of(sym, routine)) {
+                        continue;
+                    }
+                }
+                // A procedure variable, component or dummy may designate an
+                // internal procedure that reads the target by host association.
+                return true;
             }
             return ASR::down_cast<ASR::Variable_t>(root)->m_common_block != nullptr ||
                 AccessPaths::reachable_elsewhere(root, routine);

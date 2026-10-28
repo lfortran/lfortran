@@ -81,6 +81,18 @@ symbols visible only in its declaration scope (for example a module function
 used as an array bound). Reusing the type directly would leave those references
 out of scope in a derived-type constructor.
 
+### Result assignment destinations
+
+The assignment target can be used as the result argument only when the
+function cannot otherwise access its storage before completing the result
+(F2018 10.2.1.3). This includes access through callbacks: a procedure-pointer
+actual, a procedure component or a dummy procedure may designate an internal
+procedure that reads the target by host association. Such unknown procedure
+actuals retain a result temporary, including when wrapped in a procedure
+cast. A known procedure implementation outside the assignment's routine does
+not capture its locals, so it need not prevent direct result assignment to
+an otherwise unaliased local.
+
 ### Runtime character result metadata
 
 Call preparation in `array_struct_temporary` saves result specification values
