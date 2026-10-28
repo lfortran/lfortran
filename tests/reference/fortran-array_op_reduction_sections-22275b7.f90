@@ -57,22 +57,17 @@ subroutine strided(ia, ib, la, m, s)
     integer(4) :: __libasr_index_0_1
     integer(4) :: __libasr_index_0_2
     integer(4) :: __libasr_index_0_3
-    integer(4) :: __libasr_index_0_4
-    integer(4) :: __libasr_index_0_5
     integer(4) :: __libasr_reduction_acc
     real(4) :: __libasr_reduction_acc1
+    integer(4) :: __libasr_reduction_element
     integer(4) :: __libasr_section_first_element_
     integer(4) :: __libasr_section_first_element_1
     integer(4) :: __libasr_section_first_element_2
-    integer(4) :: __libasr_section_first_element_3
-    integer(4) :: __libasr_section_first_element_4
-    logical(4) :: __libasr_section_first_element_5
+    logical(4) :: __libasr_section_first_element_3
     integer(4) :: __libasr_section_last_element_
     integer(4) :: __libasr_section_last_element_1
     integer(4) :: __libasr_section_last_element_2
-    integer(4) :: __libasr_section_last_element_3
-    integer(4) :: __libasr_section_last_element_4
-    logical(4) :: __libasr_section_last_element_5
+    logical(4) :: __libasr_section_last_element_3
     integer(4), dimension(:), intent(in) :: ia
     integer(4), dimension(-2:), intent(in) :: ib
     logical(4), dimension(:), intent(in) :: la
@@ -83,32 +78,25 @@ subroutine strided(ia, ib, la, m, s)
     __libasr_section_last_element_ = ia(1 + (7 - 1)/3*3)
     __libasr_section_first_element_1 = ib(4)
     __libasr_section_last_element_1 = ib(4 + ((-2) - 4)/((-3))*(-3))
-    __libasr_section_first_element_2 = ia(1)
-    __libasr_section_last_element_2 = ia(1 + (7 - 1)/3*3)
-    __libasr_section_first_element_3 = ib(4)
-    __libasr_section_last_element_3 = ib(4 + ((-2) - 4)/((-3))*(-3))
     __libasr_index_0_1 = 4
-    __libasr_index_0_2 = 1
-    __libasr_index_0_3 = 4
     do __libasr_index_0_ = 1, 7, 3
-        __libasr_reduction_acc = (__libasr_reduction_acc > ia(__libasr_index_0_)*ib(__libasr_index_0_1) ? __libasr_reduc&
-        tion_acc : ia(__libasr_index_0_2)*ib(__libasr_index_0_3))
+        __libasr_reduction_element = ia(__libasr_index_0_)*ib(__libasr_index_0_1)
+        __libasr_reduction_acc = (__libasr_reduction_acc > __libasr_reduction_element ? __libasr_reduction_acc : __libas&
+        r_reduction_element)
         __libasr_index_0_1 = __libasr_index_0_1 + (-3)
-        __libasr_index_0_2 = __libasr_index_0_2 + 3
-        __libasr_index_0_3 = __libasr_index_0_3 + (-3)
     end do
     m = __libasr_reduction_acc
     __libasr_reduction_acc1 = 0.00000000e+00
-    __libasr_section_first_element_4 = ia(2)
-    __libasr_section_last_element_4 = ia(4)
-    __libasr_section_first_element_5 = la(1)
-    __libasr_section_last_element_5 = la(3)
-    __libasr_index_0_5 = 1
-    do __libasr_index_0_4 = 2, 4
-        if (la(__libasr_index_0_5)) then
-            __libasr_reduction_acc1 = __libasr_reduction_acc1 + Real(ia(__libasr_index_0_4))
+    __libasr_section_first_element_2 = ia(2)
+    __libasr_section_last_element_2 = ia(4)
+    __libasr_section_first_element_3 = la(1)
+    __libasr_section_last_element_3 = la(3)
+    __libasr_index_0_3 = 1
+    do __libasr_index_0_2 = 2, 4
+        if (la(__libasr_index_0_3)) then
+            __libasr_reduction_acc1 = __libasr_reduction_acc1 + Real(ia(__libasr_index_0_2))
         end if
-        __libasr_index_0_5 = __libasr_index_0_5 + 1
+        __libasr_index_0_3 = __libasr_index_0_3 + 1
     end do
     s = __libasr_reduction_acc1
 end subroutine strided

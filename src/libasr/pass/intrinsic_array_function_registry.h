@@ -8000,6 +8000,21 @@ namespace ElementwiseReduction {
         }
     }
 
+    // Whether the update of the accumulator (see accumulate) uses the
+    // element more than once, so that the element is evaluated into a
+    // variable first.
+    static inline bool accumulate_uses_element_twice(ASR::IntrinsicArrayFunction_t* x) {
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::MaxVal:
+            case IntrinsicArrayFunctions::MinVal: {
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
     // The accumulator `acc` updated with the element `element`, and for
     // DOT_PRODUCT with the element `element_b` of its second vector.
     static inline ASR::expr_t* accumulate(Allocator& al, const Location& loc,

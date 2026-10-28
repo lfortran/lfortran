@@ -1617,7 +1617,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                        const Location& loc,
                        const std::vector<ASR::expr_t*>* scalar_targets = nullptr,
                        const std::set<ASR::expr_t*>* conforming_operands = nullptr,
-                       bool check_section_ends = false) {
+                       bool check_section_ends = false,
+                       ASR::stmt_t* next_stmt = nullptr) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
         var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
@@ -1749,6 +1750,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        if( next_stmt != nullptr ) {
+            do_loop_body.push_back(al, next_stmt);
+        }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
@@ -2839,7 +2843,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     //     end do
     //     target = acc
     // A mask guards the update. The accumulator is a variable of its own,
-    // since `e` may reference the target.
+    // since `e` may reference the target. When the update uses the element
+    // twice, as `acc = (acc > e(i) ? acc : e(i))` for MAXVAL does, the
+    // element is assigned to a variable first, so that it is evaluated once.
     void lower_reduction_to_loop(const ASR::Assignment_t& x) {
         const Location& loc = x.base.base.loc;
         ASR::IntrinsicArrayFunction_t* reduction =
@@ -2859,17 +2865,32 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             acc, ASRUtils::ElementwiseReduction::get_initial_value(al, loc, reduction, array),
             nullptr, false, false)));
 
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::Assignment_t* element_stmt = nullptr;
+        ASR::expr_t* element = array;
+        if (array && ASRUtils::ElementwiseReduction::accumulate_uses_element_twice(reduction)) {
+            std::string element_name = current_scope->get_unique_name("__libasr_reduction_element");
+            ASR::symbol_t* element_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, element_name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::duplicate_type(al, reduction->m_type), nullptr,
+                ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(element_name, element_sym);
+            element = ASRUtils::EXPR(ASR::make_Var_t(al, loc, element_sym));
+            element_stmt = ASR::down_cast2<ASR::Assignment_t>(ASRUtils::make_Assignment_t_util(
+                al, loc, element, duplicator.duplicate_expr(array), nullptr, false, false));
+        }
+
         // The operation may use the element more than once (e.g. MaxVal), so
         // it is built on a placeholder that each use then replaces with a
-        // copy of the operand. The elements of both vectors of DotProduct
+        // copy of the element. The elements of both vectors of DotProduct
         // have the type of the accumulator.
-        ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::expr_t* placeholder = array ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
         ASR::expr_t* placeholder_b = vector_b ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
         ASR::expr_t* update = ASRUtils::ElementwiseReduction::accumulate(al, loc,
             reduction, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)), placeholder,
             placeholder_b);
-        for (auto& [operand_placeholder, operand]: {std::make_pair(placeholder, array),
+        for (auto& [operand_placeholder, operand]: {std::make_pair(placeholder, element),
                 std::make_pair(placeholder_b, vector_b)}) {
             if (operand) {
                 ReplacePlaceholder replace_placeholder(al, operand_placeholder, operand);
@@ -2880,6 +2901,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         update = duplicator.duplicate_expr(update);
         ASR::Assignment_t* update_stmt = ASR::down_cast2<ASR::Assignment_t>(
             ASRUtils::make_Assignment_t_util(al, loc, acc, update, nullptr, false, false));
+        // The statement that reads the elements of the operands
+        ASR::Assignment_t* read_stmt = element_stmt ? element_stmt : update_stmt;
 
         Vec<ASR::expr_t**> vars;
         vars.reserve(al, 1);
@@ -2888,13 +2911,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // array_struct_temporary leaves a section operand in place only
         // when the loop can index it through its base array
         ArrayVarAddressCollector update_collector(al, vars, true);
-        update_collector.current_expr = &update_stmt->m_value;
+        update_collector.current_expr = &read_stmt->m_value;
         update_collector.call_replacer();
-        fix_type_args.push_back(al, &update_stmt->m_value);
+        fix_type_args.push_back(al, &read_stmt->m_value);
         ASR::If_t* mask_stmt = nullptr;
         if (mask) {
             Vec<ASR::stmt_t*> body;
-            body.reserve(al, 1);
+            body.reserve(al, 2);
+            if (element_stmt) {
+                body.push_back(al, &element_stmt->base);
+            }
             body.push_back(al, &update_stmt->base);
             mask_stmt = ASR::down_cast2<ASR::If_t>(ASR::make_If_t(al, loc, nullptr,
                 duplicator.duplicate_expr(mask), body.p, body.size(), nullptr, 0));
@@ -2912,7 +2938,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             Vec<ASR::expr_t*> components;
             components.reserve(al, 2);
             CollectComponentsFromElementalExpr collect_components(al, components);
-            collect_components.visit_expr(*update_stmt->m_value);
+            collect_components.visit_expr(*read_stmt->m_value);
             if (mask_stmt) {
                 collect_components.visit_expr(*mask_stmt->m_test);
             }
@@ -2940,6 +2966,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (mask_stmt) {
             generate_loop(*mask_stmt, vars, fix_type_args, loc, nullptr,
                 &conforming_operands, true);
+        } else if (element_stmt) {
+            generate_loop(*element_stmt, vars, fix_type_args, loc, nullptr,
+                &conforming_operands, true, &update_stmt->base);
         } else {
             generate_loop(*update_stmt, vars, fix_type_args, loc, nullptr,
                 &conforming_operands, true);

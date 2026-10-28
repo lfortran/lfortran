@@ -1,32 +1,26 @@
 subroutine array_op_reduction_elemental(a, b, n, s, m, c, e)
     integer(4) :: __libasr_index_0_
     integer(4) :: __libasr_index_0_1
-    integer(4) :: __libasr_index_0_10
-    integer(4) :: __libasr_index_0_11
     integer(4) :: __libasr_index_0_2
     integer(4) :: __libasr_index_0_3
     integer(4) :: __libasr_index_0_4
     integer(4) :: __libasr_index_0_5
     integer(4) :: __libasr_index_0_6
     integer(4) :: __libasr_index_0_7
-    integer(4) :: __libasr_index_0_8
-    integer(4) :: __libasr_index_0_9
     real(4) :: __libasr_reduction_acc
     real(4) :: __libasr_reduction_acc1
     integer(4) :: __libasr_reduction_acc2
     real(4) :: __libasr_reduction_acc3
+    real(4) :: __libasr_reduction_element
+    real(4) :: __libasr_reduction_element1
     real(4) :: __libasr_section_first_element_
     real(4) :: __libasr_section_first_element_1
     real(4) :: __libasr_section_first_element_2
     real(4) :: __libasr_section_first_element_3
-    real(4) :: __libasr_section_first_element_4
-    real(4) :: __libasr_section_first_element_5
     real(4) :: __libasr_section_last_element_
     real(4) :: __libasr_section_last_element_1
     real(4) :: __libasr_section_last_element_2
     real(4) :: __libasr_section_last_element_3
-    real(4) :: __libasr_section_last_element_4
-    real(4) :: __libasr_section_last_element_5
     real(4), dimension(:), intent(in) :: a
     real(4), dimension(:), intent(in) :: b
     integer(4), intent(out) :: c
@@ -51,7 +45,7 @@ subroutine array_op_reduction_elemental(a, b, n, s, m, c, e)
     end do
     s = __libasr_reduction_acc
     __libasr_reduction_acc1 = -3.40282347e+38
-    ! CheckBounds LHS = a(2:n), RHS = a(2:n), a(1:n - 1), a(2:n), a(1:n - 1), 
+    ! CheckBounds LHS = a(2:n), RHS = a(2:n), a(1:n - 1), 
     if (2 <= n) then
         __libasr_section_first_element_2 = a(2)
         __libasr_section_last_element_2 = a(n)
@@ -60,46 +54,32 @@ subroutine array_op_reduction_elemental(a, b, n, s, m, c, e)
         __libasr_section_first_element_3 = a(1)
         __libasr_section_last_element_3 = a(n - 1)
     end if
-    if (2 <= n) then
-        __libasr_section_first_element_4 = a(2)
-        __libasr_section_last_element_4 = a(n)
-    end if
-    if (1 <= n - 1) then
-        __libasr_section_first_element_5 = a(1)
-        __libasr_section_last_element_5 = a(n - 1)
-    end if
     __libasr_index_0_3 = 1
-    __libasr_index_0_4 = 2
-    __libasr_index_0_5 = 1
     do __libasr_index_0_2 = 2, n
-        __libasr_reduction_acc1 = (__libasr_reduction_acc1 > Abs(a(__libasr_index_0_2) - a(__libasr_index_0_3)) ? __liba&
-        sr_reduction_acc1 : Abs(a(__libasr_index_0_4) - a(__libasr_index_0_5)))
+        __libasr_reduction_element = Abs(a(__libasr_index_0_2) - a(__libasr_index_0_3))
+        __libasr_reduction_acc1 = (__libasr_reduction_acc1 > __libasr_reduction_element ? __libasr_reduction_acc1 : __li&
+        basr_reduction_element)
         __libasr_index_0_3 = __libasr_index_0_3 + 1
-        __libasr_index_0_4 = __libasr_index_0_4 + 1
-        __libasr_index_0_5 = __libasr_index_0_5 + 1
     end do
     m = __libasr_reduction_acc1
     __libasr_reduction_acc2 = 0
     ! CheckBounds LHS = a, RHS = a, b, 
-    __libasr_index_0_7 = lbound(b, 1)
-    do __libasr_index_0_6 = lbound(a, 1), ubound(a, 1)
-        if (Abs(a(__libasr_index_0_6) - b(__libasr_index_0_7)) > 5.00000000e-01) then
+    __libasr_index_0_5 = lbound(b, 1)
+    do __libasr_index_0_4 = lbound(a, 1), ubound(a, 1)
+        if (Abs(a(__libasr_index_0_4) - b(__libasr_index_0_5)) > 5.00000000e-01) then
             __libasr_reduction_acc2 = __libasr_reduction_acc2 + 1
         end if
-        __libasr_index_0_7 = __libasr_index_0_7 + 1
+        __libasr_index_0_5 = __libasr_index_0_5 + 1
     end do
     c = __libasr_reduction_acc2
     __libasr_reduction_acc3 = 3.40282347e+38
-    ! CheckBounds LHS = a, RHS = a, b, a, b, 
-    __libasr_index_0_9 = lbound(b, 1)
-    __libasr_index_0_10 = lbound(a, 1)
-    __libasr_index_0_11 = lbound(b, 1)
-    do __libasr_index_0_8 = lbound(a, 1), ubound(a, 1)
-        __libasr_reduction_acc3 = (__libasr_reduction_acc3 < Exp(a(__libasr_index_0_8))*(Log(b(__libasr_index_0_9) + rea&
-        l(1, kind=4))) ? __libasr_reduction_acc3 : Exp(a(__libasr_index_0_10))*(Log(b(__libasr_index_0_11) + real(1, kind=4))))
-        __libasr_index_0_9 = __libasr_index_0_9 + 1
-        __libasr_index_0_10 = __libasr_index_0_10 + 1
-        __libasr_index_0_11 = __libasr_index_0_11 + 1
+    ! CheckBounds LHS = a, RHS = a, b, 
+    __libasr_index_0_7 = lbound(b, 1)
+    do __libasr_index_0_6 = lbound(a, 1), ubound(a, 1)
+        __libasr_reduction_element1 = Exp(a(__libasr_index_0_6))*(Log(b(__libasr_index_0_7) + real(1, kind=4)))
+        __libasr_reduction_acc3 = (__libasr_reduction_acc3 < __libasr_reduction_element1 ? __libasr_reduction_acc3 : __l&
+        ibasr_reduction_element1)
+        __libasr_index_0_7 = __libasr_index_0_7 + 1
     end do
     e = __libasr_reduction_acc3
 end subroutine array_op_reduction_elemental
