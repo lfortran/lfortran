@@ -210,60 +210,9 @@
                     )
                     (WhileLoop
                         ()
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc)
-                                    Gt
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    LtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc)
-                                    LtE
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    GtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
+                        (LogicalConstant
+                            .true.
                             (Logical 4)
-                            ()
                         )
                         [(Assignment
                             (Var 2 i)
@@ -279,6 +228,60 @@
                             .false.
                             .false.
                             .false.
+                        )
+                        (If
+                            ()
+                            (LogicalNot
+                                (LogicalBinOp
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            LtE
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    Or
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc)
+                                            LtE
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            GtE
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                ()
+                            )]
+                            []
                         )
                         (Assignment
                             (Var 2 j)
@@ -372,60 +375,9 @@
                     )
                     (WhileLoop
                         ()
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc1)
-                                    Gt
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc1)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    LtE
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc1)
-                                    LtE
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc1)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    GtE
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
+                        (LogicalConstant
+                            .true.
                             (Logical 4)
-                            ()
                         )
                         [(Assignment
                             (Var 2 i)
@@ -441,6 +393,60 @@
                             .false.
                             .false.
                             .false.
+                        )
+                        (If
+                            ()
+                            (LogicalNot
+                                (LogicalBinOp
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc1)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            LtE
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    Or
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc1)
+                                            LtE
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            GtE
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                ()
+                            )]
+                            []
                         )
                         (Assignment
                             (Var 2 j)
@@ -512,18 +518,9 @@
                     )
                     (WhileLoop
                         a
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
+                        (LogicalConstant
+                            .true.
                             (Logical 4)
-                            ()
                         )
                         [(Assignment
                             (Var 2 i)
@@ -539,6 +536,24 @@
                             .false.
                             .false.
                             .false.
+                        )
+                        (If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (Var 2 i)
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                ()
+                            )]
+                            []
                         )
                         (Assignment
                             (Var 2 j)
@@ -611,18 +626,9 @@
                     )
                     (WhileLoop
                         b
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            LtE
-                            (IntegerConstant 10 (Integer 4) Decimal)
+                        (LogicalConstant
+                            .true.
                             (Logical 4)
-                            ()
                         )
                         [(Assignment
                             (Var 2 i)
@@ -638,6 +644,24 @@
                             .false.
                             .false.
                             .false.
+                        )
+                        (If
+                            ()
+                            (LogicalNot
+                                (IntegerCompare
+                                    (Var 2 i)
+                                    LtE
+                                    (IntegerConstant 10 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                ()
+                            )]
+                            []
                         )
                         (Assignment
                             (Var 2 j)
@@ -803,60 +827,9 @@
                     )
                     (WhileLoop
                         ()
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc2)
-                                    Gt
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc2)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    LtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 2 __do_loop_inc2)
-                                    LtE
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc2)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    GtE
-                                    (IntegerConstant 10 (Integer 4) Decimal)
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
+                        (LogicalConstant
+                            .true.
                             (Logical 4)
-                            ()
                         )
                         [(Assignment
                             (Var 2 i)
@@ -872,6 +845,60 @@
                             .false.
                             .false.
                             .false.
+                        )
+                        (If
+                            ()
+                            (LogicalNot
+                                (LogicalBinOp
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc2)
+                                            Gt
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            LtE
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    Or
+                                    (LogicalBinOp
+                                        (IntegerCompare
+                                            (Var 2 __do_loop_inc2)
+                                            LtE
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        And
+                                        (IntegerCompare
+                                            (Var 2 i)
+                                            GtE
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Exit
+                                ()
+                            )]
+                            []
                         )
                         (GoToTarget
                             100

@@ -41,15 +41,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float* work = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = self.__parent.n;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             work[((int)(k) - (1))] = ((float)(k * i__dc));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = __workspace_extent;
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+        while (1) {
             __gpu_sum_k = (__gpu_sum_k + 1);
+            if (((int)(!((__gpu_sum_k <= __do_loop_end1))))) {
+                break;
+            }
             __gpu_sum_res = (__gpu_sum_res + work[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         r[((int)(i__dc) - (__lb_r_0))] = __gpu_sum_res;

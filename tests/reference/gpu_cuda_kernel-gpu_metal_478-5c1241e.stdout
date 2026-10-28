@@ -23,8 +23,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     j__dc = (__flat_idx + 1);
     __do_loop_end = m;
     k = (1 - 1);
-    while (((k + 1) <= __do_loop_end)) {
+    while (1) {
         k = (k + 1);
+        if (((int)(!((k <= __do_loop_end))))) {
+            break;
+        }
         t[((int)(k) - (1))] = ((float)j__dc);
     }
     y[((int)(j__dc) - (1))] = t[((int)(4) - (1))];

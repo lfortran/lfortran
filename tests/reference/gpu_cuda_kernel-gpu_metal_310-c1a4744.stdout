@@ -9,15 +9,21 @@ __device__ inline float vla_fill_gpu_9(int m, float v, float* tmp) {
     int k;
     __do_loop_end = m;
     k = (1 - 1);
-    while (((k + 1) <= __do_loop_end)) {
+    while (1) {
         k = (k + 1);
+        if (((int)(!((k <= __do_loop_end))))) {
+            break;
+        }
         tmp[((int)(k) - (1))] = v;
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
     __do_loop_end1 = max(0, m);
     __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+    while (1) {
         __gpu_sum_k = (__gpu_sum_k + 1);
+        if (((int)(!((__gpu_sum_k <= __do_loop_end1))))) {
+            break;
+        }
         __gpu_sum_res = (__gpu_sum_res + tmp[((int)(__gpu_sum_k) - (1))]);
     }
     s = __gpu_sum_res;

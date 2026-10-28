@@ -61,69 +61,102 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     p__dc = (__flat_idx + 1);
     __do_loop_end = n;
     __gpu_mm_i = (1 - 1);
-    while (((__gpu_mm_i + 1) <= __do_loop_end)) {
+    while (1) {
         __gpu_mm_i = (__gpu_mm_i + 1);
+        if (((int)(!((__gpu_mm_i <= __do_loop_end))))) {
+            break;
+        }
         __gpu_mm_acc =   0.00000000000000000e+00f;
         __do_loop_end6 = m;
         __gpu_mm_k = (1 - 1);
-        while (((__gpu_mm_k + 1) <= __do_loop_end6)) {
+        while (1) {
             __gpu_mm_k = (__gpu_mm_k + 1);
+            if (((int)(!((__gpu_mm_k <= __do_loop_end6))))) {
+                break;
+            }
             __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * x[((int)(__gpu_mm_k) - (1)) + (4 * ((int)(p__dc) - (1)))]));
         }
         z[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc + b[((int)(__gpu_mm_i) - (1))]);
     }
     __do_loop_end1 = n;
     __gpu_mm_i1 = (1 - 1);
-    while (((__gpu_mm_i1 + 1) <= __do_loop_end1)) {
+    while (1) {
         __gpu_mm_i1 = (__gpu_mm_i1 + 1);
+        if (((int)(!((__gpu_mm_i1 <= __do_loop_end1))))) {
+            break;
+        }
         __gpu_mm_acc1 =   0.00000000000000000e+00f;
         __do_loop_end7 = m;
         __gpu_mm_k1 = (1 - 1);
-        while (((__gpu_mm_k1 + 1) <= __do_loop_end7)) {
+        while (1) {
             __gpu_mm_k1 = (__gpu_mm_k1 + 1);
+            if (((int)(!((__gpu_mm_k1 <= __do_loop_end7))))) {
+                break;
+            }
             __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((int)(__gpu_mm_i1) - (1)) + (3 * ((int)(__gpu_mm_k1) - (1)))] * x0[((int)((0 + (__gpu_mm_k1 - 1))) - (0)) + (4 * ((int)(p__dc) - (1)))]));
         }
         e[((int)(__gpu_mm_i1) - (1)) + (3 * ((int)(p__dc) - (1)))] = (b[((int)(__gpu_mm_i1) - (1))] - __gpu_mm_acc1);
     }
     __do_loop_end2 = m;
     __gpu_mm_i2 = (1 - 1);
-    while (((__gpu_mm_i2 + 1) <= __do_loop_end2)) {
+    while (1) {
         __gpu_mm_i2 = (__gpu_mm_i2 + 1);
+        if (((int)(!((__gpu_mm_i2 <= __do_loop_end2))))) {
+            break;
+        }
         __gpu_mm_acc2 =   0.00000000000000000e+00f;
         __do_loop_end8 = n;
         __gpu_mm_k2 = (1 - 1);
-        while (((__gpu_mm_k2 + 1) <= __do_loop_end8)) {
+        while (1) {
             __gpu_mm_k2 = (__gpu_mm_k2 + 1);
+            if (((int)(!((__gpu_mm_k2 <= __do_loop_end8))))) {
+                break;
+            }
             __gpu_mm_acc2 = (__gpu_mm_acc2 + (w[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))] * z[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(p__dc) - (1)))]));
         }
         y[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc2;
     }
     __do_loop_end3 = m;
     __gpu_mm_j = (1 - 1);
-    while (((__gpu_mm_j + 1) <= __do_loop_end3)) {
+    while (1) {
         __gpu_mm_j = (__gpu_mm_j + 1);
+        if (((int)(!((__gpu_mm_j <= __do_loop_end3))))) {
+            break;
+        }
         __gpu_mm_acc3 =   0.00000000000000000e+00f;
         __do_loop_end9 = n;
         __gpu_mm_k3 = (1 - 1);
-        while (((__gpu_mm_k3 + 1) <= __do_loop_end9)) {
+        while (1) {
             __gpu_mm_k3 = (__gpu_mm_k3 + 1);
+            if (((int)(!((__gpu_mm_k3 <= __do_loop_end9))))) {
+                break;
+            }
             __gpu_mm_acc3 = (__gpu_mm_acc3 + (z[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(p__dc) - (1)))] * w[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(__gpu_mm_j) - (1)))]));
         }
         v[((int)(__gpu_mm_j) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc3;
     }
     __do_loop_end4 = n;
     __gpu_mm_i3 = (1 - 1);
-    while (((__gpu_mm_i3 + 1) <= __do_loop_end4)) {
+    while (1) {
         __gpu_mm_i3 = (__gpu_mm_i3 + 1);
+        if (((int)(!((__gpu_mm_i3 <= __do_loop_end4))))) {
+            break;
+        }
         __do_loop_end10 = n;
         __gpu_mm_j1 = (1 - 1);
-        while (((__gpu_mm_j1 + 1) <= __do_loop_end10)) {
+        while (1) {
             __gpu_mm_j1 = (__gpu_mm_j1 + 1);
+            if (((int)(!((__gpu_mm_j1 <= __do_loop_end10))))) {
+                break;
+            }
             __gpu_mm_acc4 =   0.00000000000000000e+00f;
             __do_loop_end12 = m;
             __gpu_mm_k4 = (1 - 1);
-            while (((__gpu_mm_k4 + 1) <= __do_loop_end12)) {
+            while (1) {
                 __gpu_mm_k4 = (__gpu_mm_k4 + 1);
+                if (((int)(!((__gpu_mm_k4 <= __do_loop_end12))))) {
+                    break;
+                }
                 __gpu_mm_acc4 = (__gpu_mm_acc4 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))] * w[((int)(__gpu_mm_j1) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))]));
             }
             c[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_j1) - (1))) + ((3 * 3) * ((int)(p__dc) - (1)))] = (__gpu_mm_acc4 * ((float)p__dc));
@@ -131,13 +164,19 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     __do_loop_end5 = n;
     __gpu_mm_i4 = (1 - 1);
-    while (((__gpu_mm_i4 + 1) <= __do_loop_end5)) {
+    while (1) {
         __gpu_mm_i4 = (__gpu_mm_i4 + 1);
+        if (((int)(!((__gpu_mm_i4 <= __do_loop_end5))))) {
+            break;
+        }
         __gpu_mm_acc5 =   0.00000000000000000e+00f;
         __do_loop_end11 = m;
         __gpu_mm_k5 = (1 - 1);
-        while (((__gpu_mm_k5 + 1) <= __do_loop_end11)) {
+        while (1) {
             __gpu_mm_k5 = (__gpu_mm_k5 + 1);
+            if (((int)(!((__gpu_mm_k5 <= __do_loop_end11))))) {
+                break;
+            }
             __gpu_mm_acc5 = (__gpu_mm_acc5 + (w[((int)(__gpu_mm_i4) - (1)) + (3 * ((int)(__gpu_mm_k5) - (1)))] * x[((int)(__gpu_mm_k5) - (1)) + (4 * ((int)(p__dc) - (1)))]));
         }
         d[((int)(__gpu_mm_i4) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc5 + d[((int)(__gpu_mm_i4) - (1)) + (3 * ((int)(p__dc) - (1)))]);
