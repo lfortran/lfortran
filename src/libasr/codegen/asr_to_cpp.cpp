@@ -552,15 +552,19 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         std::string indent(indentation_level * indentation_spaces, ' ');
-        from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
-        std::string out = "from_std_vector<float>({";
+        std::string elem_type = CUtils::get_c_type_from_ttype_t(
+            ASRUtils::type_get_past_array(x.m_type));
+        std::string tmp = "r" + std::to_string(array_const_count++);
+        from_std_vector_helper += indent + "Kokkos::View<" + elem_type
+            + "*> " + tmp + ";\n";
+        std::string out = "from_std_vector<" + elem_type + ">({";
         for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
             out += ASRUtils::fetch_ArrayConstant_value(x, i);
             if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) out += ", ";
         }
         out += "})";
-        from_std_vector_helper += indent + "r = " + out + ";\n";
-        src = "&r";
+        from_std_vector_helper += indent + tmp + " = " + out + ";\n";
+        src = "&" + tmp;
         last_expr_precedence = 2;
     }
 
@@ -647,6 +651,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             }
         }
         out += "<< std::endl;\n";
+        if (!from_std_vector_helper.empty()) {
+            out = from_std_vector_helper + out;
+            from_std_vector_helper.clear();
+        }
         src = out;
     }
 
@@ -670,6 +678,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             out += "<< " + src + " ";
         }
         out += "<< std::endl;\n";
+        if (!from_std_vector_helper.empty()) {
+            out = from_std_vector_helper + out;
+            from_std_vector_helper.clear();
+        }
         src = out;
     }
 
