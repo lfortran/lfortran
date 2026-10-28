@@ -3501,7 +3501,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             bool unaliased_target = lhs_var == nullptr ||
                 (ASR::is_a<ASR::Var_t>(*lhs_var) && is_unaliased_variable(
                     ASR::down_cast<ASR::Var_t>(lhs_var)->m_v));
-            if (!inside_where && unaliased_target &&
+            // Mutating list intrinsics have no result type to inspect.
+            if (!inside_where && unaliased_target && x.m_type != nullptr &&
                     ASRUtils::ElementwiseReduction::is_elementwise_operation(
                     const_cast<ASR::expr_t*>(&x.base))) {
                 for (size_t i = 0; i < x.n_args; i++) {
@@ -5683,8 +5684,9 @@ class VerifySimplifierASROutput:
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
-            bool elementwise = ASRUtils::ElementwiseReduction::is_elementwise_operation(
-                const_cast<ASR::expr_t*>(&x.base));
+            bool elementwise = x.m_type != nullptr &&
+                ASRUtils::ElementwiseReduction::is_elementwise_operation(
+                    const_cast<ASR::expr_t*>(&x.base));
             for (size_t i = 0; i < x.n_args; i++) {
                 if (operations_read_in_place.count(x.m_args[i]) > 0 ||
                         (elementwise && x.m_args[i] != nullptr &&
