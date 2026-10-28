@@ -1546,6 +1546,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return find_array_leaf(
                 ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, ref);
         }
+        if (ASR::is_a<ASR::ArraySection_t>(*e) && is_whole_array_ref(e)) {
+            self().visit_expr(
+                *ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+            ref = src;
+            return true;
+        }
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
             return find_array_leaf(
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, ref);
@@ -2027,6 +2033,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             is_ubound_of_dim(idx.m_right, base, dim);
     }
 
+    // Whether `e` is a rank-1 partial section with explicit,
+    // computable bounds (no lbound/ubound calls, which need the
+    // ArrayBound lowering): `a(2:5)`, `a(4:1:-1)`, `a(i:j:k)`.
+    bool is_partial_rank1_section(ASR::expr_t* e) {
+        if (!ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return false;
+        }
+        ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
+        if (s->n_args != 1 ||
+                !ASR::is_a<ASR::Var_t>(*s->m_v)) {
+            return false;
+        }
+        ASR::array_index_t &ix = s->m_args[0];
+        return ix.m_left && ix.m_right &&
+            !contains_arraybound(ix.m_left) &&
+            !contains_arraybound(ix.m_right) &&
+            !contains_arraybound(ix.m_step);
+    }
+
     // Whether `e` names whole-array storage: a plain array variable,
     // or an array section covering every element (e.g. the frontend
     // `(:)` form). Partial sections and anything else return false.
@@ -2063,7 +2088,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
         }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
-            return is_whole_array_ref(e);
+            return is_whole_array_ref(e) || is_partial_rank1_section(e);
         }
         if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
             ASR::ArrayBroadcast_t *b = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
@@ -2175,14 +2200,34 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         if (ASR::is_a<ASR::Var_t>(*e) ||
             ASR::is_a<ASR::ArraySection_t>(*e)) {
             // Whole-array sections (checked before) index like the base
-            // variable, whose storage they share in full.
+            // variable, whose storage they share in full. Partial rank-1
+            // sections carry their own offset and step.
             ASR::expr_t* v = e;
+            ASR::array_index_t* six = nullptr;
             if (ASR::is_a<ASR::ArraySection_t>(*e)) {
-                v = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
+                v = s->m_v;
+                if (s->n_args == 1 && !is_whole_array_ref(e)) {
+                    six = &s->m_args[0];
+                }
             }
             self().visit_expr(*v);
             if (ASRUtils::is_array(ASRUtils::expr_type(v))) {
-                return src + "->data->operator[](" + idx + ")";
+                std::string base = src;
+                if (!six) {
+                    return base + "->data->operator[](" + idx + ")";
+                }
+                self().visit_expr(*six->m_left);
+                std::string start = src;
+                std::string step = "1";
+                if (six->m_step) {
+                    self().visit_expr(*six->m_step);
+                    step = src;
+                }
+                std::string off = "((" + start + ") - " + base
+                    + "->dims[0].lower_bound)";
+                return base + "->data->operator[](" + off + " + " + idx
+                    + "*(" + step + "))";
             }
             return src;
         }
@@ -2286,8 +2331,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             // `a(:) = ...`): fill or elementwise loop over the flat data
             // view underlying the C++ array descriptor. The element
             // count comes from the descriptor so runtime-sized arrays
-            // work too. Partial sections are only covered for rank-1
-            // scalar fills; anything else falls back to the generic path.
+            // work too. Partial sections are covered for rank-1 targets
+            // and leaves; anything else falls back to the generic path.
             ASR::symbol_t* base = nullptr;
             ASR::expr_t* base_ref = nullptr;
             ASR::ArraySection_t* sec = nullptr;
@@ -2341,12 +2386,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             + rhs + ";\n" + indent + "}\n";
                         return;
                     }
-                } else if (sec && sec->n_args == 1 && scalar_rhs) {
+                } else if (sec && is_partial_rank1_section(x.m_target)) {
                     ASR::array_index_t &six = sec->m_args[0];
-                    if (six.m_left && six.m_right &&
-                        !contains_arraybound(six.m_left) &&
-                        !contains_arraybound(six.m_right) &&
-                        !contains_arraybound(six.m_step)) {
+                    std::string rhs;
+                    if (scalar_rhs) {
+                        self().visit_expr(*v);
+                        rhs = src;
+                    } else if (is_elementwise_assignable(x.m_value)) {
+                        rhs = elementwise_src(x.m_value, idx);
+                    } else {
+                        base = nullptr;
+                    }
+                    if (base) {
                         self().visit_expr(*six.m_left);
                         std::string start = src;
                         self().visit_expr(*six.m_right);
@@ -2356,8 +2407,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             self().visit_expr(*six.m_step);
                             step = src;
                         }
-                        self().visit_expr(*v);
-                        std::string scalar = src;
                         std::string off = "((" + start + ") - "
                             + arr + "->dims[0].lower_bound)";
                         std::string n = "((" + step + ") > 0 ? (((" + end
@@ -2369,7 +2418,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             + " < (size_t)(" + n + "); " + idx + "++) {\n"
                             + indent1 + arr + "->data->operator[](" + off
                             + " + " + idx + "*(" + step + ")) = "
-                            + scalar + ";\n" + indent + "}\n";
+                            + rhs + ";\n" + indent + "}\n";
                         return;
                     }
                 }
