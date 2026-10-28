@@ -1,7 +1,19 @@
 ! With --implicit-argument-casting, an external procedure defined in the same
 ! file is called with an actual of another type than its dummy: a REAL array
-! to a COMPLEX dummy, and an allocatable COMPLEX array to a REAL dummy.
+! to a COMPLEX dummy, and an allocatable COMPLEX array to a REAL dummy, from
+! the main program and from a module procedure.
+module implicit_argument_casting_05_mod
+implicit none
+contains
+    subroutine rotate(x, m)
+    integer, intent(in) :: m
+    real(8), intent(inout) :: x(m)
+    call times_i_05(x, m/2)
+    end subroutine
+end module
+
 program implicit_argument_casting_05
+use implicit_argument_casting_05_mod
 implicit none
 real(8) :: x(4) = [1d0, 2d0, 3d0, 4d0]
 complex(8), allocatable :: z(:)
@@ -16,6 +28,11 @@ call double_05(z, 4)
 print '(4F6.1)', z
 if (abs(z(1) - (2d0, 4d0)) > 1d-12) error stop 2
 if (abs(z(2) - (6d0, 8d0)) > 1d-12) error stop 3
+
+x = [1d0, 2d0, 3d0, 4d0]
+call rotate(x, 4)
+print '(4F6.1)', x
+if (any(abs(x - [-2d0, 1d0, -4d0, 3d0]) > 1d-12)) error stop 4
 end program
 
 subroutine times_i_05(c, n)

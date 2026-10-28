@@ -15,6 +15,7 @@
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <complex>
 #include <string>
@@ -1881,6 +1882,9 @@ public:
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
+    // The interfaces through which a module references the external
+    // procedures defined in this file, and the definition of each.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> external_procedure_definitions;
     // The result type declared by the function references made through a
     // procedure-pointer temporary. The call-site interface may state less:
     // a character result whose length is an expression of the caller is
@@ -22819,6 +22823,81 @@ public:
         return make_fpcast_call_target(loc, source, iface);
     }
 
+    // The procedure a reference to `proc` made in `current_scope` names. An
+    // external procedure is not part of a module, so a module cannot name
+    // its definition, even when it is in the same file: the module must be
+    // complete without it, as it is in its module file. A reference made in
+    // a module to an external procedure defined in this file therefore names
+    // a copy of its interface, filed in the referencing procedure as if it
+    // had an interface body for the procedure. Any other `proc` is returned
+    // as it is.
+    ASR::symbol_t* external_procedure_reference(ASR::symbol_t* proc) {
+        if (proc == nullptr || !ASR::is_a<ASR::Function_t>(*proc)
+                || ASRUtils::symbol_parent_symtab(proc)->parent != nullptr
+                || ASRUtils::get_FunctionType(proc)->m_deftype
+                    != ASR::deftypeType::Implementation) {
+            return proc;
+        }
+        bool in_module = false;
+        for (SymbolTable* s = current_scope; s != nullptr && !in_module; s = s->parent) {
+            in_module = s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
+                && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(s->asr_owner));
+        }
+        if (!in_module) {
+            return proc;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
+        SymbolTable* sym_scope = implicit_interface_scope();
+        if (sym_scope->get_symbol(fn->m_name) != nullptr) {
+            return proc;
+        }
+        // The interface is given by the declarations of the procedure; its
+        // contained procedures and constructs belong to its body.
+        SymbolTable* iface_scope = al.make_new<SymbolTable>(sym_scope);
+        ASRUtils::SymbolDuplicator duplicator(al);
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
+        for (auto &item : fn->m_symtab->get_scope()) {
+            ASR::symbol_t* s = item.second;
+            if ((ASR::is_a<ASR::Function_t>(*s) && ASRUtils::get_FunctionType(s)->m_deftype
+                        == ASR::deftypeType::Implementation)
+                    || ASR::is_a<ASR::Block_t>(*s) || ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+                continue;
+            }
+            duplicator.duplicate_symbol(s, iface_scope);
+            ASR::symbol_t* copy = iface_scope->get_symbol(item.first);
+            if (copy && ASR::is_a<ASR::Variable_t>(*s) && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(s),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
+        }
+        duplicator.remap_local_references(variables, iface_scope);
+        duplicator.fixup_local_type_declarations(iface_scope, fn->m_symtab);
+        ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, iface_scope);
+        node_duplicator.success = true;
+        Vec<ASR::expr_t*> iface_args;
+        iface_args.reserve(al, fn->n_args);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            iface_args.push_back(al, node_duplicator.duplicate_expr(fn->m_args[i]));
+        }
+        ASR::expr_t* iface_return_var = node_duplicator.duplicate_expr(fn->m_return_var);
+        if (!node_duplicator.success) {
+            return proc;
+        }
+        ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(fn);
+        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
+            al, fn->base.base.loc, iface_scope, fn->m_name, nullptr, 0,
+            iface_args.p, iface_args.size(), nullptr, 0, iface_return_var,
+            fn_type->m_abi, ASR::accessType::Public, ASR::deftypeType::Interface,
+            fn_type->m_bindc_name, fn_type->m_elemental, fn_type->m_pure,
+            false, false, false, nullptr, 0, false, fn->m_deterministic,
+            fn->m_side_effect_free));
+        PassUtils::UpdateDependenciesVisitor dependencies(al);
+        dependencies.visit_Function(*ASR::down_cast<ASR::Function_t>(iface));
+        sym_scope->add_symbol(fn->m_name, iface);
+        external_procedure_definitions[iface] = proc;
+        return iface;
+    }
+
     // True if `proc` is an external procedure defined in this file and,
     // with --implicit-argument-casting, an actual of `args` has another
     // numeric type or kind than its dummy (a REAL array passed to a COMPLEX
@@ -22828,6 +22907,10 @@ public:
     // file. Integer kind mismatches keep their own handling.
     bool is_mismatched_external_procedure_call(ASR::symbol_t* proc,
             const Vec<ASR::call_arg_t> &args) {
+        auto definition = external_procedure_definitions.find(proc);
+        if (definition != external_procedure_definitions.end()) {
+            proc = definition->second;
+        }
         if (!compiler_options.implicit_argument_casting
                 || !ASR::is_a<ASR::Function_t>(*proc)
                 || ASRUtils::symbol_parent_symtab(proc)->parent != nullptr) {
@@ -23889,6 +23972,7 @@ public:
                 v = v2;
             }
         }
+        v = external_procedure_reference(v);
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
