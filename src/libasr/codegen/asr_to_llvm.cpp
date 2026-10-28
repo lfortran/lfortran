@@ -7462,7 +7462,7 @@ public:
     bool is_earlier_cell_global(const ASR::Variable_t &x) {
         return compiler_options.interactive
             && (x.m_abi == ASR::abiType::ExternalUndefined ||
-                x.m_storage == ASR::storage_typeType::ExternalStorage);
+                x.m_external_storage);
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
@@ -7483,12 +7483,11 @@ public:
         // translation unit, just referenced).
         LCOMPILERS_ASSERT(x.m_intent == intent_local || x.m_intent == ASRUtils::intent_unspecified
             || x.m_abi == ASR::abiType::ExternalUndefined);
-        bool external = x.m_abi != ASR::abiType::Source ||
-            x.m_storage == ASR::storage_typeType::ExternalStorage;
+        bool external = x.m_abi != ASR::abiType::Source || x.m_external_storage;
         // BindC variables defined in this module (intent local) are
         // definitions, not external declarations
         if (x.m_abi == ASR::abiType::BindC &&
-                x.m_storage != ASR::storage_typeType::ExternalStorage &&
+                !x.m_external_storage &&
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }

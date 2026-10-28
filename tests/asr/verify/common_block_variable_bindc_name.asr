@@ -53,6 +53,7 @@
               nil
               []
               (SymbolRef 1 "common~blk")
+              false
             )
             "common~blk" (CommonBlock
               1
@@ -146,6 +147,7 @@
               nil
               []
               (SymbolRef 1 "common~blk")
+              false
             )
             "n" (Variable
               1
@@ -172,6 +174,7 @@
               nil
               []
               (SymbolRef 1 "common~blk")
+              false
             )
           }
         )

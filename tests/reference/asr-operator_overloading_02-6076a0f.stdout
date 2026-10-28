@@ -41,6 +41,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             ~assign:
                                 (CustomOperator
@@ -154,6 +155,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -179,6 +181,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer
@@ -251,6 +254,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -276,6 +280,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_gets_integer_use

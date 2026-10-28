@@ -69,6 +69,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -94,6 +95,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     next_token
@@ -161,6 +163,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration
@@ -261,6 +264,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             dot_is_token:
                                                 (Variable
@@ -286,6 +290,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     next_token
@@ -378,6 +383,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -410,6 +416,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     parse_select
@@ -503,6 +510,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -581,6 +589,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             next_token:
                                                 (StructMethodDeclaration

@@ -53,7 +53,7 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                             (asr_owner && ASR::is_a<ASR::symbol_t>(*asr_owner) &&
                              ASR::is_a<ASR::Module_t>(
                                  *ASR::down_cast<ASR::symbol_t>(asr_owner)))) {
-                        v->m_storage = ASR::storage_typeType::ExternalStorage;
+                        v->m_external_storage = true;
                     }
                     break;
                 }

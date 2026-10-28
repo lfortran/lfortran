@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.debug_check_array_bounds.check_extent_type]: the extents a shape check compares must be scalar integer(4)
-   --> tests/asr/verify/debug_check_array_bounds_extent_type.asr:130:32
+   --> tests/asr/verify/debug_check_array_bounds_extent_type.asr:132:32
     |
-130 |                 :right_extent (ArraySize
+132 |                 :right_extent (ArraySize
     |                                ^^^^^^^^^ failed here

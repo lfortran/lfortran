@@ -46,6 +46,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             empty:
                                 (Variable
@@ -86,6 +87,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             simple:
                                 (Variable
@@ -126,6 +128,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             space_at_end:
                                 (Variable
@@ -166,6 +169,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             space_at_start:
                                 (Variable
@@ -206,6 +210,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             space_in_between:
                                 (Variable
@@ -246,6 +251,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -286,6 +292,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     intrinsics_36

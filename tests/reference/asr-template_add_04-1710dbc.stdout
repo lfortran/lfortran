@@ -88,6 +88,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             lfortran_tmp:
                                                                 (Variable
@@ -117,6 +118,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -146,6 +148,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -175,6 +178,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -204,6 +208,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     add_generic
@@ -354,6 +359,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -383,6 +389,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -412,6 +419,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     f
@@ -477,6 +485,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             t:
                                                 (Variable
@@ -506,6 +515,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     add_t
@@ -547,6 +557,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -572,6 +583,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -597,6 +609,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     func_arg_int
@@ -669,6 +682,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -694,6 +708,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -719,6 +734,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     func_arg_real
@@ -800,6 +816,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -829,6 +846,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -858,6 +876,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     f
@@ -927,6 +946,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     r
@@ -963,6 +983,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             add_real:
                                                 (Function
@@ -993,6 +1014,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             lfortran_tmp:
                                                                 (Variable
@@ -1018,6 +1040,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -1043,6 +1066,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -1068,6 +1092,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -1093,6 +1118,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     add_real
@@ -1210,6 +1236,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -1235,6 +1262,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -1260,6 +1288,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -1285,6 +1314,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     test_template

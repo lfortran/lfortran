@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             lfortran_iomsg1:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             lfortran_iomsg2:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             line:
                                 (Variable
@@ -106,6 +109,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -131,6 +135,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     test_backspace_01

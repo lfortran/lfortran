@@ -2,7 +2,7 @@
     "basename": "asr-pointer_array_descriptor-5dd33d2",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/pointer_array_descriptor.asr",
-    "infile_hash": "a3ad567c595c944f646a574a37caa95286114501f35cda859c69312e",
+    "infile_hash": "cc3f7dd4aa29fd27517066906e1cdbc858c65aa84c9c386364c49de9",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

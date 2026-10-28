@@ -79,6 +79,7 @@
               nil
               []
               (SymbolRef 1 "common~views")
+              false
             )
             "s" (Variable
               1
@@ -105,6 +106,7 @@
               nil
               []
               nil
+              false
             )
             "z" (Variable
               1
@@ -131,6 +133,7 @@
               nil
               []
               (SymbolRef 1 "common~zero")
+              false
             )
           }
         )
@@ -384,6 +387,7 @@
               nil
               []
               (SymbolRef 2 "common~views")
+              false
             )
             "j" (Variable
               2
@@ -422,6 +426,7 @@
               nil
               []
               (SymbolRef 2 "common~views")
+              false
             )
             "z" (Variable
               2
@@ -460,6 +465,7 @@
               nil
               []
               (SymbolRef 2 "common~zero")
+              false
             )
           }
         )
@@ -510,6 +516,7 @@
               nil
               []
               (SymbolRef 3 "common~views")
+              false
             )
             "j" (Variable
               3
@@ -536,6 +543,7 @@
               nil
               []
               (SymbolRef 3 "common~views")
+              false
             )
             "s" (Variable
               3
@@ -562,6 +570,7 @@
               nil
               []
               nil
+              false
             )
           }
         )

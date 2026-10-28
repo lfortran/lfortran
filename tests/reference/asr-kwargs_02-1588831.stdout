@@ -58,6 +58,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -88,6 +89,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -113,6 +115,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     add_log_file
@@ -187,6 +190,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             filename:
                                                 (Variable
@@ -212,6 +216,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -242,6 +247,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -267,6 +273,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     log_io_error

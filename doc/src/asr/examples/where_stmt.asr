@@ -53,6 +53,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "mask" (Variable
               :parent_symtab 1
@@ -101,6 +102,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
           }
         )

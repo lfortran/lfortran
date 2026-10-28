@@ -117,6 +117,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -170,6 +171,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     derived_types_08
@@ -402,6 +404,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -427,6 +430,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             sh:
                                                 (Variable
@@ -460,6 +464,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -485,6 +490,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -510,6 +516,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     initialize_subrout
@@ -637,6 +644,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             width:
                                                 (Variable
@@ -662,6 +670,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     rectangle
@@ -715,6 +724,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -740,6 +750,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             initialize:
                                                 (StructMethodDeclaration
@@ -776,6 +787,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -801,6 +813,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     shape

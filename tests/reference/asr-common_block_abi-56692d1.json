@@ -2,12 +2,12 @@
     "basename": "asr-common_block_abi-56692d1",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_abi.asr",
-    "infile_hash": "f7bcf26d4569774edea782283d8d60a2591d6a567f66c8e915f63c9e",
+    "infile_hash": "8d790f92485e1ecd8f002d75c132077e175be40ab9bde3ab3ffcf8ea",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-common_block_abi-56692d1.stderr",
-    "stderr_hash": "07206660f1df8bc88d05c3139432742bde883674a6c1580783213744",
+    "stderr_hash": "c5ddb79eabd3704cf2510d96010399387b7cf08ae12efc1b684f5fed",
     "returncode": 2
 }

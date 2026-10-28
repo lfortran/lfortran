@@ -57,6 +57,7 @@
               :self_argument nil
               :codims []
               :common_block (SymbolRef 1 "common~blk")
+              :external_storage false
             )
             "y" (Variable
               :parent_symtab 1
@@ -83,6 +84,7 @@
               :self_argument nil
               :codims []
               :common_block (SymbolRef 1 "common~zero")
+              :external_storage false
             )
           }
         )
@@ -172,6 +174,7 @@
               :self_argument nil
               :codims []
               :common_block (SymbolRef 2 "common~blk")
+              :external_storage false
             )
             "z" (Variable
               :parent_symtab 2
@@ -210,6 +213,7 @@
               :self_argument nil
               :codims []
               :common_block (SymbolRef 2 "common~zero")
+              :external_storage false
             )
           }
         )

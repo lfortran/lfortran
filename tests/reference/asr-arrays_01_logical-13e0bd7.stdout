@@ -37,6 +37,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -68,6 +69,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -101,6 +103,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -126,6 +129,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -151,6 +155,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     arrays_01_logical

@@ -2,12 +2,12 @@
     "basename": "asr-procedure_argument_interface_mismatch-866ae5e",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/procedure_argument_interface_mismatch.asr",
-    "infile_hash": "fd3082b1b18dfeddb386d841447b0ddca70f7f51851391c3ca49d275",
+    "infile_hash": "1f6505ed6c658e8e0b4396ae28a52334fd304b85a60a7a58ad186a14",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-procedure_argument_interface_mismatch-866ae5e.stderr",
-    "stderr_hash": "96fe10ea964c0c9b9c7ee1142328b43f2d00e206095b652e3f62619b",
+    "stderr_hash": "d8ae9aee7b47dd06e8afc9989bc6a175c27138ddde3b9a3e915e8225",
     "returncode": 2
 }

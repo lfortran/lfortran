@@ -242,12 +242,10 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit(    "%s_t base;" % base, 2);
         args = ["Allocator &al", "const Location &a_loc"]
         lines = []
-        # An optional symbol reference that only defaulted fields follow
-        # defaults to absent, so that appending one to a constructor does not
-        # change its existing callers.
+        # Trailing optional symbols and booleans default to absent and false.
         defaulted = set()
         for f in reversed(cons.fields):
-            if f.type == "location" or (f.type == "symbol" and f.opt
+            if f.type in ("location", "bool") or (f.type == "symbol" and f.opt
                     and not f.seq):
                 defaulted.add(f.name)
             else:
@@ -260,7 +258,8 @@ class ASTNodeVisitor(ASDLVisitor):
                 seq = ""
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
             if f.name in defaulted:
-                args.append("%s a_%s = nullptr" % (type_, f.name))
+                default = "false" if f.type == "bool" else "nullptr"
+                args.append("%s a_%s = %s" % (type_, f.name, default))
             else:
                 args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))

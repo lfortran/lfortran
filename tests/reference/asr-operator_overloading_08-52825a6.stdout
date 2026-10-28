@@ -46,6 +46,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             custom_div:
                                 (ExternalSymbol
@@ -185,6 +186,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -210,6 +212,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -240,6 +243,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     custom_div
@@ -338,6 +342,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     custom_int

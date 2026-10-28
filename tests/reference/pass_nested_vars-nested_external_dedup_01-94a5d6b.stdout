@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __lcompilers_created__nested_context__nested_external_dedup_01__outer_
@@ -75,6 +76,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             a1:
                                                 (ExternalSymbol

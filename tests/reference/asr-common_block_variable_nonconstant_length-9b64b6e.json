@@ -2,7 +2,7 @@
     "basename": "asr-common_block_variable_nonconstant_length-9b64b6e",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_variable_nonconstant_length.asr",
-    "infile_hash": "24f6ece772b6c808ea7ec591784e62ae45ebc8a863a52c437c493778",
+    "infile_hash": "a8db927f1fd690260e13b9f46b2922a68759541b84c5275eac710297",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

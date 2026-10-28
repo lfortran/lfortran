@@ -2,12 +2,12 @@
     "basename": "asr-assignment_move_type_mismatch-e0f2a92",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/assignment_move_type_mismatch.asr",
-    "infile_hash": "95f872104b1cd117df4667c54639bed4f69508486bfb14255d27cffc",
+    "infile_hash": "e2f90073cd86c6cdcb9042c8051251bdd56bdc2487a61ccdfe03780e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-assignment_move_type_mismatch-e0f2a92.stderr",
-    "stderr_hash": "e1b6dd33bcffdb0e6869adec201b9733d18267fdab83062d4f970bad",
+    "stderr_hash": "c8d2e633bed32dae7fac473bbb3f9bae5f2a0e8e743d8dc2e25d405f",
     "returncode": 2
 }

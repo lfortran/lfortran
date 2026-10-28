@@ -37,6 +37,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             all_zeros:
                                 (Variable
@@ -62,6 +63,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             bits_kind:
                                 (ExternalSymbol
@@ -119,6 +121,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     bits_02

@@ -1803,10 +1803,11 @@ public:
                 is_struct = true;
             }
         }
-        if (x.m_storage == ASR::storage_typeType::ExternalStorage) {
+        if (x.m_external_storage) {
             require_id((is_module || ASRUtils::is_tu_scope(symtab)) &&
                     x.m_intent == ASR::intentType::Local &&
-                    x.m_common_block == nullptr,
+                    x.m_common_block == nullptr &&
+                    x.m_storage != ASR::storage_typeType::Parameter,
                 "asr.verify.variable.external_storage",
                 "Variable '" + std::string(x.m_name) +
                     "' with external storage must be a global variable "

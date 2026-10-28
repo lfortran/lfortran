@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -62,6 +63,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i__dc:
                                 (Variable
@@ -87,6 +89,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __lfortran_gpu_kernel_0
@@ -250,6 +253,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -281,6 +285,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -306,6 +311,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i__dc:
                                 (Variable
@@ -331,6 +337,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     gpu_kernel_source_11

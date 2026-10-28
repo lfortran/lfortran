@@ -2,12 +2,12 @@
     "basename": "asr-common_block_variable_view_of_other_scope-adffb3d",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_variable_view_of_other_scope.asr",
-    "infile_hash": "60b61ecc97d717933c2903c77f3dd26e87519ec81bf7104ba0e20269",
+    "infile_hash": "8be27731c8aa144de01e2c17ca56ec74e0e1aaba0b8c5adaa9accef8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-common_block_variable_view_of_other_scope-adffb3d.stderr",
-    "stderr_hash": "e363b76e4c4d01f4860732de395932fcf8a9861b62179caaf5bbe66a",
+    "stderr_hash": "d099e48edf77e961107fe61d76d0f71f4fd659b7c081944dbb0bf995",
     "returncode": 2
 }

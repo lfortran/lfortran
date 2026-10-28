@@ -57,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -108,6 +109,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             ~add:
                                 (CustomOperator
@@ -418,6 +420,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -443,6 +446,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -468,6 +472,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     bin_add
@@ -580,6 +585,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -605,6 +611,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -630,6 +637,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_and

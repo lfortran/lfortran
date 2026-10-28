@@ -35,6 +35,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                   "r" (Variable
                     :parent_symtab 2
@@ -61,6 +62,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                 }
               )
@@ -114,6 +116,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "w" (Variable
               :parent_symtab 3
@@ -147,6 +150,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "word" (ExternalSymbol
               :parent_symtab 3

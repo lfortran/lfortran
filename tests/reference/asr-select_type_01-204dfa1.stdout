@@ -56,6 +56,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     base
@@ -117,6 +118,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             bptr:
                                 (Variable
@@ -149,6 +151,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             child:
                                 (Struct
@@ -179,6 +182,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     child
@@ -230,6 +234,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             perform_select_type:
                                 (Function
@@ -267,6 +272,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block

@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             nml:
                                 (Namelist
@@ -63,6 +64,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __lcompilers_created__nested_context__nested_namelist_01_mod__outer_
@@ -134,6 +136,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             i_nested_ctx:
                                                 (ExternalSymbol
@@ -174,6 +177,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             nml:
                                                                 (ExternalSymbol
@@ -258,6 +262,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             x_nested_ctx:
                                                 (ExternalSymbol

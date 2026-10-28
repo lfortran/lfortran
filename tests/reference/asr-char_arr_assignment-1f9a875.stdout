@@ -37,6 +37,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     char_arr_assignment

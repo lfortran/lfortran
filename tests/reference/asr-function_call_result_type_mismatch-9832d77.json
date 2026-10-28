@@ -2,12 +2,12 @@
     "basename": "asr-function_call_result_type_mismatch-9832d77",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/function_call_result_type_mismatch.asr",
-    "infile_hash": "a29543d61006fabc7396c2a48492f88fec83e4c331f137e4e667f8e5",
+    "infile_hash": "ad6bdccf3d93ee2947a75b9d4ae5d4bb554743882d0c6324414d7a59",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-function_call_result_type_mismatch-9832d77.stderr",
-    "stderr_hash": "8ed47d3f0760dddf1833fcea07b856f1c64df6c2c42adf1450941900",
+    "stderr_hash": "9657171a391804593c783920982acae822061fd310651ff7a73628a2",
     "returncode": 2
 }

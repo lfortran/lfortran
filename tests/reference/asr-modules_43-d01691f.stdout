@@ -60,6 +60,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -148,6 +149,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -179,6 +181,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             sources:
                                                 (Variable
@@ -223,6 +226,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -461,6 +465,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -488,6 +493,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -515,6 +521,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     srcfile_t

@@ -39,6 +39,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             str:
                                 (Variable
@@ -66,6 +67,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             user_data:
                                 (Variable
@@ -99,6 +101,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     string_04

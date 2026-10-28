@@ -37,6 +37,7 @@
                                     ()
                                     []
                                     3 common~sample
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     ()
                                     []
                                     3 common~sample
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -87,6 +89,7 @@
                                     ()
                                     []
                                     3 common~c
+                                    .false.
                                 ),
                             common~:
                                 (CommonBlock
@@ -168,6 +171,7 @@
                                     ()
                                     []
                                     3 common~b
+                                    .false.
                                 ),
                             e:
                                 (Variable
@@ -193,6 +197,7 @@
                                     ()
                                     []
                                     3 common~b
+                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -218,6 +223,7 @@
                                     ()
                                     []
                                     3 common~b
+                                    .false.
                                 ),
                             g:
                                 (Variable
@@ -243,6 +249,7 @@
                                     ()
                                     []
                                     3 common~c
+                                    .false.
                                 ),
                             h:
                                 (Variable
@@ -268,6 +275,7 @@
                                     ()
                                     []
                                     3 common~c
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -299,6 +307,7 @@
                                     ()
                                     []
                                     3 common~sample
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -324,6 +333,7 @@
                                     ()
                                     []
                                     3 common~c
+                                    .false.
                                 ),
                             z1:
                                 (Variable
@@ -349,6 +359,7 @@
                                     ()
                                     []
                                     3 common~
+                                    .false.
                                 ),
                             z2:
                                 (Variable
@@ -374,6 +385,7 @@
                                     ()
                                     []
                                     3 common~
+                                    .false.
                                 )
                         })
                     common3
@@ -463,6 +475,7 @@
                                     ()
                                     []
                                     2 common~sample
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -488,6 +501,7 @@
                                     ()
                                     []
                                     2 common~sample
+                                    .false.
                                 ),
                             common~sample:
                                 (CommonBlock
@@ -527,6 +541,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -558,6 +573,7 @@
                                     ()
                                     []
                                     2 common~sample
+                                    .false.
                                 )
                         })
                     pass

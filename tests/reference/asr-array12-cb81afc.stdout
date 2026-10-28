@@ -76,6 +76,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             cpath:
                                                 (Variable
@@ -109,6 +110,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -136,6 +138,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -163,6 +166,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_current_directory
@@ -296,6 +300,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -321,6 +326,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -348,6 +354,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     getcwd

@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             loop:
                                 (Block
@@ -61,6 +62,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     loop
@@ -168,6 +170,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             result:
                                 (Variable
@@ -193,6 +196,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     square

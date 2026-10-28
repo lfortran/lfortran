@@ -2,7 +2,7 @@
     "basename": "asr-variable_assumed_size_descriptor-84c1148",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/variable_assumed_size_descriptor.asr",
-    "infile_hash": "0479d714458b2392ea47d1337e32692283b46eacc5f97f395c3576e8",
+    "infile_hash": "731245632d2c79c89ac1c4e75186575e3d7fde855f20e2d73f501163",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

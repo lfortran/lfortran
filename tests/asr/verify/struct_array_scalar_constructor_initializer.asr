@@ -84,6 +84,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "t" (Struct
               :symtab (SymbolTable
@@ -126,6 +127,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                 }
               )

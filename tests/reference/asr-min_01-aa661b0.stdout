@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             int_inp2:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_amin0:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_amin1:
                                 (Variable
@@ -106,6 +109,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_dmin1:
                                 (Variable
@@ -131,6 +135,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_min:
                                 (Variable
@@ -156,6 +161,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_min0:
                                 (Variable
@@ -181,6 +187,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_min1:
                                 (Variable
@@ -206,6 +213,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             output_min_different_kinds:
                                 (Variable
@@ -231,6 +239,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp1:
                                 (Variable
@@ -256,6 +265,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp2:
                                 (Variable
@@ -281,6 +291,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp3:
                                 (Variable
@@ -306,6 +317,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp4:
                                 (Variable
@@ -331,6 +343,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp5:
                                 (Variable
@@ -356,6 +369,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real_inp6:
                                 (Variable
@@ -381,6 +395,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     min_min

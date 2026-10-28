@@ -37,6 +37,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -118,6 +119,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             ~gt:
                                 (CustomOperator
@@ -428,6 +430,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -453,6 +456,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -478,6 +482,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     greater_than_inverse
@@ -587,6 +592,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -612,6 +618,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -637,6 +644,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     less_than_inverse
@@ -746,6 +754,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -771,6 +780,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -796,6 +806,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     less_than_overload_use

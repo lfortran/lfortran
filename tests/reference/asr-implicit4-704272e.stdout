@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             idd_random_transf:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             iixs:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             iww:
                                 (Variable
@@ -106,6 +109,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -131,6 +135,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             nsteps:
                                 (Variable
@@ -156,6 +161,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             w:
                                 (Variable
@@ -187,6 +193,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -218,6 +225,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -249,6 +257,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     idd_random_transf

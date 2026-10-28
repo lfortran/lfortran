@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             to_negative:
                                 (GenericProcedure
@@ -168,6 +169,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -193,6 +195,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     to_negative~genericprocedure

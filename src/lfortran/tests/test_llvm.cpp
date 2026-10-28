@@ -561,7 +561,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -603,7 +603,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -2864,6 +2864,44 @@ end module
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 19);
 }
+
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator bind(c) threadprivate global across cells") {
+    namespace ASR = LCompilers::ASR;
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.openmp = true;
+    SUBCASE("normal") {}
+    SUBCASE("fast") { cu.po.fast = true; }
+    SUBCASE("Fortran 2023") { cu.std_f23_conformance = true; }
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(module cell_tls
+use iso_c_binding, only: c_int
+integer(c_int), bind(c) :: cell_tls_counter = 7
+!$omp threadprivate(cell_tls_counter)
+contains
+integer function read_counter()
+    read_counter = cell_tls_counter
+end function
+end module
+)").ok);
+    REQUIRE(e.evaluate2("use cell_tls\n").ok);
+    REQUIRE(e.evaluate2("1+1\n").ok);
+    // ORC's TLS runtime is not available on every host. Check the actual
+    // evaluator's retained ASR here; the two-file integration test executes TLS.
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    auto asr = e.get_asr2("cell_tls_counter = 19\n", lm, diagnostics);
+    REQUIRE(asr.ok);
+    auto *counter = ASR::down_cast<ASR::Variable_t>(
+        LCompilers::ASRUtils::symbol_get_past_external(
+            asr.result->m_symtab->resolve_symbol("cell_tls_counter")));
+    CHECK(counter->m_storage == ASR::storage_typeType::Threadprivate);
+    CHECK(counter->m_abi == ASR::abiType::BindC);
+    CHECK(counter->m_external_storage);
+}
+#endif
 
 TEST_CASE("FortranEvaluator bind(c) global storage persists across cells") {
     CompilerOptions cu;

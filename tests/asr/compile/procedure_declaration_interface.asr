@@ -44,6 +44,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                 }
               )
@@ -124,6 +125,7 @@
               nil
               []
               nil
+              false
             )
           }
         )
@@ -394,6 +396,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                 }
               )
@@ -469,6 +472,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                   "my_wrapper" (Variable
                     5
@@ -495,6 +499,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                   "wrapper_wrapper" (Function
                     (SymbolTable
@@ -525,6 +530,7 @@
                           nil
                           []
                           nil
+                          false
                         )
                       }
                     )

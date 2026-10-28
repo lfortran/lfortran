@@ -60,6 +60,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             srcfile_t:
                                 (ExternalSymbol
@@ -129,6 +130,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __1_t:
                                                 (Variable
@@ -154,6 +156,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             dir_sources:
                                                 (Variable
@@ -198,6 +201,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             exclude_source:
                                                 (Variable
@@ -229,6 +233,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             sources:
                                                 (Variable
@@ -273,6 +278,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -748,6 +754,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -775,6 +782,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -802,6 +810,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     srcfile_t

@@ -241,6 +241,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -266,6 +267,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -297,6 +299,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     mytype
@@ -472,6 +475,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     derived_types_41_mod

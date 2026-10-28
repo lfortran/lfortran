@@ -2,12 +2,12 @@
     "basename": "asr-call_allocatable_mismatch-e5c91d8",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/call_allocatable_mismatch.asr",
-    "infile_hash": "a2a2d700abbb04a29054295fe55e2d52abd91ca491c15507a9ab3e88",
+    "infile_hash": "f75367df69f4f5ec15c71cf8065cf3bb5891f1ab190c7c0c274babe3",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-call_allocatable_mismatch-e5c91d8.stderr",
-    "stderr_hash": "06888154d55a8a92a61e01848ef8529a4ba1c86d06dfd796f8f28fe4",
+    "stderr_hash": "7b516d2e84861b269003b49cdedac12e7cb4e2088246708fe6a544eb",
     "returncode": 2
 }

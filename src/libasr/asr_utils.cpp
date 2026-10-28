@@ -9383,7 +9383,7 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     char* a_bindc_name, bool a_is_volatile, bool a_is_protected,
     ASR::pass_attrType a_pass_attr, char* a_self_argument,
     ASR::codimension_t* a_codims, size_t n_codims,
-    ASR::symbol_t* a_common_block) {
+    ASR::symbol_t* a_common_block, bool a_external_storage) {
     a_type_declaration = import_type_declaration(
         al, a_type_declaration, a_parent_symtab);
     a_type = import_procedure_type(al, a_type, a_parent_symtab);
@@ -9392,7 +9392,8 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
         a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument, a_codims, n_codims, a_common_block
+        a_pass_attr, a_self_argument, a_codims, n_codims, a_common_block,
+        a_external_storage
     );
 }
 
@@ -14271,7 +14272,8 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Variable(ASR::Variable_t* variable,
             variable->m_presence, variable->m_value_attr, variable->m_target_attr,
             variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
             variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument,
-            variable->m_codims, variable->n_codims
+            variable->m_codims, variable->n_codims, nullptr,
+            variable->m_external_storage
         ));
 }
 

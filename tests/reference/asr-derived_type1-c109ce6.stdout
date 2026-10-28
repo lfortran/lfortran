@@ -58,6 +58,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     enum_escape
@@ -128,6 +129,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             tfc:
                                 (Variable
@@ -162,6 +164,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             toml_escape:
                                 (Variable
@@ -216,6 +219,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     derived_type1
