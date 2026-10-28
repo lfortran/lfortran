@@ -1466,6 +1466,8 @@ RUN(NAME format_116 LABELS gfortran llvm)
 RUN(NAME format_117 LABELS gfortran llvm)
 RUN(NAME format_118 LABELS gfortran llvm)
 RUN(NAME format_119 LABELS gfortran llvm)
+# GFortran 16 lacks the F2023 LZ/LZP/LZS descriptors (13.8.5).
+RUN(NAME format_leading_zero LABELS llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

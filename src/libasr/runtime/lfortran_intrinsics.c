@@ -1232,6 +1232,9 @@ static int fmt_snprintf_e(char* buf, size_t size, int prec, fmt_real val,
                     : snprintf(buf, size, "%.*e", prec, (double)val);
 }
 
+static bool should_round_up_digits(const char *digits, int round_pos,
+                                   char rounding_mode, bool is_negative);
+
 // The mantissa of the E editing of G editing for the nonzero `x`, with the
 // scale factor `scale` and `decimals` digits after the decimal point, and
 // its exponent in `*exp`. The digits come from a single conversion of `x`
@@ -1239,21 +1242,39 @@ static int fmt_snprintf_e(char* buf, size_t size, int prec, fmt_real val,
 // the exponent (0.99999 is 0.1000E+01, not 1.0000E+00). Returns false,
 // leaving `buf` and `*exp` unchanged, when no significant digit is shown.
 static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
-                             int decimals, bool extended, int* exp) {
+                             int decimals, bool extended, int* exp,
+                             char rounding_mode) {
     int sig = scale > 0 ? scale + decimals : decimals + scale;
     int needed = scale > 0 ? sig + 3 : decimals + 4;
     if (sig < 1 || sig > 40 || (size_t)needed > size) {
         return false;
     }
     char e[64];
-    fmt_snprintf_e(e, sizeof(e), sig - 1, fmt_fabs(x), extended);
+    bool round_digits = rounding_mode == 'u' || rounding_mode == 'd' ||
+        rounding_mode == 'z' || rounding_mode == 'c';
+    fmt_snprintf_e(e, sizeof(e), round_digits ? 40 : sig - 1, fmt_fabs(x), extended);
     char digits[48];
     int n = 0;
     const char* p = e;
     for (; *p != '\0' && *p != 'e'; p++) {
         if (isdigit((unsigned char)*p)) digits[n++] = *p;
     }
-    if (*p != 'e' || n != sig) return false;
+    if (*p != 'e' || (!round_digits && n != sig)) return false;
+    int exponent = atoi(p + 1) + 1 - scale;
+    if (round_digits) {
+        digits[n] = '\0';
+        if (should_round_up_digits(digits, sig, rounding_mode, signbit(x))) {
+            int i = sig - 1;
+            while (i >= 0 && digits[i] == '9') digits[i--] = '0';
+            if (i >= 0) {
+                digits[i]++;
+            } else {
+                digits[0] = '1';
+                exponent++;
+            }
+        }
+        n = sig;
+    }
     int pos = 0;
     if (x < 0) buf[pos++] = '-';
     if (scale > 0) {
@@ -1267,7 +1288,7 @@ static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
         for (int i = 0; i < n; i++) buf[pos++] = digits[i];
     }
     buf[pos] = '\0';
-    *exp = atoi(p + 1) + 1 - scale;
+    *exp = exponent;
     return true;
 }
 
@@ -1283,7 +1304,22 @@ static int fmt_rounded_decimal_exponent(fmt_real x, int digits, bool extended) {
     return (e != NULL ? atoi(e + 1) : 0) + 1;
 }
 
-void handle_float(FloatFormatType format_type, char* format, fmt_real val, bool extended, int scale, char** result, bool use_sign_plus, char rounding_mode) {
+typedef enum {
+    LEADING_ZERO_PROCESSOR_DEFINED,
+    LEADING_ZERO_PRINT,
+    LEADING_ZERO_SUPPRESS
+} LeadingZeroMode;
+
+static void suppress_leading_zero(char* number) {
+    if (*number == '-' || *number == '+') number++;
+    // At least one fractional digit must remain (F0.0 still needs "0.").
+    if (number[0] == '0' && number[1] == '.' &&
+            isdigit((unsigned char)number[2])) {
+        memmove(number, number + 1, strlen(number));
+    }
+}
+
+void handle_float(FloatFormatType format_type, char* format, fmt_real val, bool extended, int scale, char** result, bool use_sign_plus, char rounding_mode, LeadingZeroMode leading_zero) {
     if (format_type == FLOAT_FORMAT_F64) {
         char* float_str = (char*)internal_malloc(64 * sizeof(char));
         format_double_fortran(float_str, (double)val * pow(10, scale));
@@ -1405,7 +1441,10 @@ void handle_float(FloatFormatType format_type, char* format, fmt_real val, bool 
                         sign_plus_exist ;
 
     bool drop_leading_zero = false;
-    if (integer_part == 0.0 && width > 0 && total_length > width) {
+    if (integer_part == 0.0 &&
+            ((leading_zero == LEADING_ZERO_SUPPRESS && decimal_digits > 0) ||
+             (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED &&
+              width > 0 && total_length > width))) {
         drop_leading_zero = true;
         total_length -= 1;
     }
@@ -1428,7 +1467,9 @@ void handle_float(FloatFormatType format_type, char* format, fmt_real val, bool 
     if (is_negative) {
         strcat(formatted_value, "-");
     }
-    if (integer_part == 0.0 && (drop_leading_zero || (decimal_part != 0 && format[1] == '0'))) {
+    if (integer_part == 0.0 && (drop_leading_zero ||
+            (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED &&
+             decimal_part != 0 && format[1] == '0'))) {
         // Omit the leading zero
     } else {
         strcat(formatted_value, int_str);
@@ -1669,6 +1710,62 @@ static bool should_round_up_digits(const char *digits, int round_pos,
     return digits[round_pos] >= '5';
 }
 
+static char* fmt_g_fixed(fmt_real x, int decimals, bool extended,
+                         char rounding_mode) {
+    bool round_digits = rounding_mode == 'u' || rounding_mode == 'd' ||
+        rounding_mode == 'z' || rounding_mode == 'c';
+    int conversion_decimals = decimals;
+    if (round_digits) {
+        // A nonzero value selected for G's fixed form is at least 0.05 in
+        // magnitude. At most mantissa_bits + 4 fractional decimal digits
+        // therefore give its exact binary value, retaining every sticky digit.
+        int exact_decimals = (extended ? LDBL_MANT_DIG : DBL_MANT_DIG) + 4;
+        if (conversion_decimals < exact_decimals) conversion_decimals = exact_decimals;
+    }
+    int len = fmt_snprintf_f(NULL, 0, true, conversion_decimals, fmt_fabs(x), extended);
+    char* number = (char*)internal_malloc(len + 2);
+    fmt_snprintf_f(number, len + 1, true, conversion_decimals, fmt_fabs(x), extended);
+    if (round_digits && conversion_decimals > decimals) {
+        int end = (int)(strchr(number, '.') - number) + 1 + decimals;
+        bool round_up = should_round_up_digits(number, end, rounding_mode, signbit(x));
+        number[end] = '\0';
+        if (round_up) {
+            int i = end - 1;
+            while (i >= 0) {
+                if (number[i] == '.') {
+                    i--;
+                } else if (number[i] == '9') {
+                    number[i--] = '0';
+                } else {
+                    number[i]++;
+                    break;
+                }
+            }
+            if (i < 0) {
+                memmove(number + 1, number, strlen(number) + 1);
+                number[0] = '1';
+            }
+        }
+    }
+    return number;
+}
+
+static int fmt_directed_decimal_exponent(fmt_real x, int digits, bool extended,
+                                         char rounding_mode) {
+    char buf[64];
+    fmt_snprintf_e(buf, sizeof(buf), 40, fmt_fabs(x), extended);
+    char* e = strchr(buf, 'e');
+    int exponent = atoi(e + 1) + 1;
+    *e = '\0';
+    memmove(buf + 1, buf + 2, strlen(buf + 2) + 1);
+    if (should_round_up_digits(buf, digits, rounding_mode, signbit(x))) {
+        int i = 0;
+        while (i < digits && buf[i] == '9') i++;
+        if (i == digits) exponent++;
+    }
+    return exponent;
+}
+
 static long long pow10_ll(int n) {
     long long result = 1;
     for (int i = 0; i < n; i++) {
@@ -1697,7 +1794,7 @@ static long long round_scaled_digits(const char *digits, int drop_digits,
 }
 
 void handle_decimal(char* format, fmt_real val, bool extended, int scale, char** result, char* c,
-                    bool is_signed_plus, char rounding_mode) {
+                    bool is_signed_plus, char rounding_mode, LeadingZeroMode leading_zero) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
@@ -1848,7 +1945,8 @@ void handle_decimal(char* format, fmt_real val, bool extended, int scale, char**
         }
         width = sign_width + digits + FIXED_CHARS_LENGTH + exp_length;
     }
-    if (digits > width - FIXED_CHARS_LENGTH) {
+    if (digits > width - FIXED_CHARS_LENGTH +
+            (leading_zero == LEADING_ZERO_SUPPRESS ? 1 : 0)) {
         goto overflow;
     }
     int val_str_len = (int)strlen(val_str);
@@ -2021,6 +2119,21 @@ void handle_decimal(char* format, fmt_real val, bool extended, int scale, char**
     // formatted_value = "  1.12E" or "  1.12" (if E dropped)
     strcat(formatted_value, exponent);
     // formatted_value = "  1.12E+10" or "  1.12+100" (if E dropped)
+
+    if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED) {
+        char* number = formatted_value;
+        while (*number == ' ') number++;
+        memmove(formatted_value, number, strlen(number) + 1);
+        if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(formatted_value);
+        int length = (int)strlen(formatted_value);
+        if (width_digits == 0) width = length;
+        if (length > width) goto overflow;
+        for (int i = length; i < width; i++) {
+            *result = append_to_string(*result, " ");
+        }
+        *result = append_to_string(*result, formatted_value);
+        return;
+    }
 
     if (strlen(formatted_value) > width) {
         size_t formatted_len = strlen(formatted_value);
@@ -2418,9 +2531,25 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     comma_seen = false;
                 }
                 break;
+            case 'l' :
+                if (tolower(cformat[index + 1]) == 'z') {
+                    if (last_was_descriptor && !comma_seen) {
+                        fprintf(stderr, "Error: Missing comma between descriptors in format string\n");
+                        exit(1);
+                    }
+                    start = index;
+                    index += 2;
+                    if (tolower(cformat[index]) == 'p' ||
+                            tolower(cformat[index]) == 's') index++;
+                    format_values_2[format_values_count++] = substring(cformat, start, index);
+                    index--;
+                    last_was_descriptor = true;
+                    comma_seen = false;
+                    break;
+                }
+                // fall through
             case 'i' :
             case 'f' :
-            case 'l' :
             case 'g' :
             case 'o' :
             case 'z' :
@@ -4297,10 +4426,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
         case 2: rounding_mode = 'd'; break;  // DOWN
         case 3: rounding_mode = 'z'; break;  // ZERO
         case 4: rounding_mode = 'n'; break;  // NEAREST
-        case 5: rounding_mode = 'n'; break;  // COMPATIBLE (treated as nearest)
+        case 5: rounding_mode = 'c'; break;  // COMPATIBLE
         default: rounding_mode = 'n'; break; // PROCESSOR_DEFINED -> nearest
     }
     int scale = 0;
+    LeadingZeroMode leading_zero = LEADING_ZERO_PROCESSOR_DEFINED;
     // Track the end of actual content per record (for trailing blank trimming).
     // X edit descriptors advance position but don't produce content, so trailing
     // blanks from X should be trimmed from the output record.
@@ -4424,21 +4554,27 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     result[result_extent] = '\0';
                 }
                 result_len = new_pos;
+            } else if (tolower(value[0]) == 'l' && tolower(value[1]) == 'z') {
+                leading_zero = tolower(value[2]) == 'p' ? LEADING_ZERO_PRINT :
+                    tolower(value[2]) == 's' ? LEADING_ZERO_SUPPRESS :
+                    LEADING_ZERO_PROCESSOR_DEFINED;
             } else if (tolower(value[0]) == 's') {
                 is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 'r') {
-                // Rounding mode descriptors (RU, RD, RN, RZ)
+                // Rounding mode descriptors (RU, RD, RN, RZ, RC, RP)
                 if (strlen(value) >= 2) {
                     char mode = tolower(value[1]);
                     if (mode == 'u') {
                         rounding_mode = 'u';
                     } else if (mode == 'd') {
                         rounding_mode = 'd';
-                    } else if (mode == 'n') {
+                    } else if (mode == 'n' || mode == 'p') {
                         rounding_mode = 'n';
                     } else if (mode == 'z') {
                         rounding_mode = 'z';
+                    } else if (mode == 'c') {
+                        rounding_mode = 'c';
                     }
                 }
             } else if (tolower(value[0]) == 'd' && strlen(value) == 2 &&
@@ -4899,7 +5035,51 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             rounded_exp = precision > 0
                                 ? fmt_rounded_decimal_exponent(real_val, precision, extended)
                                 : fmt_floor_log10(fmt_fabs(real_val), extended) + 1;
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    precision > 0 && rounding_mode != 'n') {
+                                rounded_exp = fmt_directed_decimal_exponent(
+                                    real_val, precision, extended, rounding_mode);
+                            }
                         }
+                        if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED && has_dot &&
+                                isfinite(real_val) && (real_val == 0.0 ||
+                                (rounded_exp >= 0 && rounded_exp <= precision))) {
+                            // G's fixed form reserves exponent blanks after the F field.
+                            int trailing = width > 0 ?
+                                (exp_digits > 0 ? exp_digits + 2 : 4) : 0;
+                            char* field = (char*)internal_malloc(1);
+                            field[0] = '\0';
+                            if (width > 0 && width <= trailing) {
+                                for (int j = 0; j < width; j++) field = append_to_string(field, "*");
+                                trailing = 0;
+                            } else {
+                                int k = real_val == 0.0 ? 1 : rounded_exp;
+                                int decimals = precision > k ? precision - k : 0;
+                                char* number = fmt_g_fixed(real_val, decimals, extended, rounding_mode);
+                                if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(number);
+                                const char* sign = signbit(real_val) ? "-" : (is_SP_specifier ? "+" : "");
+                                int len = (int)strlen(number) + (int)strlen(sign);
+                                int core_width = width > 0 ? width - trailing : len;
+                                if (len > core_width) {
+                                    for (int j = 0; j < core_width; j++) field = append_to_string(field, "*");
+                                } else {
+                                    for (int j = len; j < core_width; j++) field = append_to_string(field, " ");
+                                    field = append_to_string(field, sign);
+                                    field = append_to_string(field, number);
+                                }
+                                internal_free(number);
+                            }
+                            if (strchr(field, '*') != NULL) {
+                                for (int j = 0; j < trailing; j++) field = append_to_string(field, "*");
+                            } else {
+                                for (int j = 0; j < trailing; j++) field = append_to_string(field, " ");
+                            }
+                            apply_decimal_edit_mode(field, decimal_mode);
+                            int64_t field_len = strlen(field);
+                            result = write_to_result_at_pos(al, result, &result_extent, result_len, field, field_len);
+                            result_len += field_len;
+                            internal_free(field);
+                        } else {
                         if (isnan(real_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(real_val)) {
@@ -4917,6 +5097,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 format_double_fortran(formatted, (double)real_val);
                             } else {
                                 format_long_double_fortran(formatted, real_val);
+                            }
+                            if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(formatted);
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    is_SP_specifier && !signbit(real_val) && isfinite(real_val)) {
+                                memmove(formatted + 1, formatted, strlen(formatted) + 1);
+                                formatted[0] = '+';
                             }
                         } else if (real_val == 0.0 || (rounded_exp >= 0 && rounded_exp <= precision)) {
                             // G format F-mode: use F(w-n).(d-k) followed by n blanks
@@ -4951,7 +5137,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             if (adjusted_precision < 0) adjusted_precision = 0;
                             char mantissa[64], exponent[16];
                             if (!fmt_g_e_mantissa(mantissa, sizeof(mantissa), real_val,
-                                    scale, adjusted_precision, extended, &exp)) {
+                                    scale, adjusted_precision, extended, &exp,
+                                    leading_zero == LEADING_ZERO_PROCESSOR_DEFINED ? 'n' : rounding_mode)) {
                                 fmt_real final_val = fmt_mul_pow10(real_val, -exp, extended);
                                 fmt_snprintf_f(mantissa, sizeof(mantissa), false, adjusted_precision, final_val, extended);
                             }
@@ -4961,12 +5148,21 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 if (exp_width < 2) exp_width = 2;
                                 if (exp_width > 9) exp_width = 9;
                                 snprintf(exponent, sizeof(exponent), "E%+0*d", exp_width, exp);
+                            } else if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (exp >= 100 || exp <= -100)) {
+                                snprintf(exponent, sizeof(exponent), "%+04d", exp);
                             } else if (width > 0) {
                                 snprintf(exponent, sizeof(exponent), "E%+03d", exp);
                             } else {
                                 snprintf(exponent, sizeof(exponent), "E%+d", exp);
                             }
                             snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                            if (leading_zero == LEADING_ZERO_SUPPRESS) suppress_leading_zero(formatted);
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    is_SP_specifier && !signbit(real_val)) {
+                                memmove(formatted + 1, formatted, strlen(formatted) + 1);
+                                formatted[0] = '+';
+                            }
                             if (exp_digits <= 0 && width > 0 && (exp >= 1000 || exp <= -1000)) {
                                 // Without Ee the exponent has at most three digits;
                                 // only a real(10) value can need more.
@@ -4976,19 +5172,28 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             }
                             // Strip leading zero if result overflows field width
                             // e.g., "0.85734E+08" (11 chars) -> ".85734E+08" (10 chars)
-                            if (width > 0 && (int)strlen(formatted) > width) {
+                            if (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (int)strlen(formatted) > width) {
                                 if (formatted[0] == '0' && formatted[1] == '.') {
                                     memmove(formatted, formatted + 1, strlen(formatted));
                                 } else if (formatted[0] == '-' && formatted[1] == '0' && formatted[2] == '.') {
                                     memmove(formatted + 1, formatted + 2, strlen(formatted) - 1);
                                 }
                             }
+                            if (leading_zero != LEADING_ZERO_PROCESSOR_DEFINED &&
+                                    width > 0 && (int)strlen(formatted) > width) {
+                                int stars = width < (int)sizeof(formatted) ? width : (int)sizeof(formatted) - 1;
+                                memset(formatted, '*', stars);
+                                formatted[stars] = '\0';
+                            }
                         }
                         int len = (int)strlen(formatted);
                         int effective_width = width;
                         // For G format F-mode, reduce effective width by n blanks
                         // n = e+2 if explicit Ee, otherwise n = 4
-                        bool is_f_mode = (strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL);
+                        bool is_f_mode = (strchr(formatted, 'E') == NULL && strchr(formatted, 'e') == NULL) &&
+                            (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED || real_val == 0.0 ||
+                             (rounded_exp >= 0 && rounded_exp <= precision));
                         if (is_f_mode && width > 0) {
                             int n_blanks = (exp_digits > 0) ? exp_digits + 2 : 4;
                             if (width > n_blanks) {
@@ -5032,6 +5237,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, buffer, buf_len);
                         result_len += buf_len;
+                        }
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
@@ -5054,7 +5260,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_decimal(value, real_val, extended, scale, &temp_buf, "D", is_SP_specifier, rounding_mode);
+                    handle_decimal(value, real_val, extended, scale, &temp_buf, "D", is_SP_specifier, rounding_mode, leading_zero);
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -5074,7 +5280,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (format_type == 'n') {
                         handle_en(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier);
                     } else {
-                        handle_decimal(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier, rounding_mode);
+                        handle_decimal(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier, rounding_mode,
+                            (format_type == 's' || format_type == 'x') ?
+                                LEADING_ZERO_PROCESSOR_DEFINED : leading_zero);
                     }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
@@ -5091,7 +5299,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     } else {
                         float_fmt_type = FLOAT_FORMAT_CUSTOM;
                     }
-                    handle_float(float_fmt_type, value, real_val, extended, scale, &temp_buf, is_SP_specifier, rounding_mode);
+                    handle_float(float_fmt_type, value, real_val, extended, scale, &temp_buf, is_SP_specifier, rounding_mode, leading_zero);
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -14073,6 +14281,21 @@ static void process_fmt_items_read(InputSource *inputSource,
             if (next == 'C' || next == 'P') {
                 *decimal_mode = (next == 'C') ? 1 : 0;
                 fmt_pos++;
+                continue;
+            }
+        }
+
+        if (spec == 'L') {
+            int next_pos = fmt_pos;
+            while (next_pos < fmt_len && fmt[next_pos] == ' ') next_pos++;
+            if (next_pos < fmt_len && toupper(fmt[next_pos]) == 'Z') {
+                next_pos++;
+                while (next_pos < fmt_len && fmt[next_pos] == ' ') next_pos++;
+                if (next_pos < fmt_len &&
+                        (toupper(fmt[next_pos]) == 'P' || toupper(fmt[next_pos]) == 'S')) {
+                    next_pos++;
+                }
+                fmt_pos = next_pos;
                 continue;
             }
         }
