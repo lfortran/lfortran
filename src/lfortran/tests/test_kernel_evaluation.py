@@ -494,6 +494,7 @@ def check_interrupt_cleanup(lfortran, arguments=()):
                 client.start_channels()
                 client.wait_for_ready(timeout=30)
                 check(client, """module interrupt_resources
+use iso_c_binding, only: c_int, c_float
 integer :: finalized = 0, final_sum = 0
 real, allocatable :: kept(:)
 type owner
@@ -570,6 +571,15 @@ subroutine churn(forever)
         text = spin_text(.false.) // spin_text(.false.)
     end do
 end subroutine
+integer(c_int) function c_spin(forever, a) bind(c)
+    integer(c_int), value :: forever
+    real(c_float), allocatable, intent(out) :: a(:)
+    allocate(a(10))
+    a = 3
+    do while (forever /= 0)
+    end do
+    c_spin = 7
+end function
 end module""", [])
                 check(client, "use interrupt_resources", [])
                 check(client, "integer :: saved", [])
@@ -606,6 +616,7 @@ end module""", [])
                                     ("saved=spin_result(.true.)", 2),
                                     ("saved=len(spin_text(.true.))", 2),
                                     ("call churn(.true.)", 2),
+                                    ("saved=c_spin(1,kept)", 2),
                                     ("call outer(.true.)", 3)):
                     check(client, "call keep()", [])
                     running = client.execute(code, stop_on_error=False)

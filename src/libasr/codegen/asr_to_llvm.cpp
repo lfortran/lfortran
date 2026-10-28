@@ -28728,23 +28728,33 @@ public:
             args = convert_call_args(x, false);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                auto call_bindc = [&]() {
+                    auto *result = builder->CreateCall(fn, args);
+                    if (interrupt_scope && !emitting_interrupt_cleanup) {
+                        // Transfer descriptor ownership before cancellation can
+                        // leave this frame; the callee may have allocated it.
+                        apply_cfi_array_writebacks();
+                        emit_interrupt_check(true);
+                    }
+                    return result;
+                };
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = checked_integer_cast<int>(down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     if (a_kind == 8) {
                         if (compiler_options.platform == Platform::Windows) {
                             tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
-                            create_interruptible_call(fn, args);
+                            call_bindc();
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
-                            tmp = create_interruptible_call(fn, args);
+                            tmp = call_bindc();
                         }
                     } else {
-                        tmp = create_interruptible_call(fn, args);
+                        tmp = call_bindc();
                     }
                 } else {
-                    tmp = create_interruptible_call(fn, args);
+                    tmp = call_bindc();
                 }
                 apply_cfi_array_writebacks();
             } else {
