@@ -76,13 +76,17 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         return;
     }
 
-    std::string update_name(std::string curr_name) {
+    // A `global` name is that of a global procedure, which does not depend
+    // on the module or the procedures that declare its interface.
+    std::string update_name(std::string curr_name, bool global = false) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
         } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
             // mangle intrinsic functions
             uint64_t hash = get_hash(current_scope->asr_owner);
             return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
+        } else if (global) {
+            return curr_name + "_" + lcompilers_unique_ID_separate_compilation;
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";
@@ -96,21 +100,14 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 
     // An interface of an external procedure (an interface body, an
     // `external` statement or an implicit interface) refers to a global
-    // procedure, so it is named like the global procedure itself, whatever
-    // module or procedure declares the interface.
+    // procedure, so it is named like the global procedure itself. The same
+    // holds for the interface of a dummy procedure and an abstract interface,
+    // whose names are not linked.
     bool is_external_procedure_interface(const ASR::FunctionType_t *f_type) {
         return ASRUtils::is_declaration_deftype(f_type->m_deftype)
             && f_type->m_abi != ASR::abiType::Intrinsic
             && f_type->m_abi != ASR::abiType::BindC
             && !f_type->m_module;
-    }
-
-    std::string update_global_name(const std::string &curr_name) {
-        if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran")
-                || startswith(curr_name, "_lcompilers_")) {
-            return update_name(curr_name);
-        }
-        return curr_name + "_" + lcompilers_unique_ID_separate_compilation;
     }
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -184,8 +181,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if (bindc_mangling || f_type->m_abi != ASR::abiType::BindC) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             if (all_symbols_mangling || should_mangle) {
-                sym_to_renamed[sym] = is_external_procedure_interface(f_type)
-                    ? update_global_name(x.m_name) : update_name(x.m_name);
+                sym_to_renamed[sym] = update_name(x.m_name,
+                    is_external_procedure_interface(f_type));
             }
             if ( fortran_mangling ) {
                 if ( sym_to_renamed.find(sym) != sym_to_renamed.end()
