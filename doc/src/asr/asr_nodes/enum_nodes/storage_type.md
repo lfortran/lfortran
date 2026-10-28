@@ -7,7 +7,7 @@ How a variable's storage behaves.
 ### Syntax
 
 ```text
-storage_type = Default | Save | Parameter | Threadprivate
+storage_type = Default | Save | Parameter | Threadprivate | ExternalStorage
 ```
 
 ### Values
@@ -18,6 +18,7 @@ storage_type = Default | Save | Parameter | Threadprivate
 | `Save` | the `save` attribute: the variable keeps its value between calls, so it is allocated statically. |
 | `Parameter` | a named constant. Its `value` is required and is substituted wherever the name is used, so it needs no storage at all. |
 | `Threadprivate` | a module variable with a separate persistent instance for each thread. |
+| `ExternalStorage` | a global declaration whose storage is defined in another translation unit, independently of its ABI. |
 
 ### Return values
 
@@ -34,6 +35,16 @@ expression.
 retaining the module variable's lifetime and declaration initializer, and
 is preserved in module files. LLVM emits thread-local globals, including
 imported declarations. The C and C++ backends report this storage as unsupported.
+
+`ExternalStorage` refers to existing storage without allocating or initializing
+it again. It preserves the variable's ABI, binding label and type. For example,
+a `BindC` global defined in an earlier interactive cell retains its C name and
+layout when a later cell declares it. Local character descriptors may provide
+views of that external C storage without redefining it.
+
+This state is restricted to module or translation-unit variables with `Local`
+intent and no `common_block`; dummy arguments, derived-type components and
+COMMON members do not have independent global storage to declare this way.
 
 ## See Also
 
