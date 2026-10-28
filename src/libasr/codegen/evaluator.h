@@ -103,7 +103,6 @@ public:
     void save_object_file(llvm::Module &m, const std::string &filename);
     void create_empty_object_file(const std::string &filename);
     void opt(llvm::Module &m);
-    void instrument_interrupts(llvm::Module &m);
     static void check_interrupt();
     static std::string module_to_string(llvm::Module &m);
     static void print_version_message();

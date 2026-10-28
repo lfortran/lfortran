@@ -29,16 +29,26 @@ inspection (including `--interactive-parse` and `%%showllvm`) do not add these
 checks. Executed cells receive them before LLVM optimization, including in
 `--fast` mode.
 
-The checks poll at basic-block entries and after calls. A pending
-interrupt returns normally through generated callers, then raises
+The checks poll at initialized statement and loop boundaries and before a
+caller consumes a function result. A pending interrupt leaves enclosing
+BLOCK/ASSOCIATE constructs and finalizes procedure-owned locals and temporary
+storage using the same scope cleanup as normal returns. Cleanup, including
+user final subroutines, temporarily masks further checks without clearing the
+pending interrupt; session-global and saved allocations remain live.
+Declaration initialization is also an atomic region: cancellation waits until
+the scope's descriptors have been initialized. Result propagation checks only
+an interruption already observed by the callee, so a newly arriving interrupt
+cannot strand a successfully returned allocation before the caller owns it.
+The interrupt returns normally through generated callers, then raises
 `EvaluationInterrupted` at the C++ JIT invocation boundary. `execute()` reports
 `KeyboardInterrupt` and unwinds its ordinary output-capture and runtime-hook
 guards. No signal handler unwinds generated or C++ frames.
 
 `FortranEvaluator::request_interrupt()` is lock-free and may be called by the
 kernel's SIGINT handler or Xeus's separate control thread. The built-in
-kernel services its control socket through `CellIO::poll_interrupt`, without
-executing queued cells reentrantly. Runtime callback installation lasts only
+kernel services its control socket through `CellIO::poll_interrupt`, retaining
+other control requests for dispatch after execution rather than dropping them
+or executing queued cells reentrantly. Runtime callback installation lasts only
 for the cell. `execute_command_line` polls the same callback while waiting;
 on interruption it terminates the owned process group (a job on Windows) and
 reaps the command before returning. Ordinary compiled programs retain their

@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 #include <stdarg.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "hashtable.h"
@@ -66,16 +67,41 @@ static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
 static int (*interrupt_callback)(void *);
 static void *interrupt_context;
+// Like the installed hooks, these belong to the single active cell.
+// Masking cleanup does not acknowledge or clear a pending interruption.
+static unsigned interrupt_cleanup_depth;
+static int interrupt_in_progress;
 
 LFORTRAN_API void _lfortran_set_interrupt_callback(int (*callback)(void *), void *context)
 {
     interrupt_callback = callback;
     interrupt_context = context;
+    interrupt_in_progress = 0;
 }
 
 LFORTRAN_API int _lfortran_check_interrupt(void)
 {
-    return interrupt_callback ? interrupt_callback(interrupt_context) : 0;
+    if (interrupt_cleanup_depth) return 0;
+    if (!interrupt_in_progress && interrupt_callback) {
+        interrupt_in_progress = interrupt_callback(interrupt_context) != 0;
+    }
+    return interrupt_in_progress;
+}
+
+LFORTRAN_API int _lfortran_is_interrupting(void)
+{
+    return !interrupt_cleanup_depth && interrupt_in_progress;
+}
+
+LFORTRAN_API void _lfortran_begin_interrupt_cleanup(void)
+{
+    interrupt_cleanup_depth++;
+}
+
+LFORTRAN_API void _lfortran_end_interrupt_cleanup(void)
+{
+    assert(interrupt_cleanup_depth > 0);
+    interrupt_cleanup_depth--;
 }
 static char *stdin_record;
 static size_t stdin_record_length, stdin_record_pos;

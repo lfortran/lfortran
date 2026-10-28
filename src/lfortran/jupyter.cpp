@@ -1923,6 +1923,8 @@ class Kernel {
     // Set while the execute_requests that wait behind a failed cell are
     // aborted
     bool aborting = false;
+    // Peers stay owned by control_ until this queue is drained, before prune().
+    std::deque<std::pair<Peer *, Message>> deferred_control;
 
 public:
     Kernel(FortranEvaluator &e, const std::string &key, Endpoint &shell, Endpoint &control,
@@ -1981,6 +1983,15 @@ public:
     }
 
 private:
+    void drain_control()
+    {
+        while (!stopping && !deferred_control.empty()) {
+            auto next = std::move(deferred_control.front());
+            deferred_control.pop_front();
+            handle(*next.first, next.second);
+        }
+    }
+
     // Handles the requests read from the connections of `endpoint`.
     void handle_received(Endpoint &endpoint)
     {
@@ -1989,7 +2000,12 @@ private:
             std::vector<std::string> frames;
             while (!stopping && peer.next(frames)) {
                 Message request;
-                if (decode(frames, key, request)) handle(peer, request);
+                if (decode(frames, key, request)) {
+                    handle(peer, request);
+                    // Finish deferred control work before starting another
+                    // queued cell, but not inside stop_on_error queue abort.
+                    if (!aborting) drain_control();
+                }
             }
         }
     }
@@ -2181,7 +2197,11 @@ private:
                 if (!decode(frames, key, request)) continue;
                 // Never re-enter the evaluator through the control channel.
                 if (request.type() == "interrupt_request" ||
-                        request.type() == "shutdown_request") handle(*peer, request);
+                        request.type() == "shutdown_request") {
+                    handle(*peer, request);
+                } else {
+                    deferred_control.emplace_back(peer.get(), std::move(request));
+                }
             }
         }
         if (stopping || stop_requested) FortranEvaluator::request_interrupt();

@@ -424,6 +424,9 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(fchar *name
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_set_interrupt_callback(int (*callback)(void *), void *context);
 LFORTRAN_API int _lfortran_check_interrupt(void);
+LFORTRAN_API int _lfortran_is_interrupting(void);
+LFORTRAN_API void _lfortran_begin_interrupt_cleanup(void);
+LFORTRAN_API void _lfortran_end_interrupt_cleanup(void);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
 LFORTRAN_API int32_t _lfortran_get_command_status(int32_t command_len, int32_t length);

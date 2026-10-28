@@ -1493,11 +1493,15 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #endif
 
     // ASR -> LLVM
+    bool cancellation = false;
+#ifndef __EMSCRIPTEN__
+    cancellation = enable_cancellation;
+#endif
     std::unique_ptr<LCompilers::LLVMModule> m;
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             ctx, target_config, al, pass_manager,
-            compiler_options, run_fn, "", infile, lm);
+            compiler_options, run_fn, "", infile, lm, cancellation);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -1505,13 +1509,6 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         return res.error;
     }
 
-#ifndef __EMSCRIPTEN__
-    // Interactive parsing is also used to inspect and compile files. Only
-    // code being prepared for JIT execution needs cancellation safepoints.
-    if (enable_cancellation) {
-        get_llvm_evaluator().instrument_interrupts(*m->m_m);
-    }
-#endif
     if (compiler_options.po.fast) {
 #ifndef __EMSCRIPTEN__
         auto t1 = std::chrono::high_resolution_clock::now();

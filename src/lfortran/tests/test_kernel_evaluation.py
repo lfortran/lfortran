@@ -121,6 +121,7 @@ def main():
     args = parser.parse_args()
     if args.interrupt_only:
         check_interrupts(args.lfortran, args.kernel_arg)
+        check_interrupt_cleanup(args.lfortran, args.kernel_arg)
         return
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
@@ -227,6 +228,7 @@ def main():
         directory.rmdir()
     check_stop_flushes(args.lfortran)
     check_interrupts(args.lfortran)
+    check_interrupt_cleanup(args.lfortran)
 
 
 def check_interrupts(lfortran, arguments=()):
@@ -269,6 +271,18 @@ def check_interrupts(lfortran, arguments=()):
                             break
                         assert time.monotonic() < deadline, "cell did not start"
                     time.sleep(.5)
+                    info_id = ""
+                    control_execute_id = ""
+                    if managed:
+                        info = client.session.msg("kernel_info_request", content={})
+                        info_id = info["header"]["msg_id"]
+                        client.control_channel.send(info)
+                        deferred = client.session.msg("execute_request", content={
+                            "code": "saved+3", "stop_on_error": False})
+                        control_execute_id = deferred["header"]["msg_id"]
+                        client.control_channel.send(deferred)
+                        # Give the running cell's safepoint pump time to read it.
+                        time.sleep(.1)
                     if "sleep 30" in code:
                         deadline = time.monotonic() + 10
                         while not child_pid.exists() and time.monotonic() < deadline:
@@ -285,6 +299,9 @@ def check_interrupts(lfortran, arguments=()):
                     queued = client.execute("saved+1", stop_on_error=False)
                     replies, idle, values, streams = {}, set(), [], []
                     acknowledged = by_signal
+                    info_replied = not managed
+                    control_executed = not managed
+                    control_values = []
                     deadline = time.monotonic() + 8
                     while time.monotonic() < deadline:
                         for channel in ("shell", "control", "iopub"):
@@ -296,6 +313,13 @@ def check_interrupts(lfortran, arguments=()):
                             kind, content = msg["msg_type"], msg["content"]
                             if parent == interrupt_id and kind == "interrupt_reply":
                                 acknowledged = content["status"] == "ok"
+                            if parent == info_id and kind == "kernel_info_reply":
+                                info_replied = content["status"] == "ok"
+                            if parent == control_execute_id:
+                                if kind == "execute_reply":
+                                    control_executed = content["status"] == "ok"
+                                elif kind == "execute_result":
+                                    control_values.append(content["data"]["text/plain"])
                             if parent not in (running, queued):
                                 continue
                             if kind == "execute_reply":
@@ -306,8 +330,14 @@ def check_interrupts(lfortran, arguments=()):
                                 values.append(content["data"]["text/plain"])
                             elif kind == "stream" and parent == running:
                                 streams.append(content["text"])
-                        if acknowledged and len(replies) == len(idle) == 2:
+                        if (acknowledged and info_replied and control_executed
+                                and (not managed or control_values == ["45"])
+                                and len(replies) == len(idle) == 2):
                             break
+                    assert info_replied, ("control request lost during execution", managed, code)
+                    assert control_executed, ("deferred control execution lost", managed, code)
+                    if managed:
+                        assert control_values == ["45"], control_values
                     assert acknowledged, ("interrupt not serviced", managed, code, replies)
                     assert replies.get(running, {}).get("ename") == "KeyboardInterrupt", replies
                     assert replies.get(queued, {}).get("status") == "ok", replies
@@ -442,6 +472,183 @@ def check_stop_flushes(lfortran):
         connection.unlink(missing_ok=True)
         log.unlink(missing_ok=True)
         directory.rmdir()
+
+
+def check_interrupt_cleanup(lfortran, arguments=()):
+    """Cancellation ends owned scopes, not the session's allocations."""
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-cleanup-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection, log = directory / "connection.json", directory / "kernel.log"
+        client = process = None
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, "--detect-leaks", *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection))
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, """module interrupt_resources
+integer :: finalized = 0, final_sum = 0
+real, allocatable :: kept(:)
+type owner
+    real, allocatable :: data(:)
+contains
+    final :: finish
+end type
+interface
+    subroutine report() bind(c, name="dbg_report")
+    end subroutine
+end interface
+contains
+subroutine keep()
+    allocate(kept(10))
+    kept = 3
+end subroutine
+subroutine release()
+    deallocate(kept)
+end subroutine
+subroutine finish(x)
+    type(owner), intent(inout) :: x
+    integer :: j
+    finalized = finalized + 1
+    do j = 1, 100
+        final_sum = final_sum + j
+    end do
+end subroutine
+subroutine report_leaks()
+    call report()
+end subroutine
+subroutine work(forever)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(1024))
+    a = 1.0
+    do while (forever)
+    end do
+end subroutine
+subroutine outer(forever)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(512))
+    block
+        type(owner) :: b
+        real :: scratch(4096)
+        allocate(b%data(128))
+        scratch = 2
+        associate(view => a)
+            if (size(view) /= 512) error stop
+            call work(forever)
+        end associate
+    end block
+end subroutine
+integer function spin_result(forever) result(value)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(1024))
+    do while (forever)
+    end do
+    value = 7
+end function
+function spin_text(forever) result(value)
+    logical, intent(in) :: forever
+    character(:), allocatable :: value
+    value = 'pending'
+    do while (forever)
+    end do
+end function
+subroutine churn(forever)
+    logical, intent(in) :: forever
+    character(:), allocatable :: text
+    text = 'initial'
+    do while (forever)
+        text = spin_text(.false.) // spin_text(.false.)
+    end do
+end subroutine
+end module""", [])
+                check(client, "use interrupt_resources", [])
+                check(client, "integer :: saved", [])
+                check(client, "saved=42", [])
+                check(client, "call outer(.false.)", [])
+                check(client, "len(spin_text(.false.))", ["7"])
+                check(client, "finalized", ["1"])
+
+                def no_leaks():
+                    request = client.execute("call report_leaks()")
+                    text = ""
+                    idle = False
+                    deadline = time.monotonic() + 10
+                    while time.monotonic() < deadline:
+                        try:
+                            msg = client.get_iopub_msg(timeout=.1)
+                        except queue.Empty:
+                            assert process.poll() is None, ("leak reporter exited", text)
+                            continue
+                        if msg["parent_header"].get("msg_id") != request:
+                            continue
+                        if msg["msg_type"] == "stream":
+                            text += msg["content"]["text"]
+                        if (msg["msg_type"] == "status"
+                                and msg["content"]["execution_state"] == "idle"):
+                            idle = True
+                            break
+                    assert idle and "NO LEAKS FOUND" in text, text
+                    assert process.poll() is None, text
+
+                no_leaks()
+                for code, count in (("call work(.true.)", 1),
+                                    ("call outer(.true.)", 2),
+                                    ("saved=spin_result(.true.)", 2),
+                                    ("saved=len(spin_text(.true.))", 2),
+                                    ("call churn(.true.)", 2),
+                                    ("call outer(.true.)", 3)):
+                    check(client, "call keep()", [])
+                    running = client.execute(code, stop_on_error=False)
+                    while True:
+                        msg = client.get_iopub_msg(timeout=10)
+                        if (msg["parent_header"].get("msg_id") == running
+                                and msg["msg_type"] == "execute_input"):
+                            break
+                    time.sleep(.5)
+                    client.control_channel.send(client.session.msg("interrupt_request", content={}))
+                    deadline = time.monotonic() + 10
+                    while True:
+                        msg = client.get_shell_msg(timeout=max(.1, deadline-time.monotonic()))
+                        if msg["parent_header"].get("msg_id") == running:
+                            assert msg["content"]["ename"] == "KeyboardInterrupt", msg
+                            break
+                        assert time.monotonic() < deadline, "interrupted cell did not return"
+                    check(client, "saved+1", ["43"])
+                    check(client, "int(sum(kept))", ["30"])
+                    check(client, "call release()", [])
+                    check(client, "finalized", [str(count)])
+                    check(client, "final_sum", [str(count * 5050)])
+                    no_leaks()
+                client.shutdown()
+                assert process.wait(timeout=10) == 0
+                print("interrupt cleanup: %s %s passed" %
+                      ("builtin" if managed else "default", list(arguments)), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            if client:
+                client.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
+            directory.rmdir()
 
 
 if __name__ == "__main__":
