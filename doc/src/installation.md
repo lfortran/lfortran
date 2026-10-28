@@ -511,6 +511,14 @@ Now the `lf` environment has the `lfortran` compiler available, you can start th
 interactive prompt by executing `lfortran`, or see the command line options using
 `lfortran -h`.
 
+On Windows, if launching the Conda-installed `lfortran` reports
+`zstd.dll was not found`, install `zstd` from conda-forge in the same activated
+`lf` environment, then try launching `lfortran` again:
+
+```bash
+conda install -c conda-forge zstd
+```
+
 #### Note about Conda Installation
 
 When installing LFortran using Conda, multiple copies of the `lfortran`
