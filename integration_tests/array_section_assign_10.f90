@@ -3,7 +3,27 @@
 ! is defined (issue #16105): shifted, reversed, differently subscripted or
 ! vector-subscripted references, elements, reductions and other
 ! non-elementwise intrinsics of the target, array constructors, function
-! references, pointers, associate names, EQUIVALENCE and WHERE.
+! references, pointers, associate names, EQUIVALENCE, COMMON and WHERE.
+module array_section_assign_10_c1
+    implicit none
+    real :: ca(4)
+    common /asa10/ ca
+end module
+
+module array_section_assign_10_c2
+    implicit none
+    ! cc(1:3) shares the storage of ca(2:4)
+    real :: cw, cc(3)
+    common /asa10/ cw, cc
+end module
+
+module array_section_assign_10_eq
+    implicit none
+    ! nq shares the storage of iq(3)
+    integer :: iq(6), nq
+    equivalence (nq, iq(3))
+end module
+
 module array_section_assign_10_mod
     implicit none
     real :: vm(5)
@@ -55,13 +75,17 @@ end module
 
 program array_section_assign_10
     use array_section_assign_10_mod
+    use array_section_assign_10_c1
+    use array_section_assign_10_c2
+    use array_section_assign_10_eq
     implicit none
     integer, parameter :: n = 5
     real :: a(n,n), a0(n,n), v(n), v0(n), x(n), mat(n,n), w(n)
     real, target :: t(n)
     real, pointer :: p(:)
-    real :: e1(6), e2(6)
+    real :: e1(6), e2(6), f1(6), f2(5)
     equivalence (e1, e2)
+    equivalence (f1(2), f2(1))
     integer :: idx(3), i, j, k
     logical :: msk(n)
     type(dense_t) :: s
@@ -226,6 +250,40 @@ program array_section_assign_10
     e1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
     e1(1:5) = e1(1:5) + e2(2:6)
     if (any(e1 /= [3.0, 5.0, 7.0, 9.0, 11.0, 6.0])) error stop 32
+    e1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    e2(1:5) = e2(1:5) + e1(2:6)
+    if (any(e1 /= [3.0, 5.0, 7.0, 9.0, 11.0, 6.0])) error stop 34
+    e1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    e1 = e1 + e2
+    if (any(e1 /= 2.0*[1.0, 2.0, 3.0, 4.0, 5.0, 6.0])) error stop 35
+    ! f1(2:6) and f2 share their storage
+    f1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    f1(2:6) = f1(2:6) + f2(1:5)
+    if (any(f1 /= [1.0, 4.0, 6.0, 8.0, 10.0, 12.0])) error stop 36
+    f1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    f1(1:5) = f1(1:5) + f2(1:5)
+    if (any(f1 /= [3.0, 5.0, 7.0, 9.0, 11.0, 6.0])) error stop 37
+    f1 = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    f2 = f2 + f1(2:6)
+    if (any(f1 /= [1.0, 4.0, 6.0, 8.0, 10.0, 12.0])) error stop 38
+    ! EQUIVALENCE in a module: a subscript shares the storage of the target
+    iq = [1, 2, 3, 4, 5, 6]
+    iq(1:nq) = iq(1:nq) + 10
+    if (any(iq /= [11, 12, 13, 4, 5, 6])) error stop 39
+    iq = [1, 2, 3, 4, 5, 6]
+    iq(nq:6) = iq(nq:6) * 2
+    if (any(iq /= [1, 2, 6, 8, 10, 12])) error stop 40
+
+    ! COMMON views with different layouts in two modules
+    ca = [1.0, 10.0, 100.0, 1000.0]
+    ca(2:4) = ca(2:4) + cc(1:3)
+    if (any(ca /= [1.0, 20.0, 200.0, 2000.0])) error stop 41
+    ca = [1.0, 10.0, 100.0, 1000.0]
+    cc(1:2) = cc(1:2) + ca(3:4)
+    if (any(ca /= [1.0, 110.0, 1100.0, 1000.0])) error stop 42
+    ca = [1.0, 10.0, 100.0, 1000.0]
+    call common_shift()
+    if (any(ca /= [1.0, 11.0, 110.0, 1100.0])) error stop 43
 
     ! WHERE
     v = x
@@ -233,5 +291,13 @@ program array_section_assign_10
     where (msk) v = v + v(n:1:-1)
     if (any(v /= [6.0, 6.0, 3.0, 6.0, 6.0])) error stop 33
 
-    print *, sum(a), sum(v), sum(t), sum(e1)
+    print *, sum(a), sum(v), sum(t), sum(e1), sum(f1), sum(ca)
 end program
+
+! The same COMMON block as array_section_assign_10_c1, by another name
+subroutine common_shift()
+    implicit none
+    real :: h(4)
+    common /asa10/ h
+    h(2:4) = h(2:4) + h(1:3)
+end subroutine

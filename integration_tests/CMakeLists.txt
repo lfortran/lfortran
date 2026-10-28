@@ -5994,6 +5994,7 @@ RUN(NAME array_section_assign_10 LABELS gfortran llvm)
 RUN(NAME array_section_assign_11 LABELS gfortran llvm)
 RUN(NAME array_section_assign_12 LABELS gfortran llvm)
 RUN(NAME array_section_assign_13 LABELS gfortran llvm)
+RUN(NAME array_section_assign_14 LABELS llvm)
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_item_in_bounds_02 LABELS gfortran)
 

@@ -2413,13 +2413,53 @@ bool is_reevaluable_section_subscript(ASR::expr_t* x) {
     }
 }
 
+// The storage that the EQUIVALENCE view `var` is initialized to the
+// address of, if it is one: a pointer, or, in a module, a scalar of
+// non-pointer type
+ASR::expr_t* get_equivalenced_storage(const ASR::Variable_t* var) {
+    ASR::expr_t* init = var->m_symbolic_value;
+    if( init && ASR::is_a<ASR::BitCast_t>(*init) ) {
+        init = ASR::down_cast<ASR::BitCast_t>(init)->m_source;
+    }
+    return init && ASR::is_a<ASR::GetPointer_t>(*init) ?
+        ASR::down_cast<ASR::GetPointer_t>(init)->m_arg : nullptr;
+}
+
+// Whether another variable may share the storage of `var` by storage
+// association: `var` is in a common block, as a member or placed there by
+// EQUIVALENCE (the view of the same block in another scoping unit,
+// accessible by host or use association, is a different variable), it is
+// an EQUIVALENCE view of the storage of another variable (see
+// get_equivalenced_storage), or a variable of its scoping unit is such a
+// view of the storage of `var`. The first two cases are what
+// is_storage_associated checks in the fix of #16215.
+bool may_be_storage_associated(const ASR::Variable_t* var) {
+    if( var->m_common_block != nullptr || get_equivalenced_storage(var) ) {
+        return true;
+    }
+    for( auto& item: var->m_parent_symtab->get_scope() ) {
+        if( !ASR::is_a<ASR::Variable_t>(*item.second) ) {
+            continue;
+        }
+        ASR::expr_t* storage = get_equivalenced_storage(
+            ASR::down_cast<ASR::Variable_t>(item.second));
+        ASR::symbol_t* storage_root = storage ? get_root_var(storage) : nullptr;
+        if( storage_root &&
+            ASRUtils::symbol_get_past_external(storage_root) == &var->base ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // The variable whose storage the array assignment target `target` (`v`,
 // `v(...)`, `s%c`, `s%c(...)`, `s%t(k)%c(...)`) is part of, with
 // `component` set to its last component, if any. It is nullptr unless every
 // element of the target is reached only through that variable: the
-// variable is neither a pointer, nor a target, nor an associate name, no
-// component on the way is a pointer, only the last component is an array
-// and every subscript is reevaluable (no vector subscripts), see
+// variable is neither a pointer, nor a target, nor an associate name, nor
+// storage associated (see may_be_storage_associated), no component on the
+// way is a pointer, only the last component is an array and every
+// subscript is reevaluable (no vector subscripts), see
 // is_reevaluable_designator.
 ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
         ASR::symbol_t*& component) {
@@ -2456,7 +2496,8 @@ ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
                     ASRUtils::is_pointer(variable->m_type) ||
                     (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
                      ASR::is_a<ASR::AssociateBlock_t>(
-                        *ASR::down_cast<ASR::symbol_t>(owner))) ) {
+                        *ASR::down_cast<ASR::symbol_t>(owner))) ||
+                    may_be_storage_associated(variable) ) {
                     return nullptr;
                 }
                 return sym;
