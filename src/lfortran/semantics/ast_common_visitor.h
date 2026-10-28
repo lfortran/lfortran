@@ -3509,7 +3509,7 @@ public:
         }
     }
 
-    // An integer expression built only from constants and named constants
+    // An expression built only from constants and named constants
     // is a constant expression even when a named constant has no value yet
     // (a deferred template parameter, which is folded at instantiation).
     bool is_named_constant_expr(ASR::expr_t* expr) {
@@ -3532,6 +3532,10 @@ public:
             case ASR::exprType::IntegerUnaryMinus: {
                 return is_named_constant_expr(
                     ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+            }
+            case ASR::exprType::StringLen: {
+                return is_named_constant_expr(
+                    ASR::down_cast<ASR::StringLen_t>(expr)->m_arg);
             }
             case ASR::exprType::Cast: {
                 return is_named_constant_expr(
