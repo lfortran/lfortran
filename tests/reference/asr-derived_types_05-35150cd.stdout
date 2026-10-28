@@ -473,7 +473,7 @@
                     .true.
                     ()
                 ),
-            stdlib_string_type_constructor:
+            derived_types_05_stdlib_string_type@stdlib_string_type_constructor:
                 (Module
                     (SymbolTable
                         8
@@ -919,7 +919,7 @@
                                     Public
                                 )
                         })
-                    stdlib_string_type_constructor
+                    derived_types_05_stdlib_string_type@stdlib_string_type_constructor
                     derived_types_05_stdlib_string_type
                     [derived_types_05_stdlib_string_type]
                     .false.
