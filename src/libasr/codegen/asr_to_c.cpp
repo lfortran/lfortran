@@ -1561,8 +1561,14 @@ R"(    // Initialise Numpy
                 out += indent + p_func + "(" + src + ");\n";
                 continue;
             }
-            tmp_gen +=c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(*(str_fmt->m_args[i])));
-            v.push_back(src);
+            if (ASR::is_a<ASR::Logical_t>(*value_type) && !ASRUtils::is_array(value_type)) {
+                // Fortran list-directed output prints a logical as T or F
+                tmp_gen += "%s";
+                v.push_back("(" + src + ") ? \"T\" : \"F\"");
+            } else {
+                tmp_gen +=c_ds_api->get_print_type(value_type, ASR::is_a<ASR::ArrayItem_t>(*(str_fmt->m_args[i])));
+                v.push_back(src);
+            }
             if (ASR::is_a<ASR::Complex_t>(*value_type)) {
                 v.pop_back();
                 v.push_back("creal(" + src + ")");
