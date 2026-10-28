@@ -581,6 +581,13 @@ void set_allocation_dims_elemental_function(
     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(elemental_function->m_type);
     allocate_dims.reserve(al, n_dims);
     ASR::expr_t* first_array_arg = get_first_array_function_args(elemental_function);
+    // A fused argument is scalarized later; size its array operand, not
+    // the elemental expression that will become a scalar function call.
+    ASR::expr_t* shape_arg = ASRUtils::get_expr_size_expr(
+        ASRUtils::get_past_array_physical_cast(first_array_arg));
+    if (shape_arg != nullptr) {
+        first_array_arg = shape_arg;
+    }
     // Set allocate_dims
     for( size_t i = 0; i < n_dims; i++ ) {
         ASR::dimension_t allocate_dim;
