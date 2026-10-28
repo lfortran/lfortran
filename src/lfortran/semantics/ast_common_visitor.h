@@ -22978,9 +22978,11 @@ public:
     // get_transformed_function_call), which a module cannot name either, so
     // a copy filed in a module calls a copy of the getter in that module.
     // Any other procedure of the translation unit that the declarations
-    // call cannot be copied, so neither can they.
+    // call cannot be copied, so neither can they; the first such procedure
+    // is then named in `file_procedure`, when given.
     ASR::symbol_t* make_interface_copy(ASR::Function_t* fn, SymbolTable* scope,
-            const std::string& name, std::string* cyclic_module = nullptr) {
+            const std::string& name, std::string* cyclic_module = nullptr,
+            std::string* file_procedure = nullptr) {
         // The entities of `fn` that the declarations of its dummy arguments
         // and of its result name, directly or through each other.
         class ReferencedEntities : public ASR::BaseWalkVisitor<ReferencedEntities> {
@@ -22996,8 +22998,8 @@ public:
             }
             // The getters of the translation unit that the declarations call.
             std::set<ASR::symbol_t*> getters;
-            // Whether they call another procedure of the translation unit.
-            bool calls_file_procedure = false;
+            // Another procedure of the translation unit that they call.
+            ASR::symbol_t* file_procedure = nullptr;
             void add(ASR::symbol_t* s) {
                 if (s != nullptr && ASRUtils::symbol_parent_symtab(s) == symtab
                         && found.insert(s).second) {
@@ -23014,8 +23016,8 @@ public:
                         && ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(x.m_name))) {
                     if (getter_functions.find(x.m_name) != getter_functions.end()) {
                         getters.insert(x.m_name);
-                    } else {
-                        calls_file_procedure = true;
+                    } else if (file_procedure == nullptr) {
+                        file_procedure = x.m_name;
                     }
                 }
                 ASR::BaseWalkVisitor<ReferencedEntities>::visit_FunctionCall(x);
@@ -23055,7 +23057,10 @@ public:
             referenced.pending.pop_back();
             referenced.visit_symbol(*s);
         }
-        if (referenced.calls_file_procedure) {
+        if (referenced.file_procedure != nullptr) {
+            if (file_procedure != nullptr) {
+                *file_procedure = ASRUtils::symbol_name(referenced.file_procedure);
+            }
             return nullptr;
         }
         SymbolTable* iface_scope = al.make_new<SymbolTable>(scope);
@@ -23190,9 +23195,9 @@ public:
         if (sym_scope->get_symbol(fn->m_name) != nullptr) {
             return proc;
         }
-        std::string cyclic_module;
+        std::string cyclic_module, file_procedure;
         ASR::symbol_t* iface = make_interface_copy(fn, sym_scope, fn->m_name,
-            &cyclic_module);
+            &cyclic_module, &file_procedure);
         if (iface == nullptr) {
             if (compiler_options.implicit_interface) {
                 // As if the procedure were defined in another file, but
@@ -23202,16 +23207,24 @@ public:
                 return opaque;
             }
             std::string module_name = enclosing_module(current_scope)->m_name;
-            std::string reason = cyclic_module.empty()
-                ? std::string("cannot be copied into the module")
-                : "names an entity of the module '" + cyclic_module
+            std::string reason = "cannot be copied into the module";
+            std::string help = "help: use --implicit-interface to reference it "
+                "through an implicit interface";
+            if (!cyclic_module.empty()) {
+                reason = "names an entity of the module '" + cyclic_module
                     + "', which uses '" + module_name + "'";
+            } else if (!file_procedure.empty()) {
+                // The declarations of the procedure are not conforming:
+                // a specification function needs an explicit interface.
+                reason = "calls the procedure '" + file_procedure
+                    + "', which has an implicit interface";
+                help = "help: give '" + file_procedure + "' an explicit interface in '"
+                    + std::string(fn->m_name) + "', or use --implicit-interface";
+            }
             diag.add(Diagnostic("referencing the external procedure '"
                 + std::string(fn->m_name) + "' in the module '" + module_name
                 + "' without an explicit interface is not supported yet when its interface "
-                + reason, Level::Error, Stage::Semantic, {Label("help: use "
-                    "--implicit-interface to reference it through an implicit interface",
-                    {loc})}));
+                + reason, Level::Error, Stage::Semantic, {Label(help, {loc})}));
             throw SemanticAbort();
         }
         external_procedure_definitions[iface] = proc;

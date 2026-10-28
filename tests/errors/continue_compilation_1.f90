@@ -3849,7 +3849,7 @@ module cc1_file_fn_iface_m
 contains
     subroutine cc1_file_fn_iface_call(a)
         real :: a(6)
-        call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface cannot be copied into the module
+        call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
     end subroutine
 end module cc1_file_fn_iface_m
 
