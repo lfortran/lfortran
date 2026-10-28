@@ -439,14 +439,16 @@ int prompt(bool verbose, const std::string &connect,
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
+    // Before the line editor changes the terminal, which Ctrl-C restores
+    LCompilers::LFortran::jupyter::handle_interrupt();
     std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
     std::string connection_file = connect;
     try {
         if (connect.empty()) {
-            // The kernel stops when its last client disconnects, which may
-            // be after the prompt exits.
+            // This prompt ends the kernel on the way out, including while
+            // another client is connected.
             kernel = LCompilers::LFortran::jupyter::Client::start(
-                LCompilers::binary_executable_path, arguments, true, connection_file);
+                LCompilers::binary_executable_path, arguments, connection_file);
         } else {
             kernel = std::make_unique<LCompilers::LFortran::jupyter::Client>(connect);
         }
@@ -2842,6 +2844,13 @@ int main_app(int argc, char *argv[]) {
 
     if (kernel) {
 #if defined(HAVE_LFORTRAN_XEUS) || defined(HAVE_LFORTRAN_LLVM)
+        if (kernel.count("--parent") > 0 && (opts.arg_kernel_parent <= 0
+                || !LCompilers::LFortran::jupyter::stop_with_parent(
+                    opts.arg_kernel_parent, opts.arg_kernel_f))) {
+            std::cerr << "error: process " << opts.arg_kernel_parent
+                << " is not the parent of this kernel" << std::endl;
+            return 1;
+        }
         return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
             opts.arg_kernel_managed);
 #else

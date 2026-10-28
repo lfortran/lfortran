@@ -9,6 +9,10 @@ using LCompilers::LFortran::jupyter::Client;
 bool (Client::*volatile execute_cell)(const std::string &, bool) = &Client::execute;
 void (Client::*volatile show_cells)() = &Client::show_others;
 int (Client::*volatile status)(int) = &Client::kernel_status;
+bool (*volatile parent)(long long, const std::string &)
+    = &LCompilers::LFortran::jupyter::stop_with_parent;
+void (*volatile started)() = &LCompilers::LFortran::jupyter::kernel_started;
+void (*volatile interrupt)() = &LCompilers::LFortran::jupyter::handle_interrupt;
 #ifndef HAVE_LFORTRAN_XEUS
 int (*volatile kernel)(const std::string &, LCompilers::CompilerOptions &, bool)
     = &LCompilers::LFortran::run_kernel;
@@ -23,7 +27,7 @@ int main()
     }
     std::string connection;
     try {
-        Client::start("unused", {}, true, connection);
+        Client::start("unused", {}, connection);
         return 2;
     } catch (const std::runtime_error &) {
     }

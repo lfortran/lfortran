@@ -1,8 +1,10 @@
 """A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
 that misbehave: large output, connections that stall, a client that leaves
-during a READ, before the others or during a cell that does not end, cells
-queued behind a failing one, cells that stop the kernel, and `lfortran -v`.
-Each case runs against whichever kernel is built."""
+during a READ, a prompt that ends the kernel it started, a prompt killed or
+hung up on, also during a cell that does not return or a READ, cells queued
+behind a failing one, cells that stop the kernel, `lfortran -v`, and a kernel
+told that another process is its parent. Each case runs against whichever
+kernel is built."""
 
 import argparse
 import contextlib
@@ -15,6 +17,7 @@ import shutil
 import signal
 import socket
 import subprocess
+import sys
 import time
 import uuid
 
@@ -147,9 +150,9 @@ def prompt(exe, cwd, arguments=(), stdin=b"", timeout=60, status=0):
     return result.stdout + result.stderr
 
 
-def started_prompt(exe, cwd):
+def started_prompt(exe, cwd, preexec_fn=None):
     """A prompt that starts its kernel, and the kernel's connection file"""
-    process = subprocess.Popen([exe, "--no-color"], cwd=cwd,
+    process = subprocess.Popen([exe, "--no-color"], cwd=cwd, preexec_fn=preexec_fn,
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out = b""
     while True:
@@ -169,6 +172,47 @@ def wait_removed(connection, timeout=30):
     while connection.exists() and time.monotonic() < deadline:
         time.sleep(0.05)
     return not connection.exists()
+
+
+def stopped_listening(port, timeout=30):
+    """True once nothing accepts connections on `port`."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            socket.create_connection(("127.0.0.1", port), timeout=1).close()
+        except OSError:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.1)
+
+
+def children_of(parent):
+    """`(pid, command)` of each direct child of `parent`, on POSIX."""
+    if os.name != "posix":
+        return []
+    out = subprocess.check_output(
+        ["ps", "-axww", "-o", "ppid=,pid=,command="], text=True)
+    found = []
+    for line in out.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) >= 2 and parts[0] == str(parent):
+            found.append((int(parts[1]), parts[2] if len(parts) > 2 else ""))
+    return found
+
+
+def kill_pid(pid):
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
+def terminate_with_kernel(process):
+    """SIGTERM to the prompt and its kernel at once, as `pkill lfortran`"""
+    for pid, _ in children_of(process.pid):
+        os.kill(pid, signal.SIGTERM)
+    process.terminate()
 
 
 def large_output(exe, cwd):
@@ -274,61 +318,188 @@ def late_stdin(exe, cwd):
 
 
 def prompt_departure(exe, cwd):
-    """The kernel a prompt starts goes on while others use it, whether the
-    prompt exits or is killed, and stops after its last client leaves."""
-    for kill in [False, True]:
-        process, connection = started_prompt(exe, cwd)
-        client = None
-        try:
-            client = connect(connection)
-            check(run(client, "integer :: kept = 3")[0]["status"] == "ok", "declaration failed")
-            if kill:
-                process.kill()
-                process.wait()
-            else:
-                process.communicate(b"\x04", timeout=60)
-                check(process.returncode == 0, "the prompt failed")
-            check(value(client, "kept + 1") == "4", "the kernel stopped with the prompt")
+    """The prompt that started the kernel ends it on the way out, including
+    while another client is connected, and removes the connection file.
+    The kernel also stops with a prompt that is killed or hung up on, which
+    cannot end it. A prompt that only joined leaves the kernel alone."""
+    process, connection = started_prompt(exe, cwd)
+    client = None
+    kernel_pids = []
+    try:
+        heartbeat = json.loads(connection.read_text())["hb_port"]
+        if os.name == "posix":
+            children = [(pid, command) for pid, command in children_of(process.pid)
+                if "kernel" in command.split()]
+            check(children, "the prompt started no kernel")
+            kernel_pids = [pid for pid, _ in children]
+            check(all("--managed" not in command for _, command in children),
+                "the prompt passed --managed:\n"
+                + "\n".join(command for _, command in children))
+        client = connect(connection)
+        check(run(client, "integer :: kept = 3")[0]["status"] == "ok", "declaration failed")
+        # Leave the client connected. The kernel still ends with the prompt,
+        # so do not evaluate through it afterwards.
+        process.communicate(b"\x04", timeout=60)
+        check(process.returncode == 0, "the prompt failed")
+        check(wait_removed(connection), "the prompt left the connection file")
+        check(stopped_listening(heartbeat), "the kernel still listens")
+        kernel_pids = []
+    finally:
+        if client:
             client.stop_channels()
-            client = None
-            check(wait_removed(connection), "the kernel did not stop after its last client")
+        if process.poll() is None:
+            kernel_pids.extend(pid for pid, command in children_of(process.pid)
+                if "kernel" in command.split())
+            process.kill()
+            process.wait()
+        for pid in kernel_pids:
+            kill_pid(pid)
+
+    # A prompt that cannot end the kernel itself, as when it is killed or its
+    # terminal closes: the kernel stops with it and removes the connection
+    # file, also while another client is connected. So does a kernel that
+    # ends by itself first, as the built-in one does in a READ whose prompt
+    # has gone.
+    kill = lambda process: process.kill()
+    endings = [("killed", None, None, kill),
+        ("killed during a READ", b"read *, kept\r", None, kill)]
+    if os.name == "posix":
+        endings += [("hung up", None, None,
+                lambda process: process.send_signal(signal.SIGHUP)),
+            ("terminated with its kernel", None, None, terminate_with_kernel),
+            # The kernel inherits what the prompt ignores or blocks.
+            ("killed while ignoring SIGTERM", None,
+                lambda: signal.signal(signal.SIGTERM, signal.SIG_IGN), kill),
+            ("killed while blocking SIGTERM", None,
+                lambda: signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM}), kill)]
+    for how, cell, preexec_fn, end in endings:
+        process, connection = started_prompt(exe, cwd, preexec_fn)
+        client = None
+        kernel_pids = children_of(process.pid)
+        try:
+            heartbeat = json.loads(connection.read_text())["hb_port"]
+            client = connect(connection)
+            check(run(client, "integer :: kept = 3")[0]["status"] == "ok",
+                "declaration failed")
+            if cell:
+                process.stdin.write(cell)
+                process.stdin.flush()
+                time.sleep(2)
+                check(process.poll() is None and connection.exists(), "the cell ended")
+            end(process)
+            process.wait(timeout=20)
+            check(wait_removed(connection), "the kernel of a prompt %s left the connection file"
+                % how)
+            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+            kernel_pids = []
         finally:
             if client:
                 client.stop_channels()
             if process.poll() is None:
                 process.kill()
                 process.wait()
+            for pid, _ in kernel_pids:
+                kill_pid(pid)
+
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        check(run(client, "integer :: n = 1")[0]["status"] == "ok", "declaration failed")
+        out = prompt(exe, cwd, ["--connect", ports["path"]], b"6*7\r\x04")
+        check(re.search(rb"^42\r?$", out, re.M),
+            "a joined prompt failed:\n" + out.decode(errors="replace"))
+        check(value(client, "n + 1") == "2", "a joined prompt ended the kernel")
 
 
 def prompt_killed_in_cell(exe, cwd):
-    """The kernel a prompt starts stops, removing its connection file, when
-    the prompt is killed (Ctrl-C) during a cell that does not end and no
-    other client is connected."""
-    process, connection = started_prompt(exe, cwd)
+    """The kernel ends during a cell that does not return, and the connection
+    file is removed, when the prompt that started it gets Ctrl-C or is
+    killed."""
+    endings = [("killed", lambda process: process.kill(), None)]
+    if os.name == "posix":
+        # The prompt ends by SIGINT, as without its handler.
+        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
+            -signal.SIGINT))
+    for how, end, status in endings:
+        process, connection = started_prompt(exe, cwd)
+        kernel_pids = children_of(process.pid)
+        try:
+            heartbeat = json.loads(connection.read_text())["hb_port"]
+            process.stdin.write(b"do while (.true.); end do\r")
+            process.stdin.flush()
+            time.sleep(2)
+            check(process.poll() is None and connection.exists(), "the cell ended")
+            end(process)
+            process.wait(timeout=20)
+            if status is not None:
+                check(process.returncode == status, "%s exited with %s"
+                    % (how, process.returncode))
+            check(wait_removed(connection), "a prompt %s left the connection file" % how)
+            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+            kernel_pids = []
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.wait()
+            for pid, _ in kernel_pids:
+                kill_pid(pid)
+
+
+def kernel_parent(exe, cwd):
+    """`lfortran kernel --parent` takes only the process that started the
+    kernel. Another running process, or what is not a process ID, is an
+    error that leaves the connection file alone, as does a kernel that
+    cannot start on the file. A parent that has exited, also one not yet
+    reaped, as a prompt killed while it starts its kernel, stops the kernel
+    and removes the file."""
+    connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
+    write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
+    content = connection.read_bytes()
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     try:
-        heartbeat = json.loads(connection.read_text())["hb_port"]
-        process.stdin.write(b"do while (.true.); end do\r")
-        process.stdin.flush()
-        time.sleep(2)
-        check(process.poll() is None and connection.exists(), "the cell ended")
-        if os.name == "posix":
-            process.send_signal(signal.SIGINT)
-        else:
-            process.kill()
-        process.wait(timeout=20)
-        check(wait_removed(connection), "the kernel outlived its prompt")
-        deadline = time.monotonic() + 30
-        while True:
-            try:
-                socket.create_connection(("127.0.0.1", heartbeat), timeout=1).close()
-            except OSError:
-                break
-            check(time.monotonic() < deadline, "the kernel still listens")
-            time.sleep(0.1)
+        for parent in ["0", "-5", str(other.pid), str(2**32 + 1)]:
+            result = subprocess.run(
+                [exe, "--no-color", "kernel", "-f", str(connection), "--parent", parent],
+                capture_output=True, cwd=cwd, timeout=60)
+            check(result.returncode == 1
+                and b"is not the parent of this kernel" in result.stderr,
+                "--parent %s exited with %d:\n%s" % (parent, result.returncode,
+                    (result.stdout + result.stderr).decode(errors="replace")))
+            check(connection.read_bytes() == content,
+                "--parent %s changed the connection file" % parent)
     finally:
-        if process.poll() is None:
-            process.kill()
-            process.wait()
+        other.kill()
+        other.wait()
+        connection.unlink()
+    text = "not a connection file\n"
+    connection.write_text(text)
+    result = subprocess.run(
+        [exe, "--no-color", "kernel", "-f", str(connection), "--parent", str(os.getpid())],
+        capture_output=True, cwd=cwd, timeout=60)
+    check(result.returncode != 0, "the kernel started on a file that is not a connection file")
+    check(connection.exists() and connection.read_text() == text,
+        "a kernel that did not start removed the file")
+    connection.unlink()
+
+    write_connection_file(str(connection), ip="127.0.0.1", key=uuid.uuid4().hex.encode())
+    starter = subprocess.Popen([sys.executable, "-c",
+        "import os, subprocess, sys\n"
+        "kernel = subprocess.Popen([sys.argv[1], '--no-color', 'kernel', '-f', sys.argv[2],"
+        " '--parent', str(os.getpid())], stdin=subprocess.DEVNULL,"
+        " stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+        "print(kernel.pid, flush=True)\n"
+        "os._exit(0)\n", exe, str(connection)], stdout=subprocess.PIPE)
+    kernel_pid = int(starter.stdout.readline())
+    try:
+        # Not reaped meanwhile
+        check(wait_removed(connection, timeout=20),
+            "the kernel of a parent that has exited left the connection file")
+    finally:
+        starter.wait()
+        starter.stdout.close()
+        if os.name == "posix":
+            kill_pid(kernel_pid)
+        else:
+            subprocess.run(["taskkill", "/F", "/PID", str(kernel_pid)], capture_output=True)
 
 
 def stop_ends_session(exe, cwd):
@@ -418,8 +589,8 @@ def verbose(exe, cwd):
 
 
 CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
-    late_stdin, prompt_departure, prompt_killed_in_cell, stop_ends_session, stop_on_error,
-    implicit_typing, verbose, xeus_connection_files]}
+    late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
+    stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}
 

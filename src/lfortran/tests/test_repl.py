@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Drive the interactive prompt (`lfortran` with no files) through stdin: a
-pipe or a pseudo-terminal. Also run a compiled program on a pseudo-terminal."""
+pipe or a pseudo-terminal, also with Ctrl-C. Also run a compiled program on a
+pseudo-terminal."""
 
 import argparse
 import contextlib
@@ -8,6 +9,7 @@ import os
 import re
 import select
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -224,6 +226,42 @@ def check_read_from_terminal(lfortran):
                 % (expected, out))
 
 
+def check_interrupt_at_prompt(lfortran):
+    # Ctrl-C at `>>>`, while the line editor has the terminal in raw mode,
+    # ends the prompt by SIGINT, as a shell expects, and its kernel. The
+    # terminal is left as it was, in line mode with echo.
+    try:
+        import pty
+        import termios
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        return
+    with working_directory() as cwd:
+        repl = PtyRepl(pty, termios, lfortran, cwd, timeout=60)
+        status = None
+        try:
+            repl.cell("integer :: n")
+            repl.wait(lambda: repl.prompts > repl.cells, "the prompt")
+            os.write(repl.fd, b"\x03")
+            repl.wait(lambda: False, "the prompt to exit")
+            _, status = os.waitpid(repl.pid, 0)
+            lflag = termios.tcgetattr(repl.fd)[3]
+        finally:
+            if status is None:
+                os.kill(repl.pid, 9)
+                os.waitpid(repl.pid, 0)
+            os.close(repl.fd)
+    out = repl.text()
+    if not os.WIFSIGNALED(status) or os.WTERMSIG(status) != signal.SIGINT:
+        sys.exit("Ctrl-C did not end the prompt by SIGINT (status %d):\n%s"
+            % (status, out))
+    if lflag & (termios.ICANON | termios.ECHO) != termios.ICANON | termios.ECHO:
+        sys.exit("Ctrl-C left the terminal in raw mode:\n%s" % out)
+    connection = re.search(r"lfortran --connect (\S+)`", out)
+    if not connection or os.path.exists(connection.group(1)):
+        sys.exit("Ctrl-C left the connection file of the kernel:\n%s" % out)
+
+
 READ_TERMINAL_SOURCE = """\
 program read_terminal
     character(len=8) :: a, b, c, d, e
@@ -313,6 +351,7 @@ def main():
     check_keeps_files_in_cwd(os.path.abspath(args.lfortran))
     check_cell_output(os.path.abspath(args.lfortran))
     check_read_from_terminal(os.path.abspath(args.lfortran))
+    check_interrupt_at_prompt(os.path.abspath(args.lfortran))
     check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
     print("ok")
 

@@ -1,8 +1,9 @@
 // The parts of the Jupyter messaging protocol that LFortran needs, with no
 // third-party library: a kernel, which `lfortran kernel` runs when not built
-// with Xeus and which the prompt always starts, a client for the prompt, and
-// the stdin channel of both kernels. Any Jupyter client can use the kernel,
-// and the client can use any Jupyter kernel.
+// with Xeus, a client for the prompt, and the stdin channel of the built-in
+// kernel. The prompt starts that kernel, or the Xeus one in a build with
+// Xeus, and ends it when the prompt exits. Any Jupyter client can use the
+// kernel, and the client can use any Jupyter kernel.
 //
 // Transport: ZeroMQ's ZMTP 3.0 with the NULL mechanism over TCP (the "tcp"
 // transport of a connection file), implementing only what a Jupyter kernel
@@ -42,6 +43,7 @@
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <limits>
 #include <mutex>
 #include <random>
 #include <sstream>
@@ -57,6 +59,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <tlhelp32.h>
 #else
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -67,7 +70,11 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 
 extern char **environ;
 #endif
@@ -1074,11 +1081,179 @@ Client::Client(const std::string &connection_file)
     throw std::runtime_error("the kernel does not answer");
 }
 
-Client::~Client()
+namespace {
+
+// The kernel this prompt started. The destructor ends it on the way out.
+// Ctrl-C ends it too, and that handler does not run destructors, so it can
+// use only a sig_atomic_t and this fixed buffer. A client that only joined
+// leaves both empty.
+#ifdef _WIN32
+volatile PVOID owned_process = nullptr;
+#else
+volatile std::sig_atomic_t owned_pid = 0;
+#endif
+char owned_connection[4096] = {};
+volatile std::sig_atomic_t interrupt_installed = 0;
+// The terminal as it was when the prompt started, which the Ctrl-C handler
+// restores: Ctrl-C at `>>>` arrives while the line editor has it in raw mode.
+volatile std::sig_atomic_t terminal_saved = 0;
+#ifdef _WIN32
+HANDLE terminal_input = nullptr;
+DWORD terminal_mode = 0;
+#else
+struct termios terminal_state {};
+#endif
+
+// Removes the connection file this prompt created. Safe to call twice.
+// On POSIX it only uses unlink, so the Ctrl-C handler may call it too.
+void release_owned_connection()
+{
+    if (owned_connection[0] == '\0') return;
+#ifdef _WIN32
+    std::remove(owned_connection);
+#else
+    unlink(owned_connection);
+#endif
+    owned_connection[0] = '\0';
+}
+
+#ifdef _WIN32
+HANDLE take_owned_process()
+{
+    return static_cast<HANDLE>(InterlockedExchangePointer(&owned_process, nullptr));
+}
+
+BOOL WINAPI interrupt_prompt(DWORD event)
+{
+    if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
+    release_owned_connection();
+    HANDLE handle = take_owned_process();
+    if (handle) {
+        TerminateProcess(handle, 1);
+        WaitForSingleObject(handle, 2000);
+        CloseHandle(handle);
+    }
+    if (terminal_saved) SetConsoleMode(terminal_input, terminal_mode);
+    // The default handler then ends the prompt, as without this handler.
+    return FALSE;
+}
+#else
+extern "C" void interrupt_prompt(int)
+{
+    release_owned_connection();
+    const pid_t pid = static_cast<pid_t>(owned_pid);
+    owned_pid = 0;
+    if (pid > 0) {
+        // The kernel is in another process group, so it has not seen this
+        // Ctrl-C, and it may be inside a cell that does not return.
+        kill(pid, SIGKILL);
+        waitpid(pid, nullptr, 0);
+    }
+    // TCSANOW: the output may never drain, as when nothing reads it.
+    if (terminal_saved) tcsetattr(STDIN_FILENO, TCSANOW, &terminal_state);
+    // End by SIGINT, as without this handler, so that a shell knows that
+    // Ctrl-C ended the prompt (and, say, stops a loop that runs it).
+    signal(SIGINT, SIG_DFL);
+    sigset_t interrupt;
+    sigemptyset(&interrupt);
+    sigaddset(&interrupt, SIGINT);
+    sigprocmask(SIG_UNBLOCK, &interrupt, nullptr);
+    raise(SIGINT);
+    _Exit(130);
+}
+#endif
+
+// Removes the connection file of the kernel this prompt started and ends the
+// kernel. The file goes first, as this prompt may not live to remove it
+// after the kernel has gone. `wait_ms` is how long a SIGTERM may take to
+// finish, including the built-in kernel flushing output, before the process
+// is killed. Safe to call twice: the first call takes the process.
+void end_owned_kernel(int wait_ms)
 {
 #ifdef _WIN32
-    if (process) CloseHandle(reinterpret_cast<HANDLE>(process));
+    release_owned_connection();
+    HANDLE handle = take_owned_process();
+    if (handle) {
+        TerminateProcess(handle, 1);
+        WaitForSingleObject(handle, static_cast<DWORD>(wait_ms));
+        CloseHandle(handle);
+    }
+#else
+    sigset_t blocked, previous;
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGINT);
+    sigprocmask(SIG_BLOCK, &blocked, &previous);
+    release_owned_connection();
+    const pid_t pid = static_cast<pid_t>(owned_pid);
+    owned_pid = 0;
+    if (pid > 0) {
+        kill(pid, SIGTERM);
+        const auto deadline = std::chrono::steady_clock::now()
+            + std::chrono::milliseconds(wait_ms);
+        for (;;) {
+            int status = 0;
+            const pid_t got = waitpid(pid, &status, WNOHANG);
+            if (got == pid || got < 0) break;
+            if (std::chrono::steady_clock::now() >= deadline) {
+                kill(pid, SIGKILL);
+                waitpid(pid, &status, 0);
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+    sigprocmask(SIG_SETMASK, &previous, nullptr);
 #endif
+}
+
+// Records the kernel `process` (a pid, or a process handle on Windows) for
+// the destructor and the Ctrl-C handler. `connection_file` fits in
+// owned_connection.
+void remember_owned_kernel(intptr_t process, const std::string &connection_file)
+{
+    std::memcpy(owned_connection, connection_file.c_str(), connection_file.size() + 1);
+#ifdef _WIN32
+    owned_process = reinterpret_cast<HANDLE>(process);
+#else
+    owned_pid = static_cast<std::sig_atomic_t>(process);
+#endif
+}
+
+} // namespace
+
+void handle_interrupt()
+{
+    if (interrupt_installed) return;
+#ifdef _WIN32
+    terminal_input = GetStdHandle(STD_INPUT_HANDLE);
+    if (GetConsoleMode(terminal_input, &terminal_mode)) terminal_saved = 1;
+    if (SetConsoleCtrlHandler(interrupt_prompt, TRUE)) interrupt_installed = 1;
+#else
+    struct sigaction current {};
+    sigaction(SIGINT, nullptr, &current);
+    // Ctrl-C is ignored, as for a background job of a shell without job
+    // control. It must not end the prompt then.
+    if (current.sa_handler == SIG_IGN) return;
+    if (isatty(STDIN_FILENO) && tcgetattr(STDIN_FILENO, &terminal_state) == 0) {
+        terminal_saved = 1;
+    }
+    struct sigaction action {};
+    action.sa_handler = interrupt_prompt;
+    sigemptyset(&action.sa_mask);
+    // The handler does not return, so a restarted read is not needed.
+    action.sa_flags = 0;
+    if (sigaction(SIGINT, &action, nullptr) == 0) interrupt_installed = 1;
+#endif
+}
+
+Client::~Client()
+{
+    // A client that only joined did not start a kernel.
+    if (process == 0 && owned_file.empty()) return;
+    // The built-in kernel notices SIGTERM within about 250 ms, then may
+    // spend up to a second flushing what a cell printed. Wait long enough
+    // that a normal exit is not cut off.
+    end_owned_kernel(2000);
 }
 
 namespace {
@@ -1128,6 +1303,9 @@ bool Client::execute(const std::string &code, bool verbose)
         {"allow_stdin", true}, {"stop_on_error", true}};
     if (verbose) content["lfortran_verbose"] = true;
     Message request = new_message("execute_request", Object{}, std::move(content), session);
+    // Also in the header, which Xeus passes to the interpreter, unlike the
+    // rest of the content.
+    if (verbose) request.header["lfortran_verbose"] = true;
     if (!send_message(*shell, request, key)) return false;
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     bool replied = false, idle = false;
@@ -1211,21 +1389,35 @@ int Client::kernel_status(int timeout)
     if (!process) return -1;
 #ifdef _WIN32
     HANDLE handle = reinterpret_cast<HANDLE>(process);
-    DWORD code;
+    DWORD code = 0;
     if (WaitForSingleObject(handle, static_cast<DWORD>(timeout)) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
         return -1;
     }
+    // The process has exited. Drop the handle, but leave the connection
+    // file for the destructor: this client still removes it.
+    process = 0;
+    HANDLE claimed = take_owned_process();
+    if (claimed) CloseHandle(claimed);
     return static_cast<int>(code);
 #else
+    sigset_t blocked, previous;
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGINT);
     auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
     for (;;) {
-        int status;
+        int status = 0;
+        // Block Ctrl-C across the reap. Otherwise the handler can observe
+        // the pid after it has been reused.
+        sigprocmask(SIG_BLOCK, &blocked, &previous);
         const pid_t child = waitpid(static_cast<pid_t>(process), &status, WNOHANG);
         if (child == static_cast<pid_t>(process)) {
             process = 0;
+            owned_pid = 0;
+            sigprocmask(SIG_SETMASK, &previous, nullptr);
             return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
         }
+        sigprocmask(SIG_SETMASK, &previous, nullptr);
         if (child < 0 || std::chrono::steady_clock::now() > deadline) return -1;
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -1308,7 +1500,7 @@ HANDLE spawn(const std::vector<std::string> &args)
 } // namespace
 
 std::unique_ptr<Client> Client::start(const std::string &executable,
-    const std::vector<std::string> &arguments, bool managed, std::string &connection_file)
+    const std::vector<std::string> &arguments, std::string &connection_file)
 {
     start_sockets();
     // Free ports, which the kernel then listens on, as jupyter_client does:
@@ -1325,12 +1517,21 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
     std::filesystem::path directory = std::filesystem::temp_directory_path(error);
     if (error) directory = ".";
     connection_file = (directory / ("lfortran-" + random_hex() + ".json")).string();
+    // The Ctrl-C handler keeps this path in a fixed buffer. Reject a longer
+    // one before starting the kernel, so a failure leaves no child behind.
+    if (connection_file.size() >= sizeof(owned_connection)) {
+        throw std::runtime_error("the connection file path is too long");
+    }
     write_connection(connection_file, c);
 
     std::vector<std::string> args{executable};
     args.insert(args.end(), arguments.begin(), arguments.end());
-    args.insert(args.end(), {"kernel", "-f", connection_file});
-    if (managed) args.push_back("--managed");
+#ifdef _WIN32
+    const std::string parent = std::to_string(GetCurrentProcessId());
+#else
+    const std::string parent = std::to_string(getpid());
+#endif
+    args.insert(args.end(), {"kernel", "-f", connection_file, "--parent", parent});
 #ifdef _WIN32
     HANDLE child = spawn(args);
     if (!child) {
@@ -1346,9 +1547,9 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
     std::vector<char *> argv;
     for (std::string &arg : args) argv.push_back(&arg[0]);
     argv.push_back(nullptr);
-    // The kernel does not use the terminal: it may outlive the prompt, whose
-    // output must then end. In its own process group, it does not get the
-    // prompt's Ctrl-C.
+    // The kernel does not use the terminal. It is in its own process group,
+    // so the prompt's Ctrl-C does not reach it; the prompt handles Ctrl-C
+    // and then ends the kernel.
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);
     posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0);
@@ -1385,8 +1586,10 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
 #ifdef _WIN32
             client->process = reinterpret_cast<intptr_t>(child);
 #else
-            client->process = child;
+            client->process = static_cast<intptr_t>(child);
 #endif
+            client->owned_file = connection_file;
+            remember_owned_kernel(client->process, connection_file);
             return client;
         } catch (const std::runtime_error &) {
             const bool gone = exited();
@@ -1398,6 +1601,178 @@ std::unique_ptr<Client> Client::start(const std::string &executable,
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
+}
+
+namespace {
+
+// The connection file that the kernel removes when it stops, also if a cell
+// ends the process (STOP, a fatal error). Never freed, as a thread may use it
+// while the process exits.
+const std::string *owned_connection_file = nullptr;
+
+void remove_owned_connection_file()
+{
+    if (owned_connection_file) std::remove(owned_connection_file->c_str());
+}
+
+void own_connection_file(const std::string &connection_file)
+{
+    if (owned_connection_file) return;
+    owned_connection_file = new std::string(connection_file);
+    std::atexit(remove_owned_connection_file);
+}
+
+// The connection file of a kernel that stops with its parent. The kernel
+// owns it once it has started on it (kernel_started), not if it fails to.
+const std::string *parent_connection_file = nullptr;
+
+// Removes the connection file that the kernel owns, then ends the process
+// as SIGTERM does by default. The Xeus kernel, which does not handle
+// SIGTERM, then removes the file too. The built-in kernel replaces this
+// handler with its own.
+extern "C" void terminate_kernel(int)
+{
+#ifdef _WIN32
+    remove_owned_connection_file();
+#else
+    if (owned_connection_file) unlink(owned_connection_file->c_str());
+#endif
+    std::signal(SIGTERM, SIG_DFL);
+#ifndef _WIN32
+    sigset_t terminate;
+    sigemptyset(&terminate);
+    sigaddset(&terminate, SIGTERM);
+    sigprocmask(SIG_UNBLOCK, &terminate, nullptr);
+#endif
+    std::raise(SIGTERM);
+}
+
+#ifdef _WIN32
+// The ID of the process that created this one, which may have exited since.
+// 0 if it cannot be told.
+DWORD parent_id()
+{
+    DWORD parent = 0;
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return 0;
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(entry);
+    for (BOOL more = Process32First(snapshot, &entry); more;
+            more = Process32Next(snapshot, &entry)) {
+        if (entry.th32ProcessID == GetCurrentProcessId()) {
+            parent = entry.th32ParentProcessID;
+            break;
+        }
+    }
+    CloseHandle(snapshot);
+    return parent;
+}
+
+// The process `id` if it is running and was created before this one, which
+// its parent was; else null, also if a later process reused the ID of a
+// parent that has exited.
+HANDLE open_earlier_process(DWORD id)
+{
+    HANDLE handle = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, id);
+    if (!handle) return nullptr;
+    FILETIME created, self, unused1, unused2, unused3;
+    if (WaitForSingleObject(handle, 0) != WAIT_TIMEOUT
+            || (GetProcessTimes(handle, &created, &unused1, &unused2, &unused3)
+                && GetProcessTimes(GetCurrentProcess(), &self, &unused1, &unused2,
+                    &unused3)
+                && CompareFileTime(&created, &self) > 0)) {
+        CloseHandle(handle);
+        return nullptr;
+    }
+    return handle;
+}
+#else
+// Whether the process `id` has exited, also if its parent has not reaped it
+// yet: a zombie still takes signals.
+bool exited(pid_t id)
+{
+    if (kill(id, 0) != 0 && errno != EPERM) return true;
+#if defined(__APPLE__)
+    int name[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, id};
+    struct kinfo_proc info {};
+    size_t size = sizeof(info);
+    return sysctl(name, 4, &info, &size, nullptr, 0) == 0 && size == sizeof(info)
+        && info.kp_proc.p_stat == SZOMB;
+#elif defined(__linux__)
+    // The state follows the command, in parentheses that it may contain too
+    std::ifstream stat("/proc/" + std::to_string(id) + "/stat");
+    std::string line;
+    std::getline(stat, line);
+    const size_t command_end = line.rfind(')');
+    return command_end != std::string::npos && command_end + 2 < line.size()
+        && line[command_end + 2] == 'Z';
+#else
+    return false;
+#endif
+}
+#endif
+
+} // namespace
+
+bool stop_with_parent(long long parent, const std::string &connection_file)
+{
+#ifdef _WIN32
+    if (parent > MAXDWORD) return false;
+    HANDLE handle = open_earlier_process(static_cast<DWORD>(parent));
+    const DWORD actual = parent_id();
+    if (handle && actual != 0 && actual != parent) {
+        CloseHandle(handle);
+        return false;
+    }
+    const bool gone = !handle;
+#else
+    if (parent > std::numeric_limits<pid_t>::max()) return false;
+    // A parent that has exited already, before this kernel got here, is no
+    // longer the parent either. Another process that runs is an error.
+    const bool gone = getppid() != parent;
+    if (gone && !exited(static_cast<pid_t>(parent))) return false;
+#endif
+    if (gone) {
+        // Stop at once, as for a parent that exits later, before this
+        // kernel starts on the file
+        std::remove(connection_file.c_str());
+        terminate_kernel(SIGTERM);
+    }
+    parent_connection_file = new std::string(connection_file);
+#ifndef _WIN32
+    // Stop on SIGTERM also if the parent blocked it, which this process
+    // inherited, as do the threads it starts from here on.
+    sigset_t terminate;
+    sigemptyset(&terminate);
+    sigaddset(&terminate, SIGTERM);
+    sigprocmask(SIG_UNBLOCK, &terminate, nullptr);
+#endif
+    // Also if the parent ignored it
+    std::signal(SIGTERM, terminate_kernel);
+    std::thread([=]() {
+#ifdef _WIN32
+        if (handle) {
+            WaitForSingleObject(handle, INFINITE);
+            CloseHandle(handle);
+        }
+#else
+        // As ipykernel does: once the parent has exited, this process has
+        // another parent.
+        while (getppid() == static_cast<pid_t>(parent)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        }
+#endif
+        std::remove(connection_file.c_str());
+        // The built-in kernel stops as it does on SIGTERM, also during a
+        // cell. The Xeus kernel terminates.
+        std::raise(SIGTERM);
+    }).detach();
+    return true;
+}
+
+void kernel_started()
+{
+    if (parent_connection_file) own_connection_file(*parent_connection_file);
 }
 
 // The built-in kernel
@@ -1415,16 +1790,6 @@ volatile std::sig_atomic_t stop_requested = 0;
 extern "C" void request_stop(int)
 {
     stop_requested = 1;
-}
-
-// The connection file that the kernel removes when it stops, also if a cell
-// ends the process (STOP, a fatal error). Never freed, as a thread may use it
-// while the process exits.
-const std::string *owned_connection_file = nullptr;
-
-void remove_owned_connection_file()
-{
-    if (owned_connection_file) std::remove(owned_connection_file->c_str());
 }
 
 // Whether one of `clients`, connections that the kernel does not read while
@@ -1455,8 +1820,8 @@ bool connected(socket_t listener, const std::vector<socket_t> &clients)
 // The kernel does not read its connections while it runs a cell. A thread
 // watches them meanwhile, and ends the process if the kernel is asked to
 // stop (SIGINT, SIGTERM) or, for a managed kernel, once its last client has
-// gone: a cell that never ends must not keep the kernel running after the
-// prompt that ran it was killed with Ctrl-C.
+// gone. The prompt ends the kernel it started with SIGTERM, including
+// during a cell that does not return; this is what makes that cell stop.
 class CellWatch {
     std::mutex mutex;
     std::condition_variable changed;
@@ -1793,10 +2158,8 @@ int run_builtin_kernel(const std::string &connection_filename, CompilerOptions &
         std::cerr << "error: " << error.what() << std::endl;
         return 1;
     }
-    if (!existing || managed) {
-        owned_connection_file = new std::string(connection_filename);
-        std::atexit(remove_owned_connection_file);
-    }
+    if (!existing || managed) own_connection_file(connection_filename);
+    kernel_started();
     std::signal(SIGINT, request_stop);
     std::signal(SIGTERM, request_stop);
 
@@ -1860,10 +2223,19 @@ int Client::kernel_status(int)
 }
 
 std::unique_ptr<Client> Client::start(const std::string &,
-    const std::vector<std::string> &, bool, std::string &)
+    const std::vector<std::string> &, std::string &)
 {
     throw std::runtime_error("Jupyter clients are not supported in this build");
 }
+
+bool stop_with_parent(long long, const std::string &)
+{
+    return true;
+}
+
+void kernel_started() {}
+
+void handle_interrupt() {}
 
 } // namespace LCompilers::LFortran::jupyter
 

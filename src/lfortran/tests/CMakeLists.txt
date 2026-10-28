@@ -316,9 +316,9 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                 --lfortran $<TARGET_FILE:lfortran>
         )
-        # The prompt is a client of the built-in kernel. These cases assume
-        # that kernel: a READ whose client leaves fails, `lfortran -v` reaches
-        # the interpreter, and a failed cell is aborted with an idle status.
+        # The prompt starts the kernel that is built: the built-in one here.
+        # These cases assume that kernel: a READ whose client leaves fails,
+        # and a failed cell is aborted with an idle status.
         if (NOT WITH_XEUS)
             add_test(
                 NAME test_session
@@ -337,8 +337,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
                 SKIP_RETURN_CODE 77)
         else()
-            # The Xeus kernel, on Xeus's own channels. The cases that assume
-            # the built-in kernel stay out.
+            # The Xeus kernel, on Xeus's own channels, which the prompt starts
+            # here. The cases that assume the built-in kernel stay out.
             add_test(
                 NAME test_session
                 COMMAND ${LFORTRAN_TEST_PYTHON}
@@ -353,6 +353,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
                     --lfortran $<TARGET_FILE:lfortran>
                     --case xeus_connection_files --case implicit_typing
+                    --case prompt_departure --case prompt_killed_in_cell
+                    --case kernel_parent --case stop_ends_session --case verbose
             )
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)

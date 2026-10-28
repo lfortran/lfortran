@@ -15,9 +15,11 @@ namespace LCompilers::LFortran {
 // Runs the Jupyter kernel of a connection file with `options`. The kernel is
 // the Xeus one with WITH_XEUS, else the built-in one (jupyter.cpp), which
 // needs no third-party library. If the file does not exist, the built-in
-// kernel listens on free ports and writes it. A `managed` kernel, the one the
-// prompt starts, is always the built-in one: it stops when its last client
-// disconnects and removes the file.
+// kernel listens on free ports and writes it. A `managed` kernel
+// (`lfortran kernel --managed`) is always the built-in one: it stops when its
+// last client disconnects and removes the file. The prompt does not use that
+// flag. It ends the kernel it started, which also stops with the prompt
+// (stop_with_parent).
 int run_kernel(const std::string &connection_filename, CompilerOptions &options,
     bool managed);
 
@@ -34,8 +36,11 @@ class Client {
     std::string key, session;
     std::unique_ptr<Peer> shell, stdin_, iopub;
     // The kernel that start() started: its process ID, or its process
-    // handle on Windows
+    // handle on Windows. Empty for a client that only joined.
     intptr_t process = 0;
+    // The connection file start() created. Removed when this client ends
+    // the kernel.
+    std::string owned_file;
 
     // Shows what the kernel published before it closed its connections.
     void show_last(const std::string &request_id);
@@ -48,11 +53,10 @@ public:
 
     // Starts `executable kernel` with `arguments` (the prompt's own) on a new
     // connection file in the temporary directory, which it returns in
-    // `connection_file` for other clients, and connects to it. A `managed`
-    // kernel stops when its last client disconnects.
+    // `connection_file` for other clients, and connects to it. This client
+    // ends that kernel when it is destroyed, and on Ctrl-C.
     static std::unique_ptr<Client> start(const std::string &executable,
-        const std::vector<std::string> &arguments, bool managed,
-        std::string &connection_file);
+        const std::vector<std::string> &arguments, std::string &connection_file);
 
     // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
     // false if the kernel has gone.
@@ -64,6 +68,27 @@ public:
     // normally or was not started by this client.
     int kernel_status(int timeout);
 };
+
+// Stops this process, a kernel, once the process `parent` has exited, and
+// removes `connection_file`, which `parent` wrote (`lfortran kernel
+// --parent`); once the kernel has started on that file (kernel_started), it
+// also removes it when it exits by itself or on SIGTERM. The prompt starts
+// its kernel so, which then stops with the prompt however the prompt ends:
+// also if it is killed or its terminal closes, when it cannot end the kernel
+// itself. A parent that has already exited stops the kernel at once. Returns
+// false, and does nothing, if `parent` is not a process ID or is a running
+// process other than this process's parent.
+bool stop_with_parent(long long parent, const std::string &connection_file);
+
+// Tells that the kernel listens as its connection file says. A kernel that
+// fails to start leaves the file alone.
+void kernel_started();
+
+// Makes Ctrl-C end the prompt, after it ends the kernel that the prompt
+// started (Client::start), removes the kernel's connection file and restores
+// the terminal. The prompt still ends as Ctrl-C ends it by default. Does
+// nothing if Ctrl-C is ignored, as for a background job.
+void handle_interrupt();
 
 #ifndef __EMSCRIPTEN__
 

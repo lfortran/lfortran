@@ -101,8 +101,12 @@ namespace LCompilers::LFortran {
         };
 #endif
         // `lfortran -v` is the execute_request field lfortran_verbose. Xeus
-        // does not give that field to the interpreter, so a cell here is
-        // never verbose.
+        // does not give the content to the interpreter, so the client also
+        // puts that field in the header.
+        const nl::json &header = parent_header();
+        const auto field = header.find("lfortran_verbose");
+        const bool verbose = field != header.end() && field->is_boolean()
+            && field->get<bool>();
         FortranEvaluator::CellResult cell = kernel::execute(e, code, io,
             [&](const std::string &name, const std::string &text) {
                 if (!silent) publish_stream(name, text);
@@ -110,7 +114,7 @@ namespace LCompilers::LFortran {
             [&](const std::string &text) {
                 if (!silent) publish_execution_result(execution_counter,
                     nl::json{{"text/plain", text}}, nl::json::object());
-            });
+            }, verbose);
         nl::json result;
         if (cell.ok) {
             result["status"] = "ok";
@@ -238,8 +242,9 @@ namespace LCompilers::LFortran {
         throw LCompilersException("run_kernel() is not available in the WASM build");
         return 1;
 #else
-        // Xeus does not tell when its last client disconnects, so the kernel
-        // the prompt starts is the built-in one.
+        // `lfortran kernel --managed` is the built-in kernel. Xeus cannot
+        // tell when its last client disconnects. The prompt does not pass
+        // this flag: it ends the kernel it started.
         if (managed) return jupyter::run_builtin_kernel(connection_filename, options, true);
 
         std::unique_ptr<xeus::xcontext> context = xeus::make_zmq_context();
@@ -267,6 +272,7 @@ namespace LCompilers::LFortran {
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
                              xeus::make_null_debugger,
                              debugger_config);
+        jupyter::kernel_started();
 
         std::cout <<
             "Starting xeus-fortran kernel...\n\n"
