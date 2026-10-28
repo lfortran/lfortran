@@ -337,6 +337,24 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         ASR::IntegerUnaryMinus_t& xx = const_cast<ASR::IntegerUnaryMinus_t&>(x);
         xx.m_type = ASRUtils::extract_type(x.m_type);
     }
+
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t& x){
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ComplexUnaryMinus(x);
+        ASR::ComplexUnaryMinus_t& xx = const_cast<ASR::ComplexUnaryMinus_t&>(x);
+        xx.m_type = ASRUtils::extract_type(x.m_type);
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t& x){
+        if( !ASRUtils::is_array(x.m_type) ) {
+            return ;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalNot(x);
+        ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
+        xx.m_type = ASRUtils::extract_type(x.m_type);
+    }
 };
 
 class CleanupDegenerateArraySection: public ASR::BaseExprReplacer<CleanupDegenerateArraySection> {
