@@ -22819,6 +22819,54 @@ public:
         return make_fpcast_call_target(loc, source, iface);
     }
 
+    // True if `proc` is an external procedure defined in this file and,
+    // with --implicit-argument-casting, an actual of `args` has another
+    // numeric type or kind than its dummy (a REAL array passed to a COMPLEX
+    // dummy, say). The caller has no explicit interface to an external
+    // procedure, so such a reference is made through an interface built
+    // from its actuals, exactly as when the procedure is defined in another
+    // file. Integer kind mismatches keep their own handling.
+    bool is_mismatched_external_procedure_call(ASR::symbol_t* proc,
+            const Vec<ASR::call_arg_t> &args) {
+        if (!compiler_options.implicit_argument_casting
+                || !ASR::is_a<ASR::Function_t>(*proc)
+                || ASRUtils::symbol_parent_symtab(proc)->parent != nullptr) {
+            return false;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
+        ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(fn);
+        if (fn_type->m_abi != ASR::abiType::Source
+                || fn_type->m_deftype != ASR::deftypeType::Implementation) {
+            return false;
+        }
+        auto is_numeric = [](ASR::ttype_t* t) {
+            return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t) ||
+                ASR::is_a<ASR::Complex_t>(*t);
+        };
+        for (size_t i = 0; i < args.size() && i < fn->n_args; i++) {
+            if (args[i].m_value == nullptr ||
+                    !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(
+                        fn->m_args[i])->m_v)) {
+                continue;
+            }
+            ASR::ttype_t* actual_elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(args[i].m_value)));
+            ASR::ttype_t* dummy_elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(fn->m_args[i])));
+            if (is_numeric(actual_elem) && is_numeric(dummy_elem)
+                    && !(ASR::is_a<ASR::Integer_t>(*actual_elem)
+                        && ASR::is_a<ASR::Integer_t>(*dummy_elem))
+                    && (actual_elem->type != dummy_elem->type
+                        || ASRUtils::extract_kind_from_ttype_t(actual_elem)
+                            != ASRUtils::extract_kind_from_ttype_t(dummy_elem))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // The target of a function reference `x` to `name` through an implicit
     // interface: `source` cast to the interface built from the reference's
     // actuals and `return_type`.

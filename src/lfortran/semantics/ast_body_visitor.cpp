@@ -9568,6 +9568,10 @@ public:
                     original_sym = final_sym;
                     final_sym = implicit_call_target(x.base.base.loc, sub_name,
                         final_sym, args, nullptr);
+                } else if (is_mismatched_external_procedure_call(final_sym, args)) {
+                    original_sym = final_sym;
+                    final_sym = implicit_call_target(x.base.base.loc, sub_name,
+                        final_sym, args, nullptr);
                 } else {
                     // Array-section rewriting needs the Function symbol.
                     legacy_array_sections_helper(final_sym, args, x.base.base.loc);
