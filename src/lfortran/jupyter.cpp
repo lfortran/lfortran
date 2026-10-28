@@ -12,9 +12,10 @@
 // socket for the heartbeat; DEALER and SUB sockets on the client side.
 // Messages are signed with HMAC-SHA256 and encoded with LLVM's JSON library.
 //
-// The kernel runs the cells on one thread: a long cell holds the other
-// requests back (they wait in their sockets), and its output is sent when it
-// reads input, displays or ends. Two threads keep connections that must not
+// The kernel serializes cells: a long cell holds the other
+// requests back (they wait in their sockets). The evaluator runs a cell on a
+// worker while this thread streams its output and services its I/O hooks.
+// Two threads keep connections that must not
 // wait for a cell: the heartbeat, which clients expect to answer while a cell
 // runs, and the stdin channel. A third watches the clients while a cell runs.
 // No connection holds the others back: the kernel's connections do not block.

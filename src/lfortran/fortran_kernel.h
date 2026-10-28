@@ -57,10 +57,31 @@ inline FortranEvaluator::CellResult execute(FortranEvaluator &e,
     const std::function<void(const std::string &name, const std::string &text)> &stream,
     const std::function<void(const std::string &text)> &result, bool verbose = false)
 {
+    std::string pending[2];
+    auto output = [&](int fd, const std::string &text, bool final = false) {
+        std::string &bytes = pending[fd - 1];
+        bytes += text;
+        size_t end = bytes.size();
+        if (!final && end) {
+            // A pipe read can split a UTF-8 character. Retain only a
+            // possible incomplete suffix; invalid bytes still use utf8().
+            size_t lead = end - 1;
+            while (lead && (static_cast<unsigned char>(bytes[lead]) & 0xc0) == 0x80
+                    && end - lead < 4) lead--;
+            const unsigned char c = static_cast<unsigned char>(bytes[lead]);
+            const size_t n = c >= 0xc2 && c <= 0xdf ? 2
+                : c >= 0xe0 && c <= 0xef ? 3 : c >= 0xf0 && c <= 0xf4 ? 4 : 1;
+            if (end - lead < n) end = lead;
+        }
+        if (end) stream(fd == 1 ? "stdout" : "stderr", utf8(bytes.substr(0, end)));
+        bytes.erase(0, end);
+    };
     io.output = [&](int fd, const std::string &text) {
-        stream(fd == 1 ? "stdout" : "stderr", utf8(text));
+        output(fd, text);
     };
     FortranEvaluator::CellResult cell = e.execute(code, verbose, io);
+    output(1, "", true);
+    output(2, "", true);
     if (!cell.output.empty()) {
         stream("stdout", utf8(cell.output.back() == '\n' ? cell.output : cell.output + "\n"));
     }

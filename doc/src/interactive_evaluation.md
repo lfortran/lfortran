@@ -35,9 +35,24 @@ the runtime (`_lfortran_set_display_hooks`) that forward to that cell's
 functions do nothing. The hooks are process-wide, so cells must not run
 concurrently. An exception thrown by a hook does not unwind through generated
 code; the cell fails with `DisplayError` and the exception's message. The
-module is built with or without Xeus. `execute()` does not capture
-stdout/stderr; that is up to the frontend. Jupyter messages must be UTF-8, so
-the kernel shows any other bytes of a cell's output as U+FFFD.
+module is built with or without Xeus.
+
+## Runtime output
+
+When `CellIO::output` is set, `execute()` captures stdout and stderr. Native
+LLVM evaluation runs on a worker while the calling thread drains pipes and
+delivers output during the cell, not just at completion. All `CellIO` hooks
+remain on the calling thread, so frontend sockets never move to the worker.
+Output is drained before display, clear-output and input hooks, and before
+returning; descriptors and hooks are restored even after a failed cell.
+The output hook receives arbitrary byte chunks, not necessarily whole lines.
+Without an output hook, stdout and stderr are not redirected.
+
+WASM, where native threads are unavailable, retains synchronous capture:
+output is delivered at hooks and cell completion. Jupyter messages must be
+UTF-8; the kernel preserves characters split between chunks and shows invalid
+bytes as U+FFFD. Running a cell still blocks other execution requests; streaming
+does not implement interruption or cancellation.
 
 ## Runtime input
 
@@ -71,3 +86,8 @@ exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
 relying on the C++ `std::complex` return convention.
+
+The registered `test_session` also checks output-before-idle on a live kernel
+and separated output arrivals in the actual prompt, repeated cells, large
+UTF-8 streams, and session cleanup. Its `--streaming-only` selector runs these
+checks directly; `--compiler-arg=--fast` selects the kernel's compilation mode.

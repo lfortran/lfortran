@@ -81,9 +81,11 @@ public:
         std::function<int(std::string &record)> input;
         // Receives what the cell writes to stdout (stream 1) and stderr
         // (stream 2). Set, both are captured while the cell runs and passed
-        // here before each display, clear_output and input, and when the
-        // cell ends. Unset, the cell writes to the process's stdout and
-        // stderr.
+        // here while it runs, before each display, clear_output and input,
+        // and when it ends. All hooks run on the calling thread. Native
+        // evaluation uses a worker while that thread drains output; without
+        // native threads (WASM), output is drained only at hooks and cell end.
+        // Unset, the cell writes to the process's stdout and stderr.
         std::function<void(int stream, const std::string &text)> output;
     };
 

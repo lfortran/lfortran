@@ -6,6 +6,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
+#ifndef __EMSCRIPTEN__
+#include <thread>
+#endif
 
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -3054,6 +3057,44 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
 // Like test_runtime_input, the stdin cases run natively only; the WASM test
 // build also cannot read the integration test sources.
 #ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: output hook ordering and cleanup") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    auto caller = std::this_thread::get_id();
+    bool on_caller = true;
+    std::vector<std::string> events;
+    auto event = [&](const std::string &text) {
+        on_caller = on_caller && std::this_thread::get_id() == caller;
+        events.push_back(text);
+    };
+    FortranEvaluator::CellIO io;
+    io.output = [&](int fd, const std::string &text) {
+        event(std::to_string(fd) + ":" + text);
+    };
+    io.display = [&](const std::string &, const std::string &) { event("display"); };
+    io.clear_output = [&]() { event("clear"); };
+    io.input = [&](std::string &record) { event("input"); record = "7"; return 0; };
+    auto cell = e.execute("use lfortran_display\ninteger :: streamed\n"
+        "print '(a)', 'before-display'\ncall display_data('text/plain', 'shown')\n"
+        "write(0,'(a)') 'before-clear'\ncall clear_output()\n"
+        "print '(a)', 'before-input'\nread(*,*) streamed\n"
+        "print '(i1)', streamed", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(on_caller);
+    CHECK(events == std::vector<std::string>{"1:before-display\n", "display",
+        "2:before-clear\n", "clear", "1:before-input\n", "input", "1:7\n"});
+
+    io.output = [](int, const std::string &) { throw std::runtime_error("output failure"); };
+    CHECK_THROWS_WITH_AS(e.execute("print '(a)', repeat('x', 200000)", false, io),
+        "output failure", std::runtime_error);
+    events.clear();
+    io.output = [&](int fd, const std::string &text) { event(std::to_string(fd) + ":" + text); };
+    cell = e.execute("print '(a)', 'next-cell'", false, io);
+    REQUIRE(cell.ok);
+    CHECK(events == std::vector<std::string>{"1:next-cell\n"});
+    CHECK(on_caller);
+}
+
 struct InputRecords {
     std::vector<std::string> records;
     size_t next = 0;

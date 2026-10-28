@@ -6,6 +6,14 @@
 #include <set>
 #include <sstream>
 #include <type_traits>
+#ifndef __EMSCRIPTEN__
+#include <chrono>
+#include <condition_variable>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <thread>
+#endif
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -34,8 +42,11 @@
 
 #ifdef _WIN32
 #include <io.h>
+#include <fcntl.h>
 #else
 #include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
 #endif
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -53,6 +64,11 @@ namespace LCompilers {
     class WasmLFortranExecutor {};
 #endif
 }
+#endif
+
+#ifdef _WIN32
+// After LLVM headers, since Windows defines min/max macros.
+#include <windows.h>
 #endif
 
 // Defined in the runtime library (lfortran_intrinsics.c, declared in
@@ -84,18 +100,22 @@ struct InputContext {
 int dup_fd(int fd) { return _dup(fd); }
 int dup2_fd(int from, int to) { return _dup2(from, to); }
 void close_fd(int fd) { _close(fd); }
-void rewind_fd(int fd) { _lseek(fd, 0, SEEK_SET); }
 int read_fd(int fd, char *buffer, unsigned size) { return _read(fd, buffer, size); }
-bool truncate_fd(int fd) { return _chsize(fd, 0) == 0; }
 #else
 int dup_fd(int fd) { return dup(fd); }
 int dup2_fd(int from, int to) { return dup2(from, to); }
 void close_fd(int fd) { close(fd); }
-void rewind_fd(int fd) { lseek(fd, 0, SEEK_SET); }
 int read_fd(int fd, char *buffer, unsigned size) { return read(fd, buffer, size); }
-bool truncate_fd(int fd) { return ftruncate(fd, 0) == 0; }
 #endif
 
+#if defined(__EMSCRIPTEN__) || !defined(HAVE_LFORTRAN_LLVM)
+#ifdef _WIN32
+void rewind_fd(int fd) { _lseek(fd, 0, SEEK_SET); }
+bool truncate_fd(int fd) { return _chsize(fd, 0) == 0; }
+#else
+void rewind_fd(int fd) { lseek(fd, 0, SEEK_SET); }
+bool truncate_fd(int fd) { return ftruncate(fd, 0) == 0; }
+#endif
 // While a cell runs with CellIO::output set, its stdout and stderr (file
 // descriptors 1 and 2) go to temporary files rather than pipes: a file never
 // fills up, so nothing has to read it while the cell runs.
@@ -152,6 +172,176 @@ public:
         }
     }
 };
+#else
+// Only the caller reads the pipes and invokes CellIO. Evaluation can block
+// in a write without holding up either the drain or the frontend's sockets.
+class OutputCapture {
+    int readers[2] = {-1, -1};
+    int saved[2] = {-1, -1};
+
+    void restore() {
+        for (int i = 0; i < 2; i++) {
+            if (saved[i] != -1) {
+                dup2_fd(saved[i], 1 + i);
+                close_fd(saved[i]);
+                saved[i] = -1;
+            }
+            if (readers[i] != -1) {
+                close_fd(readers[i]);
+                readers[i] = -1;
+            }
+        }
+    }
+
+public:
+    OutputCapture() {
+        fflush(stdout);
+        fflush(stderr);
+        for (int i = 0; i < 2; i++) {
+            int fds[2];
+#ifdef _WIN32
+            bool opened = _pipe(fds, 4096, _O_BINARY) == 0;
+#else
+            bool opened = pipe(fds) == 0;
+#endif
+            if (!opened) {
+                restore();
+                throw LCompilers::LCompilersException("cannot create a pipe for the cell's output");
+            }
+            readers[i] = fds[0];
+            saved[i] = dup_fd(1 + i);
+            bool redirected = saved[i] != -1 && dup2_fd(fds[1], 1 + i) >= 0;
+            close_fd(fds[1]);
+#ifdef _WIN32
+            bool configured = SetHandleInformation(
+                reinterpret_cast<HANDLE>(_get_osfhandle(readers[i])), HANDLE_FLAG_INHERIT, 0)
+                && (saved[i] == -1 || SetHandleInformation(
+                    reinterpret_cast<HANDLE>(_get_osfhandle(saved[i])), HANDLE_FLAG_INHERIT, 0));
+#else
+            bool configured = fcntl(readers[i], F_SETFL, O_NONBLOCK) != -1
+                && fcntl(readers[i], F_SETFD, FD_CLOEXEC) != -1
+                && (saved[i] == -1 || fcntl(saved[i], F_SETFD, FD_CLOEXEC) != -1);
+#endif
+            if (!redirected || !configured) {
+                restore();
+                throw LCompilers::LCompilersException("cannot redirect the cell's output");
+            }
+        }
+    }
+
+    ~OutputCapture() {
+        fflush(stdout);
+        fflush(stderr);
+        restore();
+    }
+    OutputCapture(const OutputCapture &) = delete;
+    OutputCapture &operator=(const OutputCapture &) = delete;
+
+    void flush(const std::function<void(int, const std::string &)> &output) {
+        // Do not fflush here: a large stdio write can hold its FILE lock
+        // while waiting for us to make room in the pipe.
+        for (int i = 0; i < 2; i++) {
+            char buffer[4096];
+            std::string text;
+            // Coalesce reads so a large write does not flood the frontend
+            // with tiny messages, but do not starve the other stream/hooks.
+            while (text.size() < 1024 * 1024) {
+#ifdef _WIN32
+                DWORD available = 0;
+                if (!PeekNamedPipe(reinterpret_cast<HANDLE>(_get_osfhandle(readers[i])),
+                        nullptr, 0, nullptr, &available, nullptr)) {
+                    throw LCompilers::LCompilersException("cannot read the cell's output pipe");
+                }
+                if (!available) break;
+#endif
+                int n = read_fd(readers[i], buffer, sizeof(buffer));
+                if (n > 0) {
+                    text.append(buffer, n);
+                } else {
+#ifdef _WIN32
+                    if (n < 0) {
+                        throw LCompilers::LCompilersException("cannot read the cell's output pipe");
+                    }
+#else
+                    if (n < 0 && errno == EINTR) continue;
+                    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                        throw LCompilers::LCompilersException("cannot read the cell's output pipe");
+                    }
+#endif
+                    break;
+                }
+            }
+            if (!text.empty()) output(1 + i, text);
+        }
+    }
+};
+
+// Evaluation owns no frontend sockets. Its synchronous hooks rendezvous with
+// the calling thread, which also drains output until evaluation completes.
+class CellRunner {
+    std::mutex mutex;
+    std::condition_variable changed;
+    std::function<void()> pending;
+    const std::thread::id caller = std::this_thread::get_id();
+public:
+    void dispatch(std::function<void()> call) {
+        if (std::this_thread::get_id() == caller) {
+            call();
+            return;
+        }
+        auto task = std::make_shared<std::packaged_task<void()>>(std::move(call));
+        auto result = task->get_future();
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            pending = [task]() { (*task)(); };
+        }
+        changed.notify_one();
+        result.get();
+    }
+
+    void run(const std::function<void()> &evaluate, const std::function<void()> &drain) {
+        bool done = false;
+        std::exception_ptr evaluation_error, output_error;
+        std::thread worker([&]() {
+            try {
+                evaluate();
+                fflush(stdout);
+                fflush(stderr);
+            } catch (...) {
+                evaluation_error = std::current_exception();
+            }
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                done = true;
+            }
+            changed.notify_one();
+        });
+        while (true) {
+            std::function<void()> call;
+            bool finished;
+            {
+                std::unique_lock<std::mutex> lock(mutex);
+                changed.wait_for(lock, std::chrono::milliseconds(10),
+                    [&]() { return done || pending; });
+                call.swap(pending);
+                finished = done;
+            }
+            // Even a throwing output hook must not strand a worker in a
+            // full pipe or leave a joinable thread during stack unwinding.
+            try {
+                drain();
+            } catch (...) {
+                if (!output_error) output_error = std::current_exception();
+            }
+            if (call) call();
+            if (finished) break;
+        }
+        worker.join();
+        if (evaluation_error) std::rethrow_exception(evaluation_error);
+        if (output_error) std::rethrow_exception(output_error);
+    }
+};
+#endif
 
 // What the cell running with CellIO::output has written but not yet passed
 // on, for when it ends the process.
@@ -608,7 +798,24 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     // What the cell writes goes to io.output before anything it displays,
     // clears or reads.
     std::optional<OutputCapture> capture;
-    std::function<void()> flush_output = [&]() { if (capture) capture->flush(io.output); };
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+    std::optional<CellRunner> runner;
+    if (io.output) runner.emplace();
+#endif
+    auto on_caller = [&](std::function<void()> call) {
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+        if (runner) {
+            runner->dispatch(std::move(call));
+            return;
+        }
+#endif
+        call();
+    };
+    std::function<void()> flush_output = [&]() {
+        fflush(stdout);
+        fflush(stderr);
+        on_caller([&]() { if (capture) capture->flush(io.output); });
+    };
     // A cell that ends the process (STOP, a fatal error) still passes on
     // what it wrote.
     struct FlushAtExit {
@@ -627,20 +834,28 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         flush_at_exit_guard.emplace(&flush_output);
         if (io.display) {
             hooks_io.display = [&](const std::string &mime, const std::string &data) {
-                flush_output();
-                io.display(mime, data);
+                on_caller([&]() {
+                    flush_output();
+                    io.display(mime, data);
+                });
             };
         }
         if (io.clear_output) {
             hooks_io.clear_output = [&]() {
-                flush_output();
-                io.clear_output();
+                on_caller([&]() {
+                    flush_output();
+                    io.clear_output();
+                });
             };
         }
         if (io.input) {
             hooks_io.input = [&](std::string &record) {
-                flush_output();
-                return io.input(record);
+                int status = 0;
+                on_caller([&]() {
+                    flush_output();
+                    status = io.input(record);
+                });
+                return status;
             };
         }
     }
@@ -664,51 +879,61 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     passes.use_default_passes();
     try {
         if (io.output) capture.emplace();
-        const auto newline = code.find('\n');
-        auto magic = code.substr(0, newline);
-        // Trailing blanks and the \r of a CRLF line ending are not part of it.
-        magic.erase(magic.find_last_not_of(" \t\r") + 1);
-        const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
-        Result<std::string> shown{Error{}};
-        // An inspection cell shows how its code compiles in the session, but
-        // it does not run, so its declarations must not join the session.
-        struct KeepSession {
-            SymbolTable *&scope;
-            SymbolTable *const saved;
-            ~KeepSession() { scope = saved; }
+        auto evaluate_cell = [&]() {
+            const auto newline = code.find('\n');
+            auto magic = code.substr(0, newline);
+            // Trailing blanks and the \r of a CRLF line ending are not part of it.
+            magic.erase(magic.find_last_not_of(" \t\r") + 1);
+            const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
+            Result<std::string> shown{Error{}};
+            // An inspection cell shows how its code compiles in the session, but
+            // it does not run, so its declarations must not join the session.
+            struct KeepSession {
+                SymbolTable *&scope;
+                SymbolTable *const saved;
+                ~KeepSession() { scope = saved; }
+            };
+            out.inspection = true;
+            if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
+            else if (magic == "%%showasr") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_asr(source, lm, diagnostics);
+            } else if (magic == "%%showllvm") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_llvm(source, lm, passes, diagnostics);
+            } else if (magic == "%%showasm") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_asm(source, lm, passes, diagnostics);
+            } else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
+            else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
+            else {
+                out.inspection = false;
+                auto result = evaluate(code, verbose, lm, passes, diagnostics);
+                out.ok = result.ok;
+                if (out.ok) out.value = std::move(result.result);
+            }
+            if (shown.ok) {
+                out.ok = true;
+                out.output = shown.result;
+            }
+            out.diagnostics = diagnostics.render(lm, compiler_options);
+            if (!out.ok) {
+                LCOMPILERS_ASSERT(diagnostics.has_error());
+                out.error_name = "CompilerError";
+                out.error_value = out.diagnostics;
+            } else if (!display.error.empty()) {
+                out.ok = false;
+                out.error_name = "DisplayError";
+                out.error_value = "display failed: " + display.error;
+            }
         };
-        out.inspection = true;
-        if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
-        else if (magic == "%%showasr") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_asr(source, lm, diagnostics);
-        } else if (magic == "%%showllvm") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_llvm(source, lm, passes, diagnostics);
-        } else if (magic == "%%showasm") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_asm(source, lm, passes, diagnostics);
-        } else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
-        else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
-        else {
-            out.inspection = false;
-            auto result = evaluate(code, verbose, lm, passes, diagnostics);
-            out.ok = result.ok;
-            if (out.ok) out.value = std::move(result.result);
-        }
-        if (shown.ok) {
-            out.ok = true;
-            out.output = shown.result;
-        }
-        out.diagnostics = diagnostics.render(lm, compiler_options);
-        if (!out.ok) {
-            LCOMPILERS_ASSERT(diagnostics.has_error());
-            out.error_name = "CompilerError";
-            out.error_value = out.diagnostics;
-        } else if (!display.error.empty()) {
-            out.ok = false;
-            out.error_name = "DisplayError";
-            out.error_value = "display failed: " + display.error;
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+        if (runner) {
+            runner->run(evaluate_cell, [&]() { capture->flush(io.output); });
+        } else
+#endif
+        {
+            evaluate_cell();
         }
     } catch (const LCompilersException &error) {
         out.ok = false;

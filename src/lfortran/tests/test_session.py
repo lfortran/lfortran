@@ -12,6 +12,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import uuid
 
@@ -100,10 +101,95 @@ def reply_to(client, msg_id, timeout):
     return None
 
 
+def live_output(lfortran, cwd, connection, client):
+    """Observe actual output during a cell, not just its eventual contents."""
+    delay = 'call execute_command_line("sleep 3")' if os.name == "posix" else busy(3)
+    cases = [("stdout", 'print *, "first"\n' + delay, False),
+        ("stdout", 'print *, "first"\n' + delay + '\nprint *, "second"', True),
+        ("stderr", 'write(0,*) "first"\n' + delay, False)]
+    if os.name == "posix":
+        cases.append(("stdout", 'call execute_command_line("printf \'first\\n\'; sleep 3")', False))
+    for channel, code, has_second in cases:
+        request = client.execute(code)
+        messages, first, second = [], None, None
+        deadline = time.monotonic() + 30
+        while True:
+            check(time.monotonic() < deadline, "streaming cell did not finish")
+            try:
+                msg = client.get_iopub_msg(timeout=0.1)
+            except queue.Empty:
+                continue
+            if parent_id(msg) != request:
+                check(msg["msg_type"] != "stream", ("output leaked between cells", msg))
+                continue
+            now = time.monotonic()
+            messages.append(msg)
+            out = text(messages, channel)
+            if first is None and "first\n" in out:
+                first = now
+            if second is None and "second\n" in out:
+                second = now
+            if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+                break
+        reply = reply_to(client, request, 30)
+        check(reply and reply["content"]["status"] == "ok", reply)
+        check(out.split() == (["first", "second"] if has_second else ["first"]), out)
+        gap = now - first if first is not None else 0
+        print("live kernel: first-to-idle %.3f s" % gap, flush=True)
+        check(gap >= 1.5, "output withheld until idle: %.3f s margin" % gap)
+        if has_second:
+            check(second - first >= 1.5, "the two prints arrived together")
+
+    # More than a pipe buffer, including characters spanning read boundaries,
+    # and enough cells to expose leaked descriptors or stale capture offsets.
+    for i in range(20):
+        reply, messages = run(client, "print '(a)', repeat('€', 400000)")
+        check(reply["status"] == "ok", reply)
+        check(text(messages, "stdout") == "€" * 400000 + "\n", "lost or corrupt output")
+    reply, messages = run(client, "write(0,*) 'warning'\nprint *, 'after-warning'")
+    check(reply["status"] == "ok" and text(messages, "stderr").strip() == "warning"
+        and text(messages, "stdout").strip() == "after-warning", messages)
+
+    # A real prompt, connected to the same live kernel. A reader timestamps
+    # complete output lines; echoed source is deliberately not a match.
+    process = subprocess.Popen([lfortran, "--no-color", "--connect", str(connection)],
+        cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    lines = []
+
+    def read():
+        for line in process.stdout:
+            lines.append((time.monotonic(), line.strip()))
+
+    reader = threading.Thread(target=read)
+    reader.start()
+    try:
+        cell = 'print *, "first"\x0e' + delay + '\x0eprint *, "second"\r'
+        process.stdin.write((cell * 2 + "\x04").encode())
+        process.stdin.close()
+        process.wait(timeout=45)
+        reader.join(timeout=5)
+        check(not reader.is_alive(), "prompt output reader did not stop")
+        check(process.returncode == 0, ("prompt failed", lines))
+        outputs = [(t, line) for t, line in lines if line in (b"first", b"second")]
+        check([line for _, line in outputs] == [b"first", b"second"] * 2, lines)
+        for i in (0, 2):
+            gap = outputs[i + 1][0] - outputs[i][0]
+            print("live prompt: first-to-second %.3f s" % gap, flush=True)
+            check(gap >= 1.5, "prompt withheld output: %.3f s margin" % gap)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        reader.join(timeout=5)
+        process.stdout.close()
+    check(value(client, "6*7") == "42", "prompt departure damaged the session")
+
+
 def shared_session(lfortran, cwd, connection):
     a, b = connect(connection), connect(connection)
     clients = [a, b]
     try:
+        live_output(lfortran, cwd, connection, a)
         # The clients share one session.
         check(run(a, "integer :: x = 41")[0]["status"] == "ok", "declaration failed")
         check(value(b, "x + 1") == "42", "state is not shared")
@@ -228,8 +314,8 @@ def prompt_session(lfortran, cwd):
             prompt.wait()
 
 
-def start(lfortran, cwd, connection, log):
-    return subprocess.Popen([lfortran, "kernel", "-f", str(connection)], cwd=cwd,
+def start(lfortran, cwd, connection, log, arguments=()):
+    return subprocess.Popen([lfortran, *arguments, "kernel", "-f", str(connection)], cwd=cwd,
         stdin=subprocess.DEVNULL, stdout=log, stderr=log)
 
 
@@ -238,24 +324,38 @@ def main():
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--builtin", action="store_true",
         help="the kernel is the built-in one, not the Xeus one")
+    parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--compiler-arg", action="append", default=[])
     args = parser.parse_args()
     cwd = Path.cwd() / ("session-" + uuid.uuid4().hex)
     cwd.mkdir(mode=0o700)
+    for name in ("TMPDIR", "TMP", "TEMP"):
+        os.environ[name] = str(cwd)
     log_path = cwd / "kernel.log"
     try:
         with log_path.open("wb") as log:
             # A kernel started by a Jupyter frontend, with its connection file.
             connection = cwd / "connection.json"
             write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode())
-            kernel = start(args.lfortran, cwd, connection, log)
+            kernel = start(args.lfortran, cwd, connection, log, args.compiler_arg)
             try:
-                shared_session(args.lfortran, cwd, connection)
+                if args.streaming_only:
+                    client = connect(connection)
+                    try:
+                        live_output(args.lfortran, cwd, connection, client)
+                        client.shutdown()
+                    finally:
+                        client.stop_channels()
+                else:
+                    shared_session(args.lfortran, cwd, connection)
                 kernel.wait(timeout=30)
             finally:
                 if kernel.poll() is None:
                     kernel.kill()
                     kernel.wait()
             check(kernel.returncode == 0, "the kernel exited with %d" % kernel.returncode)
+            if args.streaming_only:
+                return
             if args.builtin:
                 # A kernel started by hand writes its connection file and
                 # removes it when it stops.
