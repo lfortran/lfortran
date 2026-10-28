@@ -2315,9 +2315,52 @@ bool is_reevaluable_designator(ASR::expr_t* x) {
     }
 }
 
+// Whether `x` is a scalar integer component of a variable, reached through
+// components and elements selected with reevaluable subscripts out of
+// scalars, e.g. `self%start_index` or `s%t(k)%n`, with no pointer on the
+// way. An array assignment defines only elements of its target array, which
+// such a component, not reached through a pointer, is not part of.
+bool is_non_pointer_integer_component(ASR::expr_t* x) {
+    ASR::ttype_t* type = ASRUtils::expr_type(x);
+    if( !ASRUtils::is_integer(*type) || ASRUtils::is_array(type) ||
+        ASRUtils::is_pointer(type) || !is_reevaluable_designator(x) ) {
+        return false;
+    }
+    while( true ) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        switch( x->type ) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x)->m_v);
+                return ASR::is_a<ASR::Variable_t>(*sym) &&
+                    !ASRUtils::is_pointer(ASRUtils::symbol_type(sym));
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* member =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x);
+                if( ASRUtils::is_pointer(ASRUtils::symbol_type(
+                        ASRUtils::symbol_get_past_external(member->m_m))) ) {
+                    return false;
+                }
+                x = member->m_v;
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                x = ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+}
+
 // Whether `x`, a subscript of an array section, is evaluated without side
-// effects from variables, constants and the bounds of variables only, so
-// that two references with the same subscripts select the same elements.
+// effects from variables, their scalar integer components (see
+// is_non_pointer_integer_component), constants and the bounds of variables
+// only, so that two references with the same subscripts select the same
+// elements.
 bool is_reevaluable_section_subscript(ASR::expr_t* x) {
     if( x == nullptr || ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
         return true;
@@ -2332,6 +2375,9 @@ bool is_reevaluable_section_subscript(ASR::expr_t* x) {
             ASR::ttype_t* type = ASRUtils::symbol_type(sym);
             return ASRUtils::is_integer(*type) && !ASRUtils::is_array(type) &&
                 !ASRUtils::is_pointer(type);
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return is_non_pointer_integer_component(x);
         }
         case ASR::exprType::IntegerBinOp: {
             ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(x);

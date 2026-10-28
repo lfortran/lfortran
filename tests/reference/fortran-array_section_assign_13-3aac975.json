@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_section_assign_13-3aac975",
+    "cmd": "lfortran --pass=array_struct_temporary --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/../integration_tests/array_section_assign_13.f90",
+    "infile_hash": "2407654e7894a2a17de1e920e91d6aae5b47784454ede16e76f91dad",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_section_assign_13-3aac975.f90",
+    "stdout_hash": "9788d857a0fd0ae5a33ad3380aa8fba7b433f9980d89389d8b025ef7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
