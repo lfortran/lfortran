@@ -4764,4 +4764,10 @@ semantic error: referencing the external procedure 'cc1_cyclic_iface_ext' in the
     --> tests/errors/continue_compilation_1.f90:3811:9
      |
 3811 |         call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
-     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use --implicit-interface to reference it through an implicit interface
+
+semantic error: referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface cannot be copied into the module
+    --> tests/errors/continue_compilation_1.f90:3830:9
+     |
+3830 |         call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface cannot be copied into the module
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use --implicit-interface to reference it through an implicit interface

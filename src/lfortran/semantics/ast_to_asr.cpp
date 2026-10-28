@@ -32,6 +32,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm,
         const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types);
 
@@ -48,6 +49,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm);
 
 void load_rtlib() {
@@ -69,11 +71,13 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> entry_functions;
     std::map<std::string, std::vector<int>> entry_function_arguments_mapping;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
+    std::set<ASR::symbol_t*> getter_functions;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping,
         external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
-        instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm,
+        instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure,
+        getter_functions, lm,
         interactive_implicit_types);
     if (res.ok) {
         unit = res.result;
@@ -115,7 +119,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             implicit_mapping,
             external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, lm
+            data_structure, getter_functions, lm
         );
         if (res.ok) {
             tu = res.result;

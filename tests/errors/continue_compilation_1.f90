@@ -3844,3 +3844,22 @@ subroutine cc1_cyclic_iface_ext(a)
     real :: a(m)
     a = 0
 end subroutine
+
+module cc1_file_fn_iface_m
+contains
+    subroutine cc1_file_fn_iface_call(a)
+        real :: a(6)
+        call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface cannot be copied into the module
+    end subroutine
+end module cc1_file_fn_iface_m
+
+integer function cc1_file_fn_iface_len(n)
+    integer, intent(in) :: n
+    cc1_file_fn_iface_len = 2*n
+end function
+
+subroutine cc1_file_fn_iface_ext(a, n)
+    integer, intent(in) :: n
+    real :: a(cc1_file_fn_iface_len(n))
+    a = 0
+end subroutine

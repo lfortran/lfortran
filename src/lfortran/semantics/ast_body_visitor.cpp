@@ -312,13 +312,14 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, lm
+            data_structure, getter_functions, lm
         ), asr{unit}, from_block{false} {}
 
     ASR::symbol_t* extract_assignment_base_symbol(ASR::expr_t* expr) {
@@ -541,7 +542,7 @@ public:
                 external_procedures_mapping,
                 explicit_intrinsic_procedures_mapping, instantiate_types,
                 instantiate_symbols, entry_functions,
-                entry_function_arguments_mapping, data_structure, lm);
+                entry_function_arguments_mapping, data_structure, getter_functions, lm);
         }
         block_interfaces->visit_Interface(x);
     }
@@ -12134,13 +12135,14 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
         external_procedures_mapping,
         explicit_intrinsic_procedures_mapping,
         instantiate_types, instantiate_symbols, entry_functions,
-        entry_function_arguments_mapping, data_structure, lm
+        entry_function_arguments_mapping, data_structure, getter_functions, lm
     );
     try {
         b.is_body_visitor = true;

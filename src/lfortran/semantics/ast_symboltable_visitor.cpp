@@ -583,13 +583,14 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+            entry_function_arguments_mapping, data_structure, getter_functions, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -7699,14 +7700,15 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm,
         const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
                          implicit_mapping, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
+                         entry_function_arguments_mapping, data_structure, getter_functions, lm);
     if (interactive_implicit_types) {
         v.implicit_dictionary = *interactive_implicit_types;
     }
@@ -7730,12 +7732,13 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm)
     : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
         compiler_options, implicit_mapping, external_procedures_mapping,
         explicit_intrinsic_procedures_mapping, instantiate_types,
         instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-        data_structure, lm))
+        data_structure, getter_functions, lm))
 {
     v->global_scope = block_scope;
     while (v->global_scope->parent != nullptr) {
