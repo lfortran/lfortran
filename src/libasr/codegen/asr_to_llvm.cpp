@@ -881,6 +881,9 @@ public:
         llvm::Type* array_type;
         LCompilers::ASR::ttype_t* var_type;
         size_t n_dims;
+        // Companion descriptor global, when this translation unit defines the
+        // variable. Null when it only refers to one defined elsewhere.
+        llvm::GlobalVariable* descriptor;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
     std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
@@ -2503,9 +2506,49 @@ public:
     // `is_earlier_cell_global`). The evaluator calls this before anything
     // else of the cell. The JIT runs no static constructors, so it cannot be
     // one.
+    //
+    // The same holds for the descriptor of an allocatable or pointer array
+    // global. It is the companion global created with the variable, not a
+    // slot in the setup function or in a program: both return, and a slot
+    // there would leave the global pointing at a dead descriptor.
+    bool allocatable_array_defined_here(const to_be_allocated_array &array) {
+        if (array.descriptor == nullptr) return false;
+        if (!ASR::is_a<ASR::Var_t>(*array.expr)) return false;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(array.expr)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        return !is_earlier_cell_global(*ASR::down_cast<ASR::Variable_t>(sym));
+    }
+
+    void emit_allocatable_global_array_setup() {
+        for (to_be_allocated_array array : allocatable_array_details) {
+            if (compiler_options.interactive
+                    && !allocatable_array_defined_here(array)) {
+                // An earlier cell already set this descriptor up, and the
+                // allocation it holds now has to be left in place. One this
+                // cell defines is set up below, on its companion global.
+                continue;
+            }
+            llvm::GlobalVariable *descriptor = compiler_options.interactive
+                ? array.descriptor : nullptr;
+            fill_array_details_(array.expr, array.pointer_to_array_type,
+                array.array_type, nullptr, array.n_dims,
+                true, true, false, array.var_type,
+                false, true, descriptor);
+        }
+    }
+
     void emit_interactive_global_setup() {
+        bool arrays = false;
+        for (const to_be_allocated_array &array : allocatable_array_details) {
+            if (allocatable_array_defined_here(array)) {
+                arrays = true;
+                break;
+            }
+        }
         if (allocatable_struct_array_members_details.empty()
-                && struct_array_global_members_details.empty()) {
+                && struct_array_global_members_details.empty()
+                && !arrays) {
             return;
         }
         llvm::FunctionType *function_type = llvm::FunctionType::get(
@@ -2516,6 +2559,7 @@ public:
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
         builder->SetCurrentDebugLocation(nullptr);
         emit_global_struct_members_setup();
+        emit_allocatable_global_array_setup();
         builder->CreateRetVoid();
         builder->ClearInsertionPoint();
     }
@@ -7852,7 +7896,8 @@ public:
                       ptr,
                       type_,
                       x.m_type,
-                      ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims) });
+                      ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims),
+                      nullptr });
             } else if (ASRUtils::is_character(*x.m_type) && !init_value) {
                 // set all members of string_descriptor to null and zeroes.
                 init_value = llvm::ConstantAggregateZero::get(string_descriptor);
@@ -7866,10 +7911,15 @@ public:
                     // companion global descriptor so the pointer is never NULL.
                     // In separate compilation, main() cannot initialize
                     // submodule-private variables, so we need a valid
-                    // descriptor from the start.
+                    // descriptor from the start. Interactive evaluation keeps
+                    // using this global: the cell that defines the variable
+                    // sets it up once, and later cells must not replace it.
+                    llvm::GlobalVariable *descriptor =
+                        create_null_array_descriptor_global(type_,
+                            llvm_var_name + "_descriptor__");
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            create_null_array_descriptor_global(type_,
-                                llvm_var_name + "_descriptor__"));
+                            descriptor);
+                    allocatable_array_details.back().descriptor = descriptor;
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             llvm::ConstantPointerNull::get(
@@ -8381,9 +8431,11 @@ public:
                 llvm::APInt(32, 1));
             builder->CreateCall(fn, {use_colors});
         }
-        for(to_be_allocated_array array : allocatable_array_details){
-            fill_array_details_(array.expr, array.pointer_to_array_type, array.array_type, nullptr, array.n_dims,
-                true, true, false, array.var_type);
+        // Interactive mode already set these up, once, before this program
+        // (see emit_interactive_global_setup). Doing it again would drop an
+        // allocation made by an earlier cell.
+        if (!compiler_options.interactive) {
+            emit_allocatable_global_array_setup();
         }
         emit_global_struct_members_setup();
         declare_vars(x);
