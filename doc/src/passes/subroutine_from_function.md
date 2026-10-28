@@ -89,9 +89,17 @@ function cannot otherwise access its storage before completing the result
 actual, a procedure component or a dummy procedure may designate an internal
 procedure that reads the target by host association. Such unknown procedure
 actuals retain a result temporary, including when wrapped in a procedure
-cast. A known procedure implementation outside the assignment's routine does
-not capture its locals, so it need not prevent direct result assignment to
-an otherwise unaliased local.
+cast or carried by a derived-type actual or passed object. Component types
+are followed recursively, including inherited components and recursive data
+pointers; an unknown dynamic extension can also carry a callback.
+
+A known implementation is not alone proof of noncapture: it may call an
+externally stored procedure pointer. Follow its calls, propagating known
+procedure actuals to dummy procedures, before reusing a local destination.
+Known noncapturing callbacks and data types without callback components
+remain eligible. The destination itself is checked along its entire
+designator: a nonpointer final component reached through an intervening
+pointer can still alias storage accessible to the callee.
 
 ### Runtime character result metadata
 
