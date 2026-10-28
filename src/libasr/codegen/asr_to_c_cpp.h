@@ -1740,20 +1740,223 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "_lfortran_strrepeat_c_alloc(_lfortran_get_default_allocator(), " + s + ", " + n + ")";
     }
 
+    // Whether `e` can be lowered element-by-element for a C++ array
+    // assignment: leaves are scalars, array variables or broadcasts;
+    // interior nodes are numeric/logical scalar operators. Anything
+    // else (calls, sections, ...) falls back to the generic path.
+    bool is_elementwise_assignable(ASR::expr_t* e) {
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            ASR::ArrayBroadcast_t *b = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
+            return !ASRUtils::is_array(ASRUtils::expr_type(b->m_array));
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+            if (c->m_kind != ASR::cast_kindType::IntegerToReal &&
+                c->m_kind != ASR::cast_kindType::RealToInteger &&
+                c->m_kind != ASR::cast_kindType::RealToReal &&
+                c->m_kind != ASR::cast_kindType::IntegerToInteger) {
+                return false;
+            }
+            return is_elementwise_assignable(c->m_arg);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::RealBinOp_t>(*e) ||
+            ASR::is_a<ASR::ComplexBinOp_t>(*e) ||
+            ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+                ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else {
+                ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            }
+            return is_elementwise_assignable(l) && is_elementwise_assignable(r);
+        }
+        if (ASR::is_a<ASR::IntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::RealCompare_t>(*e) ||
+            ASR::is_a<ASR::ComplexCompare_t>(*e) ||
+            ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+                ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+                ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else {
+                ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            }
+            return is_elementwise_assignable(l) && is_elementwise_assignable(r);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::RealUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            ASR::expr_t *a = nullptr;
+            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
+            } else {
+                a = ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg;
+            }
+            return is_elementwise_assignable(a);
+        }
+        if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            return is_elementwise_assignable(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg);
+        }
+        return false;
+    }
+
+    // Lowers `e` to a scalar C++ expression for one element of an
+    // elementwise array assignment; array leaves are indexed by `idx`.
+    // Only called after is_elementwise_assignable().
+    std::string elementwise_src(ASR::expr_t* e, const std::string &idx) {
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            return elementwise_src(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, idx);
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            self().visit_Var(*ASR::down_cast<ASR::Var_t>(e));
+            if (ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                return src + "->data->operator[](" + idx + ")";
+            }
+            return src;
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            self().visit_expr(*e);
+            return src;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+            std::string arg = elementwise_src(c->m_arg, idx);
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(c->m_type);
+            if (c->m_kind == ASR::cast_kindType::IntegerToReal) {
+                return (dest_kind == 4 ? "(float)(" : "(double)(") + arg + ")";
+            } else if (c->m_kind == ASR::cast_kindType::RealToInteger) {
+                return "(int" + std::to_string(dest_kind * 8) + "_t)(" + arg + ")";
+            }
+            return arg;
+        }
+        ASR::expr_t *l = nullptr, *r = nullptr;
+        bool is_compare = false, is_logical = false, is_not = false, is_neg = false;
+        ASR::binopType binop = ASR::binopType::Add;
+        ASR::cmpopType cmpop = ASR::cmpopType::Eq;
+        ASR::logicalbinopType logop = ASR::logicalbinopType::And;
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            l = b->m_left; r = b->m_right; binop = b->m_op;
+        } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+            ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+            l = b->m_left; r = b->m_right; binop = b->m_op;
+        } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+            ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+            l = b->m_left; r = b->m_right; binop = b->m_op;
+        } else if (ASR::is_a<ASR::ComplexBinOp_t>(*e)) {
+            ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+            l = b->m_left; r = b->m_right; binop = b->m_op;
+        } else if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+            ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+            l = b->m_left; r = b->m_right; is_logical = true; logop = b->m_op;
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+            ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+            l = c->m_left; r = c->m_right; is_compare = true; cmpop = c->m_op;
+        } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+            ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+            l = c->m_left; r = c->m_right; is_compare = true; cmpop = c->m_op;
+        } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+            ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+            l = c->m_left; r = c->m_right; is_compare = true; cmpop = c->m_op;
+        } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+            ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+            l = c->m_left; r = c->m_right; is_compare = true; cmpop = c->m_op;
+        } else if (ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+            l = c->m_left; r = c->m_right; is_compare = true; cmpop = c->m_op;
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            l = ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg; is_neg = true;
+        } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+            l = ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg; is_neg = true;
+        } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+            l = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg; is_neg = true;
+        } else if (ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            l = ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg; is_neg = true;
+        } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            l = ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg; is_not = true;
+        } else {
+            LCOMPILERS_ASSERT(false);
+        }
+        if (is_neg) {
+            return "(-" + elementwise_src(l, idx) + ")";
+        }
+        if (is_not) {
+            return "(!" + elementwise_src(l, idx) + ")";
+        }
+        std::string left = elementwise_src(l, idx);
+        std::string right = elementwise_src(r, idx);
+        if (is_compare) {
+            return "(" + left + ASRUtils::cmpop_to_str(cmpop) + right + ")";
+        }
+        if (is_logical) {
+            return "(" + left + ASRUtils::logicalbinop_to_str_python(logop) + right + ")";
+        }
+        if (binop == ASR::binopType::Pow) {
+            return "std::pow(" + left + ", " + right + ")";
+        }
+        return "(" + left + ASRUtils::binop_to_str_python(binop) + right + ")";
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (!is_c && ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) &&
-                ASR::is_a<ASR::Var_t>(*x.m_target) &&
-                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
-            // Scalar-to-array broadcast (`a = 1.0`): fill the flat data
-            // view underlying the C++ array descriptor. The element count
+        if (!is_c && ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                ((ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) &&
+                  !ASRUtils::is_array(ASRUtils::expr_type(
+                      ASRUtils::get_past_array_broadcast(x.m_value)))) ||
+                 (ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+                  is_elementwise_assignable(x.m_value)))) {
+            // Array assignments (`a = 1.0`, `a = b`, `a = b + 2.0`):
+            // fill or elementwise loop over the flat data view
+            // underlying the C++ array descriptor. The element count
             // comes from the descriptor so runtime-sized arrays work too.
-            ASR::ArrayBroadcast_t *b =
-                ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_value);
             ASR::Var_t *target_var = ASR::down_cast<ASR::Var_t>(x.m_target);
             self().visit_Var(*target_var);
             std::string arr = src;
-            self().visit_expr(*b->m_array);
-            std::string scalar = src;
             ASR::dimension_t *m_dims = nullptr;
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(x.m_target), m_dims);
@@ -1764,11 +1967,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string idx = "__lfortran_broadcast_idx";
+            std::string rhs;
+            if (!ASRUtils::is_array(ASRUtils::expr_type(
+                    ASRUtils::get_past_array_broadcast(x.m_value)))) {
+                self().visit_expr(*ASRUtils::get_past_array_broadcast(x.m_value));
+                rhs = src;
+            } else {
+                rhs = elementwise_src(x.m_value, idx);
+            }
             src = indent + "for (size_t " + idx + " = 0; " + idx + " < "
                 + total + "; " + idx + "++) {\n"
                 + indent + std::string(indentation_spaces, ' ')
                 + arr + "->data->operator[](" + idx + ") = "
-                + scalar + ";\n" + indent + "}\n";
+                + rhs + ";\n" + indent + "}\n";
             return;
         }
         std::string target;
