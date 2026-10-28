@@ -9,6 +9,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/intent_out_deallocate.h>
+#include <libasr/pass/access_paths.h>
 #include <unordered_map>
 
 namespace LCompilers {
@@ -959,6 +960,63 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return false;
         }
 
+        // True when `sym` is a procedure defined in the procedure whose scope
+        // is `routine`, which accesses its variables by host association. An
+        // interface body declares an external or a dummy procedure, which is
+        // not part of `routine` even though it is declared in its scope.
+        static bool is_internal_procedure_of(ASR::symbol_t *sym,
+                SymbolTable *routine) {
+            if (!ASR::is_a<ASR::Function_t>(*sym)) {
+                return false;
+            }
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+            return ASRUtils::get_FunctionType(fn)->m_deftype ==
+                    ASR::deftypeType::Implementation &&
+                AccessPaths::contained_in(fn, routine);
+        }
+
+        // True when the function `fc` calls may access the storage of the
+        // assignment target `target` other than through its arguments, by use
+        // or host association: the target is rooted at a module variable, a
+        // variable of a host, a variable in a common block or what a pointer
+        // may point to, or the function, or a procedure passed to it, is
+        // contained in the procedure of the assignment and so may access
+        // its locals and dummy arguments. The result must then not be
+        // returned into the target: the function would see the target
+        // defined before the whole value is evaluated (F2018 10.2.1.3).
+        // A target that is itself a pointer keeps the behaviour of
+        // expr_may_alias, see there.
+        bool callee_may_access_target(ASR::FunctionCall_t *fc,
+                ASR::expr_t *target) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+                return false;
+            }
+            ASR::symbol_t *root = designator_base_symbol(target);
+            if (root == nullptr) {
+                return false;
+            }
+            SymbolTable *routine = AccessPaths::enclosing_routine(current_scope);
+            ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(fc->m_name);
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+                callee = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
+            }
+            if (!ASR::is_a<ASR::Function_t>(*callee) ||
+                    is_internal_procedure_of(callee, routine)) {
+                return true;
+            }
+            for (size_t i = 0; i < fc->n_args; i++) {
+                ASR::expr_t *arg = fc->m_args[i].m_value;
+                if (arg != nullptr && ASR::is_a<ASR::Var_t>(*arg) &&
+                        is_internal_procedure_of(ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(arg)->m_v), routine)) {
+                    return true;
+                }
+            }
+            return ASR::down_cast<ASR::Variable_t>(root)->m_common_block != nullptr ||
+                AccessPaths::reachable_elsewhere(root, routine);
+        }
+
         // Remember what a pointer was associated with, so that a later call
         // argument that reaches this pass as a pointer temporary can still be
         // recognised as designating part of the assignment target.
@@ -1300,6 +1358,11 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             if (fc->m_dt && this->expr_may_alias(target, fc->m_dt)) {
+                use_temp_var_for_return = true;
+            }
+
+            if (ASR::is_a<ASR::Assignment_t>(xx) &&
+                    callee_may_access_target(fc, target)) {
                 use_temp_var_for_return = true;
             }
 

@@ -6461,6 +6461,13 @@ llvm = true
 filename = "../integration_tests/functions_41.f90"
 ast = true
 
+# A result assigned to a local that no function can reach is still returned
+# into it; one the function may access by use or host association is not.
+[[test]]
+filename = "../integration_tests/functions_69.f90"
+fortran = true
+pass = "subroutine_from_function"
+
 [[test]]
 filename = "classes1.f90"
 llvm = true

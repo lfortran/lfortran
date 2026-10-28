@@ -825,6 +825,8 @@ RUN(NAME functions_65 LABELS gfortran llvm)
 RUN(NAME functions_66 LABELS gfortran llvm)
 RUN(NAME functions_67 LABELS gfortran llvm)
 RUN(NAME functions_68 LABELS gfortran llvm) # automatic array result sized by a spread actual argument (#15333)
+RUN(NAME functions_69 LABELS llvm flang) # function result not returned into a variable the function reads (#16191); not gfortran: GFortran 16.2 returns it into a module variable the function reads
+RUN(NAME functions_70 LABELS llvm) # function result not returned into a variable an internal procedure argument reads (#16191); not gfortran: GFortran 16.2 returns it into the variable; not flang: Flang on arm64 macOS cannot pass an internal procedure as an actual argument
 
 RUN(NAME common_01 LABELS gfortran)
 
