@@ -3,6 +3,8 @@
 #include <libasr/asr_text.h>
 #include <libasr/asr_verify.h>
 #include <libasr/codegen/asr_to_fortran.h>
+#include <algorithm>
+#include <vector>
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
 
@@ -80,6 +82,98 @@ end program
     CHECK_FALSE(ASR::down_cast<ASR::Variable_t>(hits)->m_is_volatile);
     CHECK_FALSE(ASR::down_cast<ASR::Variable_t>(
         bump->m_symtab->get_symbol("increment"))->m_is_asynchronous);
+}
+
+TEST_CASE("Fortran regeneration preserves scoped variable attributes") {
+    const std::string source = R"(
+module attribute_original
+    implicit none
+    real :: a(4), v(4)
+end module
+module attribute_wrapper
+    use attribute_original, only: renamed => a, v
+    implicit none
+    asynchronous :: renamed
+    volatile :: v
+contains
+    function result_value() result(r)
+        real, asynchronous :: r
+        r = 1
+    end function
+    subroutine scoped(a)
+        real :: a(4)
+        block
+            asynchronous :: a
+            volatile :: a
+            a = 1
+        end block
+        call inner()
+    contains
+        subroutine inner()
+            volatile :: a
+            a = 2
+        end subroutine
+    end subroutine
+end module
+program attributes
+    use attribute_wrapper, only: renamed, v, scoped
+    implicit none
+    real, volatile, asynchronous :: local(4)
+    volatile :: renamed
+    asynchronous :: v
+    call scoped(local)
+end program
+)";
+    namespace ASR = LCompilers::ASR;
+    class Attributes : public ASR::BaseWalkVisitor<Attributes> {
+    public:
+        std::vector<std::string> values;
+        void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &x) {
+            values.push_back("scoped:" +
+                std::string(LCompilers::ASRUtils::symbol_name(x.m_variable)) +
+                (x.m_is_volatile ? ":volatile" : "") +
+                (x.m_is_asynchronous ? ":asynchronous" : ""));
+        }
+        void visit_Variable(const ASR::Variable_t &x) {
+            values.push_back("variable:" + std::string(x.m_name) +
+                (x.m_is_volatile ? ":volatile" : "") +
+                (x.m_is_asynchronous ? ":asynchronous" : ""));
+        }
+    };
+    auto parse = [](FortranEvaluator &evaluator, const std::string &text,
+            Diagnostics &diagnostics) {
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "scoped_attributes.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
+        return evaluator.get_asr2(text, lm, diagnostics);
+    };
+    LCompilers::CompilerOptions options;
+    FortranEvaluator evaluator(options);
+    Diagnostics diagnostics;
+    auto original = parse(evaluator, source, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(original.ok);
+    REQUIRE(LCompilers::asr_verify(*original.result, true, diagnostics));
+    auto printed = LCompilers::asr_to_fortran(*original.result, diagnostics, false, 4);
+    REQUIRE(printed.ok);
+    CHECK(printed.result.find("__scoped_attribute") == std::string::npos);
+    CHECK(printed.result.find("asynchronous :: renamed") != std::string::npos);
+    CHECK(printed.result.find("volatile :: renamed") != std::string::npos);
+    FortranEvaluator regenerated_evaluator(options);
+    Diagnostics regenerated_diagnostics;
+    auto regenerated = parse(regenerated_evaluator, printed.result, regenerated_diagnostics);
+    INFO(printed.result);
+    INFO(regenerated_diagnostics.render2());
+    REQUIRE(regenerated.ok);
+    REQUIRE(LCompilers::asr_verify(*regenerated.result, true, regenerated_diagnostics));
+    Attributes before, after;
+    before.visit_TranslationUnit(*original.result);
+    after.visit_TranslationUnit(*regenerated.result);
+    std::sort(before.values.begin(), before.values.end());
+    std::sort(after.values.begin(), after.values.end());
+    CHECK(before.values == after.values);
 }
 
 TEST_CASE("ASR text printer emits canonical named and positional forms") {
