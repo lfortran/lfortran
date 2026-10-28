@@ -372,7 +372,7 @@
                     .true.
                     ()
                 ),
-            points_a:
+            points@points_a:
                 (Module
                     (SymbolTable
                         13
@@ -832,7 +832,7 @@
                                     Public
                                 )
                         })
-                    points_a
+                    points@points_a
                     points
                     [points
                     stdlib_kinds_submodule_02]

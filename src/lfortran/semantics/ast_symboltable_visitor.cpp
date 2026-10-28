@@ -855,7 +855,9 @@ public:
     }
 
     template <typename T, typename R>
-    void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
+    void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="",
+            std::string sym_name="") {
+        if (sym_name.empty()) sym_name = to_lower(x.m_name);
         ScopingUnitScope scoping_unit_scope(*this,
             x.class_type == AST::modType::Submodule
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
@@ -893,7 +895,7 @@ public:
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
-                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                /* a_name */ s2c(al, sym_name),
                                                 m->m_name,
                                                 nullptr,
                                                 0,
@@ -940,7 +942,7 @@ public:
         } else {
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
-                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                /* a_name */ s2c(al, sym_name),
                                                 nullptr,
                                                 nullptr,
                                                 0,
@@ -1110,7 +1112,6 @@ public:
         R *m = ASR::down_cast2<R>(tmp);
         m->m_dependencies = current_module_dependencies.p;
         m->n_dependencies = current_module_dependencies.size();
-        std::string sym_name = to_lower(x.m_name);
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
                 "Module already defined",
@@ -1165,11 +1166,14 @@ public:
         in_submodule = true;
         std::string parent_name;
         if (x.m_parent_name) {
-            parent_name = to_lower(x.m_parent_name);
+            parent_name = to_lower(x.m_id) + "@" + to_lower(x.m_parent_name);
         } else {
             parent_name = to_lower(x.m_id);
         }
-        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, parent_name);
+        // Submodule names are unique within their ancestor module, not among
+        // modules or submodules belonging to other ancestors.
+        std::string sym_name = to_lower(x.m_id) + "@" + to_lower(x.m_name);
+        visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, parent_name, sym_name);
         pending_proc_placeholders.clear();
         deferred_procedure_component_values.clear();
         in_submodule = false;

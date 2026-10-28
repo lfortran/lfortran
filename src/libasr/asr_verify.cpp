@@ -23,6 +23,7 @@ bool valid_char(char c) {
     if (c >= 'A' && c <= 'Z') return true;
     if (c >= '0' && c <= '9') return true;
     if (c == '_') return true;
+    if (c == '@') return true; // Ancestor-qualified submodule dependencies.
     return false;
 }
 

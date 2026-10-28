@@ -1091,7 +1091,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             if (!m->m_parent_module) {
                 modfile_name = std::string(m->m_name) + ".mod";
             } else {
-                modfile_name = std::string(m->m_parent_module) + "@" + std::string(m->m_name) + ".smod";
+                modfile_name = std::string(m->m_name) + ".smod";
             }
 
 	    std::filesystem::path filename { modfile_name };
@@ -1102,11 +1102,14 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
                 out << modfile_binary;
             }
 
-            // Create an empty modfile for submodules using submodule name to satify CMAKE condition.
+            // CMake expects a bare submodule modfile. Never truncate a real
+            // module with the same name (in particular the ancestor module).
             if (m->m_parent_module) {
-                std::filesystem::path emptyfile_filename { std::string(m->m_name) + ".mod" };
+                std::string name = m->m_name;
+                name = name.substr(name.find('@') + 1);
+                std::filesystem::path emptyfile_filename { name + ".mod" };
                 std::filesystem::path emptyfile_fullpath = compiler_options.po.mod_files_dir / emptyfile_filename;
-                {
+                if (!std::filesystem::exists(emptyfile_fullpath)) {
                     std::ofstream emptyfile_out(emptyfile_fullpath);
                 }
             }

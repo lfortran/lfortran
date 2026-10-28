@@ -6349,9 +6349,9 @@ public:
     }
 
     template <typename T>
-    void visit_SubmoduleModuleCommon(const T& x) {
+    void visit_SubmoduleModuleCommon(const T& x, const std::string &sym_name) {
         SymbolTable *old_scope = current_scope;
-        ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
+        ASR::symbol_t *t = current_scope->get_symbol(sym_name);
         if (t == nullptr) {
             // The symbol table visitor skipped this program unit, which is only
             // possible with `--continue-compilation` and after it reported an
@@ -6412,11 +6412,11 @@ public:
     }
 
     void visit_Submodule(const AST::Submodule_t &x) {
-        visit_SubmoduleModuleCommon(x);
+        visit_SubmoduleModuleCommon(x, to_lower(x.m_id) + "@" + to_lower(x.m_name));
     }
 
     void visit_Module(const AST::Module_t &x) {
-        visit_SubmoduleModuleCommon(x);
+        visit_SubmoduleModuleCommon(x, to_lower(x.m_name));
     }
 
     void visit_Use(const AST::Use_t &x) {
