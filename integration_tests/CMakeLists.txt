@@ -715,6 +715,9 @@ RUN(NAME doloop_18 LABELS gfortran llvm)
 RUN(NAME doloop_19 LABELS gfortran llvm)
 RUN(NAME doloop_20 LABELS gfortran llvm)
 RUN(NAME doloop_21 LABELS gfortran llvm)
+# Real DO is a deleted feature, tested only in legacy mode.
+RUN(NAME doloop_real_01 LABELS gfortran llvm NO_STD_F23
+    EXTRA_ARGS --std=legacy GFORTRAN_ARGS -std=legacy)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

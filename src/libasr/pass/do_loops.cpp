@@ -36,11 +36,55 @@ to:
     end do
 
 The comparison is >= for c<0.
+Real loop controls are lowered separately using a saved iteration count.
 */
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
     bool device_code = false;
     std::set<const ASR::DoLoop_t*> counted_loops;
+
+    void lower_real_loop(const ASR::DoLoop_t &x) {
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *var = x.m_head.m_v;
+        ASR::ttype_t *type = ASRUtils::expr_type(var);
+        auto capture = [&](ASR::expr_t *expr, const std::string &prefix) {
+            std::string name = current_scope->get_unique_name(prefix);
+            ASR::stmt_t *assign;
+            ASR::expr_t *value = PassUtils::create_auxiliary_variable_for_expr(
+                expr, name, al, current_scope, assign);
+            pass_result.push_back(al, assign);
+            return value;
+        };
+        ASR::expr_t *start = capture(x.m_head.m_start, "__do_loop_start");
+        ASR::expr_t *end = capture(x.m_head.m_end, "__do_loop_end");
+        ASR::expr_t *step = capture(x.m_head.m_increment
+            ? x.m_head.m_increment : b.f_t(1.0, type), "__do_loop_inc");
+
+        // Real DO uses a trip count computed once in the control's real kind,
+        // not a comparison of the repeatedly rounded loop variable to the end.
+        ASR::expr_t *remaining = capture(
+            b.r2i_t(b.Div(b.Add(b.Sub(end, start), step), step),
+                b.int_type(8)), "__do_loop_count");
+        ASR::expr_t *first = capture(b.logical_true(), "__do_loop_first");
+        pass_result.push_back(al, b.Assignment(var, start));
+
+        // Increment at the head so CYCLE cannot skip it. The first entry
+        // preserves the exact initial value, including for a zero-trip loop.
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body + 3);
+        body.push_back(al, b.If(first,
+            {b.Assignment(first, b.logical_false())},
+            {b.Assignment(var, b.Add(var, step))}));
+        body.push_back(al, b.If(b.LtE(remaining, b.i64(0)), {b.Exit()}, {}));
+        body.push_back(al, b.Assignment(remaining, b.Sub(remaining, b.i64(1))));
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al, x.m_body[i]);
+        }
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_WhileLoop_t(al,
+            loc, x.m_name, b.logical_true(), body.p, body.n,
+            x.m_orelse, x.n_orelse)));
+    }
 
     bool unroll_device_loop(const ASR::DoLoop_t &x) {
         if (counted_loops.count(&x)) return true;
@@ -125,6 +169,11 @@ public:
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (x.m_head.m_v && ASRUtils::is_real(
+                *ASRUtils::expr_type(x.m_head.m_v))) {
+            lower_real_loop(x);
+            return;
+        }
         if (unroll_device_loop(x)) return;
         pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop, this->current_scope);
     }
