@@ -1700,14 +1700,19 @@ public:
             "scoped attribute must belong to its declaring scope");
         require(x.m_is_volatile || x.m_is_asynchronous,
             "scoped attribute must specify volatile or asynchronous");
-        symbol_t *symbol = ASRUtils::symbol_get_past_external(
-            x.m_variable);
+        require(x.m_variable != nullptr,
+            "scoped attribute must reference a variable");
+        require(symtab_in_scope(current_symtab, x.m_variable),
+            "scoped attribute's variable must be visible in its scope");
+        // Module files are verified before their externals are resolved.
+        if (!check_external && is_a<ExternalSymbol_t>(*x.m_variable)) return;
+        symbol_t *symbol = ASRUtils::symbol_get_past_external(x.m_variable);
+        require(symbol != nullptr,
+            "scoped attribute's variable must be resolved");
         require(is_a<Variable_t>(*symbol),
             "scoped attribute must reference a variable entity");
         require(ASRUtils::symbol_parent_symtab(symbol) != current_symtab,
             "local attributes must be recorded on the local variable");
-        require(symtab_in_scope(current_symtab, x.m_variable),
-            "scoped attribute's variable must be visible in its scope");
     }
 
     void visit_Variable(const Variable_t &x) {

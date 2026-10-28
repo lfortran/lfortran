@@ -4260,6 +4260,8 @@ RUN(NAME template_instantiate_no_only_02 LABELS llvm)
 RUN(NAME template_instantiate_no_only_03 LABELS llvm)
 RUN(NAME template_prefix_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME scoped_attribute_01 LABELS gfortran llvm
+        EXTRAFILES scoped_attribute_01_m.f90)
 RUN(NAME template_host_var_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_host_var_04 LABELS llvm llvm_wasm llvm_wasm_emcc)

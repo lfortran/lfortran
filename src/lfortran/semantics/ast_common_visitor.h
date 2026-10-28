@@ -29192,6 +29192,9 @@ public:
                 // A common block is not made accessible by use association:
                 // the module's view of it lays out the storage of the
                 // module's own variables, which are imported themselves.
+            } else if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+                // These declarations apply only in the declaring scope,
+                // not in scopes that use its variables.
             } else {
                 return item.first;
             }
