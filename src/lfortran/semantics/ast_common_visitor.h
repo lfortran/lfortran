@@ -1645,6 +1645,19 @@ inline void validate_format_string(const std::string& fmt_str, const Location& l
                         i = j;
                     }
                 }
+            } else if (c_upper == 'L') {
+                size_t j = i + 1;
+                while (j < content.length() && std::isspace(content[j])) j++;
+                if (j < content.length() && std::toupper(content[j]) == 'Z') {
+                    current_desc = DescType::CONTROL;
+                    i = j++;
+                    while (j < content.length() && std::isspace(content[j])) j++;
+                    if (j < content.length() &&
+                            (std::toupper(content[j]) == 'P' ||
+                             std::toupper(content[j]) == 'S')) {
+                        i = j;
+                    }
+                }
             } else if (c_upper == 'D') {
                 size_t j = i + 1;
                 while (j < content.length() && std::isspace(content[j])) j++;
