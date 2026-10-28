@@ -6,6 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_designator.h>
@@ -367,6 +368,7 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
         ASR::symbol_t *copy = sym_dup.duplicate_Block(orig,
             current_scope);
         if (copy == nullptr) return nullptr;
+        inline_entry_initialized_locals(al, copy, &orig->base);
         ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(copy);
         retarget_block_calls_in(blk);
         remap_block_to_own_scope(blk);

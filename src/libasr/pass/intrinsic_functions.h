@@ -8141,12 +8141,60 @@ namespace Max {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
+    static inline bool is_zero(ASR::expr_t* e) {
+        int64_t value = -1;
+        return ASR::is_a<ASR::IntegerConstant_t>(*e)
+            && ASRUtils::extract_value(e, value) && value == 0;
+    }
+
+    // The length `x` if `extent` is the extent max(0, x) that create_extent
+    // makes, possibly converted to another kind, or a local initialized on
+    // entry with it (see ASRUtils::is_entry_initialized_local); otherwise
+    // nullptr.
+    static inline ASR::expr_t* get_clamped_length(ASR::expr_t* extent) {
+        while (ASR::is_a<ASR::Cast_t>(*extent)) {
+            extent = ASR::down_cast<ASR::Cast_t>(extent)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*extent)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(extent)->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            return ASRUtils::is_entry_initialized_local(*v)
+                ? get_clamped_length(v->m_symbolic_value) : nullptr;
+        }
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*extent)) {
+            return nullptr;
+        }
+        ASR::IntrinsicElementalFunction_t* max =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(extent);
+        if (!ASRUtils::is_intrinsic_max(*max) || max->n_args != 2) {
+            return nullptr;
+        }
+        if (is_zero(max->m_args[0])) {
+            return max->m_args[1];
+        }
+        return is_zero(max->m_args[1]) ? max->m_args[0] : nullptr;
+    }
+
     // The extent of an explicit-shape dimension whose length `ub - lb + 1`
-    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2).
+    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2). A length that
+    // cannot be negative, the size of an array or such an extent, is the
+    // extent itself.
     static inline ASR::expr_t* create_extent(Allocator &al,
             ASR::expr_t* length) {
+        ASR::expr_t* past_cast = length;
+        while (ASR::is_a<ASR::Cast_t>(*past_cast)) {
+            past_cast = ASR::down_cast<ASR::Cast_t>(past_cast)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArraySize_t>(*past_cast)
+                || get_clamped_length(length) != nullptr) {
+            return length;
+        }
         const Location &loc = length->base.loc;
-        ASR::ttype_t* type = ASRUtils::expr_type(length);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(length));
         int64_t value = 0;
         ASR::expr_t* length_value = ASRUtils::expr_value(length);
         if (length_value != nullptr

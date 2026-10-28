@@ -32,6 +32,7 @@ enum class GpuExtentKind {
     Neg,        // -children[0]
     Compare,    // children[0] `cmpop` children[1]
     Select,     // children[0] ? children[1] : children[2]
+    Max,        // the larger of children[0] and children[1]
     Product,    // children[0] * children[1] * ...
     ArgScalar,  // the value of the kernel parameter `arg_index`
     ArgMember,  // the component `member_path` of parameter `arg_index`
@@ -226,6 +227,7 @@ inline void gpu_read_extent_names(const GpuExtent &e,
         case GpuExtentKind::Neg:
         case GpuExtentKind::Compare:
         case GpuExtentKind::Select:
+        case GpuExtentKind::Max:
         case GpuExtentKind::Product: {
             for (const GpuExtent &c : e.children) {
                 gpu_read_extent_names(c, names, found);
@@ -703,6 +705,18 @@ inline bool try_eval_int_constant(ASR::expr_t *e, int64_t &val) {
                 return false;
             default: return false;
         }
+    }
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+        auto *f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+        if (!ASRUtils::is_intrinsic_max(*f) || f->n_args == 0) {
+            return false;
+        }
+        for (size_t i = 0; i < f->n_args; i++) {
+            int64_t arg;
+            if (!try_eval_int_constant(f->m_args[i], arg)) return false;
+            val = i == 0 ? arg : std::max(val, arg);
+        }
+        return true;
     }
     return false;
 }
@@ -1720,6 +1734,23 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         out.children.push_back(std::move(bdy));
         out.children.push_back(std::move(els));
         return out;
+    }
+    // max(a, b), such as the extent max(0, n) of an explicit-shape array.
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*v)) {
+        ASR::IntrinsicElementalFunction_t *f =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(v);
+        if (ASRUtils::is_intrinsic_max(*f) && f->n_args == 2
+                && ASRUtils::is_integer(*f->m_type)) {
+            GpuExtent l = gpu_derive_extent(f->m_args[0], scope, depth);
+            GpuExtent r = gpu_derive_extent(f->m_args[1], scope, depth);
+            if (!l.ok() || !r.ok()) return none;
+            GpuExtent out;
+            out.kind = GpuExtentKind::Max;
+            out.expr = v;
+            out.children.push_back(std::move(l));
+            out.children.push_back(std::move(r));
+            return out;
+        }
     }
     {
         size_t idx = 0;

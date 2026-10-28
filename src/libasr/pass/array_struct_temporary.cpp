@@ -360,6 +360,28 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
 
+// The type of a temporary that is sized with the lengths `ub - lb + 1`
+// that semantics gave the type of an expression, which may be negative.
+// Its extents are max(0, length), as those of the explicit-shape arrays
+// the lengths were taken from (see explicit_shape_extent).
+static ASR::ttype_t* clamp_extents(Allocator& al, ASR::ttype_t* type) {
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    Vec<ASR::dimension_t> clamped;
+    clamped.reserve(al, n_dims);
+    bool changed = false;
+    for (size_t i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim = dims[i];
+        if (dim.m_length != nullptr) {
+            dim.m_length = ASRUtils::Max::create_extent(al, dim.m_length);
+            changed = changed || dim.m_length != dims[i].m_length;
+        }
+        clamped.push_back(al, dim);
+    }
+    return changed ? ASRUtils::duplicate_type(al, type, &clamped,
+        ASRUtils::extract_physical_type(type), true) : type;
+}
+
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
     bool is_pointer_required, bool override_physical_type) {
@@ -431,7 +453,8 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
             value_type = ASRUtils::duplicate_type(al, value_type, nullptr,
                 ASR::array_physical_typeType::FixedSizeArray, true);
         }
-        var_type = value_type;
+        var_type = is_size_only_dependent_on_arguments && !is_allocatable
+            && !is_pointer_func ? clamp_extents(al, value_type) : value_type;
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&

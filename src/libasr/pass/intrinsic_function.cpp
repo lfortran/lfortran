@@ -73,6 +73,17 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         // backend cannot evaluate it.
         if (in_debugcheck && !in_ttype && x->m_intrinsic_id != static_cast<int64_t>(
                 ASRUtils::IntrinsicElementalFunctions::StorageSize)) return;
+        // In a type, an integer maximum, such as the extent max(0, n) of an
+        // explicit-shape array, stays an intrinsic, which the code
+        // generators lower. The type can be copied into a scope (a caller
+        // that sizes the result of a procedure from it) that would not see
+        // a procedure instantiated for it here.
+        if (in_ttype && ASRUtils::is_intrinsic_max(*x)
+                && ASRUtils::is_integer(*x->m_type)) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>
+                ::replace_IntrinsicElementalFunction(x);
+            return;
+        }
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:

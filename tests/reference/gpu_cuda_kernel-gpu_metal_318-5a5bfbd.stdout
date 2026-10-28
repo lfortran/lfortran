@@ -122,7 +122,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __1__libasr_index_ = (__1__libasr_index_ + __workspace_extent3);
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = __gpu_arg[((int)(n) - (1))];
         __1__libasr_index_ = (__1__libasr_index_ + 1);
-        __do_loop_end5 = ((4) + 1);
+        __do_loop_end5 = max(0, ((4) + 1));
         __gpu_elem_i = (1 - 1);
         while (((__gpu_elem_i + 1) <= __do_loop_end5)) {
             __gpu_elem_i = (__gpu_elem_i + 1);

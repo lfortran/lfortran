@@ -953,6 +953,9 @@ static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
         !is_value_constant(v.m_symbolic_value);
 }
 
+// Whether `f` is a reference to the intrinsic MAX.
+bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f);
+
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {

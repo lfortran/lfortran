@@ -4,9 +4,11 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/explicit_shape_extent.h>
-#include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 
+#include <map>
 #include <set>
+#include <vector>
 
 /*
 The extent of an explicit-shape dimension is max(0, ub - lb + 1)
@@ -36,8 +38,13 @@ expressions again, and redefining a variable of a bound in the body changes
 neither the bounds nor the extent. The code generators set these locals
 before they set up the dummies from their types. The only arrays that keep
 an expression, max(0, length), as their extent are the dummies and the result
-of an interface body, which has no body to evaluate it in, and temporaries
-that a pass created for a statement of the body (see visit_Variable).
+of an interface body, which has no body to evaluate it in.
+
+The pass runs right after function_call_in_declaration, which captures each
+bound of an automatic object that the body can change in such a local (this
+pass clamps it there), and before any other pass copies the type of an array
+into a temporary, a new procedure or a loop. They all see the bounds fixed on
+entry and an extent that is never negative.
 
 An ArrayPhysicalCast of such an array (for example, to pass it to an
 assumed-shape dummy) was given a copy of the declared length by semantics. Its
@@ -48,9 +55,9 @@ The signature of the procedure is left unchanged; a pass that builds it again
 from the types of the dummies substitutes the initializer of the local
 (ASRUtils::ReplaceWithFunctionParamVisitor). This includes a caller that sizes
 the result of a procedure from its type, also when the procedure was loaded
-from a module file (in another translation unit, the locals are never set). The maximum is created after the
-intrinsic function pass, so it is lowered by the backends directly and never
-becomes a helper procedure that only one translation unit could see.
+from a module file (in another translation unit, the locals are never set).
+The GPU offload passes do the same in the copy of a procedure that they make
+for device code (inline_entry_initialized_locals).
 */
 
 namespace LCompilers {
@@ -166,6 +173,22 @@ private:
             duplicator.duplicate_expr(start));
     }
 
+    // max(0, length) for the dimension `dim` of `array`, where `length` is
+    // evaluated on entry in a local of `scope`. A length that references a
+    // function is first evaluated in a local of its own, so that the
+    // maximum stays an intrinsic that the code generators lower (the
+    // intrinsic function pass makes a procedure of a MAX with a function
+    // reference as an argument).
+    ASR::expr_t* clamped_length(SymbolTable* scope,
+            const ASR::Variable_t& array, size_t dim, ASR::expr_t* length) {
+        PassUtils::FunctionCallFinder finder;
+        finder.visit_expr(*length);
+        if (finder.found) {
+            length = create_entry_local(scope, array, "length", dim, length);
+        }
+        return ASRUtils::Max::create_extent(al, length);
+    }
+
     // The extent of the dimension `dim` of `array`, whose declared length is
     // `length`, evaluated on entry in a local of `scope`. A length that
     // function_call_in_declaration already captured in such a local is
@@ -174,13 +197,13 @@ private:
             const ASR::Variable_t& array, size_t dim, ASR::expr_t* length) {
         if (ASR::Variable_t* v = get_entry_local(scope, length)) {
             if (extents.insert(v).second) {
-                v->m_symbolic_value = ASRUtils::Max::create_extent(al,
+                v->m_symbolic_value = clamped_length(scope, array, dim,
                     v->m_symbolic_value);
             }
             return length;
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::expr_t* extent = ASRUtils::Max::create_extent(al,
+        ASR::expr_t* extent = clamped_length(scope, array, dim,
             duplicator.duplicate_expr(length));
         if (ASRUtils::is_value_constant(extent)) {
             // E.g. a template parameter, a named constant without a value.
@@ -214,28 +237,18 @@ public:
         // so it keeps them with the extent max(0, length), the value that
         // the procedure computes on entry. Callers, which size the result
         // and check the arguments with this type, then agree with it.
-        // function_call_in_declaration captured each bound of an automatic
-        // object that the body can change (outside the scopes it leaves
-        // alone), so a local with a bound that can still change is a
-        // temporary that a later pass created for a statement of the body.
-        // It is treated in the same way.
-        bool temporary = owner == Owner::Interface;
-        for (size_t i = 0; i < array->n_dims; i++) {
-            temporary = temporary || (x.m_intent == ASR::intentType::Local
-                && (bound_may_change(array->m_dims[i].m_start)
-                    || bound_may_change(array->m_dims[i].m_length)));
-        }
+        bool inline_extent = owner == Owner::Interface;
         Vec<ASR::dimension_t> dims;
         dims.reserve(al, array->n_dims);
         for (size_t i = 0; i < array->n_dims; i++) {
             ASR::dimension_t dim = array->m_dims[i];
-            if (is_runtime(dim.m_start) && !temporary) {
+            if (is_runtime(dim.m_start) && !inline_extent) {
                 dim.m_start = lbound_local(x.m_parent_symtab, x, i,
                     dim.m_start);
             }
             if (dim.m_length != nullptr
                     && ASRUtils::expr_value(dim.m_length) == nullptr) {
-                dim.m_length = temporary
+                dim.m_length = inline_extent
                     ? ASRUtils::Max::create_extent(al, dim.m_length)
                     : extent_local(x.m_parent_symtab, x, i, dim.m_length);
             }
@@ -302,6 +315,111 @@ public:
                 array->m_memory_space));
     }
 };
+
+// The locals initialized on entry of `scope`, of the procedures it contains
+// and of its BLOCKs, with their initializers, and those scopes. Each local
+// of the same name in the same place of `original`, of which `scope` is a
+// copy, is given the same initializer.
+static void collect_entry_initialized_locals(SymbolTable* scope,
+        SymbolTable* original, std::map<ASR::symbol_t*, ASR::expr_t*>& locals,
+        std::vector<SymbolTable*>& scopes) {
+    scopes.push_back(scope);
+    for (auto& item : scope->get_scope()) {
+        ASR::symbol_t* sym = item.second;
+        ASR::symbol_t* original_sym = original != nullptr
+            ? original->get_symbol(item.first) : nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::is_entry_initialized_local(*v)) {
+                locals[sym] = v->m_symbolic_value;
+                if (original_sym != nullptr && original_sym != sym) {
+                    locals[original_sym] = v->m_symbolic_value;
+                }
+            }
+        } else if (ASR::is_a<ASR::Function_t>(*sym)
+                || ASR::is_a<ASR::Block_t>(*sym)) {
+            SymbolTable* original_scope = original_sym != nullptr
+                    && original_sym->type == sym->type
+                ? ASRUtils::symbol_symtab(original_sym) : nullptr;
+            collect_entry_initialized_locals(ASRUtils::symbol_symtab(sym),
+                original_scope, locals, scopes);
+        }
+    }
+}
+
+void inline_entry_initialized_locals(Allocator &al, ASR::symbol_t* owner,
+        ASR::symbol_t* original) {
+    std::map<ASR::symbol_t*, ASR::expr_t*> locals;
+    std::vector<SymbolTable*> scopes;
+    collect_entry_initialized_locals(ASRUtils::symbol_symtab(owner),
+        original != nullptr ? ASRUtils::symbol_symtab(original) : nullptr,
+        locals, scopes);
+    if (locals.empty()) {
+        return;
+    }
+    // An initializer can refer to another such local (an extent to the
+    // length it clamps), which each round replaces one level deeper.
+    AssociateVarResolver resolver(al, locals);
+    for (size_t round = 0; round < locals.size(); round++) {
+        for (auto& item : locals) {
+            resolver.current_expr = &item.second;
+            resolver.replace_expr(item.second);
+        }
+    }
+    AssociateVarResolverVisitor visitor(al, locals);
+    visitor.visit_symbol(*owner);
+    for (SymbolTable* scope : scopes) {
+        std::vector<std::string> names;
+        for (auto& item : scope->get_scope()) {
+            if (locals.find(item.second) != locals.end()) {
+                names.push_back(item.first);
+            }
+        }
+        for (const std::string& name : names) {
+            scope->erase_symbol(name);
+        }
+    }
+    for (SymbolTable* scope : scopes) {
+        for (auto& item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            SetChar dependencies;
+            dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies,
+                v->m_type, v->m_symbolic_value, v->m_value, v->m_name);
+            v->m_dependencies = dependencies.p;
+            v->n_dependencies = dependencies.size();
+        }
+    }
+}
+
+void substitute_entry_initialized_locals(Allocator &al, ASR::Function_t &fn,
+        std::map<ASR::symbol_t*, ASR::expr_t*> &substitutions) {
+    std::map<ASR::symbol_t*, ASR::expr_t*> locals;
+    std::vector<SymbolTable*> scopes;
+    collect_entry_initialized_locals(fn.m_symtab, nullptr, locals, scopes);
+    if (locals.empty()) {
+        return;
+    }
+    std::map<ASR::symbol_t*, ASR::expr_t*> values = substitutions;
+    for (auto& item : locals) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        values[item.first] = duplicator.duplicate_expr(item.second);
+    }
+    // As in inline_entry_initialized_locals, one level per round.
+    AssociateVarResolver resolver(al, values);
+    for (size_t round = 0; round <= locals.size(); round++) {
+        for (auto& item : locals) {
+            resolver.current_expr = &values[item.first];
+            resolver.replace_expr(values[item.first]);
+        }
+    }
+    for (auto& item : locals) {
+        substitutions[item.first] = values[item.first];
+    }
+}
 
 void pass_explicit_shape_extent(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &/*pass_options*/) {

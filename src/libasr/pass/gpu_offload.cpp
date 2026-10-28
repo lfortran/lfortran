@@ -13,6 +13,7 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/string_utils.h>
+#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
@@ -1126,6 +1127,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (dup) {
                 gpu_rebind_host_association(orig,
                     ASR::down_cast<ASR::Function_t>(dup));
+                inline_entry_initialized_locals(al, dup, &orig->base);
             }
             return dup;
         };

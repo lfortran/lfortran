@@ -3347,6 +3347,17 @@ public:
                     case ASR::exprType::GpuBlockSize:
                         ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
                         break;
+                    // max(0, n), the extent of an explicit-shape array.
+                    case ASR::exprType::IntrinsicElementalFunction:
+                        if (ASRUtils::is_intrinsic_max(
+                                (const ASR::IntrinsicElementalFunction_t &)
+                                    expression)) {
+                            ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(
+                                expression);
+                        } else {
+                            host_evaluable = false;
+                        }
+                        break;
                     // A function without side effects, which the host
                     // calls before the launch.
                     case ASR::exprType::FunctionCall: {

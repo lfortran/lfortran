@@ -313,6 +313,10 @@ namespace LCompilers {
                 // other procedure body.
                 "global_init",
                 "function_call_in_declaration",
+                // The bounds and the extent (never negative) of every
+                // explicit-shape array are fixed on entry here, before any
+                // pass below copies its type or sizes a temporary from it.
+                "explicit_shape_extent",
                 // Each defined output procedure that a formatted output
                 // statement uses gets a callback with the fixed interface
                 // the runtime formatter calls, lowered by the passes below
@@ -376,10 +380,6 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
-                // The extent of an explicit-shape array is never negative.
-                // Its maximum with zero is added after the intrinsic
-                // function pass, so that it is lowered by the backends.
-                "explicit_shape_extent",
                 "subroutine_from_function",
                 // A pass above can add a routine of its own, such as the
                 // shared lowering of an intrinsic, so the partition is
