@@ -1576,15 +1576,15 @@ semantic error: selected_real_kind requires at least one of p, r or radix
 
 
 semantic error: the volatile statement requires a list of entities
-    --> tests/errors/continue_compilation_1.f90:3811:9
+    --> tests/errors/continue_compilation_1.f90:3810:9
      |
-3811 |         volatile  ! {Error} the volatile statement requires a list of entities
+3810 |         volatile  ! {Error} the volatile statement requires a list of entities
      |         ^^^^^^^^ 
 
 semantic error: the asynchronous statement requires a list of entities
-    --> tests/errors/continue_compilation_1.f90:3820:9
+    --> tests/errors/continue_compilation_1.f90:3819:9
      |
-3820 |         asynchronous  ! {Error} the asynchronous statement requires a list of entities
+3819 |         asynchronous  ! {Error} the asynchronous statement requires a list of entities
      |         ^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
