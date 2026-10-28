@@ -62,6 +62,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __lfortran_global_init_global_init_01_a:
                                                 (ExternalSymbol
@@ -248,6 +249,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             leaf:
                                 (ExternalSymbol
@@ -295,6 +297,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     global_init_01
@@ -715,6 +718,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_a
@@ -849,6 +853,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             leaf:
                                 (Struct
@@ -879,6 +884,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tag:
                                                 (Variable
@@ -910,6 +916,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     leaf
@@ -983,6 +990,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_b
@@ -1127,6 +1135,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             check_a:
                                 (Function
@@ -1177,6 +1186,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     check_a

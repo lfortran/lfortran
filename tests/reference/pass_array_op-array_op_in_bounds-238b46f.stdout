@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_1:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_2:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_3:
                                 (Variable
@@ -106,6 +109,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_4:
                                 (Variable
@@ -131,6 +135,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_5:
                                 (Variable
@@ -156,6 +161,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             scale:
                                 (Function
@@ -186,6 +192,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -211,6 +218,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     scale
@@ -284,6 +292,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -315,6 +324,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -346,6 +356,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     array_op_in_bounds
