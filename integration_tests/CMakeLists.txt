@@ -4391,6 +4391,7 @@ RUN(NAME external_32 LABELS gfortran llvm)
 RUN(NAME external_33 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME external_34 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME external_35 LABELS gfortran llvm EXTRAFILES external_35_procs.f90)
+RUN(NAME external_36 LABELS gfortran llvm EXTRAFILES external_36_procs.f90)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
