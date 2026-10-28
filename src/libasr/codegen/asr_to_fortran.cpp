@@ -828,12 +828,16 @@ public:
         current_pass_self_args.clear();
         SymbolTable *parent_symtab = ASRUtils::symbol_parent_symtab(
             (ASR::symbol_t*) &x);
-        bool module_procedure = type->m_module && parent_symtab
+        ASR::symbol_t *parent_owner = parent_symtab
             && parent_symtab->asr_owner
-            && ASR::is_a<ASR::Module_t>(*parent_symtab->asr_owner)
+            && ASR::is_a<ASR::symbol_t>(*parent_symtab->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(parent_symtab->asr_owner)
+            : nullptr;
+        bool module_procedure = type->m_module && parent_owner
+            && ASR::is_a<ASR::Module_t>(*parent_owner)
             && (type->m_deftype == ASR::deftypeType::Interface
                 || ASR::down_cast<ASR::Module_t>(
-                    parent_symtab->asr_owner)->m_parent_module);
+                    parent_owner)->m_parent_module);
         if (parent_symtab) {
             for (auto &item : parent_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::Struct_t>(*item.second)) {
