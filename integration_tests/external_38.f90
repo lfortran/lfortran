@@ -2,7 +2,8 @@
 ! defined in this file through an implicit interface when a bound of its
 ! dummy calls another external function of this file without an explicit
 ! interface, which a copy of its interface in the module cannot call.
-! The function is implicitly typed. It is not a specification function
+! The function used in the bound has no explicit interface (it is declared
+! integer). It is not a specification function
 ! (F2018 10.1.11), so GFortran rejects this extension and the test has no
 ! gfortran label.
 module external_38_m
