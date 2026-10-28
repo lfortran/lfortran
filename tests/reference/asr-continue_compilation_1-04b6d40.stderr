@@ -4759,3 +4759,15 @@ semantic error: the extent of the last dimension of an assumed-size array is not
      |
 3825 |         print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
      |                  ^^^^^^^^^^ 
+
+semantic error: referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+    --> tests/errors/continue_compilation_1.f90:3833:9
+     |
+3833 |         call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use --implicit-interface to reference it through an implicit interface
+
+semantic error: referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+    --> tests/errors/continue_compilation_1.f90:3852:9
+     |
+3852 |         call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: give 'cc1_file_fn_iface_len' an explicit interface in 'cc1_file_fn_iface_ext', or use --implicit-interface

@@ -1,0 +1,5 @@
+semantic error: the external procedure 'implicit_interface_external_definition_03_add' is referenced through an implicit interface, so its optional dummy argument 'k' cannot be absent
+ --> tests/errors/implicit_interface_external_definition_03.f90:9:9
+  |
+9 |         call implicit_interface_external_definition_03_add(x)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: pass an actual argument for 'k'

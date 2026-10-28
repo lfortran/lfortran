@@ -3825,3 +3825,41 @@ contains
         print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
     end subroutine
 end module cc1_size_assumed_size_bindc
+
+module cc1_cyclic_iface_a
+contains
+    subroutine cc1_cyclic_iface_call(a)
+        real :: a(2)
+        call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+    end subroutine
+end module cc1_cyclic_iface_a
+
+module cc1_cyclic_iface_b
+    use cc1_cyclic_iface_a
+    integer :: m = 2
+end module cc1_cyclic_iface_b
+
+subroutine cc1_cyclic_iface_ext(a)
+    use cc1_cyclic_iface_b, only: m
+    real :: a(m)
+    a = 0
+end subroutine
+
+module cc1_file_fn_iface_m
+contains
+    subroutine cc1_file_fn_iface_call(a)
+        real :: a(6)
+        call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+    end subroutine
+end module cc1_file_fn_iface_m
+
+integer function cc1_file_fn_iface_len(n)
+    integer, intent(in) :: n
+    cc1_file_fn_iface_len = 2*n
+end function
+
+subroutine cc1_file_fn_iface_ext(a, n)
+    integer, intent(in) :: n
+    real :: a(cc1_file_fn_iface_len(n))
+    a = 0
+end subroutine

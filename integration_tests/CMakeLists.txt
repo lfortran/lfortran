@@ -4387,6 +4387,13 @@ RUN(NAME external_28 LABELS gfortran llvm EXTRAFILES external_28_procs.f90)
 RUN(NAME external_29 LABELS gfortran llvm wasm)
 RUN(NAME external_30 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing)
 RUN(NAME external_31 LABELS gfortran llvm)
+RUN(NAME external_32 LABELS gfortran llvm)
+RUN(NAME external_33 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME external_34 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME external_35 LABELS gfortran llvm EXTRAFILES external_35_procs.f90)
+RUN(NAME external_36 LABELS gfortran llvm EXTRAFILES external_36_procs.f90)
+RUN(NAME external_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME external_38 LABELS llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
@@ -5157,6 +5164,9 @@ RUN(NAME implicit_argument_casting_03 LABELS gfortran llvm
     GFORTRAN_ARGS -fallow-argument-mismatch)
 RUN(NAME implicit_argument_casting_04 LABELS gfortran llvm
     EXTRA_ARGS --implicit-argument-casting)
+RUN(NAME implicit_argument_casting_05 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-interface --implicit-argument-casting
+    GFORTRAN_ARGS -fallow-argument-mismatch)
 
 RUN(NAME specfun_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)

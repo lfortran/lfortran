@@ -1,0 +1,5 @@
+semantic error: Type mismatch in argument `a`: expected `real(4)[:]` but got `integer(4)[:]`.
+  --> tests/errors/implicit_interface_external_definition_02.f90:10:59
+   |
+10 |         s = implicit_interface_external_definition_02_sum(ia)
+   |                                                           ^^ 

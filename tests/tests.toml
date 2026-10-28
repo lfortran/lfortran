@@ -449,6 +449,18 @@ filename = "errors/generic_function_no_match_01.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "errors/implicit_interface_external_definition_01.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "errors/implicit_interface_external_definition_02.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "errors/implicit_interface_external_definition_03.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 

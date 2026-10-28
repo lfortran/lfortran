@@ -15,6 +15,7 @@
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <libasr/pass/instantiate_template.h>
+#include <libasr/pass/pass_utils.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <complex>
 #include <string>
@@ -1854,6 +1855,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm);
     ~BlockInterfaceVisitor();
     BlockInterfaceVisitor(const BlockInterfaceVisitor &) = delete;
@@ -1881,6 +1883,12 @@ public:
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
+    // The interfaces through which a module references the external
+    // procedures defined in this file, and the definition of each.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> external_procedure_definitions;
+    // The copies, per module scope, of the getters of the translation unit
+    // that the interface copies filed in the module call, keyed by getter.
+    std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> getter_copies;
     // The result type declared by the function references made through a
     // procedure-pointer temporary. The call-site interface may state less:
     // a character result whose length is an expression of the caller is
@@ -2490,6 +2498,9 @@ public:
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
+    // The getters that create_getter_function made, which read a variable
+    // in a specification expression for the procedures of their scope.
+    std::set<ASR::symbol_t*> &getter_functions;
     LCompilers::LocationManager &lm;
 
     // A specific procedure named in a generic interface block, with the scope
@@ -2615,6 +2626,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
             LCompilers::LocationManager &lm
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
@@ -2622,7 +2634,8 @@ public:
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure},
+          getter_functions{getter_functions}, lm{lm}
     {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
@@ -3180,6 +3193,7 @@ public:
                                 nullptr, false, true, false, false, false, nullptr, 0, false, false, true, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
+        getter_functions.insert(func_sym);
 
         return func_name;
     }
@@ -22812,11 +22826,579 @@ public:
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
             ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
         check_implicit_procedure_kind(loc, name, source, return_type != nullptr);
+        check_actuals_against_external_definition(loc, source, args,
+            return_type != nullptr);
         ASR::symbol_t* iface = get_callsite_interface(loc, name, args, return_type);
         // Nothing is known about the called procedure.
         current_function_deterministic = false;
         current_function_side_effect_free = false;
         return make_fpcast_call_target(loc, source, iface);
+    }
+
+    // The module that `scope` is in, or null.
+    static ASR::Module_t* enclosing_module(SymbolTable* scope) {
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            if (s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+                ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)) {
+                    return ASR::down_cast<ASR::Module_t>(owner);
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // True if the module named `name` uses the module named `used`,
+    // directly or through other modules.
+    static bool module_depends_on(SymbolTable* tu_scope, const std::string& name,
+            const std::string& used, std::set<std::string>& visited) {
+        if (!visited.insert(name).second) {
+            return false;
+        }
+        ASR::symbol_t* sym = tu_scope->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) {
+            return false;
+        }
+        ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(sym);
+        for (size_t i = 0; i < m->n_dependencies; i++) {
+            if (used == m->m_dependencies[i]
+                    || module_depends_on(tu_scope, m->m_dependencies[i], used, visited)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The names of the modules that the use-associated entities of `scope`
+    // and of the scopes nested in it come from.
+    static void collect_used_modules(SymbolTable* scope, std::set<std::string>& modules) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t* s = item.second;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(
+                    ASR::down_cast<ASR::ExternalSymbol_t>(s)->m_external);
+                while (owner && !ASR::is_a<ASR::Module_t>(*owner)) {
+                    owner = ASRUtils::get_asr_owner(owner);
+                }
+                if (owner) {
+                    modules.insert(ASRUtils::symbol_name(owner));
+                }
+            } else if (SymbolTable* nested = ASRUtils::symbol_symtab(s)) {
+                collect_used_modules(nested, modules);
+            }
+        }
+    }
+
+    // Makes the declarations of `iface_scope`, a scope in the module whose
+    // scope is `module_scope`, call copies in that module of the `getters`
+    // of the translation unit they call. False if a getter cannot be copied.
+    bool call_module_getters(SymbolTable* module_scope,
+            const std::set<ASR::symbol_t*>& getters, SymbolTable* iface_scope) {
+        std::map<ASR::symbol_t*, ASR::symbol_t*>& copies = getter_copies[module_scope];
+        std::map<std::string, std::string> names;
+        for (ASR::symbol_t* getter : getters) {
+            ASR::symbol_t*& copy = copies[getter];
+            if (copy == nullptr) {
+                ASRUtils::SymbolDuplicator duplicator(al);
+                copy = duplicator.duplicate_Function(
+                    ASR::down_cast<ASR::Function_t>(getter), module_scope);
+                if (copy == nullptr) {
+                    return false;
+                }
+                ASR::Function_t* copy_fn = ASR::down_cast<ASR::Function_t>(copy);
+                std::string copy_name = module_scope->get_unique_name(
+                    ASRUtils::symbol_name(getter), false);
+                copy_fn->m_name = s2c(al, copy_name);
+                // Public, as the getters of module procedures are, so that
+                // a USE of the module imports it.
+                copy_fn->m_access = ASR::accessType::Public;
+                module_scope->add_symbol(copy_name, copy);
+            }
+            names[ASRUtils::symbol_name(getter)] = ASRUtils::symbol_name(copy);
+        }
+        class RetargetGetters : public ASR::BaseWalkVisitor<RetargetGetters> {
+        public:
+            Allocator& al;
+            std::map<ASR::symbol_t*, ASR::symbol_t*>& copies;
+            std::map<std::string, std::string>& names;
+            RetargetGetters(Allocator& al, std::map<ASR::symbol_t*, ASR::symbol_t*>& copies,
+                std::map<std::string, std::string>& names)
+                : al(al), copies(copies), names(names) {}
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
+                auto copy = copies.find(x.m_name);
+                if (copy != copies.end()) {
+                    xx.m_name = copy->second;
+                }
+                if (x.m_original_name != nullptr) {
+                    copy = copies.find(x.m_original_name);
+                    if (copy != copies.end()) {
+                        xx.m_original_name = copy->second;
+                    }
+                }
+                ASR::BaseWalkVisitor<RetargetGetters>::visit_FunctionCall(x);
+            }
+            void visit_Variable(const ASR::Variable_t& x) {
+                // A copied variable shares its dependencies with the original.
+                SetChar dependencies;
+                dependencies.reserve(al, x.n_dependencies);
+                for (size_t i = 0; i < x.n_dependencies; i++) {
+                    auto name = names.find(x.m_dependencies[i]);
+                    dependencies.push_back(al, name != names.end()
+                        ? s2c(al, name->second) : x.m_dependencies[i]);
+                }
+                ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+                xx.m_dependencies = dependencies.p;
+                xx.n_dependencies = dependencies.size();
+                ASR::BaseWalkVisitor<RetargetGetters>::visit_Variable(x);
+            }
+        };
+        RetargetGetters retarget(al, copies, names);
+        retarget.visit_compile_time_value = true;
+        for (auto &item : iface_scope->get_scope()) {
+            retarget.visit_symbol(*item.second);
+        }
+        return true;
+    }
+
+    // A copy of the interface of the procedure `fn`, named `name` and filed
+    // in `scope`, as an interface body for `fn` would declare it there: its
+    // dummy arguments, its result and the entities of `fn` that their
+    // declarations name (named constants, derived types, interfaces of dummy
+    // procedures, use-associated entities), with no body, no other local
+    // and no contained procedure. When `scope` is in a module, the modules
+    // that the copy names become dependencies of it, so that its module
+    // file is complete. Null, with nothing filed, when the declarations
+    // cannot be copied, when they name a derived type the copy cannot see,
+    // or when they name an entity of a module that uses the module `scope`
+    // is in, which would make the two modules depend on each other; that
+    // module is then named in `cyclic_module`, when given.
+    // A bound of a dummy of an external procedure that reads a variable of a
+    // module calls a getter of the translation unit (see
+    // get_transformed_function_call), which a module cannot name either, so
+    // a copy filed in a module calls a copy of the getter in that module.
+    // Any other procedure of the translation unit that the declarations
+    // call cannot be copied, so neither can they; the first such procedure
+    // is then named in `file_procedure`, when given.
+    ASR::symbol_t* make_interface_copy(ASR::Function_t* fn, SymbolTable* scope,
+            const std::string& name, std::string* cyclic_module = nullptr,
+            std::string* file_procedure = nullptr) {
+        // The entities of `fn` that the declarations of its dummy arguments
+        // and of its result name, directly or through each other.
+        class ReferencedEntities : public ASR::BaseWalkVisitor<ReferencedEntities> {
+        public:
+            SymbolTable* symtab;
+            const std::set<ASR::symbol_t*>& getter_functions;
+            std::set<ASR::symbol_t*> found;
+            std::vector<ASR::symbol_t*> pending;
+            ReferencedEntities(SymbolTable* symtab,
+                    const std::set<ASR::symbol_t*>& getter_functions)
+                : symtab(symtab), getter_functions(getter_functions) {
+                this->visit_compile_time_value = true;
+            }
+            // The getters of the translation unit that the declarations call.
+            std::set<ASR::symbol_t*> getters;
+            // Another procedure of the translation unit that they call.
+            ASR::symbol_t* file_procedure = nullptr;
+            void add(ASR::symbol_t* s) {
+                if (s != nullptr && ASRUtils::symbol_parent_symtab(s) == symtab
+                        && found.insert(s).second) {
+                    pending.push_back(s);
+                }
+            }
+            void visit_Var(const ASR::Var_t& x) {
+                add(x.m_v);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                add(x.m_name);
+                add(x.m_original_name);
+                if (ASR::is_a<ASR::Function_t>(*x.m_name)
+                        && ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(x.m_name))) {
+                    if (getter_functions.find(x.m_name) != getter_functions.end()) {
+                        getters.insert(x.m_name);
+                    } else if (file_procedure == nullptr) {
+                        file_procedure = x.m_name;
+                    }
+                }
+                ASR::BaseWalkVisitor<ReferencedEntities>::visit_FunctionCall(x);
+            }
+            void visit_GenericProcedure(const ASR::GenericProcedure_t& x) {
+                for (size_t i = 0; i < x.n_procs; i++) {
+                    add(x.m_procs[i]);
+                }
+            }
+            void visit_CustomOperator(const ASR::CustomOperator_t& x) {
+                for (size_t i = 0; i < x.n_procs; i++) {
+                    add(x.m_procs[i]);
+                }
+            }
+            void visit_StructConstructor(const ASR::StructConstructor_t& x) {
+                add(x.m_dt_sym);
+                ASR::BaseWalkVisitor<ReferencedEntities>::visit_StructConstructor(x);
+            }
+            void visit_Variable(const ASR::Variable_t& x) {
+                add(x.m_type_declaration);
+                ASR::BaseWalkVisitor<ReferencedEntities>::visit_Variable(x);
+            }
+            void visit_Struct(const ASR::Struct_t& x) {
+                add(x.m_parent);
+                ASR::BaseWalkVisitor<ReferencedEntities>::visit_Struct(x);
+            }
+        };
+        ReferencedEntities referenced(fn->m_symtab, getter_functions);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            referenced.visit_expr(*fn->m_args[i]);
+        }
+        if (fn->m_return_var) {
+            referenced.visit_expr(*fn->m_return_var);
+        }
+        while (!referenced.pending.empty()) {
+            ASR::symbol_t* s = referenced.pending.back();
+            referenced.pending.pop_back();
+            referenced.visit_symbol(*s);
+        }
+        if (referenced.file_procedure != nullptr) {
+            if (file_procedure != nullptr) {
+                *file_procedure = ASRUtils::symbol_name(referenced.file_procedure);
+            }
+            return nullptr;
+        }
+        SymbolTable* iface_scope = al.make_new<SymbolTable>(scope);
+        ASRUtils::SymbolDuplicator duplicator(al);
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
+        for (auto &item : fn->m_symtab->get_scope()) {
+            ASR::symbol_t* s = item.second;
+            if (referenced.found.find(s) == referenced.found.end()) {
+                continue;
+            }
+            duplicator.duplicate_symbol(s, iface_scope);
+            ASR::symbol_t* copy = iface_scope->get_symbol(item.first);
+            if (copy == nullptr) {
+                return nullptr;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*s) && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(s),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
+        }
+        duplicator.remap_local_references(variables, iface_scope);
+        duplicator.fixup_local_type_declarations(iface_scope, fn->m_symtab);
+        // A copied generic name or defined operator names the copies of its
+        // specific procedures of `fn`, not the procedures themselves.
+        auto copied_procs = [&](ASR::symbol_t** procs, size_t n_procs) {
+            Vec<ASR::symbol_t*> copies;
+            copies.reserve(al, n_procs);
+            for (size_t i = 0; i < n_procs; i++) {
+                ASR::symbol_t* proc = procs[i];
+                if (ASRUtils::symbol_parent_symtab(proc) == fn->m_symtab) {
+                    proc = iface_scope->get_symbol(ASRUtils::symbol_name(proc));
+                    LCOMPILERS_ASSERT(proc != nullptr);
+                }
+                copies.push_back(al, proc);
+            }
+            return copies.p;
+        };
+        for (auto &item : iface_scope->get_scope()) {
+            if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                ASR::GenericProcedure_t* g = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
+                g->m_procs = copied_procs(g->m_procs, g->n_procs);
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t* op = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                op->m_procs = copied_procs(op->m_procs, op->n_procs);
+            }
+        }
+        for (auto &item : iface_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_type_declaration == nullptr) {
+                continue;
+            }
+            v->m_type_declaration = ASRUtils::import_type_declaration(al,
+                v->m_type_declaration, iface_scope);
+            if (!ASRUtils::is_visible_from(v->m_type_declaration, iface_scope)) {
+                return nullptr;
+            }
+        }
+        ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, iface_scope);
+        node_duplicator.success = true;
+        Vec<ASR::expr_t*> iface_args;
+        iface_args.reserve(al, fn->n_args);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            iface_args.push_back(al, node_duplicator.duplicate_expr(fn->m_args[i]));
+        }
+        ASR::expr_t* iface_return_var = node_duplicator.duplicate_expr(fn->m_return_var);
+        if (!node_duplicator.success) {
+            return nullptr;
+        }
+        ASR::Module_t* module = enclosing_module(scope);
+        std::set<std::string> used_modules;
+        if (module != nullptr) {
+            collect_used_modules(iface_scope, used_modules);
+            for (ASR::symbol_t* getter : referenced.getters) {
+                collect_used_modules(ASRUtils::symbol_symtab(getter), used_modules);
+            }
+            used_modules.erase(module->m_name);
+            for (auto &used : used_modules) {
+                std::set<std::string> visited;
+                if (module_depends_on(scope->get_tu_scope(), used, module->m_name, visited)) {
+                    if (cyclic_module != nullptr) {
+                        *cyclic_module = used;
+                    }
+                    return nullptr;
+                }
+            }
+        }
+        if (module != nullptr && !referenced.getters.empty()
+                && !call_module_getters(module->m_symtab, referenced.getters, iface_scope)) {
+            return nullptr;
+        }
+        ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(fn);
+        ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
+            al, fn->base.base.loc, iface_scope, s2c(al, name), nullptr, 0,
+            iface_args.p, iface_args.size(), nullptr, 0, iface_return_var,
+            fn_type->m_abi, fn->m_access, ASR::deftypeType::Interface,
+            fn_type->m_bindc_name, fn_type->m_elemental, fn_type->m_pure,
+            false, false, false, nullptr, 0, false, fn->m_deterministic,
+            fn->m_side_effect_free));
+        PassUtils::UpdateDependenciesVisitor dependencies(al);
+        dependencies.visit_Function(*ASR::down_cast<ASR::Function_t>(iface));
+        for (auto &used : used_modules) {
+            current_module_dependencies.push_back(al, s2c(al, used));
+        }
+        scope->add_symbol(name, iface);
+        return iface;
+    }
+
+    // The procedure a reference to `proc` made in `current_scope` names. An
+    // external procedure is not part of a module, so a module cannot name
+    // its definition, even when it is in the same file: the module must be
+    // complete without it, as it is in its module file. A reference made in
+    // a module to an external procedure defined in this file therefore names
+    // a copy of its interface, filed in the referencing procedure as if it
+    // had an interface body for the procedure. With --implicit-interface, an
+    // interface that cannot be copied is not needed: the reference names an
+    // opaque procedure, as when the procedure is defined in another file.
+    // Any other `proc` is returned as it is.
+    ASR::symbol_t* external_procedure_reference(ASR::symbol_t* proc,
+            const Location& loc) {
+        if (proc == nullptr || !ASR::is_a<ASR::Function_t>(*proc)
+                || ASRUtils::symbol_parent_symtab(proc)->parent != nullptr
+                || ASRUtils::get_FunctionType(proc)->m_deftype
+                    != ASR::deftypeType::Implementation
+                || enclosing_module(current_scope) == nullptr) {
+            return proc;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
+        SymbolTable* sym_scope = implicit_interface_scope();
+        if (sym_scope->get_symbol(fn->m_name) != nullptr) {
+            return proc;
+        }
+        std::string cyclic_module, file_procedure;
+        ASR::symbol_t* iface = make_interface_copy(fn, sym_scope, fn->m_name,
+            &cyclic_module, &file_procedure);
+        if (iface == nullptr) {
+            if (compiler_options.implicit_interface) {
+                // As if the procedure were defined in another file, but
+                // the references are still checked against the definition.
+                ASR::symbol_t* opaque = get_or_create_opaque_procedure(fn->m_name, loc);
+                external_procedure_definitions[opaque] = proc;
+                return opaque;
+            }
+            std::string module_name = enclosing_module(current_scope)->m_name;
+            std::string reason = "cannot be copied into the module";
+            std::string help = "help: use --implicit-interface to reference it "
+                "through an implicit interface";
+            if (!cyclic_module.empty()) {
+                reason = "names an entity of the module '" + cyclic_module
+                    + "', which uses '" + module_name + "'";
+            } else if (!file_procedure.empty()) {
+                // The declarations of the procedure are not conforming:
+                // a specification function needs an explicit interface.
+                reason = "calls the procedure '" + file_procedure
+                    + "', which has an implicit interface";
+                help = "help: give '" + file_procedure + "' an explicit interface in '"
+                    + std::string(fn->m_name) + "', or use --implicit-interface";
+            }
+            diag.add(Diagnostic("referencing the external procedure '"
+                + std::string(fn->m_name) + "' in the module '" + module_name
+                + "' without an explicit interface is not supported yet when its interface "
+                + reason, Level::Error, Stage::Semantic, {Label(help, {loc})}));
+            throw SemanticAbort();
+        }
+        external_procedure_definitions[iface] = proc;
+        return iface;
+    }
+
+    // Reports the actual argument `passed_arg` of a CALL when its type does
+    // not agree with the type of the data dummy argument `dummy`.
+    // `self_passing_call` is a call of a `pass` type-bound procedure, whose
+    // offset of the passed object is not properly handled for now.
+    void check_call_actual_type(ASR::expr_t* passed_arg, ASR::expr_t* dummy,
+            bool self_passing_call) {
+        ASR::Variable_t* v = ASRUtils::EXPR2VAR(dummy);
+        ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
+        ASR::ttype_t* param_type = v->m_type;
+        // Skip type checking for function types (procedure dummy
+        // arguments are validated separately).
+        bool is_function_type_arg = ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(passed_type)) ||
+                            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type));
+        // For polymorphic (class) types, don't unconditionally skip —
+        // verify actual compatibility instead. A genuinely incompatible
+        // actual argument (e.g. an integer passed to a class(T) dummy)
+        // must be reported here, otherwise it silently reaches codegen
+        // and crashes there.
+        bool has_class_type_side = ASRUtils::is_class_type(ASRUtils::type_get_past_array(passed_type)) ||
+                            ASRUtils::is_class_type(ASRUtils::type_get_past_array(param_type));
+        bool is_checkable_class_arg = !is_function_type_arg && has_class_type_side && !self_passing_call;
+        bool skip_check = is_function_type_arg || (has_class_type_side && self_passing_call) ||
+                        (is_checkable_class_arg ? ASRUtils::can_pass_class_argument(dummy, passed_arg) : false);
+        // For implicit_argument_casting, skip type checking for
+        // compatible type families (e.g., numeric↔numeric, string↔string)
+        // but reject fundamentally incompatible types (e.g., string→integer)
+        // that would cause an ICE in Call_t_body.
+        // Also reject arrays of integers with different kinds, which
+        // Call_t_body cannot handle.
+        if (compiler_options.implicit_argument_casting && !skip_check) {
+            ASR::ttype_t* passed_elem = ASRUtils::type_get_past_array(passed_type);
+            ASR::ttype_t* param_elem = ASRUtils::type_get_past_array(param_type);
+            auto is_numeric = [](ASR::ttype_t* t) {
+                return ASR::is_a<ASR::Integer_t>(*t) ||
+                       ASR::is_a<ASR::Real_t>(*t) ||
+                       ASR::is_a<ASR::Complex_t>(*t);
+            };
+            bool both_numeric = is_numeric(passed_elem) && is_numeric(param_elem);
+            // `same_type_class` is only meaningful for scalar
+            // built-in types where the AST-level Cast node can
+            // paper over differences in kind/length. Structs,
+            // classes, pointers, and function types must still
+            // be checked strictly — otherwise e.g. passing
+            // type(foo) where type(bar) is expected would be
+            // silently accepted.
+            bool same_type_class = (passed_elem->type == param_elem->type)
+                && !ASR::is_a<ASR::StructType_t>(*passed_elem)
+                && !ASR::is_a<ASR::Pointer_t>(*passed_elem)
+                && !ASR::is_a<ASR::FunctionType_t>(*passed_elem)
+                && !ASRUtils::is_class_type(passed_elem);
+            bool compatible_types = both_numeric || same_type_class;
+            bool both_are_arrays = ASRUtils::is_array(passed_type) && ASRUtils::is_array(param_type);
+            bool both_are_integers = ASR::is_a<ASR::Integer_t>(*passed_elem) &&
+                                     ASR::is_a<ASR::Integer_t>(*param_elem);
+            bool different_kinds = ASRUtils::extract_kind_from_ttype_t(passed_elem) !=
+                                   ASRUtils::extract_kind_from_ttype_t(param_elem);
+            if (compatible_types && !(both_are_arrays && both_are_integers && different_kinds)) {
+                skip_check = true;
+            }
+        }
+        // Check if types are equal
+        if (!skip_check && (ASRUtils::is_unlimited_polymorphic_to_specific_type(param_type, passed_type) ||
+                !ASRUtils::check_equal_type(passed_type, param_type, passed_arg, dummy))) {
+            std::string passed_type_str = ASRUtils::type_to_str_with_kind(passed_type, passed_arg);
+            std::string param_type_str = ASRUtils::type_to_str_with_kind(param_type, dummy);
+            diag.add(diag::Diagnostic(
+                "Type mismatch in argument `" + std::string(v->m_name) +
+                "`: expected `" + param_type_str + "` but got `" +passed_type_str + "`",
+                diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {passed_arg->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
+    // With --implicit-interface, a reference made in a module to an external
+    // procedure defined in this file whose interface cannot be copied names
+    // an opaque procedure `source` (see external_procedure_reference). The
+    // definition is in this file, though, so the actuals `args` of a
+    // reference to `source` are checked against it, as those of a reference
+    // to the definition or to a copy of its interface are.
+    void check_actuals_against_external_definition(const Location &loc,
+            ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, bool is_function) {
+        if (!ASRUtils::is_bare_implicit_interface(source)) {
+            return;
+        }
+        auto definition = external_procedure_definitions.find(source);
+        if (definition == external_procedure_definitions.end()) {
+            return;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(definition->second);
+        validate_function_call_argument_count(loc, args, fn);
+        // The interface built from the actuals has no dummy for an absent
+        // optional argument, so the definition would not receive it.
+        for (size_t i = args.size(); i < fn->n_args; i++) {
+            ASR::symbol_t* dummy = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*dummy)) {
+                std::string dummy_name = ASRUtils::symbol_name(dummy);
+                diag.add(Diagnostic("the external procedure '" + std::string(fn->m_name)
+                    + "' is referenced through an implicit interface, so its optional "
+                    "dummy argument '" + dummy_name + "' cannot be absent",
+                    Level::Error, Stage::Semantic, {Label("help: pass an actual "
+                        "argument for '" + dummy_name + "'", {loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (is_function) {
+            validate_create_function_arguments(args, definition->second);
+            return;
+        }
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i].m_value != nullptr && ASR::is_a<ASR::Variable_t>(
+                    *ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v)) {
+                check_call_actual_type(args[i].m_value, fn->m_args[i], false);
+            }
+        }
+    }
+
+    // True if `proc` is an external procedure defined in this file and,
+    // with --implicit-argument-casting, an actual of `args` has another
+    // numeric type or kind than its dummy (a REAL array passed to a COMPLEX
+    // dummy, say). The caller has no explicit interface to an external
+    // procedure, so such a reference is made through an interface built
+    // from its actuals, exactly as when the procedure is defined in another
+    // file. Integer kind mismatches keep their own handling.
+    bool is_mismatched_external_procedure_call(ASR::symbol_t* proc,
+            const Vec<ASR::call_arg_t> &args) {
+        auto definition = external_procedure_definitions.find(proc);
+        if (definition != external_procedure_definitions.end()) {
+            proc = definition->second;
+        }
+        if (!compiler_options.implicit_argument_casting
+                || !ASR::is_a<ASR::Function_t>(*proc)
+                || ASRUtils::symbol_parent_symtab(proc)->parent != nullptr) {
+            return false;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(proc);
+        ASR::FunctionType_t* fn_type = ASRUtils::get_FunctionType(fn);
+        if (fn_type->m_abi != ASR::abiType::Source
+                || fn_type->m_deftype != ASR::deftypeType::Implementation) {
+            return false;
+        }
+        auto is_numeric = [](ASR::ttype_t* t) {
+            return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t) ||
+                ASR::is_a<ASR::Complex_t>(*t);
+        };
+        for (size_t i = 0; i < args.size() && i < fn->n_args; i++) {
+            if (args[i].m_value == nullptr ||
+                    !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(
+                        fn->m_args[i])->m_v)) {
+                continue;
+            }
+            ASR::ttype_t* actual_elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(args[i].m_value)));
+            ASR::ttype_t* dummy_elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(fn->m_args[i])));
+            if (is_numeric(actual_elem) && is_numeric(dummy_elem)
+                    && !(ASR::is_a<ASR::Integer_t>(*actual_elem)
+                        && ASR::is_a<ASR::Integer_t>(*dummy_elem))
+                    && (actual_elem->type != dummy_elem->type
+                        || ASRUtils::extract_kind_from_ttype_t(actual_elem)
+                            != ASRUtils::extract_kind_from_ttype_t(dummy_elem))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // The target of a function reference `x` to `name` through an implicit
@@ -22870,34 +23452,12 @@ public:
         if (copy != nullptr) {
             return copy;
         }
-        ASRUtils::SymbolDuplicator duplicator(al);
-        ASR::symbol_t* dup = duplicator.duplicate_Function(fn, sym_scope);
+        std::string name = sym_scope->get_unique_name(
+            generated_symbol_name(fn->m_name, "cast_interface"), false);
+        ASR::symbol_t* dup = make_interface_copy(fn, sym_scope, name);
         if (dup == nullptr) {
             return nullptr;
         }
-        ASR::Function_t* dup_fn = ASR::down_cast<ASR::Function_t>(dup);
-        for (auto &item : dup_fn->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
-                continue;
-            }
-            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
-            if (v->m_type_declaration == nullptr) {
-                continue;
-            }
-            v->m_type_declaration = ASRUtils::import_type_declaration(al,
-                v->m_type_declaration, dup_fn->m_symtab);
-            if (!ASRUtils::is_visible_from(v->m_type_declaration, dup_fn->m_symtab)) {
-                return nullptr;
-            }
-        }
-        // The copy only describes the interface.
-        dup_fn->m_body = nullptr;
-        dup_fn->n_body = 0;
-        ASRUtils::get_FunctionType(dup_fn)->m_deftype = ASR::deftypeType::Interface;
-        std::string name = sym_scope->get_unique_name(
-            generated_symbol_name(fn->m_name, "cast_interface"), false);
-        dup_fn->m_name = s2c(al, name);
-        sym_scope->add_symbol(name, dup);
         copy = dup;
         return copy;
     }
@@ -23841,6 +24401,14 @@ public:
                 v = v2;
             }
         }
+        ASR::symbol_t* referenced = external_procedure_reference(v, x.base.base.loc);
+        if (referenced != v && ASRUtils::is_bare_implicit_interface(referenced)) {
+            // An opaque procedure, referenced through an interface built from
+            // this reference's actuals, returning the result of its definition.
+            referenced = implicit_function_reference_target(x, var_name, referenced,
+                ASRUtils::symbol_type(v));
+        }
+        v = referenced;
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
