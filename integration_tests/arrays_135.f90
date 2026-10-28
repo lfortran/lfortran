@@ -7,6 +7,7 @@ real :: a(3)
 real :: b(2, 2)
 real, allocatable :: c(:)
 real :: d(3), e(3)
+real :: f(4), h(4)
 integer :: i, j
 a = 1.0
 do i = 1, 3
@@ -31,6 +32,21 @@ end do
 e = d + 2.0
 do i = 1, 3
     if (abs(e(i) - 3.0) > 1e-6) error stop 5
+end do
+f = 0.0
+f(:) = 1.0
+do i = 1, 4
+    if (abs(f(i) - 1.0) > 1e-6) error stop 6
+end do
+f(2:3) = 2.0
+if (abs(f(1) - 1.0) > 1e-6) error stop 7
+if (abs(f(2) - 2.0) > 1e-6) error stop 8
+if (abs(f(3) - 2.0) > 1e-6) error stop 9
+if (abs(f(4) - 1.0) > 1e-6) error stop 10
+h = 5.0
+f(:) = h + 1.0
+do i = 1, 4
+    if (abs(f(i) - 6.0) > 1e-6) error stop 11
 end do
 print *, a(2), e(2)
 end program arrays_135

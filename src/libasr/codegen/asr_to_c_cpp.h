@@ -1740,11 +1740,148 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "_lfortran_strrepeat_c_alloc(_lfortran_get_default_allocator(), " + s + ", " + n + ")";
     }
 
+    // Conservative scan for ArrayBound nodes (e.g. from lbound()/ubound()
+    // calls); those need the ArrayBound lowering, so constructs holding
+    // them fall back to the generic path here.
+    bool contains_arraybound(ASR::expr_t* e) {
+        if (!e) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Var_t>(*e) ||
+            ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return contains_arraybound(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            return contains_arraybound(b->m_left) || contains_arraybound(b->m_right);
+        }
+        if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+            ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+            return contains_arraybound(b->m_left) || contains_arraybound(b->m_right);
+        }
+        if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+            ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+            return contains_arraybound(b->m_left) || contains_arraybound(b->m_right);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+            return contains_arraybound(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+        }
+        if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+            return contains_arraybound(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+        }
+        return true;
+    }
+
+    bool is_lbound_of_dim(ASR::expr_t* e, ASR::symbol_t* base, size_t dim) {
+        if (!ASR::is_a<ASR::ArrayBound_t>(*e)) {
+            return false;
+        }
+        ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+        if (b->m_bound != ASR::arrayboundType::LBound) {
+            return false;
+        }
+        return is_same_var(b->m_v, base) && is_dim_constant(b->m_dim, dim);
+    }
+
+    bool is_ubound_of_dim(ASR::expr_t* e, ASR::symbol_t* base, size_t dim) {
+        if (!ASR::is_a<ASR::ArrayBound_t>(*e)) {
+            return false;
+        }
+        ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+        if (b->m_bound != ASR::arrayboundType::UBound) {
+            return false;
+        }
+        return is_same_var(b->m_v, base) && is_dim_constant(b->m_dim, dim);
+    }
+
+    bool is_same_var(ASR::expr_t* e, ASR::symbol_t* base) {
+        if (!ASR::is_a<ASR::Var_t>(*e)) {
+            return false;
+        }
+        return ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v) ==
+            ASRUtils::symbol_get_past_external(base);
+    }
+
+    bool is_dim_constant(ASR::expr_t* e, size_t dim) {
+        if (!e || !ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            return false;
+        }
+        return ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n ==
+            (int64_t)(dim + 1);
+    }
+
+    // Whether one section dimension covers the whole array dimension:
+    // omitted bounds, or the frontend `(:)` form lbound:ubound with a
+    // unit step. `base` is the sectioned variable, `dim` is 0-based.
+    // Anything else (partial ranges, scalar indices, ...) is not full.
+    bool is_full_section_dim(ASR::array_index_t &idx, ASR::symbol_t* base,
+            size_t dim) {
+        if (!idx.m_step) {
+            if (!idx.m_left && !idx.m_right) {
+                return true;
+            }
+        } else {
+            ASR::expr_t* step_value = ASRUtils::expr_value(idx.m_step);
+            int step = 0;
+            if (!ASRUtils::extract_value(step_value, step) || step != 1) {
+                return false;
+            }
+            if (!idx.m_left && !idx.m_right) {
+                return true;
+            }
+        }
+        if (!idx.m_left || !idx.m_right) {
+            return false;
+        }
+        return is_lbound_of_dim(idx.m_left, base, dim) &&
+            is_ubound_of_dim(idx.m_right, base, dim);
+    }
+
+    // Whether `e` names whole-array storage: a plain array variable,
+    // or an array section covering every element (e.g. the frontend
+    // `(:)` form). Partial sections and anything else return false.
+    bool is_whole_array_ref(ASR::expr_t* e) {
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::is_array(ASRUtils::expr_type(e));
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e)) ||
+                !ASR::is_a<ASR::Var_t>(*s->m_v)) {
+                return false;
+            }
+            ASR::symbol_t* base = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(s->m_v)->m_v);
+            for (size_t d = 0; d < s->n_args; d++) {
+                if (!is_full_section_dim(s->m_args[d], base, d)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     // Whether `e` can be lowered element-by-element for a C++ array
-    // assignment: leaves are scalars, array variables or broadcasts;
-    // interior nodes are numeric/logical scalar operators. Anything
-    // else (calls, sections, ...) falls back to the generic path.
+    // assignment: leaves are scalars, whole-array references or
+    // broadcasts; interior nodes are numeric/logical scalar operators.
+    // Anything else (calls, partial sections, ...) falls back to the
+    // generic path.
     bool is_elementwise_assignable(ASR::expr_t* e) {
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return is_whole_array_ref(e);
+        }
         if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
             ASR::ArrayBroadcast_t *b = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
             return !ASRUtils::is_array(ASRUtils::expr_type(b->m_array));
@@ -1848,9 +1985,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return elementwise_src(
                 ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, idx);
         }
-        if (ASR::is_a<ASR::Var_t>(*e)) {
-            self().visit_Var(*ASR::down_cast<ASR::Var_t>(e));
-            if (ASRUtils::is_array(ASRUtils::expr_type(e))) {
+        if (ASR::is_a<ASR::Var_t>(*e) ||
+            ASR::is_a<ASR::ArraySection_t>(*e)) {
+            // Whole-array sections (checked before) index like the base
+            // variable, whose storage they share in full.
+            ASR::expr_t* v = e;
+            if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                v = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            }
+            self().visit_expr(*v);
+            if (ASRUtils::is_array(ASRUtils::expr_type(v))) {
                 return src + "->data->operator[](" + idx + ")";
             }
             return src;
@@ -1943,44 +2087,106 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (!is_c && ASR::is_a<ASR::Var_t>(*x.m_target) &&
-                ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
-                ((ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value) &&
-                  !ASRUtils::is_array(ASRUtils::expr_type(
-                      ASRUtils::get_past_array_broadcast(x.m_value)))) ||
-                 (ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-                  is_elementwise_assignable(x.m_value)))) {
-            // Array assignments (`a = 1.0`, `a = b`, `a = b + 2.0`):
-            // fill or elementwise loop over the flat data view
-            // underlying the C++ array descriptor. The element count
-            // comes from the descriptor so runtime-sized arrays work too.
-            ASR::Var_t *target_var = ASR::down_cast<ASR::Var_t>(x.m_target);
-            self().visit_Var(*target_var);
-            std::string arr = src;
-            ASR::dimension_t *m_dims = nullptr;
-            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(x.m_target), m_dims);
-            std::string total;
-            for (size_t d = 0; d < n_dims; d++) {
-                if (d > 0) total += " * ";
-                total += arr + "->dims[" + std::to_string(d) + "].length";
+        // Character arrays stay on the generic path: their element
+        // model differs from the flat numeric views handled below.
+        ASR::ttype_t* target_el_type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::expr_type(x.m_target));
+        if (ASRUtils::is_array(target_el_type)) {
+            target_el_type = ASRUtils::type_get_past_array(target_el_type);
+        }
+        if (!is_c && !ASRUtils::is_character(*target_el_type)) {
+            // Array assignments (`a = 1.0`, `a = b`, `a = b + 2.0`,
+            // `a(:) = ...`): fill or elementwise loop over the flat data
+            // view underlying the C++ array descriptor. The element
+            // count comes from the descriptor so runtime-sized arrays
+            // work too. Partial sections are only covered for rank-1
+            // scalar fills; anything else falls back to the generic path.
+            ASR::symbol_t* base = nullptr;
+            ASR::expr_t* base_ref = nullptr;
+            ASR::ArraySection_t* sec = nullptr;
+            bool full = false;
+            if (ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+                base = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+                base_ref = x.m_target;
+                full = true;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_target) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                    ASR::is_a<ASR::Var_t>(*ASR::down_cast<ASR::ArraySection_t>(
+                        x.m_target)->m_v)) {
+                sec = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+                base = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(sec->m_v)->m_v);
+                base_ref = sec->m_v;
+                full = is_whole_array_ref(x.m_target);
             }
-            std::string indent(indentation_level*indentation_spaces, ' ');
-            std::string idx = "__lfortran_broadcast_idx";
-            std::string rhs;
-            if (!ASRUtils::is_array(ASRUtils::expr_type(
-                    ASRUtils::get_past_array_broadcast(x.m_value)))) {
-                self().visit_expr(*ASRUtils::get_past_array_broadcast(x.m_value));
-                rhs = src;
-            } else {
-                rhs = elementwise_src(x.m_value, idx);
+            if (base) {
+                self().visit_expr(*base_ref);
+                std::string arr = src;
+                std::string indent(indentation_level*indentation_spaces, ' ');
+                std::string indent1 = indent + std::string(indentation_spaces, ' ');
+                std::string idx = "__lfortran_broadcast_idx";
+                ASR::expr_t* v = ASRUtils::get_past_array_broadcast(x.m_value);
+                bool scalar_rhs = !ASRUtils::is_array(ASRUtils::expr_type(v));
+                if (full) {
+                    ASR::dimension_t *m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(base_ref), m_dims);
+                    std::string total;
+                    for (size_t d = 0; d < n_dims; d++) {
+                        if (d > 0) total += " * ";
+                        total += arr + "->dims[" + std::to_string(d) + "].length";
+                    }
+                    std::string rhs;
+                    if (scalar_rhs) {
+                        self().visit_expr(*v);
+                        rhs = src;
+                    } else if (is_elementwise_assignable(x.m_value)) {
+                        rhs = elementwise_src(x.m_value, idx);
+                    } else {
+                        base = nullptr;
+                    }
+                    if (base) {
+                        src = indent + "for (size_t " + idx + " = 0; " + idx + " < "
+                            + total + "; " + idx + "++) {\n"
+                            + indent1 + arr + "->data->operator[](" + idx + ") = "
+                            + rhs + ";\n" + indent + "}\n";
+                        return;
+                    }
+                } else if (sec && sec->n_args == 1 && scalar_rhs) {
+                    ASR::array_index_t &six = sec->m_args[0];
+                    if (six.m_left && six.m_right &&
+                        !contains_arraybound(six.m_left) &&
+                        !contains_arraybound(six.m_right) &&
+                        !contains_arraybound(six.m_step)) {
+                        self().visit_expr(*six.m_left);
+                        std::string start = src;
+                        self().visit_expr(*six.m_right);
+                        std::string end = src;
+                        std::string step = "1";
+                        if (six.m_step) {
+                            self().visit_expr(*six.m_step);
+                            step = src;
+                        }
+                        self().visit_expr(*v);
+                        std::string scalar = src;
+                        std::string off = "((" + start + ") - "
+                            + arr + "->dims[0].lower_bound)";
+                        std::string n = "((" + step + ") > 0 ? (((" + end
+                            + ") >= (" + start + ")) ? (((" + end + ")-("
+                            + start + "))/(" + step + ")+1) : 0) : ((("
+                            + end + ") <= (" + start + ")) ? (((" + start
+                            + ")-(" + end + "))/(-(" + step + "))+1) : 0))";
+                        src = indent + "for (size_t " + idx + " = 0; " + idx
+                            + " < (size_t)(" + n + "); " + idx + "++) {\n"
+                            + indent1 + arr + "->data->operator[](" + off
+                            + " + " + idx + "*(" + step + ")) = "
+                            + scalar + ";\n" + indent + "}\n";
+                        return;
+                    }
+                }
             }
-            src = indent + "for (size_t " + idx + " = 0; " + idx + " < "
-                + total + "; " + idx + "++) {\n"
-                + indent + std::string(indentation_spaces, ' ')
-                + arr + "->data->operator[](" + idx + ") = "
-                + rhs + ";\n" + indent + "}\n";
-            return;
         }
         std::string target;
         ASR::ttype_t* m_target_type = ASRUtils::expr_type(x.m_target);
