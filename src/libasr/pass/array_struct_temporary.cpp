@@ -216,6 +216,11 @@ enum targetType {
 
 typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTargetType;
 
+// The dummy arguments of procedures that a call associates with the same
+// variable as another dummy argument of the same call (see
+// DummiesSharingActualCollector)
+typedef std::set<ASR::symbol_t*> DummiesSharingActualType;
+
 struct FunctionCallPreparation {
     // Copies of a prepared reference must retain its entry-time metadata.
     // This records value snapshots, not function references or cached results.
@@ -2142,7 +2147,8 @@ bool contains_function_reference(ASR::expr_t* value) {
 void prepare_function_actuals(Allocator& al, ASR::FunctionCall_t* call,
     Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool realloc_lhs,
-    FunctionCallPreparation& call_preparation);
+    FunctionCallPreparation& call_preparation,
+    const DummiesSharingActualType& dummies_sharing_actual);
 
 // Returns true if `value` is the null pointer constant and its type is an
 // array of rank >= 1, i.e. a value which is represented by an array
@@ -2237,7 +2243,121 @@ ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
     return sym;
 }
 
-bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
+// The component that `x` (a component, or an element or a section of one)
+// is part of, e.g. `a%x` for `a%x(1:n)`, if no pointer can reach it (see
+// is_unaliased_designator), otherwise nullptr.
+ASR::expr_t* get_unaliased_component(ASR::expr_t* x) {
+    x = ASRUtils::get_past_array_physical_cast(x);
+    if( ASR::is_a<ASR::ArraySection_t>(*x) ) {
+        x = ASR::down_cast<ASR::ArraySection_t>(x)->m_v;
+    } else if( ASR::is_a<ASR::ArrayItem_t>(*x) ) {
+        x = ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
+    }
+    if( !ASR::is_a<ASR::StructInstanceMember_t>(*x) ||
+            !is_unaliased_designator(x) ) {
+        return nullptr;
+    }
+    return x;
+}
+
+// Collects DummiesSharingActualType. A function with an ENTRY statement
+// becomes one procedure that takes the result variables of the function and
+// of every entry as dummy arguments, and each of them passes its own result
+// variable for all of them, because they are the same variable (F2018
+// 15.6.2.6). So these dummy arguments share storage although neither is a
+// pointer or a target.
+class DummiesSharingActualCollector:
+    public ASR::BaseWalkVisitor<DummiesSharingActualCollector> {
+
+    private:
+
+    DummiesSharingActualType& dummies;
+
+    template <typename T>
+    void collect(const T& x) {
+        ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if( !ASR::is_a<ASR::Function_t>(*callee) ) {
+            return;
+        }
+        ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(callee);
+        std::vector<ASR::symbol_t*> roots;
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            ASR::symbol_t* root = x.m_args[i].m_value ? get_root_var(
+                ASRUtils::get_past_array_physical_cast(x.m_args[i].m_value)) : nullptr;
+            roots.push_back(root ? ASRUtils::symbol_get_past_external(root) : nullptr);
+        }
+        // Without a passed object, the actual arguments correspond to the
+        // dummy arguments in order; otherwise every dummy argument may be
+        // the one that shares the variable.
+        bool in_order = x.m_dt == nullptr && x.n_args == function->n_args;
+        if( x.m_dt ) {
+            ASR::symbol_t* root = get_root_var(
+                ASRUtils::get_past_array_physical_cast(x.m_dt));
+            roots.push_back(root ? ASRUtils::symbol_get_past_external(root) : nullptr);
+        }
+        for( size_t i = 0; i < roots.size(); i++ ) {
+            for( size_t j = i + 1; j < roots.size(); j++ ) {
+                if( roots[i] == nullptr || roots[i] != roots[j] ) {
+                    continue;
+                }
+                for( size_t k = 0; k < function->n_args; k++ ) {
+                    if( (!in_order || k == i || k == j) &&
+                            ASR::is_a<ASR::Var_t>(*function->m_args[k]) ) {
+                        dummies.insert(ASR::down_cast<ASR::Var_t>(
+                            function->m_args[k])->m_v);
+                    }
+                }
+            }
+        }
+    }
+
+    public:
+
+    DummiesSharingActualCollector(DummiesSharingActualType& dummies_):
+        dummies(dummies_) {}
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        collect(x);
+        ASR::BaseWalkVisitor<DummiesSharingActualCollector>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        collect(x);
+        ASR::BaseWalkVisitor<DummiesSharingActualCollector>::visit_FunctionCall(x);
+    }
+};
+
+// Whether `a` and `b` are parts of the same component of two different
+// variables that cannot share storage, e.g. `c%x(1:n)` and `a%x`: each
+// component is an unaliased designator (see is_unaliased_designator), so
+// each variable is neither a pointer (which includes an associate name),
+// nor a target, nor in a common block, nor an EQUIVALENCE alias, and
+// neither is a dummy argument that a call associates with the same
+// variable as another one (see DummiesSharingActualCollector). Such a dummy
+// argument may still be associated with the other variable, but then
+// neither may be modified while the other is referenced (Fortran 2018
+// 15.5.2.13), so the target of an assignment does not overlap the other
+// one.
+bool are_components_of_distinct_variables(ASR::expr_t* a, ASR::expr_t* b,
+        const DummiesSharingActualType& dummies_sharing_actual) {
+    ASR::expr_t* a_component = get_unaliased_component(a);
+    ASR::expr_t* b_component = get_unaliased_component(b);
+    if( a_component == nullptr || b_component == nullptr ) {
+        return false;
+    }
+    ASR::symbol_t* a_root = get_root_var(a_component);
+    ASR::symbol_t* b_root = get_root_var(b_component);
+    if( a_root == nullptr || b_root == nullptr ) {
+        return false;
+    }
+    a_root = ASRUtils::symbol_get_past_external(a_root);
+    b_root = ASRUtils::symbol_get_past_external(b_root);
+    return a_root != b_root && dummies_sharing_actual.count(a_root) == 0 &&
+        dummies_sharing_actual.count(b_root) == 0;
+}
+
+bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs,
+        const DummiesSharingActualType& dummies_sharing_actual) {
     if (lhs == nullptr) {
         return false;
     }
@@ -2247,11 +2367,18 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
     ArrayVarCollector rhs_collector(al, rhs_vars);
     lhs_collector.visit_expr(*lhs);
     rhs_collector.visit_expr(*rhs);
+    // A function referenced in `rhs` may access the variable of `lhs` too,
+    // e.g. by use association, so the variables are only told apart without
+    // one.
+    bool distinguish_variables = !contains_function_reference(rhs);
 
     for( size_t i = 0; i < lhs_vars.size(); i++ ) {
         ASR::symbol_t* lhs_sym = get_associated_symbol(extract_symbol(lhs_vars[i]));
         for( size_t j = 0; j < rhs_vars.size(); j++ ) {
-            if( get_associated_symbol(extract_symbol(rhs_vars[j])) == lhs_sym ) {
+            if( get_associated_symbol(extract_symbol(rhs_vars[j])) == lhs_sym &&
+                    !(distinguish_variables &&
+                      are_components_of_distinct_variables(lhs_vars[i], rhs_vars[j],
+                          dummies_sharing_actual)) ) {
                 return true;
             }
         }
@@ -2263,8 +2390,9 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
 // Whether `rhs` can refer to the storage of `lhs`: it names an array of
 // `lhs`, or an array pointer, which includes an array associate name such as
 // `q` in `select type (q => u)`.
-bool can_rhs_refer_to_lhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
-    if (is_common_symbol_present_in_lhs_and_rhs(al, lhs, rhs)) {
+bool can_rhs_refer_to_lhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs,
+        const DummiesSharingActualType& dummies_sharing_actual) {
+    if (is_common_symbol_present_in_lhs_and_rhs(al, lhs, rhs, dummies_sharing_actual)) {
         return true;
     }
     Vec<ASR::expr_t*> rhs_vars;
@@ -2815,6 +2943,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // The references to the target of the current assignment in its value
     // that read it in place (see reads_target_only_in_place)
     std::set<ASR::expr_t*> target_operands_read_in_place;
+    const DummiesSharingActualType& dummies_sharing_actual;
 
     public:
 
@@ -2823,7 +2952,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
-            std::set<ASR::expr_t*>& sections_read_in_place_, bool bounds_checking_) :
+            std::set<ASR::expr_t*>& sections_read_in_place_,
+            bool bounds_checking_,
+            const DummiesSharingActualType& dummies_sharing_actual_) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
@@ -2831,7 +2962,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             sections_read_in_place(sections_read_in_place_),
             matmul_into_target(nullptr), matmul_target(nullptr),
             matmul_target_operand(nullptr), matmul_target_realloc_lhs(false),
-            bounds_checking(bounds_checking_) {}
+            bounds_checking(bounds_checking_),
+            dummies_sharing_actual(dummies_sharing_actual_) {}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
@@ -2856,7 +2988,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             target_operands_read_in_place.count(x_m_args_i) > 0;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
                     (is_read_in_place ||
-                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr)) &&
+                    !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr, dummies_sharing_actual)) &&
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
@@ -3390,7 +3522,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
               !ASRUtils::is_elemental(
                   ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) &&
-            can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value)) {
+            can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value, dummies_sharing_actual)) {
             xx.m_value = create_and_allocate_temporary_variable_for_array(
                 value, "_assignment_", al, current_body, current_scope,
                 exprs_with_target);
@@ -4037,7 +4169,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if (!inside_where) {
             prepare_function_actuals(al, const_cast<ASR::FunctionCall_t*>(&x),
                 current_body, current_scope, exprs_with_target, realloc_lhs,
-                call_preparation);
+                call_preparation, dummies_sharing_actual);
         }
         visit_Call(x, "_function_call_");
     }
@@ -4227,6 +4359,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ExprsWithTargetType& exprs_with_target;
     bool realloc_lhs;
     FunctionCallPreparation& call_preparation;
+    const DummiesSharingActualType& dummies_sharing_actual;
 
     public:
 
@@ -4241,9 +4374,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
-            FunctionCallPreparation& call_preparation_) :
+            FunctionCallPreparation& call_preparation_,
+            const DummiesSharingActualType& dummies_sharing_actual_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
-        call_preparation(call_preparation_), current_scope(nullptr),
+        call_preparation(call_preparation_),
+        dummies_sharing_actual(dummies_sharing_actual_), current_scope(nullptr),
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
         parent_expr(nullptr), lhs_var(nullptr) {}
 
@@ -4830,7 +4965,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
-                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr))) ) ||
+                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr, dummies_sharing_actual))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ||
                 // The call associates its pointer result; the assignment copies from it.
@@ -4842,7 +4977,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             }
         }
         if( !ASRUtils::is_array(x->m_type) &&
-               is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr) ) {
+               is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr, dummies_sharing_actual) ) {
             force_replace_current_expr_for_scalar(current_expr, std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name), al, current_body, current_scope, exprs_with_target);
             return ;
@@ -4893,7 +5028,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             (is_current_expr_linked_to_target(exprs_with_target, current_expr) && ((
              ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
              ASRUtils::is_array(x->m_type)) &&
-             is_common_symbol_present_in_lhs_and_rhs(al, exprs_with_target[*current_expr].first, *current_expr)))
+             is_common_symbol_present_in_lhs_and_rhs(al, exprs_with_target[*current_expr].first, *current_expr, dummies_sharing_actual)))
         ) {
             // x = transpose(x), where 'x' is user-variable
             // needs have a temporary, there might be more
@@ -4990,7 +5125,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
-                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
+                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
@@ -5018,7 +5153,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( exprs_with_target.find(*current_expr) != exprs_with_target.end() ) {
             // For self-referential section assignments, aliasing RHS as a pointer can
             // violate Fortran assignment semantics for overlapping slices.
-            if (is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
+            if (is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
                     current_scope, exprs_with_target);
@@ -5051,7 +5186,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
-                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
+                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
@@ -5064,13 +5199,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             // still shares storage with the target afterwards is copied as a
             // whole, not as the scalar an element would be.
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
-            if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v) ) {
+            if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual) ) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
                     current_scope, exprs_with_target);
             }
             return ;
-        } else if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v) ) {
+        } else if( is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             *current_expr = create_and_declare_temporary_variable_for_scalar(*current_expr,
                 "_array_item_", al, current_body, current_scope, exprs_with_target);
@@ -5237,9 +5372,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 void prepare_function_actuals(Allocator& al, ASR::FunctionCall_t* call,
     Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool realloc_lhs,
-    FunctionCallPreparation& call_preparation) {
+    FunctionCallPreparation& call_preparation,
+    const DummiesSharingActualType& dummies_sharing_actual) {
     ReplaceExprWithTemporary replacer(al, exprs_with_target, realloc_lhs,
-        call_preparation);
+        call_preparation, dummies_sharing_actual);
     replacer.call_replacer_on_value = false;
     replacer.current_body = current_body;
     replacer.current_scope = current_scope;
@@ -5262,6 +5398,7 @@ class ReplaceExprWithTemporaryVisitor:
     ReplaceExprWithTemporary replacer;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     bool inside_where;
+    const DummiesSharingActualType& dummies_sharing_actual;
 
     public:
 
@@ -5271,10 +5408,13 @@ class ReplaceExprWithTemporaryVisitor:
 
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation,
-            const std::set<ASR::expr_t*>& sections_read_in_place):
+            const std::set<ASR::expr_t*>& sections_read_in_place,
+            const DummiesSharingActualType& dummies_sharing_actual_):
         al(al_), exprs_with_target(exprs_with_target_),
-        replacer(al, exprs_with_target, realloc_lhs_, call_preparation),
-        parent_body_for_where(nullptr), inside_where(false) {
+        replacer(al, exprs_with_target, realloc_lhs_, call_preparation,
+            dummies_sharing_actual_),
+        parent_body_for_where(nullptr), inside_where(false),
+        dummies_sharing_actual(dummies_sharing_actual_) {
         replacer.sections_read_in_place = &sections_read_in_place;
         replacer.call_replacer_on_value = false;
         call_replacer_on_value = false;
@@ -5629,7 +5769,7 @@ class ReplaceExprWithTemporaryVisitor:
             (ASR::is_a<ASR::ArraySection_t>(*x.m_value) ||
              ASR::is_a<ASR::ArrayItem_t>(*x.m_value) ||
              ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) &&
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value);
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual);
 
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         // A scalar value is assigned to each element of an array target.
@@ -5650,12 +5790,12 @@ class ReplaceExprWithTemporaryVisitor:
         if(  is_assignment_target_array_section_item ||
             (!reads_target_in_place &&
             (ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) &&
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual)) ||
             (!reads_target_in_place &&
             lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             !ASRUtils::is_simd_array(x.m_value) &&
             !ASRUtils::is_allocatable(x.m_target) &&
-            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual)) ||
             is_self_ref_allocatable_array ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
@@ -6352,11 +6492,16 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     a.visit_TranslationUnit(unit);
     FunctionCallPreparation call_preparation;
     std::set<ASR::expr_t*> sections_read_in_place;
+    DummiesSharingActualType dummies_sharing_actual;
+    DummiesSharingActualCollector dummies_collector(dummies_sharing_actual);
+    dummies_collector.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
-        call_preparation, sections_read_in_place, pass_options.bounds_checking);
+        call_preparation, sections_read_in_place, pass_options.bounds_checking,
+        dummies_sharing_actual);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
-        pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place);
+        pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,
+        dummies_sharing_actual);
     c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
