@@ -7,6 +7,14 @@
                     (SymbolTable
                         3
                         {
+                            __scoped_attribute_m4:
+                                (ScopedVariableAttribute
+                                    3
+                                    __scoped_attribute_m4
+                                    3 m4
+                                    .false.
+                                    .true.
+                                ),
                             l1:
                                 (Variable
                                     3
@@ -1599,7 +1607,7 @@
                                     .false.
                                     ()
                                     .false.
-                                    .true.
+                                    .false.
                                     .false.
                                     NotMethod
                                     ()
