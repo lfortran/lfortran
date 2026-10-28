@@ -43,10 +43,22 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
 
     Allocator& al;
     Vec<ASR::expr_t**>& vars;
+    // Whether a section is an array operand of its own, which the loop
+    // indexes through its base array, rather than a reference to one
+    bool collect_sections;
 
-    ArrayVarAddressReplacer(Allocator& al_, Vec<ASR::expr_t**>& vars_):
-        al(al_), vars(vars_) {
+    ArrayVarAddressReplacer(Allocator& al_, Vec<ASR::expr_t**>& vars_,
+            bool collect_sections_=false):
+        al(al_), vars(vars_), collect_sections(collect_sections_) {
         call_replacer_on_value = false;
+    }
+
+    void replace_ArraySection(ASR::ArraySection_t* x) {
+        if( collect_sections ) {
+            vars.push_back(al, current_expr);
+            return ;
+        }
+        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_ArraySection(x);
     }
 
     void replace_ArraySize(ASR::ArraySize_t* /*x*/) {
@@ -126,8 +138,9 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
         replacer.replace_expr(*current_expr);
     }
 
-    ArrayVarAddressCollector(Allocator& al_, Vec<ASR::expr_t**>& vars_):
-        replacer(al_, vars_) {
+    ArrayVarAddressCollector(Allocator& al_, Vec<ASR::expr_t**>& vars_,
+            bool collect_sections=false):
+        replacer(al_, vars_, collect_sections) {
         visit_expr_after_replacement = false;
     }
 
@@ -797,6 +810,30 @@ static bool have_same_compile_time_shape(ASR::expr_t* target,
     return true;
 }
 
+// Replaces each occurrence of the expression `placeholder` with a copy of
+// `value`.
+class ReplacePlaceholder: public ASR::BaseExprReplacer<ReplacePlaceholder> {
+
+    private:
+
+    Allocator& al;
+    ASR::expr_t* placeholder;
+    ASR::expr_t* value;
+
+    public:
+
+    ReplacePlaceholder(Allocator& al_, ASR::expr_t* placeholder_, ASR::expr_t* value_):
+        al(al_), placeholder(placeholder_), value(value_) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        if (&x->base == placeholder) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            *current_expr = duplicator.duplicate_expr(value);
+        }
+    }
+
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -1145,28 +1182,49 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             : value <= start + length - 1;
     }
 
-    // Whether evaluating `subscript` once more has no effect: a constant, a
-    // variable or a bound of an array variable.
+    // Whether evaluating `subscript` once more has no effect.
     static bool can_reevaluate_subscript(ASR::expr_t* subscript) {
         return ASRUtils::is_value_constant(ASRUtils::expr_value(subscript)) ||
             ASR::is_a<ASR::Var_t>(*subscript) ||
-            (ASR::is_a<ASR::ArrayBound_t>(*subscript) && ASR::is_a<ASR::Var_t>(
-                *ASR::down_cast<ASR::ArrayBound_t>(subscript)->m_v));
+            PassUtils::is_reevaluable_integer_expr(subscript);
+    }
+
+    // The reference to the element of the base array of `section` that
+    // `subscripts` select, which checks it to be within the bounds.
+    ASR::stmt_t* check_section_element(ASR::ArraySection_t* section,
+            Vec<ASR::array_index_t>& subscripts, const std::string& name_hint,
+            const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* element_type = ASRUtils::extract_type(section->m_type);
+        ASR::expr_t* element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
+            loc, section->m_v, subscripts.p, subscripts.size(), element_type,
+            ASR::arraystorageType::ColMajor, nullptr, false));
+        std::string name = current_scope->get_unique_name(name_hint);
+        ASR::symbol_t* temp = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, element_type), nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, temp);
+        return b.Assignment(ASRUtils::EXPR(ASR::make_Var_t(al, loc, temp)), element);
     }
 
     // Whether every element of the base array that the loops over the
-    // triplets of the section target `section` reference is within its
-    // bounds. The subscripts that the loop over a triplet runs through lie
-    // between its start and its end, so it suffices that its end is known
-    // to be within the bounds and that the subscripts of the first element
+    // triplets of the section `section` reference is within its bounds.
+    // The subscripts that the loop over a triplet runs through lie between
+    // its start and its end, so it suffices that its end is known to be
+    // within the bounds and that the subscripts of the first element
     // referenced, its starts and the scalar subscripts, are. With bounds
     // checking, those not known at compile time are checked once, before
     // the loops, by referencing that element if the section is not empty
-    // and its elements are of intrinsic numeric or logical type.
+    // and its elements are of intrinsic numeric or logical type. With
+    // `check_last_element`, an end not known to be within the bounds is
+    // checked the same way, by referencing the last element of the section.
     bool is_section_traversal_in_bounds(ASR::ArraySection_t* section,
-            const Location& loc) {
+            const Location& loc, bool check_last_element=false) {
         ASRUtils::ASRBuilder b(al, loc);
         bool check_first_element = false;
+        bool check_last = false;
         ASR::expr_t* is_not_empty = nullptr;
         for( size_t i = 0; i < section->n_args; i++ ) {
             ASR::array_index_t& index = section->m_args[i];
@@ -1193,7 +1251,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::arrayboundType end_bound = step > 0 ?
                 ASR::arrayboundType::UBound : ASR::arrayboundType::LBound;
             if( !is_subscript_within_bound(section->m_v, i, index.m_right, end_bound) ) {
-                return false;
+                if( !check_last_element ) {
+                    return false;
+                }
+                check_last = true;
             }
             check_first_element = check_first_element ||
                 !is_subscript_within_bound(section->m_v, i, index.m_left, start_bound);
@@ -1214,7 +1275,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             is_not_empty = is_not_empty ? b.And(is_not_empty, is_dim_not_empty)
                 : is_dim_not_empty;
         }
-        if( !check_first_element ) {
+        if( !check_first_element && !check_last ) {
             return true;
         }
         ASR::ttype_t* element_type = ASRUtils::extract_type(section->m_type);
@@ -1233,33 +1294,60 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        Vec<ASR::array_index_t> args;
-        args.reserve(al, section->n_args);
-        for( size_t i = 0; i < section->n_args; i++ ) {
-            ASR::array_index_t arg;
-            arg.loc = loc;
-            arg.m_left = nullptr;
-            arg.m_step = nullptr;
-            arg.m_right = duplicator.duplicate_expr(is_scalar_subscript(section->m_args[i]) ?
-                section->m_args[i].m_right : section->m_args[i].m_left);
-            args.push_back(al, arg);
+        std::vector<ASR::stmt_t*> checks;
+        if( check_first_element ) {
+            Vec<ASR::array_index_t> args;
+            args.reserve(al, section->n_args);
+            for( size_t i = 0; i < section->n_args; i++ ) {
+                ASR::array_index_t arg;
+                arg.loc = loc;
+                arg.m_left = nullptr;
+                arg.m_step = nullptr;
+                arg.m_right = duplicator.duplicate_expr(is_scalar_subscript(section->m_args[i]) ?
+                    section->m_args[i].m_right : section->m_args[i].m_left);
+                args.push_back(al, arg);
+            }
+            checks.push_back(check_section_element(section, args,
+                "__libasr_section_first_element_", loc));
         }
-        ASR::expr_t* first_element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
-            loc, section->m_v, args.p, args.size(), element_type,
-            ASR::arraystorageType::ColMajor, nullptr, false));
-        std::string name = current_scope->get_unique_name("__libasr_section_first_element_");
-        ASR::symbol_t* temp = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-            al, loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local,
-            nullptr, nullptr, ASR::storage_typeType::Default,
-            ASRUtils::duplicate_type(al, element_type), nullptr, ASR::abiType::Source,
-            ASR::accessType::Public, ASR::presenceType::Required, false));
-        current_scope->add_symbol(name, temp);
-        ASR::stmt_t* check = b.Assignment(ASRUtils::EXPR(ASR::make_Var_t(al, loc, temp)),
-            first_element);
+        if( check_last ) {
+            // The last subscript a triplet selects is
+            // start + (end - start) / step * step
+            Vec<ASR::array_index_t> args;
+            args.reserve(al, section->n_args);
+            for( size_t i = 0; i < section->n_args; i++ ) {
+                ASR::array_index_t& index = section->m_args[i];
+                ASR::array_index_t arg;
+                arg.loc = loc;
+                arg.m_left = nullptr;
+                arg.m_step = nullptr;
+                if( is_scalar_subscript(index) ) {
+                    arg.m_right = duplicator.duplicate_expr(index.m_right);
+                } else {
+                    int64_t step = 0;
+                    ASRUtils::extract_value(ASRUtils::expr_value(index.m_step), step);
+                    ASR::expr_t* end = to_index_kind(duplicator.duplicate_expr(index.m_right));
+                    if( step == 1 ) {
+                        arg.m_right = end;
+                    } else {
+                        ASR::expr_t* start = to_index_kind(duplicator.duplicate_expr(index.m_left));
+                        ASR::expr_t* step_expr = to_index_kind(duplicator.duplicate_expr(index.m_step));
+                        arg.m_right = b.Add(duplicator.duplicate_expr(start), b.Mul(b.Div(
+                            b.Sub(end, start), step_expr), duplicator.duplicate_expr(step_expr)));
+                    }
+                }
+                args.push_back(al, arg);
+            }
+            checks.push_back(check_section_element(section, args,
+                "__libasr_section_last_element_", loc));
+        }
         if( is_not_empty != nullptr ) {
-            check = b.If(is_not_empty, {check}, {});
+            pass_result.push_back(al, b.If(is_not_empty, checks, {}));
+        } else {
+            for( ASR::stmt_t* check: checks ) {
+                pass_result.push_back(al, check);
+            }
         }
-        pass_result.push_back(al, check);
         return true;
     }
 
@@ -1562,7 +1650,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                        Vec<ASR::expr_t**>& fix_types_args,
                        const Location& loc,
                        const std::vector<ASR::expr_t*>* scalar_targets = nullptr,
-                       const std::set<ASR::expr_t*>* conforming_operands = nullptr) {
+                       const std::set<ASR::expr_t*>* conforming_operands = nullptr,
+                       bool check_section_ends = false,
+                       ASR::stmt_t* next_stmt = nullptr) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
         var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
@@ -1606,8 +1696,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         auto is_conforming = [&](size_t i) {
             return conforming_operands != nullptr &&
                 var_ranks[i] == var_ranks[var_with_maxrank] &&
-                conforming_operands->count(*vars[i]) > 0 &&
-                conforming_operands->count(*vars[var_with_maxrank]) > 0;
+                conforming_operands->count(vars_expr[i]) > 0 &&
+                conforming_operands->count(vars_expr[var_with_maxrank]) > 0;
         };
         std::vector<bool> in_bounds(vars.size(), false);
         for( size_t i = 0; i < vars.size(); i++ ) {
@@ -1634,9 +1724,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(
                     vars_expr[i]);
                 // The loops run over the triplets of the section only if it
-                // drives them
-                bool section_in_bounds = i == var_with_maxrank &&
-                    is_section_traversal_in_bounds(section, loc);
+                // drives them. With `check_section_ends`, the index of a
+                // section that conforms with that operand runs over its
+                // triplets too, and both ends of each triplet are checked
+                // before the loops.
+                bool section_in_bounds = (i == var_with_maxrank ||
+                        (check_section_ends && is_conforming(i))) &&
+                    is_section_traversal_in_bounds(section, loc, check_section_ends);
                 *vars[i] = index_section_through_base(section, var2indices[i], loc,
                     section_in_bounds);
                 continue;
@@ -1690,6 +1784,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
+        if( next_stmt != nullptr ) {
+            do_loop_body.push_back(al, next_stmt);
+        }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
@@ -2771,7 +2868,156 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
 
+    // `target = sum(e)`, where `e` is an elementwise operation (see
+    // ElementwiseReduction), is lowered into one loop nest over the elements
+    // of `e`:
+    //     acc = 0
+    //     do ...
+    //         acc = acc + e(i1, ..., in)
+    //     end do
+    //     target = acc
+    // A mask guards the update. The accumulator is a variable of its own,
+    // since `e` may reference the target. When the update uses the element
+    // twice, as `acc = (acc > e(i) ? acc : e(i))` for MAXVAL does, the
+    // element is assigned to a variable first, so that it is evaluated once.
+    void lower_reduction_to_loop(const ASR::Assignment_t& x) {
+        const Location& loc = x.base.base.loc;
+        ASR::IntrinsicArrayFunction_t* reduction =
+            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x.m_value);
+        ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+        ASRUtils::ElementwiseReduction::get_operands(reduction, array, vector_b, mask);
+
+        std::string acc_name = current_scope->get_unique_name("__libasr_reduction_acc");
+        ASR::symbol_t* acc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, acc_name), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, reduction->m_type), nullptr,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+        current_scope->add_symbol(acc_name, acc_sym);
+        ASR::expr_t* acc = ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym));
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            acc, ASRUtils::ElementwiseReduction::get_initial_value(al, loc, reduction, array),
+            nullptr, false, false)));
+
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::Assignment_t* element_stmt = nullptr;
+        ASR::expr_t* element = array;
+        if (array && ASRUtils::ElementwiseReduction::accumulate_uses_element_twice(reduction)) {
+            std::string element_name = current_scope->get_unique_name("__libasr_reduction_element");
+            ASR::symbol_t* element_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                al, loc, current_scope, s2c(al, element_name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::duplicate_type(al, reduction->m_type), nullptr,
+                ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+            current_scope->add_symbol(element_name, element_sym);
+            element = ASRUtils::EXPR(ASR::make_Var_t(al, loc, element_sym));
+            element_stmt = ASR::down_cast2<ASR::Assignment_t>(ASRUtils::make_Assignment_t_util(
+                al, loc, element, duplicator.duplicate_expr(array), nullptr, false, false));
+        }
+
+        // The operation may use the element more than once (e.g. MaxVal), so
+        // it is built on a placeholder that each use then replaces with a
+        // copy of the element. The elements of both vectors of DotProduct
+        // have the type of the accumulator.
+        ASR::expr_t* placeholder = array ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
+        ASR::expr_t* placeholder_b = vector_b ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)) : nullptr;
+        ASR::expr_t* update = ASRUtils::ElementwiseReduction::accumulate(al, loc,
+            reduction, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)), placeholder,
+            placeholder_b);
+        for (auto& [operand_placeholder, operand]: {std::make_pair(placeholder, element),
+                std::make_pair(placeholder_b, vector_b)}) {
+            if (operand) {
+                ReplacePlaceholder replace_placeholder(al, operand_placeholder, operand);
+                replace_placeholder.current_expr = &update;
+                replace_placeholder.replace_expr(update);
+            }
+        }
+        update = duplicator.duplicate_expr(update);
+        ASR::Assignment_t* update_stmt = ASR::down_cast2<ASR::Assignment_t>(
+            ASRUtils::make_Assignment_t_util(al, loc, acc, update, nullptr, false, false));
+        // The statement that reads the elements of the operands
+        ASR::Assignment_t* read_stmt = element_stmt ? element_stmt : update_stmt;
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        Vec<ASR::expr_t**> fix_type_args;
+        fix_type_args.reserve(al, 2);
+        // array_struct_temporary leaves a section operand in place only
+        // when the loop can index it through its base array
+        ArrayVarAddressCollector update_collector(al, vars, true);
+        update_collector.current_expr = &read_stmt->m_value;
+        update_collector.call_replacer();
+        fix_type_args.push_back(al, &read_stmt->m_value);
+        ASR::If_t* mask_stmt = nullptr;
+        if (mask) {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 2);
+            if (element_stmt) {
+                body.push_back(al, &element_stmt->base);
+            }
+            body.push_back(al, &update_stmt->base);
+            mask_stmt = ASR::down_cast2<ASR::If_t>(ASR::make_If_t(al, loc, nullptr,
+                duplicator.duplicate_expr(mask), body.p, body.size(), nullptr, 0));
+            ArrayVarAddressCollector mask_collector(al, vars, true);
+            mask_collector.current_expr = &mask_stmt->m_test;
+            mask_collector.call_replacer();
+            fix_type_args.push_back(al, &mask_stmt->m_test);
+        }
+        LCOMPILERS_ASSERT(vars.size() > 0);
+
+        // The operands are checked to conform, as when the operation is
+        // assigned to an array temporary
+        std::set<ASR::expr_t*> conforming_operands;
+        if (bounds_checking) {
+            Vec<ASR::expr_t*> components;
+            components.reserve(al, 2);
+            CollectComponentsFromElementalExpr collect_components(al, components);
+            collect_components.visit_expr(*read_stmt->m_value);
+            if (mask_stmt) {
+                collect_components.visit_expr(*mask_stmt->m_test);
+            }
+            for (size_t i = 0; i < vars.size(); i++) {
+                if (ASR::is_a<ASR::ArraySection_t>(**vars[i])) {
+                    components.push_back(al, *vars[i]);
+                }
+            }
+            if (components.size() > 1 && have_same_rank(components[0], components)) {
+                Vec<ASR::expr_t*> checked;
+                checked.reserve(al, components.size());
+                for (size_t i = 0; i < components.size(); i++) {
+                    checked.push_back(al, duplicator.duplicate_expr(components[i]));
+                    conforming_operands.insert(components[i]);
+                    conforming_operands.insert(
+                        ASRUtils::get_past_array_physical_cast(components[i]));
+                }
+                if (!have_same_compile_time_shape(components[0], components)) {
+                    pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al, loc,
+                        duplicator.duplicate_expr(components[0]), checked, false));
+                }
+            }
+        }
+
+        if (mask_stmt) {
+            generate_loop(*mask_stmt, vars, fix_type_args, loc, nullptr,
+                &conforming_operands, true);
+        } else if (element_stmt) {
+            generate_loop(*element_stmt, vars, fix_type_args, loc, nullptr,
+                &conforming_operands, true, &update_stmt->base);
+        } else {
+            generate_loop(*update_stmt, vars, fix_type_args, loc, nullptr,
+                &conforming_operands, true);
+        }
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            x.m_target, ASRUtils::EXPR(ASR::make_Var_t(al, loc, acc_sym)),
+            nullptr, x.m_realloc_lhs, false)));
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
+        if (ASRUtils::ElementwiseReduction::is_assigned_by_loop(x.m_target, x.m_value,
+                x.m_overloaded)) {
+            lower_reduction_to_loop(x);
+            return;
+        }
         // A non-elemental defined assignment is entirely carried out by the
         // overloaded subroutine call, which takes both sides as actual
         // arguments. There is no element-wise assignment to expand and no

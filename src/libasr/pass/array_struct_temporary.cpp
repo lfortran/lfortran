@@ -1833,6 +1833,165 @@ bool is_temporary_needed(ASR::expr_t* value) {
         && !is_null_pointer;
 }
 
+// Whether the reduction `x` is the value of an assignment to a scalar that
+// array_op lowers into a loop accumulating the elements of its elementwise
+// operand (see ElementwiseReduction::is_assigned_by_loop), so that the
+// operand needs no array temporary.
+bool is_reduction_lowered_to_loop(ASR::expr_t* x,
+        ExprsWithTargetType& exprs_with_target) {
+    auto target = exprs_with_target.find(x);
+    return target != exprs_with_target.end() &&
+        ASRUtils::ElementwiseReduction::is_assigned_by_loop(target->second.first, x, nullptr);
+}
+
+// Collects the sections that are array operands of an elementwise
+// operation, and the operations that are array arguments of its elemental
+// intrinsic functions. Scalar operands, which are evaluated once, are not
+// entered.
+class ElementwiseSectionCollector:
+    public ASR::BaseWalkVisitor<ElementwiseSectionCollector> {
+
+    public:
+
+    std::set<ASR::expr_t*>& sections;
+    std::set<ASR::expr_t*>& operations;
+
+    ElementwiseSectionCollector(std::set<ASR::expr_t*>& sections_,
+            std::set<ASR::expr_t*>& operations_):
+        sections(sections_), operations(operations_) {
+        visit_compile_time_value = false;
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {
+    }
+
+    void visit_expr(const ASR::expr_t& x) {
+        ASR::expr_t* expr = const_cast<ASR::expr_t*>(&x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(expr))) {
+            return;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(x)) {
+            sections.insert(expr);
+            return;
+        }
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(x)) {
+            ASR::IntrinsicElementalFunction_t* f =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
+            // The loop reads the elements whatever the physical type of the
+            // argument, so it is the operation that is read in place
+            for (size_t i = 0; i < f->n_args; i++) {
+                if (f->m_args[i] != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(f->m_args[i])) {
+                    operations.insert(ASRUtils::get_past_array_physical_cast(f->m_args[i]));
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<ElementwiseSectionCollector>::visit_expr(x);
+    }
+
+};
+
+// Adds to `sections` each section operand of the reduction `x`, which
+// array_op lowers into a loop, that the loop indexes through its base array
+// rather than through a pointer to the section, which would need a
+// descriptor of its own built on every evaluation. The base array must be a
+// variable or a component of a scalar one, and the subscripts must be
+// expressions that the loop, which assigns only to its accumulator, can
+// evaluate again. Adds to `operations` each operation that is an array
+// argument of an elemental intrinsic function in those operands, which the
+// loop evaluates element by element too, rather than into an array
+// temporary.
+void get_sections_read_in_place(ASR::IntrinsicArrayFunction_t* x,
+        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations) {
+    ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+    ASRUtils::ElementwiseReduction::get_operands(x, array, vector_b, mask);
+    std::set<ASR::expr_t*> operands;
+    ElementwiseSectionCollector collector(operands, operations);
+    for (ASR::expr_t* operand: {array, vector_b, mask}) {
+        if (operand != nullptr) {
+            collector.visit_expr(*operand);
+        }
+    }
+    for (ASR::expr_t* operand: operands) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(operand);
+        if (!ASRUtils::ElementwiseReduction::is_designator(operand) ||
+                ASRUtils::is_simd_array(operand)) {
+            continue;
+        }
+        bool is_read_in_place = true;
+        for (size_t i = 0; i < section->n_args && is_read_in_place; i++) {
+            ASR::array_index_t& index = section->m_args[i];
+            if (index.m_left == nullptr && index.m_step == nullptr) {
+                is_read_in_place = index.m_right != nullptr &&
+                    PassUtils::is_reevaluable_integer_expr(index.m_right);
+                continue;
+            }
+            // array_op converts a triplet to the loop index kind, which is
+            // integer(4) by default, as for a section target
+            for (ASR::expr_t* subscript: {index.m_left, index.m_right, index.m_step}) {
+                if (subscript == nullptr || !PassUtils::is_reevaluable_integer_expr(subscript) ||
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(subscript)) > 4) {
+                    is_read_in_place = false;
+                    break;
+                }
+            }
+        }
+        if (is_read_in_place) {
+            sections.insert(operand);
+        }
+    }
+}
+
+// Replaces each reduction that array_op lowers into a loop, and that is an
+// operand of an expression evaluated once, using `hoist`. Only operands of
+// intrinsic operations and elemental intrinsic functions are replaced, which
+// are evaluated exactly once whenever the expression is.
+class ReductionOperandReplacer:
+    public ASR::BaseExprReplacer<ReductionOperandReplacer> {
+
+    public:
+
+    std::function<void(ASR::expr_t**)> hoist;
+
+    ReductionOperandReplacer(std::function<void(ASR::expr_t**)> hoist_):
+        hoist(hoist_) {}
+
+    void replace_expr(ASR::expr_t* x) {
+        if (x == nullptr) {
+            return;
+        }
+        switch (x->type) {
+            case ASR::exprType::IntrinsicArrayFunction: {
+                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
+                    hoist(current_expr);
+                }
+                return;
+            }
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::ComplexUnaryMinus:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::Cast:
+            case ASR::exprType::ArrayPhysicalCast:
+            case ASR::exprType::IntrinsicElementalFunction: {
+                ASR::BaseExprReplacer<ReductionOperandReplacer>::replace_expr(x);
+                return;
+            }
+            default: {
+                return;
+            }
+        }
+    }
+
+};
+
 class ContainsFunctionReference:
     public ASR::BaseWalkVisitor<ContainsFunctionReference> {
     public:
@@ -2011,15 +2170,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     bool realloc_lhs;
     bool inside_where;
     FunctionCallPreparation& call_preparation;
+    // Section operands of reductions that array_op lowers into a loop, read
+    // in place (see get_sections_read_in_place)
+    std::set<ASR::expr_t*>& sections_read_in_place;
+    // Operations in arguments of elemental intrinsic functions in those
+    // operands, read in place too
+    std::set<ASR::expr_t*> operations_read_in_place;
 
     public:
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
-            FunctionCallPreparation& call_preparation_) :
+            FunctionCallPreparation& call_preparation_,
+            std::set<ASR::expr_t*>& sections_read_in_place_) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
-            inside_where(false), call_preparation(call_preparation_) {}
+            inside_where(false), call_preparation(call_preparation_),
+            sections_read_in_place(sections_read_in_place_) {}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
@@ -2101,6 +2268,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
+            if( sections_read_in_place.count(x_m_args[i]) > 0 ) {
+                x_m_args_vec.push_back(al, x_m_args[i]);
+                continue;
+            }
+            ASR::expr_t* operation = ASRUtils::get_past_array_physical_cast(x_m_args[i]);
+            if( operations_read_in_place.count(operation) > 0 ) {
+                visit_expr(*operation);
+                x_m_args_vec.push_back(al, operation);
+                continue;
+            }
             visit_expr(*x_m_args[i]);
             if( is_temporary_needed(x_m_args[i]) ) {
                 ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i], al, current_body, name_hint, current_scope, exprs_with_target);
@@ -2386,8 +2563,50 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // metadata is instantiated and saved by prepare_function_actuals.
     }
 
+    // Evaluates each reduction of `*expr` that array_op lowers into a loop
+    // into a scalar variable before the statement, so that it is the value of
+    // an assignment to a scalar of its own, e.g. the assignment
+    // `z(i) = sum(k(i, :) * x) + b(i)` becomes `t = sum(k(i, :) * x)` and
+    // `z(i) = t + b(i)`. `*expr` is evaluated once, before the statement
+    // does anything else, as is such a reduction anyway (see
+    // ReplaceExprWithTemporary::replace_IntrinsicArrayFunction).
+    void hoist_reductions_lowered_to_loop(ASR::expr_t** expr) {
+        if (current_body == nullptr || inside_where) {
+            return;
+        }
+        ReductionOperandReplacer replacer([this](ASR::expr_t** reduction) {
+            ASR::expr_t* value = *reduction;
+            std::string name_hint = "_intrinsic_array_function_" +
+                ASRUtils::get_array_intrinsic_name(
+                    ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value)->m_arr_intrinsic_id);
+            ASR::expr_t* temporary = create_temporary_variable_for_scalar(
+                al, value, current_scope, name_hint, false);
+            exprs_with_target[value] = std::make_pair(temporary, targetType::GeneratedTarget);
+            ASR::expr_t* lhs_var_copy = lhs_var;
+            lhs_var = nullptr;
+            visit_expr(*value);
+            lhs_var = lhs_var_copy;
+            current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, value->base.loc, temporary, value, nullptr, false, false)));
+            *reduction = temporary;
+        });
+        replacer.current_expr = expr;
+        replacer.replace_expr(*expr);
+    }
+
+    void visit_If(const ASR::If_t& x) {
+        hoist_reductions_lowered_to_loop(&const_cast<ASR::If_t&>(x).m_test);
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_If(x);
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        // A reduction assigned to a scalar is lowered in place
+        if (x.m_overloaded == nullptr &&
+                !ASRUtils::ElementwiseReduction::is_assigned_by_loop(x.m_target, x.m_value,
+                    x.m_overloaded)) {
+            hoist_reductions_lowered_to_loop(&xx.m_value);
+        }
         // Assigning to `ps(1::2)%y` walks the stride of the section and the
         // stride of the component at once, which the element-wise lowering
         // cannot index. Binding the section to a pointer first leaves a
@@ -2643,6 +2862,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
+        if (sections_read_in_place.count(expr) > 0) {
+            return expr;
+        }
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
             !(reads_elementwise_operands_in_place(allowed_expr) &&
                 (ASR::is_a<ASR::ArrayBroadcast_t>(*expr) ||
@@ -2931,11 +3153,36 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
+        if (is_reduction_lowered_to_loop(&xx.base, exprs_with_target)) {
+            // array_op accumulates the elements of an elementwise operand
+            // in a loop, so the operand is prepared in place, as the value
+            // of an array assignment is, not evaluated into a temporary.
+            // The loop indexes its sections through their base arrays.
+            get_sections_read_in_place(&xx, sections_read_in_place,
+                operations_read_in_place);
+            std::string name_hint = "_intrinsic_array_function_" +
+                ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id);
+            Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i] != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i])) {
+                    // A nested reduction is a scalar operand, evaluated once
+                    hoist_reductions_lowered_to_loop(&xx.m_args[i]);
+                    visit_expr(*x.m_args[i]);
+                    x_m_args.push_back(al, x.m_args[i]);
+                } else {
+                    traverse_args(x_m_args, x.m_args + i, 1, name_hint);
+                }
+            }
+            xx.m_args = x_m_args.p;
+            xx.n_args = x_m_args.size();
+            return;
+        }
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
             visit_IntrinsicCall(x, "_intrinsic_array_function_" +
                 ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id));
         }
-        ASR::IntrinsicArrayFunction_t& xx = const_cast<ASR::IntrinsicArrayFunction_t&>(x);
         int dim_arg_idx = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
             static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id));
         if( dim_arg_idx >= 1 &&
@@ -3210,6 +3457,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::ttype_t* simd_type;
     ASR::expr_t* parent_expr;
     ASR::expr_t* lhs_var;
+    // Sections that ArgSimplifier left in place (see get_sections_read_in_place)
+    const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_) :
@@ -3841,7 +4090,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         for (size_t i = 0; i < x->n_args; i++) {
             original_args.push_back(x->m_args[i]);
         }
+        // The elementwise operand of a reduction that array_op lowers into
+        // a loop is read in place, as an operand of the reduction, not
+        // evaluated on its own (see replace_IntegerBinOp)
+        ASR::expr_t* parent_expr_copy = parent_expr;
+        if (is_reduction_lowered_to_loop(&x->base, exprs_with_target)) {
+            parent_expr = &x->base;
+        }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_IntrinsicArrayFunction(x);
+        parent_expr = parent_expr_copy;
         x->m_type = rebind_prepared_actuals_in_type(al, x->m_type,
             original_args, x->m_args);
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
@@ -3945,6 +4202,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
+        if( sections_read_in_place != nullptr &&
+                sections_read_in_place->count(&x->base) > 0 ) {
+            return ;
+        }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
@@ -4225,10 +4486,12 @@ class ReplaceExprWithTemporaryVisitor:
     public:
 
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
-            FunctionCallPreparation& call_preparation):
+            FunctionCallPreparation& call_preparation,
+            const std::set<ASR::expr_t*>& sections_read_in_place):
         al(al_), exprs_with_target(exprs_with_target_),
         replacer(al, exprs_with_target, realloc_lhs_, call_preparation),
         parent_body_for_where(nullptr), inside_where(false) {
+        replacer.sections_read_in_place = &sections_read_in_place;
         replacer.call_replacer_on_value = false;
         call_replacer_on_value = false;
     }
@@ -4351,6 +4614,19 @@ class ReplaceExprWithTemporaryVisitor:
             return ;
         }
         ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_ArrayItem(x);
+    }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        // The elementwise operand of a reduction that array_op lowers into
+        // a loop is read in place (see
+        // ReplaceExprWithTemporary::replace_IntrinsicArrayFunction)
+        ASR::expr_t* parent_expr_copy = replacer.parent_expr;
+        ASR::expr_t* reduction = const_cast<ASR::expr_t*>(&x.base);
+        if (is_reduction_lowered_to_loop(reduction, exprs_with_target)) {
+            replacer.parent_expr = reduction;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_IntrinsicArrayFunction(x);
+        replacer.parent_expr = parent_expr_copy;
     }
 
     // A subscript that denotes the same value throughout an assignment: a
@@ -4909,6 +5185,10 @@ class VerifySimplifierASROutput:
 
     Allocator& al;
     ExprsWithTargetType& exprs_with_target;
+    // Sections, and operations in arguments of elemental intrinsic
+    // functions, that a reduction lowered into a loop reads in place
+    std::set<ASR::expr_t*> sections_read_in_place;
+    std::set<ASR::expr_t*> operations_read_in_place;
 
     public:
 
@@ -4942,7 +5222,7 @@ class VerifySimplifierASROutput:
     }
 
     void check_for_var_if_array(ASR::expr_t* expr) {
-        if ( is_temporary_needed(expr) ) {
+        if ( is_temporary_needed(expr) && sections_read_in_place.count(expr) == 0 ) {
             [[maybe_unused]] ASR::expr_t* stripped_expr = ASRUtils::get_past_array_physical_cast(expr);
             LCOMPILERS_ASSERT(
                 ASR::is_a<ASR::Var_t>(*stripped_expr) ||
@@ -5033,11 +5313,33 @@ class VerifySimplifierASROutput:
 
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
-            visit_IntrinsicCall(x);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (operations_read_in_place.count(x.m_args[i]) > 0) {
+                    visit_expr(*x.m_args[i]);
+                } else {
+                    check_for_var_if_array(x.m_args[i]);
+                }
+            }
         }
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        if (is_reduction_lowered_to_loop(const_cast<ASR::expr_t*>(&x.base),
+                exprs_with_target)) {
+            // An elementwise operand is read in place, element by element,
+            // and so are its sections
+            get_sections_read_in_place(const_cast<ASR::IntrinsicArrayFunction_t*>(&x),
+                sections_read_in_place, operations_read_in_place);
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i] != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i])) {
+                    visit_expr(*x.m_args[i]);
+                } else {
+                    check_for_var_if_array(x.m_args[i]);
+                }
+            }
+            return;
+        }
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only verify args for runtime functions
             visit_IntrinsicCall(x);
         }
@@ -5255,11 +5557,12 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
     FunctionCallPreparation call_preparation;
+    std::set<ASR::expr_t*> sections_read_in_place;
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
-        call_preparation);
+        call_preparation, sections_read_in_place);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
-        pass_options.realloc_lhs_arrays, call_preparation);
+        pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place);
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);

@@ -1,0 +1,1493 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            _lcompilers_optimization_fma_f32:
+                (Function
+                    (SymbolTable
+                        3
+                        {
+                            _lcompilers_optimization_fma_f32:
+                                (Variable
+                                    3
+                                    _lcompilers_optimization_fma_f32
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a:
+                                (Variable
+                                    3
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    3
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            c:
+                                (Variable
+                                    3
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    _lcompilers_optimization_fma_f32
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 3 a)
+                    (Var 3 b)
+                    (Var 3 c)]
+                    [(Assignment
+                        (Var 3 _lcompilers_optimization_fma_f32)
+                        (RealBinOp
+                            (Var 3 a)
+                            Add
+                            (RealBinOp
+                                (Var 3 b)
+                                Mul
+                                (Var 3 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    (Var 3 _lcompilers_optimization_fma_f32)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_fma_f321:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            _lcompilers_optimization_fma_f321:
+                                (Variable
+                                    4
+                                    _lcompilers_optimization_fma_f321
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a:
+                                (Variable
+                                    4
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    4
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            c:
+                                (Variable
+                                    4
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    _lcompilers_optimization_fma_f321
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 4 a)
+                    (Var 4 b)
+                    (Var 4 c)]
+                    [(Assignment
+                        (Var 4 _lcompilers_optimization_fma_f321)
+                        (RealBinOp
+                            (Var 4 a)
+                            Add
+                            (RealBinOp
+                                (Var 4 b)
+                                Mul
+                                (Var 4 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    (Var 4 _lcompilers_optimization_fma_f321)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            fma_04:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    (IntegerConstant 100 (Integer 4) Decimal)
+                                    (IntegerConstant 100 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s4:
+                                (Variable
+                                    2
+                                    s4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s8:
+                                (Variable
+                                    2
+                                    s8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            t4:
+                                (Variable
+                                    2
+                                    t4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            t8:
+                                (Variable
+                                    2
+                                    t8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            u8:
+                                (Variable
+                                    2
+                                    u8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            x4:
+                                (Variable
+                                    2
+                                    x4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            x8:
+                                (Variable
+                                    2
+                                    x8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            y4:
+                                (Variable
+                                    2
+                                    y4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            y8:
+                                (Variable
+                                    2
+                                    y8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            z4:
+                                (Variable
+                                    2
+                                    z4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 100 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    fma_04
+                    []
+                    [(DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (ArrayItem
+                                (Var 2 x4)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (RealBinOp
+                                (IntrinsicElementalFunction
+                                    Real
+                                    [(Var 2 i)]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Div
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        100.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (ArrayItem
+                                (Var 2 y4)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (RealBinOp
+                                (IntrinsicElementalFunction
+                                    Real
+                                    [(IntegerBinOp
+                                        (Var 2 n)
+                                        Sub
+                                        (Var 2 i)
+                                        (Integer 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Div
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        100.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (ArrayItem
+                                (Var 2 x8)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 8)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (RealBinOp
+                                (IntrinsicElementalFunction
+                                    Real
+                                    [(Var 2 i)]
+                                    0
+                                    (Real 8)
+                                    ()
+                                )
+                                Div
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
+                                    (Real 8)
+                                    (RealConstant
+                                        100.000000
+                                        (Real 8)
+                                    )
+                                    ()
+                                )
+                                (Real 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (ArrayItem
+                                (Var 2 y8)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 8)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (RealBinOp
+                                (IntrinsicElementalFunction
+                                    Real
+                                    [(IntegerBinOp
+                                        (Var 2 n)
+                                        Sub
+                                        (Var 2 i)
+                                        (Integer 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 8)
+                                    ()
+                                )
+                                Div
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToReal
+                                    (Real 8)
+                                    (RealConstant
+                                        100.000000
+                                        (Real 8)
+                                    )
+                                    ()
+                                )
+                                (Real 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 s4)
+                        (Cast
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (Var 2 s4)
+                            (RealBinOp
+                                (Var 2 s4)
+                                Add
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 x4)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 y4)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 s8)
+                        (Cast
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (Var 2 s8)
+                            (RealBinOp
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 x8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 y8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    (Real 8)
+                                    ()
+                                )
+                                Add
+                                (Var 2 s8)
+                                (Real 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 t8)
+                        (Cast
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (Var 2 t8)
+                            (RealBinOp
+                                (Var 2 t8)
+                                Sub
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 x8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 y8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    (Real 8)
+                                    ()
+                                )
+                                (Real 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 u8)
+                        (Cast
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (Var 2 u8)
+                            (RealBinOp
+                                (RealBinOp
+                                    (Var 2 u8)
+                                    Add
+                                    (RealBinOp
+                                        (ArrayItem
+                                            (Var 2 x8)
+                                            [(()
+                                            (Var 2 i)
+                                            ())]
+                                            (Real 8)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        Mul
+                                        (ArrayItem
+                                            (Var 2 y8)
+                                            [(()
+                                            (Var 2 i)
+                                            ())]
+                                            (Real 8)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        (Real 8)
+                                        ()
+                                    )
+                                    (Real 8)
+                                    ()
+                                )
+                                Add
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 x8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    Mul
+                                    (ArrayItem
+                                        (Var 2 x8)
+                                        [(()
+                                        (Var 2 i)
+                                        ())]
+                                        (Real 8)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    (Real 8)
+                                    ()
+                                )
+                                (Real 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(Assignment
+                            (ArrayItem
+                                (Var 2 z4)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (FunctionCall
+                                1 _lcompilers_optimization_fma_f32
+                                1 _lcompilers_optimization_fma_f32
+                                [((RealConstant
+                                    1.000000
+                                    (Real 4)
+                                ))
+                                ((ArrayItem
+                                    (Var 2 x4)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                    .false.
+                                ))
+                                ((ArrayItem
+                                    (Var 2 y4)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                    .false.
+                                ))]
+                                (Real 4)
+                                ()
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 t4)
+                        (FunctionCall
+                            1 _lcompilers_optimization_fma_f321
+                            1 _lcompilers_optimization_fma_f321
+                            [((Var 2 s4))
+                            ((ArrayItem
+                                (Var 2 x4)
+                                [(()
+                                (Var 2 n)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .true.
+                            ))
+                            ((ArrayItem
+                                (Var 2 y4)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .true.
+                            ))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 s4)
+                            (Var 2 s8)
+                            (Var 2 t8)
+                            (Var 2 u8)
+                            (Var 2 t4)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 s4)
+                                    Sub
+                                    (RealConstant
+                                        16.665001
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 s8)
+                                    Sub
+                                    (RealConstant
+                                        16.665000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 t8)
+                                    Add
+                                    (RealConstant
+                                        16.665000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 u8)
+                                    Sub
+                                    (RealConstant
+                                        50.500000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 t4)
+                                    Sub
+                                    (RealBinOp
+                                        (RealConstant
+                                            0.990000
+                                            (Real 4)
+                                        )
+                                        Add
+                                        (Var 2 s4)
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000100
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        ())
+                        [(If
+                            ()
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 2 z4)
+                                            [(()
+                                            (Var 2 i)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        Sub
+                                        (RealBinOp
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            Add
+                                            (RealBinOp
+                                                (IntrinsicElementalFunction
+                                                    Real
+                                                    [(IntegerBinOp
+                                                        (Var 2 i)
+                                                        Mul
+                                                        (IntegerBinOp
+                                                            (Var 2 n)
+                                                            Sub
+                                                            (Var 2 i)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Div
+                                                (Cast
+                                                    (IntegerBinOp
+                                                        (Var 2 n)
+                                                        Pow
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        (IntegerConstant 10000 (Integer 4) Decimal)
+                                                    )
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        10000.000000
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (RealConstant
+                                    0.000001
+                                    (Real 4)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                ()
+                            )]
+                            []
+                        )]
+                        []
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

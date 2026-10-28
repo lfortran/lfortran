@@ -1366,6 +1366,64 @@ namespace LCompilers {
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
         }
 
+        // Whether `x` is an array variable, or a component of a scalar
+        // variable, whose bounds an inquiry reads without side effects.
+        static bool is_bound_inquiry_designator(ASR::expr_t* x) {
+            while (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+                x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
+                if (ASRUtils::is_array(ASRUtils::expr_type(x))) {
+                    return false;
+                }
+            }
+            return ASR::is_a<ASR::Var_t>(*x);
+        }
+
+        // Whether the scalar integer `expr` is an expression of constants,
+        // variables, and bounds and sizes of arrays, which has no side
+        // effects, so that evaluating it again, with no assignment to a
+        // variable it references in between, gives the same value.
+        bool is_reevaluable_integer_expr(ASR::expr_t* expr) {
+            if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(expr))) {
+                return false;
+            }
+            if (ASRUtils::is_value_constant(ASRUtils::expr_value(expr))) {
+                return true;
+            }
+            switch (expr->type) {
+                case ASR::exprType::Var: {
+                    return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(expr)->m_v));
+                }
+                case ASR::exprType::IntegerBinOp: {
+                    ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                    return is_reevaluable_integer_expr(binop->m_left) &&
+                        is_reevaluable_integer_expr(binop->m_right);
+                }
+                case ASR::exprType::IntegerUnaryMinus: {
+                    return is_reevaluable_integer_expr(
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+                }
+                case ASR::exprType::Cast: {
+                    ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
+                    return cast->m_kind == ASR::cast_kindType::IntegerToInteger &&
+                        is_reevaluable_integer_expr(cast->m_arg);
+                }
+                case ASR::exprType::ArrayBound: {
+                    ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(expr);
+                    return is_bound_inquiry_designator(bound->m_v) &&
+                        (bound->m_dim == nullptr || is_reevaluable_integer_expr(bound->m_dim));
+                }
+                case ASR::exprType::ArraySize: {
+                    ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(expr);
+                    return is_bound_inquiry_designator(size->m_v) &&
+                        (size->m_dim == nullptr || is_reevaluable_integer_expr(size->m_dim));
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+
         // A non-empty rank one constant, which can be named as a named
         // constant (parameter); backends keep that as static data.
         bool is_nameable_array_constant(ASR::ArrayConstant_t* x) {

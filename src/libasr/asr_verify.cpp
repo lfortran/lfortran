@@ -2408,7 +2408,11 @@ public:
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]) ||
-                        ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, ArrayConstant, or ArrayConstructor");
+                        ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i]) ||
+                        (ASR::is_a<ASR::ArraySection_t>(*x.m_components[i]) &&
+                         !ASRUtils::is_array_indexed_with_array_indices(
+                            ASR::down_cast<ASR::ArraySection_t>(x.m_components[i]))),
+                        "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, ArrayConstant, ArrayConstructor, or ArraySection without vector subscripts");
                 if (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i])) {
                     ASR::dimension_t* m_dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(

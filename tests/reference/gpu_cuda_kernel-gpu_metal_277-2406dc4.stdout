@@ -50,7 +50,7 @@ __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c
     }
 }
 
-__device__ inline void pair_values_device_t_gpu_80(float x, float* pair) {
+__device__ inline void pair_values_device_t_gpu_78(float x, float* pair) {
     int __1__libasr_index_;
     int __do_loop_end;
     float __libasr__created__var__4__array_constructor_[2];
@@ -134,7 +134,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float __libasr_created__function_call_pair_values[2];
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        pair_values_device_t_gpu_80(((float)j__dc), __libasr_created__function_call_pair_values);
+        pair_values_device_t_gpu_78(((float)j__dc), __libasr_created__function_call_pair_values);
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + 2 - 1);
         __libasr_index_0_ = (1 - 1);
