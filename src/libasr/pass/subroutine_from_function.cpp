@@ -51,21 +51,21 @@ public:
 
 
         void visit_Function(const ASR::Function_t& x) {
-            ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
+            ASR::Function_t& fn = const_cast<ASR::Function_t&>(x);
             if (ASRUtils::is_bare_implicit_interface(x)) {
                 // A procedure declared `external` with no interface. It has no
                 // signature to lower and is never code-generated; every call
                 // site references its own inferred interface instead.
                 return;
             }
-            ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
+            ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(fn)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr,
+            bool transform_success = PassUtils::handle_fn_return_var(al, &fn,
                 PassUtils::is_result_returned_through_argument);
             if(transform_success) {
-                Function__TO__ReturnType_MAP_[x_ptr] = return_type;
-                handle_finalizable_result(*x_ptr);
+                Function__TO__ReturnType_MAP_[&fn] = return_type;
+                handle_finalizable_result(fn);
             }
 
             visit_procedures_in_scope_and_constructs(x.m_symtab);
