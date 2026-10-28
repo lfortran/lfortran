@@ -88,15 +88,9 @@ void render(Term::Window &scr, const Model &m, size_t cols) {
 
 std::string prompt0(const Terminal &term, const std::string &prompt_string,
         std::vector<std::string> &history, std::function<bool(std::string)>
-        &iscomplete) {
-    int row, col;
+        &iscomplete, const std::function<void(const std::function<void()> &)>
+        &poll_output = {}) {
     bool term_attached = term.is_stdin_a_tty();
-    if (term_attached) {
-        term.get_cursor_position(row, col);
-    } else {
-        row = 1;
-        col = 1;
-    }
     int rows, cols;
     if (!term.get_term_size(rows, cols)) {
         rows = 25;
@@ -117,11 +111,57 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
 
     Term::Window scr(cols, 1);
     int key;
-    render(scr, m, cols);
-    std::cout << scr.render(1, row, term_attached) << std::flush;
+    // Relative repainting follows scrolling output without a cursor query
+    // that could consume keystrokes while the user is editing.
+    size_t drawn_cursor_row = 1;
+    auto top = [&]() {
+        if (term_attached) {
+            std::cout << "\r";
+            if (drawn_cursor_row > 1) {
+                std::cout << Term::move_cursor_up(drawn_cursor_row-1);
+            }
+        }
+    };
+    auto draw = [&]() {
+        render(scr, m, cols);
+        std::cout << scr.render(1, 1, term_attached, true) << std::flush;
+        drawn_cursor_row = m.cursor_row;
+    };
+    draw();
     bool not_complete = true;
     while (not_complete) {
-        key = term.read_key();
+        if (poll_output) {
+            bool hidden = false;
+            poll_output([&]() {
+                if (hidden) return;
+                hidden = true;
+                top();
+                if (term_attached) {
+                    for (size_t j=1; j <= scr.get_h(); j++) {
+                        std::cout << "\x1b[2K";
+                        if (j < scr.get_h()) std::cout << "\n";
+                    }
+                    if (scr.get_h() > 1) {
+                        std::cout << Term::move_cursor_up(scr.get_h()-1);
+                    }
+                    std::cout << "\r";
+                } else {
+                    std::cout << "\n";
+                }
+                std::cout << std::flush;
+            });
+            if (hidden) {
+                // Output may not end with a newline. Keep the edit separate.
+                std::cout << "\n";
+                draw();
+            }
+        }
+        key = !term_attached && !term.input_ready() ? 0 : term.read_key0();
+        if (key == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+        top();
         if  (key >= 32 && key <= 126) {
             std::string before = m.lines[m.cursor_row-1].substr(0,
                     m.cursor_col-1);
@@ -140,7 +180,6 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             switch (key) {
                 case CTRL_KEY('l'):
                     std::cout<< "\x1b[2J" << move_cursor(1,1) << std::flush;
-                    row = 1;
                     break;
                 case CTRL_KEY('u'):
                     m.lines[m.cursor_row-1] = 
@@ -261,12 +300,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     }
             }
         }
-        render(scr, m, cols);
-        std::cout << scr.render(1, row, term_attached) << std::flush;
-        if (row+(int)scr.get_h()-1 > rows) {
-            row = rows - ((int)scr.get_h()-1);
-            std::cout << scr.render(1, row, term_attached) << std::flush;
-        }
+        draw();
     }
     // REPL currently supports pressing enter at any cursor position, so
     // correctly draw if the user presses enter at a line other than the bottom

@@ -2,6 +2,7 @@
 #define LFORTRAN_JUPYTER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,7 +35,7 @@ class Peer;
 // terminal.
 class Client {
     std::string key, session;
-    std::unique_ptr<Peer> shell, stdin_, iopub;
+    std::unique_ptr<Peer> shell, stdin_, iopub, control_;
     // The kernel that start() started: its process ID, or its process
     // handle on Windows. Empty for a client that only joined.
     intptr_t process = 0;
@@ -54,15 +55,17 @@ public:
     // Starts `executable kernel` with `arguments` (the prompt's own) on a new
     // connection file in the temporary directory, which it returns in
     // `connection_file` for other clients, and connects to it. This client
-    // ends that kernel when it is destroyed, and on Ctrl-C.
+    // ends that kernel when it is destroyed. Ctrl-C during a cell interrupts
+    // the cell without discarding the kernel's variables.
     static std::unique_ptr<Client> start(const std::string &executable,
         const std::vector<std::string> &arguments, std::string &connection_file);
 
     // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
     // false if the kernel has gone.
     bool execute(const std::string &code, bool verbose = false);
-    // Prints what the other clients ran since the last call.
-    void show_others();
+    // Prints what the other clients ran since the last call. Calls
+    // before_output before printing, so a line editor can hide its input.
+    void show_others(const std::function<void()> &before_output = {});
     // Waits at most `timeout` ms for the kernel that start() started to
     // exit; returns its exit status, or -1 if it has not exited, did not end
     // normally or was not started by this client.
@@ -84,7 +87,8 @@ bool stop_with_parent(long long parent, const std::string &connection_file);
 // fails to start leaves the file alone.
 void kernel_started();
 
-// Makes Ctrl-C end the prompt, after it ends the kernel that the prompt
+// During a cell, Ctrl-C sends an interrupt request. Otherwise it ends the
+// prompt, after it ends the kernel that the prompt
 // started (Client::start), removes the kernel's connection file and restores
 // the terminal. The prompt still ends as Ctrl-C ends it by default. Does
 // nothing if Ctrl-C is ignored, as for a background job.

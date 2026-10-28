@@ -5,6 +5,8 @@ import argparse
 import os
 from pathlib import Path
 import queue
+import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -28,7 +30,7 @@ def limit_open_files():
     resource.setrlimit(resource.RLIMIT_NOFILE, (MAX_OPEN_FILES, hard))
 
 
-def execute(client, code, *, silent=False):
+def execute(client, code, *, silent=False, on_message=None):
     msg_id = client.execute(code, silent=silent, allow_stdin=False)
     messages = []
     deadline = time.monotonic() + 30
@@ -39,6 +41,8 @@ def execute(client, code, *, silent=False):
         if msg["parent_header"].get("msg_id") != msg_id:
             continue
         messages.append(msg)
+        if on_message:
+            on_message(msg)
         if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
             break
     deadline = time.monotonic() + 30
@@ -60,10 +64,81 @@ def check(client, code, expected):
     return messages
 
 
+def pending_messages(client):
+    for channel in ("shell", "control", "iopub"):
+        for _ in range(128):
+            try:
+                yield getattr(client, channel + "_channel").get_msg(timeout=0)
+            except queue.Empty:
+                break
+
+
+def check_live_output(client):
+    started = time.monotonic()
+    arrivals = []
+
+    def received(msg):
+        if msg["msg_type"] == "stream":
+            arrivals.append((time.monotonic() - started, msg["content"]))
+
+    delay = ("call execute_command_line('sleep 2')\n" if os.name == "posix" else
+             "block\ninteger(8) :: start, now, rate\ncall system_clock(start, rate)\n"
+             "do\ncall system_clock(now)\nif(now-start>=2*rate) exit\nend do\nend block\n")
+    reply, messages = execute(client,
+        "program live_burst\ninteger :: i\nprint '(a)', 'first'\n"
+        "print '(a)', 'tail'\n" + delay +
+        "do i=1,3000\nprint '(i0)', i\nend do\n"
+        "write(0,'(a)') 'stderr'\nprint '(a)', 'last'\nend program",
+        on_message=received)
+    assert reply["status"] == "ok", reply
+    prefix = "first\ntail\n" + "".join(f"{i}\n" for i in range(1, 3001))
+    expected = prefix + "last\n"
+    stdout = "".join(c["text"] for _, c in arrivals if c["name"] == "stdout")
+    assert stdout == expected, (len(stdout), len(expected))
+    early = "".join(c["text"] for t, c in arrivals if t < 1.5)
+    assert early == "first\ntail\n", arrivals[:2]
+    events = [(c["name"], char) for _, c in arrivals for char in c["text"]]
+    wanted = [(name, char) for name, text in [
+        ("stdout", prefix), ("stderr", "stderr\n"), ("stdout", "last\n")]
+        for char in text]
+    assert events == wanted, (len(events), len(wanted))
+    assert messages[-1]["content"]["execution_state"] == "idle", messages[-1]
+    print("live output: first/tail", arrivals[:2], "burst bytes", len(stdout),
+          "messages", len(arrivals), flush=True)
+
+    # Coalescing stdout alone is insufficient: alternating streams cannot
+    # be merged without destroying their labels and chronological order.
+    reply, messages = execute(client,
+        "program alternating_burst\ninteger :: i\ndo i=1,3000\n"
+        "print '(i0)', i\nwrite(0,'(i0)') i\nend do\nend program")
+    assert reply["status"] == "ok", reply
+    actual = [(m["content"]["name"], char) for m in messages
+              if m["msg_type"] == "stream" for char in m["content"]["text"]]
+    expected = [(name, char) for i in range(1, 3001)
+                for name in ("stdout", "stderr") for char in f"{i}\n"]
+    assert actual == expected, (len(actual), len(expected))
+    print("alternating output: ordered bytes", len(actual), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
+    parser.add_argument("--compiler-arg", action="append", default=[])
+    parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--interrupt-only", action="store_true")
+    parser.add_argument("--combined-only", action="store_true")
+    parser.add_argument("--kernel-arg", action="append", default=[])
     args = parser.parse_args()
+    if args.combined_only:
+        for mode in ([], ["--fast"], ["--std=f23"]):
+            check_interrupts(args.lfortran, mode)
+            check_backpressure_interrupt(args.lfortran, mode)
+            check_interrupt_cleanup(args.lfortran, mode)
+        return
+    if args.interrupt_only:
+        check_interrupts(args.lfortran, args.kernel_arg)
+        check_interrupt_cleanup(args.lfortran, args.kernel_arg)
+        return
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -74,7 +149,7 @@ def main():
         write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
         with log.open("wb") as output:
             process = subprocess.Popen(
-                [args.lfortran, "kernel", "-f", str(connection)],
+                [args.lfortran, *args.compiler_arg, "kernel", "-f", str(connection)],
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
                 preexec_fn=limit_open_files if os.name == "posix" else None,
             )
@@ -82,6 +157,12 @@ def main():
             client.load_connection_file()
             client.start_channels()
             client.wait_for_ready(timeout=30)
+            check_live_output(client)
+            if args.streaming_only:
+                client.shutdown()
+                process.wait(timeout=15)
+                assert process.returncode == 0, process.returncode
+                return
             check(client, "integer :: n\nn=41", [])
             check(client, "n+1", ["42"])
             check(client, ".true.", ["True"])
@@ -162,6 +243,305 @@ def main():
         log.unlink(missing_ok=True)
         directory.rmdir()
     check_stop_flushes(args.lfortran)
+    check_interrupts(args.lfortran)
+    check_interrupt_cleanup(args.lfortran)
+
+
+def check_interrupts(lfortran, arguments=()):
+    """Interrupt real, non-returning cells without replacing the session."""
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-interrupt-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection = directory / "connection.json"
+        log = directory / "kernel.log"
+        client = process = None
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection))
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, "integer :: saved\nsaved=42", [])
+                check(client, "subroutine spin()\ndo\nend do\nend subroutine", [])
+                check(client, "subroutine emit_pair(i)\ninteger,intent(in)::i\n"
+                      "print '(i0)',i\nwrite(0,'(i0)')i\nend subroutine", [])
+                codes = [
+                    ("do\nend do\nsaved=0", True),
+                    ("block\nprint '(a)', 'before-interrupt'\ndo\nend do\nend block", False),
+                    ("block\ninteger i\ni=0\ndo\ni=i+1\n"
+                     "call emit_pair(i)\nend do\nend block", False),
+                    ("call spin()\nsaved=0", False)]
+                if os.name == "posix":
+                    child_pid = directory / "child.pid"
+                    codes.append(('call execute_command_line("sleep 30 & echo $! > '
+                                 + shlex.quote(str(child_pid)) + '; wait")\nsaved=0', False))
+                elif os.name == "nt":
+                    codes.append(('call execute_command_line("ping -n 31 127.0.0.1 > NUL")\nsaved=0', False))
+                for code, silent in codes:
+                    running = client.execute(code, stop_on_error=False, silent=silent)
+                    deadline = time.monotonic() + 10
+                    while True:
+                        msg = client.get_iopub_msg(timeout=max(.1, deadline-time.monotonic()))
+                        if (msg["parent_header"].get("msg_id") == running
+                                and (msg["msg_type"] == "execute_input"
+                                     or (silent and msg["msg_type"] == "status"
+                                         and msg["content"]["execution_state"] == "busy"))):
+                            break
+                        assert time.monotonic() < deadline, "cell did not start"
+                    early_events = []
+
+                    def receive_while_running(seconds):
+                        deadline = time.monotonic() + seconds
+                        while time.monotonic() < deadline:
+                            try:
+                                msg = client.get_iopub_msg(timeout=.01)
+                            except queue.Empty:
+                                continue
+                            if (msg["parent_header"].get("msg_id") == running
+                                    and msg["msg_type"] == "stream"):
+                                early_events.append((msg["content"]["name"],
+                                                     msg["content"]["text"]))
+
+                    receive_while_running(.5)
+                    info_id = ""
+                    control_execute_id = ""
+                    info = client.session.msg("kernel_info_request", content={})
+                    info_id = info["header"]["msg_id"]
+                    client.control_channel.send(info)
+                    deferred = client.session.msg("execute_request", content={
+                        "code": "saved+3", "stop_on_error": False})
+                    control_execute_id = deferred["header"]["msg_id"]
+                    client.control_channel.send(deferred)
+                    # The caller must retain these, not re-enter the evaluator.
+                    receive_while_running(.1)
+                    assert not client.control_channel.msg_ready(), "nonurgent control re-entered a cell"
+                    if "sleep 30" in code:
+                        deadline = time.monotonic() + 10
+                        while not child_pid.exists() and time.monotonic() < deadline:
+                            time.sleep(.02)
+                        assert child_pid.exists(), "command did not start"
+                    by_signal = os.name == "posix" and code.startswith("call spin()")
+                    interrupt_id = ""
+                    if by_signal:
+                        process.send_signal(signal.SIGINT)
+                    else:
+                        interrupt = client.session.msg("interrupt_request", content={})
+                        interrupt_id = interrupt["header"]["msg_id"]
+                        client.control_channel.send(interrupt)
+                    queued = client.execute("saved+1", stop_on_error=False)
+                    replies, idle, values = {}, set(), []
+                    streams = [text for _, text in early_events]
+                    acknowledged = by_signal
+                    info_replied = False
+                    control_executed = False
+                    control_values = []
+                    events = early_events
+                    deadline = time.monotonic() + 8
+                    while time.monotonic() < deadline:
+                        for msg in pending_messages(client):
+                            parent = msg["parent_header"].get("msg_id")
+                            kind, content = msg["msg_type"], msg["content"]
+                            if parent == interrupt_id and kind == "interrupt_reply":
+                                acknowledged = content["status"] == "ok"
+                            if parent == info_id and kind == "kernel_info_reply":
+                                info_replied = content["status"] == "ok"
+                            if parent == control_execute_id:
+                                if kind == "execute_reply":
+                                    control_executed = content["status"] == "ok"
+                                elif kind == "execute_result":
+                                    control_values.append(content["data"]["text/plain"])
+                            if parent not in (running, queued):
+                                continue
+                            if kind == "execute_reply":
+                                replies[parent] = content
+                            elif kind == "status" and content["execution_state"] == "idle":
+                                idle.add(parent)
+                                if parent == running:
+                                    events.append(("idle", ""))
+                            elif kind == "execute_result" and parent == queued:
+                                values.append(content["data"]["text/plain"])
+                            elif kind == "stream" and parent == running:
+                                streams.append(content["text"])
+                                events.append((content["name"], content["text"]))
+                            elif kind == "error" and parent == running:
+                                events.append(("error", content["ename"]))
+                        if (acknowledged and info_replied and control_executed
+                                and control_values == ["45"]
+                                and len(replies) == len(idle) == 2):
+                            break
+                        time.sleep(.001)
+                    assert info_replied, ("control request lost during execution", managed, code,
+                                          replies, idle, acknowledged, len(streams), events[-3:],
+                                          process.poll())
+                    assert control_executed, ("deferred control execution lost", managed, code)
+                    assert control_values == ["45"], control_values
+                    assert acknowledged, ("interrupt not serviced", managed, code, replies)
+                    assert replies.get(running, {}).get("ename") == "KeyboardInterrupt", replies
+                    assert replies.get(queued, {}).get("status") == "ok", replies
+                    assert values == ["43"], values
+                    assert len(idle) == 2 and process.poll() is None
+                    if "before-interrupt" in code:
+                        assert "before-interrupt" in "".join(streams), streams
+                    assert events[-1:] == [("idle", "")], events[-3:]
+                    if not silent:
+                        diagnostic = ("stderr", "execution interrupted\n")
+                        index = events.index(diagnostic)
+                        expected_tail = [diagnostic, ("idle", "")]
+                        assert events[index:] == expected_tail, events[-4:]
+                    if "integer i" in code:
+                        actual = [(name, char) for name, text in events[:index]
+                                  if name in ("stdout", "stderr") for char in text]
+                        expected = []
+                        i = 1
+                        while len(expected) < len(actual):
+                            expected.extend((name, char) for name in ("stdout", "stderr")
+                                            for char in f"{i}\n")
+                            i += 1
+                        assert actual and actual == expected[:len(actual)], (actual[:30], actual[-30:])
+                    if "sleep 30" in code:
+                        child = int(child_pid.read_text())
+                        deadline = time.monotonic() + 3
+                        while time.monotonic() < deadline:
+                            try:
+                                os.kill(child, 0)
+                            except ProcessLookupError:
+                                break
+                            time.sleep(.02)
+                        else:
+                            raise AssertionError("interrupted command left its child running")
+                    check(client, "saved+2", ["44"])
+                running = client.execute("do\nend do", silent=True, stop_on_error=False)
+                while True:
+                    msg = client.get_iopub_msg(timeout=10)
+                    if (msg["parent_header"].get("msg_id") == running
+                            and msg["msg_type"] == "status"
+                            and msg["content"]["execution_state"] == "busy"):
+                        break
+                time.sleep(.2)
+                client.shutdown()
+                reply = client.get_shell_msg(timeout=10)
+                assert reply["parent_header"]["msg_id"] == running, reply
+                assert reply["content"].get("ename") == "KeyboardInterrupt", reply
+                assert process.wait(timeout=10) == 0
+                print("interrupts: %s %s passed" %
+                      ("builtin" if managed else "default", list(arguments)), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            if client:
+                client.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
+            if (directory / "child.pid").exists():
+                try:
+                    os.kill(int((directory / "child.pid").read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            (directory / "child.pid").unlink(missing_ok=True)
+            directory.rmdir()
+
+
+def check_backpressure_interrupt(lfortran, arguments=()):
+    """A subscriber that stops reading must not strand cancellation/join."""
+    import zmq
+
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-pressure-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection, log = directory / "connection.json", directory / "kernel.log"
+        context = zmq.Context()
+        context.setsockopt(zmq.RCVHWM, 1)
+        context.setsockopt(zmq.RCVBUF, 1024)
+        client = process = None
+        clients, contexts = [], [context]
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection), context=context)
+                clients.append(client)
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, "integer :: saved=42", [])
+                check(client, "subroutine pressure_pair(i)\ninteger,intent(in)::i\n"
+                      "print '(a)',repeat('x',4096)\nwrite(0,'(i0)')i\nend subroutine", [])
+                running = client.execute("block\ninteger i\ni=0\ndo\n"
+                    "i=i+1\ncall pressure_pair(i)\nend do\nend block", stop_on_error=False)
+                # Withhold IOPub throughout cancellation, not merely while
+                # sending the request. Xeus's finite XPUB queue fills here.
+                time.sleep(2)
+                interrupt = client.session.msg("interrupt_request", content={})
+                client.control_channel.send(interrupt)
+                reply = client.get_control_msg(timeout=8)
+                assert reply["parent_header"]["msg_id"] == interrupt["header"]["msg_id"], reply
+                assert reply["msg_type"] == "interrupt_reply", reply
+                reply = client.get_shell_msg(timeout=8)
+                assert reply["parent_header"]["msg_id"] == running, reply
+                assert reply["content"].get("ename") == "KeyboardInterrupt", reply
+                assert process.poll() is None
+
+                # Interrupted backpressure explicitly abandons undelivered
+                # output to the stalled subscriber. A fresh reader must recover
+                # the same state and receive complete output through idle.
+                stalled, stalled_context = client, context
+                context = zmq.Context()
+                contexts.append(context)
+                client = BlockingKernelClient(connection_file=str(connection), context=context)
+                clients.append(client)
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                stalled.stop_channels()
+                clients.remove(stalled)
+                stalled_context.destroy(linger=0)
+                contexts.remove(stalled_context)
+                check(client, "saved+1", ["43"])
+                reply, messages = execute(client,
+                    "block\nprint '(a)','after-pressure'\nwrite(0,'(a)')'tail'\nend block")
+                assert reply["status"] == "ok", reply
+                streams = [(m["content"]["name"], m["content"]["text"])
+                           for m in messages if m["msg_type"] == "stream"]
+                assert streams == [("stdout", "after-pressure\n"), ("stderr", "tail\n")], streams
+                client.shutdown()
+                assert process.wait(timeout=10) == 0
+                print("backpressure cancellation/recovery:", managed, list(arguments), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            for connected in clients:
+                connected.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            for owned_context in contexts:
+                owned_context.destroy(linger=0)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
+            directory.rmdir()
 
 
 def builtin_stop_kernel(lfortran):
@@ -251,6 +631,194 @@ def check_stop_flushes(lfortran):
         connection.unlink(missing_ok=True)
         log.unlink(missing_ok=True)
         directory.rmdir()
+
+
+def check_interrupt_cleanup(lfortran, arguments=()):
+    """Cancellation ends owned scopes, not the session's allocations."""
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-cleanup-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection, log = directory / "connection.json", directory / "kernel.log"
+        client = process = None
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, "--detect-leaks", *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection))
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, """module interrupt_resources
+use iso_c_binding, only: c_int, c_float
+integer :: finalized = 0, final_sum = 0
+real, allocatable :: kept(:)
+type owner
+    real, allocatable :: data(:)
+contains
+    final :: finish
+end type
+interface
+    subroutine report() bind(c, name="dbg_report")
+    end subroutine
+end interface
+contains
+subroutine keep()
+    allocate(kept(10))
+    kept = 3
+end subroutine
+subroutine release()
+    deallocate(kept)
+end subroutine
+subroutine finish(x)
+    type(owner), intent(inout) :: x
+    integer :: j
+    finalized = finalized + 1
+    do j = 1, 100
+        final_sum = final_sum + j
+    end do
+end subroutine
+subroutine report_leaks()
+    call report()
+end subroutine
+subroutine work(forever)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(1024))
+    a = 1.0
+    do while (forever)
+    end do
+end subroutine
+subroutine outer(forever)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(512))
+    block
+        type(owner) :: b
+        real :: scratch(4096)
+        allocate(b%data(128))
+        scratch = 2
+        associate(view => a)
+            if (size(view) /= 512) error stop
+            call work(forever)
+        end associate
+    end block
+end subroutine
+integer function spin_result(forever) result(value)
+    logical, intent(in) :: forever
+    real, allocatable :: a(:)
+    allocate(a(1024))
+    do while (forever)
+    end do
+    value = 7
+end function
+function spin_text(forever) result(value)
+    logical, intent(in) :: forever
+    character(:), allocatable :: value
+    value = 'pending'
+    do while (forever)
+    end do
+end function
+subroutine churn(forever)
+    logical, intent(in) :: forever
+    character(:), allocatable :: text
+    text = 'initial'
+    do while (forever)
+        text = spin_text(.false.) // spin_text(.false.)
+    end do
+end subroutine
+integer(c_int) function c_spin(forever, a) bind(c)
+    integer(c_int), value :: forever
+    real(c_float), allocatable, intent(out) :: a(:)
+    allocate(a(10))
+    a = 3
+    do while (forever /= 0)
+    end do
+    c_spin = 7
+end function
+end module""", [])
+                check(client, "use interrupt_resources", [])
+                check(client, "integer :: saved", [])
+                check(client, "saved=42", [])
+                check(client, "call outer(.false.)", [])
+                check(client, "len(spin_text(.false.))", ["7"])
+                check(client, "finalized", ["1"])
+
+                def no_leaks():
+                    request = client.execute("call report_leaks()")
+                    text = ""
+                    idle = False
+                    deadline = time.monotonic() + 10
+                    while time.monotonic() < deadline:
+                        try:
+                            msg = client.get_iopub_msg(timeout=.1)
+                        except queue.Empty:
+                            assert process.poll() is None, ("leak reporter exited", text)
+                            continue
+                        if msg["parent_header"].get("msg_id") != request:
+                            continue
+                        if msg["msg_type"] == "stream":
+                            text += msg["content"]["text"]
+                        if (msg["msg_type"] == "status"
+                                and msg["content"]["execution_state"] == "idle"):
+                            idle = True
+                            break
+                    assert idle and "NO LEAKS FOUND" in text, text
+                    assert process.poll() is None, text
+
+                no_leaks()
+                for code, count in (("call work(.true.)", 1),
+                                    ("call outer(.true.)", 2),
+                                    ("saved=spin_result(.true.)", 2),
+                                    ("saved=len(spin_text(.true.))", 2),
+                                    ("call churn(.true.)", 2),
+                                    ("saved=c_spin(1,kept)", 2),
+                                    ("call outer(.true.)", 3)):
+                    check(client, "call keep()", [])
+                    running = client.execute(code, stop_on_error=False)
+                    while True:
+                        msg = client.get_iopub_msg(timeout=10)
+                        if (msg["parent_header"].get("msg_id") == running
+                                and msg["msg_type"] == "execute_input"):
+                            break
+                    time.sleep(.5)
+                    client.control_channel.send(client.session.msg("interrupt_request", content={}))
+                    deadline = time.monotonic() + 10
+                    while True:
+                        msg = client.get_shell_msg(timeout=max(.1, deadline-time.monotonic()))
+                        if msg["parent_header"].get("msg_id") == running:
+                            assert msg["content"]["ename"] == "KeyboardInterrupt", msg
+                            break
+                        assert time.monotonic() < deadline, "interrupted cell did not return"
+                    check(client, "saved+1", ["43"])
+                    check(client, "int(sum(kept))", ["30"])
+                    check(client, "call release()", [])
+                    check(client, "finalized", [str(count)])
+                    check(client, "final_sum", [str(count * 5050)])
+                    no_leaks()
+                client.shutdown()
+                assert process.wait(timeout=10) == 0
+                print("interrupt cleanup: %s %s passed" %
+                      ("builtin" if managed else "default", list(arguments)), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            if client:
+                client.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
+            directory.rmdir()
 
 
 if __name__ == "__main__":

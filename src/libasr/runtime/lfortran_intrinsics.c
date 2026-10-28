@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 #include <stdarg.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "hashtable.h"
@@ -40,6 +41,7 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -63,6 +65,44 @@ static int lfortran_fileno(FILE *fp) {
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
+static int (*interrupt_callback)(void *);
+static void *interrupt_context;
+// Like the installed hooks, these belong to the single active cell.
+// Masking cleanup does not acknowledge or clear a pending interruption.
+static unsigned interrupt_cleanup_depth;
+static int interrupt_in_progress;
+
+LFORTRAN_API void _lfortran_set_interrupt_callback(int (*callback)(void *), void *context)
+{
+    interrupt_callback = callback;
+    interrupt_context = context;
+    interrupt_in_progress = 0;
+}
+
+LFORTRAN_API int _lfortran_check_interrupt(void)
+{
+    if (interrupt_cleanup_depth) return 0;
+    if (!interrupt_in_progress && interrupt_callback) {
+        interrupt_in_progress = interrupt_callback(interrupt_context) != 0;
+    }
+    return interrupt_in_progress;
+}
+
+LFORTRAN_API int _lfortran_is_interrupting(void)
+{
+    return !interrupt_cleanup_depth && interrupt_in_progress;
+}
+
+LFORTRAN_API void _lfortran_begin_interrupt_cleanup(void)
+{
+    interrupt_cleanup_depth++;
+}
+
+LFORTRAN_API void _lfortran_end_interrupt_cleanup(void)
+{
+    assert(interrupt_cleanup_depth > 0);
+    interrupt_cleanup_depth--;
+}
 static char *stdin_record;
 static size_t stdin_record_length, stdin_record_pos;
 static int stdin_status;
@@ -952,6 +992,27 @@ static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
     const char* str, int64_t str_len);
 static int32_t dtio_take_error(int32_t* iostat);
 
+static void (*output_flush_hook)(void*) = NULL;
+static void* output_flush_context = NULL;
+
+LFORTRAN_API void* _lfortran_set_output_flush_hook(void (*flush)(void*), void* context)
+{
+    void* previous = output_flush_context;
+    output_flush_hook = flush;
+    output_flush_context = context;
+    return previous;
+}
+
+static void flush_captured_output(FILE* filep)
+{
+    if (output_flush_hook && (filep == stdout || filep == stderr)) {
+        fflush(filep);
+        // Acknowledge this write before the next runtime write can use the
+        // other descriptor: two independent pipes cannot retain their order.
+        output_flush_hook(output_flush_context);
+    }
+}
+
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
     dtio_take_error(NULL);
@@ -987,6 +1048,7 @@ LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_
     fwrite((char*)str, sizeof(char), str_len, stdout);
     fwrite((char*)end, sizeof(char), end_len, stdout);
     fflush(stdout);
+    flush_captured_output(stdout);
     internal_free(encoded);
 }
 
@@ -7452,6 +7514,7 @@ LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
         filep = stdout;
     }
     fprintf(filep, "\n");
+    flush_captured_output(filep);
 }
 
 static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
@@ -8321,6 +8384,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
                 fflush(unit_to_file[i].filep);
             }
         }
+        flush_captured_output(stdout);
+        flush_captured_output(stderr);
     } else {
         bool unit_file_bin;
         FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -8328,6 +8393,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             if ( unit_num == 6 ) {
                 // special case: flush OUTPUT_UNIT
                 fflush(stdout);
+                flush_captured_output(stdout);
                 return;
             } else if ( unit_num == 5 ) {
                 // special case: flush INPUT_UNIT
@@ -8336,6 +8402,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             } else if ( unit_num == 0 ) {
                 // special case: flush ERROR_UNIT
                 fflush(stderr);
+                flush_captured_output(stderr);
                 return;
             }
             if (iostat != NULL) {
@@ -8351,6 +8418,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             }
         }
         fflush(filep);
+        flush_captured_output(filep);
     }
 }
 
@@ -14868,6 +14936,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (filep != stdout && filep != stderr && access_id == 0) {
         (void)!ftruncate(lfortran_fileno(filep), ftell(filep));
     }
+    flush_captured_output(filep);
 }
 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
@@ -16555,7 +16624,84 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if defined(_WIN32)
+    if (interrupt_callback) {
+        const char *shell = getenv("COMSPEC");
+        if (!shell) shell = "cmd.exe";
+        size_t size = strlen(shell) + strlen(c_cmd) + 10;
+        char *line = internal_malloc(size);
+        snprintf(line, size, "\"%s\" /c %s", shell, c_cmd);
+        STARTUPINFOA startup = {0};
+        PROCESS_INFORMATION process = {0};
+        startup.cb = sizeof(startup);
+        startup.dwFlags = STARTF_USESTDHANDLES;
+        startup.hStdInput = (HANDLE)_get_osfhandle(_fileno(stdin));
+        startup.hStdOutput = (HANDLE)_get_osfhandle(_fileno(stdout));
+        startup.hStdError = (HANDLE)_get_osfhandle(_fileno(stderr));
+        HANDLE job = CreateJobObjectA(NULL, NULL);
+        result = -1;
+        if (job && CreateProcessA(shell, line, NULL, NULL, TRUE,
+                CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
+                &startup, &process)) {
+            if (AssignProcessToJobObject(job, process.hProcess)) {
+                ResumeThread(process.hThread);
+                for (;;) {
+                    DWORD waited = WaitForSingleObject(process.hProcess, 10);
+                    if (waited == WAIT_OBJECT_0) {
+                        DWORD status;
+                        if (GetExitCodeProcess(process.hProcess, &status)) result = (int)status;
+                        break;
+                    }
+                    if (waited == WAIT_FAILED || _lfortran_check_interrupt()) {
+                        TerminateJobObject(job, 1);
+                        WaitForSingleObject(process.hProcess, INFINITE);
+                        break;
+                    }
+                }
+            } else {
+                TerminateProcess(process.hProcess, 1);
+                WaitForSingleObject(process.hProcess, INFINITE);
+            }
+            CloseHandle(process.hThread);
+            CloseHandle(process.hProcess);
+        }
+        if (job) CloseHandle(job);
+        internal_free(line);
+    } else
+#elif !defined(COMPILE_TO_WASM)
+    if (interrupt_callback) {
+        pid_t child = fork();
+        if (child == 0) {
+            setpgid(0, 0);
+            execl("/bin/sh", "sh", "-c", c_cmd, (char *)NULL);
+            _exit(127);
+        }
+        if (child < 0) {
+            result = -1;
+        } else {
+            setpgid(child, child);
+            for (;;) {
+                pid_t waited = waitpid(child, &result, WNOHANG);
+                if (waited == child) break;
+                if (waited < 0 && errno != EINTR) {
+                    result = -1;
+                    break;
+                }
+                if (_lfortran_check_interrupt()) {
+                    kill(-child, SIGKILL);
+                    while (waitpid(child, &result, 0) < 0 && errno == EINTR) {}
+                    break;
+                }
+                struct timespec delay = {0, 10000000};
+                nanosleep(&delay, NULL);
+            }
+        }
+    } else
+#endif
+    {
+        result = system(c_cmd);
+    }
     internal_free(c_cmd);
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.
@@ -16836,6 +16982,7 @@ LFORTRAN_API void _lfortran_namelist_write(
     w.delim = delim; 
 
     namelist_write_impl(&w, group);
+    flush_captured_output(filep);
 
     if (iostat) *iostat = 0;
 }

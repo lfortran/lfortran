@@ -719,8 +719,11 @@ public:
     std::string infile;
     Allocator &al;
 
-    llvm::Value *tmp;
+    llvm::Value *tmp = nullptr;
     llvm::BasicBlock *proc_return;
+    bool enable_cancellation = false;
+    SymbolTable *interrupt_scope = nullptr;
+    bool emitting_interrupt_cleanup = false;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8;
@@ -10270,6 +10273,10 @@ public:
 
     template<typename T>
     void declare_vars(const T &x) {
+        // A scope cannot be exited until its descriptors have been initialized.
+        auto *saved_interrupt_scope = interrupt_scope;
+        interrupt_scope = nullptr;
+        interrupt_cleanup_guard(true);
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
@@ -10282,6 +10289,8 @@ public:
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
+        interrupt_cleanup_guard(false);
+        interrupt_scope = saved_interrupt_scope;
     }
 
     bool is_function_variable(const ASR::Variable_t &v) {
@@ -10963,6 +10972,7 @@ public:
         llvm::BasicBlock *BB = llvm::BasicBlock::Create(context,
                 ".entry", F);
         builder->SetInsertPoint(BB);
+        interrupt_cleanup_guard(true);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         declare_args(x, *F);
 
@@ -11255,6 +11265,7 @@ public:
         }
         finalize_intent_out_array_args(x);
         declare_local_vars(x);
+        interrupt_cleanup_guard(false);
     }
 
     /**
@@ -11349,10 +11360,12 @@ public:
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if (x.m_return_var) {
             start_new_block(proc_return);
+            interrupt_cleanup_guard(true);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             finalize_list_call_arg_allocas();
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
+            interrupt_cleanup_guard(false);
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
             if (fn->getReturnType()->isVoidTy()) {
                 // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI:
@@ -11426,10 +11439,12 @@ public:
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
+            interrupt_cleanup_guard(true);
             llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
             finalize_list_call_arg_allocas();
             free_heap_fixed_size_arrays();
             convert_bindc_strides_to_byte();
+            interrupt_cleanup_guard(false);
             builder->CreateRetVoid();
         }
     }
@@ -11454,9 +11469,12 @@ public:
                 define_function_entry(x);
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
+                interrupt_scope = enable_cancellation ? x.m_symtab : nullptr;
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
+                emit_interrupt_check();
+                interrupt_scope = nullptr;
                 
                 define_function_exit(x);
             }
@@ -16324,6 +16342,7 @@ public:
     // stack pointer saved on entry.
     void emit_block_cleanup(const BlockCleanup &b, size_t heap_end,
             size_t wb_end) {
+        interrupt_cleanup_guard(true);
         for (size_t i = b.char_writebacks_before;
                 b.writes_back_chars && i < wb_end; i++) {
             auto& wb = pending_char_writebacks[i];
@@ -16347,6 +16366,7 @@ public:
             module.get(), llvm::Intrinsic::stackrestore);
         builder->CreateCall(stackrestore_fn, {b.saved_stack});
 #endif
+        interrupt_cleanup_guard(false);
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
@@ -17218,6 +17238,7 @@ public:
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
+            emit_interrupt_check();
             this->visit_expr_wrapper(x.m_test, true);
             // Free the test's string temporaries on every evaluation.
             free_strings_to_be_deallocated(0);
@@ -17269,6 +17290,81 @@ public:
                 wb_end = b.char_writebacks_before;
             }
         }
+
+    }
+
+    void interrupt_cleanup_guard(bool begin) {
+        if (!enable_cancellation) return;
+        auto fn = module->getOrInsertFunction(
+            begin ? "_lfortran_begin_interrupt_cleanup" : "_lfortran_end_interrupt_cleanup",
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), false));
+        builder->CreateCall(fn);
+    }
+
+    // Safepoints are scope exits, not arbitrary LLVM basic-block exits.
+    // Only emit them after declaration initialization, at statement/loop
+    // boundaries and before a caller consumes an interrupted function result.
+    void emit_interrupt_check(bool propagate_only = false) {
+        if (!interrupt_scope || emitting_interrupt_cleanup) return;
+        llvm::Value *saved_tmp = tmp;
+        auto *fn = builder->GetInsertBlock()->getParent();
+        auto poll = module->getOrInsertFunction(
+            propagate_only ? "_lfortran_is_interrupting" : "_lfortran_check_interrupt",
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false));
+        auto *pending = builder->CreateCall(poll);
+        auto *cleanup = llvm::BasicBlock::Create(context, "interrupted", fn);
+        auto *resume = llvm::BasicBlock::Create(context, "resume", fn);
+        builder->CreateCondBr(builder->CreateICmpNE(pending,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)),
+            cleanup, resume);
+        builder->SetInsertPoint(cleanup);
+        emitting_interrupt_cleanup = true;
+        interrupt_cleanup_guard(true);
+        const size_t strings_n = strings_to_be_deallocated.n;
+        free_strings_to_be_deallocated(0);
+        strings_to_be_deallocated.n = strings_n;
+        leave_blocks(0, true);
+        llvm_symtab_finalizer.finalize_symtab(interrupt_scope, true, true);
+        auto saved_list_args = list_call_arg_to_finalize;
+        finalize_list_call_arg_allocas();
+        list_call_arg_to_finalize = std::move(saved_list_args);
+        // BLOCK-owned arrays were already released by leave_blocks().
+        const size_t heap_end = block_cleanups.empty()
+            ? heap_fixed_size_arrays.n : block_cleanups.front().heap_arrays_before;
+        for (size_t i = 0; i < heap_end; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        convert_bindc_strides_to_byte();
+        interrupt_cleanup_guard(false);
+        if (fn->getReturnType()->isVoidTy()) {
+            builder->CreateRetVoid();
+        } else {
+            builder->CreateRet(llvm::Constant::getNullValue(fn->getReturnType()));
+        }
+        emitting_interrupt_cleanup = false;
+        builder->SetInsertPoint(resume);
+        tmp = saved_tmp;
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        emit_interrupt_check();
+        ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
+    }
+
+    llvm::CallInst *create_interruptible_call(llvm::FunctionCallee fn,
+            llvm::ArrayRef<llvm::Value *> args = {}) {
+        auto *result = builder->CreateCall(fn, args);
+        // Do not observe a new interrupt before ownership of a successful
+        // result has been transferred to the caller's expression temporaries.
+        emit_interrupt_check(true);
+        return result;
+    }
+
+    llvm::CallInst *create_interruptible_call(llvm::FunctionType *type,
+            llvm::Value *fn, llvm::ArrayRef<llvm::Value *> args) {
+        auto *result = builder->CreateCall(type, fn, args);
+        emit_interrupt_check(true);
+        return result;
     }
 
     // Branch to `loop_or_block_end[target]`, first ending every construct
@@ -28314,11 +28410,11 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                builder->CreateCall(fn, args);
+                create_interruptible_call(fn, args);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = builder->CreateCall(fn, args);
+        llvm::Value* return_value = create_interruptible_call(fn, args);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
@@ -28477,7 +28573,7 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, checked_integer_cast<int>(struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name])));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        tmp = builder->CreateCall(fnTy, fn, args);
+        tmp = create_interruptible_call(fnTy, fn, args);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -28541,7 +28637,7 @@ public:
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            tmp = builder->CreateCall(fntype, callee, args);
+            tmp = create_interruptible_call(fntype, callee, args);
             wrap_string_function_result(x.m_type);
             return ;
         }
@@ -28644,7 +28740,7 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            tmp = create_interruptible_call(fntype, fn, args);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -28654,7 +28750,7 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            tmp = create_interruptible_call(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -28664,23 +28760,33 @@ public:
             args = convert_call_args(x, false);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                auto call_bindc = [&]() {
+                    auto *result = builder->CreateCall(fn, args);
+                    if (interrupt_scope && !emitting_interrupt_cleanup) {
+                        // Transfer descriptor ownership before cancellation can
+                        // leave this frame; the callee may have allocated it.
+                        apply_cfi_array_writebacks();
+                        emit_interrupt_check(true);
+                    }
+                    return result;
+                };
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = checked_integer_cast<int>(down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     if (a_kind == 8) {
                         if (compiler_options.platform == Platform::Windows) {
                             tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
-                            builder->CreateCall(fn, args);
+                            call_bindc();
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
-                            tmp = builder->CreateCall(fn, args);
+                            tmp = call_bindc();
                         }
                     } else {
-                        tmp = builder->CreateCall(fn, args);
+                        tmp = call_bindc();
                     }
                 } else {
-                    tmp = builder->CreateCall(fn, args);
+                    tmp = call_bindc();
                 }
                 apply_cfi_array_writebacks();
             } else {
@@ -29594,9 +29700,10 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         const LLVMTargetConfig &target_config, Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
-        const std::string &infile, LocationManager &lm)
+        const std::string &infile, LocationManager &lm, bool enable_cancellation)
 {
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm, target_config);
+    v.enable_cancellation = enable_cancellation;
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(

@@ -412,13 +412,9 @@ def prompt_departure(exe, cwd):
 
 def prompt_killed_in_cell(exe, cwd):
     """The kernel ends during a cell that does not return, and the connection
-    file is removed, when the prompt that started it gets Ctrl-C or is
-    killed."""
+    file is removed, when the prompt that started it is killed. Ctrl-C
+    interrupts the cell instead, retaining the shared session."""
     endings = [("killed", lambda process: process.kill(), None)]
-    if os.name == "posix":
-        # The prompt ends by SIGINT, as without its handler.
-        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
-            -signal.SIGINT))
     for how, end, status in endings:
         process, connection = started_prompt(exe, cwd)
         kernel_pids = children_of(process.pid)
@@ -442,6 +438,43 @@ def prompt_killed_in_cell(exe, cwd):
                 process.wait()
             for pid, _ in kernel_pids:
                 kill_pid(pid)
+
+    if os.name != "posix":
+        return
+    process, connection = started_prompt(exe, cwd)
+    kernel_pids = children_of(process.pid)
+    client = None
+    try:
+        client = connect(connection)
+        check(run(client, "integer :: saved = 42")[0]["status"] == "ok",
+              "state declaration failed")
+        process.stdin.write(b"do; end do\r")
+        process.stdin.flush()
+        deadline = time.monotonic() + 10
+        while True:
+            msg = client.get_iopub_msg(timeout=max(.1, deadline-time.monotonic()))
+            if msg["msg_type"] == "execute_input" and msg["content"]["code"].strip() == "do; end do":
+                running = msg["parent_header"]["msg_id"]
+                break
+            check(time.monotonic() < deadline, "prompt did not start its cell")
+        process.send_signal(signal.SIGINT)
+        idle_order(client, [running])
+        check(process.poll() is None and connection.exists(),
+              "Ctrl-C ended the prompt or shared kernel")
+        check(value(client, "saved+1") == "43", "Ctrl-C discarded saved variables")
+        out, _ = process.communicate(b"saved+2\r\x04", timeout=20)
+        check(process.returncode == 0 and b"44" in out,
+              "prompt could not execute a subsequent cell:\n" + out.decode(errors="replace"))
+        check(wait_removed(connection), "prompt left its connection file")
+        kernel_pids = []
+    finally:
+        if client:
+            client.stop_channels()
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        for pid, _ in kernel_pids:
+            kill_pid(pid)
 
 
 def kernel_parent(exe, cwd):

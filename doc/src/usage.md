@@ -148,8 +148,7 @@ $ lfortran --connect /tmp/lfortran-0123abcd.json
 ```
 
 A kernel can also be started on its own; it writes the connection file if it
-does not exist and runs until a client shuts it down, or until Ctrl-C or
-SIGTERM:
+does not exist and runs until a client shuts it down or sends SIGTERM:
 
 ```console
 $ lfortran kernel -f session.json
@@ -157,9 +156,10 @@ $ lfortran --connect session.json
 ```
 
 The kernel runs one cell at a time, in the order the cells arrive. Every
-client sees every cell's output, as in Jupyter: the prompt shows another
-client's cell, marked `[other client]`, when it runs its next cell. A cell's
-output is shown when the cell finishes or reads input. A cell that fails
+client sees every cell's output, as in Jupyter: the terminal prompt shows
+another client's cell, marked `[other client]`, and its output while waiting
+for input, preserving the cell being edited. Native cell output streams
+while the cell runs, including during calls that wait. A cell that fails
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
 
@@ -172,14 +172,21 @@ the kernel's exit status, as it did when it ran its cells itself.
 
 The prompt that starts a kernel ends that kernel when the prompt exits, and
 removes the connection file. Exiting ends the kernel while another client is
-still connected, and during a cell that does not return. Ctrl-C ends the
-prompt and the kernel. The kernel also stops, removing the connection file,
+still connected, and during a cell that does not return. Ctrl-C while a cell
+runs interrupts that cell, keeping the prompt, kernel and saved variables.
+At an idle prompt, Ctrl-C ends the prompt and its kernel.
+The kernel also stops, removing the connection file,
 when that prompt cannot end it, such as when its terminal closes or it is
 killed with `kill -9`. A prompt that only joins, with
 `lfortran --connect FILE`, leaves the kernel running; that session lasts
-until the kernel itself stops. The way to stop a cell that does not return
-is to end the prompt that started the kernel. Jupyter's Interrupt has no
-effect until the cell ends. Whoever can read the connection file can run
+until the kernel itself stops. Jupyter's Interrupt, or SIGINT to a native
+kernel, cancels generated Fortran code at cooperative safepoints. An
+interrupted cell returns `KeyboardInterrupt`; changes it already made are
+not rolled back. `execute_command_line` also terminates its running command
+and descendants. Blocking foreign calls must return before cancellation can
+take effect; this does not add interruption to the browser kernel.
+The usual `stop_on_error` policy still applies to queued cells.
+Whoever can read the connection file can run
 code as its owner. The file is readable by its owner only.
 
 The client is LFortran's own. The kernel is LFortran's own implementation of

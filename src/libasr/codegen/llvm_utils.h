@@ -1148,8 +1148,9 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_variable(ASR::Variable_t* const v){
-            if(not_finalizable_variable(v)) return;
+        void finalize_variable(ASR::Variable_t* const v, bool cancelled_result = false){
+            if(not_finalizable_variable(v) &&
+                    !(cancelled_result && v->m_intent == ASR::ReturnVar)) return;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
@@ -3036,8 +3037,11 @@ class ASRToLLVMVisitor;
          * @param call_final_subroutines False when the program terminates:
          *        the variables are then not finalized (F2018 7.5.6.4), only
          *        their memory is freed.
+         * @param cancelled_result Include the function result when cancellation
+         *        prevents its ownership from being transferred to the caller.
          */
-        void finalize_symtab(SymbolTable* symtab, const bool call_final_subroutines = true){
+        void finalize_symtab(SymbolTable* symtab, const bool call_final_subroutines = true,
+                const bool cancelled_result = false){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
             auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
@@ -3049,7 +3053,7 @@ class ASRToLLVMVisitor;
                 for(auto &str_sym_pair : MAP){
                     ASR::symbol_t* const sym = str_sym_pair.second;
                     if (is_variable(sym)){
-                        finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
+                        finalize_variable(ASR::down_cast<ASR::Variable_t>(sym), cancelled_result);
                     }
                 }
             });

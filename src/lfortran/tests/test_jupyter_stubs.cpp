@@ -7,7 +7,7 @@ using LCompilers::LFortran::jupyter::Client;
 // Keep references to every platform stub, including methods not called by
 // JupyterLite today: a declaration-only stub must fail at link time.
 bool (Client::*volatile execute_cell)(const std::string &, bool) = &Client::execute;
-void (Client::*volatile show_cells)() = &Client::show_others;
+void (Client::*volatile show_cells)(const std::function<void()> &) = &Client::show_others;
 int (Client::*volatile status)(int) = &Client::kernel_status;
 bool (*volatile parent)(long long, const std::string &)
     = &LCompilers::LFortran::jupyter::stop_with_parent;

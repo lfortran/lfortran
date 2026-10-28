@@ -6,6 +6,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
+#ifndef __EMSCRIPTEN__
+#include <thread>
+#endif
 
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -2930,6 +2933,28 @@ static CompilerOptions execute_options() {
     return cu;
 }
 
+#ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: cancellation is execution-only") {
+    for (bool fast : {false, true}) {
+        CAPTURE(fast);
+        CompilerOptions cu = execute_options();
+        cu.po.fast = fast;
+        FortranEvaluator e(cu);
+        auto cell = e.execute("%%showllvm\n42");
+        REQUIRE(cell.ok);
+        CHECK(cell.output.find("_lfortran_check_interrupt") == std::string::npos);
+        cell = e.execute("integer :: n = 41\nn + 1", true);
+        REQUIRE(cell.ok);
+        CHECK(cell.value.text() == "42");
+        CHECK(cell.value.llvm_ir.find("_lfortran_check_interrupt") != std::string::npos);
+        cell = e.execute("%%showllvm\nn + 1");
+        REQUIRE(cell.ok);
+        CHECK(cell.output.find("_lfortran_check_interrupt") == std::string::npos);
+        CHECK(e.execute("n").value.text() == "41");
+    }
+}
+#endif
+
 TEST_CASE("FortranEvaluator execute: results and cells") {
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
@@ -3054,6 +3079,121 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
 // Like test_runtime_input, the stdin cases run natively only; the WASM test
 // build also cannot read the integration test sources.
 #ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: control polling joins on the caller") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    REQUIRE(e.execute("integer :: saved = 42").ok);
+    REQUIRE(e.execute("use lfortran_display").ok);
+    REQUIRE(e.execute("subroutine emit_pair(i)\ninteger,intent(in)::i\n"
+        "print '(i0)',i\nwrite(0,'(i0)')i\nend subroutine").ok);
+    const auto caller = std::this_thread::get_id();
+    for (bool streaming : {false, true}) {
+        CAPTURE(streaming);
+        bool on_caller = true;
+        int polls = 0;
+        int hooks = 0;
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.poll_interrupt = [&]() {
+            on_caller = on_caller && std::this_thread::get_id() == caller;
+            if (++polls >= 50 && hooks == 3) FortranEvaluator::request_interrupt();
+        };
+        auto called = [&]() {
+            on_caller = on_caller && std::this_thread::get_id() == caller;
+            hooks++;
+        };
+        io.display = [&](const std::string &, const std::string &) { called(); };
+        io.clear_output = called;
+        io.input = [&](std::string &record) { called(); record = "42"; return 0; };
+        if (streaming) {
+            io.output = [&](int, const std::string &text) {
+                on_caller = on_caller && std::this_thread::get_id() == caller;
+                output += text;
+            };
+        }
+        std::string code = "call display_data('text/plain','ready')\n"
+            "call clear_output()\nread(*,*)saved\n";
+        code += streaming
+            ? "block\ninteger i\nprint '(a)', 'before-interrupt'\ni=0\n"
+              "do\ni=i+1\ncall emit_pair(i)\nend do\nend block\nsaved=0"
+            : "do\nend do\nsaved=0";
+        auto cell = e.execute(code, false, io);
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "KeyboardInterrupt");
+        CHECK(on_caller);
+        CHECK(polls >= 50);
+        CHECK(hooks == 3);
+        if (streaming) CHECK(output.rfind("before-interrupt\n1\n", 0) == 0);
+        CHECK(e.execute("saved+1").value.text() == "43");
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: output hook ordering and cleanup") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    auto caller = std::this_thread::get_id();
+    bool on_caller = true;
+    std::vector<std::string> events;
+    auto event = [&](const std::string &text) {
+        on_caller = on_caller && std::this_thread::get_id() == caller;
+        events.push_back(text);
+    };
+    FortranEvaluator::CellIO io;
+    io.output = [&](int fd, const std::string &text) {
+        event(std::to_string(fd) + ":" + text);
+    };
+    io.display = [&](const std::string &, const std::string &) { event("display"); };
+    io.clear_output = [&]() { event("clear"); };
+    io.input = [&](std::string &record) { event("input"); record = "7"; return 0; };
+    auto cell = e.execute("use lfortran_display\ninteger :: streamed\n"
+        "print '(a)', 'before-display'\ncall display_data('text/plain', 'shown')\n"
+        "write(0,'(a)') 'before-clear'\ncall clear_output()\n"
+        "print '(a)', 'before-input'\nread(*,*) streamed\n"
+        "print '(i1)', streamed", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(on_caller);
+    CHECK(events == std::vector<std::string>{"1:before-display\n", "display",
+        "2:before-clear\n", "clear", "1:before-input\n", "input", "1:7\n"});
+
+    io.output = [](int, const std::string &) { throw std::runtime_error("output failure"); };
+    CHECK_THROWS_WITH_AS(e.execute("print '(a)', 'small'", false, io),
+        "output failure", std::runtime_error);
+    CHECK_THROWS_WITH_AS(e.execute("print '(a)', repeat('x', 200000)", false, io),
+        "output failure", std::runtime_error);
+    events.clear();
+    io.output = [&](int fd, const std::string &text) { event(std::to_string(fd) + ":" + text); };
+    cell = e.execute("print '(a)', 'next-cell'", false, io);
+    REQUIRE(cell.ok);
+    CHECK(events == std::vector<std::string>{"1:next-cell\n"});
+    CHECK(on_caller);
+}
+
+TEST_CASE("FortranEvaluator execute: alternating output beyond a drain batch") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::vector<std::pair<int, std::string>> events;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int fd, const std::string &text) {
+        if (!events.empty() && events.back().first == fd) {
+            events.back().second += text;
+        } else {
+            events.emplace_back(fd, text);
+        }
+    };
+    for (int i = 0; i < 3; i++) {
+        events.clear();
+        auto cell = e.execute("block\n"
+            "write(0,'(a)') repeat('b', 2400000)\n"
+            "print '(a)', 'c'\nwrite(0,'(a)') 'd'\nend block", false, io);
+        REQUIRE_MESSAGE(cell.ok, cell.error_text());
+        REQUIRE(events.size() == 3);
+        CHECK(events[0].first == 2);
+        CHECK(events[0].second == std::string(2400000, 'b') + "\n");
+        CHECK(events[1] == std::make_pair(1, std::string("c\n")));
+        CHECK(events[2] == std::make_pair(2, std::string("d\n")));
+    }
+}
+
 struct InputRecords {
     std::vector<std::string> records;
     size_t next = 0;

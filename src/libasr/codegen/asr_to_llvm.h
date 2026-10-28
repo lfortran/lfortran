@@ -16,7 +16,7 @@ namespace LCompilers {
             const std::string &run_fn,
             const std::string &/*global_underscore*/,
             const std::string &infile,
-            LocationManager &lm);
+            LocationManager &lm, bool enable_cancellation = false);
 
 } // namespace LCompilers
 

@@ -135,6 +135,7 @@ class PtyRepl:
         self.deadline = time.monotonic() + timeout
         self.out = b""
         self.prompts = 0
+        self.cursor_queries = 0
         self.cells = 0
 
     def text(self):
@@ -142,9 +143,8 @@ class PtyRepl:
             errors="replace")
 
     def wait(self, done, what):
-        # Reads the output until `done()`, answering the cursor position
-        # query that starts every prompt as a terminal would. Returns False
-        # if the output ends first.
+        # Wait for the empty editor, not a cursor query: relative rendering
+        # does not need to ask the terminal where its cursor is.
         while not done():
             left = self.deadline - time.monotonic()
             if left <= 0:
@@ -159,9 +159,10 @@ class PtyRepl:
             if not data:
                 return False
             self.out += data
-            while self.prompts < self.out.count(b"\x1b[6n"):
+            while self.cursor_queries < self.out.count(b"\x1b[6n"):
                 os.write(self.fd, b"\x1b[1;1R")
-                self.prompts += 1
+                self.cursor_queries += 1
+            self.prompts = len(re.findall(r">>> +1,1 +\]", self.text()))
         return True
 
     def cell(self, text, keys=None):

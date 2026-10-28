@@ -1,5 +1,9 @@
 #include <iostream>
 #include <sstream>
+#include <csignal>
+#include <deque>
+#include <chrono>
+#include <thread>
 
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
@@ -11,7 +15,10 @@
 #else
 #include <xeus-zmq/xzmq_context.hpp>
 #include <xeus-zmq/xserver_zmq.hpp>
+#include <xeus-zmq/xmiddleware.hpp>
 #include <xeus/xinput.hpp>
+#include <zmq.h>
+#include <openssl/hmac.h>
 #endif
 
 #include <nlohmann/json.hpp>
@@ -25,6 +32,270 @@ namespace nl = nlohmann;
 
 namespace LCompilers::LFortran {
 
+#ifndef __EMSCRIPTEN__
+    // Unlike the split server, this keeps all request sockets on the
+    // publishing thread. Only interrupts run during a cell; everything that
+    // could re-enter the interpreter is retained until its worker has joined.
+    class polling_server : public xeus::xserver_zmq {
+        std::deque<xeus::xmessage> shell, control;
+
+        void start_impl(xeus::xpub_message message) override {
+            start_publisher_thread();
+            start_heartbeat_thread();
+            publish(std::move(message), xeus::channel::SHELL);
+            while (!is_stopped()) {
+                if (!control.empty()) {
+                    auto next = std::move(control.front());
+                    control.pop_front();
+                    notify_control_listener(std::move(next));
+                } else if (!shell.empty()) {
+                    auto next = std::move(shell.front());
+                    shell.pop_front();
+                    notify_shell_listener(std::move(next));
+                } else if (auto next = poll_channels(-1)) {
+                    if (next->second == xeus::channel::SHELL) {
+                        notify_shell_listener(std::move(next->first));
+                    } else {
+                        notify_control_listener(std::move(next->first));
+                    }
+                }
+            }
+            stop_channels();
+        }
+
+        void stop_impl() override { set_request_stop(true); }
+
+    public:
+        void abort_pending(const listener &listen) {
+            while (!shell.empty()) {
+                auto next = std::move(shell.front());
+                shell.pop_front();
+                listen(std::move(next));
+            }
+        }
+
+        polling_server(xeus::xcontext &context, const xeus::xconfiguration &config,
+                nl::json::error_handler_t eh) : xeus::xserver_zmq(context, config, eh) {}
+
+        void poll_control() {
+            for (int i = 0; i < 64; i++) {
+                auto next = poll_channels(0);
+                if (!next) break;
+                auto &message = next->first;
+                const auto type = message.header().value("msg_type", "");
+                if (next->second == xeus::channel::SHELL) {
+                    shell.push_back(std::move(message));
+                } else if (type == "interrupt_request") {
+                    FortranEvaluator::request_interrupt();
+                    // Do not enter Xeus's control dispatcher here: its status
+                    // publication would change the active cell's parent/state.
+                    send_control_message(xeus::xmessage(message.identities(),
+                        xeus::make_header("interrupt_reply",
+                            message.header().value("username", ""),
+                            message.header().value("session", "")),
+                        message.header(), nl::json::object(),
+                        nl::json{{"status", "ok"}}, {}));
+                } else {
+                    if (type == "shutdown_request") FortranEvaluator::request_interrupt();
+                    control.push_back(std::move(message));
+                }
+            }
+        }
+    };
+
+    class streaming_server;
+    static thread_local streaming_server *active_streaming_server = nullptr;
+
+#if XEUS_VERSION_MAJOR > 5
+    using connection_configuration = xeus::xkernel_configuration;
+#else
+    using connection_configuration = xeus::xconfiguration;
+#endif
+
+    // Xeus-ZMQ forwards IOPub through an inproc PUB/SUB queue and then an
+    // external XPUB socket. Both silently drop at their high-water marks.
+    // Keep its request channels, but publish directly on a caller-owned
+    // XPUB with backpressure, including status/idle and display messages.
+    class streaming_server : public xeus::xserver {
+        std::unique_ptr<void, decltype(&zmq_ctx_term)> context{nullptr, zmq_ctx_term};
+        std::unique_ptr<void, decltype(&zmq_close)> publisher{nullptr, zmq_close};
+        std::unique_ptr<polling_server> server;
+        connection_configuration configuration;
+        const EVP_MD *digest;
+        nl::json::error_handler_t error_handler;
+        std::string endpoint;
+
+        static void checked(int result) {
+            if (result < 0) throw LCompilersException(
+                std::string("cannot publish kernel output: ") + zmq_strerror(zmq_errno()));
+        }
+
+        void send(const xeus::xpub_message &message) {
+            // Consume subscription notifications; ZeroMQ applies the
+            // subscriptions itself, even when evaluation is running.
+            while (zmq_recv(publisher.get(), nullptr, 0, ZMQ_DONTWAIT) >= 0) {}
+            std::string parts[] = {
+                message.header().dump(-1, ' ', false, error_handler),
+                message.parent_header().dump(-1, ' ', false, error_handler),
+                message.metadata().dump(-1, ' ', false, error_handler),
+                message.content().dump(-1, ' ', false, error_handler)
+            };
+            std::string signature;
+            if (digest) {
+                std::string data;
+                for (auto &part : parts) data += part;
+                unsigned char hash[EVP_MAX_MD_SIZE];
+                unsigned int length = 0;
+                if (!HMAC(digest, configuration.m_key.data(),
+                        configuration.m_key.size(),
+                        reinterpret_cast<const unsigned char*>(data.data()),
+                        data.size(), hash, &length)) {
+                    throw LCompilersException("cannot sign kernel output");
+                }
+                const char *hex = "0123456789abcdef";
+                for (unsigned int i = 0; i < length; i++) {
+                    signature += hex[hash[i] >> 4];
+                    signature += hex[hash[i] & 15];
+                }
+            }
+            auto frame = [&](const char *data, size_t size, bool more) {
+                for (;;) {
+                    int result = zmq_send(publisher.get(), data, size,
+                        ZMQ_DONTWAIT | (more ? ZMQ_SNDMORE : 0));
+                    if (result >= 0) return true;
+                    if (zmq_errno() == EINTR) continue;
+                    if (zmq_errno() != EAGAIN) checked(result);
+                    poll_control();
+                    if (FortranEvaluator::is_interrupt_requested()) {
+                        // A stalled subscriber must not hold cancellation or
+                        // join hostage. Drop this transport's undelivered
+                        // backlog and disconnect subscribers, which reconnect
+                        // normally; never claim complete output for that peer.
+                        const int linger = 0;
+                        checked(zmq_setsockopt(publisher.get(), ZMQ_LINGER,
+                            &linger, sizeof(linger)));
+                        publisher.reset();
+                        open_publisher();
+                        return false;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+            };
+            if (!frame(message.topic().data(), message.topic().size(), true)) return;
+            if (!frame("<IDS|MSG>", 9, true)) return;
+            if (!frame(signature.data(), signature.size(), true)) return;
+            for (int i = 0; i < 4; i++) {
+                if (!frame(parts[i].data(), parts[i].size(),
+                        i != 3 || !message.buffers().empty())) return;
+            }
+            for (size_t i = 0; i < message.buffers().size(); i++) {
+                auto &buffer = message.buffers()[i];
+                if (!frame(buffer.data(), buffer.size(), i + 1 < message.buffers().size())) return;
+            }
+        }
+
+        xeus::xcontrol_messenger &get_control_messenger_impl() override {
+            return server->get_control_messenger();
+        }
+        void send_shell_impl(xeus::xmessage message) override {
+            server->send_shell(std::move(message));
+        }
+        void send_control_impl(xeus::xmessage message) override {
+            server->send_control(std::move(message));
+        }
+        void send_stdin_impl(xeus::xmessage message) override {
+            server->send_stdin(std::move(message));
+        }
+        void publish_impl(xeus::xpub_message message, xeus::channel) override {
+            send(message);
+        }
+        void start_impl(xeus::xpub_message message) override {
+            active_streaming_server = this;
+            struct Reset {
+                ~Reset() { active_streaming_server = nullptr; }
+            } reset;
+            send(message);
+            server->start(std::move(message));
+        }
+        void abort_queue_impl(const listener &listen, long interval) override {
+            server->abort_pending(listen);
+            server->abort_queue(listen, interval);
+        }
+        void stop_impl() override {
+            server->stop();
+        }
+        void update_config_impl(connection_configuration &config) const override {
+            server->update_config(config);
+            config.m_iopub_port = configuration.m_iopub_port;
+        }
+
+    public:
+        void poll_control() { server->poll_control(); }
+
+    private:
+        void open_publisher() {
+            publisher.reset(zmq_socket(context.get(), ZMQ_XPUB));
+            if (!publisher) checked(-1);
+            const int no_drop = 1, linger = 1000;
+            checked(zmq_setsockopt(publisher.get(), ZMQ_XPUB_NODROP, &no_drop, sizeof(no_drop)));
+            checked(zmq_setsockopt(publisher.get(), ZMQ_LINGER, &linger, sizeof(linger)));
+            checked(zmq_bind(publisher.get(), endpoint.c_str()));
+        }
+
+    public:
+        streaming_server(xeus::xcontext &xeus_context,
+                const connection_configuration &config, nl::json::error_handler_t eh)
+            : configuration(config), error_handler(eh) {
+            const std::string prefix = "hmac-";
+            digest = config.m_signature_scheme.compare(0, prefix.size(), prefix) == 0
+                ? EVP_get_digestbyname(config.m_signature_scheme.substr(prefix.size()).c_str())
+                : nullptr;
+            if (!digest && config.m_signature_scheme != "none") {
+                throw LCompilersException("unsupported kernel signature scheme");
+            }
+            context.reset(zmq_ctx_new());
+            if (!context) checked(-1);
+            const std::string port = config.m_iopub_port.empty()
+                ? (config.m_transport == "tcp" ? "*" : xeus::find_free_port())
+                : config.m_iopub_port;
+            endpoint = xeus::get_end_point(config.m_transport, config.m_ip, port);
+            open_publisher();
+            char address[1024];
+            size_t size = sizeof(address);
+            checked(zmq_getsockopt(publisher.get(), ZMQ_LAST_ENDPOINT, address, &size));
+            endpoint = address;
+            const char separator = config.m_transport == "tcp" ? ':' : '-';
+            configuration.m_iopub_port = endpoint.substr(endpoint.rfind(separator) + 1);
+            auto request_config = config;
+            request_config.m_iopub_port.clear();
+            server = std::make_unique<polling_server>(xeus_context, request_config, eh);
+            server->register_shell_listener([this](xeus::xmessage message) {
+                notify_shell_listener(std::move(message));
+            });
+            server->register_control_listener([this](xeus::xmessage message) {
+                notify_control_listener(std::move(message));
+            });
+            server->register_stdin_listener([this](xeus::xmessage message) {
+                notify_stdin_listener(std::move(message));
+            });
+            server->register_internal_listener([this](nl::json message) {
+                return notify_internal_listener(std::move(message));
+            });
+        }
+    };
+
+    static std::unique_ptr<xeus::xserver> make_streaming_server(xeus::xcontext &context,
+            const xeus::xconfiguration &config, nl::json::error_handler_t eh) {
+#if XEUS_VERSION_MAJOR > 5
+        if (const auto *connection = std::get_if<connection_configuration>(&config)) {
+            return std::make_unique<streaming_server>(context, *connection, eh);
+        }
+        return xeus::make_xserver_default(context, config, eh);
+#else
+        return std::make_unique<streaming_server>(context, config, eh);
+#endif
+    }
+#endif
 
     // nlohmann::json throws on a string that is not UTF-8, which would leave
     // the request without a reply.
@@ -84,6 +355,11 @@ namespace LCompilers::LFortran {
     {
         const bool silent = config.silent;
         FortranEvaluator::CellIO io;
+#ifndef __EMSCRIPTEN__
+        io.poll_interrupt = []() {
+            if (active_streaming_server) active_streaming_server->poll_control();
+        };
+#endif
         io.display = [&](const std::string &mime, const std::string &data) {
             if (!silent) display_data(nl::json{{utf8(mime), utf8(data)}},
                 nl::json::object(), nl::json::object());
@@ -224,6 +500,7 @@ namespace LCompilers::LFortran {
     }
 
     nl::json custom_interpreter::interrupt_request_impl() {
+        FortranEvaluator::request_interrupt();
         return xeus::create_interrupt_reply();
     }
 #else
@@ -266,13 +543,14 @@ namespace LCompilers::LFortran {
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_default,
+                             make_streaming_server,
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),
                              xeus::make_null_debugger,
                              debugger_config);
         jupyter::kernel_started();
+        std::signal(SIGINT, [](int) { FortranEvaluator::request_interrupt(); });
 
         std::cout <<
             "Starting xeus-fortran kernel...\n\n"

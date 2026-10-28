@@ -43,6 +43,9 @@ public:
 
     FortranEvaluator(CompilerOptions& compiler_options);
     ~FortranEvaluator();
+    // Lock-free: also used by the kernel's SIGINT handler.
+    static void request_interrupt();
+    static bool is_interrupt_requested();
 
     struct EvalResult {
         enum {
@@ -81,10 +84,17 @@ public:
         std::function<int(std::string &record)> input;
         // Receives what the cell writes to stdout (stream 1) and stderr
         // (stream 2). Set, both are captured while the cell runs and passed
-        // here before each display, clear_output and input, and when the
-        // cell ends. Unset, the cell writes to the process's stdout and
-        // stderr.
+        // here while it runs, before each display, clear_output and input,
+        // and when it ends. All hooks run on the calling thread. Native
+        // evaluation uses a worker while that thread drains output; without
+        // native threads (WASM), output is drained at runtime writes, hooks
+        // and cell end. Sequential runtime writes preserve stream order;
+        // foreign writes to independent descriptors have no common ordering.
+        // Unset, the cell writes to the process's stdout and stderr.
         std::function<void(int stream, const std::string &text)> output;
+        // Services the control channel on the caller while native evaluation
+        // runs, even without output. Runtime safepoints only observe cancellation.
+        std::function<void()> poll_interrupt;
     };
 
     struct CellResult {
@@ -152,7 +162,7 @@ public:
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics, LocationManager &lm, const std::string &infile,
-        int64_t* time_opt);
+        int64_t* time_opt, bool enable_cancellation = false);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
         LCompilers::PassManager& pass_manager,

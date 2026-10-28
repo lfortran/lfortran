@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <optional>
+#include <vector>
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/ADT/STLExtras.h>
@@ -836,6 +837,13 @@ void LLVMEvaluator::configure_module(llvm::Module &module) const
 #endif
     module.setDataLayout(target_config.data_layout);
     target_config.apply_target_attributes(module);
+}
+
+extern "C" int _lfortran_check_interrupt(void);
+
+void LLVMEvaluator::check_interrupt()
+{
+    if (_lfortran_check_interrupt()) throw EvaluationInterrupted{};
 }
 
 std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")
