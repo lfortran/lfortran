@@ -11778,7 +11778,13 @@ public:
                     && !(p_var->m_storage == ASR::storage_typeType::Parameter
                         && p_var->m_value != nullptr);
             } else if (ASR::is_a<ASR::CPtr_t>(*p_type)
-                    && ASRUtils::expr_value(x.m_ptr) != nullptr) {
+                    && (ASRUtils::expr_value(x.m_ptr) != nullptr
+                        || !(ASR::is_a<ASR::ArrayItem_t>(*x.m_ptr)
+                            || ASR::is_a<ASR::StructInstanceMember_t>(*x.m_ptr)))) {
+                // Only a variable, an array element or a component is
+                // visited as a reference to its c_ptr; any other c_ptr
+                // expression, such as c_loc(x) or a function result, is
+                // already the pointer value.
                 load_cptr = false;
             }
             if (load_cptr) {
