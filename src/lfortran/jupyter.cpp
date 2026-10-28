@@ -1061,6 +1061,8 @@ Client::Client(const std::string &connection_file)
         session);
     stdin_ = std::make_unique<Peer>(connect_to(c.ip, c.ports[stdin_channel]), "DEALER", true,
         session);
+    control_ = std::make_unique<Peer>(connect_to(c.ip, c.ports[jupyter::control]), "DEALER", true,
+        session);
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     // As jupyter_client's wait_for_ready(): send kernel_info_requests until
     // IOPub delivers, as a kernel may start publishing to a new subscriber a
@@ -1095,6 +1097,8 @@ volatile std::sig_atomic_t owned_pid = 0;
 #endif
 char owned_connection[4096] = {};
 volatile std::sig_atomic_t interrupt_installed = 0;
+volatile std::sig_atomic_t executing_cell = 0;
+volatile std::sig_atomic_t prompt_interrupt = 0;
 // The terminal as it was when the prompt started, which the Ctrl-C handler
 // restores: Ctrl-C at `>>>` arrives while the line editor has it in raw mode.
 volatile std::sig_atomic_t terminal_saved = 0;
@@ -1127,6 +1131,10 @@ HANDLE take_owned_process()
 BOOL WINAPI interrupt_prompt(DWORD event)
 {
     if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
+    if (executing_cell) {
+        prompt_interrupt = 1;
+        return TRUE;
+    }
     release_owned_connection();
     HANDLE handle = take_owned_process();
     if (handle) {
@@ -1141,6 +1149,10 @@ BOOL WINAPI interrupt_prompt(DWORD event)
 #else
 extern "C" void interrupt_prompt(int)
 {
+    if (executing_cell) {
+        prompt_interrupt = 1;
+        return;
+    }
     release_owned_connection();
     const pid_t pid = static_cast<pid_t>(owned_pid);
     owned_pid = 0;
@@ -1241,7 +1253,7 @@ void handle_interrupt()
     struct sigaction action {};
     action.sa_handler = interrupt_prompt;
     sigemptyset(&action.sa_mask);
-    // The handler does not return, so a restarted read is not needed.
+    // During a cell the handler returns so execute() can forward the signal.
     action.sa_flags = 0;
     if (sigaction(SIGINT, &action, nullptr) == 0) interrupt_installed = 1;
 #endif
@@ -1305,6 +1317,10 @@ void show(const Message &m, bool other,
 
 bool Client::execute(const std::string &code, bool verbose)
 {
+    struct ExecutingCell {
+        ExecutingCell() { prompt_interrupt = 0; executing_cell = 1; }
+        ~ExecutingCell() { executing_cell = 0; prompt_interrupt = 0; }
+    } executing;
     Object content{{"code", kernel::utf8(code)}, {"silent", false},
         {"store_history", true}, {"user_expressions", Object{}},
         {"allow_stdin", true}, {"stop_on_error", true}};
@@ -1317,8 +1333,18 @@ bool Client::execute(const std::string &code, bool verbose)
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     bool replied = false, idle = false;
     while (!replied || !idle) {
+        if (prompt_interrupt) {
+            prompt_interrupt = 0;
+            auto interrupt = new_message("interrupt_request", Object{}, Object{}, session);
+            if (!send_message(*control_, interrupt, key)) return false;
+        }
+        std::vector<pollfd> ready{{control_->s, POLLIN, 0}};
+        if (poll_sockets(ready, 0) > 0) control_->read();
+        std::vector<std::string> frames;
+        while (control_->next(frames)) {}
         Message m;
-        const int i = next_message(peers, key, m, -1);
+        const int i = next_message(peers, key, m, 100);
+        if (i == -1) continue;
         if (i < 0) {
             show_last(request.id());
             return false;
@@ -2039,8 +2065,7 @@ private:
             reply(peer, request, "comm_info_reply", Object{{"status", "ok"},
                 {"comms", Object{}}});
         } else if (type == "interrupt_request") {
-            // A cell cannot be interrupted yet; between cells there is
-            // nothing to interrupt.
+            FortranEvaluator::request_interrupt();
             reply(peer, request, "interrupt_reply", Object{{"status", "ok"}});
         } else if (type == "shutdown_request") {
             bool restart = get_bool(request.content, "restart", false);
@@ -2069,6 +2094,13 @@ private:
                 Object{{"code", code}, {"execution_count", execution_count}});
         }
         FortranEvaluator::CellIO io;
+        auto next_control_poll = std::chrono::steady_clock::now();
+        io.poll_interrupt = [&]() {
+            auto now = std::chrono::steady_clock::now();
+            if (now < next_control_poll) return;
+            next_control_poll = now + std::chrono::milliseconds(5);
+            poll_control();
+        };
         io.display = [&](const std::string &mime, const std::string &data) {
             if (!silent) publish("display_data", request.header,
                 Object{{"data", Object{{kernel::utf8(mime), kernel::utf8(data)}}},
@@ -2138,6 +2170,22 @@ private:
             if (!fds.empty()) poll_sockets(fds, 50);
         }
     }
+
+    void poll_control()
+    {
+        progress({&control_}, 0);
+        for (auto &peer : control_.peers) {
+            std::vector<std::string> frames;
+            while (peer->next(frames)) {
+                Message request;
+                if (!decode(frames, key, request)) continue;
+                // Never re-enter the evaluator through the control channel.
+                if (request.type() == "interrupt_request" ||
+                        request.type() == "shutdown_request") handle(*peer, request);
+            }
+        }
+        if (stopping || stop_requested) FortranEvaluator::request_interrupt();
+    }
 };
 
 } // namespace
@@ -2169,7 +2217,7 @@ int run_builtin_kernel(const std::string &connection_filename, CompilerOptions &
     }
     if (!existing || managed) own_connection_file(connection_filename);
     kernel_started();
-    std::signal(SIGINT, request_stop);
+    std::signal(SIGINT, [](int) { FortranEvaluator::request_interrupt(); });
     std::signal(SIGTERM, request_stop);
 
     options.interactive = true;

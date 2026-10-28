@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <atomic>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -81,8 +82,23 @@ extern "C" void *_lfortran_set_display_hooks(
     void (*clear_output)(void *context),
     void *context);
 extern "C" void *_lfortran_set_output_flush_hook(void (*flush)(void*), void *context);
+extern "C" void _lfortran_set_interrupt_callback(int (*callback)(void *), void *context);
 
 namespace {
+std::atomic<bool> interrupt_requested{false};
+static_assert(std::atomic<bool>::is_always_lock_free);
+
+int poll_interrupt(void *context)
+{
+    const auto &io = *static_cast<const LCompilers::FortranEvaluator::CellIO *>(context);
+    try {
+        if (io.poll_interrupt) io.poll_interrupt();
+    } catch (...) {
+        // A runtime callback must not unwind through generated code.
+        interrupt_requested.store(true, std::memory_order_relaxed);
+    }
+    return interrupt_requested.load(std::memory_order_relaxed);
+}
 // The context of the display hooks while FortranEvaluator::execute() runs a
 // cell.
 struct DisplayContext {
@@ -814,6 +830,7 @@ std::string FortranEvaluator::CellResult::error_text() const {
 FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     LCOMPILERS_ASSERT(compiler_options.interactive);
+    interrupt_requested.store(false, std::memory_order_relaxed);
     CellResult out;
     // What the cell writes goes to io.output before anything it displays,
     // clears or reads.
@@ -891,9 +908,12 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             previous = _lfortran_set_output_flush_hook(
                 display.io.output ? flush_output_hook : nullptr, &output);
             LCOMPILERS_ASSERT(previous == nullptr);
+            _lfortran_set_interrupt_callback(poll_interrupt,
+                const_cast<CellIO *>(&input.io));
         }
         ~Hooks() {
             _lfortran_set_output_flush_hook(nullptr, nullptr);
+            _lfortran_set_interrupt_callback(nullptr, nullptr);
             _lfortran_stdin_reset();
             _lfortran_set_display_hooks(nullptr, nullptr, nullptr);
         }
@@ -960,6 +980,12 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         {
             evaluate_cell();
         }
+#ifdef HAVE_LFORTRAN_LLVM
+    } catch (const EvaluationInterrupted &) {
+        out.ok = false;
+        out.error_name = "KeyboardInterrupt";
+        out.error_value = "execution interrupted";
+#endif
     } catch (const LCompilersException &error) {
         out.ok = false;
         out.internal_error = true;
@@ -973,6 +999,11 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     flush_output();
     if (output.error) std::rethrow_exception(output.error);
     return out;
+}
+
+void FortranEvaluator::request_interrupt()
+{
+    interrupt_requested.store(true, std::memory_order_relaxed);
 }
 
 Result<std::string> FortranEvaluator::get_ast(const std::string &code,
@@ -1473,6 +1504,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         return res.error;
     }
 
+#ifndef __EMSCRIPTEN__
+    if (compiler_options.interactive) {
+        get_llvm_evaluator().instrument_interrupts(*m->m_m);
+    }
+#endif
     if (compiler_options.po.fast) {
 #ifndef __EMSCRIPTEN__
         auto t1 = std::chrono::high_resolution_clock::now();

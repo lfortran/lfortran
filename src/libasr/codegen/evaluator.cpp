@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <optional>
+#include <vector>
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/ADT/STLExtras.h>
@@ -836,6 +837,53 @@ void LLVMEvaluator::configure_module(llvm::Module &module) const
 #endif
     module.setDataLayout(target_config.data_layout);
     target_config.apply_target_attributes(module);
+}
+
+extern "C" int _lfortran_check_interrupt(void);
+
+void LLVMEvaluator::check_interrupt()
+{
+    if (_lfortran_check_interrupt()) throw EvaluationInterrupted{};
+}
+
+void LLVMEvaluator::instrument_interrupts(llvm::Module &module)
+{
+    auto &ctx = module.getContext();
+    auto poll = module.getOrInsertFunction("_lfortran_check_interrupt",
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), false));
+    for (auto &function : module) {
+        if (function.isDeclaration()) continue;
+        std::vector<llvm::Instruction *> points;
+        for (auto &block : function) {
+            points.push_back(&*block.getFirstInsertionPt());
+            for (auto &instruction : block) {
+                if (auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction)) {
+                    if (!call->isMustTailCall() && call->getNextNode()) {
+                        points.push_back(call->getNextNode());
+                    }
+                }
+            }
+        }
+        // Generated frames return normally, propagating cancellation after
+        // each call. No signal unwinding, longjmp, or C++ destructor bypass.
+        auto *cancel = llvm::BasicBlock::Create(ctx, "interrupted", &function);
+        llvm::IRBuilder<> cleanup(cancel);
+        if (function.getReturnType()->isVoidTy()) {
+            cleanup.CreateRetVoid();
+        } else {
+            cleanup.CreateRet(llvm::Constant::getNullValue(function.getReturnType()));
+        }
+        for (auto *point : points) {
+            auto *block = point->getParent();
+            auto *continuation = block->splitBasicBlock(point, "resume");
+            block->getTerminator()->eraseFromParent();
+            llvm::IRBuilder<> builder(block);
+            auto *pending = builder.CreateCall(poll);
+            builder.CreateCondBr(builder.CreateICmpNE(pending,
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0)),
+                cancel, continuation);
+        }
+    }
 }
 
 std::unique_ptr<llvm::Module> LLVMEvaluator::parse_module(const std::string &source, const std::string &filename="")

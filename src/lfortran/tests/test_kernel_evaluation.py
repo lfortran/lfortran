@@ -5,6 +5,8 @@ import argparse
 import os
 from pathlib import Path
 import queue
+import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -114,7 +116,12 @@ def main():
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--compiler-arg", action="append", default=[])
     parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--interrupt-only", action="store_true")
+    parser.add_argument("--kernel-arg", action="append", default=[])
     args = parser.parse_args()
+    if args.interrupt_only:
+        check_interrupts(args.lfortran, args.kernel_arg)
+        return
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -219,6 +226,133 @@ def main():
         log.unlink(missing_ok=True)
         directory.rmdir()
     check_stop_flushes(args.lfortran)
+    check_interrupts(args.lfortran)
+
+
+def check_interrupts(lfortran, arguments=()):
+    """Interrupt real, non-returning cells without replacing the session."""
+    for managed in (True, False):
+        directory = Path.cwd() / ("kernel-interrupt-" + uuid.uuid4().hex)
+        directory.mkdir(mode=0o700)
+        connection = directory / "connection.json"
+        log = directory / "kernel.log"
+        client = process = None
+        try:
+            write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+            command = [lfortran, *arguments, "kernel", "-f", str(connection)]
+            if managed:
+                command.append("--managed")
+            with log.open("wb") as output:
+                process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+                                           stdout=output, stderr=output)
+                client = BlockingKernelClient(connection_file=str(connection))
+                client.load_connection_file()
+                client.start_channels()
+                client.wait_for_ready(timeout=30)
+                check(client, "integer :: saved\nsaved=42", [])
+                check(client, "subroutine spin()\ndo\nend do\nend subroutine", [])
+                codes = ["print '(a)', 'before-interrupt'\ndo\nend do",
+                         "call spin()\nsaved=0"]
+                if os.name == "posix":
+                    child_pid = directory / "child.pid"
+                    codes.append('call execute_command_line("sleep 30 & echo $! > '
+                                 + shlex.quote(str(child_pid)) + '; wait")\nsaved=0')
+                elif os.name == "nt":
+                    codes.append('call execute_command_line("ping -n 31 127.0.0.1 > NUL")\nsaved=0')
+                for code in codes:
+                    running = client.execute(code, stop_on_error=False)
+                    deadline = time.monotonic() + 10
+                    while True:
+                        msg = client.get_iopub_msg(timeout=max(.1, deadline-time.monotonic()))
+                        if (msg["parent_header"].get("msg_id") == running
+                                and msg["msg_type"] == "execute_input"):
+                            break
+                        assert time.monotonic() < deadline, "cell did not start"
+                    time.sleep(.5)
+                    if "sleep 30" in code:
+                        deadline = time.monotonic() + 10
+                        while not child_pid.exists() and time.monotonic() < deadline:
+                            time.sleep(.02)
+                        assert child_pid.exists(), "command did not start"
+                    by_signal = os.name == "posix" and code.startswith("call spin()")
+                    interrupt_id = ""
+                    if by_signal:
+                        process.send_signal(signal.SIGINT)
+                    else:
+                        interrupt = client.session.msg("interrupt_request", content={})
+                        interrupt_id = interrupt["header"]["msg_id"]
+                        client.control_channel.send(interrupt)
+                    queued = client.execute("saved+1", stop_on_error=False)
+                    replies, idle, values, streams = {}, set(), [], []
+                    acknowledged = by_signal
+                    deadline = time.monotonic() + 8
+                    while time.monotonic() < deadline:
+                        for channel in ("shell", "control", "iopub"):
+                            try:
+                                msg = getattr(client, channel + "_channel").get_msg(timeout=.01)
+                            except queue.Empty:
+                                continue
+                            parent = msg["parent_header"].get("msg_id")
+                            kind, content = msg["msg_type"], msg["content"]
+                            if parent == interrupt_id and kind == "interrupt_reply":
+                                acknowledged = content["status"] == "ok"
+                            if parent not in (running, queued):
+                                continue
+                            if kind == "execute_reply":
+                                replies[parent] = content
+                            elif kind == "status" and content["execution_state"] == "idle":
+                                idle.add(parent)
+                            elif kind == "execute_result" and parent == queued:
+                                values.append(content["data"]["text/plain"])
+                            elif kind == "stream" and parent == running:
+                                streams.append(content["text"])
+                        if acknowledged and len(replies) == len(idle) == 2:
+                            break
+                    assert acknowledged, ("interrupt not serviced", managed, code, replies)
+                    assert replies.get(running, {}).get("ename") == "KeyboardInterrupt", replies
+                    assert replies.get(queued, {}).get("status") == "ok", replies
+                    assert values == ["43"], values
+                    assert len(idle) == 2 and process.poll() is None
+                    if "before-interrupt" in code:
+                        assert "before-interrupt" in "".join(streams), streams
+                    if "sleep 30" in code:
+                        child = int(child_pid.read_text())
+                        deadline = time.monotonic() + 3
+                        while time.monotonic() < deadline:
+                            try:
+                                os.kill(child, 0)
+                            except ProcessLookupError:
+                                break
+                            time.sleep(.02)
+                        else:
+                            raise AssertionError("interrupted command left its child running")
+                    check(client, "saved+2", ["44"])
+                client.shutdown()
+                assert process.wait(timeout=10) == 0
+                print("interrupts: %s %s passed" %
+                      ("builtin" if managed else "default", list(arguments)), flush=True)
+        except BaseException:
+            print(log.read_text(errors="replace"))
+            raise
+        finally:
+            if client:
+                client.stop_channels()
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=3)
+            connection.unlink(missing_ok=True)
+            log.unlink(missing_ok=True)
+            if (directory / "child.pid").exists():
+                try:
+                    os.kill(int((directory / "child.pid").read_text()), signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            (directory / "child.pid").unlink(missing_ok=True)
+            directory.rmdir()
 
 
 def builtin_stop_kernel(lfortran):

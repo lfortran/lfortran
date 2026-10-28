@@ -40,6 +40,7 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -63,6 +64,19 @@ static int lfortran_fileno(FILE *fp) {
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
+static int (*interrupt_callback)(void *);
+static void *interrupt_context;
+
+LFORTRAN_API void _lfortran_set_interrupt_callback(int (*callback)(void *), void *context)
+{
+    interrupt_callback = callback;
+    interrupt_context = context;
+}
+
+LFORTRAN_API int _lfortran_check_interrupt(void)
+{
+    return interrupt_callback ? interrupt_callback(interrupt_context) : 0;
+}
 static char *stdin_record;
 static size_t stdin_record_length, stdin_record_pos;
 static int stdin_status;
@@ -16584,7 +16598,84 @@ LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if defined(_WIN32)
+    if (interrupt_callback) {
+        const char *shell = getenv("COMSPEC");
+        if (!shell) shell = "cmd.exe";
+        size_t size = strlen(shell) + strlen(c_cmd) + 10;
+        char *line = internal_malloc(size);
+        snprintf(line, size, "\"%s\" /c %s", shell, c_cmd);
+        STARTUPINFOA startup = {0};
+        PROCESS_INFORMATION process = {0};
+        startup.cb = sizeof(startup);
+        startup.dwFlags = STARTF_USESTDHANDLES;
+        startup.hStdInput = (HANDLE)_get_osfhandle(_fileno(stdin));
+        startup.hStdOutput = (HANDLE)_get_osfhandle(_fileno(stdout));
+        startup.hStdError = (HANDLE)_get_osfhandle(_fileno(stderr));
+        HANDLE job = CreateJobObjectA(NULL, NULL);
+        result = -1;
+        if (job && CreateProcessA(shell, line, NULL, NULL, TRUE,
+                CREATE_SUSPENDED | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
+                &startup, &process)) {
+            if (AssignProcessToJobObject(job, process.hProcess)) {
+                ResumeThread(process.hThread);
+                for (;;) {
+                    DWORD waited = WaitForSingleObject(process.hProcess, 10);
+                    if (waited == WAIT_OBJECT_0) {
+                        DWORD status;
+                        if (GetExitCodeProcess(process.hProcess, &status)) result = (int)status;
+                        break;
+                    }
+                    if (waited == WAIT_FAILED || _lfortran_check_interrupt()) {
+                        TerminateJobObject(job, 1);
+                        WaitForSingleObject(process.hProcess, INFINITE);
+                        break;
+                    }
+                }
+            } else {
+                TerminateProcess(process.hProcess, 1);
+                WaitForSingleObject(process.hProcess, INFINITE);
+            }
+            CloseHandle(process.hThread);
+            CloseHandle(process.hProcess);
+        }
+        if (job) CloseHandle(job);
+        internal_free(line);
+    } else
+#elif !defined(COMPILE_TO_WASM)
+    if (interrupt_callback) {
+        pid_t child = fork();
+        if (child == 0) {
+            setpgid(0, 0);
+            execl("/bin/sh", "sh", "-c", c_cmd, (char *)NULL);
+            _exit(127);
+        }
+        if (child < 0) {
+            result = -1;
+        } else {
+            setpgid(child, child);
+            for (;;) {
+                pid_t waited = waitpid(child, &result, WNOHANG);
+                if (waited == child) break;
+                if (waited < 0 && errno != EINTR) {
+                    result = -1;
+                    break;
+                }
+                if (_lfortran_check_interrupt()) {
+                    kill(-child, SIGKILL);
+                    while (waitpid(child, &result, 0) < 0 && errno == EINTR) {}
+                    break;
+                }
+                struct timespec delay = {0, 10000000};
+                nanosleep(&delay, NULL);
+            }
+        }
+    } else
+#endif
+    {
+        result = system(c_cmd);
+    }
     internal_free(c_cmd);
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.

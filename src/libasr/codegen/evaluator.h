@@ -4,6 +4,7 @@
 #include <complex>
 #include <iostream>
 #include <memory>
+#include <type_traits>
 
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
@@ -32,6 +33,8 @@ namespace mlir {
 }
 
 namespace LCompilers {
+
+struct EvaluationInterrupted {};
 
 struct LLVMTargetConfig {
     std::string triple;
@@ -100,6 +103,8 @@ public:
     void save_object_file(llvm::Module &m, const std::string &filename);
     void create_empty_object_file(const std::string &filename);
     void opt(llvm::Module &m);
+    void instrument_interrupts(llvm::Module &m);
+    static void check_interrupt();
     static std::string module_to_string(llvm::Module &m);
     static void print_version_message();
     static std::string llvm_version();
@@ -118,7 +123,14 @@ public:
     T execfn(const std::string &name, Args... args) {
         intptr_t addr = get_symbol_address(name);
         T (*f)(Args...) = (T (*)(Args...))addr;
-        return f(args...);
+        if constexpr (std::is_void_v<T>) {
+            f(args...);
+            check_interrupt();
+        } else {
+            T result = f(args...);
+            check_interrupt();
+            return result;
+        }
     }
 };
 

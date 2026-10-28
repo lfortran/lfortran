@@ -21,6 +21,29 @@ apart in `error_traceback`. `CellResult::error_text()` is what a frontend shows
 for it. The kernel sends the message as the Jupyter `evalue` and the stack
 trace as the `traceback`.
 
+## Native cell interruption
+
+The native evaluator inserts cooperative checks into interactive LLVM code
+before optimization: at basic-block entries and after calls. A pending
+interrupt returns normally through generated callers, then raises
+`EvaluationInterrupted` at the C++ JIT invocation boundary. `execute()` reports
+`KeyboardInterrupt` and unwinds its ordinary output-capture and runtime-hook
+guards. No signal handler unwinds generated or C++ frames.
+
+`FortranEvaluator::request_interrupt()` is lock-free and may be called by the
+kernel's SIGINT handler or Xeus's separate control thread. The built-in
+kernel services its control socket through `CellIO::poll_interrupt`, without
+executing queued cells reentrantly. Runtime callback installation lasts only
+for the cell. `execute_command_line` polls the same callback while waiting;
+on interruption it terminates the owned process group (a job on Windows) and
+reaps the command before returning. Ordinary compiled programs retain their
+existing `system()` execution path.
+
+Cancellation preserves the session, not a transaction: assignments and other
+side effects already performed remain. Blocking runtime input or foreign
+calls without cooperative polling must return before interruption can be
+observed. The WASM executor does not use this native cancellation path.
+
 `EvalResult::text()` formats a value the way the prompt and the kernel show it:
 for real and complex, the shortest text that reads back as the same value (at
 most 9/17 significant digits), always with a decimal point or an exponent, so

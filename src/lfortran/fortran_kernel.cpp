@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <csignal>
 
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
@@ -12,6 +13,9 @@
 #include <xeus-zmq/xzmq_context.hpp>
 #include <xeus-zmq/xserver_zmq.hpp>
 #include <xeus-zmq/xmiddleware.hpp>
+#if XEUS_VERSION_MAJOR > 5
+#include <xeus-zmq/xserver_zmq_split.hpp>
+#endif
 #include <xeus/xinput.hpp>
 #include <zmq.h>
 #include <openssl/hmac.h>
@@ -387,6 +391,7 @@ namespace LCompilers::LFortran {
     }
 
     nl::json custom_interpreter::interrupt_request_impl() {
+        FortranEvaluator::request_interrupt();
         return xeus::create_interrupt_reply();
     }
 #else
@@ -436,6 +441,7 @@ namespace LCompilers::LFortran {
                              xeus::make_null_debugger,
                              debugger_config);
         jupyter::kernel_started();
+        std::signal(SIGINT, [](int) { FortranEvaluator::request_interrupt(); });
 
         std::cout <<
             "Starting xeus-fortran kernel...\n\n"
