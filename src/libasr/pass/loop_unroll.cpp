@@ -32,7 +32,7 @@ public:
     }
 
     void visit_DoLoop(const ASR::DoLoop_t& x) {
-        ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+        if (!x.m_head.m_start || !x.m_head.m_end || x.n_orelse) return;
         ASR::do_loop_head_t x_head = x.m_head;
         ASR::expr_t* x_start = ASRUtils::expr_value(x_head.m_start);
         ASR::expr_t* x_end = ASRUtils::expr_value(x_head.m_end);
@@ -57,16 +57,10 @@ public:
         if( !create_unrolled_loop ) {
             return ;
         }
-        int64_t groups = loop_size / unroll_factor_;
-        int64_t new_end = _start + (groups - 1) * _inc * unroll_factor_ + (unroll_factor_ - 1) * _inc;
-        int64_t remaining_part = loop_size % unroll_factor_;
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x_end->base.loc, new_end, int32_type));
-
-        Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x);
-        ASR::stmt_t* whileloop_stmt = init_and_whileloop[1];
+        Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(
+            al, x, -1, current_scope);
+        ASR::stmt_t* whileloop_stmt = init_and_whileloop[init_and_whileloop.size() - 1];
         ASR::WhileLoop_t* whileloop = ASR::down_cast<ASR::WhileLoop_t>(whileloop_stmt);
-        ASR::stmt_t* init_stmt = init_and_whileloop[0];
 
         Vec<ASR::stmt_t*> unrolled_loop;
         unrolled_loop.reserve(al, whileloop->n_body * unroll_factor_);
@@ -75,6 +69,8 @@ public:
         }
 
         for( int64_t j = 1; j < unroll_factor_; j++ ) {
+            // Each copy includes the termination test, so a partial final
+            // group exits with the same index as the original counted loop.
             for( size_t i = 0; i < whileloop->n_body; i++ ) {
                 node_duplicator.success = true;
                 ASR::stmt_t* m_body_copy = node_duplicator.duplicate_stmt(whileloop->m_body[i]);
@@ -85,16 +81,13 @@ public:
             }
         }
 
-        pass_result.push_back(al, init_stmt);
-        ASR::stmt_t* unrolled_whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, x.base.base.loc,
-            whileloop->m_name, whileloop->m_test, unrolled_loop.p, unrolled_loop.size(), x.m_orelse, x.n_orelse));
-        pass_result.push_back(al, unrolled_whileloop);
-        for( int64_t i = 0; i < remaining_part; i++ ) {
-            for( size_t i = 0; i < whileloop->n_body; i++ ) {
-                ASR::stmt_t* m_body_copy = node_duplicator.duplicate_stmt(whileloop->m_body[i]);
-                pass_result.push_back(al, m_body_copy);
-            }
+        for (size_t i = 0; i + 1 < init_and_whileloop.size(); i++) {
+            pass_result.push_back(al, init_and_whileloop[i]);
         }
+        ASR::stmt_t* unrolled_whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, x.base.base.loc,
+            whileloop->m_name, whileloop->m_test, unrolled_loop.p, unrolled_loop.size(),
+            whileloop->m_orelse, whileloop->n_orelse));
+        pass_result.push_back(al, unrolled_whileloop);
     }
 
 };

@@ -30,15 +30,15 @@ Converts:
 to:
 
     i = a-c
-    do while (i+c <= b)
+    do while (.true.)
         i = i+c
+        if (i > b) exit
         ...
     end do
 
-The comparison is >= for c<0. With --fast, a loop with c = 1 or c = -1
-tests `i < b` (`i > b` for c<0) if a is a constant for which `a-c` does not
-overflow, and `i /= b` guarded by `if (i+c <= b)` otherwise, so that LLVM can
-compute its trip count (see PassUtils::replace_doloop).
+The exit comparison is < for c<0. With --fast, unit-step loops use an
+equality termination test and a zero-trip guard so LLVM can compute their
+trip counts (see PassUtils::replace_doloop).
 */
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
@@ -113,7 +113,6 @@ class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
     }
 
 public:
-    bool use_loop_variable_after_loop = false;
     PassOptions pass_options;
     DoLoopVisitor(Allocator &al, PassOptions pass_options_) :
         StatementWalkVisitor(al), pass_options(pass_options_) {
@@ -130,7 +129,7 @@ public:
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         if (unroll_device_loop(x)) return;
         pass_result = PassUtils::replace_doloop(al, x, -1,
-            use_loop_variable_after_loop, this->current_scope, pass_options.fast);
+            this->current_scope, pass_options.fast);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
@@ -146,7 +145,7 @@ public:
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
         const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
         pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1,
-            use_loop_variable_after_loop, this->current_scope, pass_options.fast);
+            this->current_scope, pass_options.fast);
     }
 };
 
@@ -156,7 +155,6 @@ void pass_replace_do_loops(Allocator &al, ASR::TranslationUnit_t &unit,
     // Each call transforms only one layer of nested loops, so we call it twice
     // to transform doubly nested loops:
     v.asr_changed = true;
-    v.use_loop_variable_after_loop = pass_options.use_loop_variable_after_loop;
     while( v.asr_changed ) {
         v.asr_changed = false;
         v.visit_TranslationUnit(unit);
