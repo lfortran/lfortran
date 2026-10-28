@@ -1715,28 +1715,116 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "_lfortran_strrepeat_c_alloc(_lfortran_get_default_allocator(), " + s + ", " + n + ")";
     }
 
+    // Stores one array-constructor element (or implied-do iteration)
+    // into the flat C++ data view, counting positions with `k`.
+    void emit_array_ctor_arg(ASR::expr_t* e, const std::string &arr,
+            const std::string &indent, std::string &out) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+            self().visit_expr(*idl->m_var);
+            std::string lvname = src;
+            ASR::expr_t *a = idl->m_start;
+            ASR::expr_t *b = idl->m_end;
+            ASR::expr_t *c = idl->m_increment;
+            int increment;
+            bool is_c_constant = false;
+            if (!c) {
+                increment = 1;
+                is_c_constant = true;
+            } else {
+                ASR::expr_t* c_value = ASRUtils::expr_value(c);
+                is_c_constant = ASRUtils::extract_value(c_value, increment);
+            }
+            std::string loop = indent + "for (" + lvname + " = ";
+            self().visit_expr(*a);
+            loop += src + "; " + lvname;
+            std::string indent1 = indent + std::string(indentation_spaces, ' ');
+            std::string step;
+            if (is_c_constant) {
+                loop += (increment > 0) ? " <= " : " >= ";
+                self().visit_expr(*b);
+                loop += src + "; " + lvname;
+                if (increment == 1) {
+                    step = "++";
+                } else if (increment == -1) {
+                    step = "--";
+                } else {
+                    step = "+=" + std::to_string(increment);
+                }
+                loop += step;
+            } else {
+                self().visit_expr(*c);
+                std::string incr = src;
+                self().visit_expr(*b);
+                std::string end_name = current_scope->get_unique_name(
+                    "loop_end___" + std::to_string(loop_end_count));
+                loop_end_count += 1;
+                out += indent + CUtils::get_c_type_from_ttype_t(
+                    ASRUtils::expr_type(b), is_c) + " " + end_name
+                    + " = " + src + ";\n";
+                loop += "; ((" + incr + " >= 0) && (" + lvname + " <= "
+                    + end_name + ")) || ((" + incr + " < 0) && ("
+                    + lvname + " >= " + end_name + ")); " + lvname
+                    + " += " + incr;
+            }
+            loop += ") {\n";
+            out += loop;
+            for (size_t i = 0; i < idl->n_values; i++) {
+                self().visit_expr(*idl->m_values[i]);
+                out += indent1 + arr + "->data->operator[](k++) = "
+                    + src + ";\n";
+            }
+            out += indent + "}\n";
+            return;
+        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            ASR::ArrayConstructor_t *nested =
+                ASR::down_cast<ASR::ArrayConstructor_t>(e);
+            for (size_t i = 0; i < nested->n_args; i++) {
+                emit_array_ctor_arg(nested->m_args[i], arr, indent, out);
+            }
+            return;
+        }
+        self().visit_expr(*e);
+        out += indent + arr + "->data->operator[](k++) = " + src + ";\n";
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (!is_c && ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) &&
+        if (!is_c && (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value) ||
+                ASR::is_a<ASR::ArrayConstructor_t>(*x.m_value)) &&
                 ASR::is_a<ASR::Var_t>(*x.m_target) &&
                 ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
-            // Array-constructor assignment (`a = [1.0, 2.0, 3.0]`):
-            // store each element into the flat data view underlying the
-            // C++ array descriptor. This avoids the `from_std_vector`
-            // temporary, which has no statement to live in here, and is
-            // exact for every element type.
-            ASR::ArrayConstant_t *c =
-                ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+            // Array-constructor assignment (`a = [1.0, 2.0, 3.0]`,
+            // also with non-constant elements): store each element into
+            // the flat data view underlying the C++ array descriptor.
+            // This avoids the `from_std_vector` temporary, which has no
+            // statement to live in here, and is exact for every element
+            // type. Folded constructors (`ArrayConstant`) inline their
+            // literals; the rest (`ArrayConstructor`, implied-do loops
+            // included) visit each element expression.
             ASR::Var_t *target_var = ASR::down_cast<ASR::Var_t>(x.m_target);
             self().visit_Var(*target_var);
             std::string arr = src;
             std::string indent(indentation_level*indentation_spaces, ' ');
+            std::string indent1 = indent + std::string(indentation_spaces, ' ');
             std::string out = "";
-            size_t n = (size_t) ASRUtils::get_fixed_size_of_array(
-                ASRUtils::expr_type(x.m_value));
-            for (size_t i = 0; i < n; i++) {
-                out += indent + arr + "->data->operator[]("
-                    + std::to_string(i) + ") = "
-                    + ASRUtils::fetch_ArrayConstant_value(c, i) + ";\n";
+            if (ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
+                ASR::ArrayConstant_t *c =
+                    ASR::down_cast<ASR::ArrayConstant_t>(x.m_value);
+                size_t n = (size_t) ASRUtils::get_fixed_size_of_array(
+                    ASRUtils::expr_type(x.m_value));
+                for (size_t i = 0; i < n; i++) {
+                    out += indent + arr + "->data->operator[]("
+                        + std::to_string(i) + ") = "
+                        + ASRUtils::fetch_ArrayConstant_value(c, i) + ";\n";
+                }
+            } else {
+                out = indent + "{\n" + indent1 + "size_t k = 0;\n";
+                ASR::ArrayConstructor_t *c =
+                    ASR::down_cast<ASR::ArrayConstructor_t>(x.m_value);
+                for (size_t i = 0; i < c->n_args; i++) {
+                    emit_array_ctor_arg(c->m_args[i], arr, indent1, out);
+                }
+                out += indent + "}\n";
             }
             src = out;
             return;
