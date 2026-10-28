@@ -10541,6 +10541,18 @@ public:
         };
         if (var) {
             check_loop_control_type(var, "DO variable");
+            if (ASRUtils::is_real(*ASRUtils::expr_type(var))) {
+                diag.message_label(
+                    "real do loop variable is a deleted feature (deleted in fortran 95)",
+                    {var->base.loc}, "use an integer loop counter instead",
+                    compiler_options.std_f23_conformance ? Level::Error : Level::Warning,
+                    Stage::Semantic);
+                if (compiler_options.std_f23_conformance) {
+                    all_loops_blocks_nesting -= 1;
+                    all_blocks_nesting--;
+                    throw SemanticAbort();
+                }
+            }
         }
         if (x.m_start) {
             visit_expr(*x.m_start);
