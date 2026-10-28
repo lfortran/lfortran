@@ -3802,3 +3802,26 @@ contains
         print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
     end subroutine
 end module cc1_assumed_rank_intrinsic_argument
+
+module cc1_size_assumed_size
+contains
+    subroutine cc1_size_assumed_size_sub(n, c, d)
+        integer, intent(in) :: n
+        real, intent(in) :: c(n,*), d(*)
+        print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+        print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+        print *, size(d, dim=1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+    end subroutine
+end module cc1_size_assumed_size
+
+module cc1_size_assumed_size_bindc
+contains
+    subroutine cc1_size_assumed_size_bindc_sub(n, c, d) bind(c)
+        use iso_c_binding, only: c_int, c_float
+        integer(c_int), value :: n
+        real(c_float), intent(in) :: c(n,*), d(*)
+        print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+        print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+        print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+    end subroutine
+end module cc1_size_assumed_size_bindc
