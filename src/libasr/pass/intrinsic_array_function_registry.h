@@ -7848,10 +7848,11 @@ namespace ElementwiseReduction {
     }
 
     // Whether `x` is an array computed element by element from its operands
-    // by intrinsic operations and elemental intrinsic functions only. A
-    // reference to a function, which may have side effects or return an
-    // array, is not.
-    static inline bool is_elementwise_operation(ASR::expr_t* x) {
+    // by intrinsic operations, and elemental intrinsic functions if
+    // `elemental_functions`, only, with `operand` true for each operand.
+    template <typename Operand>
+    static inline bool is_elementwise_operation_of(ASR::expr_t* x,
+            const Operand& operand, bool elemental_functions) {
         x = ASRUtils::get_past_array_physical_cast(x);
         if (!ASRUtils::is_array(ASRUtils::expr_type(x)) ||
                 ASRUtils::is_simd_array(x) || !has_elementwise_element_type(x)) {
@@ -7860,56 +7861,59 @@ namespace ElementwiseReduction {
         switch (x->type) {
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t* op = ASR::down_cast<ASR::IntegerBinOp_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::RealBinOp: {
                 ASR::RealBinOp_t* op = ASR::down_cast<ASR::RealBinOp_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::ComplexBinOp: {
                 ASR::ComplexBinOp_t* op = ASR::down_cast<ASR::ComplexBinOp_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::LogicalBinOp: {
                 ASR::LogicalBinOp_t* op = ASR::down_cast<ASR::LogicalBinOp_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::IntegerCompare: {
                 ASR::IntegerCompare_t* op = ASR::down_cast<ASR::IntegerCompare_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::RealCompare: {
                 ASR::RealCompare_t* op = ASR::down_cast<ASR::RealCompare_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::ComplexCompare: {
                 ASR::ComplexCompare_t* op = ASR::down_cast<ASR::ComplexCompare_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::LogicalCompare: {
                 ASR::LogicalCompare_t* op = ASR::down_cast<ASR::LogicalCompare_t>(x);
-                return is_elementwise_operand(op->m_left) && is_elementwise_operand(op->m_right);
+                return operand(op->m_left) && operand(op->m_right);
             }
             case ASR::exprType::IntegerUnaryMinus: {
-                return is_elementwise_operand(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+                return operand(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
             }
             case ASR::exprType::RealUnaryMinus: {
-                return is_elementwise_operand(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
+                return operand(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
             }
             case ASR::exprType::ComplexUnaryMinus: {
-                return is_elementwise_operand(ASR::down_cast<ASR::ComplexUnaryMinus_t>(x)->m_arg);
+                return operand(ASR::down_cast<ASR::ComplexUnaryMinus_t>(x)->m_arg);
             }
             case ASR::exprType::LogicalNot: {
-                return is_elementwise_operand(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
+                return operand(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
             }
             case ASR::exprType::Cast: {
-                return is_elementwise_operand(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+                return operand(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
             }
             case ASR::exprType::IntrinsicElementalFunction: {
+                if (!elemental_functions) {
+                    return false;
+                }
                 ASR::IntrinsicElementalFunction_t* f =
                     ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
                 for (size_t i = 0; i < f->n_args; i++) {
-                    if (!is_elementwise_operand(f->m_args[i])) {
+                    if (!operand(f->m_args[i])) {
                         return false;
                     }
                 }
@@ -7919,6 +7923,14 @@ namespace ElementwiseReduction {
                 return false;
             }
         }
+    }
+
+    // Whether `x` is an array computed element by element from its operands
+    // by intrinsic operations and elemental intrinsic functions only. A
+    // reference to a function, which may have side effects or return an
+    // array, is not.
+    static inline bool is_elementwise_operation(ASR::expr_t* x) {
+        return is_elementwise_operation_of(x, is_elementwise_operand, true);
     }
 
     // The array and mask operands of the reduction `x`, if it is one with a

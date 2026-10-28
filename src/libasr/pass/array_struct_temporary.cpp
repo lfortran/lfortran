@@ -2101,18 +2101,24 @@ ASR::symbol_t* get_root_var(ASR::expr_t* e) {
     }
 }
 
+// Whether `var` is an associate name of an ASSOCIATE construct
+bool is_associate_name(const ASR::Variable_t* var) {
+    ASR::asr_t* owner = var->m_parent_symtab->asr_owner;
+    return owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+        ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+}
+
 // The symbol whose storage `sym` names: for an associate name of an
 // ASSOCIATE construct, that of its selector, e.g. `a` for `b` in
 // `associate (b => a(2:6))`, otherwise `sym` itself.
 ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
     while (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
-        ASR::asr_t* owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
-        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
-                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!is_associate_name(variable)) {
             break;
         }
         ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
-            ASR::down_cast<ASR::symbol_t>(owner));
+            ASR::down_cast<ASR::symbol_t>(variable->m_parent_symtab->asr_owner));
         ASR::symbol_t* selector_sym = nullptr;
         for (size_t i = 0; i < block->n_body; i++) {
             if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
@@ -2280,139 +2286,6 @@ class MayReadAssignmentTarget:
     void visit_ttype(const ASR::ttype_t& /*x*/) {}
 };
 
-bool is_reevaluable_section_subscript(ASR::expr_t* x);
-
-// Whether `x` is a variable, or a component or an element of one, selected
-// with reevaluable subscripts out of scalars, e.g. `s%t(k)%c`
-bool is_reevaluable_designator(ASR::expr_t* x) {
-    x = ASRUtils::get_past_array_physical_cast(x);
-    switch( x->type ) {
-        case ASR::exprType::Var: {
-            return true;
-        }
-        case ASR::exprType::StructInstanceMember: {
-            ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
-            return !ASRUtils::is_array(ASRUtils::expr_type(base)) &&
-                is_reevaluable_designator(base);
-        }
-        case ASR::exprType::ArrayItem: {
-            ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
-            if( ASRUtils::is_array(item->m_type) ) {
-                return false;
-            }
-            for( size_t i = 0; i < item->n_args; i++ ) {
-                if( item->m_args[i].m_left || item->m_args[i].m_step ||
-                    !item->m_args[i].m_right ||
-                    !is_reevaluable_section_subscript(item->m_args[i].m_right) ) {
-                    return false;
-                }
-            }
-            return is_reevaluable_designator(item->m_v);
-        }
-        default: {
-            return false;
-        }
-    }
-}
-
-// Whether `x` is a scalar integer component of a variable, reached through
-// components and elements selected with reevaluable subscripts out of
-// scalars, e.g. `self%start_index` or `s%t(k)%n`, with no pointer on the
-// way. An array assignment defines only elements of its target array, which
-// such a component, not reached through a pointer, is not part of.
-bool is_non_pointer_integer_component(ASR::expr_t* x) {
-    ASR::ttype_t* type = ASRUtils::expr_type(x);
-    if( !ASRUtils::is_integer(*type) || ASRUtils::is_array(type) ||
-        ASRUtils::is_pointer(type) || !is_reevaluable_designator(x) ) {
-        return false;
-    }
-    while( true ) {
-        x = ASRUtils::get_past_array_physical_cast(x);
-        switch( x->type ) {
-            case ASR::exprType::Var: {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x)->m_v);
-                return ASR::is_a<ASR::Variable_t>(*sym) &&
-                    !ASRUtils::is_pointer(ASRUtils::symbol_type(sym));
-            }
-            case ASR::exprType::StructInstanceMember: {
-                ASR::StructInstanceMember_t* member =
-                    ASR::down_cast<ASR::StructInstanceMember_t>(x);
-                if( ASRUtils::is_pointer(ASRUtils::symbol_type(
-                        ASRUtils::symbol_get_past_external(member->m_m))) ) {
-                    return false;
-                }
-                x = member->m_v;
-                break;
-            }
-            case ASR::exprType::ArrayItem: {
-                x = ASR::down_cast<ASR::ArrayItem_t>(x)->m_v;
-                break;
-            }
-            default: {
-                return false;
-            }
-        }
-    }
-}
-
-// Whether `x`, a subscript of an array section, is evaluated without side
-// effects from variables, their scalar integer components (see
-// is_non_pointer_integer_component), constants and the bounds of variables
-// only, so that two references with the same subscripts select the same
-// elements.
-bool is_reevaluable_section_subscript(ASR::expr_t* x) {
-    if( x == nullptr || ASRUtils::is_value_constant(ASRUtils::expr_value(x)) ) {
-        return true;
-    }
-    switch( x->type ) {
-        case ASR::exprType::Var: {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(x)->m_v);
-            if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
-                return false;
-            }
-            ASR::ttype_t* type = ASRUtils::symbol_type(sym);
-            return ASRUtils::is_integer(*type) && !ASRUtils::is_array(type) &&
-                !ASRUtils::is_pointer(type);
-        }
-        case ASR::exprType::StructInstanceMember: {
-            return is_non_pointer_integer_component(x);
-        }
-        case ASR::exprType::IntegerBinOp: {
-            ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(x);
-            return is_reevaluable_section_subscript(binop->m_left) &&
-                is_reevaluable_section_subscript(binop->m_right);
-        }
-        case ASR::exprType::IntegerUnaryMinus: {
-            return is_reevaluable_section_subscript(
-                ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
-        }
-        case ASR::exprType::Cast: {
-            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(x);
-            return cast->m_kind == ASR::cast_kindType::IntegerToInteger &&
-                is_reevaluable_section_subscript(cast->m_arg);
-        }
-        case ASR::exprType::ArrayBound:
-        case ASR::exprType::ArraySize: {
-            ASR::expr_t* v = nullptr;
-            ASR::expr_t* dim = nullptr;
-            if( ASR::is_a<ASR::ArrayBound_t>(*x) ) {
-                v = ASR::down_cast<ASR::ArrayBound_t>(x)->m_v;
-                dim = ASR::down_cast<ASR::ArrayBound_t>(x)->m_dim;
-            } else {
-                v = ASR::down_cast<ASR::ArraySize_t>(x)->m_v;
-                dim = ASR::down_cast<ASR::ArraySize_t>(x)->m_dim;
-            }
-            return is_reevaluable_designator(v) &&
-                is_reevaluable_section_subscript(dim);
-        }
-        default: {
-            return false;
-        }
-    }
-}
-
 // The storage that the EQUIVALENCE view `var` is initialized to the
 // address of, if it is one: a pointer, or, in a module, a scalar of
 // non-pointer type
@@ -2459,27 +2332,31 @@ bool may_be_storage_associated(const ASR::Variable_t* var) {
 // variable is neither a pointer, nor a target, nor an associate name, nor
 // storage associated (see may_be_storage_associated), no component on the
 // way is a pointer, only the last component is an array and every
-// subscript is reevaluable (no vector subscripts), see
-// is_reevaluable_designator.
+// subscript is reevaluable (see PassUtils::is_reevaluable_integer_expr),
+// so there are no vector subscripts. The assignment then defines no
+// variable or component that a subscript references: those are not
+// elements of an array of intrinsic type and are reached through no
+// pointer.
 ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
         ASR::symbol_t*& component) {
     component = nullptr;
+    auto is_reevaluable = [](ASR::expr_t* subscript) {
+        return subscript == nullptr ||
+            PassUtils::is_reevaluable_integer_expr(subscript, true);
+    };
     ASR::expr_t* e = ASRUtils::get_past_array_physical_cast(target);
     if( ASR::is_a<ASR::ArraySection_t>(*e) ) {
         ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(e);
         for( size_t i = 0; i < section->n_args; i++ ) {
-            if( !is_reevaluable_section_subscript(section->m_args[i].m_left) ||
-                !is_reevaluable_section_subscript(section->m_args[i].m_right) ||
-                !is_reevaluable_section_subscript(section->m_args[i].m_step) ) {
+            if( !is_reevaluable(section->m_args[i].m_left) ||
+                !is_reevaluable(section->m_args[i].m_right) ||
+                !is_reevaluable(section->m_args[i].m_step) ) {
                 return nullptr;
             }
         }
         e = ASRUtils::get_past_array_physical_cast(section->m_v);
     } else if( !ASR::is_a<ASR::Var_t>(*e) &&
                !ASR::is_a<ASR::StructInstanceMember_t>(*e) ) {
-        return nullptr;
-    }
-    if( !is_reevaluable_designator(e) ) {
         return nullptr;
     }
     while( true ) {
@@ -2491,12 +2368,9 @@ ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
                     return nullptr;
                 }
                 ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::asr_t* owner = variable->m_parent_symtab->asr_owner;
                 if( variable->m_target_attr ||
                     ASRUtils::is_pointer(variable->m_type) ||
-                    (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
-                     ASR::is_a<ASR::AssociateBlock_t>(
-                        *ASR::down_cast<ASR::symbol_t>(owner))) ||
+                    is_associate_name(variable) ||
                     may_be_storage_associated(variable) ) {
                     return nullptr;
                 }
@@ -2514,11 +2388,25 @@ ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
                     component = member_sym;
                 }
                 e = ASRUtils::get_past_array_physical_cast(member->m_v);
+                if( ASRUtils::is_array(ASRUtils::expr_type(e)) ) {
+                    return nullptr;
+                }
                 break;
             }
             case ASR::exprType::ArrayItem: {
-                e = ASRUtils::get_past_array_physical_cast(
-                    ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+                // A scalar element, the base of a component
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(e);
+                if( ASRUtils::is_array(item->m_type) ) {
+                    return nullptr;
+                }
+                for( size_t i = 0; i < item->n_args; i++ ) {
+                    if( item->m_args[i].m_left || item->m_args[i].m_step ||
+                        !item->m_args[i].m_right ||
+                        !is_reevaluable(item->m_args[i].m_right) ) {
+                        return nullptr;
+                    }
+                }
+                e = ASRUtils::get_past_array_physical_cast(item->m_v);
                 break;
             }
             default: {
@@ -2565,8 +2453,9 @@ bool is_same_designator_as_target(ASR::expr_t* x, ASR::expr_t* target) {
 // Finds a reference that may read the storage of an assignment target
 // whose elements are reached only through `root` (see
 // get_unaliased_assignment_root): `root` itself or an associate name of it,
-// the target component `component` of any variable, any pointer, or a
-// function reference. Another component of `root` is not part of the target.
+// the target component `component` of any variable, or any pointer. Another
+// component of `root` is not part of the target. Function references, which
+// may read anything, are rejected before.
 class TargetStorageReadFinder: public ASR::BaseWalkVisitor<TargetStorageReadFinder> {
     private:
 
@@ -2610,12 +2499,6 @@ class TargetStorageReadFinder: public ASR::BaseWalkVisitor<TargetStorageReadFind
             return;
         }
         visit_expr(*x.m_v);
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        if( x.m_value == nullptr ) {
-            found = true;
-        }
     }
 
     void visit_ttype(const ASR::ttype_t& /*x*/) {}
@@ -2731,35 +2614,17 @@ bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
     return finder.found;
 }
 
-// Whether `kind` converts a numeric or logical value element by element
-bool is_elementwise_scalar_cast(ASR::cast_kindType kind) {
-    switch( kind ) {
-        case ASR::cast_kindType::RealToInteger:
-        case ASR::cast_kindType::IntegerToReal:
-        case ASR::cast_kindType::LogicalToReal:
-        case ASR::cast_kindType::RealToReal:
-        case ASR::cast_kindType::IntegerToInteger:
-        case ASR::cast_kindType::RealToComplex:
-        case ASR::cast_kindType::IntegerToComplex:
-        case ASR::cast_kindType::IntegerToLogical:
-        case ASR::cast_kindType::RealToLogical:
-        case ASR::cast_kindType::ComplexToLogical:
-        case ASR::cast_kindType::ComplexToComplex:
-        case ASR::cast_kindType::ComplexToReal:
-        case ASR::cast_kindType::ComplexToInteger:
-        case ASR::cast_kindType::LogicalToInteger:
-        case ASR::cast_kindType::LogicalToLogical:
-            return true;
-        default:
-            return false;
-    }
-}
-
 // See reads_target_only_in_place
 bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         ASR::expr_t* target, ASR::expr_t* lhs_array_var, ASR::symbol_t* root,
         ASR::symbol_t* component, std::set<ASR::expr_t*>& operands) {
     ASR::expr_t* d = ASRUtils::get_past_array_physical_cast(e);
+    // A scalar broadcast to the shape of the target is a scalar operand
+    if( ASR::is_a<ASR::ArrayBroadcast_t>(*d) &&
+        !ASRUtils::is_array(ASRUtils::expr_type(
+            ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array)) ) {
+        d = ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array;
+    }
     if( !ASRUtils::is_array(ASRUtils::expr_type(d)) ) {
         // A scalar operand is evaluated for every element, or once before
         // the assignment, and must not read any element of the target.
@@ -2770,75 +2635,18 @@ bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         operands.insert(d);
         return true;
     }
+    // The operands of an intrinsic elementwise operation are read element
+    // by element as well. Any other array operand, e.g. another array, a
+    // section of the target shifted against it, an elemental function
+    // reference or `matmul(m, v)`, must not read the target at all.
     auto operand = [&](ASR::expr_t* x) {
         return reads_target_in_place_operands_only(al, x, target,
             lhs_array_var, root, component, operands);
     };
-    // Both operands of an elementwise binary operation or comparison
-    auto operands_of = [&](auto* op) {
-        return operand(op->m_left) && operand(op->m_right);
-    };
-    switch( d->type ) {
-        case ASR::exprType::IntegerBinOp: {
-            return operands_of(ASR::down_cast<ASR::IntegerBinOp_t>(d));
-        }
-        case ASR::exprType::UnsignedIntegerBinOp: {
-            return operands_of(ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(d));
-        }
-        case ASR::exprType::RealBinOp: {
-            return operands_of(ASR::down_cast<ASR::RealBinOp_t>(d));
-        }
-        case ASR::exprType::ComplexBinOp: {
-            return operands_of(ASR::down_cast<ASR::ComplexBinOp_t>(d));
-        }
-        case ASR::exprType::LogicalBinOp: {
-            return operands_of(ASR::down_cast<ASR::LogicalBinOp_t>(d));
-        }
-        case ASR::exprType::IntegerCompare: {
-            return operands_of(ASR::down_cast<ASR::IntegerCompare_t>(d));
-        }
-        case ASR::exprType::UnsignedIntegerCompare: {
-            return operands_of(ASR::down_cast<ASR::UnsignedIntegerCompare_t>(d));
-        }
-        case ASR::exprType::RealCompare: {
-            return operands_of(ASR::down_cast<ASR::RealCompare_t>(d));
-        }
-        case ASR::exprType::ComplexCompare: {
-            return operands_of(ASR::down_cast<ASR::ComplexCompare_t>(d));
-        }
-        case ASR::exprType::LogicalCompare: {
-            return operands_of(ASR::down_cast<ASR::LogicalCompare_t>(d));
-        }
-        case ASR::exprType::IntegerUnaryMinus: {
-            return operand(ASR::down_cast<ASR::IntegerUnaryMinus_t>(d)->m_arg);
-        }
-        case ASR::exprType::RealUnaryMinus: {
-            return operand(ASR::down_cast<ASR::RealUnaryMinus_t>(d)->m_arg);
-        }
-        case ASR::exprType::ComplexUnaryMinus: {
-            return operand(ASR::down_cast<ASR::ComplexUnaryMinus_t>(d)->m_arg);
-        }
-        case ASR::exprType::LogicalNot: {
-            return operand(ASR::down_cast<ASR::LogicalNot_t>(d)->m_arg);
-        }
-        case ASR::exprType::Cast: {
-            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(d);
-            return is_elementwise_scalar_cast(cast->m_kind) &&
-                operand(cast->m_arg);
-        }
-        case ASR::exprType::ArrayBroadcast: {
-            ASR::ArrayBroadcast_t* broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(d);
-            return !ASRUtils::is_array(ASRUtils::expr_type(broadcast->m_array)) &&
-                operand(broadcast->m_array);
-        }
-        default: {
-            // Any other array operand, e.g. another array, a section of
-            // the target shifted against it, or `matmul(m, v)`, must not
-            // read the target at all.
-            return !may_read_target_storage(d, root, component) &&
-                !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d);
-        }
-    }
+    return ASRUtils::ElementwiseReduction::is_elementwise_operation_of(
+            d, operand, false) ||
+        (!may_read_target_storage(d, root, component) &&
+         !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d));
 }
 
 // Whether every reference to the storage of the array assignment target
@@ -2856,12 +2664,7 @@ bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
         ASRUtils::is_simd_array(value) || ASRUtils::is_assumed_rank_array(type) ) {
         return false;
     }
-    ASR::ttype_t* element_type = ASRUtils::extract_type(type);
-    if( !ASRUtils::is_integer(*element_type) &&
-        !ASRUtils::is_unsigned_integer(*element_type) &&
-        !ASRUtils::is_real(*element_type) &&
-        !ASRUtils::is_complex(*element_type) &&
-        !ASRUtils::is_logical(*element_type) ) {
+    if( !ASRUtils::ElementwiseReduction::has_elementwise_element_type(target) ) {
         return false;
     }
     ASR::symbol_t* component = nullptr;

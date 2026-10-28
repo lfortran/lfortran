@@ -1366,23 +1366,65 @@ namespace LCompilers {
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
         }
 
-        // Whether `x` is an array variable, or a component of a scalar
-        // variable, whose bounds an inquiry reads without side effects.
-        static bool is_bound_inquiry_designator(ASR::expr_t* x) {
-            while (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
-                x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
-                if (ASRUtils::is_array(ASRUtils::expr_type(x))) {
+        // Whether `x` is a variable, or a component of a scalar one, which
+        // is read without side effects, e.g. an array whose bounds an
+        // inquiry reads. With `through_components`, the scalar may also be
+        // an element of an array selected with reevaluable subscripts (see
+        // is_reevaluable_integer_expr), as in `net%layers(k)%w`. With
+        // `non_pointer`, no variable or component on the way is a pointer.
+        static bool is_reevaluable_designator(ASR::expr_t* x,
+                bool through_components, bool non_pointer) {
+            if (through_components) {
+                x = ASRUtils::get_past_array_physical_cast(x);
+            }
+            switch (x->type) {
+                case ASR::exprType::Var: {
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x)->m_v);
+                    return !non_pointer || (ASR::is_a<ASR::Variable_t>(*sym) &&
+                        !ASRUtils::is_pointer(ASRUtils::symbol_type(sym)));
+                }
+                case ASR::exprType::StructInstanceMember: {
+                    ASR::StructInstanceMember_t* member =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(x);
+                    ASR::expr_t* base = through_components ?
+                        ASRUtils::get_past_array_physical_cast(member->m_v) : member->m_v;
+                    if (non_pointer && ASRUtils::is_pointer(ASRUtils::symbol_type(
+                            ASRUtils::symbol_get_past_external(member->m_m)))) {
+                        return false;
+                    }
+                    return !ASRUtils::is_array(ASRUtils::expr_type(base)) &&
+                        is_reevaluable_designator(base, through_components, non_pointer);
+                }
+                case ASR::exprType::ArrayItem: {
+                    ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
+                    if (!through_components || ASRUtils::is_array(item->m_type)) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < item->n_args; i++) {
+                        if (item->m_args[i].m_left || item->m_args[i].m_step ||
+                                !item->m_args[i].m_right ||
+                                !is_reevaluable_integer_expr(item->m_args[i].m_right, true)) {
+                            return false;
+                        }
+                    }
+                    return is_reevaluable_designator(item->m_v, true, non_pointer);
+                }
+                default: {
                     return false;
                 }
             }
-            return ASR::is_a<ASR::Var_t>(*x);
         }
 
         // Whether the scalar integer `expr` is an expression of constants,
         // variables, and bounds and sizes of arrays, which has no side
         // effects, so that evaluating it again, with no assignment to a
-        // variable it references in between, gives the same value.
-        bool is_reevaluable_integer_expr(ASR::expr_t* expr) {
+        // variable it references in between, gives the same value. With
+        // `through_components`, it may also reference integer components
+        // and elements of scalars, reached through no pointer, as in
+        // `self%start_index` or `s%t(k)%n`, and bounds of components of
+        // such elements, as in `ubound(net%layers(k)%w, 1)`.
+        bool is_reevaluable_integer_expr(ASR::expr_t* expr, bool through_components) {
             if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(expr))) {
                 return false;
             }
@@ -1394,29 +1436,35 @@ namespace LCompilers {
                     return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(expr)->m_v));
                 }
+                case ASR::exprType::StructInstanceMember: {
+                    return through_components &&
+                        is_reevaluable_designator(expr, true, true);
+                }
                 case ASR::exprType::IntegerBinOp: {
                     ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
-                    return is_reevaluable_integer_expr(binop->m_left) &&
-                        is_reevaluable_integer_expr(binop->m_right);
+                    return is_reevaluable_integer_expr(binop->m_left, through_components) &&
+                        is_reevaluable_integer_expr(binop->m_right, through_components);
                 }
                 case ASR::exprType::IntegerUnaryMinus: {
                     return is_reevaluable_integer_expr(
-                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+                        ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg, through_components);
                 }
                 case ASR::exprType::Cast: {
                     ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
                     return cast->m_kind == ASR::cast_kindType::IntegerToInteger &&
-                        is_reevaluable_integer_expr(cast->m_arg);
+                        is_reevaluable_integer_expr(cast->m_arg, through_components);
                 }
                 case ASR::exprType::ArrayBound: {
                     ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(expr);
-                    return is_bound_inquiry_designator(bound->m_v) &&
-                        (bound->m_dim == nullptr || is_reevaluable_integer_expr(bound->m_dim));
+                    return is_reevaluable_designator(bound->m_v, through_components, false) &&
+                        (bound->m_dim == nullptr ||
+                         is_reevaluable_integer_expr(bound->m_dim, through_components));
                 }
                 case ASR::exprType::ArraySize: {
                     ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(expr);
-                    return is_bound_inquiry_designator(size->m_v) &&
-                        (size->m_dim == nullptr || is_reevaluable_integer_expr(size->m_dim));
+                    return is_reevaluable_designator(size->m_v, through_components, false) &&
+                        (size->m_dim == nullptr ||
+                         is_reevaluable_integer_expr(size->m_dim, through_components));
                 }
                 default: {
                     return false;
