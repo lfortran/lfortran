@@ -4711,3 +4711,15 @@ semantic error: `errmsg` argument of `deallocate` must be a scalar of type chara
      |
 3789 |         deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
      |                              ^ 
+
+semantic error: assumed-rank arguments are not supported for intrinsic `sum`
+    --> tests/errors/continue_compilation_1.f90:3797:22
+     |
+3797 |         print *, sum(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `sum`
+     |                      ^ 
+
+semantic error: assumed-rank arguments are not supported for intrinsic `maxval`
+    --> tests/errors/continue_compilation_1.f90:3802:25
+     |
+3802 |         print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
+     |                         ^ 

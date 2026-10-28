@@ -3789,3 +3789,16 @@ contains
         deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
     end subroutine
 end module cc1_deallocate_stat
+
+module cc1_assumed_rank_intrinsic_argument
+contains
+    subroutine cc1_assumed_rank_sum(x)
+        integer, intent(in) :: x(..)
+        print *, sum(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `sum`
+    end subroutine
+
+    subroutine cc1_assumed_rank_maxval(x)
+        integer, intent(in) :: x(..)
+        print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
+    end subroutine
+end module cc1_assumed_rank_intrinsic_argument
