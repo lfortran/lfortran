@@ -2170,6 +2170,24 @@ bool is_numeric_array_of_element_type(ASR::ttype_t* x, ASR::ttype_t* y) {
             ASRUtils::extract_kind_from_ttype_t(y_element);
 }
 
+// Whether another variable may name the storage of `var` by storage
+// association: `var` is in a common block (a view of the same block in
+// another scoping unit, accessible by host or use association, is a different
+// variable), or it is an EQUIVALENCE alias of a module variable, initialized
+// to the address of that variable's storage (other EQUIVALENCE aliases are
+// pointers). The same test is `is_storage_associated` in PR #16215; whichever
+// lands second should merge the two.
+bool may_share_storage_by_association(const ASR::Variable_t* var) {
+    if( var->m_common_block != nullptr ) {
+        return true;
+    }
+    ASR::expr_t* init = var->m_symbolic_value;
+    if( init && ASR::is_a<ASR::BitCast_t>(*init) ) {
+        init = ASR::down_cast<ASR::BitCast_t>(init)->m_source;
+    }
+    return init && ASR::is_a<ASR::GetPointer_t>(*init);
+}
+
 // A variable that no pointer can point at and that does not name the
 // storage of another variable.
 bool is_unaliased_variable(ASR::symbol_t* sym) {
@@ -2180,14 +2198,16 @@ bool is_unaliased_variable(ASR::symbol_t* sym) {
     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
     ASR::asr_t* owner = var->m_parent_symtab->asr_owner;
     return !var->m_target_attr && !ASRUtils::is_pointer(var->m_type) &&
+        !may_share_storage_by_association(var) &&
         !(owner && ASR::is_a<ASR::symbol_t>(*owner) &&
           ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner)));
 }
 
 // Whether evaluating an expression may read the storage of an assignment
 // target `v` or `s%c` (`root` is `v` or `s`, `component` is `c`), under the
-// conservative assumption that any pointer and any function referenced at
-// run time may do so.
+// conservative assumption that any pointer, any storage associated variable
+// (which includes a subscript such as `k` in `b(k:k+1)`) and any function
+// referenced at run time may do so.
 class MayReadAssignmentTarget:
     public ASR::BaseWalkVisitor<MayReadAssignmentTarget> {
     public:
@@ -2205,7 +2225,9 @@ class MayReadAssignmentTarget:
         ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
         if( get_associated_symbol(sym) == root ||
             (ASR::is_a<ASR::Variable_t>(*sym) &&
-             ASRUtils::is_pointer(ASRUtils::symbol_type(sym))) ) {
+             (ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ||
+              may_share_storage_by_association(
+                  ASR::down_cast<ASR::Variable_t>(sym)))) ) {
             found = true;
         }
     }
@@ -2241,8 +2263,9 @@ class MayReadAssignmentTarget:
 // temporary, unless the value may read `z`. Returns the MatMul operand of the
 // element-wise operations of `value` that can be computed into `target`, or
 // nullptr. `target` is a whole numeric array `v` or `s%c`, where `s` is a
-// scalar, neither of them a pointer, target or associate name. The variables
-// among the other operands, which have the shape of `value`, are appended to
+// scalar, neither of them a pointer, target, associate name or storage
+// associated variable (COMMON, EQUIVALENCE). The variables among the other
+// operands, which have the shape of `value`, are appended to
 // `shape_operands`.
 ASR::expr_t* find_matmul_computable_into_target(ASR::expr_t* target,
         ASR::expr_t* value, std::vector<ASR::expr_t*>& shape_operands) {
