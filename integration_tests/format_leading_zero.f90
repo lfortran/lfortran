@@ -4,6 +4,7 @@ program format_leading_zero
     character(6) :: records(3)
     character(20) :: input
     real :: x, y, z
+    integer :: ios
     logical :: flag
 
     ! F2023 13.8.5. GFortran 16 does not yet support these descriptors.
@@ -61,6 +62,9 @@ program format_leading_zero
     input = '0.5 0.5 0.5 T'
     read(input, '(LZP,F4.1,LZS,F4.1,LZ,F4.1,L1)') x, y, z, flag
     if (x /= .5 .or. y /= .5 .or. z /= .5 .or. .not. flag) error stop
+    input = ' 0.5 0.5 0.5T'
+    read(input, '(L Z P,F4.1,l z s,F4.1,L Z,F4.1,L1)', iostat=ios) x, y, z, flag
+    if (ios /= 0 .or. x /= .5 .or. y /= .5 .or. z /= .5 .or. .not. flag) error stop
     write(records, '(LZS,(F6.2))') .5, .5, .5
     call check(records(1), '   .50')
     call check(records(2), '   .50')

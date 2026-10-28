@@ -14233,14 +14233,19 @@ static void process_fmt_items_read(InputSource *inputSource,
             }
         }
 
-        if (spec == 'L' && fmt_pos < fmt_len &&
-                toupper(fmt[fmt_pos]) == 'Z') {
-            fmt_pos++;
-            if (fmt_pos < fmt_len &&
-                    (toupper(fmt[fmt_pos]) == 'P' || toupper(fmt[fmt_pos]) == 'S')) {
-                fmt_pos++;
+        if (spec == 'L') {
+            int next_pos = fmt_pos;
+            while (next_pos < fmt_len && fmt[next_pos] == ' ') next_pos++;
+            if (next_pos < fmt_len && toupper(fmt[next_pos]) == 'Z') {
+                next_pos++;
+                while (next_pos < fmt_len && fmt[next_pos] == ' ') next_pos++;
+                if (next_pos < fmt_len &&
+                        (toupper(fmt[next_pos]) == 'P' || toupper(fmt[next_pos]) == 'S')) {
+                    next_pos++;
+                }
+                fmt_pos = next_pos;
+                continue;
             }
-            continue;
         }
 
         // Handle ES, EN format descriptors (treat same as E for read)
