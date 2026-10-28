@@ -5234,6 +5234,8 @@ RUN(NAME mangle_underscore_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTR
 RUN(NAME mangle_underscore_02 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling)
 RUN(NAME mangle_underscore_03 LABELS gfortran llvm EXTRAFILES mangle_underscore_03b.f90
     EXTRA_ARGS --separate-compilation --implicit-interface --all-mangling --mangle-underscore) # external procedures called from module procedures (#16065)
+RUN(NAME mangle_underscore_04 LABELS gfortran llvm EXTRAFILES mangle_underscore_04_m.f90
+    EXTRA_ARGS --separate-compilation --implicit-interface --all-mangling --mangle-underscore) # module compiled separately agrees on the names of `t` and `x` (#16065)
 
 RUN(NAME nan_handling_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
