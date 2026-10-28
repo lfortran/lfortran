@@ -23,6 +23,47 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+class EntryInitializerReference : public ASR::BaseWalkVisitor<EntryInitializerReference>
+{
+public:
+    SymbolTable* scope;
+    const ASR::Variable_t* undefined = nullptr;
+
+    EntryInitializerReference(SymbolTable* scope_) : scope(scope_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t* sym = symbol_get_past_external(x.m_v);
+        if (undefined != nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
+        const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        // COMMON storage is defined before the procedure is entered.
+        if (v->m_parent_symtab == scope &&
+                v->m_intent == ASR::intentType::Local &&
+                v->m_storage != ASR::storage_typeType::Parameter &&
+                v->m_common_block == nullptr &&
+                !is_entry_initialized_local(*v)) {
+            undefined = v;
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_StringLen(const ASR::StringLen_t & /*x*/) {}
+
+    void visit_TypeInquiry(const ASR::TypeInquiry_t & /*x*/) {}
+};
+
+const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* scope) {
+    EntryInitializerReference reference(scope);
+    if (expr) reference.visit_expr(*expr);
+    return reference.undefined;
+}
+
 
 /**
  * @param string_expr string to be casted

@@ -1,0 +1,1407 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __lfortran_gpu_kernel_0:
+                (Function
+                    (SymbolTable
+                        19
+                        {
+                            __flat_idx:
+                                (Variable
+                                    19
+                                    __flat_idx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_bc_i:
+                                (Variable
+                                    19
+                                    __gpu_bc_i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_bc_i1:
+                                (Variable
+                                    19
+                                    __gpu_bc_i1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __inlined_f:
+                                (Block
+                                    (SymbolTable
+                                        6
+                                        {
+                                            __gpu_sum_k:
+                                                (Variable
+                                                    6
+                                                    __gpu_sum_k
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __gpu_sum_res:
+                                                (Variable
+                                                    6
+                                                    __gpu_sum_res
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __gpu_sum_tmp:
+                                                (Variable
+                                                    6
+                                                    __gpu_sum_tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_extent_head_1:
+                                                (Variable
+                                                    6
+                                                    __libasr_extent_head_1
+                                                    [n]
+                                                    Local
+                                                    (IntrinsicElementalFunction
+                                                        Max
+                                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                                        (Var 19 n)]
+                                                        0
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            head:
+                                                (Variable
+                                                    6
+                                                    head
+                                                    [__libasr_extent_head_1]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 6 __libasr_extent_head_1))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            k:
+                                                (Variable
+                                                    6
+                                                    k
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Integer 4)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            r:
+                                                (Variable
+                                                    6
+                                                    r
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            tail:
+                                                (Variable
+                                                    6
+                                                    tail
+                                                    [k]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Var 6 k)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    __inlined_f
+                                    [(DoLoop
+                                        ()
+                                        ((Var 19 __gpu_bc_i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                            (Var 19 n)]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 6 head)
+                                                [(()
+                                                (Var 19 __gpu_bc_i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Associate
+                                        (Var 6 k)
+                                        (Var 19 n)
+                                        NoPointerBounds
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 19 __gpu_bc_i1)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                            (Var 6 k)]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 6 tail)
+                                                [(()
+                                                (Var 19 __gpu_bc_i1)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 6 __gpu_sum_res)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 6 __gpu_sum_k)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntrinsicElementalFunction
+                                            Max
+                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                            (Var 19 n)]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ())
+                                        [(Assignment
+                                            (Var 6 __gpu_sum_res)
+                                            (IntegerBinOp
+                                                (Var 6 __gpu_sum_res)
+                                                Add
+                                                (ArrayItem
+                                                    (Var 6 head)
+                                                    [(()
+                                                    (Var 6 __gpu_sum_k)
+                                                    ())]
+                                                    (Integer 4)
+                                                    ColMajor
+                                                    ()
+                                                    .false.
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 6 __gpu_sum_tmp)
+                                        (Var 6 __gpu_sum_res)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 6 r)
+                                        (IntegerBinOp
+                                            (Var 6 __gpu_sum_tmp)
+                                            Add
+                                            (IntrinsicArrayFunction
+                                                Sum
+                                                [(ArrayPhysicalCast
+                                                    (Var 6 tail)
+                                                    PointerArray
+                                                    DescriptorArray
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Var 6 k)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )]
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 19 out)
+                                            [(()
+                                            (Var 19 i__dc)
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        (Var 6 r)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                ),
+                            i__dc:
+                                (Variable
+                                    19
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    19
+                                    n
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            out:
+                                (Variable
+                                    19
+                                    out
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    __lfortran_gpu_kernel_0
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 4) Decimal))]
+                            FixedSizeArray
+                            Global
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Kernel
+                    )
+                    []
+                    [(Var 19 n)
+                    (Var 19 out)]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            GtE
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Return)]
+                        []
+                    )
+                    (Assignment
+                        (Var 19 __flat_idx)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (GpuBlockIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                Mul
+                                (GpuBlockSize
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Add
+                            (GpuThreadIndex
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 19 i__dc)
+                        (IntegerBinOp
+                            (Var 19 __flat_idx)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (BlockCall
+                        -1
+                        19 __inlined_f
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            gpu_kernel_source_39:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __gpu_bc_i:
+                                (Variable
+                                    2
+                                    __gpu_bc_i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_bc_i1:
+                                (Variable
+                                    2
+                                    __gpu_bc_i1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_iteration_count:
+                                (Variable
+                                    2
+                                    __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            __libasr_extent_head_1:
+                                                (Variable
+                                                    3
+                                                    __libasr_extent_head_1
+                                                    [m]
+                                                    Local
+                                                    (IntrinsicElementalFunction
+                                                        Max
+                                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                                        (Var 3 m)]
+                                                        0
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            associate_block:
+                                                (AssociateBlock
+                                                    (SymbolTable
+                                                        4
+                                                        {
+                                                            block:
+                                                                (Block
+                                                                    (SymbolTable
+                                                                        5
+                                                                        {
+                                                                            __libasr_extent_tail_1:
+                                                                                (Variable
+                                                                                    5
+                                                                                    __libasr_extent_tail_1
+                                                                                    [k]
+                                                                                    Local
+                                                                                    (IntrinsicElementalFunction
+                                                                                        Max
+                                                                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                                                                        (Var 4 k)]
+                                                                                        0
+                                                                                        (Integer 4)
+                                                                                        ()
+                                                                                    )
+                                                                                    ()
+                                                                                    Default
+                                                                                    (Integer 4)
+                                                                                    ()
+                                                                                    Source
+                                                                                    Public
+                                                                                    Required
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    ()
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    NotMethod
+                                                                                    ()
+                                                                                    []
+                                                                                    ()
+                                                                                ),
+                                                                            tail:
+                                                                                (Variable
+                                                                                    5
+                                                                                    tail
+                                                                                    [__libasr_extent_tail_1]
+                                                                                    Local
+                                                                                    ()
+                                                                                    ()
+                                                                                    Default
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                        (Var 5 __libasr_extent_tail_1))]
+                                                                                        PointerArray
+                                                                                        Global
+                                                                                    )
+                                                                                    ()
+                                                                                    Source
+                                                                                    Public
+                                                                                    Required
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    ()
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    NotMethod
+                                                                                    ()
+                                                                                    []
+                                                                                    ()
+                                                                                )
+                                                                        })
+                                                                    block
+                                                                    [(Assignment
+                                                                        (Var 5 tail)
+                                                                        (ArrayBroadcast
+                                                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                                                            (IntrinsicArrayFunction
+                                                                                Shape
+                                                                                [(Var 5 tail)]
+                                                                                0
+                                                                                (Array
+                                                                                    (Integer 4)
+                                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                                                    FixedSizeArray
+                                                                                    Global
+                                                                                )
+                                                                                ()
+                                                                            )
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                (Var 5 __libasr_extent_tail_1))]
+                                                                                PointerArray
+                                                                                Global
+                                                                            )
+                                                                            ()
+                                                                        )
+                                                                        ()
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (Assignment
+                                                                        (Var 3 r)
+                                                                        (IntegerBinOp
+                                                                            (IntrinsicArrayFunction
+                                                                                Sum
+                                                                                [(ArrayPhysicalCast
+                                                                                    (Var 3 head)
+                                                                                    PointerArray
+                                                                                    DescriptorArray
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                        (Var 3 __libasr_extent_head_1))]
+                                                                                        DescriptorArray
+                                                                                        Global
+                                                                                    )
+                                                                                    ()
+                                                                                )]
+                                                                                0
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            Add
+                                                                            (IntrinsicArrayFunction
+                                                                                Sum
+                                                                                [(ArrayPhysicalCast
+                                                                                    (Var 5 tail)
+                                                                                    PointerArray
+                                                                                    DescriptorArray
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                                        (Var 5 __libasr_extent_tail_1))]
+                                                                                        DescriptorArray
+                                                                                        Global
+                                                                                    )
+                                                                                    ()
+                                                                                )]
+                                                                                0
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        )
+                                                                        ()
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                    )]
+                                                                ),
+                                                            k:
+                                                                (Variable
+                                                                    4
+                                                                    k
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Pointer
+                                                                        (Integer 4)
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    associate_block
+                                                    [(Associate
+                                                        (Var 4 k)
+                                                        (Var 3 m)
+                                                        NoPointerBounds
+                                                    )
+                                                    (BlockCall
+                                                        -1
+                                                        4 block
+                                                    )]
+                                                ),
+                                            head:
+                                                (Variable
+                                                    3
+                                                    head
+                                                    [__libasr_extent_head_1]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 3 __libasr_extent_head_1))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            m:
+                                                (Variable
+                                                    3
+                                                    m
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            r:
+                                                (Variable
+                                                    3
+                                                    r
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 m)]
+                                    [(Assignment
+                                        (Var 3 head)
+                                        (ArrayBroadcast
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 3 head)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (Var 3 __libasr_extent_head_1))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (AssociateBlockCall
+                                        3 associate_block
+                                    )]
+                                    (Var 3 r)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            out:
+                                (Variable
+                                    2
+                                    out
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    gpu_kernel_source_39
+                    []
+                    [(Assignment
+                        (Var 2 n)
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_iteration_count)
+                        (IntegerConstant 4 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 __gpu_iteration_count)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GpuKernelLaunch
+                            1 __lfortran_gpu_kernel_0
+                            (Var 2 __gpu_iteration_count)
+                            (IntegerConstant 256 (Integer 4) Decimal)
+                            [((Var 2 n))
+                            ((Var 2 out))]
+                            ()
+                            []
+                            ()
+                            []
+                            []
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 out)
+                                    NotEq
+                                    (IntegerConstant 20 (Integer 4) Decimal)
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                2 f
+                                ()
+                                [((IntegerConstant 3 (Integer 4) Decimal))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 15 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (FunctionCall
+                                2 f
+                                ()
+                                [((IntegerConstant 0 (Integer 4) Decimal))]
+                                (Integer 4)
+                                ()
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

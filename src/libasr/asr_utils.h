@@ -957,6 +957,10 @@ static inline bool is_entry_initialized_local(const ASR::Variable_t &v) {
         !is_value_constant(v.m_symbolic_value);
 }
 
+// The first local of `scope` whose value is read by `expr` but is not
+// defined on entry. Shape/length inquiries do not read the variable's value.
+const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* scope);
+
 // Whether `f` is a reference to the intrinsic MAX.
 bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f);
 

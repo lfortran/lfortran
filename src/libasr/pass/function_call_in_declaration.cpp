@@ -955,12 +955,21 @@ public:
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(v->m_type);
             if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) continue;
             bool runtime_shape = false;
+            bool entry_shape = true;
             for (size_t i = 0; i < array_t->n_dims; i++) {
                 const ASR::dimension_t& dim = array_t->m_dims[i];
+                // Inlining can flatten a nested declaration into a scope
+                // whose body first defines its bounds (e.g. ASSOCIATE).
+                // Replaying this pass must not hoist those reads to entry.
+                if (!interface && (ASRUtils::undefined_local_on_entry(dim.m_start, scope) ||
+                        ASRUtils::undefined_local_on_entry(dim.m_length, scope))) {
+                    entry_shape = false;
+                    break;
+                }
                 runtime_shape = runtime_shape || (dim.m_length != nullptr &&
                     (!is_constant_bound(dim.m_start) || !is_constant_bound(dim.m_length)));
             }
-            if (!runtime_shape) continue;
+            if (!runtime_shape || !entry_shape) continue;
             Vec<ASR::dimension_t> captured_dims; captured_dims.reserve(al, array_t->n_dims);
             Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, array_t->n_dims);
             bool any_dim_captured = false;

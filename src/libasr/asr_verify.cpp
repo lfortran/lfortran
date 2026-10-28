@@ -36,47 +36,6 @@ bool valid_name(const char *s) {
     return true;
 }
 
-// The first local of the scope of `local` that its initializer references
-// and that is not defined when the initializer is evaluated, on entry: a
-// local that is neither a parameter nor itself initialized on entry. An
-// inquiry about the bounds or the length of a local does not reference its
-// value.
-class EntryInitializerReference : public BaseWalkVisitor<EntryInitializerReference>
-{
-public:
-    const Variable_t &local;
-    const Variable_t *undefined = nullptr;
-
-    EntryInitializerReference(const Variable_t &local_) : local(local_) {}
-
-    void visit_Var(const Var_t &x) {
-        symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
-        if (undefined != nullptr || !is_a<Variable_t>(*sym)) return;
-        const Variable_t *v = down_cast<Variable_t>(sym);
-        // A variable in a common block is in static storage, defined before
-        // the procedure is entered (Fortran 2023 10.1.11).
-        if (v->m_parent_symtab == local.m_parent_symtab &&
-                v->m_intent == intentType::Local &&
-                v->m_storage != storage_typeType::Parameter &&
-                v->m_common_block == nullptr &&
-                !ASRUtils::is_entry_initialized_local(*v)) {
-            undefined = v;
-        }
-    }
-
-    void visit_ArraySize(const ArraySize_t &x) {
-        if (x.m_dim) visit_expr(*x.m_dim);
-    }
-
-    void visit_ArrayBound(const ArrayBound_t &x) {
-        if (x.m_dim) visit_expr(*x.m_dim);
-    }
-
-    void visit_StringLen(const StringLen_t & /*x*/) {}
-
-    void visit_TypeInquiry(const TypeInquiry_t & /*x*/) {}
-};
-
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -1867,12 +1826,12 @@ public:
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant.");
                 if (ASRUtils::is_entry_initialized_local(x)) {
-                    EntryInitializerReference reference(x);
-                    reference.visit_expr(*x.m_symbolic_value);
-                    require(reference.undefined == nullptr,
+                    const Variable_t* undefined = ASRUtils::undefined_local_on_entry(
+                        x.m_symbolic_value, x.m_parent_symtab);
+                    require(undefined == nullptr,
                         "The initializer of " + std::string(x.m_name) +
                         ", evaluated on entry, references the local " +
-                        (reference.undefined ? std::string(reference.undefined->m_name) : "") +
+                        (undefined ? std::string(undefined->m_name) : "") +
                         ", which is not defined on entry");
                 }
             }
