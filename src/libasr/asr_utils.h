@@ -2424,6 +2424,16 @@ static inline bool is_array_of_strings(ASR::ttype_t* type){
            ASR::is_a<ASR::String_t>(*extract_type(type));
 }
 
+// Whether `t` is an assumed-size array of strings, represented by the
+// descriptor of its data and its length (which has an address like a
+// variable, see nested_vars)
+static inline bool is_assumed_size_string_array(ASR::ttype_t *t) {
+    return is_array(t) && extract_physical_type(t) ==
+            ASR::array_physical_typeType::UnboundedPointerArray &&
+        is_character(*extract_type(t)) &&
+        get_string_type(t)->m_physical_type == ASR::DescriptorString;
+}
+
 /*
  * Makes sure to cast the string to the required physical type.
  * If the string is already of the required physical type, it returns the same string

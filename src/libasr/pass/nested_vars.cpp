@@ -54,7 +54,9 @@ non-pointer array or character) or that is a procedure: the host associates
 a pointer "view" with it on entry, and the member refers to the view. The
 view of an assumed-size array only holds the address of its data, so its
 aliases keep its declared bounds, which refer to the aliases of the host
-variables they use.
+variables they use. An assumed-size array of strings is represented by the
+descriptor of its data and its length, which the member refers to like a
+variable.
 
 An internal procedure of an internal procedure (an extension) reaches a
 variable of a more distant host through the aliases of the procedures in
@@ -289,7 +291,8 @@ static bool reached_through_view(ASR::symbol_t *sym) {
         return true;
     }
     if (ASRUtils::is_array(t)) {
-        return !ASRUtils::is_assumed_rank_array(t);
+        return !ASRUtils::is_assumed_rank_array(t) &&
+            !ASRUtils::is_assumed_size_string_array(t);
     }
     return ASRUtils::is_character(*t);
 }

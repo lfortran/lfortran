@@ -6056,9 +6056,11 @@ public:
             ptr_loads = ptr_loads_copy;
             if (ASRUtils::is_array(v->m_type) && !LLVM::is_llvm_pointer(*v->m_type) &&
                     ASRUtils::extract_physical_type(v->m_type) ==
-                        ASR::array_physical_typeType::UnboundedPointerArray) {
+                        ASR::array_physical_typeType::UnboundedPointerArray &&
+                    !ASRUtils::is_assumed_size_string_array(v->m_type)) {
                 // An assumed-size array is represented by its data, as a
-                // dummy argument is.
+                // dummy argument is (an array of strings by the descriptor
+                // of its data, which the member refers to).
                 tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
                     v->m_symbolic_value, v->m_type, module.get()), tmp);
             }
