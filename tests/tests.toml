@@ -1200,14 +1200,17 @@ pass = "array_op"
 
 [[test]]
 filename = "array_op_reduction_loop.f90"
+fortran = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
 filename = "array_op_reduction_sections.f90"
+fortran = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
 filename = "array_op_reduction_dot_product.f90"
+fortran = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
