@@ -1540,7 +1540,7 @@ public:
             x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
             x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
-            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
+            x->m_is_asynchronous, x->m_is_protected, x->m_pass_attr, x->m_self_argument));
         target_scope->add_symbol(new_sym_name, s);
 
         // The initializer of a named constant may refer to the template's

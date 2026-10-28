@@ -2,12 +2,12 @@
     "basename": "asr-common_block_threadprivate_storage-9566d18",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_threadprivate_storage.asr",
-    "infile_hash": "f6f005f76fb3305ea41ac76b9010858fd0310a9955884ee203dff6d9",
+    "infile_hash": "a2a8c403e0f3613f42dae44597ab01ce1a8d0525b82635f155a8273f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-common_block_threadprivate_storage-9566d18.stderr",
-    "stderr_hash": "3885aafb992fb9e8395e8ac0a85bab82e7ad519c95f48a5dedb04ea0",
+    "stderr_hash": "29aaee69776d0108ae12c29ff19784263d504e2d8d0ebf486264c94c",
     "returncode": 2
 }

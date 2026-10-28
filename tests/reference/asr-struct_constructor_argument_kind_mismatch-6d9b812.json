@@ -2,12 +2,12 @@
     "basename": "asr-struct_constructor_argument_kind_mismatch-6d9b812",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_constructor_argument_kind_mismatch.asr",
-    "infile_hash": "0b30f7665e85853d01a5aaa39d7fa01690786d587f31bf58c1ccec51",
+    "infile_hash": "f94a54f481f0c1a0a4082e5875b842743b0d43f4bcf289454c1b35df",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-struct_constructor_argument_kind_mismatch-6d9b812.stderr",
-    "stderr_hash": "5cdb97321537a14f7d72bd594f6c5e4f2259985f3f3e2a0a78b82f95",
+    "stderr_hash": "0fce715d15d4e75f6ee94e6cd5e031c17721782f09b4a5c952e528bb",
     "returncode": 2
 }

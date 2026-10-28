@@ -2,12 +2,12 @@
     "basename": "asr-assignment_new_allocation_new_target-67add93",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/assignment_new_allocation_new_target.asr",
-    "infile_hash": "72d7bb7713f0cce5ad7e724ec5b090cb4789c44c1833900616dd40d3",
+    "infile_hash": "aaf721afca0b9d0a8842d2c45a37865c0bc1f612462fda0d5a544246",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-assignment_new_allocation_new_target-67add93.stderr",
-    "stderr_hash": "11e1965da2f10a24b14b012bb7f3ad0966b4a4a956fbc5f5d2084ec9",
+    "stderr_hash": "df81274675810a41313f9933a2197fe860f5c5613c2184f31c319c50",
     "returncode": 2
 }

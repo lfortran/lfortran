@@ -2,12 +2,12 @@
     "basename": "asr-associate_pointer_bounds_null_target-66e4a81",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/associate_pointer_bounds_null_target.asr",
-    "infile_hash": "916923a07c2468409f39adb7357e1d2820dabaf2be9cb794b72c4d48",
+    "infile_hash": "ce38f2a8931812ebc15e1ca867e5e8219da950fdf17f9235680a00f7",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-associate_pointer_bounds_null_target-66e4a81.stderr",
-    "stderr_hash": "f1a0b6839b59b08c9369d046db90703337801ecdefceb65dafa78fd9",
+    "stderr_hash": "012f54a9924aad8d671e87d40b9e2fb6d658f377e1627d2eefaa147b",
     "returncode": 2
 }

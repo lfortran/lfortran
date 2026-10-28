@@ -2,12 +2,12 @@
     "basename": "asr-realloc_shape_differs_type-47fa869",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/realloc_shape_differs_type.asr",
-    "infile_hash": "a4f25a9cbec327123c51d61fc7adc039674af8420c7455edf5c7e949",
+    "infile_hash": "d3bc84ccfc9320e7e003e55b7aadd57e7fbf216c492289bd6443f8fc",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-realloc_shape_differs_type-47fa869.stderr",
-    "stderr_hash": "3d7410b7c8ed0b8cb5d1315cfef0210fb5c6dc4840b0b0011d32e5fd",
+    "stderr_hash": "79a5377c64dae293972e809800f09d698e3a5e2508250b35f87734cc",
     "returncode": 2
 }

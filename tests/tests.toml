@@ -6434,6 +6434,15 @@ asr = true
 options = "--implicit-typing"
 
 [[test]]
+filename = "../integration_tests/asynchronous_02.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/asynchronous_03.f90"
+asr = true
+extrafiles = "../integration_tests/asynchronous_03_module.f90"
+
+[[test]]
 filename = "codegen_function_polymorphic.f90"
 llvm = true
 options = "-c --separate-compilation"

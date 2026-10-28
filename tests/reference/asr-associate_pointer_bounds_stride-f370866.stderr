@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.associate.pointer_bounds_present]: Associate::m_target: a pointer bounds-spec must give the lower bound of every dimension and a bounds-remapping-list the lower and the upper bound, and neither a stride
-   --> tests/asr/verify/associate_pointer_bounds_stride.asr:100:12
+   --> tests/asr/verify/associate_pointer_bounds_stride.asr:102:12
     |
-100 |           (Associate
+102 |           (Associate
     |            ^^^^^^^^^ failed here

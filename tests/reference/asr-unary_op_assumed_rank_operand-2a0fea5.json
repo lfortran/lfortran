@@ -2,12 +2,12 @@
     "basename": "asr-unary_op_assumed_rank_operand-2a0fea5",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/unary_op_assumed_rank_operand.asr",
-    "infile_hash": "d8d6862bc0b56baeb08c75ea086052c9b05389bdd2e0d72269c8ee6c",
+    "infile_hash": "d57faa0e6bbba3d47e35d5dba2e7cd84abfd5f325ac7a82718f777e5",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-unary_op_assumed_rank_operand-2a0fea5.stderr",
-    "stderr_hash": "195877005d1563a09eb2e2620a9d26dd1ac24f5ba370e297d5257312",
+    "stderr_hash": "94d3cbff52299c96d40ff983dcf37fb5f3f22e396e4874f4dadea4c4",
     "returncode": 2
 }

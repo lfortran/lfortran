@@ -13,8 +13,8 @@ Variable(symbol_table parent_symtab, identifier name,
     symbol? type_declaration, abi abi, access access,
     presence presence, bool value_attr, bool target_attr,
     bool contiguous_attr, string? bindc_name, bool is_volatile,
-    bool is_protected, pass_attr pass_attr, identifier? self_argument,
-    codimension* codims, symbol? common_block)
+    bool is_asynchronous, bool is_protected, pass_attr pass_attr,
+    identifier? self_argument, codimension* codims, symbol? common_block)
 ```
 
 ### Arguments
@@ -38,6 +38,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `contiguous_attr` | `true` for the `contiguous` attribute. |
 | `bindc_name` | the linker name given by `bind(c, name=...)`. |
 | `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. |
+| `is_asynchronous` | `true` for the `asynchronous` attribute: the variable may be subject to a pending asynchronous input/output or communication, which can read or change it at a call or a `wait` that does not name it. |
 | `is_protected` | `true` for the `protected` attribute: the variable is readable but not writable outside its module. |
 | `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
 | `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
@@ -108,6 +109,7 @@ units like any other module variable, through an
   :contiguous_attr false
   :bindc_name nil
   :is_volatile false
+  :is_asynchronous false
   :is_protected false
   :pass_attr :NotMethod
   :self_argument nil
