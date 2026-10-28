@@ -1815,6 +1815,33 @@ inline bool is_assumed_rank_array(ASR::ttype_t* x) {
     return array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray;
 }
 
+// Whether `x` is the type of an assumed-size array `a(..., *)`, whose last
+// extent is not known. Such an array is an UnboundedPointerArray, except for
+// a dummy of a bind(c) procedure: that is a PointerArray whose last
+// dimension alone has no length.
+inline bool is_assumed_size_array(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    if (array_t->m_physical_type ==
+            ASR::array_physical_typeType::UnboundedPointerArray) {
+        return true;
+    }
+    if (array_t->m_physical_type != ASR::array_physical_typeType::PointerArray ||
+            array_t->n_dims == 0 ||
+            array_t->m_dims[array_t->n_dims - 1].m_length != nullptr) {
+        return false;
+    }
+    for (size_t i = 0; i + 1 < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length == nullptr) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline bool is_array_t(ASR::ttype_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }

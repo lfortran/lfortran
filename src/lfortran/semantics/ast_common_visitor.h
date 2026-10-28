@@ -19367,6 +19367,28 @@ public:
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), m_dims);
         bool is_assumed_rank = ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var));
+        // The last extent of an assumed-size array is not known, so DIM
+        // shall be present with a value less than the rank (Fortran 2023,
+        // 16.9.194).
+        if (ASRUtils::is_assumed_size_array(ASRUtils::expr_type(v_Var))) {
+            int64_t const_dim = -1;
+            if (dim == nullptr) {
+                diag.add(Diagnostic(
+                    "size of an assumed-size array requires the DIM "
+                    "argument",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            } else if (ASRUtils::extract_value(ASRUtils::expr_value(dim), const_dim)
+                    && const_dim == (int64_t) n_dims) {
+                diag.add(Diagnostic(
+                    "the extent of the last dimension of an assumed-size "
+                    "array is not defined",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         int64_t compile_time_size = 1;
         if (is_assumed_rank) {
             compile_time_size = -1;

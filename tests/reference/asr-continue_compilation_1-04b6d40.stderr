@@ -4723,3 +4723,39 @@ semantic error: assumed-rank arguments are not supported for intrinsic `maxval`
      |
 3802 |         print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
      |                         ^ 
+
+semantic error: size of an assumed-size array requires the DIM argument
+    --> tests/errors/continue_compilation_1.f90:3811:18
+     |
+3811 |         print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+     |                  ^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3812:18
+     |
+3812 |         print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3813:18
+     |
+3813 |         print *, size(d, dim=1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^^^^^ 
+
+semantic error: size of an assumed-size array requires the DIM argument
+    --> tests/errors/continue_compilation_1.f90:3823:18
+     |
+3823 |         print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+     |                  ^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3824:18
+     |
+3824 |         print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3825:18
+     |
+3825 |         print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
