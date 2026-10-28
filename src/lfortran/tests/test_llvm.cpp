@@ -3085,6 +3085,8 @@ TEST_CASE("FortranEvaluator execute: output hook ordering and cleanup") {
         "2:before-clear\n", "clear", "1:before-input\n", "input", "1:7\n"});
 
     io.output = [](int, const std::string &) { throw std::runtime_error("output failure"); };
+    CHECK_THROWS_WITH_AS(e.execute("print '(a)', 'small'", false, io),
+        "output failure", std::runtime_error);
     CHECK_THROWS_WITH_AS(e.execute("print '(a)', repeat('x', 200000)", false, io),
         "output failure", std::runtime_error);
     events.clear();
@@ -3093,6 +3095,32 @@ TEST_CASE("FortranEvaluator execute: output hook ordering and cleanup") {
     REQUIRE(cell.ok);
     CHECK(events == std::vector<std::string>{"1:next-cell\n"});
     CHECK(on_caller);
+}
+
+TEST_CASE("FortranEvaluator execute: alternating output beyond a drain batch") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::vector<std::pair<int, std::string>> events;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int fd, const std::string &text) {
+        if (!events.empty() && events.back().first == fd) {
+            events.back().second += text;
+        } else {
+            events.emplace_back(fd, text);
+        }
+    };
+    for (int i = 0; i < 3; i++) {
+        events.clear();
+        auto cell = e.execute("block\n"
+            "write(0,'(a)') repeat('b', 2400000)\n"
+            "print '(a)', 'c'\nwrite(0,'(a)') 'd'\nend block", false, io);
+        REQUIRE_MESSAGE(cell.ok, cell.error_text());
+        REQUIRE(events.size() == 3);
+        CHECK(events[0].first == 2);
+        CHECK(events[0].second == std::string(2400000, 'b') + "\n");
+        CHECK(events[1] == std::make_pair(1, std::string("c\n")));
+        CHECK(events[2] == std::make_pair(2, std::string("d\n")));
+    }
 }
 
 struct InputRecords {

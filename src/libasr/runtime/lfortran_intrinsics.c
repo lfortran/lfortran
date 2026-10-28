@@ -952,6 +952,27 @@ static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
     const char* str, int64_t str_len);
 static int32_t dtio_take_error(int32_t* iostat);
 
+static void (*output_flush_hook)(void*) = NULL;
+static void* output_flush_context = NULL;
+
+LFORTRAN_API void* _lfortran_set_output_flush_hook(void (*flush)(void*), void* context)
+{
+    void* previous = output_flush_context;
+    output_flush_hook = flush;
+    output_flush_context = context;
+    return previous;
+}
+
+static void flush_captured_output(FILE* filep)
+{
+    if (output_flush_hook && (filep == stdout || filep == stderr)) {
+        fflush(filep);
+        // Acknowledge this write before the next runtime write can use the
+        // other descriptor: two independent pipes cannot retain their order.
+        output_flush_hook(output_flush_context);
+    }
+}
+
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
     dtio_take_error(NULL);
@@ -987,6 +1008,7 @@ LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_
     fwrite((char*)str, sizeof(char), str_len, stdout);
     fwrite((char*)end, sizeof(char), end_len, stdout);
     fflush(stdout);
+    flush_captured_output(stdout);
     internal_free(encoded);
 }
 
@@ -7452,6 +7474,7 @@ LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
         filep = stdout;
     }
     fprintf(filep, "\n");
+    flush_captured_output(filep);
 }
 
 static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
@@ -8321,6 +8344,8 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
                 fflush(unit_to_file[i].filep);
             }
         }
+        flush_captured_output(stdout);
+        flush_captured_output(stderr);
     } else {
         bool unit_file_bin;
         FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -8328,6 +8353,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             if ( unit_num == 6 ) {
                 // special case: flush OUTPUT_UNIT
                 fflush(stdout);
+                flush_captured_output(stdout);
                 return;
             } else if ( unit_num == 5 ) {
                 // special case: flush INPUT_UNIT
@@ -8336,6 +8362,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             } else if ( unit_num == 0 ) {
                 // special case: flush ERROR_UNIT
                 fflush(stderr);
+                flush_captured_output(stderr);
                 return;
             }
             if (iostat != NULL) {
@@ -8351,6 +8378,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num, int32_t* iostat, char* iomsg
             }
         }
         fflush(filep);
+        flush_captured_output(filep);
     }
 }
 
@@ -14868,6 +14896,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (filep != stdout && filep != stderr && access_id == 0) {
         (void)!ftruncate(lfortran_fileno(filep), ftell(filep));
     }
+    flush_captured_output(filep);
 }
 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
@@ -16836,6 +16865,7 @@ LFORTRAN_API void _lfortran_namelist_write(
     w.delim = delim; 
 
     namelist_write_impl(&w, group);
+    flush_captured_output(filep);
 
     if (iostat) *iostat = 0;
 }

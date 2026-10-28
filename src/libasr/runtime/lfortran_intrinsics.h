@@ -109,6 +109,9 @@ LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len);
+// Serial, process-local hook for completed writes to stdout/stderr. The hook
+// must not throw; NULL restores ordinary stdio without extra flushing.
+LFORTRAN_API void* _lfortran_set_output_flush_hook(void (*flush)(void*), void* context);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);

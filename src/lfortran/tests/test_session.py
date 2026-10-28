@@ -101,8 +101,59 @@ def reply_to(client, msg_id, timeout):
     return None
 
 
+def ordered_output(client):
+    """Keep stream labels and producer order, even within one drain interval."""
+    delay = 'call execute_command_line("sleep 1")' if os.name == "posix" else busy(1)
+    cases = [
+        ([("stderr", "B\n"), ("stdout", "C\n")],
+            'write(error_unit, "(a)") "B"\nflush(error_unit)\n'
+            'write(output_unit, "(a)") "C"\nflush(output_unit)\n'),
+        ([("stdout", "A\n"), ("stderr", "B\n"), ("stdout", "C\n"),
+            ("stderr", "D\n")],
+            'print "(a)", "A"\nwrite(error_unit, "(a)") "B"\n'
+            'write(output_unit, "(a)") "C"\nwrite(error_unit, "(a)") "D"\n'),
+        ([("stderr", "partial"), ("stdout", "other\n"), ("stderr", "end\n")],
+            'write(error_unit, "(a)", advance="no") "partial"\n'
+            'write(output_unit, "(a)") "other"\nwrite(error_unit, "(a)") "end"\n'),
+    ]
+    for iteration in range(3):
+        for expected, writes in cases:
+            code = ("block\nuse iso_fortran_env, only: output_unit, error_unit\n"
+                + writes + delay + "\nend block")
+            request = client.execute(code)
+            events, last_output = [], None
+            deadline = time.monotonic() + 30
+            while True:
+                check(time.monotonic() < deadline, "ordered cell did not finish")
+                try:
+                    msg = client.get_iopub_msg(timeout=0.1)
+                except queue.Empty:
+                    continue
+                if parent_id(msg) != request:
+                    check(msg["msg_type"] != "stream", ("stale ordered output", msg))
+                    continue
+                if msg["msg_type"] == "stream":
+                    content = msg["content"]
+                    events.extend((content["name"], char) for char in content["text"])
+                    last_output = time.monotonic()
+                if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+                    break
+            reply = reply_to(client, request, 30)
+            check(reply and reply["content"]["status"] == "ok", reply)
+            wanted = [(name, char) for name, value in expected for char in value]
+            check(events == wanted, ("cross-stream order/content", expected, events))
+            margin = time.monotonic() - last_output if last_output is not None else 0
+            check(margin >= 0.5, ("ordered output withheld until idle", margin))
+            reply, messages = run(client, "block\ninteger :: untouched\nend block")
+            check(reply["status"] == "ok" and not any(
+                msg["msg_type"] == "stream" for msg in messages),
+                ("ordered output leaked into next cell", reply, messages))
+        print("ordered live streams: repetition", iteration + 1, "passed", flush=True)
+
+
 def live_output(lfortran, cwd, connection, client):
     """Observe actual output during a cell, not just its eventual contents."""
+    ordered_output(client)
     delay = 'call execute_command_line("sleep 3")' if os.name == "posix" else busy(3)
     cases = [("stdout", 'print *, "first"\n' + delay, False),
         ("stdout", 'print *, "first"\n' + delay + '\nprint *, "second"', True),
@@ -445,6 +496,7 @@ def main():
     parser.add_argument("--builtin", action="store_true",
         help="the kernel is the built-in one, not the Xeus one")
     parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--ordering-only", action="store_true")
     parser.add_argument("--compiler-arg", action="append", default=[])
     args = parser.parse_args()
     cwd = Path.cwd() / ("session-" + uuid.uuid4().hex)
@@ -459,10 +511,13 @@ def main():
             write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode())
             kernel = start(args.lfortran, cwd, connection, log, args.compiler_arg)
             try:
-                if args.streaming_only:
+                if args.streaming_only or args.ordering_only:
                     client = connect(connection)
                     try:
-                        live_output(args.lfortran, cwd, connection, client)
+                        if args.ordering_only:
+                            ordered_output(client)
+                        else:
+                            live_output(args.lfortran, cwd, connection, client)
                         client.shutdown()
                     finally:
                         client.stop_channels()
@@ -474,7 +529,7 @@ def main():
                     kernel.kill()
                     kernel.wait()
             check(kernel.returncode == 0, "the kernel exited with %d" % kernel.returncode)
-            if args.streaming_only:
+            if args.streaming_only or args.ordering_only:
                 return
             if args.builtin:
                 # A kernel started by hand writes its connection file and

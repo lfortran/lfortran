@@ -84,7 +84,9 @@ public:
         // here while it runs, before each display, clear_output and input,
         // and when it ends. All hooks run on the calling thread. Native
         // evaluation uses a worker while that thread drains output; without
-        // native threads (WASM), output is drained only at hooks and cell end.
+        // native threads (WASM), output is drained at runtime writes, hooks
+        // and cell end. Sequential runtime writes preserve stream order;
+        // foreign writes to independent descriptors have no common ordering.
         // Unset, the cell writes to the process's stdout and stderr.
         std::function<void(int stream, const std::string &text)> output;
     };

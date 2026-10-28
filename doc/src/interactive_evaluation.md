@@ -48,10 +48,18 @@ returning; descriptors and hooks are restored even after a failed cell.
 The output hook receives arbitrary byte chunks, not necessarily whole lines.
 Without an output hook, stdout and stderr are not redirected.
 
+The runtime acknowledges each completed write to a preconnected output stream
+before the cell continues, draining it on the calling thread. This preserves
+sequential Fortran writes across stdout and stderr without merging their stream
+labels, including nonadvancing writes. Ordinary files and standalone programs
+are unaffected. Foreign code and child processes still write directly to the
+captured descriptors; their bytes are streamed, but cross-stream order cannot
+be reconstructed from two independent pipes without producer-side boundaries.
+
 WASM, where native threads are unavailable, retains synchronous capture:
-output is delivered at hooks and cell completion. Jupyter messages must be
-UTF-8; the kernel preserves characters split between chunks and shows invalid
-bytes as U+FFFD. Running a cell still blocks other execution requests; streaming
+output is delivered at runtime writes, hooks and cell completion. Jupyter
+messages must be UTF-8; the kernel preserves characters split between chunks
+and shows invalid bytes as U+FFFD. Running a cell still blocks other execution requests; streaming
 does not implement interruption or cancellation.
 
 ## Runtime input
@@ -89,5 +97,7 @@ relying on the C++ `std::complex` return convention.
 
 The registered `test_session` also checks output-before-idle on a live kernel
 and separated output arrivals in the actual prompt, repeated cells, large
-UTF-8 streams, and session cleanup. Its `--streaming-only` selector runs these
-checks directly; `--compiler-arg=--fast` selects the kernel's compilation mode.
+UTF-8 streams, stream labels and cross-stream order, and session cleanup. Its
+`--streaming-only` selector runs these checks directly; `--ordering-only`
+selects just the live ordering cases. `--compiler-arg=--fast` selects the
+kernel's compilation mode.

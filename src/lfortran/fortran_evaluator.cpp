@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <iomanip>
 #include <optional>
 #include <set>
@@ -79,6 +80,7 @@ extern "C" void *_lfortran_set_display_hooks(
     void (*display_data)(void *context, const char *mime_type, const char *data),
     void (*clear_output)(void *context),
     void *context);
+extern "C" void *_lfortran_set_output_flush_hook(void (*flush)(void*), void *context);
 
 namespace {
 // The context of the display hooks while FortranEvaluator::execute() runs a
@@ -94,6 +96,11 @@ struct DisplayContext {
 struct InputContext {
     const LCompilers::FortranEvaluator::CellIO &io;
     std::string record;
+};
+
+struct OutputContext {
+    const std::function<void()> &flush;
+    std::exception_ptr error;
 };
 
 #ifdef _WIN32
@@ -151,7 +158,8 @@ public:
     OutputCapture(const OutputCapture &) = delete;
     OutputCapture &operator=(const OutputCapture &) = delete;
     // Passes what the cell has written since the last call to `output`.
-    void flush(const std::function<void(int, const std::string &)> &output) {
+    void flush(const std::function<void(int, const std::string &)> &output,
+            bool = false) {
         fflush(stdout);
         fflush(stderr);
         for (int i = 0; i < 2; i++) {
@@ -237,7 +245,8 @@ public:
     OutputCapture(const OutputCapture &) = delete;
     OutputCapture &operator=(const OutputCapture &) = delete;
 
-    void flush(const std::function<void(int, const std::string &)> &output) {
+    void flush(const std::function<void(int, const std::string &)> &output,
+            bool complete = false) {
         // Do not fflush here: a large stdio write can hold its FILE lock
         // while waiting for us to make room in the pipe.
         for (int i = 0; i < 2; i++) {
@@ -245,7 +254,9 @@ public:
             std::string text;
             // Coalesce reads so a large write does not flood the frontend
             // with tiny messages, but do not starve the other stream/hooks.
-            while (text.size() < 1024 * 1024) {
+            // At a runtime boundary the producer is paused: drain its entire
+            // write before acknowledging it and allowing a different stream.
+            while (complete || text.size() < 1024 * 1024) {
 #ifdef _WIN32
                 DWORD available = 0;
                 if (!PeekNamedPipe(reinterpret_cast<HANDLE>(_get_osfhandle(readers[i])),
@@ -362,6 +373,15 @@ void run_hook(DisplayContext &context, const Call &call) {
 }
 
 extern "C" {
+static void flush_output_hook(void *context) {
+    auto &c = *static_cast<OutputContext *>(context);
+    try {
+        c.flush();
+    } catch (...) {
+        if (!c.error) c.error = std::current_exception();
+    }
+}
+
 static void display_data_hook(void *context, const char *mime_type,
         const char *data) {
     DisplayContext &c = *static_cast<DisplayContext *>(context);
@@ -814,8 +834,9 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     std::function<void()> flush_output = [&]() {
         fflush(stdout);
         fflush(stderr);
-        on_caller([&]() { if (capture) capture->flush(io.output); });
+        on_caller([&]() { if (capture) capture->flush(io.output, true); });
     };
+    OutputContext output{flush_output, nullptr};
     // A cell that ends the process (STOP, a fatal error) still passes on
     // what it wrote.
     struct FlushAtExit {
@@ -862,17 +883,21 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     DisplayContext display{hooks_io, ""};
     InputContext input{hooks_io, ""};
     struct Hooks {
-        Hooks(DisplayContext &display, InputContext &input) {
+        Hooks(DisplayContext &display, InputContext &input, OutputContext &output) {
             [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
                 clear_output_hook, &display);
             LCOMPILERS_ASSERT(previous == nullptr);
             _lfortran_stdin_install(input.io.input ? read_input : nullptr, &input);
+            previous = _lfortran_set_output_flush_hook(
+                display.io.output ? flush_output_hook : nullptr, &output);
+            LCOMPILERS_ASSERT(previous == nullptr);
         }
         ~Hooks() {
+            _lfortran_set_output_flush_hook(nullptr, nullptr);
             _lfortran_stdin_reset();
             _lfortran_set_display_hooks(nullptr, nullptr, nullptr);
         }
-    } hooks(display, input);
+    } hooks(display, input, output);
     LocationManager lm;
     diag::Diagnostics diagnostics;
     PassManager passes;
@@ -946,6 +971,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         out.error_traceback = stacktrace2str(trace, stacktrace_depth);
     }
     flush_output();
+    if (output.error) std::rethrow_exception(output.error);
     return out;
 }
 
