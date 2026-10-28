@@ -2989,6 +2989,87 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         != std::string::npos);
 }
 
+TEST_CASE("FortranEvaluator execute: persistent implicit none") {
+    for (int mode = 0; mode < 3; mode++) {
+        for (bool implicit_typing : {false, true}) {
+            CAPTURE(mode);
+            CAPTURE(implicit_typing);
+            CompilerOptions cu = execute_options();
+            cu.implicit_typing = implicit_typing;
+            cu.po.fast = mode == 1;
+            cu.std_f23_conformance = mode == 2;
+            FortranEvaluator e(cu);
+            REQUIRE(e.execute("integer :: previous = 7").ok);
+            auto cell = e.execute("implicit none");
+            INFO(cell.error_text());
+            REQUIRE(cell.ok);
+            CHECK(!cell.value.has_value());
+            CHECK(e.execute("previous").value.text() == "7");
+            for (const std::string source : {"n = 1", "x = 1.0"}) {
+                cell = e.execute(source);
+                CHECK(!cell.ok);
+                CHECK(!cell.internal_error);
+                CHECK(cell.error_name == "CompilerError");
+                CHECK(cell.diagnostics.find("not declared") != std::string::npos);
+            }
+            REQUIRE(e.execute("integer :: n").ok);
+            REQUIRE(e.execute("n = 1").ok);
+            cell = e.execute("n");
+            REQUIRE(cell.ok);
+            CHECK(cell.value.type == FortranEvaluator::EvalResult::integer4);
+            CHECK(cell.value.i32 == 1);
+            REQUIRE(e.execute("").ok);
+            REQUIRE(e.execute("implicit none").ok);
+            REQUIRE(e.execute("implicit none(type)").ok);
+            CHECK(!e.execute("j = 2").ok);
+            CHECK(!e.execute("y = 2.0").ok);
+            CHECK(e.execute("n").value.text() == "1");
+        }
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: implicit none scope and inspection") {
+    CompilerOptions cu = execute_options();
+    SUBCASE("normal") {}
+    SUBCASE("fast") { cu.po.fast = true; }
+    SUBCASE("f23") { cu.std_f23_conformance = true; }
+    cu.implicit_typing = true;
+    FortranEvaluator e(cu);
+    for (const std::string magic : {"asr", "llvm", "asm", "cpp"}) {
+#ifdef __EMSCRIPTEN__
+        if (magic == "asm") continue;
+#endif
+        CAPTURE(magic);
+        auto cell = e.execute("%%show" + magic + "\nimplicit none");
+        INFO(cell.error_text());
+        REQUIRE(cell.ok);
+        CHECK(cell.inspection);
+        REQUIRE(e.execute("n = 1").ok);
+    }
+    // A failed cell must not change the session's typing policy.
+    auto cell = e.execute("implicit none\nmissing = 1");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    REQUIRE(e.execute("x = 2.0").ok);
+    cell = e.execute("implicit none(external)");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.diagnostics.find("not supported") != std::string::npos);
+    REQUIRE(e.execute("y = 2.0").ok);
+    REQUIRE(e.execute("module local_rules\nimplicit none\nend module").ok);
+    REQUIRE(e.execute("j = 3").ok);
+    REQUIRE(e.execute("implicit none").ok);
+    // A procedure's local implicit rules must not re-enable cell typing.
+    REQUIRE(e.execute("integer function f()\nimplicit integer(a-z)\nf = 4\nend function").ok);
+    CHECK(e.execute("f()").value.text() == "4");
+    CHECK(!e.execute("k = 4").ok);
+    // A fresh evaluator, even sharing compiler options, starts independently.
+    FortranEvaluator other(cu);
+    REQUIRE(other.execute("n = 5").ok);
+    CHECK(other.execute("n").value.text() == "5");
+    CHECK(!e.execute("z = 5.0").ok);
+}
+
 TEST_CASE("FortranEvaluator execute: inspection cells") {
     for (const std::string magic : {"ast", "asr", "llvm", "asm", "cpp", "fmt"}) {
 #ifdef __EMSCRIPTEN__

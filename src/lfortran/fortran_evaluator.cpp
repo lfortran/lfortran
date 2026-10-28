@@ -1102,7 +1102,12 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
     // Ordinary compilation has none of this: one translation unit, no chaining
     // and no copying, so that it is not slowed down by it.
     SymbolTable *cell_scope = symbol_table;
+    std::map<std::string, ASR::ttype_t*> implicit_types;
     if (compiler_options.interactive) {
+        auto previous = cell_implicit_types.find(symbol_table);
+        if (previous != cell_implicit_types.end()) {
+            implicit_types = previous->second;
+        }
         if (symbol_table) {
             // Everything declared before this cell is already compiled, so it
             // is referenced rather than emitted again.
@@ -1111,7 +1116,8 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         cell_scope = al.make_new<SymbolTable>(symbol_table);
     }
     auto res = LFortran::ast_to_asr(al, ast, diagnostics, cell_scope,
-        compiler_options.symtab_only, compiler_options, lm);
+        compiler_options.symtab_only, compiler_options, lm,
+        compiler_options.interactive ? &implicit_types : nullptr);
     if (res.ok) {
         asr = res.result;
     } else {
@@ -1122,6 +1128,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         // The next cell is parented to a snapshot of this one, not to the tree
         // about to be handed to the passes.
         symbol_table = snapshot_cell_scope(*asr);
+        cell_implicit_types[symbol_table] = std::move(implicit_types);
     }
 
     return asr;
