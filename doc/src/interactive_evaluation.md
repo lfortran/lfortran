@@ -65,6 +65,9 @@ stderr writes without changing their order. The other Xeus channels and
 request handling are unchanged. A connected subscriber that stops reading can
 therefore hold up evaluation until it resumes or disconnects. Xeus registration
 configurations retain its default server; WASM uses its own transport.
+The same native streaming transport supports Xeus 5 with xeus-zmq 3 and
+Xeus 6 with xeus-zmq 4; older supported versions do not fall back to lossy
+publication.
 
 WASM, where native threads are unavailable, retains synchronous capture:
 output is delivered at runtime writes, hooks and cell completion. Jupyter

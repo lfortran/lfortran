@@ -29,6 +29,12 @@ namespace nl = nlohmann;
 namespace LCompilers::LFortran {
 
 #ifndef __EMSCRIPTEN__
+#if XEUS_VERSION_MAJOR > 5
+    using connection_configuration = xeus::xkernel_configuration;
+#else
+    using connection_configuration = xeus::xconfiguration;
+#endif
+
     // Xeus-ZMQ forwards IOPub through an inproc PUB/SUB queue and then an
     // external XPUB socket. Both silently drop at their high-water marks.
     // Keep its request channels, but publish directly on a caller-owned
@@ -37,7 +43,7 @@ namespace LCompilers::LFortran {
         std::unique_ptr<void, decltype(&zmq_ctx_term)> context{nullptr, zmq_ctx_term};
         std::unique_ptr<void, decltype(&zmq_close)> publisher{nullptr, zmq_close};
         std::unique_ptr<xeus::xserver> server;
-        xeus::xkernel_configuration configuration;
+        connection_configuration configuration;
         const EVP_MD *digest;
         nl::json::error_handler_t error_handler;
 
@@ -118,14 +124,14 @@ namespace LCompilers::LFortran {
         void stop_impl() override {
             server->stop();
         }
-        void update_config_impl(xeus::xkernel_configuration &config) const override {
+        void update_config_impl(connection_configuration &config) const override {
             server->update_config(config);
             config.m_iopub_port = configuration.m_iopub_port;
         }
 
     public:
         streaming_server(xeus::xcontext &xeus_context,
-                const xeus::xkernel_configuration &config, nl::json::error_handler_t eh)
+                const connection_configuration &config, nl::json::error_handler_t eh)
             : configuration(config), error_handler(eh) {
             const std::string prefix = "hmac-";
             digest = config.m_signature_scheme.compare(0, prefix.size(), prefix) == 0
@@ -172,10 +178,14 @@ namespace LCompilers::LFortran {
 
     static std::unique_ptr<xeus::xserver> make_streaming_server(xeus::xcontext &context,
             const xeus::xconfiguration &config, nl::json::error_handler_t eh) {
-        if (const auto *connection = std::get_if<xeus::xkernel_configuration>(&config)) {
+#if XEUS_VERSION_MAJOR > 5
+        if (const auto *connection = std::get_if<connection_configuration>(&config)) {
             return std::make_unique<streaming_server>(context, *connection, eh);
         }
         return xeus::make_xserver_default(context, config, eh);
+#else
+        return std::make_unique<streaming_server>(context, config, eh);
+#endif
     }
 #endif
 
