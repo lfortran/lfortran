@@ -1,14 +1,40 @@
 ! Reductions accumulated in a loop over allocatable and pointer arrays,
-! operands and masks
+! operands and masks, and assigned to a target by a defined assignment
 module sum_08_mod
 implicit none
+
+type :: box
+    real :: v = 0
+    integer :: n = 0
+end type
 
 type :: grid
     real(8), pointer :: x(:) => null()
     integer, allocatable :: k(:)
 end type
 
+interface assignment(=)
+    module procedure box_from_real, int_from_logical
+end interface
+
 contains
+
+    subroutine box_from_real(b, x)
+        type(box), intent(inout) :: b
+        real, intent(in) :: x
+        b%v = x
+        b%n = b%n + 1
+    end subroutine
+
+    subroutine int_from_logical(i, l)
+        integer, intent(out) :: i
+        logical, intent(in) :: l
+        if (l) then
+            i = 42
+        else
+            i = -1
+        end if
+    end subroutine
 
     real(8) function max_error(g, y) result(e)
         type(grid), intent(in) :: g
@@ -32,9 +58,10 @@ complex, pointer :: zp(:) => null()
 logical, allocatable :: mk(:)
 logical, pointer :: lp(:) => null()
 type(grid) :: g
+type(box) :: b
 real(8) :: y(3) = [1d0, 2d0, 3d0]
 real :: s
-integer :: i
+integer :: i, j
 complex :: z
 logical :: l
 
@@ -125,6 +152,26 @@ i = maxval(g%k - 1)
 if (i /= 5) error stop 35
 i = sum(g%k, mask = g%k > 4)
 if (i /= 11) error stop 36
+
+! Defined assignment from a reduction to a derived type
+b = sum(x(1:3) * c(2:4))
+if (abs(b%v - 4) > 1e-6 .or. b%n /= 1) error stop 37
+b = maxval(x * c)
+if (abs(b%v - 8) > 1e-6 .or. b%n /= 2) error stop 38
+b = product(p * 2, mask = p > 2)
+if (abs(b%v - 48) > 1e-6 .or. b%n /= 3) error stop 39
+b = dot_product(x * 2, c)
+if (abs(b%v - 24) > 1e-6 .or. b%n /= 4) error stop 40
+
+! Defined assignment from a logical reduction to an integer
+i = any(x * 2 > 7)
+j = all(x(1:2) * 2 > 3)
+if (i /= 42) error stop 41
+if (j /= -1) error stop 42
+i = all(p > 0)
+j = any(ip > 4)
+if (i /= 42) error stop 43
+if (j /= -1) error stop 44
 
 print *, "ok"
 end program

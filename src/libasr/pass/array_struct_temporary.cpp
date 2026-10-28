@@ -1835,16 +1835,13 @@ bool is_temporary_needed(ASR::expr_t* value) {
 
 // Whether the reduction `x` is the value of an assignment to a scalar that
 // array_op lowers into a loop accumulating the elements of its elementwise
-// operand (see ElementwiseReduction), so that the operand needs no array
-// temporary.
+// operand (see ElementwiseReduction::is_assigned_by_loop), so that the
+// operand needs no array temporary.
 bool is_reduction_lowered_to_loop(ASR::expr_t* x,
         ExprsWithTargetType& exprs_with_target) {
-    if (!ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
-        return false;
-    }
     auto target = exprs_with_target.find(x);
     return target != exprs_with_target.end() &&
-        !ASRUtils::is_array(ASRUtils::expr_type(target->second.first));
+        ASRUtils::ElementwiseReduction::is_assigned_by_loop(target->second.first, x, nullptr);
 }
 
 // Collects the sections that are array operands of an elementwise
@@ -2606,8 +2603,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // A reduction assigned to a scalar is lowered in place
         if (x.m_overloaded == nullptr &&
-                !(ASRUtils::ElementwiseReduction::is_lowered_to_loop(x.m_value) &&
-                  !ASRUtils::is_array(ASRUtils::expr_type(x.m_target)))) {
+                !ASRUtils::ElementwiseReduction::is_assigned_by_loop(x.m_target, x.m_value,
+                    x.m_overloaded)) {
             hoist_reductions_lowered_to_loop(&xx.m_value);
         }
         // Assigning to `ps(1::2)%y` walks the stride of the section and the

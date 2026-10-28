@@ -2979,8 +2979,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
-        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
-                ASRUtils::ElementwiseReduction::is_lowered_to_loop(x.m_value)) {
+        if (ASRUtils::ElementwiseReduction::is_assigned_by_loop(x.m_target, x.m_value,
+                x.m_overloaded)) {
             lower_reduction_to_loop(x);
             return;
         }

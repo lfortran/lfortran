@@ -7960,6 +7960,23 @@ namespace ElementwiseReduction {
             is_lowered_to_loop(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x));
     }
 
+    // Whether assigning `value` to `target` is lowered into a loop that
+    // accumulates the elements of the reduction `value` and then assigns
+    // the accumulator to `target`: an intrinsic assignment to a scalar of
+    // the type of the result. A defined assignment, given by `overloaded`,
+    // is carried out by its subroutine instead. Its target never has the
+    // type of the result, since a defined assignment cannot replace an
+    // intrinsic one, so the types tell it apart when `overloaded` is not
+    // at hand.
+    static inline bool is_assigned_by_loop(ASR::expr_t* target, ASR::expr_t* value,
+            ASR::stmt_t* overloaded) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        return overloaded == nullptr && !ASRUtils::is_array(target_type) &&
+            is_lowered_to_loop(value) &&
+            ASRUtils::types_equal(ASRUtils::type_get_past_allocatable_pointer(target_type),
+                ASRUtils::expr_type(value), target, value);
+    }
+
     // The value of the accumulator before the first element. It has the
     // type of the elements of `array`, which is not allocatable or a
     // pointer even when `array` is.
