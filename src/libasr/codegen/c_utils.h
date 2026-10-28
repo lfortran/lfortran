@@ -293,6 +293,11 @@ namespace CUtils {
                 type_src = get_c_type_from_ttype_t(ptr_type->m_type) + "*";
                 break;
             }
+            case ASR::ttypeType::Allocatable: {
+                ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(t);
+                type_src = get_c_type_from_ttype_t(alloc_type->m_type);
+                break;
+            }
             case ASR::ttypeType::CPtr: {
                 type_src = "void*";
                 break;

@@ -3235,6 +3235,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
+            } else if (!is_c && ASRUtils::is_character(
+                    *ASRUtils::type_get_past_allocatable(type))) {
+                // A C++ allocatable string is a plain std::string, which
+                // grows on demand: honour only the requested length.
+                if (x.m_args[i].m_len_expr) {
+                    self().visit_expr(*x.m_args[i].m_len_expr);
+                    out += indent + sym + ".resize(" + src + ", ' ');\n";
+                }
             } else {
                 std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
                 size_str = "sizeof(" + ty + ")";
@@ -3748,6 +3756,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         this->visit_expr(*x.m_args[0]);
         out += "(" + src + ")";
         src = out;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        if (x.m_impure_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated)) {
+            LCOMPILERS_ASSERT(x.n_args == 1);
+            ASR::expr_t* arg = x.m_args[0];
+            if (!ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                throw CodeGenError("allocated() on scalars is not supported by the C/C++ backends yet",
+                    x.base.base.loc);
+            }
+            self().visit_expr(*arg);
+            src = src + "->is_allocated";
+            last_expr_precedence = 2;
+            return;
+        }
+        throw LCompilersException("IntrinsicImpureFunction: `"
+            + ASRUtils::get_intrinsic_name(x.m_impure_intrinsic_id)
+            + "` is not implemented");
     }
 
     void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {

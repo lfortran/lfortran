@@ -256,7 +256,8 @@ public:
                         v.m_intent == ASRUtils::intent_inout ||
                         v.m_intent == ASRUtils::intent_unspecified
                         );
-        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(v.m_type);
+        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(v.m_type));
         if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
             ASR::Function_t* iface = nullptr;
             if (v.m_type_declaration) {
