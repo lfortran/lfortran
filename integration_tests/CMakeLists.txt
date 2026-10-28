@@ -3260,6 +3260,7 @@ RUN(NAME allocate_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_75 LABELS gfortran llvm fortran)
 RUN(NAME allocate_76 LABELS gfortran llvm)
 RUN(NAME allocate_77 LABELS gfortran llvm c) # allocation on assignment of a derived-type scalar with the C backend (#15949)
+RUN(NAME allocate_78 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)

@@ -4505,20 +4505,20 @@ public:
                 if( type_name == "integer" ) {
                     kind = compiler_options.po.default_integer_kind;
                 }
+                AST::expr_t* kind_expr = nullptr;
                 if (func_call_t->n_args == 1 && func_call_t->m_args[0].m_end) {
-                    AST::expr_t* kind_expr = func_call_t->m_args[0].m_end;
-                    if( AST::is_a<AST::Num_t>(*kind_expr) ) {
-                        kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
-                    }
+                    kind_expr = func_call_t->m_args[0].m_end;
                 } else {
                     for( size_t j = 0; j < func_call_t->n_keywords; j++ ) {
                         if( to_lower(std::string(func_call_t->m_keywords[j].m_arg)) == "kind" ) {
-                            AST::expr_t* kind_expr = func_call_t->m_keywords[j].m_value;
-                            if( AST::is_a<AST::Num_t>(*kind_expr) ) {
-                                kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
-                            }
+                            kind_expr = func_call_t->m_keywords[j].m_value;
                         }
                     }
+                }
+                if( kind_expr ) {
+                    visit_restricted_expr(*kind_expr, RestrictedExprContext::KindParameter);
+                    kind = ASRUtils::extract_kind<SemanticAbort>(ASRUtils::EXPR(tmp),
+                        kind_expr->base.loc, diag);
                 }
                 if( type_name == "integer" ) {
                     alloc_arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
