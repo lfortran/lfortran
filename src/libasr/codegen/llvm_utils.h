@@ -3068,6 +3068,29 @@ class ASRToLLVMVisitor;
             });
         }
 
+        /**
+         * Free a SAVE allocatable array of a procedure at program exit.
+         *
+         * Like `finalize_saved_struct_variable`: the array outlives every
+         * call to its procedure, so only the program can free what it holds.
+         *
+         * @param v the save variable
+         * @param ptr llvm global holding the pointer to its descriptor
+         */
+        void finalize_saved_allocatable_array(ASR::Variable_t* const v, llvm::Value* const ptr){
+            LCOMPILERS_ASSERT(ASRUtils::is_allocatable(v->m_type) && ASRUtils::is_array(v->m_type))
+            ASR::Struct_t* const struct_sym = get_struct_sym(v);
+            if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
+            insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
+            llvm::Value* const array_desc = llvm_utils_->CreateLoad2(
+                get_llvm_type(v->m_type, struct_sym), ptr);
+            // The program is terminating, so the variable is not finalized
+            // (F2018 7.5.6.4): only its memory is freed.
+            with_final_subroutines(false, [&]() {
+                check_userDefinedFinalizer_then_finalize(array_desc, v->m_type, struct_sym, false);
+            });
+        }
+
         // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*, bool)` below
         llvm::Function* get_UPoly_finalize_fn(ASR::Struct_t* const struct_sym, const bool call_final_subroutines){
             ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);

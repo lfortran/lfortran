@@ -901,6 +901,12 @@ public:
         llvm::Value* init_guard; // True once the members have been initialized.
     };
     std::vector<saved_struct_variable> saved_struct_variable_vec;
+    struct saved_allocatable_array { /* A procedure's SAVE allocatable array, freed at program exit */
+        ASR::Variable_t* v;
+        llvm::Value* target_var; // The global holding the pointer to its descriptor.
+        llvm::Value* init_guard; // True once the descriptor has been set up.
+    };
+    std::vector<saved_allocatable_array> saved_allocatable_array_vec;
 
     // Pool of allocas for call arguments, keyed by LLVM type.
     // This avoids creating a new alloca for every expression argument at every
@@ -1783,6 +1789,23 @@ public:
             throw LCompilersException("Unhandled string physicalType");
         }
         return nullptr;
+    }
+    // The same, for the descriptor of a SAVE allocatable or pointer array:
+    // its string descriptor is static storage, like the variable itself.
+    llvm::Value* create_and_setup_saved_string_for_array(ASR::ttype_t* var_type,
+            const std::string& name) {
+        LCOMPILERS_ASSERT(ASRUtils::is_array(var_type) && ASRUtils::is_character(*var_type))
+        LCOMPILERS_ASSERT(ASRUtils::is_allocatable_or_pointer(var_type))
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(var_type));
+        if (str->m_physical_type != ASR::DescriptorString) {
+            throw LCompilersException("Unhandled string physicalType");
+        }
+        llvm::Value* str_desc = new llvm::GlobalVariable(*module,
+            llvm_utils->string_descriptor, false,
+            llvm::GlobalVariable::InternalLinkage,
+            llvm::ConstantAggregateZero::get(llvm_utils->string_descriptor), name);
+        setup_string_length(str_desc, str, str->m_len);
+        return str_desc;
     }
     /*
     * Dispatches the required function from runtime library to
@@ -8377,6 +8400,15 @@ public:
             }, [](){});
         }
         saved_struct_variable_vec.clear();
+        for(saved_allocatable_array saved_var : saved_allocatable_array_vec){
+            llvm::Value* initialized = builder->CreateLoad(
+                llvm::Type::getInt1Ty(context), saved_var.init_guard);
+            llvm_utils->create_if_else(initialized, [&](){
+                llvm_symtab_finalizer.finalize_saved_allocatable_array(
+                    saved_var.v, saved_var.target_var);
+            }, [](){});
+        }
+        saved_allocatable_array_vec.clear();
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = LLVM::get_or_declare_function(*module,
@@ -8458,7 +8490,7 @@ public:
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
         bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false,
-        bool reserve_data_memory=true) {
+        bool reserve_data_memory=true, llvm::GlobalVariable* saved_descriptor=nullptr) {
         // Skip function call for AssumedLength strings
         // Their descriptors come from the original parameter inside subroutines
         if (ASRUtils::is_character(*m_type)) {
@@ -8476,12 +8508,18 @@ public:
         llvm::Value* ptr_ = nullptr;
         bool pointer_null_array_init = has_pointer_null_array_initializer(expr);
         if( is_malloc_array_type && !is_list && !is_data_only ) {
-            ptr_ = arr_descr->create_descriptor_alloca(type_, "arr_desc");
+            // A SAVE variable's descriptor must outlive the call, so it is
+            // the static storage `saved_descriptor`, not a stack slot.
+            ptr_ = saved_descriptor ? saved_descriptor
+                : arr_descr->create_descriptor_alloca(type_, "arr_desc");
             if(ASRUtils::is_character(*m_type)){
                 if (pointer_null_array_init) {
                     arr_descr->reset_is_allocated_flag(type_, ptr_, llvm_data_type);
                 } else {
-                    llvm::Value* str_desc = create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
+                    llvm::Value* str_desc = saved_descriptor
+                        ? create_and_setup_saved_string_for_array(m_type,
+                            saved_descriptor->getName().str() + ".__str_desc")
+                        : create_and_setup_string_for_array(m_type, nullptr, false, "arr_desc_str_desc");
                     builder->CreateStore(str_desc, arr_descr->get_pointer_to_data(type_, ptr_));
                 }
             } else if (ASRUtils::non_unlimited_polymorphic_class(m_type)){ 
@@ -10090,10 +10128,48 @@ public:
                     && !ASRUtils::is_character(*ASRUtils::type_get_past_array(v->m_type))
                     && !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(v->m_type))
                     && is_array_const_or_ctor(init_value);
-                fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
-                    al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
-                    is_malloc_array_type, is_array_type, is_list, v->m_type,
-                    /*is_data_only=*/false, /*reserve_data_memory=*/!skip_data_alloc);
+                llvm::GlobalVariable* saved_global = llvm::dyn_cast<llvm::GlobalVariable>(ptr);
+                if (v->m_storage == ASR::storage_typeType::Save
+                        && is_malloc_array_type && !is_list && saved_global) {
+                    // The global of a SAVE allocatable or pointer array points
+                    // to its descriptor. The descriptor is static storage too,
+                    // set up on the first call only: the allocation status,
+                    // bounds and association persist between calls.
+                    std::string global_name = saved_global->getName().str();
+                    llvm::GlobalVariable* saved_descriptor =
+                        create_null_array_descriptor_global(type_,
+                            global_name + ".__descriptor");
+                    saved_global->setInitializer(saved_descriptor);
+                    llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
+                    llvm::GlobalVariable* guard = new llvm::GlobalVariable(
+                        *module, i1_type, false,
+                        llvm::GlobalValue::InternalLinkage,
+                        llvm::ConstantInt::getFalse(context),
+                        global_name + ".__descriptor_init");
+                    llvm::Value* first_call = builder->CreateNot(
+                        builder->CreateLoad(i1_type, guard));
+                    llvm_utils->create_if_else(first_call, [&]() {
+                        builder->CreateStore(llvm::ConstantInt::getTrue(context), guard);
+                        fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
+                            al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
+                            is_malloc_array_type, is_array_type, is_list, v->m_type,
+                            /*is_data_only=*/false, /*reserve_data_memory=*/!skip_data_alloc,
+                            saved_descriptor);
+                    }, [](){});
+                    // Free it at program exit when detecting leaks, as with
+                    // the save variables of struct type above. A pointer
+                    // does not own its target.
+                    if (compiler_options.detect_leaks &&
+                            x.class_type != ASR::symbolType::Program &&
+                            ASRUtils::is_allocatable(v->m_type)) {
+                        saved_allocatable_array_vec.push_back({v, ptr, guard});
+                    }
+                } else {
+                    fill_array_details_(ASRUtils::EXPR(ASR::make_Var_t(
+                        al, v->base.base.loc, &v->base)), ptr, type_, m_dims, n_dims,
+                        is_malloc_array_type, is_array_type, is_list, v->m_type,
+                        /*is_data_only=*/false, /*reserve_data_memory=*/!skip_data_alloc);
+                }
                 // Now that the descriptor is initialized, initialize allocatable
                 // members of each element for DescriptorArray struct arrays.
                 if( ASR::is_a<ASR::StructType_t>(
