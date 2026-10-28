@@ -14,6 +14,74 @@ using LCompilers::LocationManager;
 using LCompilers::Result;
 using LCompilers::diag::Diagnostics;
 
+TEST_CASE("Template instantiation preserves scoped variable identities") {
+    const std::string source = R"(
+module attribute_template
+    integer :: hits = 0
+    template tmpl {t}
+        deferred type :: t
+    contains
+        subroutine bump()
+            volatile :: hits
+            integer :: increment
+            increment = 1
+            call record()
+        contains
+            subroutine record()
+                asynchronous :: increment
+                hits = hits + increment
+            end subroutine
+        end subroutine
+    end template
+end module
+program attributes
+    use attribute_template, only: tmpl
+    instantiate tmpl {integer}, only: bump
+    call bump()
+end program
+)";
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    LCompilers::CompilerOptions options;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "template_attributes.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    Diagnostics diagnostics;
+    auto result = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    REQUIRE(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        result.result->m_symtab->get_symbol("attributes"));
+    auto *bump = ASR::down_cast<ASR::Function_t>(program->m_symtab->get_symbol("bump"));
+    auto *record = ASR::down_cast<ASR::Function_t>(bump->m_symtab->get_symbol("record"));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("attribute_template"));
+    auto check = [](LCompilers::SymbolTable *scope, ASR::symbol_t *target,
+            bool is_volatile, bool is_asynchronous) {
+        size_t count = 0;
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) continue;
+            auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(item.second);
+            CHECK(attribute->m_parent_symtab == scope);
+            CHECK(ASRUtils::symbol_get_past_external(attribute->m_variable) == target);
+            CHECK(attribute->m_is_volatile == is_volatile);
+            CHECK(attribute->m_is_asynchronous == is_asynchronous);
+            count++;
+        }
+        CHECK(count == 1);
+    };
+    auto *hits = module->m_symtab->get_symbol("hits");
+    check(bump->m_symtab, hits, true, false);
+    check(record->m_symtab, bump->m_symtab->get_symbol("increment"), false, true);
+    CHECK_FALSE(ASR::down_cast<ASR::Variable_t>(hits)->m_is_volatile);
+    CHECK_FALSE(ASR::down_cast<ASR::Variable_t>(
+        bump->m_symtab->get_symbol("increment"))->m_is_asynchronous);
+}
+
 TEST_CASE("ASR text printer emits canonical named and positional forms") {
     const std::string source = R"(
 program p
