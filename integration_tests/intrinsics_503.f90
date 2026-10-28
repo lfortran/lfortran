@@ -2,8 +2,10 @@
 ! character, zero-extended to the result kind.
 program intrinsics_503
 implicit none
-character(len=1) :: c = "A"
-character(len=1) :: d = "z"
+character(len=1) :: c
+character(len=1) :: d
+c = "A"
+d = "z"
 if (ichar(c) /= 65) error stop 1
 if (ichar(d) /= 122) error stop 2
 if (ichar("A") /= 65) error stop 3

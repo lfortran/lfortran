@@ -6396,6 +6396,15 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
         }
     }
 }
+// The C backend models strings as plain null-terminated `char*` with no
+// blank padding, so assigning one is just a fresh copy of the right-hand
+// side. Emitted by the C backend for scalar string assignment.
+LFORTRAN_API void _lfortran_strcpy(char** lhs, char* rhs, int32_t char_kind) {
+    (void)char_kind;
+    size_t n = strlen(rhs);
+    *lhs = (char*)_lfortran_malloc_alloc(_lfortran_get_default_allocator(), n + 1);
+    strcpy(*lhs, rhs);
+}
 // TODO : split them into three functions instead of making compile-time choices at runtime
 LFORTRAN_API void _lfortran_strcpy_alloc(
     lfortran_allocator_t* al,
