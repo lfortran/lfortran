@@ -101,19 +101,6 @@ bool is_dummy_procedure(const ASR::Function_t& fn) {
 }
 
 /**
- * Check if a function is an external interface function.
- * External interface functions are functions with:
- * - Interface or ImplicitInterface deftype
- * - Not intrinsic ABI
- * - Not in a module
- */
-static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
-    return ASRUtils::is_declaration_deftype(ftype->m_deftype) &&
-           ftype->m_abi != ASR::abiType::Intrinsic &&
-           !ftype->m_module;
-}
-
-/**
  * Compute the final mangled LLVM function name.
  *
  * This function encapsulates all mangling logic in one place:
@@ -135,7 +122,7 @@ static std::string compute_llvm_function_name(
     const ASR::symbol_t* host
 ) {
     (void)compiler_options;
-    bool is_external_interface = is_external_interface_function(ftype);
+    bool is_external_interface = ASRUtils::is_external_procedure_interface(ftype);
     bool is_bindc = (ftype->m_abi == ASR::abiType::BindC);
 
     std::string fn_name;
@@ -26074,7 +26061,7 @@ public:
                 bool is_proc_pointer_call = ASR::is_a<ASR::Variable_t>(*call_sym);
                 bool callee_is_extern_c = !is_proc_pointer_call &&
                                            (!arg_cft ||
-                                            is_external_interface_function(arg_cft));
+                                            ASRUtils::is_external_procedure_interface(arg_cft));
 
                 // If the interface looks external but there is a Fortran
                 // bind(C) implementation in the same translation unit,
