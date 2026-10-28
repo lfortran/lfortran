@@ -5132,6 +5132,11 @@ asr = true
 options = "--gpu=cuda --gpu-split-min-iterations=0 --pass=gpu_offload --cumulative --verify-all-passes"
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_40.f90"
+asr = true
+options = "--gpu=cuda --gpu-split-min-iterations=0 --pass=gpu_offload --cumulative --verify-all-passes"
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_12.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
