@@ -430,6 +430,9 @@ bool determine_completeness(std::string command)
 int prompt(bool verbose, const std::string &connect,
     const std::vector<std::string> &arguments)
 {
+    // Polling redirected stdin must also see characters not yet consumed by
+    // the editor or a cell's READ, rather than hiding them in a stdio buffer.
+    setvbuf(stdin, nullptr, _IONBF, 0);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
     std::cout << "LFortran version: " << version << std::endl;
@@ -468,7 +471,10 @@ int prompt(bool verbose, const std::string &connect,
             // The terminal is in raw mode only while a line is edited, so
             // that the cell can read the terminal as usual (#15284).
             Terminal term(true, false);
-            input = prompt0(term, ">>> ", history, iscomplete);
+            input = prompt0(term, ">>> ", history, iscomplete,
+                [&](const std::function<void()> &before_output) {
+                    kernel->show_others(before_output);
+                });
         }
         // A READ ended by Ctrl-D in an earlier cell must not end later READs
         clearerr(stdin);

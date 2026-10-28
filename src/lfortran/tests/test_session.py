@@ -155,14 +155,34 @@ def live_output(lfortran, cwd, connection, client):
     process = subprocess.Popen([lfortran, "--no-color", "--connect", str(connection)],
         cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     lines = []
+    output = bytearray()
 
     def read():
-        for line in process.stdout:
-            lines.append((time.monotonic(), line.strip()))
+        pending = b""
+        while True:
+            chunk = os.read(process.stdout.fileno(), 16384)
+            if not chunk:
+                return
+            output.extend(chunk)
+            pending += chunk
+            while b"\n" in pending:
+                line, pending = pending.split(b"\n", 1)
+                lines.append((time.monotonic(), line.strip()))
 
     reader = threading.Thread(target=read)
     reader.start()
     try:
+        deadline = time.monotonic() + 15
+        while b">>> " not in output:
+            check(process.poll() is None and time.monotonic() < deadline,
+                "redirected shared prompt not ready")
+            time.sleep(0.01)
+        reply, _ = run(client, 'block\nprint *, "shared-pipe"\nend block')
+        check(reply["status"] == "ok", reply)
+        deadline = time.monotonic() + 10
+        while not any(line == b"shared-pipe" for _, line in lines):
+            check(time.monotonic() < deadline, "redirected shared prompt withheld output")
+            time.sleep(0.01)
         cell = 'print *, "first"\x0e' + delay + '\x0eprint *, "second"\r'
         process.stdin.write((cell * 2 + "\x04").encode())
         process.stdin.close()
@@ -183,6 +203,106 @@ def live_output(lfortran, cwd, connection, client):
         reader.join(timeout=5)
         process.stdout.close()
     check(value(client, "6*7") == "42", "prompt departure damaged the session")
+    shared_prompt_output(lfortran, cwd, connection, client)
+
+
+def shared_prompt_output(lfortran, cwd, connection, client):
+    """Other clients' output must arrive without submitting the edited cell."""
+    if os.name != "posix":
+        return  # The PTY harness needs POSIX; the client/editor are portable.
+    import fcntl
+    import pty
+    import select
+    import struct
+    import termios
+
+    master, slave = pty.openpty()
+    fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    process = subprocess.Popen([lfortran, "--no-color", "--connect", str(connection)],
+        cwd=cwd, stdin=slave, stdout=slave, stderr=slave)
+    os.close(slave)
+    data = b""
+
+    def receive():
+        nonlocal data
+        if select.select([master], [], [], 0.02)[0]:
+            chunk = os.read(master, 16384)
+            check(chunk, "shared prompt closed")
+            # Answer the editor's cursor-position queries, as a terminal does.
+            if b"\x1b[6n" in chunk:
+                os.write(master, b"\x1b[1;1R")
+            data += chunk
+
+    def wait_for(predicate, message, timeout=10):
+        deadline = time.monotonic() + timeout
+        while not predicate():
+            check(process.poll() is None and time.monotonic() < deadline,
+                (message, data))
+            receive()
+
+    try:
+        wait_for(lambda: b">>> " in data, "shared prompt not ready")
+        # A complete one-PRINT cell used to remain queued until the next key.
+        # Also keep an unfinished multiline edit across later output batches.
+        for channel, pending, delayed in (("stdout", b"", False),
+                ("stdout", b"6*&\x0e", True), ("stderr", b"4", True)):
+            if pending:
+                os.write(master, pending)
+                wait_for(lambda: b"6*" in data if pending != b"4" else b"4" in data,
+                    "pending edit not shown")
+            data = b""
+            code = ('print *, "shared-first"' if channel == "stdout"
+                else 'write(0,*) "shared-first"')
+            if delayed:
+                code += "\n" + busy(3)
+            # BLOCK also exercises F23 without its unrelated raw PRINT bug.
+            request = client.execute("block\n" + code + "\nend block")
+            started = time.monotonic()
+            wait_for(lambda: re.search(rb"(?:^|[\r\n]) *shared-first\r?\n", data),
+                "shared output withheld while editing")
+            first = time.monotonic() - started
+            messages = []
+            deadline = started + 30
+            while True:
+                check(time.monotonic() < deadline, "shared cell did not finish")
+                receive()
+                try:
+                    msg = client.get_iopub_msg(timeout=0.01)
+                except queue.Empty:
+                    continue
+                if parent_id(msg) != request:
+                    continue
+                messages.append(msg)
+                if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+                    break
+            reply = reply_to(client, request, 10)
+            check(reply and reply["content"]["status"] == "ok", reply)
+            check(text(messages, channel).split() == ["shared-first"], messages)
+            margin = time.monotonic() - started - first
+            print("shared prompt: %s first %.3f s, idle margin %.3f s"
+                % (channel, first, margin), flush=True)
+            if delayed:
+                check(margin >= 1.5, "shared progress arrived only after idle")
+        # The edit was 6*&<newline>4. Finish it, then use history and editing.
+        data = b""
+        os.write(master, b"2\r")
+        wait_for(lambda: b"252\r\n" in data
+            and b">>> " in data.split(b"252\r\n")[-1],
+            "shared output damaged pending edit")
+        data = b""
+        os.write(master, b"\x1b[A\x7f1\r")
+        wait_for(lambda: b"246\r\n" in data
+            and b">>> " in data.split(b"246\r\n")[-1],
+            "shared output damaged edit history")
+        os.write(master, b"\x04")
+        wait_for(lambda: b"Exiting." in data, "shared prompt did not exit")
+        check(process.wait(timeout=10) == 0, "shared prompt failed")
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        os.close(master)
+    check(value(client, "6*7") == "42", "shared prompt departure damaged session")
 
 
 def shared_session(lfortran, cwd, connection):

@@ -21,6 +21,7 @@
 #    include <io.h>
 #else
 #    include <sys/ioctl.h>
+#    include <sys/select.h>
 #    include <termios.h>
 #undef B0
 #undef B50
@@ -169,6 +170,29 @@ public:
                 throw std::runtime_error("tcsetattr() failed in destructor");
             }
         }
+#endif
+    }
+
+    // Non-terminal input is normally blocking; a prompt can poll it while
+    // servicing other events. Its stdio input must be unbuffered for this.
+    bool input_ready() const
+    {
+#ifdef _WIN32
+        HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+        if (GetFileType(input) == FILE_TYPE_PIPE) {
+            DWORD available = 0;
+            if (PeekNamedPipe(input, nullptr, 0, nullptr, &available, nullptr)) {
+                return available != 0;
+            }
+            return true; // EOF or an error is handled by the read.
+        }
+        return true;
+#else
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+        timeval timeout{0, 0};
+        return select(STDIN_FILENO+1, &fds, nullptr, nullptr, &timeout) != 0;
 #endif
     }
 

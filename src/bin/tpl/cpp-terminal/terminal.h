@@ -123,6 +123,11 @@ inline std::string move_cursor_down(int row)
     return "\x1b[" + std::to_string(row) + "B";
 }
 
+inline std::string move_cursor_up(int row)
+{
+    return "\x1b[" + std::to_string(row) + "A";
+}
+
 inline std::string cursor_position_report()
 {
     return "\x1b[6n";
@@ -743,7 +748,7 @@ public:
     // old_scr = scr;
     // scr.print_str(...)
     // scr.render(1, 1, old_scr)
-    std::string render(int x0, int y0, bool term) {
+    std::string render(int x0, int y0, bool term, bool relative=false) {
         std::string out;
         if (term){
           out.append(cursor_off());
@@ -753,7 +758,7 @@ public:
         style current_style = style::reset;
         for (size_t j=1; j <= h; j++) {
             if (term){
-              out.append(move_cursor(y0+j-1, x0));
+              out.append(relative ? "\r" : move_cursor(y0+j-1, x0));
             }
             for (size_t i=1; i <= w; i++) {
                 bool update_fg = false;
@@ -785,13 +790,19 @@ public:
                 if (update_bg) out.append(color(get_bg(i,j)));
                 codepoint_to_utf8(out, get_char(i,j));
             }
-            if (j < h) out.append("\n");
+            if (j < h) out.append(relative && term ? "\r\n" : "\n");
         }
         if (current_fg != fg::reset) out.append(color(fg::reset));
         if (current_bg != bg::reset) out.append(color(bg::reset));
         if (current_style != style::reset) out.append(color(style::reset));
         if (term) {
-          out.append(move_cursor(y0+cursor_y-1, x0+cursor_x-1));
+          if (relative) {
+            out.append("\r");
+            if (h > cursor_y) out.append(move_cursor_up(h-cursor_y));
+            if (cursor_x > 1) out.append(move_cursor_right(cursor_x-1));
+          } else {
+            out.append(move_cursor(y0+cursor_y-1, x0+cursor_x-1));
+          }
           out.append(cursor_on());
         }
         return out;

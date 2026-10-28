@@ -1261,22 +1261,27 @@ namespace {
 
 // Prints an IOPub message as a terminal shows it: plain text only. A cell of
 // another client is shown with its code.
-void show(const Message &m, bool other)
+void show(const Message &m, bool other,
+    const std::function<void()> &before_output = {})
 {
     const std::string type = m.type();
     const Object *data = m.content.getObject("data");
     if (type == "execute_input" && other) {
+        if (before_output) before_output();
         std::istringstream lines(get_string(m.content, "code"));
         for (std::string line; std::getline(lines, line);) {
             std::cout << "[other client] " << line << "\n";
         }
         std::cout << std::flush;
     } else if (type == "stream") {
+        if (before_output) before_output();
         (get_string(m.content, "name") == "stderr" ? std::cerr : std::cout)
             << get_string(m.content, "text") << std::flush;
     } else if (type == "execute_result" && data) {
+        if (before_output) before_output();
         std::cout << get_string(*data, "text/plain") << std::endl;
     } else if (type == "display_data" && data) {
+        if (before_output) before_output();
         if (data->getString("text/plain")) {
             std::cout << get_string(*data, "text/plain") << std::endl;
         } else {
@@ -1287,6 +1292,7 @@ void show(const Message &m, bool other)
         }
     } else if (type == "error") {
         if (const Array *traceback = m.content.getArray("traceback")) {
+            if (before_output) before_output();
             for (const auto &line : *traceback) {
                 if (auto text = line.getAsString()) std::cerr << text->str() << "\n";
             }
@@ -1357,12 +1363,14 @@ bool Client::execute(const std::string &code, bool verbose)
     return true;
 }
 
-void Client::show_others()
+void Client::show_others(const std::function<void()> &before_output)
 {
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     Message m;
     for (int i; (i = next_message(peers, key, m, 0)) >= 0;) {
-        if (i == 0 && get_string(m.parent, "session") != session) show(m, true);
+        if (i == 0 && get_string(m.parent, "session") != session) {
+            show(m, true, before_output);
+        }
     }
 }
 
@@ -2216,7 +2224,7 @@ bool Client::execute(const std::string &, bool)
     return false;
 }
 
-void Client::show_others() {}
+void Client::show_others(const std::function<void()> &) {}
 
 int Client::kernel_status(int)
 {

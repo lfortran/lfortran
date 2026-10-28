@@ -157,9 +157,10 @@ $ lfortran --connect session.json
 ```
 
 The kernel runs one cell at a time, in the order the cells arrive. Every
-client sees every cell's output, as in Jupyter: the prompt shows another
-client's cell, marked `[other client]`, when it runs its next cell. A cell's
-output is shown when the cell finishes or reads input. A cell that fails
+client sees every cell's output, as in Jupyter: the terminal prompt shows
+another client's cell, marked `[other client]`, and its output while waiting
+for input, preserving the cell being edited. Native cell output streams
+while the cell runs, including during calls that wait. A cell that fails
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
 

@@ -2,6 +2,7 @@
 #define LFORTRAN_JUPYTER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -61,8 +62,9 @@ public:
     // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
     // false if the kernel has gone.
     bool execute(const std::string &code, bool verbose = false);
-    // Prints what the other clients ran since the last call.
-    void show_others();
+    // Prints what the other clients ran since the last call. Calls
+    // before_output before printing, so a line editor can hide its input.
+    void show_others(const std::function<void()> &before_output = {});
     // Waits at most `timeout` ms for the kernel that start() started to
     // exit; returns its exit status, or -1 if it has not exited, did not end
     // normally or was not started by this client.
