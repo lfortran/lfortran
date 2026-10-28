@@ -3871,3 +3871,12 @@ end subroutine
 subroutine selected_real_kind_empty_parameter()
     integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
 end subroutine
+
+module cc1_volatile_no_entities
+contains
+    subroutine cc1_volatile_no_entities_sub(x)
+        integer :: x
+        volatile  ! {Error} the volatile statement requires a list of entities
+        x = 1
+    end subroutine
+end module cc1_volatile_no_entities

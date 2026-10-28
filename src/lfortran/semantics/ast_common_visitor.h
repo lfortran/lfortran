@@ -2289,12 +2289,13 @@ public:
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
     std::set<std::string> assgnd_target;
-    // A PARAMETER, POINTER, ALLOCATABLE or TARGET statement that names an
-    // entity not declared yet is recorded above and applied to the entity
-    // when it is declared. Such a statement applies only to the scoping unit
-    // or BLOCK construct in which it appears (8.6), so this guard gives the
-    // unit empty records and restores the host's when it ends, also when a
-    // diagnostic aborts the visit. Otherwise `parameter (m = 10)` in one
+    std::set<std::string> assgnd_volatile;
+    // A PARAMETER, POINTER, ALLOCATABLE, TARGET or VOLATILE statement that
+    // names an entity not declared yet is recorded above and applied to the
+    // entity when it is declared. Such a statement applies only to the
+    // scoping unit or BLOCK construct in which it appears (8.6), so this guard
+    // gives the unit empty records and restores the host's when it ends, also
+    // when a diagnostic aborts the visit. Otherwise `parameter (m = 10)` in one
     // subroutine would make a later `integer m` in another one a constant.
     struct PendingAttributeScope {
         CommonVisitor &v;
@@ -2302,18 +2303,21 @@ public:
         std::set<std::string> pointer;
         std::set<std::string> allocatable;
         std::set<std::string> target;
+        std::set<std::string> volatile_;
 
         PendingAttributeScope(CommonVisitor &v_) : v{v_} {
             storage.swap(v.assgnd_storage);
             pointer.swap(v.assgnd_pointer);
             allocatable.swap(v.assgnd_allocatable);
             target.swap(v.assgnd_target);
+            volatile_.swap(v.assgnd_volatile);
         }
         ~PendingAttributeScope() {
             v.assgnd_storage.swap(storage);
             v.assgnd_pointer.swap(pointer);
             v.assgnd_allocatable.swap(allocatable);
             v.assgnd_target.swap(target);
+            v.assgnd_volatile.swap(volatile_);
         }
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
@@ -8281,8 +8285,11 @@ public:
                                 ::AttrAsynchronous) {
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrVolatile) {
-                            // no-op: LFortran does not perform optimizations
-                            // that VOLATILE would need to suppress
+                            diag.add(Diagnostic(
+                                "the volatile statement requires a list of entities",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute declaration not supported yet",
@@ -8728,8 +8735,16 @@ public:
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
                                     // no-op: valid Fortran 2003, LFortran's runtime is synchronous
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
-                                    // no-op: LFortran does not perform optimizations
-                                    // that VOLATILE would need to suppress
+                                    ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
+                                    if (sym_) {
+                                        ASR::symbol_t* sym_past_external = ASRUtils::symbol_get_past_external(sym_);
+                                        if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_past_external);
+                                            v->m_is_volatile = true;
+                                        }
+                                    } else {
+                                        assgnd_volatile.insert(to_lower(sym));
+                                    }
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -8761,6 +8776,8 @@ public:
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
                                             }
+                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                            ASR::down_cast<ASR::Variable_t>(sym_)->m_is_volatile = true;
                                         }
                                     }
                                 }
@@ -10007,6 +10024,9 @@ public:
                 }
                 if (assgnd_target.count(sym)) {
                     target_attr = true;
+                }
+                if (assgnd_volatile.count(sym)) {
+                    is_volatile = true;
                 }
                 // A procedure declaration statement without an interface,
                 // `procedure() :: f`, gives no type: a type declaration

@@ -6425,6 +6425,15 @@ filename = "../integration_tests/volatile_03.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/volatile_05.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/volatile_06.f90"
+asr = true
+options = "--implicit-typing"
+
+[[test]]
 filename = "codegen_function_polymorphic.f90"
 llvm = true
 options = "-c --separate-compilation"
