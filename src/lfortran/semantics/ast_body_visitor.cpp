@@ -735,14 +735,53 @@ public:
             if (compiler_options.interactive) {
                 implicit_dictionary = implicit_mapping[get_hash(asr)];
             }
+            // An interactive cell visits a statement with no procedure body.
+            // Install one, as transform_stmts does, so a prologue (allocate
+            // with source, mold, or a shared type parameter) is kept.
+            AST::decl_stmt_t *stmt = nullptr;
+            if (x.m_items[i]->type == AST::astType::decl_stmt) {
+                AST::decl_stmt_t *decl = AST::down_cast<AST::decl_stmt_t>(x.m_items[i]);
+                if (AST::is_executable_stmt(*decl)) {
+                    stmt = decl;
+                }
+            }
+            Vec<ASR::stmt_t*> body;
+            bool failed = false;
             try {
-                visit_ast(*x.m_items[i]);
+                if (stmt) {
+                    body.reserve(al, 4);
+                    CurrentBodyScope body_scope(*this, &body, current_scope);
+                    visit_ast(*x.m_items[i]);
+                    // Same choice as transform_stmts: a statement in `tmp`
+                    // wins over `tmp_vec`.
+                    if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
+                        body.push_back(al, ASRUtils::STMT(tmp));
+                        tmp = nullptr;
+                        tmp_vec.clear();
+                    } else if (!tmp && !tmp_vec.empty()) {
+                        for (auto &t: tmp_vec) {
+                            body.push_back(al, ASRUtils::STMT(t));
+                        }
+                        tmp_vec.clear();
+                    }
+                } else {
+                    visit_ast(*x.m_items[i]);
+                }
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     throw a;
                 } else {
                     tmp = nullptr;
                     tmp_vec.clear();
+                    failed = true;
+                }
+            }
+            if (failed) {
+                continue;
+            }
+            if (stmt) {
+                for (size_t j = 0; j < body.size(); j++) {
+                    items.push_back(al, &body.p[j]->base);
                 }
             }
             if (tmp) {

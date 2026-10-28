@@ -3490,3 +3490,67 @@ call deallocate(n)
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 8);
 }
+
+TEST_CASE("FortranEvaluator allocate source mold and type parameter") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // source=, mold=, a function source, and a shared type parameter each
+    // emit a prologue. An interactive cell has to run that prologue.
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer, allocatable :: c(:)
+allocate(c, source=[1, 2])
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("sum(c)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 3);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer :: a(2)
+a = [4, 5]
+integer, allocatable :: d(:)
+allocate(d, mold=a)
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("size(d)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 2);
+        r = e.evaluate2("allocated(d)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+        CHECK(r.result.b);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer function alloc_source_fn_13455()
+alloc_source_fn_13455 = 7
+end function
+integer, allocatable :: f
+allocate(f, source=alloc_source_fn_13455())
+)").ok);
+        // An allocatable scalar is not a supported cell result, so read it
+        // through an integer expression.
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("f + 0");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 7);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer :: n
+n = 1
+character(:), allocatable :: s, t
+allocate(character(n+1) :: s, t)
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("len(s)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 2);
+        r = e.evaluate2("len(t)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 2);
+    }
+}
