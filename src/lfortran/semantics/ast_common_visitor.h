@@ -6906,6 +6906,14 @@ public:
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
             ASR::symbol_t *local_sym = current_scope->get_symbol(sym);
+            // The EXTERNAL attribute makes `sym` a local name of this scope,
+            // which hides a generic interface accessible from the host (F2023
+            // 19.5.1.4). Such a generic does not define the characteristics of
+            // the external procedure.
+            if (sym_ && !local_sym && ASR::is_a<ASR::GenericProcedure_t>(
+                    *ASRUtils::symbol_get_past_external(sym_))) {
+                sym_ = nullptr;
+            }
             bool is_optional_dummy = (local_sym &&
                 ASR::is_a<ASR::Variable_t>(*local_sym) &&
                 ASR::down_cast<ASR::Variable_t>(local_sym)->m_presence ==
