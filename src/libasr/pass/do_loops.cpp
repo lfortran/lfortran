@@ -35,7 +35,10 @@ to:
         ...
     end do
 
-The comparison is >= for c<0.
+The comparison is >= for c<0. With --fast, a loop with c = 1 or c = -1
+tests `i < b` (`i > b` for c<0) if a is a constant for which `a-c` does not
+overflow, and `i /= b` guarded by `if (i+c <= b)` otherwise, so that LLVM can
+compute its trip count (see PassUtils::replace_doloop).
 */
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
@@ -126,7 +129,8 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         if (unroll_device_loop(x)) return;
-        pass_result = PassUtils::replace_doloop(al, x, -1, use_loop_variable_after_loop, this->current_scope);
+        pass_result = PassUtils::replace_doloop(al, x, -1,
+            use_loop_variable_after_loop, this->current_scope, pass_options.fast);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
@@ -141,7 +145,8 @@ public:
         }
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
         const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
-        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1, use_loop_variable_after_loop, this->current_scope);
+        pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1,
+            use_loop_variable_after_loop, this->current_scope, pass_options.fast);
     }
 };
 

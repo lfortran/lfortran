@@ -5380,6 +5380,14 @@ filename = "../integration_tests/matmul_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/matmul_11.f90"
+pass = "intrinsic_function"
+
+[[test]]
+filename = "../integration_tests/matmul_13.f90"
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "errors/external1.f90"
 asr = true
 
@@ -6143,6 +6151,18 @@ filename = "errors/array_shape_06.f90"
 run = true
 
 [[test]]
+filename = "errors/array_shape_07.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_08.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_09.f90"
+run = true
+
+[[test]]
 filename = "function_call1.f90"
 asr = true
 lookup_name = true
@@ -6290,6 +6310,11 @@ document_symbols = true
 filename = "../integration_tests/loop_var_use_after_loop.f90"
 pass = "do_loops"
 options = "--use-loop-variable-after-loop"
+
+[[test]]
+filename = "../integration_tests/doloop_23.f90"
+pass = "do_loops"
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/use_02.f90"

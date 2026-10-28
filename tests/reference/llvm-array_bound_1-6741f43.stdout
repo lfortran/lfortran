@@ -41,10 +41,10 @@ define i32 @main(i32 %0, i8** %1) {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %a = alloca [196 x i32], align 4
-  %b = alloca [96 x i32], align 4
-  %c = alloca [35 x i32], align 4
-  %d = alloca [4 x i32], align 4
+  %a = alloca [196 x i32], align 16
+  %b = alloca [96 x i32], align 16
+  %c = alloca [35 x i32], align 16
+  %d = alloca [4 x i32], align 16
   %3 = alloca i64, align 8
   %4 = alloca i32, align 4
   store i32 2, i32* %4, align 4

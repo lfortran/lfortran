@@ -10070,6 +10070,12 @@ public:
                             ptr = llvm_utils->CreateAlloca(*builder, type, array_size, v->m_name);
                         }
 #endif
+                        if (ASRUtils::is_array(v->m_type) &&
+                                ASRUtils::extract_physical_type(v->m_type) ==
+                                    ASR::array_physical_typeType::FixedSizeArray &&
+                                !LLVM::is_llvm_pointer(*v->m_type)) {
+                            LLVM::align_stack_array(ptr, module->getDataLayout());
+                        }
                     }
                 }
             }

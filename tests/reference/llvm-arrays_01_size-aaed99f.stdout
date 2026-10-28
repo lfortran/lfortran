@@ -56,7 +56,7 @@ define i32 @main(i32 %0, i8** %1) {
   %__do_loop_end1 = alloca i32, align 4
   %__do_loop_end2 = alloca i32, align 4
   %a = alloca [3 x i32], align 4
-  %b = alloca [4 x i32], align 4
+  %b = alloca [4 x i32], align 16
   %i = alloca i32, align 4
   %size_a = alloca i32, align 4
   %size_b = alloca i32, align 4

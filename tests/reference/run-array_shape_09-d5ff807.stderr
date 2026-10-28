@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'c'. Tried to match size 5 of dimension 2 of LHS with size 4 of dimension 2 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+  --> tests/errors/array_shape_09.f90:14:5
+   |
+14 |     c = matmul(a, w) + b
+   |     ^ LHS size is 5
+   |
+14 |     c = matmul(a, w) + b
+   |         ^^^^^^^^^^^^ RHS size is 4

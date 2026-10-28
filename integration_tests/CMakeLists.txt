@@ -715,6 +715,8 @@ RUN(NAME doloop_18 LABELS gfortran llvm)
 RUN(NAME doloop_19 LABELS gfortran llvm)
 RUN(NAME doloop_20 LABELS gfortran llvm)
 RUN(NAME doloop_21 LABELS gfortran llvm)
+RUN(NAME doloop_22 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
+RUN(NAME doloop_23 LABELS gfortran llvm)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1102,6 +1104,7 @@ RUN(NAME arrays_131 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_132 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_133 LABELS gfortran llvm EXTRAFILES arrays_133_mod.f90 arrays_133b.f90 arrays_133c.f90) # bound getters in two object files link (#14542)
 RUN(NAME arrays_134 LABELS gfortran llvm) # size() of an explicit-shape dummy with an integer(8) extent
+RUN(NAME arrays_135 LABELS gfortran llvm llvmStackArray) # loops over 16-byte aligned stack arrays, promoted allocatables under --fast
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5278,6 +5281,12 @@ RUN(NAME matmul_06 LABELS gfortran llvm)
 RUN(NAME matmul_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME matmul_08 LABELS gfortran llvm)
 RUN(NAME matmul_10 LABELS gfortran llvm)
+RUN(NAME matmul_11 LABELS gfortran llvm)
+RUN(NAME matmul_12 LABELS gfortran llvm)
+RUN(NAME matmul_13 LABELS gfortran llvm)
+RUN(NAME matmul_14 LABELS gfortran llvm)
+RUN(NAME matmul_15 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME matmul_16 LABELS llvm) # gfortran -O1 and above gives other results; gfortran -O0 and flang agree with the checked values
 RUN(NAME array_size_matmul_01 LABELS gfortran llvm)
 RUN(NAME array_size_empty_triplet_01 LABELS gfortran llvm)
 RUN(NAME array_size_section_01 LABELS gfortran llvm)

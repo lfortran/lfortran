@@ -218,6 +218,14 @@ class ASRToLLVMVisitor;
         // the alignment of `type`.
         llvm::MaybeAlign known_underalignment(llvm::Type *type,
             llvm::Value *address, const llvm::DataLayout &data_layout);
+        // Gives a local array stored on the stack (an alloca of at least 16
+        // bytes) the 16-byte alignment that malloc gives arrays allocated on
+        // the heap. The ABI alignment of an array type is only that of its
+        // element, and vector loads and stores of a less aligned array can
+        // straddle cache lines. Never lowers the alignment; does nothing if
+        // `ptr` is not an alloca.
+        void align_stack_array(llvm::Value *ptr,
+            const llvm::DataLayout &data_layout);
         // A store that claims only the alignment its address is known to
         // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);

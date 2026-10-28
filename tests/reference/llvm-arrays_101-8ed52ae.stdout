@@ -50,7 +50,7 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = call i8* @_lfortran_get_default_allocator()
   %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 8000)
   %5 = bitcast i8* %4 to [2000 x float]*
-  %small_arr = alloca [100 x float], align 4
+  %small_arr = alloca [100 x float], align 16
   %sum = alloca float, align 4
   br i1 true, label %then, label %else
 

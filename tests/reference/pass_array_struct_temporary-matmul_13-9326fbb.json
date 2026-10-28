@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary-matmul_13-9326fbb",
+    "cmd": "lfortran --pass=array_struct_temporary --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/matmul_13.f90",
+    "infile_hash": "6423fcf906ab67836c0d1fcf8b087bf39227fe4e1a03508d3b2dde72",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary-matmul_13-9326fbb.stdout",
+    "stdout_hash": "e551e40dff9ca15924ef9c4b1e124e911a8872ace1ff9f47ec8b1667",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
