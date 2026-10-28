@@ -582,6 +582,25 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         src = var_name + "->data->extent(" + args + ")";
     }
 
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        visit_expr(*x.m_v);
+        std::string var_name = src;
+        std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+        visit_expr(*x.m_dim);
+        std::string idx = src;
+        if (x.m_bound == ASR::arrayboundType::LBound) {
+            src = "((" + result_type + ")" + var_name
+                + "->dims[" + idx + "-1].lower_bound)";
+        } else {
+            std::string lower_bound = var_name
+                + "->dims[" + idx + "-1].lower_bound";
+            std::string length = var_name
+                + "->dims[" + idx + "-1].length";
+            std::string upper_bound = length + " + " + lower_bound + " - 1";
+            src = "((" + result_type + ") " + upper_bound + ")";
+        }
+    }
+
     void visit_StringConcat(const ASR::StringConcat_t &x) {
         this->visit_expr(*x.m_left);
         std::string left = std::move(src);
