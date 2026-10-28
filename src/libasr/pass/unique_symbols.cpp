@@ -52,6 +52,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool should_mangle = false;
     std::vector<std::string> parent_function_name;
     std::string module_name = "";
+    // The symbols renamed to the global name of an external procedure,
+    // with the name that they would get otherwise
+    std::unordered_map<ASR::symbol_t*, std::string> global_symbols;
     SymbolTable* current_scope = nullptr;
 
     SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm, bool mue) :
@@ -76,13 +79,20 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         return;
     }
 
-    std::string update_name(std::string curr_name) {
+    // A `global` name is that of a global procedure, which does not depend
+    // on the module or the procedures that declare its interface. A specific
+    // procedure that shares the name of its generic interface is stored
+    // under a disambiguated name, from which its own name is recovered.
+    std::string update_name(std::string curr_name, bool global = false) {
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
         } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
             // mangle intrinsic functions
             uint64_t hash = get_hash(current_scope->asr_owner);
             return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
+        } else if (global) {
+            return ASRUtils::strip_genericprocedure_suffix(curr_name) + "_"
+                + lcompilers_unique_ID_separate_compilation;
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";
@@ -94,6 +104,53 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
     }
 
+    // The global name of an external procedure can be the name of another
+    // symbol of the same scope: in module `m`, the interface body `m_t` and
+    // the module procedure `t` both become `m_t_`. The other symbol keeps
+    // its name, because other units can link to it, and they may not see
+    // the clash: a unit that loads `m` from its modfile and does not use
+    // `m_t` drops the interface in the `unused_functions` pass. The external
+    // procedure gets the name that it would get without a global name
+    // instead. So only the name by which a unit references an external
+    // procedure can differ between units, never the name of an entity
+    // defined in one of them. A global name is never taken, while a clash
+    // of the other names is left as it was.
+    void keep_names_of_other_symbols(SymbolTable *symtab) {
+        std::unordered_set<std::string> names;
+        std::vector<ASR::symbol_t*> globals;
+        for (auto &a: symtab->get_scope()) {
+            if (global_symbols.find(a.second) != global_symbols.end()) {
+                globals.push_back(a.second);
+            } else {
+                auto it = sym_to_renamed.find(a.second);
+                names.insert(it == sym_to_renamed.end() ? a.first : it->second);
+            }
+        }
+        // A procedure that gets its other name takes that name, which can be
+        // the global name of a further procedure
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (size_t i = 0; i < globals.size(); ) {
+                std::string &new_name = sym_to_renamed[globals[i]];
+                if (names.find(new_name) != names.end()) {
+                    new_name = global_symbols[globals[i]];
+                    names.insert(new_name);
+                    globals.erase(globals.begin() + i);
+                    changed = true;
+                } else {
+                    i++;
+                }
+            }
+        }
+        std::unordered_set<std::string> global_names;
+        for (ASR::symbol_t *sym: globals) {
+            [[maybe_unused]] bool inserted
+                = global_names.insert(sym_to_renamed[sym]).second;
+            LCOMPILERS_ASSERT(inserted);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         ASR::TranslationUnit_t& xx = const_cast<ASR::TranslationUnit_t&>(x);
         current_scope = xx.m_symtab;
@@ -101,6 +158,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : xx.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
+        keep_names_of_other_symbols(xx.m_symtab);
     }
 
     void visit_Program(const ASR::Program_t &x) {
@@ -109,6 +167,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
+        keep_names_of_other_symbols(x.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -137,6 +196,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             }
             visit_symbol(*a.second);
         }
+        keep_names_of_other_symbols(x.m_symtab);
         should_mangle = should_mangle_copy;
         module_name = mod_name_copy;
         current_scope = current_scope_copy;
@@ -201,10 +261,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             }
         }
         if (mangle_underscore_external) {
-            bool is_external_interface = (ASRUtils::is_declaration_deftype(f_type->m_deftype) &&
-                                          f_type->m_abi != ASR::abiType::Intrinsic &&
-                                          !f_type->m_module);
-            if (is_external_interface) {
+            if (ASRUtils::is_external_procedure_interface(f_type)) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||
@@ -213,6 +270,23 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                     ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                     sym_to_renamed[sym] = name + "_";
                 }
+            }
+        }
+        if ((all_symbols_mangling || should_mangle)
+                && ASRUtils::is_external_procedure_interface(f_type)
+                && f_type->m_abi != ASR::abiType::BindC) {
+            // An interface of an external procedure (an interface body, an
+            // `external` statement or an implicit interface) refers to a
+            // global procedure, so it is named like the global procedure
+            // itself, unless another option gave it a name. The same holds
+            // for the interface of a dummy procedure and an abstract
+            // interface, whose names are not linked.
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
+            auto it = sym_to_renamed.find(sym);
+            std::string local_name = update_name(x.m_name);
+            if (it != sym_to_renamed.end() && it->second == local_name) {
+                global_symbols[sym] = local_name;
+                it->second = update_name(x.m_name, true);
             }
         }
         for (auto &a : x.m_symtab->get_scope()) {
@@ -225,6 +299,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 parent_function_name.pop_back();
             }
         }
+        keep_names_of_other_symbols(x.m_symtab);
         current_scope = current_scope_copy;
     }
 
@@ -280,6 +355,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        keep_names_of_other_symbols(x.m_symtab);
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
@@ -320,6 +396,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
         }
+        keep_names_of_other_symbols(x.m_symtab);
     }
 
     void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {

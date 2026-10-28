@@ -1336,6 +1336,16 @@ static inline bool is_declaration_deftype(ASR::deftypeType deftype) {
         || deftype == ASR::deftypeType::ImplicitInterface;
 }
 
+// True if `f_type` is the interface of a procedure that is not a module
+// procedure: an interface body, an `external` statement or an implicit
+// interface of an external or dummy procedure, or an abstract interface.
+static inline bool is_external_procedure_interface(
+        const ASR::FunctionType_t *f_type) {
+    return is_declaration_deftype(f_type->m_deftype)
+        && f_type->m_abi != ASR::abiType::Intrinsic
+        && !f_type->m_module;
+}
+
 // True if `x` has deftype ImplicitInterface: the opaque procedure type of a
 // procedure with an implicit interface (e.g. `integer, external :: f`, an
 // `external f` dummy or a `procedure()` pointer).
