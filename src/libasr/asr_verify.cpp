@@ -1711,6 +1711,17 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        if (x.m_storage == storage_typeType::ResultArgument) {
+            asr_t *owner = x.m_parent_symtab->asr_owner;
+            require(is_a<symbol_t>(*owner) &&
+                is_a<Function_t>(*down_cast<symbol_t>(owner)),
+                "result argument must belong to a procedure");
+            auto *function = down_cast<Function_t>(down_cast<symbol_t>(owner));
+            require(function->m_return_var == nullptr &&
+                ASRUtils::is_dummy_argument(*function, &x.base) &&
+                (x.m_intent == intentType::Out || x.m_intent == intentType::InOut),
+                "result argument must be an output dummy of a lowered function");
+        }
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();

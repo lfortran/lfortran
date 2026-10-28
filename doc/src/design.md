@@ -102,7 +102,10 @@ compiler-managed descriptors and struct pointer fields using TBAA. Numeric
 and logical elements share one data class, so this metadata does not claim
 that two data arrays cannot overlap.
 
-Scoped ASYNCHRONOUS/VOLATILE redeclarations are
+Lowered function results retain the explicit `ResultArgument` storage role;
+the backend does not infer that role from dummy position or type. A C_PTR
+passed as a C address is not a restricted Fortran object's address and is
+not annotated `noalias`. Scoped ASYNCHRONOUS/VOLATILE redeclarations are
 represented by `ScopedVariableAttribute`, referring to the canonical
 host/use-associated variable without changing its declaration. Such regions
 also exclude the variable from whole-procedure alias promises and dead

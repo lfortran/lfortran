@@ -881,8 +881,7 @@ end module
         "assumed:str "
         // Not POINTER p, TARGET tg, VOLATILE v, ASYNCHRONOUS as or VALUE k.
         "attributes:r "
-        // Not y, which could be a function result.
-        "last_inout:x "
+        "last_inout:x last_inout:y "
         // C addresses may designate the same storage. Scoped attributes
         // exclude a, but a locally redeclared name does not affect its host.
         "cptr:r shadow:a "
