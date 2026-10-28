@@ -19045,7 +19045,7 @@ public:
                         intrinsic_name == "rank" || intrinsic_name == "shape" || intrinsic_name == "is_contiguous" || 
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
-                        intrinsic_name == "c_loc")) {
+                        intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
                         diag.semantic_error_label("Assumed rank arrays cannot be used as arguments to intrinsics",
                             {arg_expr->base.loc}, "");
                         throw SemanticAbort();
@@ -21982,6 +21982,22 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         ASR::ttype_t *size_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, x.base.base.loc, 8));
+        if (ASRUtils::is_array(arg_type) &&
+                !ASRUtils::is_fixed_size_array(arg_type)) {
+            ASR::ttype_t *element_type = ASRUtils::extract_type(arg_type);
+            ASR::expr_t *element_value = nullptr;
+            int64_t element_size = ASRUtils::get_type_byte_size(element_type);
+            if (element_size > 0) {
+                element_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, x.base.base.loc, element_size, size_type));
+            }
+            ASR::expr_t *element_bytes = ASRUtils::EXPR(ASR::make_SizeOfType_t(
+                al, x.base.base.loc, element_type, size_type, element_value));
+            ASR::expr_t *array_size = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                al, x.base.base.loc, arg, nullptr, size_type, nullptr, false));
+            return ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                array_size, ASR::binopType::Mul, element_bytes, size_type, nullptr);
+        }
         ASR::expr_t *value = nullptr;
         int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
         if (type_size > 0) {
