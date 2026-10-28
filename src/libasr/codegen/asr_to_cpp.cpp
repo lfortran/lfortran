@@ -750,7 +750,28 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 x.base.base.loc);
         }
         for (size_t i=0; i<n_values; i++) {
-            this->visit_expr(*(str_fmt->m_args[i]));
+            ASR::expr_t* arg = str_fmt->m_args[i];
+            // Array-valued elementwise expressions of fixed size are
+            // unrolled into the output list element by element. Anything
+            // else keeps the existing behavior.
+            if (!ASR::is_a<ASR::Var_t>(*arg) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
+                    is_elementwise_assignable(arg)) {
+                int64_t arr_size = ASRUtils::get_fixed_size_of_array(
+                    ASRUtils::expr_type(arg));
+                if (arr_size > 0) {
+                    for (int64_t k = 0; k < arr_size; k++) {
+                        out += "<< (" + elementwise_src(arg,
+                            std::to_string(k)) + ") << \" \";\n"
+                            + indent + "std::cout ";
+                    }
+                    if (i+1 != n_values) {
+                        out += "<< " + sep + " ";
+                    }
+                    continue;
+                }
+            }
+            this->visit_expr(*arg);
             out += "<< (" + src + ") ";
             if (i+1 != n_values) {
                 out += "<< " + sep + " ";
@@ -776,7 +797,22 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             n_values = str_fmt->n_args;
         }
         for (size_t i=0; i<n_values; i++) {
-            str_fmt? this->visit_expr(*(str_fmt->m_args[i])): this->visit_expr(*x.m_values[i]);
+            ASR::expr_t* arg = str_fmt ? str_fmt->m_args[i] : x.m_values[i];
+            if (!ASR::is_a<ASR::Var_t>(*arg) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
+                    is_elementwise_assignable(arg)) {
+                int64_t arr_size = ASRUtils::get_fixed_size_of_array(
+                    ASRUtils::expr_type(arg));
+                if (arr_size > 0) {
+                    for (int64_t k = 0; k < arr_size; k++) {
+                        out += "<< (" + elementwise_src(arg,
+                            std::to_string(k)) + ") << \" \";\n"
+                            + indent + "std::cout ";
+                    }
+                    continue;
+                }
+            }
+            this->visit_expr(*arg);
             out += "<< (" + src + ") ";
         }
         out += "<< std::endl;\n";
