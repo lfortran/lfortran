@@ -36,6 +36,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             line:
                                                 (Variable
@@ -61,6 +62,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f90_assert
@@ -155,6 +157,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -180,6 +183,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -205,6 +209,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fn

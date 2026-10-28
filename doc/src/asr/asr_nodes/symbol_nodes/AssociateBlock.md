@@ -66,6 +66,7 @@ body, which binds the name to the target expression rather than copying it.
         :self_argument nil
         :codims []
         :common_block nil
+        :external_storage false
       )
     }
   )

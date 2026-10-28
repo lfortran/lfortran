@@ -1803,6 +1803,16 @@ public:
                 is_struct = true;
             }
         }
+        if (x.m_external_storage) {
+            require_id((is_module || ASRUtils::is_tu_scope(symtab)) &&
+                    x.m_intent == ASR::intentType::Local &&
+                    x.m_common_block == nullptr &&
+                    x.m_storage != ASR::storage_typeType::Parameter,
+                "asr.verify.variable.external_storage",
+                "Variable '" + std::string(x.m_name) +
+                    "' with external storage must be a global variable "
+                    "with no common block");
+        }
         // Classifying an initializer looks through ExternalSymbol, which is
         // possible only once external symbols are resolved (a module file
         // is verified with check_external=false before that), so the check

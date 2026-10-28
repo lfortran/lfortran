@@ -84,6 +84,7 @@
                                     ()
                                     []
                                     2 common~arrblock
+                                    .false.
                                 ),
                             myint:
                                 (Variable
@@ -109,6 +110,7 @@
                                     ()
                                     []
                                     2 common~myblock
+                                    .false.
                                 ),
                             myzero:
                                 (Variable
@@ -134,6 +136,7 @@
                                     ()
                                     []
                                     2 common~myblock
+                                    .false.
                                 )
                         })
                     block_data~
@@ -200,6 +203,7 @@
                                     ()
                                     []
                                     3 common~arrblock
+                                    .false.
                                 ),
                             myint:
                                 (Variable
@@ -225,6 +229,7 @@
                                     ()
                                     []
                                     3 common~myblock
+                                    .false.
                                 ),
                             myzero:
                                 (Variable
@@ -250,6 +255,7 @@
                                     ()
                                     []
                                     3 common~myblock
+                                    .false.
                                 )
                         })
                     common_13

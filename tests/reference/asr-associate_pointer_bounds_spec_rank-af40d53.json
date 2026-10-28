@@ -2,12 +2,12 @@
     "basename": "asr-associate_pointer_bounds_spec_rank-af40d53",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/associate_pointer_bounds_spec_rank.asr",
-    "infile_hash": "77c131740a96be826ac0d46674b599260d83f42969c2a84dca2629e3",
+    "infile_hash": "3489f2d5805705da266a795901637f15418141e8875d1f67266c1c34",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-associate_pointer_bounds_spec_rank-af40d53.stderr",
-    "stderr_hash": "3d1d0aeeaa6814457d076279dde1c321107b0dfc57090bb704eb182a",
+    "stderr_hash": "7add1aeec4ce9ea8166d6a0a89ab424be27780afb2a0c6cebbf2ecbf",
     "returncode": 2
 }

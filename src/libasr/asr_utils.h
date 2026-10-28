@@ -2150,7 +2150,7 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
     ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0,
-    ASR::symbol_t* a_common_block = nullptr
+    ASR::symbol_t* a_common_block = nullptr, bool a_external_storage = false
 );
 
 ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,

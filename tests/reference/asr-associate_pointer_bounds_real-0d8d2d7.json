@@ -2,12 +2,12 @@
     "basename": "asr-associate_pointer_bounds_real-0d8d2d7",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/associate_pointer_bounds_real.asr",
-    "infile_hash": "2f6e42a44f0a80c829aa3b976a72daf161b52388cf69fd34b4b8c442",
+    "infile_hash": "76b690c3463d1d1f3f639265d67e5363c07ac50543665bdc95ed7295",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-associate_pointer_bounds_real-0d8d2d7.stderr",
-    "stderr_hash": "f3cd65d3602c23423001022aa1ff07a38fb698e1b097cec6bd68298f",
+    "stderr_hash": "2aa3a9af39de26170cdf63d7a3db7ae0497a89b26e4a64df55f10a65",
     "returncode": 2
 }

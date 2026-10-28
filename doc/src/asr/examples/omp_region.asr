@@ -53,6 +53,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "i" (Variable
               :parent_symtab 1
@@ -79,6 +80,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "n" (Variable
               :parent_symtab 1
@@ -105,6 +107,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "run" (Variable
               :parent_symtab 1
@@ -131,6 +134,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "total" (Variable
               :parent_symtab 1
@@ -157,6 +161,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
           }
         )

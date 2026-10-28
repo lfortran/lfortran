@@ -122,6 +122,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             set2:
                                                 (Variable
@@ -147,6 +148,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     assign_large
@@ -211,6 +213,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -236,6 +239,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     assign_logint8_large
@@ -307,6 +311,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             message:
                                                 (Variable
@@ -332,6 +337,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             module:
                                                 (Variable
@@ -357,6 +363,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             procedure:
                                                 (Variable
@@ -382,6 +389,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -407,6 +415,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     error_handler~genericprocedure

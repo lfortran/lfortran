@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             intro:
                                 (ExternalSymbol
@@ -66,6 +67,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             posit:
                                 (Variable
@@ -91,6 +93,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             title:
                                 (Variable
@@ -116,6 +119,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             verb:
                                 (Variable
@@ -141,6 +145,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     string_03
@@ -280,6 +285,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     string_03_mod

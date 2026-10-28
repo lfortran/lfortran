@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     2 common~block_1
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     2 common~block_1
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -87,6 +89,7 @@
                                     ()
                                     []
                                     2 common~block_1
+                                    .false.
                                 ),
                             common~block_1:
                                 (CommonBlock
@@ -126,6 +129,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     main

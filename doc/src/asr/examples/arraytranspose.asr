@@ -69,6 +69,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "b" (Variable
               :parent_symtab 1
@@ -133,6 +134,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
           }
         )

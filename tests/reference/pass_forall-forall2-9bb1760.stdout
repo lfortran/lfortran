@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_forall_index:
                                 (Variable
@@ -64,6 +65,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_forall_position:
                                 (Variable
@@ -89,6 +91,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_forall_rhs:
                                 (Variable
@@ -122,6 +125,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -153,6 +157,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -184,6 +189,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -217,6 +223,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             f:
                                 (ExternalSymbol
@@ -252,6 +259,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -277,6 +285,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     forall2
@@ -764,6 +773,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -789,6 +799,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f

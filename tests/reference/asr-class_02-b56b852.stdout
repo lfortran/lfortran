@@ -85,6 +85,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -146,6 +147,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -176,6 +178,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_area
@@ -282,6 +285,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -312,6 +316,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_print
@@ -440,6 +445,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     main
@@ -551,6 +557,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     class_circle2

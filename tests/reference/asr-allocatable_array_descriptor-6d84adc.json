@@ -2,7 +2,7 @@
     "basename": "asr-allocatable_array_descriptor-6d84adc",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/allocatable_array_descriptor.asr",
-    "infile_hash": "18ddcf863b03cc95e7581c01520576b66aef7d224f831f43c9cdf390",
+    "infile_hash": "385ab4a1031687459dbc765e9c76f8966593e891013eee1308b6d2e8",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

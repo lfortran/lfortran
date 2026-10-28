@@ -48,6 +48,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             t:
                                 (ExternalSymbol
@@ -100,6 +101,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             ~unlimited_polymorphic_type:
                                 (Struct
@@ -247,6 +249,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     t
@@ -298,6 +301,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     t2

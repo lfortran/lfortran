@@ -47,6 +47,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                   "red" (Variable
                     :parent_symtab 2
@@ -85,6 +86,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                 }
               )

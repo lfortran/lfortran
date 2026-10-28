@@ -35,6 +35,13 @@ retaining the module variable's lifetime and declaration initializer, and
 is preserved in module files. LLVM emits thread-local globals, including
 imported declarations. The C and C++ backends report this storage as unsupported.
 
+Declaration ownership is independent of lifetime. A
+[Variable](../symbol_nodes/Variable.md) with `external_storage=true` refers to
+storage defined elsewhere without changing its `storage` value. In particular,
+importing a `BindC` threadprivate global retains both its C ABI and its
+`Threadprivate` storage, so definitions and declarations agree on thread-local
+addressing.
+
 ## See Also
 
 [Variable](../symbol_nodes/Variable.md), [IntegerConstant](../expression_nodes/IntegerConstant.md)

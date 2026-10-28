@@ -56,6 +56,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -91,6 +92,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -116,6 +118,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     git_target_branch
@@ -217,6 +220,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -244,6 +248,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     git_target_t
@@ -327,6 +332,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -354,6 +360,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -381,6 +388,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     dependency_config_t
@@ -454,6 +462,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     error_t
@@ -558,6 +567,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -592,6 +602,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             root:
                                                 (Variable
@@ -617,6 +628,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -647,6 +659,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     new_dependencies
@@ -766,6 +779,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -814,6 +828,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             url:
                                                 (Variable
@@ -841,6 +856,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     new_dependency
@@ -1029,6 +1045,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table

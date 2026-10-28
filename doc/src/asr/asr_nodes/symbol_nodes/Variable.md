@@ -14,7 +14,7 @@ Variable(symbol_table parent_symtab, identifier name,
     presence presence, bool value_attr, bool target_attr,
     bool contiguous_attr, string? bindc_name, bool is_volatile,
     bool is_protected, pass_attr pass_attr, identifier? self_argument,
-    codimension* codims, symbol? common_block)
+    codimension* codims, symbol? common_block, bool external_storage)
 ```
 
 ### Arguments
@@ -27,10 +27,10 @@ Variable(symbol_table parent_symtab, identifier name,
 | `intent` | `Local` for a local variable, `In`, `Out`, `InOut` or `Unspecified` for a dummy argument, `ReturnVar` for the result variable of a function. |
 | `symbolic_value` | the initializer as written, before folding. |
 | `value` | the folded compile time value, when there is one. A `Parameter` always has one. |
-| `storage` | `Default`, `Save` for a variable that keeps its value between calls, or `Parameter` for a named constant. |
+| `storage` | `Default`, `Save` for a variable that keeps its value between calls, `Parameter` for a named constant, or `Threadprivate` for per-thread persistent storage. |
 | `type` | the type of the variable. |
 | `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
-| `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. A variable with a `common_block` has the `Source` ABI but no allocation of its own: its storage is that of the block, and the [CommonBlock](CommonBlock.md) view gives the ABI and the role of the block's definition. |
+| `abi` | the variable's data ABI, such as `Source` for Fortran or `BindC` for C-compatible layout and linkage; `external_storage` independently records storage defined elsewhere. A variable with a `common_block` has the `Source` ABI but no allocation of its own: its storage is that of the block, and the [CommonBlock](CommonBlock.md) view gives the ABI and the role of the block's definition. |
 | `access` | `Public` or `Private`. |
 | `presence` | `Required`, or `Optional` for an optional dummy argument. |
 | `value_attr` | `true` when a `bind(c)` dummy argument is passed by value. |
@@ -43,6 +43,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
 | `codims` | the codimensions of a coarray; empty for anything else. |
 | `common_block` | the [CommonBlock](CommonBlock.md) of the same symbol table whose storage the variable lives in, as one of its `members` or as the `variable` of one of its `associations`; `nil` for a variable with storage of its own. |
+| `external_storage` | `true` for a global declaration whose storage is defined in another translation unit; independent of `storage` and `abi`. Defaults to `false`. |
 
 ### Return values
 
@@ -64,6 +65,16 @@ the symbol itself.
 initializer as the user wrote it, and `value` is what it folds to.
 `storage=Parameter` requires `value`, since a named constant is substituted
 wherever it is used.
+
+`external_storage=true` is a declaration, not a second definition of the global.
+It preserves the variable's storage lifetime, ABI, binding label and type.
+In particular, a `BindC` global from an earlier interactive cell keeps its C name and layout,
+but later cells must neither allocate nor initialize its storage again.
+Character descriptors may be local views of the externally defined C storage.
+Threadprivate globals retain `storage=Threadprivate` when externalized, so both
+the definition and its imported declarations use thread-local addressing.
+External storage is restricted to module or translation-unit variables with
+`Local` intent, no `common_block`, and non-`Parameter` storage.
 
 A variable in a COMMON block has no storage of its own. Its `common_block`
 names the view of the block that its own scoping unit declares, and its
@@ -113,6 +124,7 @@ units like any other module variable, through an
   :self_argument nil
   :codims []
   :common_block nil
+  :external_storage false
 )
 ```
 

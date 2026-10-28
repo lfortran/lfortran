@@ -2,7 +2,7 @@
     "basename": "asr-array_fixed_size_constant_dims-9326dba",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_fixed_size_constant_dims.asr",
-    "infile_hash": "8b8fc120955f44371e755be74352ce6e103df4138f9dbc5abfe6f038",
+    "infile_hash": "8aa740ea1e1ee78ebffca1eee937d3d2c41f06f355c1f994fe98bbaa",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

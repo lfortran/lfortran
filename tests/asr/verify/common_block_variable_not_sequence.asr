@@ -47,6 +47,7 @@
               nil
               []
               (SymbolRef 1 "common~seqblk")
+              false
             )
             "pair" (Struct
               (SymbolTable

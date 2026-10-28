@@ -86,6 +86,7 @@ particular **Module** came from.
         :self_argument nil
         :codims []
         :common_block nil
+        :external_storage false
       )
     }
   )

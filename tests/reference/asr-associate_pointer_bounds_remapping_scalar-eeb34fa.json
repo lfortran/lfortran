@@ -2,12 +2,12 @@
     "basename": "asr-associate_pointer_bounds_remapping_scalar-eeb34fa",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/associate_pointer_bounds_remapping_scalar.asr",
-    "infile_hash": "92d73a534bb3491d47c860f88e1fdf5ea3710248d85cd29aecf62da3",
+    "infile_hash": "26b6ac99bb0d72a9d99633946080557fa755fd89cd27de11bf004a9c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-associate_pointer_bounds_remapping_scalar-eeb34fa.stderr",
-    "stderr_hash": "dc6776488cbc705a530ed244eabc7bb4a3d2443ed2e22e2056f78d43",
+    "stderr_hash": "fa7fa4650005ea79b1af0cb18af4a1eb2553c1d3d5816c5f9efb7211",
     "returncode": 2
 }

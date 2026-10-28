@@ -48,6 +48,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             message:
                                                 (Variable
@@ -73,6 +74,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -113,6 +115,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -138,6 +141,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     final_logger
@@ -215,6 +219,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             log_units:
                                                 (Variable
@@ -248,6 +253,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             max_width:
                                                 (Variable
@@ -273,6 +279,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logger_type

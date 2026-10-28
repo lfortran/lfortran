@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             rp1d:
                                 (Struct
@@ -69,6 +70,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     rp1d
@@ -134,6 +136,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -171,6 +174,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             hdf32:
                                                 (Variable
@@ -196,6 +200,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ndim:
                                                 (Variable
@@ -221,6 +226,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             scales:
                                                 (Variable
@@ -265,6 +271,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     sds
@@ -446,6 +453,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             sds:
                                 (ExternalSymbol

@@ -2,7 +2,7 @@
     "basename": "asr-bindc_string_array_physical_type-dd68caa",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/bindc_string_array_physical_type.asr",
-    "infile_hash": "b4032fcbf3ff6424fc87e6a4980be99728931eda67f3dc27de6fb57c",
+    "infile_hash": "94ebea7849e3d0c5bf7e85543af611c86dc203a508de13749e946bf0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

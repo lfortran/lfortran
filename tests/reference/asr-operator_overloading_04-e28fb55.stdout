@@ -53,6 +53,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -78,6 +79,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     assign_string_char
@@ -160,6 +162,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -230,6 +233,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             trimmed_string:
                                                 (Variable
@@ -262,6 +266,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     trim_string
@@ -399,6 +404,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             last:
                                                 (Variable
@@ -424,6 +430,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -456,6 +463,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator

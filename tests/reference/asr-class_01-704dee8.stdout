@@ -56,6 +56,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -181,6 +182,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -242,6 +244,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -272,6 +275,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_area
@@ -378,6 +382,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -408,6 +413,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_print
@@ -521,6 +527,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     class_circle1

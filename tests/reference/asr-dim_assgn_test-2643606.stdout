@@ -39,6 +39,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -72,6 +73,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     dim_assgn_test

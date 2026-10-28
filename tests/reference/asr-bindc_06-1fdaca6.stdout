@@ -103,6 +103,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     bindc_06
@@ -288,6 +289,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             f_int8:
                                 (Variable
@@ -313,6 +315,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             f_logical:
                                 (Variable
@@ -338,6 +341,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             f_type_c_ptr:
                                 (Variable
@@ -365,6 +369,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     bindc_06_mod

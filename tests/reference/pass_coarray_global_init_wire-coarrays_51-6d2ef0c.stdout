@@ -28,6 +28,7 @@
                     ()
                     []
                     ()
+                    .false.
                 ),
             __module_coarrays_51_a_ca__coarray_handle:
                 (Variable
@@ -60,6 +61,7 @@
                     ()
                     []
                     ()
+                    .false.
                 ),
             __module_coarrays_51_b_cb__coarray_data:
                 (Variable
@@ -87,6 +89,7 @@
                     ()
                     []
                     ()
+                    .false.
                 ),
             __module_coarrays_51_b_cb__coarray_handle:
                 (Variable
@@ -119,6 +122,7 @@
                     ()
                     []
                     ()
+                    .false.
                 ),
             __module_prif_prif_dummy_team_descriptor:
                 (Struct
@@ -183,6 +187,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             current_image_buffer:
                                 (Variable
@@ -210,6 +215,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             errmsg:
                                 (Variable
@@ -235,6 +241,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             errmsg_alloc:
                                 (Variable
@@ -262,6 +269,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             image_num:
                                 (Variable
@@ -287,6 +295,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             offset:
                                 (Variable
@@ -312,6 +321,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             size_in_bytes:
                                 (Variable
@@ -337,6 +347,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             stat:
                                 (Variable
@@ -362,6 +373,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_get
@@ -443,6 +455,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_init
@@ -506,6 +519,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             initial_team_index:
                                 (Variable
@@ -531,6 +545,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             stat:
                                 (Variable
@@ -556,6 +571,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             sub:
                                 (Variable
@@ -587,6 +603,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_initial_team_index
@@ -662,6 +679,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             stop_code_char:
                                 (Variable
@@ -687,6 +705,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             stop_code_int:
                                 (Variable
@@ -712,6 +731,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_stop
@@ -772,6 +792,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             errmsg_alloc:
                                 (Variable
@@ -799,6 +820,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             stat:
                                 (Variable
@@ -824,6 +846,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_sync_all
@@ -893,6 +916,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_team_type
@@ -963,6 +987,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             this_image:
                                 (Variable
@@ -988,6 +1013,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     __module_prif_prif_this_image_no_coarray
@@ -1099,6 +1125,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     __lfortran_global_init_coarrays_51
@@ -1204,6 +1231,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             p:
                                 (ExternalSymbol
@@ -1259,6 +1287,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     coarrays_51
@@ -1619,6 +1648,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     __lfortran_global_init_coarrays_51_a
@@ -1674,6 +1704,7 @@
                                     ()
                                     CodimensionStar)]
                                     ()
+                                    .false.
                                 )
                         })
                     coarrays_51_a
@@ -1724,6 +1755,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     __lfortran_global_init_coarrays_51_b
@@ -1779,6 +1811,7 @@
                                     ()
                                     CodimensionStar)]
                                     ()
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -1816,6 +1849,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             point:
                                 (Struct
@@ -1846,6 +1880,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     point
@@ -1939,6 +1974,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     coarrays_51_b
@@ -1985,6 +2021,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             image_num:
                                 (Variable
@@ -2010,6 +2047,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             offset:
                                 (Variable
@@ -2035,6 +2073,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             result:
                                 (Variable
@@ -2060,6 +2099,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             sub:
                                 (Variable
@@ -2091,6 +2131,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     lcompilers_prif_get_integer(4)
@@ -2197,6 +2238,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     lcompilers_prif_this_image
@@ -2262,6 +2304,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     prif_coarray_handle

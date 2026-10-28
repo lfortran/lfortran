@@ -122,6 +122,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -173,6 +174,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     host_bound
@@ -530,6 +532,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             shared:
                                 (ExternalSymbol
@@ -880,6 +883,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             expected:
                                                 (Variable
@@ -905,6 +909,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     counts
@@ -1049,6 +1054,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             step:
                                                 (Variable
@@ -1074,6 +1080,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     extent
@@ -1163,6 +1170,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     module_bound
@@ -1387,6 +1395,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     global_init_07_m
@@ -1472,6 +1481,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -1523,6 +1533,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             counts:
                                 (ExternalSymbol

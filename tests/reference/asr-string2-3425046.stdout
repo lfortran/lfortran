@@ -103,6 +103,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tempfile:
                                                 (Variable
@@ -130,6 +131,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_temp_filename
@@ -207,6 +209,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             dir_handle:
                                                 (Variable
@@ -234,6 +237,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             string_fortran:
                                                 (Variable
@@ -261,6 +265,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     list_files
@@ -427,6 +432,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -454,6 +460,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     c_strlen
@@ -509,6 +516,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
@@ -534,6 +542,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -561,6 +570,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f_string_cptr
@@ -655,6 +665,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -680,6 +691,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -705,6 +717,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f_string_cptr_n
@@ -775,6 +788,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             f_string:
                                                 (Variable
@@ -802,6 +816,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f_string~genericprocedure
@@ -868,6 +883,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     string_t

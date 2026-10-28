@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -108,6 +111,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
@@ -135,6 +139,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
@@ -162,6 +167,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -199,6 +205,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             lfortran_tmp:
                                 (Variable
@@ -226,6 +233,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             lfortran_tmp1:
                                 (Variable
@@ -253,6 +261,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             my_sub:
                                 (ExternalSymbol
@@ -472,6 +481,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -499,6 +509,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -524,6 +535,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     f1
@@ -592,6 +604,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     my_sub

@@ -41,6 +41,7 @@
                           :self_argument nil
                           :codims []
                           :common_block nil
+                          :external_storage false
                         )
                         "z" (Variable
                           :parent_symtab 3
@@ -69,6 +70,7 @@
                           :self_argument nil
                           :codims []
                           :common_block nil
+                          :external_storage false
                         )
                       }
                     )
@@ -140,6 +142,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                 }
               )

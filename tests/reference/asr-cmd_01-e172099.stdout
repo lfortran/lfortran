@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             count:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -81,6 +83,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     test_get_command_argument

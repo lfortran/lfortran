@@ -264,7 +264,8 @@
                                         "pass_attr": "NotMethod",
                                         "self_argument": [],
                                         "codims": [],
-                                        "common_block": []
+                                        "common_block": [],
+                                        "external_storage": false
                                     },
                                     "loc": {
                                         "first": 38,

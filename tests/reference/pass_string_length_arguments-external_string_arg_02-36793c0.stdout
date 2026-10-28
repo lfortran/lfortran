@@ -68,6 +68,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __libasr_len_check~arg_1:
                                                 (Variable
@@ -93,6 +94,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             check~arg_0:
                                                 (Variable
@@ -118,6 +120,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             check~arg_1:
                                                 (Variable
@@ -143,6 +146,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     check~fpcast
@@ -235,6 +239,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -266,6 +271,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     external_string_arg_02

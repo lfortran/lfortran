@@ -43,6 +43,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -77,6 +78,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -241,6 +243,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     child_value
@@ -375,6 +378,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_value

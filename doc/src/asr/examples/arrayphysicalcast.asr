@@ -53,6 +53,7 @@
               :self_argument nil
               :codims []
               :common_block nil
+              :external_storage false
             )
             "total" (Function
               :symtab (SymbolTable
@@ -93,6 +94,7 @@
                     :self_argument nil
                     :codims []
                     :common_block nil
+                    :external_storage false
                   )
                 }
               )

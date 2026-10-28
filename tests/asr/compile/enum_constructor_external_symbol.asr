@@ -47,6 +47,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                   "red" (Variable
                     2
@@ -85,6 +86,7 @@
                     nil
                     []
                     nil
+                    false
                   )
                 }
               )
@@ -141,6 +143,7 @@
               nil
               []
               nil
+              false
             )
             "color" (ExternalSymbol
               3
@@ -176,6 +179,7 @@
               nil
               []
               nil
+              false
             )
           }
         )

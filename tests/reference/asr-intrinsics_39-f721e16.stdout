@@ -31,6 +31,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             time:
                                 (Variable
@@ -56,6 +57,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             values:
                                 (Variable
@@ -87,6 +89,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             zone:
                                 (Variable
@@ -112,6 +115,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     test_time_and_date

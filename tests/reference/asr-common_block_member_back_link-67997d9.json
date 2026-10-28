@@ -2,12 +2,12 @@
     "basename": "asr-common_block_member_back_link-67997d9",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_member_back_link.asr",
-    "infile_hash": "c67598f003591f2acfb5b8558ef99842a34377c0f2bf0fc777f60469",
+    "infile_hash": "9159041fe2deb08263c5d2f1f9aa328523515c862022b659ab5b69ff",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-common_block_member_back_link-67997d9.stderr",
-    "stderr_hash": "f931a72cdc9b6bbc761c58ccefac3df1fd50a397f7478ac88e6358e9",
+    "stderr_hash": "c89c33797f9665949664e647c2d9ed02c4a40e0051cd1d0236be3426",
     "returncode": 2
 }

@@ -48,6 +48,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -73,6 +74,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -98,6 +100,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             line:
                                                 (Variable
@@ -125,6 +128,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -157,6 +161,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -182,6 +187,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             v_list:
                                                 (Variable
@@ -213,6 +219,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     read_formatted
@@ -294,6 +301,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -347,6 +355,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -372,6 +381,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -397,6 +407,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -429,6 +440,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -454,6 +466,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             v_list:
                                                 (Variable
@@ -485,6 +498,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     write_formatted

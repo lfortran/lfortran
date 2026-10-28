@@ -59,6 +59,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             s:
                                 (Function
@@ -117,6 +118,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __libasr_created__array_section_subscript_:
                                                 (Variable
@@ -142,6 +144,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __libasr_index_0_:
                                                 (Variable
@@ -167,6 +170,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __libasr_index_0_1:
                                                 (Variable
@@ -192,6 +196,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             __libasr_section_first_element_:
                                                 (Variable
@@ -217,6 +222,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             a:
                                                 (Variable
@@ -250,6 +256,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -275,6 +282,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     s

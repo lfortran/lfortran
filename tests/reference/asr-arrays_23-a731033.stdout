@@ -65,6 +65,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             lfortran_iomsg:
                                                 (Variable
@@ -90,6 +91,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             line_break:
                                                 (Variable
@@ -115,6 +117,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             message:
                                                 (Variable
@@ -142,6 +145,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             num:
                                                 (Variable
@@ -167,6 +171,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     add_context
@@ -407,6 +412,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -432,6 +438,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -459,6 +466,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_context

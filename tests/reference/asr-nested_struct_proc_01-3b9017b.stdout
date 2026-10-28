@@ -131,6 +131,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             initial_team:
                                 (ExternalSymbol
@@ -250,6 +251,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     integer32complex32orderedmap
@@ -422,6 +424,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             rc:
                                                 (Variable
@@ -447,6 +450,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -474,6 +478,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -510,6 +515,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omap_i_at_rc
@@ -658,6 +664,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -683,6 +690,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -724,6 +732,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -751,6 +760,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tol:
                                                 (Variable
@@ -782,6 +792,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             value:
                                                 (Variable
@@ -807,6 +818,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omap_insert_key_value
@@ -1058,6 +1070,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             tree:
                                                 (Variable
@@ -1088,6 +1101,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omap_map
@@ -1161,6 +1175,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             real128:
                                 (ExternalSymbol
@@ -1563,6 +1578,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             logical16:
                                 (ExternalSymbol
@@ -1654,6 +1670,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             numeric_storage_size:
                                 (ExternalSymbol
@@ -1879,6 +1896,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     nested_struct_proc_01

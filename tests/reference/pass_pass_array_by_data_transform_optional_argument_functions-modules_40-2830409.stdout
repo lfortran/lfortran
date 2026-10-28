@@ -58,6 +58,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -88,6 +89,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             de:
                                                                 (Variable
@@ -118,6 +120,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -158,6 +161,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -183,6 +187,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     fill_stack
@@ -298,6 +303,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -323,6 +329,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -363,6 +370,7 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     resize
@@ -464,6 +472,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 ),
                             toml_key:
                                 (Struct
@@ -496,6 +505,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_key

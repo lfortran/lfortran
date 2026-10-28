@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.common_block.unique]: CommonBlock 'common~blk' places 'n' more than once
-  --> tests/asr/verify/common_block_member_placed_twice.asr:57:27
+  --> tests/asr/verify/common_block_member_placed_twice.asr:58:27
    |
-57 |             "common~blk" (CommonBlock
+58 |             "common~blk" (CommonBlock
    |                           ^^^^^^^^^^^ failed here

@@ -736,7 +736,7 @@ class ASRToLLVMVisitor;
             */
             llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
                 llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage,
-                std::string data_name = "");
+                std::string data_name = "", bool external_data = false);
             
             /*
                 * Sets up the global array of strings that's not allocatable.
@@ -746,7 +746,8 @@ class ASRToLLVMVisitor;
             llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
                 ASR::ArrayConstant_t* arrayConst_t, std::string name,
                 std::string data_name="_data",
-                llvm::GlobalValue::LinkageTypes data_linkage=llvm::GlobalValue::PrivateLinkage);
+                llvm::GlobalValue::LinkageTypes data_linkage=llvm::GlobalValue::PrivateLinkage,
+                bool external_data = false);
 
             llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
 

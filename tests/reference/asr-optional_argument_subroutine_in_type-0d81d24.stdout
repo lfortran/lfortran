@@ -66,6 +66,7 @@
                                     ()
                                     []
                                     ()
+                                    .false.
                                 )
                         })
                     main
@@ -113,6 +114,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     test_subroutine
@@ -174,6 +176,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             test_subroutine:
                                                 (StructMethodDeclaration

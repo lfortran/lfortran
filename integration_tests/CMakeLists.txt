@@ -5670,6 +5670,9 @@ RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_bindc_threadprivate LABELS gfortran llvm llvm_omp
+    EXTRAFILES openmp_bindc_threadprivate_mod.f90
+    EXTRA_ARGS --openmp --separate-compilation GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)

@@ -32,7 +32,7 @@ symbol
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
                string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
-               codimension* codims, symbol? common_block)
+               codimension* codims, symbol? common_block, bool external_storage)
     | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -299,6 +299,8 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
+-- Global declaration ownership is recorded separately in Variable.external_storage,
+-- so importing a global preserves its lifetime, including Threadprivate.
 storage_type = Default | Save | Parameter | Threadprivate
 -- How a CommonBlock view provides the block's storage: a Tentative view
 -- gives no initial value, an Initialized one gives initial values (even all

@@ -103,6 +103,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iomsg:
                                                 (Variable
@@ -128,6 +129,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -153,6 +155,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -178,6 +181,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             pfmt:
                                                 (Variable
@@ -203,6 +207,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -228,6 +233,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             vlist:
                                                 (Variable
@@ -259,6 +265,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     pwf
@@ -341,6 +348,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iomsg:
                                                 (Variable
@@ -366,6 +374,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -391,6 +400,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -416,6 +426,7 @@
                                                     ()
                                                     []
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     pwunf
