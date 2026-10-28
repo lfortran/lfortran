@@ -7960,11 +7960,13 @@ namespace ElementwiseReduction {
             is_lowered_to_loop(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x));
     }
 
-    // The value of the accumulator before the first element.
+    // The value of the accumulator before the first element. It has the
+    // type of the elements of `array`, which is not allocatable or a
+    // pointer even when `array` is.
     static inline ASR::expr_t* get_initial_value(Allocator& al, const Location& loc,
             ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* array) {
-        ASR::ttype_t* element_type = array ? ASRUtils::duplicate_type_without_dims(
-            al, ASRUtils::expr_type(array), loc) : nullptr;
+        ASR::ttype_t* element_type = array ? ASRUtils::duplicate_type(
+            al, ASRUtils::extract_type(ASRUtils::expr_type(array))) : nullptr;
         switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
             case IntrinsicArrayFunctions::Sum: {
                 return get_constant_zero_with_given_type(al, element_type);
