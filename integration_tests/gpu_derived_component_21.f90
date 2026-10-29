@@ -1,10 +1,10 @@
 program gpu_derived_component_21
     implicit none
-    type tensor
+    type tensor_t
         real, allocatable :: v(:)
         real, allocatable :: w(:)
     end type
-    type(tensor) :: a(1)
+    type(tensor_t) :: a(1)
     real :: x(2) = [1., 2.]
     integer :: i
 
@@ -16,7 +16,7 @@ program gpu_derived_component_21
 contains
     pure function twice(x) result(r)
         real, intent(in) :: x(:)
-        type(tensor) :: r
+        type(tensor_t) :: r
         r%v = x
         r%w = x
     end function

@@ -8,12 +8,12 @@ program gpu_derived_component_20
         real, allocatable :: v(:)
         integer :: id
     end type
-    type, extends(base) :: tensor
+    type, extends(base) :: tensor_t
         type(metadata) :: info
         type(metadata) :: records(2)
         real :: scale
     end type
-    type(tensor) :: a(2)
+    type(tensor_t) :: a(2)
     real :: x(2) = [3., 4.]
     integer :: i
 
@@ -40,7 +40,7 @@ contains
     pure function make_tensor(x, id) result(r)
         real, intent(in) :: x(:)
         integer, intent(in) :: id
-        type(tensor) :: r
+        type(tensor_t) :: r
         r%v = x
         r%id = id
         r%scale = real(id)
