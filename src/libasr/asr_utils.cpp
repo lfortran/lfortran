@@ -5765,7 +5765,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            stype->n_data_member_types,
                                            nullptr,
                                            0,
-                                           is_cstruct == false ? false : stype->m_is_cstruct,
+                                           is_cstruct,
                                            stype->m_is_unlimited_polymorphic
                                            )
                 );

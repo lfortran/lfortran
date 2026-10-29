@@ -17,7 +17,7 @@ StructType(ttype* data_member_types, ttype* member_function_types,
 |----------|-------------|
 | `data_member_types` | the types of the data components, in the order the [Struct](../symbol_nodes/Struct.md) lists them in `members`. |
 | `member_function_types` | the types of the type-bound procedures. |
-| `is_cstruct` | `true` for a type that must be laid out the way C would lay it out, as for `bind(c)`. |
+| `is_cstruct` | `true` for a concrete derived type (`type(t)`); `false` for a polymorphic class wrapper (`class(t)`). C interoperability is recorded by the defining `Struct`'s ABI. |
 | `is_unlimited_polymorphic` | `true` for `class(*)`, which may hold a value of any type. |
 
 ### Return values
@@ -36,8 +36,13 @@ what names the definition when it is needed.
 A polymorphic variable, `class(t)`, has the **StructType** of `t`: the dynamic
 type is a run time property, and
 [SelectType](../statement_nodes/SelectType.md) is what examines it.
+Its `is_cstruct` flag is false, whereas the defining concrete `Struct`'s
+signature has the flag true. A self-referential `class(t)` component must
+not make the enclosing concrete signature polymorphic.
 
 ## Examples
+
+The following example is a polymorphic type.
 
 ```clojure
 (StructType
