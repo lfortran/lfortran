@@ -161,23 +161,8 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         *current_expr = array_size;
     }
 
-    void replace_ArrayBound(ASR::ArrayBound_t* x) {
-        if( !ASR::is_a<ASR::Var_t>(*x->m_v) ||
-            !ASRUtils::is_value_constant(x->m_dim) ) {
-            return ;
-        }
-
-        ASR::Variable_t* v = ASRUtils::EXPR2VAR(x->m_v);
-        ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
-        ASR::dimension_t* dims = nullptr;
-        int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, dims));
-        bool is_argument = ASRUtils::is_arg_dummy(v->m_intent);
-        if( !(n > 0 && is_argument &&
-              !ASRUtils::is_dimension_empty(dims, n)) ) {
-            return ;
-        }
-        int64_t dim = -1;
-        ASRUtils::extract_value(x->m_dim, dim);
+    ASR::expr_t* declared_bound(ASR::ArrayBound_t* x,
+            ASR::dimension_t* dims, int64_t dim) {
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
         ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
         ASR::expr_t* start = copy_of(dims[dim - 1].m_start);
@@ -218,6 +203,40 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                         al, x->base.base.loc, 0, x->m_type))),
                     bound, empty_bound, x->m_type, nullptr));
             }
+        }
+        return bound;
+    }
+
+    void replace_ArrayBound(ASR::ArrayBound_t* x) {
+        if( !ASR::is_a<ASR::Var_t>(*x->m_v) || !x->m_dim ) {
+            return ;
+        }
+        int64_t dim = -1;
+        bool constant_dim = ASRUtils::extract_value(
+            ASRUtils::expr_value(x->m_dim), dim);
+        // A runtime selector can occur in more than one test. Leave other
+        // expressions for a lowering that can materialize their value.
+        if( !constant_dim && !PassUtils::is_reevaluable_integer_expr(x->m_dim) ) {
+            return ;
+        }
+        ASR::Variable_t* v = ASRUtils::EXPR2VAR(x->m_v);
+        ASR::dimension_t* dims = nullptr;
+        int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(x->m_v), dims));
+        if( !(n > 0 && ASRUtils::is_arg_dummy(v->m_intent) &&
+              !ASRUtils::is_dimension_empty(dims, n)) ) {
+            return ;
+        }
+        if( constant_dim ) {
+            *current_expr = declared_bound(x, dims, dim);
+            return ;
+        }
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::expr_t* bound = declared_bound(x, dims, n);
+        for( int i = n - 1; i >= 1; i-- ) {
+            bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, x->base.base.loc,
+                b.Eq(copy_of(x->m_dim), b.i_t(i, ASRUtils::expr_type(x->m_dim))),
+                declared_bound(x, dims, i), bound, x->m_type, nullptr));
         }
         *current_expr = bound;
     }

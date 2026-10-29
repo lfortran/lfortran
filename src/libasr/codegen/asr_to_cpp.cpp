@@ -7,8 +7,10 @@
 #include <libasr/codegen/c_utils.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_verify.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
 
 namespace LCompilers {
@@ -356,7 +358,8 @@ public:
                 size_t size;
                 extract_dimensions(v.m_type)
                 dims = convert_dims(n_dims, m_dims, size);
-                sub = format_type(dims, "bool", v.m_name, use_ref, dummy);
+                sub = format_type(dims, "bool", v.m_name, use_ref, dummy,
+                    true, "", true);
             } else if (ASRUtils::is_character(*v.m_type)) {
                 // std::string is a byte string, so it can only carry kind 1.
                 int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(v.m_type);
@@ -662,6 +665,14 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             throw CodeGenError("array bounds without dim must be lowered "
                 "before C++ code generation", x.base.base.loc);
         }
+        ASR::expr_t* array = ASRUtils::get_expr_size_expr(x.m_v);
+        if (array && ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::Variable_t* variable = ASRUtils::EXPR2VAR(array);
+            if (ASRUtils::is_arg_dummy(variable->m_intent)) {
+                throw CodeGenError("bounds of this dummy array with this dim "
+                    "expression are not supported by the C++ backend", x.base.base.loc);
+            }
+        }
         if (array_bound_helper.empty()) {
             array_bound_helper = global_scope->get_unique_name("array_bound");
             array_types_decls += "\ntemplate <typename I>\nI " + array_bound_helper
@@ -675,7 +686,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
         visit_expr(*x.m_dim);
         std::string idx = src;
-        src = array_bound_helper + "<" + result_type + ">((" + var_name
+        src = "::" + array_bound_helper + "<" + result_type + ">((" + var_name
             + ")->dims[(" + idx + ")-1], "
             + (x.m_bound == ASR::arrayboundType::UBound ? "true" : "false") + ")";
         last_expr_precedence = 2;
@@ -732,7 +743,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             n_values = str_fmt->n_args;
         } else if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
-            src = "std::cout<< " + src + "<<std::endl;\n";
+            src = "std::cout<< (" + src + ")<<std::endl;\n";
             return;
         } else {
             throw CodeGenError("print statment supported for stringformat and single character argument",
@@ -740,7 +751,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         for (size_t i=0; i<n_values; i++) {
             this->visit_expr(*(str_fmt->m_args[i]));
-            out += "<< " + src + " ";
+            out += "<< (" + src + ") ";
             if (i+1 != n_values) {
                 out += "<< " + sep + " ";
             }
@@ -766,7 +777,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         for (size_t i=0; i<n_values; i++) {
             str_fmt? this->visit_expr(*(str_fmt->m_args[i])): this->visit_expr(*x.m_values[i]);
-            out += "<< " + src + " ";
+            out += "<< (" + src + ") ";
         }
         out += "<< std::endl;\n";
         src = out;
@@ -840,6 +851,10 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    pass_update_array_dim_intrinsic_calls(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) {
+        return Error();
+    }
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);

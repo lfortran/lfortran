@@ -1,7 +1,7 @@
 program arrays_137
 implicit none
 real :: empty(5:4), nonempty(-2:3), matrix(-1:1,0:3)
-integer :: d
+integer :: d, array_bound
 if (lbound(empty,1) /= 1) error stop 1
 if (ubound(empty,1) /= 0) error stop 2
 do d = 1, 1
