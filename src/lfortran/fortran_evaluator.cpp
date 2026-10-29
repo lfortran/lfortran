@@ -1,11 +1,36 @@
 #include <cstdio>
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <optional>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <type_traits>
+#include <cerrno>
+#include <exception>
+#ifndef __EMSCRIPTEN__
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#endif
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+// The SDK's COM shorthand must not rewrite compiler identifiers.
+#undef interface
+#else
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
@@ -31,12 +56,6 @@
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
 
-
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
@@ -84,71 +103,106 @@ struct InputContext {
 int dup_fd(int fd) { return _dup(fd); }
 int dup2_fd(int from, int to) { return _dup2(from, to); }
 void close_fd(int fd) { _close(fd); }
-void rewind_fd(int fd) { _lseek(fd, 0, SEEK_SET); }
-int read_fd(int fd, char *buffer, unsigned size) { return _read(fd, buffer, size); }
-bool truncate_fd(int fd) { return _chsize(fd, 0) == 0; }
 #else
 int dup_fd(int fd) { return dup(fd); }
 int dup2_fd(int from, int to) { return dup2(from, to); }
 void close_fd(int fd) { close(fd); }
-void rewind_fd(int fd) { lseek(fd, 0, SEEK_SET); }
-int read_fd(int fd, char *buffer, unsigned size) { return read(fd, buffer, size); }
-bool truncate_fd(int fd) { return ftruncate(fd, 0) == 0; }
 #endif
 
 // While a cell runs with CellIO::output set, its stdout and stderr (file
 // descriptors 1 and 2) go to temporary files rather than pipes: a file never
-// fills up, so nothing has to read it while the cell runs.
+// fills up. Readers must not change the writer's file position.
 class OutputCapture {
-    FILE *files[2];
-    int saved[2];
+    FILE *files[2] = {nullptr, nullptr};
+    int saved[2] = {-1, -1};
+    int64_t consumed[2] = {0, 0};
+#ifdef _WIN32
+    int readers[2] = {-1, -1};
+#endif
+    void restore() noexcept {
+        for (int i = 0; i < 2; i++) {
+            if (saved[i] >= 0) {
+                dup2_fd(saved[i], 1 + i);
+                close_fd(saved[i]);
+            }
+#ifdef _WIN32
+            if (readers[i] >= 0) close_fd(readers[i]);
+#endif
+            if (files[i]) fclose(files[i]);
+        }
+    }
 public:
     OutputCapture() {
-        files[0] = tmpfile();
-        files[1] = tmpfile();
-        if (!files[0] || !files[1]) {
-            if (files[0]) fclose(files[0]);
-            if (files[1]) fclose(files[1]);
-            throw LCompilers::LCompilersException(
-                "cannot create a temporary file for the cell's output");
-        }
-        fflush(stdout);
-        fflush(stderr);
-        for (int i = 0; i < 2; i++) {
-            saved[i] = dup_fd(1 + i);
-            dup2_fd(fileno(files[i]), 1 + i);
+        try {
+            fflush(stdout);
+            fflush(stderr);
+            for (int i = 0; i < 2; i++) {
+                files[i] = tmpfile();
+                if (!files[i]) throw std::runtime_error("cannot create cell output capture");
+#ifdef _WIN32
+                // Unlike dup(), ReOpenFile creates an independent file position.
+                HANDLE reader = ReOpenFile((HANDLE)_get_osfhandle(fileno(files[i])),
+                    GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+                if (reader == INVALID_HANDLE_VALUE)
+                    throw std::runtime_error("cannot open cell output reader");
+                readers[i] = _open_osfhandle((intptr_t)reader, _O_BINARY);
+                if (readers[i] < 0) {
+                    CloseHandle(reader);
+                    throw std::runtime_error("cannot open cell output descriptor");
+                }
+#endif
+                saved[i] = dup_fd(1 + i);
+                if (saved[i] < 0 || dup2_fd(fileno(files[i]), 1 + i) < 0)
+                    throw std::runtime_error("cannot redirect cell output");
+            }
+        } catch (...) {
+            restore();
+            throw;
         }
     }
     ~OutputCapture() {
         fflush(stdout);
         fflush(stderr);
-        for (int i = 0; i < 2; i++) {
-            dup2_fd(saved[i], 1 + i);
-            close_fd(saved[i]);
-            fclose(files[i]);
-        }
+        restore();
     }
     OutputCapture(const OutputCapture &) = delete;
     OutputCapture &operator=(const OutputCapture &) = delete;
     // Passes what the cell has written since the last call to `output`.
-    void flush(const std::function<void(int, const std::string &)> &output) {
-        fflush(stdout);
-        fflush(stderr);
+    void pump(const std::function<void(int, const std::string &)> &output,
+            bool barrier = false) {
+        // Formatted/nonadvancing WRITE may still be in the C stdio buffer.
+        // fflush serializes with stdio writers; it never moves the read offset.
+        if (fflush(stdout) != 0 || fflush(stderr) != 0)
+            throw std::runtime_error("cannot flush cell output capture");
         for (int i = 0; i < 2; i++) {
             int fd = fileno(files[i]);
-            std::string text;
             char buffer[4096];
-            rewind_fd(fd);
-            int n;
-            while ((n = read_fd(fd, buffer, sizeof(buffer))) > 0) text.append(buffer, n);
-            // Descriptor 1 or 2 shares this file offset, so the cell's next
-            // write starts again at the beginning.
-            if (!truncate_fd(fd)) {
-                throw LCompilers::LCompilersException(
-                    "cannot truncate the temporary file of the cell's output");
+#ifdef _WIN32
+            struct _stat64 info;
+            if (_fstat64(fd, &info) != 0)
+#else
+            struct stat info;
+            if (fstat(fd, &info) != 0)
+#endif
+                throw std::runtime_error("cannot inspect cell output capture");
+            // Snapshot at barriers; bounded turns otherwise. Separate spools
+            // preserve per-stream order, not stdout/stderr interleaving.
+            int64_t end = barrier ? info.st_size
+                : std::min<int64_t>(info.st_size, consumed[i] + 65536);
+            while (consumed[i] < end) {
+                unsigned size = (unsigned)std::min<int64_t>(sizeof(buffer), end - consumed[i]);
+#ifdef _WIN32
+                if (_lseeki64(readers[i], consumed[i], SEEK_SET) < 0)
+                    throw std::runtime_error("cannot position cell output reader");
+                int n = _read(readers[i], buffer, size);
+#else
+                auto n = pread(fd, buffer, size, consumed[i]);
+#endif
+                if (n < 0 && errno == EINTR) continue;
+                if (n <= 0) throw std::runtime_error("cannot read cell output capture");
+                consumed[i] += n;
+                output(1 + i, std::string(buffer, n));
             }
-            rewind_fd(fd);
-            if (!text.empty()) output(1 + i, text);
         }
     }
 };
@@ -156,6 +210,49 @@ public:
 // What the cell running with CellIO::output has written but not yet passed
 // on, for when it ends the process.
 std::function<void()> *flush_at_exit = nullptr;
+
+#ifndef __EMSCRIPTEN__
+// One synchronous hook at a time; no output queue or frontend work on the
+// worker. In particular no mutex is held while a callback waits for stdin.
+class CellMailbox {
+    std::mutex mutex;
+    std::condition_variable changed;
+    std::function<void()> pending;
+    std::exception_ptr failure;
+    bool done = false;
+public:
+    void call(const std::function<void()> &action) {
+        std::unique_lock<std::mutex> lock(mutex);
+        pending = action;
+        changed.notify_one();
+        changed.wait(lock, [&]() { return !pending; });
+        if (failure) std::rethrow_exception(failure);
+    }
+    void finish() {
+        std::lock_guard<std::mutex> lock(mutex);
+        done = true;
+        changed.notify_one();
+    }
+    [[noreturn]] void await_process_exit() {
+        std::unique_lock<std::mutex> lock(mutex);
+        for (;;) changed.wait(lock);
+    }
+    bool service() {
+        std::unique_lock<std::mutex> lock(mutex);
+        if (!pending && !done) changed.wait_for(lock, std::chrono::milliseconds(10));
+        if (pending) {
+            lock.unlock();
+            std::exception_ptr error;
+            try { pending(); } catch (...) { error = std::current_exception(); }
+            lock.lock();
+            failure = error;
+            pending = {};
+            changed.notify_one();
+        }
+        return done;
+    }
+};
+#endif
 
 // A hook is called from generated code, so its exception must not unwind
 // through it.
@@ -608,13 +705,57 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     // What the cell writes goes to io.output before anything it displays,
     // clears or reads.
     std::optional<OutputCapture> capture;
-    std::function<void()> flush_output = [&]() { if (capture) capture->flush(io.output); };
+    std::exception_ptr output_error;
+    auto drain_output = [&](bool barrier) {
+        if (output_error) std::rethrow_exception(output_error);
+        if (capture) {
+            try {
+                capture->pump(io.output, barrier);
+                if (io.progress_output) io.progress_output();
+            }
+            catch (...) {
+                output_error = std::current_exception();
+                throw;
+            }
+        }
+    };
+#ifndef __EMSCRIPTEN__
+    CellMailbox mailbox;
+    const bool threaded = bool(io.output);
+    const auto owner = std::this_thread::get_id();
+    bool process_exiting = false; // Only accessed by the caller.
+#endif
+    auto dispatch = [&](const std::function<void()> &action) {
+#ifndef __EMSCRIPTEN__
+        if (threaded && std::this_thread::get_id() != owner) {
+            mailbox.call(action);
+            return;
+        }
+#endif
+        action();
+    };
+    std::function<void()> flush_output = [&]() {
+        dispatch([&]() {
+#ifndef __EMSCRIPTEN__
+            process_exiting = true;
+#endif
+            // STOP runs atexit on the worker. Drain and flush the transport
+            // here, before letting it continue process termination.
+            try { drain_output(true); }
+            catch (...) {
+                if (io.flush_on_exit) io.flush_on_exit();
+                throw;
+            }
+            if (io.flush_on_exit) io.flush_on_exit();
+        });
+    };
     // A cell that ends the process (STOP, a fatal error) still passes on
     // what it wrote.
     struct FlushAtExit {
         FlushAtExit(std::function<void()> *flush) {
             static const int registered = std::atexit([]() {
-                if (flush_at_exit) (*flush_at_exit)();
+                try { if (flush_at_exit) (*flush_at_exit)(); }
+                catch (...) {} // An atexit failure cannot escape exit().
             });
             (void)registered;
             flush_at_exit = flush;
@@ -627,20 +768,28 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         flush_at_exit_guard.emplace(&flush_output);
         if (io.display) {
             hooks_io.display = [&](const std::string &mime, const std::string &data) {
-                flush_output();
-                io.display(mime, data);
+                dispatch([&]() {
+                    drain_output(true);
+                    io.display(mime, data);
+                });
             };
         }
         if (io.clear_output) {
             hooks_io.clear_output = [&]() {
-                flush_output();
-                io.clear_output();
+                dispatch([&]() {
+                    drain_output(true);
+                    io.clear_output();
+                });
             };
         }
         if (io.input) {
             hooks_io.input = [&](std::string &record) {
-                flush_output();
-                return io.input(record);
+                int status = 1;
+                dispatch([&]() {
+                    drain_output(true);
+                    status = io.input(record);
+                });
+                return status;
             };
         }
     }
@@ -662,65 +811,103 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     diag::Diagnostics diagnostics;
     PassManager passes;
     passes.use_default_passes();
+    auto execute_cell = [&]() {
+        try {
+            const auto newline = code.find('\n');
+            auto magic = code.substr(0, newline);
+            // Trailing blanks and the \r of a CRLF line ending are not part of it.
+            magic.erase(magic.find_last_not_of(" \t\r") + 1);
+            const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
+            Result<std::string> shown{Error{}};
+            // An inspection cell shows how its code compiles in the session, but
+            // it does not run, so its declarations must not join the session.
+            struct KeepSession {
+                SymbolTable *&scope;
+                SymbolTable *const saved;
+                ~KeepSession() { scope = saved; }
+            };
+            out.inspection = true;
+            if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
+            else if (magic == "%%showasr") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_asr(source, lm, diagnostics);
+            } else if (magic == "%%showllvm") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_llvm(source, lm, passes, diagnostics);
+            } else if (magic == "%%showasm") {
+                KeepSession keep{symbol_table, symbol_table};
+                shown = get_asm(source, lm, passes, diagnostics);
+            } else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
+            else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
+            else {
+                out.inspection = false;
+                auto result = evaluate(code, verbose, lm, passes, diagnostics);
+                out.ok = result.ok;
+                if (out.ok) out.value = std::move(result.result);
+            }
+            if (shown.ok) {
+                out.ok = true;
+                out.output = shown.result;
+            }
+            out.diagnostics = diagnostics.render(lm, compiler_options);
+            if (!out.ok) {
+                LCOMPILERS_ASSERT(diagnostics.has_error());
+                out.error_name = "CompilerError";
+                out.error_value = out.diagnostics;
+            } else if (!display.error.empty()) {
+                out.ok = false;
+                out.error_name = "DisplayError";
+                out.error_value = "display failed: " + display.error;
+            }
+        } catch (const LCompilersException &error) {
+            out.ok = false;
+            out.internal_error = true;
+            out.error_name = error.name();
+            out.error_value = error.msg();
+            auto trace = error.stacktrace_addresses();
+            get_local_addresses(trace);
+            get_local_info(trace);
+            out.error_traceback = stacktrace2str(trace, stacktrace_depth);
+        }
+    };
+    auto execution_error = [&](const std::string &message) {
+        out.ok = false;
+        out.internal_error = false;
+        out.error_traceback.clear();
+        out.error_name = "ExecutionError";
+        out.error_value = message;
+    };
     try {
         if (io.output) capture.emplace();
-        const auto newline = code.find('\n');
-        auto magic = code.substr(0, newline);
-        // Trailing blanks and the \r of a CRLF line ending are not part of it.
-        magic.erase(magic.find_last_not_of(" \t\r") + 1);
-        const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
-        Result<std::string> shown{Error{}};
-        // An inspection cell shows how its code compiles in the session, but
-        // it does not run, so its declarations must not join the session.
-        struct KeepSession {
-            SymbolTable *&scope;
-            SymbolTable *const saved;
-            ~KeepSession() { scope = saved; }
-        };
-        out.inspection = true;
-        if (magic == "%%showast") shown = get_ast(source, lm, diagnostics);
-        else if (magic == "%%showasr") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_asr(source, lm, diagnostics);
-        } else if (magic == "%%showllvm") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_llvm(source, lm, passes, diagnostics);
-        } else if (magic == "%%showasm") {
-            KeepSession keep{symbol_table, symbol_table};
-            shown = get_asm(source, lm, passes, diagnostics);
-        } else if (magic == "%%showcpp") shown = get_cpp(source, lm, diagnostics, 1);
-        else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
-        else {
-            out.inspection = false;
-            auto result = evaluate(code, verbose, lm, passes, diagnostics);
-            out.ok = result.ok;
-            if (out.ok) out.value = std::move(result.result);
+#ifndef __EMSCRIPTEN__
+        if (threaded) {
+            std::exception_ptr worker_error;
+            std::thread worker([&]() {
+                try { execute_cell(); }
+                catch (...) { worker_error = std::current_exception(); }
+                mailbox.finish();
+            });
+            bool done;
+            do {
+                try { drain_output(false); }
+                catch (...) {} // Saved above; keep servicing hooks until join.
+                done = mailbox.service();
+                if (process_exiting) mailbox.await_process_exit();
+            } while (!done);
+            worker.join();
+            drain_output(true);
+            if (worker_error) std::rethrow_exception(worker_error);
+        } else
+#endif
+        {
+            execute_cell();
         }
-        if (shown.ok) {
-            out.ok = true;
-            out.output = shown.result;
-        }
-        out.diagnostics = diagnostics.render(lm, compiler_options);
-        if (!out.ok) {
-            LCOMPILERS_ASSERT(diagnostics.has_error());
-            out.error_name = "CompilerError";
-            out.error_value = out.diagnostics;
-        } else if (!display.error.empty()) {
-            out.ok = false;
-            out.error_name = "DisplayError";
-            out.error_value = "display failed: " + display.error;
-        }
-    } catch (const LCompilersException &error) {
-        out.ok = false;
-        out.internal_error = true;
-        out.error_name = error.name();
-        out.error_value = error.msg();
-        auto trace = error.stacktrace_addresses();
-        get_local_addresses(trace);
-        get_local_info(trace);
-        out.error_traceback = stacktrace2str(trace, stacktrace_depth);
+        drain_output(true);
+    } catch (const std::exception &error) {
+        execution_error(error.what());
+    } catch (...) {
+        execution_error("unknown cell execution failure");
     }
-    flush_output();
     return out;
 }
 

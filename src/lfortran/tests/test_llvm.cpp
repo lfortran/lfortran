@@ -11,6 +11,10 @@
 #include <vector>
 
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/fortran_kernel.h>
+#ifndef __EMSCRIPTEN__
+#include <thread>
+#endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/exception.h>
@@ -3835,6 +3839,116 @@ TEST_CASE("FortranEvaluator execute: display hooks") {
 // Like test_runtime_input, the stdin cases run natively only; the WASM test
 // build also cannot read the integration test sources.
 #ifndef __EMSCRIPTEN__
+TEST_CASE("FortranEvaluator execute: streaming hook affinity and failure cleanup") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    auto owner = std::this_thread::get_id();
+    std::string output, events;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int fd, const std::string &text) {
+        CHECK(std::this_thread::get_id() == owner);
+        CHECK(fd == 1);
+        output += text;
+    };
+    io.display = [&](const std::string &, const std::string &) {
+        CHECK(std::this_thread::get_id() == owner);
+        CHECK(output == "printed\n");
+        events += "display ";
+    };
+    io.clear_output = [&]() {
+        CHECK(std::this_thread::get_id() == owner);
+        CHECK(output == "printed\n");
+        events += "clear ";
+    };
+    io.input = [&](std::string &record) {
+        CHECK(std::this_thread::get_id() == owner);
+        CHECK(output == "printed\nprompt");
+        events += "input";
+        record = "42";
+        return 0;
+    };
+    auto cell = e.execute(R"(
+use lfortran_display
+integer :: answer, ios
+print '(a)', 'printed'
+call display_data('text/plain', 'shown')
+call clear_output()
+write(*,'(a)',advance='no') 'prompt'
+read(*,*,iostat=ios) answer
+if (ios /= 0 .or. answer /= 42) error stop
+)", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(events == "display clear input");
+    io.clear_output = [&]() {
+        CHECK(std::this_thread::get_id() == owner);
+        throw std::runtime_error("clear failed");
+    };
+    cell = e.execute("call clear_output()", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "DisplayError");
+    CHECK(cell.error_value == "display failed: clear failed");
+    io.input = [&](std::string &) -> int {
+        CHECK(std::this_thread::get_id() == owner);
+        throw std::runtime_error("input failed");
+    };
+    cell = e.execute("read(*,*,iostat=ios) answer\nif (ios <= 0) error stop", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    io.output = [&](int, const std::string &) {
+        CHECK(std::this_thread::get_id() == owner);
+        throw std::runtime_error("publication failed");
+    };
+    cell = e.execute("print *, 'failure'\ncall clear_output()", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "ExecutionError");
+    CHECK(cell.error_value == "publication failed");
+    io.output = [&](int, const std::string &text) { output += text; };
+    output.clear();
+    cell = e.execute("print '(a)', 'recovered'", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output == "recovered\n");
+    io.progress_output = [&]() {
+        CHECK(std::this_thread::get_id() == owner);
+        throw std::runtime_error("transport failed");
+    };
+    cell = e.execute("print '(a)', 'transport failure'", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "ExecutionError");
+    CHECK(cell.error_value == "transport failed");
+    io.progress_output = {};
+    output.clear();
+    cell = e.execute("print '(a)', 'transport recovered'", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output == "transport recovered\n");
+}
+
+TEST_CASE("Kernel streams: split UTF-8 and invalid bytes") {
+    using namespace LCompilers::LFortran::kernel;
+    std::string streams[2];
+    std::function<void(const std::string &, const std::string &)> publish =
+        [&](const std::string &name, const std::string &text) {
+            CHECK(LCompilers::is_valid_utf8(text));
+            streams[name == "stdout" ? 0 : 1] += text;
+        };
+    StreamText text(publish);
+    text.write(1, "partial\xe2");
+    CHECK(streams[0] == "partial");
+    text.write(2, "\xf0\x9f");
+    CHECK(streams[1].empty());
+    text.write(1, "\x82");
+    CHECK(streams[0] == "partial");
+    text.write(1, "\xac");
+    text.write(2, "\x98\x80");
+    CHECK(streams[0] == "partial\xe2\x82\xac");
+    CHECK(streams[1] == "\xf0\x9f\x98\x80");
+    text.write(1, "\xff\xe2\x82");
+    text.finish();
+    CHECK(streams[0] == "partial\xe2\x82\xac" + utf8("\xff\xe2\x82"));
+    text.write(1, "\xe0\x80");
+    text.write(1, "\x80");
+    CHECK(streams[0] == "partial\xe2\x82\xac" +
+        utf8("\xff\xe2\x82") + utf8("\xe0\x80\x80"));
+}
+
 struct InputRecords {
     std::vector<std::string> records;
     size_t next = 0;

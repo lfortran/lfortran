@@ -225,13 +225,38 @@ def large_output(exe, cwd):
         client = join()
         stalled = zmtp(ports["iopub_port"], b"SUB")
         stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
-        size = 70 * 1024 * 1024
-        out = prompt(exe, cwd, ["--connect", ports["path"]],
-            b"print '(a)', repeat('x', %d)\r6*7\r\x04" % size)
-        check(out.count(b"x") >= size, "the prompt lost the output")
-        check(re.search(rb"^42\r?$", out, re.M), "the prompt did not run its next cell")
-        check(value(client, "7*8") == "56", "another client did not run its cell")
-        stalled.close()
+        stopped = threading.Event()
+        errors = []
+
+        def drain():
+            # Only the raw SUB is deliberately stalled, not this healthy client.
+            try:
+                while not stopped.is_set():
+                    try:
+                        client.get_iopub_msg(timeout=0.1)
+                    except queue.Empty:
+                        pass
+            except BaseException as error:
+                errors.append(error)
+
+        drainer = threading.Thread(target=drain, daemon=True)
+        try:
+            size = 70 * 1024 * 1024
+            drainer.start()
+            try:
+                out = prompt(exe, cwd, ["--connect", ports["path"]],
+                    b"print '(a)', repeat('x', %d)\r6*7\r\x04" % size)
+            finally:
+                stopped.set()
+                drainer.join(timeout=5)
+                check(not drainer.is_alive(), "control subscriber did not stop draining")
+                if errors:
+                    raise errors[0]
+            check(out.count(b"x") >= size, "the prompt lost the output")
+            check(re.search(rb"^42\r?$", out, re.M), "the prompt did not run its next cell")
+            check(value(client, "7*8") == "56", "another client did not run its cell")
+        finally:
+            stalled.close()
 
 
 def stalled_connections(exe, cwd):

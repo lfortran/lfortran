@@ -35,6 +35,51 @@ inline std::string utf8(const std::string &s)
     return out;
 }
 
+// Capture chunks can split a code point. Keep only a valid incomplete suffix,
+// independently for stdout and stderr; malformed bytes retain utf8()'s policy.
+class StreamText {
+    std::string carry[2];
+    const std::function<void(const std::string &, const std::string &)> &stream;
+public:
+    explicit StreamText(const std::function<void(const std::string &,
+        const std::string &)> &stream) : stream(stream) {}
+    void write(int fd, const std::string &bytes) {
+        auto &tail = carry[fd - 1];
+        std::string text = std::move(tail);
+        text += bytes;
+        size_t end = text.size(), start = end;
+        while (start && end - start < 3 &&
+                (static_cast<unsigned char>(text[start - 1]) & 0xc0) == 0x80) start--;
+        if (start) {
+            start--;
+            const auto c = static_cast<unsigned char>(text[start]);
+            size_t n = c >= 0xc2 && c <= 0xdf ? 2 :
+                c >= 0xe0 && c <= 0xef ? 3 : c >= 0xf0 && c <= 0xf4 ? 4 : 0;
+            bool prefix = n && end - start < n;
+            for (size_t j = start + 1; prefix && j < end; j++) {
+                auto b = static_cast<unsigned char>(text[j]);
+                prefix = (b & 0xc0) == 0x80;
+                if (j == start + 1)
+                    prefix = prefix && !(c == 0xe0 && b < 0xa0) &&
+                        !(c == 0xed && b >= 0xa0) && !(c == 0xf0 && b < 0x90) &&
+                        !(c == 0xf4 && b >= 0x90);
+            }
+            if (prefix) end = start;
+        }
+        tail = text.substr(end);
+        if (end) stream(fd == 1 ? "stdout" : "stderr", utf8(text.substr(0, end)));
+    }
+    void finish() {
+        for (int i = 0; i < 2; i++) {
+            if (!carry[i].empty()) {
+                auto text = std::move(carry[i]);
+                carry[i].clear();
+                stream(i == 0 ? "stdout" : "stderr", utf8(text));
+            }
+        }
+    }
+};
+
 // The kernel_info_reply.
 const char *const implementation = "LFortran";
 const char *const language = "fortran";
@@ -57,10 +102,31 @@ inline FortranEvaluator::CellResult execute(FortranEvaluator &e,
     const std::function<void(const std::string &name, const std::string &text)> &stream,
     const std::function<void(const std::string &text)> &result, bool verbose = false)
 {
-    io.output = [&](int fd, const std::string &text) {
-        stream(fd == 1 ? "stdout" : "stderr", utf8(text));
+    StreamText text(stream);
+    const auto on_exit = io.flush_on_exit;
+    io.flush_on_exit = [&]() {
+        try { text.finish(); }
+        catch (...) {
+            if (on_exit) on_exit();
+            throw;
+        }
+        if (on_exit) on_exit();
     };
+    const auto display = io.display;
+    if (display) io.display = [&](const std::string &mime, const std::string &data) {
+        text.finish();
+        display(mime, data);
+    };
+    const auto clear = io.clear_output;
+    if (clear) io.clear_output = [&]() { text.finish(); clear(); };
+    const auto input = io.input;
+    if (input) io.input = [&](std::string &record) {
+        text.finish();
+        return input(record);
+    };
+    io.output = [&](int fd, const std::string &bytes) { text.write(fd, bytes); };
     FortranEvaluator::CellResult cell = e.execute(code, verbose, io);
+    text.finish();
     if (!cell.output.empty()) {
         stream("stdout", utf8(cell.output.back() == '\n' ? cell.output : cell.output + "\n"));
     }
