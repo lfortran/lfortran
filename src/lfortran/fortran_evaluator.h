@@ -87,6 +87,9 @@ public:
         // on the execute() caller. WASM currently drains only at these
         // barriers. Unset, the cell writes to the process's stdout and stderr.
         std::function<void(int stream, const std::string &text)> output;
+        // Make bounded, nonblocking transport progress on the caller after
+        // each capture pump, even when no new output was captured.
+        std::function<void()> progress_output;
         // Flush the frontend's transport before STOP terminates the process.
         // Called on the execute() caller, after the last output.
         std::function<void()> flush_on_exit;

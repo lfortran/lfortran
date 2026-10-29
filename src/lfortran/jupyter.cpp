@@ -601,11 +601,13 @@ public:
     bool pending() const { return !closed && !outbox.empty(); }
 
     // Sends what the socket takes now.
-    void flush()
+    void flush(size_t budget = SIZE_MAX)
     {
-        while (pending()) {
+        while (budget && pending()) {
             Outgoing &out = outbox.front();
-            auto n = ::send(s, out.data.data() + sent, chunk(out.data.size() - sent), 0);
+            const size_t remaining = out.data.size() - sent;
+            auto n = ::send(s, out.data.data() + sent,
+                chunk(remaining < budget ? remaining : budget), 0);
             if (n < 0 && interrupted()) continue;
             if (n < 0 && would_block()) return;
             if (n <= 0) {
@@ -613,6 +615,7 @@ public:
                 return;
             }
             sent += static_cast<size_t>(n);
+            budget -= static_cast<size_t>(n);
             if (sent == out.data.size()) {
                 queued -= sent;
                 if (out.reliable) queued_reliable -= sent;
@@ -2086,6 +2089,9 @@ private:
                 Object{{"code", code}, {"execution_count", execution_count}});
         }
         FortranEvaluator::CellIO io;
+        io.progress_output = [&]() {
+            for (auto &subscriber : iopub_.peers) subscriber->flush(65536);
+        };
         io.flush_on_exit = [&]() { flush_subscribers(1000); };
         io.display = [&](const std::string &mime, const std::string &data) {
             if (!silent) publish("display_data", request.header,

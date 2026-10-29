@@ -121,6 +121,69 @@ def check_streaming(client, directory, partial=False):
     gate.unlink()
 
 
+def check_transport_progress(client, directory):
+    import zmq
+
+    gate = directory / "transport-release"
+    waiting = directory / "transport-waiting"
+    waiter = directory / "transport-wait.py"
+    waiter.write_text("import sys, time\nfrom pathlib import Path\n"
+                      "Path(sys.argv[2]).touch()\n"
+                      "while not Path(sys.argv[1]).exists(): time.sleep(0.01)\n")
+    subscriber = client.context.socket(zmq.SUB)
+    subscriber.setsockopt(zmq.RCVHWM, 1)
+    subscriber.setsockopt(zmq.RCVBUF, 65536)
+    subscriber.setsockopt(zmq.SUBSCRIBE, b"")
+    subscriber.connect("tcp://127.0.0.1:%d" % client.iopub_port)
+    session = client.session.clone()
+    msg_id = None
+    try:
+        time.sleep(0.3)
+        command = '"%s" "%s" "%s" "%s"' % (
+            Path(sys.executable).as_posix(), waiter.as_posix(),
+            gate.as_posix(), waiting.as_posix())
+        argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
+            for i in range(0, len(command), 60))
+        code = ("program transport_progress\ninteger :: j\n"
+                "do j=1,1024\nprint '(a)', repeat('x',4095)\nend do\n"
+                "print '(a)', 'TRANSPORT-END'\n"
+                "call execute_command_line( &\n" + argument + ")\nend program")
+        msg_id = client.execute(code, allow_stdin=False)
+        deadline = time.monotonic() + 30
+        while not waiting.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert waiting.exists(), "cell did not reach transport gate"
+        # Let capture pumping reach the end while this subscriber is paused.
+        time.sleep(2)
+        text = ""
+        deadline = time.monotonic() + 10
+        while "TRANSPORT-END\n" not in text and time.monotonic() < deadline:
+            if not subscriber.poll(100):
+                continue
+            _, parts = session.feed_identities(subscriber.recv_multipart())
+            msg = session.deserialize(parts)
+            if msg["parent_header"].get("msg_id") != msg_id:
+                continue
+            assert msg["msg_type"] != "error", msg
+            assert not (msg["msg_type"] == "status" and
+                        msg["content"]["execution_state"] == "idle"), msg
+            if msg["msg_type"] == "stream":
+                text += msg["content"]["text"]
+        assert text == ("x" * 4095 + "\n") * 1024 + "TRANSPORT-END\n", (
+            "queued output stalled before gate release", len(text))
+    finally:
+        gate.touch()
+        try:
+            if msg_id is not None:
+                reply = client.get_shell_msg(timeout=15)
+                assert reply["parent_header"]["msg_id"] == msg_id, reply
+                assert reply["content"]["status"] == "ok", reply
+        finally:
+            subscriber.close(linger=0)
+            for path in (gate, waiting, waiter):
+                path.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
@@ -164,6 +227,8 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
             client.wait_for_ready(timeout=30)
             check_streaming(client, directory)
             check_streaming(client, directory, partial=True)
+            if managed:
+                check_transport_progress(client, directory)
             if streaming_only:
                 client.shutdown()
                 process.wait(timeout=15)

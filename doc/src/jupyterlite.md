@@ -449,6 +449,9 @@ worker; the calling thread reads bounded chunks from cell-lifetime temporary
 files and owns all frontend callbacks and sockets. Output is drained before
 display, clear-output, input and completion. Each stream preserves byte order;
 two separate capture files do not establish an exact stdout/stderr interleaving.
+The built-in kernel also makes bounded, nonblocking IOPub transport progress
+on each capture-pump turn, even without new output, so queued output resumes
+when a paused subscriber starts reading again.
 UTF-8 characters split between chunks are reassembled at the Jupyter boundary.
 Foreign code or child processes must still flush their own buffered output.
 

@@ -3906,6 +3906,19 @@ if (ios /= 0 .or. answer /= 42) error stop
     cell = e.execute("print '(a)', 'recovered'", false, io);
     REQUIRE_MESSAGE(cell.ok, cell.error_text());
     CHECK(output == "recovered\n");
+    io.progress_output = [&]() {
+        CHECK(std::this_thread::get_id() == owner);
+        throw std::runtime_error("transport failed");
+    };
+    cell = e.execute("print '(a)', 'transport failure'", false, io);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "ExecutionError");
+    CHECK(cell.error_value == "transport failed");
+    io.progress_output = {};
+    output.clear();
+    cell = e.execute("print '(a)', 'transport recovered'", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output == "transport recovered\n");
 }
 
 TEST_CASE("Kernel streams: split UTF-8 and invalid bytes") {

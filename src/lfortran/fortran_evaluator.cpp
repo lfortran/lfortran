@@ -707,7 +707,10 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     auto drain_output = [&](bool barrier) {
         if (output_error) std::rethrow_exception(output_error);
         if (capture) {
-            try { capture->pump(io.output, barrier); }
+            try {
+                capture->pump(io.output, barrier);
+                if (io.progress_output) io.progress_output();
+            }
             catch (...) {
                 output_error = std::current_exception();
                 throw;
