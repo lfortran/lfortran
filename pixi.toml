@@ -33,6 +33,11 @@ platforms = ["win-64", "linux-64"]
 llvmdev = "==10.0.1"
 [feature.llvm11.dependencies]
 llvmdev = "==11.1.0"
+kokkos = "==4.4.01"
+[feature.llvm11.activation.env]
+LFORTRAN_KOKKOS_DIR = "$CONDA_PREFIX"
+[feature.llvm11.target.win-64.activation.env]
+LFORTRAN_KOKKOS_DIR = "%CONDA_PREFIX%"
 [feature.llvm11.target.osx-arm64.activation.env]
 # GFortran emits M1/LSE instructions that LLVM 11's bundled Clang assembler
 # rejects. Use the required Xcode tools without changing the LLVM version.

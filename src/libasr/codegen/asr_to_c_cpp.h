@@ -131,8 +131,6 @@ public:
 
     std::string template_for_Kokkos;
     size_t template_number;
-    std::map<std::string, std::string> dummy_proc_template_map;
-    bool generating_dummy_proc = false;
     std::string from_std_vector_helper;
 
     std::unique_ptr<CCPPDSUtils> c_ds_api;
@@ -976,7 +974,6 @@ R"(#include <stdio.h>
     std::string get_function_declaration(const ASR::Function_t &x, bool &has_typevar, bool is_pointer=false) {
         template_for_Kokkos.clear();
         template_number = 0;
-        dummy_proc_template_map.clear();
         std::string sub, inl, static_attr;
 
         // This helps to check if the function is generic.
@@ -1535,6 +1532,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return nullptr;
     }
 
+    std::string convert_procedure_actual(ASR::expr_t*, ASR::expr_t*,
+                                        const std::string& value) {
+        return value;
+    }
+
     std::string construct_call_args(ASR::Function_t* f, size_t n_args, ASR::call_arg_t* m_args) {
         bracket_open++;
         std::string args = "";
@@ -1542,6 +1544,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             ASR::expr_t* call_arg = m_args[i].m_value;
             check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
             self().visit_expr(*call_arg);
+            src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
             if (ASR::is_a<ASR::Var_t>(*call_arg)
                 && ASR::is_a<ASR::Variable_t>(

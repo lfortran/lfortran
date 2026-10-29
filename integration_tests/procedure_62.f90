@@ -12,14 +12,14 @@ end interface
 contains
 subroutine apply(f, x, n)
 procedure(objfun) :: f
-real, intent(inout) :: x(n)
 integer, intent(in) :: n
+real, intent(inout) :: x(n)
 x(1) = f(x)
 end subroutine apply
 subroutine apply_sub(f, x, n)
 procedure(cb_interface) :: f
-real, intent(inout) :: x(n)
 integer, intent(in) :: n
+real, intent(inout) :: x(n)
 call f(x)
 end subroutine apply_sub
 end module proc_dummy_m
