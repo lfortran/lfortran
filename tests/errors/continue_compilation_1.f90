@@ -3947,3 +3947,47 @@ contains
         inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
     end subroutine
 end module cc1_inquire_delim
+
+module cc1_pure_associated_data
+    type :: item
+        integer :: value
+    end type
+    integer :: scalar, cc1_pa_values(3)
+    type(item) :: object
+end module
+
+module cc1_pure_associated_assignment
+contains
+    pure integer function host_result() result(res)
+        call inner()
+    contains
+        pure subroutine inner()
+            res = 10  ! {Error} cannot assign to host-associated variable 'res' in a pure procedure
+        end subroutine
+    end function
+
+    subroutine host_objects()
+        use cc1_pure_associated_data, only: item
+        integer :: scalar, cc1_pa_values(3)
+        type(item) :: object
+        character(3) :: text
+    contains
+        pure subroutine inner()
+            scalar = 1  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+            object%value = 2  ! {Error} cannot assign to host-associated variable 'object' in a pure procedure
+            cc1_pa_values(1) = 3  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+            cc1_pa_values(2:3) = 4  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+            text(1:2) = 'ab'  ! {Error} cannot assign to host-associated variable 'text' in a pure procedure
+            block
+                scalar = 5  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+            end block
+        end subroutine
+    end subroutine
+
+    pure subroutine use_objects()
+        use cc1_pure_associated_data, only: renamed => scalar, object, cc1_pa_values
+        renamed = 1  ! {Error} cannot assign to use-associated variable 'scalar' in a pure procedure
+        object%value = 2  ! {Error} cannot assign to use-associated variable 'object' in a pure procedure
+        cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
+    end subroutine
+end module
