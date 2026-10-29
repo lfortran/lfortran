@@ -3,6 +3,7 @@
 
 #include "terminal.h"
 
+#include <functional>
 #include <vector>
 
 using Term::Terminal;
