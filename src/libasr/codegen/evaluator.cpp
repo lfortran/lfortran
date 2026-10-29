@@ -1124,8 +1124,7 @@ WasmLFortranExecutor::WasmLFortranExecutor()
         throw LCompilersException("WasmLFortranExecutor: failed to create temp dir");
     TempDir = tmp.str().str();
 
-    // Claim a unique instance ID so that __lfortran_evaluate_N function names
-    // are globally unique across all executor instances in the same process.
+    // Side modules share the process's dynamic-linker namespace.
     static std::atomic<int> s_next_id{0};
     m_id = s_next_id.fetch_add(1);
 }
@@ -1150,41 +1149,22 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
 {
     std::unique_ptr<llvm::Module> mod = std::move(lm->m_m);
 
-    // Rename __lfortran_evaluate_<eval_count> → __lfortran_evaluate_<m_id>_<eval_count>
-    // so that multiple WasmLFortranExecutor instances in the same process (e.g.
-    // test suite) each own uniquely-named symbols and dlsym(RTLD_DEFAULT) finds
-    // the right one without needing per-handle tracking.
-    const std::string logical_stem = "__lfortran_evaluate_" + std::to_string(eval_count);
-    const std::string unique_stem  = "__lfortran_evaluate_" + std::to_string(m_id)
-                                     + "_" + std::to_string(eval_count);
-    if (llvm::Function *fn = mod->getFunction(logical_stem))
-        fn->setName(unique_stem);
-    // Same for the program unit of this evaluation, if the cell defined one:
-    // get_symbol_address() rewrites every "__lfortran_evaluate_" name, so this
-    // one has to carry the instance id too.
-    if (llvm::Function *fn = mod->getFunction(logical_stem + "_program"))
-        fn->setName(unique_stem + "_program");
-    // And for the set up of the globals it declares.
-    if (llvm::Function *fn = mod->getFunction(logical_stem + "_setup"))
-        fn->setName(unique_stem + "_setup");
+    const std::string instance = "__exec" + std::to_string(m_id) + "_";
+    const std::string unique_stem = instance + std::to_string(eval_count);
 
-    // Symbols qualified by their cell (__cell<N>_...) are named per session,
-    // so two executors in one process emit the same names. The wasm dynamic
-    // linker has one global namespace, so the second definition collides with
-    // the first -- and if their signatures differ, a module importing the name
-    // fails to link. Give each instance its own, the same way the run function
-    // above is made unique. Renaming here covers definitions and the
-    // declarations other modules of this instance import them through, so they
-    // still resolve to each other.
-    {
-        const std::string cell_prefix = "__cell";
-        const std::string instance = "__e" + std::to_string(m_id) + "_";
-        auto qualify = [&](llvm::GlobalValue &g) {
-            std::string n = g.getName().str();
-            if (n.rfind(cell_prefix, 0) == 0) g.setName(instance + n);
-        };
-        for (llvm::Function &f : mod->functions()) qualify(f);
-        for (llvm::GlobalVariable &g : mod->globals()) qualify(g);
+    // Isolate every exported definition, not just cell entry points. Otherwise
+    // a function in one executor can interpose on a variable in another. Record
+    // ownership before renaming so imports from this and later modules agree,
+    // while unresolved runtime imports retain their external ABI names.
+    for (const llvm::GlobalValue &g : mod->global_values()) {
+        if (!g.isDeclaration() && !g.hasLocalLinkage() && !g.hasAppendingLinkage()) {
+            std::string name = g.getName().str();
+            symbols.emplace(name, instance + name);
+        }
+    }
+    for (llvm::GlobalValue &g : mod->global_values()) {
+        auto symbol = symbols.find(g.getName().str());
+        if (symbol != symbols.end()) g.setName(symbol->second);
     }
 
     const std::string triple = "wasm32-unknown-emscripten";
@@ -1246,14 +1226,8 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
 
 intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
 {
-    // Translate the logical name to the instance-unique name, then look it up
-    // in the global RTLD symbol table.  Within one session there is only ever
-    // one executor, so RTLD_DEFAULT finds the right symbol.  In the test suite
-    // the per-instance prefix prevents collisions across test cases.
-    const std::string prefix = "__lfortran_evaluate_";
-    std::string actual = name;
-    if (name.substr(0, prefix.size()) == prefix)
-        actual = prefix + std::to_string(m_id) + "_" + name.substr(prefix.size());
+    auto symbol = symbols.find(name);
+    const std::string &actual = symbol == symbols.end() ? name : symbol->second;
 
     void *sym = dlsym(RTLD_DEFAULT, actual.c_str());
     if (!sym)

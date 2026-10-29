@@ -2553,6 +2553,53 @@ end function
 #endif
 }
 
+TEST_CASE("FortranEvaluator independent session symbol ownership") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    {
+        FortranEvaluator functions(cu);
+        REQUIRE(functions.evaluate2(R"(integer function session_symbol()
+session_symbol = 17
+end function
+)").ok);
+        auto r = functions.evaluate2("session_symbol()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 17);
+        {
+            FortranEvaluator variables(cu);
+            REQUIRE(variables.evaluate2(
+                "integer, allocatable :: session_symbol").ok);
+            r = variables.evaluate2("allocated(session_symbol)");
+            REQUIRE(r.ok);
+            REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+            REQUIRE_FALSE(r.result.b);
+            REQUIRE(variables.evaluate2(
+                "allocate(session_symbol, source=7)").ok);
+            r = variables.evaluate2("session_symbol + 0");
+            REQUIRE(r.ok);
+            CHECK(r.result.i32 == 7);
+            REQUIRE(variables.evaluate2("deallocate(session_symbol)").ok);
+            r = variables.evaluate2("allocated(session_symbol)");
+            REQUIRE(r.ok);
+            CHECK_FALSE(r.result.b);
+        }
+        r = functions.evaluate2("session_symbol()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 17);
+    }
+    {
+        FortranEvaluator functions(cu);
+        REQUIRE(functions.evaluate2(R"(integer function session_symbol()
+session_symbol = 29
+end function
+)").ok);
+        auto r = functions.evaluate2("session_symbol()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 29);
+    }
+}
+
 TEST_CASE("FortranEvaluator shadow a module across cells") {
     CompilerOptions cu;
     cu.interactive = true;
