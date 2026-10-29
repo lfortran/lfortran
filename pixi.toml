@@ -72,6 +72,8 @@ FC = "gfortran -B/usr/bin/"
 
 [feature.llvm11.target.osx-arm64.dependencies]
 kokkos = "==5.2.2"
+# The C++ driver invokes g++; this native package supports Kokkos's -fopenmp.
+gxx = "==16.2.0"
 [feature.llvm12.dependencies]
 llvmdev = "==12.0.1"
 [feature.llvm13.dependencies]
