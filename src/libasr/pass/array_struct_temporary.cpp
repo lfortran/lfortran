@@ -5363,6 +5363,21 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         x->m_type = rebind_prepared_actuals_in_type(al, x->m_type,
             original_args, x->m_args);
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
+        auto target = exprs_with_target.find(*current_expr);
+        if (!inside_where && x->m_arr_intrinsic_id ==
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack) &&
+                target != exprs_with_target.end() &&
+                target->second.second == targetType::OriginalTarget &&
+                ASRUtils::is_allocatable(target->second.first)) {
+            ASR::expr_t* destination = target->second.first;
+            // PACK's output dummy does not allocate. Finish its value in
+            // independent storage before resizing a possibly aliased target.
+            force_replace_current_expr_for_array(current_expr, name_hint, al,
+                current_body, current_scope, exprs_with_target, false);
+            insert_allocate_stmt_for_array(al, destination, *current_expr,
+                current_body, nullptr, true);
+            return;
+        }
         if (!(is_current_expr_linked_to_target(exprs_with_target, current_expr) || ASRUtils::is_array(x->m_type))) {
             force_replace_current_expr_for_scalar(current_expr, name_hint, al, current_body, current_scope, exprs_with_target);
         } else if ((is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
