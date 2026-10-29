@@ -637,12 +637,13 @@ namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
 // `inspect` with each of the given procedures and its LLVM definition, before
-// any LLVM pass runs. Each procedure is given as {name, end of the name of its
-// LLVM definition}.
+// any LLVM pass runs, unless `optimize` is set. Each procedure is given as
+// {name, end of the name of its LLVM definition}.
 void inspect_definitions(const std::string &source, bool fast,
         const std::vector<std::pair<std::string, std::string>> &procedures,
         const std::function<void(const std::string &, llvm::Function &)>
-            &inspect, bool stack_arrays = false) {
+            &inspect, bool stack_arrays = false, bool optimize = false,
+            bool detect_leaks = false) {
     Allocator al(64*1024);
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions co;
@@ -650,6 +651,7 @@ void inspect_definitions(const std::string &source, bool fast,
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
     co.po.stack_arrays = stack_arrays;
+    co.detect_leaks = detect_leaks;
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
         LCompilers::LFortran::parse(al, source, diagnostics, co));
     LCompilers::LocationManager lm;
@@ -667,6 +669,9 @@ void inspect_definitions(const std::string &source, bool fast,
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
             e.get_target_config(), al, lpm, co, "", "", "", lm);
     REQUIRE(res.ok);
+    if (optimize) {
+        e.opt(*res.result->m_m);
+    }
     for (const auto &[procedure, suffix]: procedures) {
         llvm::Function *fn = nullptr;
         for (llvm::Function &f: *res.result->m_m) {
@@ -1473,6 +1478,84 @@ end module
     CHECK(noalias_allocators(source, true, procedures[0]) ==
         "_lfortran_malloc_alloc ");
     CHECK(noalias_allocators(source, false, procedures[0]).empty());
+}
+
+TEST_CASE("LLVM allocator accessors under --fast") {
+    const std::string source = R"(module allocator_accessors_ir_m
+implicit none
+contains
+subroutine unused()
+    real, allocatable :: a(:), b(:)
+end subroutine
+
+subroutine needed(n)
+    integer, intent(in) :: n
+    real, allocatable :: a(:), b(:)
+    interface
+        subroutine consume(a, b, n)
+            integer, intent(in) :: n
+            real, intent(inout) :: a(n), b(n)
+        end subroutine
+    end interface
+    allocate(a(n), b(n))
+    call consume(a, b, n)
+    deallocate(a, b)
+end subroutine
+end module)";
+    for (bool detect_leaks: {false, true}) {
+        const char *getter = detect_leaks
+            ? "_lfortran_get_compiler_mem_dbg_allocator"
+            : "_lfortran_get_default_allocator";
+        for (bool fast: {false, true}) {
+            inspect_definitions(source, fast, {{"needed", "needed"}},
+                [&](const std::string &, llvm::Function &fn) {
+                    llvm::Function *f = fn.getParent()->getFunction(getter);
+                    REQUIRE(f != nullptr);
+                    CHECK(f->doesNotAccessMemory() == fast);
+                    CHECK(f->doesNotThrow() == fast);
+#if LLVM_VERSION_MAJOR >= 9
+                    CHECK(f->hasFnAttribute(llvm::Attribute::WillReturn) == fast);
+#endif
+                    CHECK(!f->returnDoesNotAlias());
+                    for (const char *name: {"_lfortran_malloc_alloc",
+                            "_lfortran_free_alloc"}) {
+                        llvm::Function *allocation =
+                            fn.getParent()->getFunction(name);
+                        REQUIRE(allocation != nullptr);
+                        CHECK(!allocation->onlyReadsMemory());
+                    }
+                }, false, false, detect_leaks);
+        }
+        inspect_definitions(source, true,
+            {{"unused", "unused"}, {"needed", "needed"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                int getters = 0, allocations = 0;
+                llvm::Value *identity = nullptr;
+                for (llvm::BasicBlock &bb: fn) {
+                    for (llvm::Instruction &inst: bb) {
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                        if (!call || !call->getCalledFunction()) continue;
+                        llvm::StringRef name = call->getCalledFunction()->getName();
+                        if (name == getter) {
+                            getters++;
+                        } else if (name == "_lfortran_malloc_alloc" ||
+                                name == "_lfortran_free_alloc") {
+                            llvm::Value *allocator = call->getArgOperand(0);
+                            if (identity) CHECK(allocator == identity);
+                            identity = allocator;
+                            allocations++;
+                        }
+                    }
+                }
+                if (procedure == "unused") {
+                    CHECK(getters == 0);
+                    CHECK(allocations == 0);
+                } else {
+                    CHECK(getters == 1);
+                    CHECK(allocations >= 4);
+                }
+            }, false, true, detect_leaks);
+    }
 }
 
 #endif // __EMSCRIPTEN__
