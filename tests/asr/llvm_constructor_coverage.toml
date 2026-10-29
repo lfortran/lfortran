@@ -11,6 +11,7 @@
 "symbol.Template" = "non-executable"
 "symbol.Trait" = "non-executable"
 "symbol.TraitConstraint" = "metadata"
+"symbol.TraitAssociatedType" = "metadata"
 "symbol.TraitImplementation" = "metadata"
 "symbol.TraitRuntimeContract" = "metadata"
 "symbol.TraitWitness" = "helper:module witness emission"

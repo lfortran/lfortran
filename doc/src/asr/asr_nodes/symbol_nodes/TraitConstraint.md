@@ -9,7 +9,8 @@ A trait requirement on a generic type parameter.
 ```text
 TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter,
     symbol trait, trait_requirement* requirements,
-    type_set_requirement* intrinsic_requirements)
+    type_set_requirement* intrinsic_requirements,
+    trait_same_type_requirement* same_types)
 ```
 
 ### Arguments
@@ -22,6 +23,7 @@ TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter,
 | `trait` | Required nominal trait, using a visible import when necessary. |
 | `requirements` | Mappings to normalized abstract procedures used by the generic body; for a generic message, a generic requirement `Template` followed by its published specializations. |
 | `intrinsic_requirements` | Complete all-member capability proofs for a finite type set; empty for universal traits. |
+| `same_types` | Explicit associated-type equalities of this constraint, with scalar RHS types and their declaration metadata. |
 
 ### Return values
 
@@ -51,6 +53,13 @@ dependent parameters, not additional arguments of the enclosing `Template`.
 Conformance selection substitutes the types inferred from its checked
 bindings, or the corresponding placeholders of a forwarding caller.
 The verifier requires complete, unique mappings and matching signatures.
+
+`same_types` records only the equalities explicitly declared by the binder,
+not inferred additional requirements. Each entry names a distinct associated
+declaration in the required trait hierarchy. Equalities from all constraints
+of the same binder must agree; normalized signatures use these effective
+types instead of the corresponding private placeholders. Specialization
+checks the selected conformance against the explicit equalities.
 
 A generic message instead maps to a generic requirement: a `Template` in the
 same scope whose fresh binders keep the message's nominally equivalent
@@ -83,5 +92,7 @@ See the [static traits guide](../../traits.md).
 ## See Also
 
 [Trait](Trait.md), [Template](Template.md),
+[TraitAssociatedType](TraitAssociatedType.md),
 [trait_requirement](../helper_nodes/trait_requirement.md),
+[trait_same_type_requirement](../helper_nodes/trait_same_type_requirement.md),
 [type_set_requirement](../helper_nodes/type_set_requirement.md)
