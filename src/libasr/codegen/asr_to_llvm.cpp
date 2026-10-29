@@ -6006,9 +6006,8 @@ public:
     // The LLVM type of a member of Reference type: the address of a variable
     // of the referenced type.
     llvm::Type* reference_storage_type(ASR::Variable_t& member) {
-        return llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
-            ASR::make_Var_t(al, member.base.base.loc, &member.base)),
-            member.m_type, module.get(), member.m_abi);
+        return llvm_utils->get_type_from_ttype_t_util(member.m_type,
+            member.m_type_declaration, module.get(), member.m_abi);
     }
 
     // Makes the member store the address of the variable, which it then
@@ -6062,7 +6061,7 @@ public:
                 // dummy argument is (an array of strings by the descriptor
                 // of its data, which the member refers to).
                 tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
-                    v->m_symbolic_value, v->m_type, module.get()), tmp);
+                    v->m_type, v->m_type_declaration, module.get()), tmp);
             }
             llvm_symtab[get_hash((ASR::asr_t*)v)] = tmp;
             if (compiler_options.emit_debug_info) {
@@ -9907,8 +9906,7 @@ public:
             ASR::dimension_t *m_dims = nullptr;
             int n_dims = 0, a_kind = 4;
             llvm::Type *type = llvm_utils->get_type_from_ttype_t(
-                ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
-                v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
+                nullptr, v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
                 is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
             std::string global_name = save_variable_global_prefix(x) + "." +
                 std::string(v->m_name);
