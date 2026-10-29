@@ -109,6 +109,13 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
         &iscomplete, const PromptEvents &events = {}) {
     int row, col;
     bool term_attached = term.is_stdin_a_tty();
+    struct RestoreCursor {
+        const Terminal &term;
+        bool attached;
+        ~RestoreCursor() {
+            if (attached) term.write(cursor_on());
+        }
+    } restore_cursor{term, term_attached};
     if (term_attached) {
         term.get_cursor_position(row, col);
     } else {

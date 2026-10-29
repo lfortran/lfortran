@@ -209,6 +209,7 @@ class Screen:
         # A test may type just before a cursor reply to exercise interleaving.
         self.before_report = b""
         self.on_render = None
+        self.cursor_visible = True
 
     def newline(self):
         self.row += 1
@@ -248,8 +249,10 @@ class Screen:
                         + ("\x1b[%d;%dR" % (self.row + 1,
                             min(self.col + 1, self.cols))).encode())
                     self.before_report = b""
-                elif command == "h" and arg == "?25" and self.on_render:
-                    self.on_render(self)
+                elif command in ("h", "l") and arg == "?25":
+                    self.cursor_visible = command == "h"
+                    if self.cursor_visible and self.on_render:
+                        self.on_render(self)
                 elif command not in ("m", "h", "l"):
                     raise AssertionError("unsupported screen command: " + match[0])
                 i += len(match[0])

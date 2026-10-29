@@ -933,8 +933,27 @@ def test_idle_disconnect(exe, cwd):
                 "an explicit idle disconnection error"), repl.text())
 
 
+def test_output_error_cleanup(exe, cwd):
+    with display_kernel(cwd) as (connection, publish):
+        with editing_prompt(exe, cwd, connection, expected_status=1) as repl:
+            if repl is None:
+                return
+            check(repl.screen.cursor_visible, "ready cursor is hidden")
+            publish([("stream", {"name": "stdout",
+                "text": "\x1b[" + "1" * 65535})])
+            repl.wait(lambda: False, "rejected output through EOF")
+            check("error: terminal output sequence is too long" in repl.text(),
+                "no explicit oversized-sequence diagnostic:\n" + repl.text())
+            lflag = repl.termios.tcgetattr(repl.fd)[3]
+            check(lflag & (repl.termios.ICANON | repl.termios.ECHO)
+                == repl.termios.ICANON | repl.termios.ECHO,
+                "output rejection left the terminal in raw mode")
+            check(repl.screen.cursor_visible,
+                "output rejection left the terminal cursor hidden")
+
+
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
-    test_fragmented_updates, test_idle_disconnect,
+    test_fragmented_updates, test_idle_disconnect, test_output_error_cleanup,
     large_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
