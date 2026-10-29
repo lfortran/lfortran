@@ -456,8 +456,10 @@ UTF-8 characters split between chunks are reassembled at the Jupyter boundary.
 Foreign code or child processes must still flush their own buffered output.
 
 `FortranEvaluator::execute()` remains synchronous and accepts only one active
-cell per process. Other execute requests still wait; this is not interruption
-support or a new slow-consumer policy. The threadless browser/WASM build keeps
+cell per process. Other execute requests still wait; streaming does not change
+the slow-consumer policy. Native cooperative interruption is described in
+{doc}`interactive_evaluation`; it is not browser interruption support.
+The threadless browser/WASM build keeps
 its synchronous output barriers, not native live streaming.
 
 ### A note on rich display (`display_data`)

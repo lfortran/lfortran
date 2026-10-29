@@ -99,7 +99,7 @@ def value(client, code, timeout=20):
 
 
 @contextlib.contextmanager
-def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
+def kernel(exe, cwd, ip="127.0.0.1", arguments=(), managed=False):
     """A kernel started on a connection file, as a Jupyter frontend does, a
     function that connects a client to it, and the connection file's content
     with its "path". `arguments` are compiler options of the kernel process."""
@@ -113,7 +113,8 @@ def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
 
     with connection.with_suffix(".log").open("wb") as log:
         process = subprocess.Popen(
-            [exe, "--no-color", *arguments, "kernel", "-f", str(connection)],
+            [exe, "--no-color", *arguments, "kernel", "-f", str(connection)] +
+            (["--managed"] if managed else []),
             cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
         info = json.loads(connection.read_text())
         info["path"] = str(connection)
@@ -439,13 +440,8 @@ def prompt_departure(exe, cwd):
 
 def prompt_killed_in_cell(exe, cwd):
     """The kernel ends during a cell that does not return, and the connection
-    file is removed, when the prompt that started it gets Ctrl-C or is
-    killed."""
+    file is removed, when the prompt that started it is killed."""
     endings = [("killed", lambda process: process.kill(), None)]
-    if os.name == "posix":
-        # The prompt ends by SIGINT, as without its handler.
-        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
-            -signal.SIGINT))
     for how, end, status in endings:
         process, connection = started_prompt(exe, cwd)
         kernel_pids = children_of(process.pid)
@@ -617,7 +613,7 @@ def verbose(exe, cwd):
 
 
 @contextlib.contextmanager
-def editing_prompt(exe, cwd, connection, expected_status=0):
+def editing_prompt(exe, cwd, connection=None, expected_status=0):
     try:
         import fcntl
         import pty
@@ -629,7 +625,7 @@ def editing_prompt(exe, cwd, connection, expected_status=0):
         return
     screen = Screen()
     repl = PtyRepl(pty, termios, exe, cwd, timeout=30,
-        args=["--connect", str(connection)], screen=screen)
+        args=["--connect", str(connection)] if connection else [], screen=screen)
     fcntl.ioctl(repl.fd, termios.TIOCSWINSZ,
         struct.pack("HHHH", screen.rows, screen.cols, 0, 0))
     reaped = False
@@ -649,6 +645,94 @@ def editing_prompt(exe, cwd, connection, expected_status=0):
             os.kill(repl.pid, signal.SIGKILL)
             os.waitpid(repl.pid, 0)
         os.close(repl.fd)
+
+def test_interrupt_prompt(exe, cwd):
+    """Ctrl-C keeps owning/attached prompts and their state alive, also in
+    READ; a control interrupt can end READ without a key at that prompt."""
+    def exercise(connection=None):
+        client = None
+        owned = connection is None
+        try:
+            with editing_prompt(exe, cwd, connection) as repl:
+                if repl is None:
+                    return
+                if owned:
+                    match = re.search(r"lfortran --connect (\S+)`", repl.text())
+                    check(match is not None, repl.text())
+                    connection = Path(match.group(1))
+                client = connect(connection)
+                def ready():
+                    return (repl.screen.lines[repl.screen.row].startswith(">>> ")
+                        and repl.screen.col == 4
+                        and not repl.termios.tcgetattr(repl.fd)[3] & repl.termios.ICANON)
+
+                def submit(code):
+                    check(repl.wait(ready, "editing prompt"), repl.text())
+                    queries = repl.prompts
+                    os.write(repl.fd, code.encode() + ENTER)
+                    return queries
+
+                def finished(queries):
+                    check(repl.wait(lambda: repl.prompts > queries and ready(),
+                        "prompt after cell"), repl.text())
+
+                finished(submit("integer :: kept_interrupt = 41"))
+                for code, external in [
+                        ("do while (.true.); end do", False),
+                        ("print '(a)', 'waiting-one'; read *, kept_interrupt", False),
+                        ("print '(a)', 'waiting-two'; read *, kept_interrupt", True)]:
+                    before = len(repl.out)
+                    queries = submit(code)
+                    if "waiting-" in code:
+                        marker = b"waiting-two" if external else b"waiting-one"
+                        check(repl.wait(lambda: marker + b"\r\n" in repl.out[before:],
+                            "READ output"), repl.text())
+                    else:
+                        check(repl.wait(lambda: repl.termios.tcgetattr(repl.fd)[3]
+                            & repl.termios.ICANON, "silent cell in line mode"), repl.text())
+                        deadline = time.monotonic() + 6
+                        while time.monotonic() < deadline:
+                            try:
+                                message = client.get_iopub_msg(timeout=0.1)
+                            except queue.Empty:
+                                continue
+                            if (message["msg_type"] == "execute_input"
+                                    and message["content"]["code"].strip() == code):
+                                break
+                        else:
+                            raise AssertionError("silent loop did not start:\n" + repl.text())
+                    if external:
+                        request = client.session.msg("interrupt_request")
+                        client.control_channel.send(request)
+                        reply = client.get_control_msg(timeout=5)
+                        check(parent_id(reply) == request["header"]["msg_id"], reply)
+                    else:
+                        os.write(repl.fd, b"\x03")
+                    finished(queries)
+                    check(b"cell execution interrupted" in repl.out[before:], repl.text())
+                    check(connection.exists(), "Ctrl-C removed the connection file")
+                    finished(submit("kept_interrupt+1"))
+                    check(re.search(r"^42\r?$", repl.text(), re.M), repl.text())
+                queries = submit("read *, kept_interrupt")
+                check(repl.wait(lambda: repl.termios.tcgetattr(repl.fd)[3]
+                    & repl.termios.ICANON, "READ in line mode"), repl.text())
+                os.write(repl.fd, b"58\n")
+                finished(queries)
+                check(value(client, "kept_interrupt") == "58", "READ lost its input")
+            if owned:
+                check(wait_removed(connection), "owning prompt left its kernel file")
+            else:
+                check(value(client, "kept_interrupt") == "58",
+                    "attached prompt ended the session")
+        finally:
+            if client:
+                client.stop_channels()
+
+    exercise()
+    for managed in (False, True):
+        with kernel(exe, cwd, managed=managed) as (_, join, ports):
+            join()
+            exercise(Path(ports["path"]))
 
 
 def test_idle_updates(exe, cwd):
@@ -1049,7 +1133,8 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
     large_output, stalled_connections, read_disconnect,
-    late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
+    late_stdin, prompt_departure, prompt_killed_in_cell, test_interrupt_prompt,
+    kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}

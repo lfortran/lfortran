@@ -17749,7 +17749,8 @@ public:
 
     // Only fully initialized scopes may be left. Reuse normal scope cleanup,
     // but abandon the result rather than loading an incomplete return value.
-    void emit_cancellation_check(bool propagate_only = false) {
+    void emit_cancellation_check(bool propagate_only = false,
+            const std::function<void()> &before_cleanup = {}) {
         if (!cancellation_scope || emitting_cancellation_cleanup) return;
         auto *saved_tmp = tmp;
         auto *fn = builder->GetInsertBlock()->getParent();
@@ -17765,6 +17766,7 @@ public:
         builder->SetInsertPoint(cleanup);
         emitting_cancellation_cleanup = true;
         protect_cancellation(true);
+        if (before_cleanup) before_cleanup();
         auto strings_n = strings_to_be_deallocated.n;
         free_strings_to_be_deallocated(0);
         strings_to_be_deallocated.n = strings_n;
@@ -21544,7 +21546,8 @@ public:
             bool is_string = false,
             llvm::Value* str_src_data = nullptr,
             llvm::Value* str_src_len = nullptr,
-            llvm::Value* str_offset = nullptr) {
+            llvm::Value* str_offset = nullptr,
+            const std::function<void()> &check_read = {}) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -21588,7 +21591,7 @@ public:
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[vi])) {
                 ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[vi]);
                 generate_read_implied_do_loop(inner_idl, unit_val, iostat,
-                    is_string, str_src_data, str_src_len, str_offset);
+                    is_string, str_src_data, str_src_len, str_offset, check_read);
             } else {
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -21626,6 +21629,7 @@ public:
                         llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt1Ty(context));
                         builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                        if (check_read) check_read();
                         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                         llvm::Value* loaded = llvm_utils->CreateLoad2(
                             llvm::Type::getInt1Ty(context), tmp_bool);
@@ -21641,6 +21645,7 @@ public:
                         builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
                     }
                 }
+                if (check_read) check_read();
             }
         }
 
@@ -21683,6 +21688,29 @@ public:
             return ;
         }
 
+        // A cancelled stdin wait must return through the normal READ frame
+        // before taking the JIT cleanup path, not exit from a runtime reader
+        // receiving a null IOSTAT. File compilation keeps its original path.
+        const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup;
+        auto finish_read = [&](llvm::Value *status) {
+            if (!cancellable) return;
+            emit_cancellation_check(false, [&]() {
+                if (x.m_decimal) emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
+                    llvm_utils->i32, llvm::APInt(32, -1, true)));
+            });
+            if (!x.m_iostat) {
+                llvm::Value *value = llvm_utils->CreateLoad2(llvm_utils->i32, status);
+                llvm_utils->create_if_else(builder->CreateICmpNE(value,
+                        llvm::ConstantInt::get(llvm_utils->i32, 0)), [&]() {
+                    print_error(context, *module, *builder, {
+                        LCompilers::create_global_string_ptr(context, *module, *builder,
+                            "Error: Failed to read input.\n")});
+                    exit(context, *module, *builder,
+                        llvm::ConstantInt::get(llvm_utils->i32, 1));
+                }, [](){});
+            }
+        };
+
         // Handle namelist read
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
@@ -21720,6 +21748,9 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                     iostat);
+            } else if (cancellable) {
+                iostat = llvm_utils->CreateAlloca(*builder, llvm_utils->i32);
+                builder->CreateStore(llvm::ConstantInt::get(llvm_utils->i32, 0), iostat);
             } else {
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
@@ -21832,6 +21863,7 @@ public:
             } else {
                 builder->CreateCall(fn, {unit_val, iostat, nml_group});
             }
+            finish_read(iostat);
             return;
         }
 
@@ -21902,10 +21934,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+            if (cancellable) iostat = iostat_for_empty_read;
         }
 
         if (x.m_unit && !is_string && !x.m_rec && !x.m_pos) {
             emit_connect_unit_for_read(unit_val, !x.m_is_formatted, iostat);
+            finish_read(iostat);
         }
 
         if (x.m_decimal) {
@@ -22010,6 +22044,7 @@ public:
                 }
             }
             for (size_t i=0; i<x.n_values; i++) {
+                if (i) finish_read(iostat);
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -22197,7 +22232,8 @@ public:
                         }
                         if (can_handle) {
                             generate_read_implied_do_loop(idl, unit_val, iostat,
-                                is_string, str_src_data, str_src_len, str_offset);
+                                is_string, str_src_data, str_src_len, str_offset,
+                                [&]() { finish_read(iostat); });
                             continue;
                         }
                     }
@@ -22403,6 +22439,7 @@ public:
                                 llvm::Type::getInt1Ty(context));
                             builder->CreateStore(cur_bool, tmp_bool);
                             builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
+                            finish_read(iostat);
                             llvm::Value* loaded = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt1Ty(context), tmp_bool);
                             llvm::Value* widened = builder->CreateZExt(loaded,
@@ -22415,6 +22452,7 @@ public:
                 }
             }
 
+            finish_read(iostat);
             // In Fortran, read(u, *) is used to read the entire line. The
             // next read(u, *) function is intended to read the next entire
             // line. Let's take an example: `read(u, *) n`, where n is an
@@ -22501,6 +22539,7 @@ public:
             emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
         }
+        finish_read(iostat);
     }
 
     // One scalar target of a formatted READ in the runtime protocol (see

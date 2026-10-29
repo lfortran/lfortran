@@ -3625,6 +3625,7 @@ end subroutine
 
 extern "C" void lfortran_display_data(const char *mime_type, const char *data);
 extern "C" void lfortran_clear_output();
+extern "C" int32_t _lfortran_get_decimal_mode(int32_t unit_num);
 
 static CompilerOptions execute_options() {
     CompilerOptions cu;
@@ -3859,6 +3860,74 @@ use cancel_core
         CHECK(shown.output.find("cancel.cleanup") == std::string::npos);
     }
 }
+
+TEST_CASE("FortranEvaluator execute: cancellable stdin and protected input") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        REQUIRE(e.execute("integer :: input_saved = 17").ok);
+        bool requested = false;
+        const auto owner = std::this_thread::get_id();
+        FortranEvaluator::CellIO io;
+        io.cancel_requested = [&]() { return requested; };
+        io.input = [&](std::string &, bool interruptible) {
+            CHECK(std::this_thread::get_id() == owner);
+            CHECK(interruptible);
+            requested = true;
+            return -1;
+        };
+        for (const auto &code : {
+                "read *, input_saved",
+                "block\nreal :: r\nread(*,*,decimal='comma') r\nend block",
+                "block\nlogical :: b\nread *, b\nend block",
+                "block\ninteger :: a(2,2), i, j\n"
+                "read *, ((a(i,j), i=1,2), j=1,2)\nend block"}) {
+            requested = false;
+            auto cell = e.execute(code, false, io);
+            INFO(cell.error_text());
+            CHECK(!cell.ok);
+            CHECK(cell.error_name == "KeyboardInterrupt");
+            CHECK(_lfortran_get_decimal_mode(5) == 0);
+            auto next = e.execute("input_saved+1");
+            REQUIRE(next.ok);
+            CHECK(next.value.i32 == 18);
+        }
+        REQUIRE(e.execute(R"(
+module protected_input
+integer :: final_input = 0
+type :: owned_input
+contains
+    final :: finish_input
+end type
+contains
+subroutine finish_input(x)
+type(owned_input), intent(inout) :: x
+read *, final_input
+end subroutine
+end module
+use protected_input
+)").ok);
+        requested = false;
+        io.input = [&](std::string &record, bool interruptible) {
+            CHECK(std::this_thread::get_id() == owner);
+            CHECK(!interruptible);
+            requested = true;
+            record = "7";
+            return 0;
+        };
+        auto cell = e.execute("block\ntype(owned_input) :: x\nend block\ndo\nend do",
+            false, io);
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "KeyboardInterrupt");
+        auto next = e.execute("final_input");
+        REQUIRE(next.ok);
+        CHECK(next.value.i32 == 7);
+    }
+}
+
 #endif
 
 TEST_CASE("FortranEvaluator execute: results and cells") {
@@ -4087,7 +4156,7 @@ TEST_CASE("FortranEvaluator execute: streaming hook affinity and failure cleanup
         CHECK(output == "printed\n");
         events += "clear ";
     };
-    io.input = [&](std::string &record) {
+    io.input = [&](std::string &record, bool) {
         CHECK(std::this_thread::get_id() == owner);
         CHECK(output == "printed\nprompt");
         events += "input";
@@ -4114,7 +4183,7 @@ if (ios /= 0 .or. answer /= 42) error stop
     CHECK(!cell.ok);
     CHECK(cell.error_name == "DisplayError");
     CHECK(cell.error_value == "display failed: clear failed");
-    io.input = [&](std::string &) -> int {
+    io.input = [&](std::string &, bool) -> int {
         CHECK(std::this_thread::get_id() == owner);
         throw std::runtime_error("input failed");
     };
@@ -4183,7 +4252,7 @@ struct InputRecords {
     int end = -1;
     FortranEvaluator::CellIO io() {
         FortranEvaluator::CellIO io;
-        io.input = [this](std::string &record) {
+        io.input = [this](std::string &record, bool) {
             calls++;
             if (next == records.size()) return end;
             record = records[next++];
@@ -4356,7 +4425,7 @@ if (ios <= 0) error stop
     CHECK(disconnected.calls == 1);
     // A hook's exception must not unwind through generated code.
     FortranEvaluator::CellIO throwing;
-    throwing.input = [](std::string &) -> int {
+    throwing.input = [](std::string &, bool) -> int {
         throw std::runtime_error("input callback failure");
     };
     run_cell(e, "read(*,*,iostat=ios) a\nif (ios <= 0) error stop", throwing);

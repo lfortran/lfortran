@@ -50,6 +50,9 @@ input. `execute()` installs the hook through the runtime's C API
 (`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
 it, so a later cell can read again after end of file and unread bytes are
 discarded.
+The hook also receives `interruptible`, a worker-snapshotted boolean passed
+through the caller mailbox. When false (protected initialization or cleanup),
+it must keep servicing control without abandoning the input wait.
 
 The runtime keeps the record's bytes, its cursor and delimiters, so one record
 can satisfy several list items and one READ can consume several records.
@@ -99,8 +102,32 @@ is no transactional rollback. A request is not carried into the next cell.
 An idle request, or one arriving after the last checkpoint, need not turn a
 completed cell into a failure.
 
-This is an evaluator-level native-JIT facility, not yet Jupyter interrupt
-protocol or prompt Ctrl-C integration. It does not interrupt compilation,
-blocking READ, arbitrary foreign calls, subprocesses, or WASM execution.
-Initialization and cleanup must finish before cancellation can proceed.
+The built-in kernel and the native Xeus TCP/IPv4 server (including hostnames)
+connect control-channel `interrupt_request` to this pump, including silent
+loops. Other requests are deferred until execution returns. Interrupt replies
+have the interrupt as parent; the execution error/reply and final idle retain
+the cell's parent. Idle interrupts do not latch into subsequent cells.
+
+Both adapters use `InputChannel` for cancellable stdin waits, pumping control
+and output on the caller. A native JIT READ without user IOSTAT uses an internal
+status and checks cancellation before reporting an ordinary input error.
+This lets READ return through its runtime frame and normal JIT cleanup, even
+as the last statement of a cell. Ordinary EOF/error without IOSTAT remains
+fatal. Cancellation discards the pending input request; correlated replies
+to an older request are ignored. Unparented input replies, as sent by some
+Jupyter clients, cannot distinguish an old answer from a new one.
+
+While executing, prompt Ctrl-C sets only a signal marker. Its client loop
+sends the interrupt on the control channel; it continues servicing messages
+while waiting for terminal input. Owning and attached prompts retain the
+session. At an idle prompt, Ctrl-C retains its existing exit behavior.
+Protected READs advertise `lfortran_interruptible: false` in input_request;
+the prompt keeps accepting their input after Ctrl-C so cleanup can finish.
+
+Compilation, arbitrary foreign calls without safepoints, subprocesses
+(including EXECUTE_COMMAND_LINE children), and WASM execution are not
+interrupted. Foreign calls may defer cancellation until they return.
+Initialization and cleanup, including their input waits, must finish before
+cancellation can proceed. Xeus registration configurations, IPv6 and non-TCP
+transports retain their legacy server and blocking input behavior.
 No exception, signal unwind, or nonlocal jump crosses a generated/C frame.

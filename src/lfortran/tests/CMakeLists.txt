@@ -369,6 +369,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --lfortran $<TARGET_FILE:lfortran>
                     --case xeus_connection_files --case implicit_typing
                     --case prompt_departure --case prompt_killed_in_cell
+                    --case test_interrupt_prompt
                     --case kernel_parent --case stop_ends_session --case verbose
                     --case test_idle_updates --case test_edited_updates
                     --case test_fragmented_updates --case test_idle_disconnect

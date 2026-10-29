@@ -316,7 +316,11 @@ static int read_input(void *context, const char **record, size_t *length) {
     InputContext &c = *static_cast<InputContext *>(context);
     try {
         c.record.clear();
-        int status = c.io.input(c.record);
+        bool interruptible = true;
+#ifndef __EMSCRIPTEN__
+        interruptible = !active_cancellation || active_cancellation->protected_depth == 0;
+#endif
+        int status = c.io.input(c.record, interruptible);
         *record = c.record.data();
         *length = c.record.size();
         return status;
@@ -845,11 +849,11 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             };
         }
         if (io.input) {
-            hooks_io.input = [&](std::string &record) {
+            hooks_io.input = [&](std::string &record, bool interruptible) {
                 int status = 1;
                 dispatch([&]() {
                     drain_output(true);
-                    status = io.input(record);
+                    status = io.input(record, interruptible);
                 });
                 return status;
             };
