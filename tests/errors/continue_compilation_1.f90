@@ -3863,3 +3863,11 @@ subroutine cc1_file_fn_iface_ext(a, n)
     real :: a(cc1_file_fn_iface_len(n))
     a = 0
 end subroutine
+
+subroutine selected_real_kind_empty()
+    print *, selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+end subroutine
+
+subroutine selected_real_kind_empty_parameter()
+    integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+end subroutine
