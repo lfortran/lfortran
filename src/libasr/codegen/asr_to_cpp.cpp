@@ -9,6 +9,8 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_intrinsic_function.h>
 
 
 namespace LCompilers {
@@ -803,6 +805,17 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co,
     int64_t default_lower_bound)
 {
+    PassOptions pass_options = co.po;
+    using Intrinsic = ASRUtils::IntrinsicElementalFunctions;
+    for (Intrinsic intrinsic : {Intrinsic::Sign, Intrinsic::Mod, Intrinsic::Modulo,
+            Intrinsic::Merge, Intrinsic::Floor, Intrinsic::Ceiling,
+            Intrinsic::Nint, Intrinsic::Real, Intrinsic::Int, Intrinsic::Atan2}) {
+        pass_options.elemental_intrinsics_to_lower.push_back(
+            static_cast<int64_t>(intrinsic));
+    }
+    // Elemental intrinsics must have scalar arguments before instantiation.
+    pass_replace_array_op(al, asr, pass_options);
+    pass_replace_intrinsic_function(al, asr, pass_options);
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);

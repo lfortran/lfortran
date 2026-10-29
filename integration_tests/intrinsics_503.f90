@@ -6,6 +6,9 @@ real :: x, y, tol
 real, parameter :: pi = 3.141592653589793
 integer :: a, p
 complex :: z
+real :: values(3)
+integer :: rounded(3), selected(3)
+logical :: mask
 
 tol = 1.0e-6
 
@@ -98,6 +101,22 @@ if (int(x) /= -5) error stop
 z = (3.0, 4.0)
 if (abs(real(z) - 3.0) > tol) error stop
 if (int(z) /= 3) error stop
+
+values(1) = -2.5
+values(2) = 0.0
+values(3) = 2.5
+rounded = floor(values)
+if (rounded(1) /= -3 .or. rounded(2) /= 0 .or. rounded(3) /= 2) error stop
+selected = sign(rounded, 1)
+if (selected(1) /= 3 .or. selected(2) /= 0 .or. selected(3) /= 2) error stop
+mask = .true.
+selected = merge(rounded, 9, mask)
+if (selected(1) /= -3 .or. selected(2) /= 0 .or. selected(3) /= 2) error stop
+mask = .false.
+selected = merge(rounded, 9, mask)
+if (selected(1) /= 9 .or. selected(2) /= 9 .or. selected(3) /= 9) error stop
+rounded = modulo(rounded, 2)
+if (rounded(1) /= 1 .or. rounded(2) /= 0 .or. rounded(3) /= 0) error stop
 
 print *, "ok"
 end program

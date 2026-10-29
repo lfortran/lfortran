@@ -8,6 +8,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <algorithm>
 #include <vector>
 
 
@@ -34,6 +35,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     bool& in_debugcheck;
     bool& in_ttype;
     int index_kind;
+    const std::vector<int64_t>& elemental_intrinsics_to_lower;
 
     public:
     // The scope the replaced expression stands in, so a helper that names
@@ -42,9 +44,9 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool& in_debugcheck_, bool &in_ttype_,
-    int index_kind_) :
+    int index_kind_, const std::vector<int64_t>& elemental_intrinsics_to_lower_) :
         al(al_), global_scope(global_scope_), func2intrinsicid(func2intrinsicid_), in_debugcheck(in_debugcheck_), in_ttype(in_ttype_),
-        index_kind(index_kind_) {}
+        index_kind(index_kind_), elemental_intrinsics_to_lower(elemental_intrinsics_to_lower_) {}
 
 
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
@@ -65,6 +67,12 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
+            return;
+        }
+        if (!elemental_intrinsics_to_lower.empty()
+                && std::find(elemental_intrinsics_to_lower.begin(),
+                    elemental_intrinsics_to_lower.end(), x->m_intrinsic_id)
+                    == elemental_intrinsics_to_lower.end()) {
             return;
         }
         // If inside DebugCheckArrayBounds and not inside a type
@@ -194,9 +202,9 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
 
         ReplaceIntrinsicFunctionsVisitor(Allocator& al_, SymbolTable* global_scope_,
             std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_,
-            int index_kind_) :
+            int index_kind_, const std::vector<int64_t>& elemental_intrinsics_to_lower_) :
             replacer(al_, global_scope_, func2intrinsicid_, in_debugcheck, in_ttype,
-                index_kind_) {}
+                index_kind_, elemental_intrinsics_to_lower_) {}
 
         void visit_Template(const ASR::Template_t& /*x*/) {
             // Intrinsic implementations require concrete specialization types.
@@ -471,7 +479,8 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
                             const LCompilers::PassOptions& pass_options) {
     int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
-    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind);
+    ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind,
+        pass_options.elemental_intrinsics_to_lower);
     PassUtils::make_new_tu_functions_private(unit, [&]() {
         v.visit_TranslationUnit(unit);
     });
