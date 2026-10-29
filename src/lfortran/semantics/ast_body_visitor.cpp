@@ -5996,6 +5996,8 @@ public:
                     // Whether the selector is an array — determines which path we use
                     bool is_selector_array = false;
                     ASR::symbol_t *type_declaration = nullptr;
+                    // ClassToIntrinsic Cast target type for scalar selectors
+                    ASR::ttype_t* cast_type = nullptr;
                     if( assoc_variable ) {
                         Vec<ASR::dimension_t> m_dims;
                         m_dims.reserve(al, 1);
@@ -6005,11 +6007,16 @@ public:
                                                        type_stmt_type->m_vartype, false, false, m_dims,
                                                        nullptr,
                                                        type_declaration, ASR::abiType::Source);
+                        cast_type = selector_type;
                         // Convert AssumedLength to DeferredLength for select type associate statements
                         if (ASRUtils::is_character(*selector_type)) {
                             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
                                 ASRUtils::extract_type(selector_type));
                             if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+                                // The Cast is not a variable, so it keeps the
+                                // assumed length: assignment through it blank-pads
+                                // to the selector's length instead of reallocating
+                                cast_type = ASRUtils::duplicate_type(al, selector_type);
                                 str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
                             }
                         }
@@ -6229,12 +6236,12 @@ public:
                         if (!assoc_sym && ASR::is_a<ASR::Var_t>(*m_selector)) {
                             selector_sym_for_map_tst = ASR::down_cast<ASR::Var_t>(m_selector)->m_v;
                             select_type_casts_map[selector_sym_for_map_tst] = {
-                                ASR::cast_kindType::ClassToIntrinsic, selector_type, nullptr};
+                                ASR::cast_kindType::ClassToIntrinsic, cast_type, nullptr};
                         }
                         if (assoc_sym) {
                             selector_sym_for_map_tst = assoc_sym;
                             select_type_casts_map[assoc_sym] = {
-                                ASR::cast_kindType::ClassToIntrinsic, selector_type, nullptr};
+                                ASR::cast_kindType::ClassToIntrinsic, cast_type, nullptr};
                         }
                     }
                     transform_stmts(type_stmt_type_body, type_stmt_type->n_body, type_stmt_type->m_body);
