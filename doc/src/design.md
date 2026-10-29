@@ -45,9 +45,12 @@ or user finalization keep their existing lifetime.
 
 The C++ backend normalizes array expressions in ASR before emitting Kokkos
 operations. It uses `implied_do_loops`, `array_struct_temporary`, `array_op`,
+`intrinsic_function`, function-result lowering, another `array_op`,
 `print_arr`, and then `update_array_dim_intrinsic_calls`, verifying the
-transformed ASR between stages. The constructor pass's
-`materialize_array_constants` policy creates typed RHS storage instead of
+transformed ASR between stages. Elemental intrinsics are scalarized before
+their existing typed ASR implementations are instantiated; numeric conversions
+remain explicit ASR casts rather than backend type inference. The constructor
+pass's `materialize_array_constants` policy creates typed RHS storage instead of
 named array constants; other backends retain their default policy.
 Fixed-cardinality constructor values are filled before the destination is
 written, including self-referential assignments. Remaining executable

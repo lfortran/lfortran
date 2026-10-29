@@ -14,6 +14,7 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/create_subroutine_from_function.h>
 
@@ -1006,6 +1007,8 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     pass_array_struct_temporary(al, asr, co.po, ArraySectionLowering::ValueSnapshot);
     if (!asr_verify(asr, true, diagnostics)) return Error();
     pass_replace_array_op(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_intrinsic_function(al, asr, co.po);
     if (!asr_verify(asr, true, diagnostics)) return Error();
     pass_create_subroutine_from_function(al, asr, co.po,
         FunctionResultLowering::ExplicitArraySnapshot);
