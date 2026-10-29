@@ -840,7 +840,9 @@ def test_edited_updates(exe, cwd):
 @contextlib.contextmanager
 def display_kernel(cwd):
     """A signed Jupyter publisher for precisely fragmented output, independent
-    of either kernel's buffering. All sockets belong to the serving thread."""
+    of either kernel's buffering. Bind the client's control endpoint too, even
+    though display-only tests send no interrupts. All sockets belong to the
+    serving thread."""
     import zmq
     from jupyter_client.session import Session
     commands, answers = queue.Queue(), queue.Queue()
@@ -849,21 +851,25 @@ def display_kernel(cwd):
     def serve():
         try:
             with zmq.Context() as context:
-                pub, shell, stdin = [context.socket(t) for t in
-                    (zmq.PUB, zmq.ROUTER, zmq.ROUTER)]
-                sockets = [pub, shell, stdin]
+                pub, shell, stdin, control = [context.socket(t) for t in
+                    (zmq.PUB, zmq.ROUTER, zmq.ROUTER, zmq.ROUTER)]
+                sockets = [pub, shell, stdin, control]
                 for s in sockets:
                     s.linger = 0
                 ports = [s.bind_to_random_port("tcp://127.0.0.1") for s in sockets]
                 session = Session(key=b"editor-test")
                 write_connection_file(str(connection), ip="127.0.0.1",
                     key=session.key, iopub_port=ports[0], shell_port=ports[1],
-                    stdin_port=ports[2])
+                    stdin_port=ports[2], control_port=ports[3])
                 answers.put(connection)
                 try:
                     while True:
+                        check(not control.poll(0),
+                            "display-only requests must not use the control channel")
                         if shell.poll(10):
                             identities, message = session.recv(shell)
+                            check(message["msg_type"] == "kernel_info_request",
+                                ("unexpected display-only shell request", message))
                             session.send(shell, "kernel_info_reply",
                                 content={"status": "ok"}, parent=message,
                                 ident=identities)
