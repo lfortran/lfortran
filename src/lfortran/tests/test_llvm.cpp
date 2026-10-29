@@ -1157,8 +1157,8 @@ end module
     // are data. The elements of an array of EQUIVALENCE (k, the storage of
     // r), of a common block or whose address C_LOC takes are not tagged,
     // nor is anything in a bind(c) procedure. In equivalenced only the
-    // setup of the descriptor of r, a pointer to k, is tagged, with the
-    // shape [8] that it stores in a local temporary array.
+    // setup of the descriptor of r, a pointer to k, and its independent
+    // local shape array are tagged.
     std::string expected =
         "automatic:load float:data; "
         "automatic:store float:data; "
@@ -1168,8 +1168,72 @@ end module
         "equivalenced:store pointer:descriptor; "
         "fixed:load i32:data; "
         "fixed:store i32:data; ";
-    CHECK(tbaa_accesses(source, true, procedures) == expected);
+    std::string expected_shape_load = expected;
+    expected_shape_load.insert(expected_shape_load.find("equivalenced:store"),
+        "equivalenced:load i32:data; ");
+    std::string accesses = tbaa_accesses(source, true, procedures);
+    CHECK((accesses == expected || accesses == expected_shape_load));
     CHECK(tbaa_accesses(source, false, procedures).empty());
+    // EQUIVALENCE also creates an independent local shape array [8].
+    // With opaque pointers its extent load needs no bitcast and may have
+    // data TBAA. Check storage provenance, not a procedure-wide load type.
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"equivalenced", "_m_equivalenced"}},
+            [&](const std::string &, llvm::Function &fn) {
+                unsigned aliased_loads = 0, aliased_stores = 0;
+                unsigned shape_loads = 0, shape_stores = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        llvm::Value *ptr = nullptr;
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                        auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                        if (load) ptr = load->getPointerOperand();
+                        if (store) ptr = store->getPointerOperand();
+                        if (!ptr) continue;
+                        llvm::MDNode *tag = inst.getMetadata(
+                            llvm::LLVMContext::MD_tbaa);
+                        if (!fast) CHECK(tag == nullptr);
+                        ptr = ptr->stripPointerCasts();
+                        while (auto *gep =
+                                llvm::dyn_cast<llvm::GetElementPtrInst>(ptr)) {
+                            ptr = gep->getPointerOperand()->stripPointerCasts();
+                        }
+                        auto *storage = llvm::dyn_cast<llvm::AllocaInst>(ptr);
+                        if (tag && load && load->getType()->isIntegerTy(32)) {
+                            REQUIRE(storage != nullptr);
+                            CHECK(storage->getAllocatedType() ==
+                                llvm::ArrayType::get(load->getType(), 1));
+                        }
+                        if (!storage) continue;
+                        auto *array = llvm::dyn_cast<llvm::ArrayType>(
+                            storage->getAllocatedType());
+                        if (!array) continue;
+                        REQUIRE(array->getElementType()->isIntegerTy(32));
+                        if (storage->getName() == "k") {
+                            CHECK(array->getNumElements() == 8);
+                            CHECK(tag == nullptr);
+                            if (load) aliased_loads++;
+                            if (store) aliased_stores++;
+                        } else {
+                            REQUIRE(array->getNumElements() == 1);
+                            if (load) shape_loads++;
+                            if (store) {
+                                auto *extent = llvm::dyn_cast<llvm::ConstantInt>(
+                                    store->getValueOperand());
+                                REQUIRE(extent != nullptr);
+                                CHECK(extent->getSExtValue() == 8);
+                                CHECK((tag != nullptr) == fast);
+                                shape_stores++;
+                            }
+                        }
+                    }
+                }
+                CHECK(aliased_loads == 1);
+                CHECK(aliased_stores == 1);
+                CHECK(shape_loads == 1);
+                CHECK(shape_stores == 1);
+            });
+    }
     // The storage of an automatic array comes from _lfortran_malloc_alloc,
     // which returns fresh memory; realloc may return its argument.
     CHECK(noalias_allocators(source, true, procedures[0]) ==
