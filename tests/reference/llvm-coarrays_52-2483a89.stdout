@@ -679,17 +679,29 @@ ifcont:                                           ; preds = %.entry
   store i32 %55, i32* %__libasr_index_0_, align 4
   br label %loop.head
 
-loop.head:                                        ; preds = %loop.body, %ifcont
-  %56 = load i32, i32* %__libasr_index_0_, align 4
-  %57 = add i32 %56, 1
-  %58 = load i32, i32* %__do_loop_end, align 4
-  %59 = icmp sle i32 %57, %58
-  br i1 %59, label %loop.body, label %loop.end
+loop.head:                                        ; preds = %ifcont2, %ifcont
+  br i1 true, label %loop.body, label %loop.end
 
 loop.body:                                        ; preds = %loop.head
-  %60 = load i32, i32* %__libasr_index_0_, align 4
-  %61 = add i32 %60, 1
-  store i32 %61, i32* %__libasr_index_0_, align 4
+  %56 = load i32, i32* %__libasr_index_0_, align 4
+  %57 = add i32 %56, 1
+  store i32 %57, i32* %__libasr_index_0_, align 4
+  %58 = load i32, i32* %__libasr_index_0_, align 4
+  %59 = load i32, i32* %__do_loop_end, align 4
+  %60 = icmp sle i32 %58, %59
+  %61 = xor i1 %60, true
+  br i1 %61, label %then1, label %else
+
+then1:                                            ; preds = %loop.body
+  br label %loop.end
+
+unreachable_after_exit:                           ; No predecessors!
+  br label %ifcont2
+
+else:                                             ; preds = %loop.body
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %unreachable_after_exit
   %62 = load i32, i32* %__libasr_index_0_, align 4
   %63 = load %array.1*, %array.1** @__module_coarrays_52_m_coarrays_52_mod_sub_m__coarray_ptr, align 8
   %64 = getelementptr %array.1, %array.1* %63, i32 0, i32 8
@@ -740,7 +752,7 @@ loop.body:                                        ; preds = %loop.head
   store i32 %107, i32* %__libasr_index_0_1, align 4
   br label %loop.head
 
-loop.end:                                         ; preds = %loop.head
+loop.end:                                         ; preds = %then1, %loop.head
   %108 = load %array.1*, %array.1** @__module_coarrays_52_m_coarrays_52_mod_sub_m__coarray_ptr, align 8
   %109 = getelementptr %array.1, %array.1* %108, i32 0, i32 8
   %110 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %109, i32 0, i32 0
