@@ -403,7 +403,7 @@ namespace LCompilers {
             llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
 
-            if( !co.stack_arrays ) {
+            if( !co.po.stack_arrays ) {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 builder->CreateStore(builder->CreateMul(

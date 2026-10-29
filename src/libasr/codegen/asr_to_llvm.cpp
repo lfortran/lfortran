@@ -1374,7 +1374,7 @@ public:
                     prod = builder->CreateMul(prod, dim_size);
                 }
                 llvm::Value* arr_first = nullptr;
-                if( !compiler_options.stack_arrays ) {
+                if( !compiler_options.po.stack_arrays ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                     prod = builder->CreateMul(prod,
@@ -9910,9 +9910,9 @@ public:
                 }
                 ptr = llvm_utils->handle_global_nonallocatable_stringArray(
                     al, ASR::down_cast<ASR::Array_t>(v->m_type), arr_const, v->m_name);
-            } else if( !compiler_options.stack_arrays && array_size ) { // malloc for PointerArray
+            } else if( !compiler_options.po.stack_arrays && array_size ) { // malloc for PointerArray
                 if(is_array_of_strings){
-                    ptr = create_and_setup_string_for_array(v->m_type, array_size, compiler_options.stack_arrays, v->m_name);
+                    ptr = create_and_setup_string_for_array(v->m_type, array_size, compiler_options.po.stack_arrays, v->m_name);
                 } else {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t size = data_layout.getTypeAllocSize(type);
@@ -10003,7 +10003,7 @@ public:
                     constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use heap
                     bool use_heap_allocation = false;
                     uint64_t type_size = 0;
-                    if (!compiler_options.stack_arrays &&
+                    if (!compiler_options.po.stack_arrays &&
                         ASRUtils::is_array(v->m_type) &&
                         ASRUtils::extract_physical_type(v->m_type) ==
                             ASR::array_physical_typeType::FixedSizeArray) {

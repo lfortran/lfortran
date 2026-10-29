@@ -51,6 +51,7 @@ struct PassOptions {
     bool disable_main = false;
     bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
+    bool stack_arrays = false;
     // Each module is compiled into an object file of its own, so a module
     // read back from a `.mod` file is defined elsewhere and this translation
     // unit only refers to it.
@@ -199,7 +200,6 @@ struct CompilerOptions {
     // Diagnose requirements of Fortran 2023 that earlier standards relax
     bool std_f23_conformance = false;
     bool ignore_pragma = false;
-    bool stack_arrays = false;
     bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;

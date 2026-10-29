@@ -1554,6 +1554,158 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     }
 }
 
+// Only new, private numeric result temporaries of this assignment are
+// candidates. Their allocation is replaced at its original position, not at
+// procedure entry: preceding argument/metadata evaluations must happen first.
+static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
+        Vec<ASR::stmt_t*>& body, size_t begin, size_t assignment_pos,
+        const std::set<ASR::symbol_t*>& old_symbols,
+        const ExprsWithTargetType& exprs_with_target) {
+    for (SymbolTable* s = scope; s; s = s->parent) {
+        if (s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) &&
+                    ASRUtils::runs_on_device(*ASR::down_cast<ASR::Function_t>(owner))) {
+                return;
+            }
+        }
+    }
+    std::set<ASR::symbol_t*> candidates;
+    for (size_t i = begin; i < assignment_pos; i++) {
+        if (!ASR::is_a<ASR::Assignment_t>(*body[i])) continue;
+        auto* assignment = ASR::down_cast<ASR::Assignment_t>(body[i]);
+        ASR::expr_t* value = assignment->m_value;
+        if (!ASR::is_a<ASR::FunctionCall_t>(*value) ||
+                !ASR::is_a<ASR::Var_t>(*assignment->m_target)) continue;
+        auto entry = exprs_with_target.find(value);
+        if (entry == exprs_with_target.end() ||
+                entry->second.second != targetType::GeneratedTarget) continue;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(
+            assignment->m_target)->m_v;
+        ASR::ttype_t* type = ASRUtils::expr_type(value);
+        ASR::ttype_t* element = ASRUtils::extract_type(type);
+        if (old_symbols.count(sym) || !ASR::is_a<ASR::Variable_t>(*sym) ||
+                ASRUtils::symbol_parent_symtab(sym) != scope ||
+                !ASRUtils::is_array(type) ||
+                ASRUtils::is_allocatable_or_pointer(type) ||
+                !ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) ||
+                !(ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                  ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element))) continue;
+        candidates.insert(sym);
+    }
+    std::map<ASR::symbol_t*, ASR::Allocate_t*> allocations;
+    for (size_t i = begin; i < assignment_pos; i++) {
+        if (!ASR::is_a<ASR::Allocate_t>(*body[i])) continue;
+        auto* allocation = ASR::down_cast<ASR::Allocate_t>(body[i]);
+        if (allocation->n_args != 1 || allocation->m_source ||
+                allocation->m_stat || allocation->m_errmsg) continue;
+        ASR::alloc_arg_t& arg = allocation->m_args[0];
+        if (!ASR::is_a<ASR::Var_t>(*arg.m_a) || arg.m_type ||
+                arg.m_len_expr || arg.n_codims || !arg.n_dims) continue;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg.m_a)->m_v;
+        if (!candidates.count(sym)) continue;
+        if (allocations.count(sym)) {
+            candidates.erase(sym);
+        } else {
+            allocations[sym] = allocation;
+        }
+    }
+    for (auto it = candidates.begin(); it != candidates.end();) {
+        if (!allocations.count(*it)) {
+            it = candidates.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (candidates.empty()) return;
+
+    // Each BLOCK ends with the original assignment. Nested BLOCKs retain
+    // allocation order and reclaim dynamic storage before any loop backedge.
+    // Snapshot bounds once here, so a call cannot change the allocated shape.
+    std::function<Vec<ASR::stmt_t*>(size_t, SymbolTable*)> scoped_body;
+    scoped_body = [&](size_t start, SymbolTable* parent) {
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, body.size() - start);
+        for (size_t i = start; i < body.size(); i++) {
+            ASR::stmt_t* stmt = body[i];
+            ASR::expr_t** deallocated = nullptr;
+            size_t n_deallocated = 0;
+            if (ASR::is_a<ASR::ExplicitDeallocate_t>(*stmt)) {
+                auto* d = ASR::down_cast<ASR::ExplicitDeallocate_t>(stmt);
+                if (!d->m_stat && !d->m_errmsg) {
+                    deallocated = d->m_vars;
+                    n_deallocated = d->n_vars;
+                }
+            } else if (ASR::is_a<ASR::ImplicitDeallocate_t>(*stmt)) {
+                auto* d = ASR::down_cast<ASR::ImplicitDeallocate_t>(stmt);
+                deallocated = d->m_vars;
+                n_deallocated = d->n_vars;
+            }
+            if (n_deallocated == 1 && ASR::is_a<ASR::Var_t>(*deallocated[0]) &&
+                    candidates.count(ASR::down_cast<ASR::Var_t>(
+                        deallocated[0])->m_v)) continue;
+            if (!ASR::is_a<ASR::Allocate_t>(*stmt)) {
+                out.push_back(al, stmt);
+                continue;
+            }
+            auto* allocation = ASR::down_cast<ASR::Allocate_t>(stmt);
+            if (allocation->n_args != 1 ||
+                    !ASR::is_a<ASR::Var_t>(*allocation->m_args[0].m_a)) {
+                out.push_back(al, stmt);
+                continue;
+            }
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(
+                allocation->m_args[0].m_a)->m_v;
+            if (!candidates.count(sym)) {
+                out.push_back(al, stmt);
+                continue;
+            }
+            const Location& loc = stmt->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::dimension_t> dims;
+            const ASR::alloc_arg_t& arg = allocation->m_args[0];
+            dims.reserve(al, arg.n_dims);
+            for (size_t d = 0; d < arg.n_dims; d++) {
+                ASR::dimension_t dim = arg.m_dims[d];
+                for (ASR::expr_t** part: {&dim.m_start, &dim.m_length}) {
+                    if (!*part || ASRUtils::is_value_constant(
+                            ASRUtils::expr_value(*part))) continue;
+                    ASR::expr_t* snapshot = b.Variable(parent,
+                        parent->get_unique_name("__libasr_result_bound"),
+                        ASRUtils::expr_type(*part), ASR::intentType::Local);
+                    out.push_back(al, b.Assignment(snapshot, *part));
+                    *part = snapshot;
+                }
+                dims.push_back(al, dim);
+            }
+            SymbolTable* block_scope = al.make_new<SymbolTable>(parent);
+            auto* var = ASR::down_cast<ASR::Variable_t>(sym);
+            var->m_type = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(var->m_type), &dims,
+                ASR::array_physical_typeType::DescriptorArray, true);
+            scope->erase_symbol(var->m_name);
+            var->m_parent_symtab = block_scope;
+            block_scope->add_symbol(var->m_name, sym);
+            Vec<ASR::stmt_t*> tail = scoped_body(i + 1, block_scope);
+            std::string name = parent->get_unique_name("__libasr_result_storage");
+            ASR::asr_t* block = ASR::make_Block_t(al, loc, block_scope,
+                s2c(al, name), tail.p, tail.size());
+            block_scope->asr_owner = block;
+            ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(block);
+            parent->add_symbol(name, block_sym);
+            out.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+                al, loc, -1, block_sym)));
+            break;
+        }
+        return out;
+    };
+    Vec<ASR::stmt_t*> replacement = scoped_body(begin, scope);
+    body.n = begin;
+    for (size_t i = 0; i < replacement.size(); i++) {
+        body.push_back(al, replacement[i]);
+    }
+}
+
 // `body_after_curr_stmt`, when given, collects the statements a visitor wants
 // emitted right after the statement it is visiting (the copy-out of an
 // argument temporary, for example). They are appended once that statement has
@@ -1561,7 +1713,9 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     Vec<ASR::stmt_t*>*& current_body, bool inside_where,
     std::function<void(const ASR::stmt_t&)> visit_stmt,
-    Vec<ASR::stmt_t*>** body_after_curr_stmt = nullptr) {
+    Vec<ASR::stmt_t*>** body_after_curr_stmt = nullptr,
+    SymbolTable* stack_scope = nullptr,
+    const ExprsWithTargetType* exprs_with_target = nullptr) {
     if( inside_where ) {
         for (size_t i = 0; i < n_body; i++) {
             visit_stmt(*m_body[i]);
@@ -1572,6 +1726,15 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
         current_body_vec.reserve(al, n_body);
         current_body = &current_body_vec;
         for (size_t i = 0; i < n_body; i++) {
+            size_t statement_start = current_body->size();
+            bool scope_results = stack_scope &&
+                ASR::is_a<ASR::Assignment_t>(*m_body[i]);
+            std::set<ASR::symbol_t*> old_symbols;
+            if (scope_results) {
+                for (const auto& entry: stack_scope->get_scope()) {
+                    old_symbols.insert(entry.second);
+                }
+            }
             Vec<ASR::stmt_t*>* body_after_curr_stmt_copy = nullptr;
             Vec<ASR::stmt_t*> body_after_curr_stmt_vec;
             if( body_after_curr_stmt != nullptr ) {
@@ -1580,12 +1743,17 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
                 *body_after_curr_stmt = &body_after_curr_stmt_vec;
             }
             visit_stmt(*m_body[i]);
+            size_t assignment_pos = current_body->size();
             current_body->push_back(al, m_body[i]);
             if( body_after_curr_stmt != nullptr ) {
                 for (size_t j = 0; j < body_after_curr_stmt_vec.size(); j++) {
                     current_body->push_back(al, body_after_curr_stmt_vec[j]);
                 }
                 *body_after_curr_stmt = body_after_curr_stmt_copy;
+            }
+            if (scope_results) {
+                scope_stack_result_temporaries(al, stack_scope, *current_body,
+                    statement_start, assignment_pos, old_symbols, *exprs_with_target);
             }
         }
         m_body = current_body_vec.p; n_body = current_body_vec.size();
@@ -2943,6 +3111,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     bool matmul_target_realloc_lhs;
     std::vector<ASR::expr_t*> matmul_target_shape_check;
     bool bounds_checking;
+    bool stack_arrays;
     // The references to the target of the current assignment in its value
     // that read it in place (see reads_target_only_in_place)
     std::set<ASR::expr_t*> target_operands_read_in_place;
@@ -2957,7 +3126,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             FunctionCallPreparation& call_preparation_,
             std::set<ASR::expr_t*>& sections_read_in_place_,
             bool bounds_checking_,
-            const DummiesSharingActualType& dummies_sharing_actual_) :
+            const DummiesSharingActualType& dummies_sharing_actual_,
+            bool stack_arrays_ = false) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
@@ -2966,13 +3136,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             matmul_into_target(nullptr), matmul_target(nullptr),
             matmul_target_operand(nullptr), matmul_target_realloc_lhs(false),
             bounds_checking(bounds_checking_),
+            stack_arrays(stack_arrays_),
             dummies_sharing_actual(dummies_sharing_actual_) {}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); },
-            &body_after_curr_stmt);
+            &body_after_curr_stmt, stack_arrays ? current_scope : nullptr,
+            &exprs_with_target);
     }
 
     bool var_check(ASR::expr_t* expr) {
@@ -5401,6 +5573,7 @@ class ReplaceExprWithTemporaryVisitor:
     ReplaceExprWithTemporary replacer;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     bool inside_where;
+    bool stack_arrays;
     const DummiesSharingActualType& dummies_sharing_actual;
 
     public:
@@ -5412,11 +5585,13 @@ class ReplaceExprWithTemporaryVisitor:
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation,
             const std::set<ASR::expr_t*>& sections_read_in_place,
-            const DummiesSharingActualType& dummies_sharing_actual_):
+            const DummiesSharingActualType& dummies_sharing_actual_,
+            bool stack_arrays_ = false):
         al(al_), exprs_with_target(exprs_with_target_),
         replacer(al, exprs_with_target, realloc_lhs_, call_preparation,
             dummies_sharing_actual_),
         parent_body_for_where(nullptr), inside_where(false),
+        stack_arrays(stack_arrays_),
         dummies_sharing_actual(dummies_sharing_actual_) {
         replacer.sections_read_in_place = &sections_read_in_place;
         replacer.call_replacer_on_value = false;
@@ -5448,7 +5623,8 @@ class ReplaceExprWithTemporaryVisitor:
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
-            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
+            [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); }, nullptr,
+            stack_arrays ? current_scope : nullptr, &exprs_with_target);
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
@@ -6500,11 +6676,11 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     dummies_collector.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
         call_preparation, sections_read_in_place, pass_options.bounds_checking,
-        dummies_sharing_actual);
+        dummies_sharing_actual, pass_options.stack_arrays);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,
-        dummies_sharing_actual);
+        dummies_sharing_actual, pass_options.stack_arrays);
     c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);

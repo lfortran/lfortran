@@ -641,13 +641,14 @@ namespace {
 void inspect_definitions(const std::string &source, bool fast,
         const std::vector<std::pair<std::string, std::string>> &procedures,
         const std::function<void(const std::string &, llvm::Function &)>
-            &inspect) {
+            &inspect, bool stack_arrays = false) {
     Allocator al(64*1024);
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions co;
     co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
+    co.po.stack_arrays = stack_arrays;
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
         LCompilers::LFortran::parse(al, source, diagnostics, co));
     LCompilers::LocationManager lm;
@@ -677,6 +678,76 @@ void inspect_definitions(const std::string &source, bool fast,
         }
         REQUIRE(fn != nullptr);
         inspect(procedure, *fn);
+    }
+}
+
+TEST_CASE("LLVM statement-local stack storage for numeric function results") {
+    std::string source = R"(module stack_results
+implicit none
+type :: sigmoid
+contains
+    procedure :: evaluate, derivative
+end type
+contains
+pure function evaluate(self, x) result(y)
+    class(sigmoid), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = 1.0 / (1.0 + exp(-x))
+end function
+pure function derivative(self, x) result(y)
+    class(sigmoid), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end function
+subroutine user_allocation(n, y)
+    integer, intent(in) :: n
+    real, allocatable, intent(out) :: y(:)
+    allocate(y(n))
+    y = 1.0
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        unsigned heap_calls[2] = {};
+        for (bool stack: {false, true}) {
+            inspect_definitions(source, fast,
+                {{"derivative", "_derivative"},
+                 {"user_allocation", "_user_allocation"}},
+                [&](const std::string &name, llvm::Function &fn) {
+                    unsigned allocations = 0, saves = 0, restores = 0;
+                    unsigned dynamic_arrays = 0;
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &inst: block) {
+                            if (auto *allocation = llvm::dyn_cast<llvm::AllocaInst>(&inst)) {
+                                if (allocation->getAllocatedType()->isFloatTy()
+                                        && !llvm::isa<llvm::ConstantInt>(
+                                            allocation->getArraySize())) {
+                                    dynamic_arrays++;
+                                }
+                            }
+                            auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                            if (!call || !call->getCalledFunction()) continue;
+                            llvm::StringRef callee = call->getCalledFunction()->getName();
+                            if (callee == "_lfortran_malloc_alloc") allocations++;
+                            if (callee == "llvm.stacksave") saves++;
+                            if (callee == "llvm.stackrestore") restores++;
+                        }
+                    }
+                    if (name == "user_allocation") {
+                        CHECK(allocations > 0);
+                    } else {
+                        heap_calls[stack] = allocations;
+                        if (stack) {
+                            CHECK(dynamic_arrays > 0);
+                            CHECK(saves > 0);
+                            CHECK(restores == saves);
+                        }
+                    }
+                }, stack);
+        }
+        CHECK(heap_calls[1] < heap_calls[0]);
     }
 }
 
