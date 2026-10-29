@@ -4088,7 +4088,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         builder->CreateStore(str_len,
                             create_gep2(llvm_str_desc_type, dest_str_desc, 1));
                         // Fill the array details for offset, rank, dim using existing function
-                        arr_api->fill_array_details(src_expr, src_expr, src, dest,
+                        arr_api->fill_array_details(src_expr, nullptr, src, dest,
                             alloc_type->m_type, alloc_type->m_type, module, true);
                     } else {
                         ensure_dest_array_descriptor();

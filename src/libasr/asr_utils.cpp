@@ -13704,7 +13704,7 @@ bool struct_needs_member_init(ASR::Struct_t* s,
     return false;
 }
 
-bool needs_struct_array_member_init(ASR::expr_t* expr,
+bool needs_struct_array_member_init(ASR::symbol_t* type_declaration,
         ASR::ttype_t* type) {
     if (!is_array(type)) {
         return false;
@@ -13713,8 +13713,7 @@ bool needs_struct_array_member_init(ASR::expr_t* expr,
     if (!ASR::is_a<ASR::StructType_t>(*el_type) || is_class_type(el_type)) {
         return false;
     }
-    ASR::symbol_t* struct_sym = symbol_get_past_external(
-        get_struct_sym_from_struct_expr(expr));
+    ASR::symbol_t* struct_sym = symbol_get_past_external(type_declaration);
     if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
         return false;
     }
