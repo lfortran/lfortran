@@ -50,8 +50,12 @@ void main2() {
     f32_3_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 3;
-    a->data = &r;
-    b->data = &r;
+    a->data->operator[](1 - a->dims[0].lower_bound) =   1.00000000000000000e+00;
+    a->data->operator[](2 - a->dims[0].lower_bound) =   2.00000000000000000e+00;
+    a->data->operator[](3 - a->dims[0].lower_bound) =   3.00000000000000000e+00;
+    b->data->operator[](1 - b->dims[0].lower_bound) =   1.00000000000000000e+00;
+    b->data->operator[](2 - b->dims[0].lower_bound) =   2.00000000000000000e+00;
+    b->data->operator[](3 - b->dims[0].lower_bound) =   3.00000000000000000e+00;
 }
 
 }
