@@ -2,6 +2,7 @@
 over FortranEvaluator::execute()."""
 
 import argparse
+import json
 import os
 from pathlib import Path
 import queue
@@ -60,10 +61,19 @@ def check(client, code, expected):
     return messages
 
 
-def check_interruption(client):
+def check_interruption(client, directory):
     check(client, "integer :: saved_interrupt = 41", [])
     check(client, "integer function interrupt_plus(i)\ninteger, intent(in) :: i\n"
           "interrupt_plus=i+1\nend function", [])
+    check_command_interruption(client, directory)
+    for _ in range(2 if os.name == "posix" else 0):
+        started = time.monotonic()
+        messages = interrupt_cell(client,
+            "call execute_command_line('sleep 4')\nprint *, 'command-done'")
+        assert time.monotonic() - started < 2.5, "command cancellation waited for sleep"
+        assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
+                       for m in messages), messages
+        check(client, "interrupt_plus(saved_interrupt)", ["42"])
     msg_id = client.execute("do\nend do", stop_on_error=False)
     deadline = time.monotonic() + 10
     while True:
@@ -253,6 +263,101 @@ def waiter_command(waiter, *paths):
     return command
 
 
+def process_running(pid):
+    if os.name == "nt":
+        import ctypes
+        api = ctypes.WinDLL("kernel32", use_last_error=True)
+        api.OpenProcess.restype = ctypes.c_void_p
+        api.OpenProcess.argtypes = [ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
+        api.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        api.CloseHandle.argtypes = [ctypes.c_void_p]
+        handle = api.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE
+        if not handle:
+            return ctypes.get_last_error() != 87  # ERROR_INVALID_PARAMETER
+        try:
+            return api.WaitForSingleObject(handle, 0) == 258  # WAIT_TIMEOUT
+        finally:
+            api.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    # Orphaned grandchildren are reaped by the OS, not by the kernel process.
+    stat = Path("/proc") / str(pid) / "stat"
+    if sys.platform.startswith("linux") and stat.exists():
+        try:
+            return stat.read_text().split(") ", 1)[1][0] != "Z"
+        except FileNotFoundError:
+            return False
+    return True
+
+
+def check_command_interruption(client, directory):
+    # Quoted paths and a shell -> Python -> Python tree, not just shell exec
+    # replacing itself with a single sleep process.
+    command_dir = directory / "owned command"
+    command_dir.mkdir()
+    helper = command_dir / "owned child.py"
+    pids = command_dir / "pids.json"
+    helper.write_text(
+        "import json, os, subprocess, sys, time\n"
+        "from pathlib import Path\n"
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
+        "Path(sys.argv[1]).write_text(json.dumps([os.getpid(), child.pid]))\n"
+        "print('owned-command-started', flush=True)\n"
+        "child.wait()\n")
+    command = waiter_command(helper, pids).replace("'", "''")
+    owned = []
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        for _ in range(2):
+            started = time.monotonic()
+            messages = interrupt_cell(client,
+                "call execute_command_line('" + command + "')\nprint *, 'command-done'",
+                started_text="owned-command-started\n")
+            assert time.monotonic() - started < 2.5, "owned command ignored interrupt"
+            owned = json.loads(pids.read_text())
+            deadline = time.monotonic() + 2
+            while any(process_running(pid) for pid in owned) and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert not any(process_running(pid) for pid in owned), ("surviving children", owned)
+            assert unrelated.poll() is None, "command cancellation stopped an unrelated process"
+            assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
+                           for m in messages), messages
+            check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=10)
+        if pids.exists():
+            owned = json.loads(pids.read_text())
+        for pid in reversed(owned):
+            if process_running(pid):
+                import signal
+                os.kill(pid, signal.SIGTERM)
+        pids.unlink(missing_ok=True)
+        helper.unlink()
+        command_dir.rmdir()
+    messages = check(client,
+        "integer :: command_exit, command_status\n"
+        "call execute_command_line('echo command-stdout', exitstat=command_exit, cmdstat=command_status)\n"
+        "if (command_exit /= 0 .or. command_status /= 0) error stop\n"
+        "call execute_command_line('echo command-stderr >&2')\n"
+        "call execute_command_line('exit 7', exitstat=command_exit, cmdstat=command_status)\n"
+        "if (command_exit /= 7 .or. command_status /= 0) error stop\n"
+        "call execute_command_line('exit 0', wait=.false., cmdstat=command_status)\n"
+        "if (command_status /= 0) error stop", [])
+    for name in ("stdout", "stderr"):
+        assert any(m["msg_type"] == "stream" and m["content"]["name"] == name
+                   and "command-" + name in m["content"]["text"] for m in messages), messages
+    if os.name == "posix":
+        check(client,
+            "block\ninteger :: es, cs\ncharacter(40) :: msg\n"
+            "call execute_command_line('LFORTRAN_NO_SUCH_COMMAND_16183 2>/dev/null', &\n"
+            "exitstat=es, cmdstat=cs, cmdmsg=msg)\n"
+            "if (es /= 127 .or. cs /= 3) error stop\n"
+            "if (trim(msg) /= 'Invalid command line') error stop\nend block", [])
+
+
 def streaming_code(gate, partial=False):
     first = ("write(*,'(a)',advance='no')" if partial else "print '(a)',")
     command = waiter_command(gate.with_name("wait.py"), gate)
@@ -420,7 +525,7 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal", interrupt
             client.start_channels()
             client.wait_for_ready(timeout=30)
             if not streaming_only:
-                check_interruption(client)
+                check_interruption(client, directory)
             if interrupt_only:
                 client.shutdown()
                 process.wait(timeout=15)
