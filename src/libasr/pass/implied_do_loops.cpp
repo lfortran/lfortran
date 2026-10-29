@@ -653,7 +653,15 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
-        ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
+        ASR::expr_t* array_constructor = nullptr;
+        if (materialize_constants && ASRUtils::is_fixed_size_array(x->m_type)) {
+            // Use the constructor's extent, independently of its values or destination.
+            array_constructor = make_ConstantWithKind(make_IntegerConstant_t,
+                make_Integer_t, ASRUtils::get_fixed_size_of_array(x->m_type),
+                get_index_kind(), loc);
+        } else {
+            array_constructor = get_ArrayConstructor_size(x, is_allocatable);
+        }
 
         // Case: `keywords = [character(len=ii) :: value]`
         // For runtime-dependent string lengths, defer evaluation and use allocatable results with per-element runtime allocation.
