@@ -91,6 +91,15 @@ dummy has its own template parameter: equal element kind and rank do not imply
 equal descriptor types or extents. This is a C++ representation choice; the
 Fortran interface and argument conversion remain determined by ASR.
 
+Scalar allocatable arguments share their allocation storage with the caller.
+For `character(*)` allocatable dummies, the
+`scalar_allocatable_string_lengths` lowering reuses the hidden-length ASR
+machinery to pass the actual's declared length independently of that storage.
+The dummy has an explicit `ExpressionLength`, and `LEN(dummy)` reads the
+length argument, including while unallocated or after `INTENT(OUT)`
+deallocation. Allocation and assignment consume that same ASR length; the
+backend must not recover a nondeferred length from the stored string value.
+
 ## Compilation Modes
 
 We support two compilation modes:
