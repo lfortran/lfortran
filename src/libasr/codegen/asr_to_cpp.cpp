@@ -11,6 +11,10 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
+#include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_print_arr.h>
 
 
 namespace LCompilers {
@@ -355,11 +359,9 @@ public:
                 std::string encoded_type_name = "c" + std::to_string(t->m_kind * 8);
                 handle_array(v.m_type, type_name, false)
             } else if (ASRUtils::is_logical(*v.m_type)) {
-                size_t size;
-                extract_dimensions(v.m_type)
-                dims = convert_dims(n_dims, m_dims, size);
-                sub = format_type(dims, "bool", v.m_name, use_ref, dummy,
-                    true, "", true);
+                std::string type_name = "bool";
+                std::string encoded_type_name = "b";
+                handle_array(v.m_type, type_name, false)
             } else if (ASRUtils::is_character(*v.m_type)) {
                 // std::string is a byte string, so it can only carry kind 1.
                 int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(v.m_type);
@@ -368,10 +370,9 @@ public:
                         ") is not supported by the C++ backend, only kind 1 is",
                         v.base.base.loc);
                 }
-                size_t size;
-                extract_dimensions(v.m_type)
-                dims = convert_dims(n_dims, m_dims, size);
-                sub = format_type(dims, "std::string", v.m_name, use_ref, dummy);
+                std::string type_name = "std::string";
+                std::string encoded_type_name = "s";
+                handle_array(v.m_type, type_name, false)
             } else if (ASR::is_a<ASR::StructType_t>(*v.m_type)) {
                 std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                 std::string encoded_type_name = "x" + der_type_name;
@@ -619,39 +620,25 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        std::string indent(indentation_level * indentation_spaces, ' ');
-        std::string elem_type = CUtils::get_c_type_from_ttype_t(
-            ASRUtils::type_get_past_array(x.m_type));
-        std::string tmp = "r" + std::to_string(array_const_count++);
-        from_std_vector_helper += indent + "Kokkos::View<" + elem_type
-            + "*> " + tmp + ";\n";
-        std::string out = "from_std_vector<" + elem_type + ">({";
-        for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            out += ASRUtils::fetch_ArrayConstant_value(x, i);
-            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) out += ", ";
-        }
-        out += "})";
-        from_std_vector_helper += indent + tmp + " = " + out + ";\n";
-        src = "&" + tmp;
-        last_expr_precedence = 2;
+        throw CodeGenError("array constant must be materialized before C++ code generation",
+            x.base.base.loc);
     }
 
     void visit_ArraySize(const ASR::ArraySize_t& x) {
         visit_expr(*x.m_v);
         std::string var_name = src;
-        std::string args = "";
+        std::string result;
         if (x.m_dim == nullptr) {
-            // TODO: return the product of all dimensions:
-            args = "0";
-        } else {
-            if( x.m_dim ) {
-                visit_expr(*x.m_dim);
-                args += src + "-1";
-                args += ", ";
+            result = "1";
+            for (size_t i = 0; i < ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(x.m_v)); i++) {
+                result += " * " + var_name + "->dims[" + std::to_string(i) + "].length";
             }
-            args += std::to_string(ASRUtils::extract_kind_from_ttype_t(x.m_type)) + "-1";
+        } else {
+            visit_expr(*x.m_dim);
+            result = var_name + "->dims[(" + src + ") - 1].length";
         }
-        src = var_name + "->data->extent(" + args + ")";
+        src = "((" + CUtils::get_c_type_from_ttype_t(x.m_type) + ")(" + result + "))";
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
@@ -660,11 +647,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             return;
         }
         ASR::ttype_t* array_type = ASRUtils::expr_type(x.m_v);
-        if (ASRUtils::is_logical(*array_type) ||
-                ASRUtils::is_character(*array_type)) {
-            throw CodeGenError("bounds of this array require a descriptor "
-                "in the C++ backend", x.base.base.loc);
-        }
         if (!x.m_dim) {
             throw CodeGenError("array bounds without dim must be lowered "
                 "before C++ code generation", x.base.base.loc);
@@ -755,26 +737,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         for (size_t i=0; i<n_values; i++) {
             ASR::expr_t* arg = str_fmt->m_args[i];
-            // Array-valued elementwise expressions of fixed size are
-            // unrolled into the output list element by element. Anything
-            // else keeps the existing behavior.
-            if (!ASR::is_a<ASR::Var_t>(*arg) &&
-                    ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
-                    is_elementwise_assignable(arg)) {
-                int64_t arr_size = ASRUtils::get_fixed_size_of_array(
-                    ASRUtils::expr_type(arg));
-                if (arr_size > 0) {
-                    for (int64_t k = 0; k < arr_size; k++) {
-                        out += "<< (" + elementwise_src(arg,
-                            std::to_string(k)) + ") << \" \";\n"
-                            + indent + "std::cout ";
-                    }
-                    if (i+1 != n_values) {
-                        out += "<< " + sep + " ";
-                    }
-                    continue;
-                }
-            }
             this->visit_expr(*arg);
             out += "<< (" + src + ") ";
             if (i+1 != n_values) {
@@ -802,20 +764,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         }
         for (size_t i=0; i<n_values; i++) {
             ASR::expr_t* arg = str_fmt ? str_fmt->m_args[i] : x.m_values[i];
-            if (!ASR::is_a<ASR::Var_t>(*arg) &&
-                    ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
-                    is_elementwise_assignable(arg)) {
-                int64_t arr_size = ASRUtils::get_fixed_size_of_array(
-                    ASRUtils::expr_type(arg));
-                if (arr_size > 0) {
-                    for (int64_t k = 0; k < arr_size; k++) {
-                        out += "<< (" + elementwise_src(arg,
-                            std::to_string(k)) + ") << \" \";\n"
-                            + indent + "std::cout ";
-                    }
-                    continue;
-                }
-            }
             this->visit_expr(*arg);
             out += "<< (" + src + ") ";
         }
@@ -886,18 +834,48 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 
 };
 
+class CPPConstructorReadiness : public ASR::BaseWalkVisitor<CPPConstructorReadiness>
+{
+public:
+    void visit_ttype(const ASR::ttype_t&) {}
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t&) {}
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
+        throw CodeGenError("array constructor must be materialized before C++ code generation",
+            x.base.base.loc);
+    }
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& x) {
+        throw CodeGenError("implied-do must be lowered before C++ code generation",
+            x.base.base.loc);
+    }
+    void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
+        throw CodeGenError("array constant must be materialized before C++ code generation",
+            x.base.base.loc);
+    }
+};
+
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co,
     int64_t default_lower_bound)
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    PassOptions array_options = co.po;
+    array_options.materialize_array_constants = true;
+    pass_replace_implied_do_loops(al, asr, array_options);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_array_struct_temporary(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_array_op(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_print_arr(al, asr, co.po);
     pass_update_array_dim_intrinsic_calls(al, asr, co.po);
     if (!asr_verify(asr, true, diagnostics)) {
         return Error();
     }
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
+        CPPConstructorReadiness readiness;
+        readiness.visit_TranslationUnit(asr);
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
         diagnostics.diagnostics.push_back(e.d);

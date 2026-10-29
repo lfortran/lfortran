@@ -37,6 +37,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     bool realloc_lhs, allocate_target;
     const LCompilers::PassOptions& pass_options;
     bool skip_idl_save_restore;
+    bool materialize_constants = false;
     // Index variables of the enclosing FORALL statements
     std::vector<ASR::symbol_t*> forall_indices;
 
@@ -677,7 +678,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         dim.m_length = array_constructor;
         dims.push_back(al, dim);
         remove_original_statement = false;
-        if( is_result_var_fixed_size ) {
+        if( is_result_var_fixed_size && !materialize_constants ) {
             result_type_ = ASRUtils::expr_type(result_var);
             is_allocatable = false;
         } else {
@@ -754,7 +755,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
             pass_result.push_back(al, allocate_stmt);
         }
-        if ( allocate_target && realloc_lhs ) {
+        if ( allocate_target && realloc_lhs && !materialize_constants ) {
             allocate_target = false;
             arg.loc = result_var_copy->base.loc;
             arg.m_a = result_var_copy;
@@ -796,7 +797,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     // which backends keep as static data. Filling a temporary with it
     // instead takes code for each element, for every such assignment.
     bool is_named_array_constant(ASR::ArrayConstant_t* x, bool is_assignment_value) {
-        if (!is_assignment_value || !PassUtils::is_nameable_array_constant(x)) {
+        if (materialize_constants || !is_assignment_value || !PassUtils::is_nameable_array_constant(x)) {
             return false;
         }
         ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
@@ -841,7 +842,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             dims.push_back(al, dim);
         }
         remove_original_statement = false;
-        if( is_result_var_fixed_size ) {
+        if( is_result_var_fixed_size && !materialize_constants ) {
             result_type_ = ASRUtils::expr_type(result_var);
             is_allocatable = false;
         } else {
@@ -894,7 +895,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
             pass_result.push_back(al, allocate_stmt);
         }
-        if ( allocate_target && realloc_lhs ) {
+        if ( allocate_target && realloc_lhs && !materialize_constants ) {
             allocate_target = false;
             arg.loc = result_var_copy->base.loc;
             arg.m_a = result_var_copy;
@@ -982,13 +983,15 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return pass_options.descriptor_index_64 ? 8 : 4;
         }
 
-        ArrayConstantVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
+        ArrayConstantVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_,
+                bool materialize_constants) :
         al(al_), remove_original_statement(false),
         replacer(al_, pass_result, remove_original_statement,
             resultvar2value, pass_options_.realloc_lhs_arrays, allocate_target, pass_options_),
         parent_body(nullptr), pass_options(pass_options_) {
             call_replacer_on_value = false;
             replacer.call_replacer_on_value = false;
+            replacer.materialize_constants = materialize_constants;
             pass_result.n = 0;
             pass_result.reserve(al, 0);
             print = false, file_write = false;
@@ -2213,7 +2216,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 void pass_replace_implied_do_loops(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
-    ArrayConstantVisitor v(al, pass_options);
+    ArrayConstantVisitor v(al, pass_options, pass_options.materialize_array_constants);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

@@ -43,6 +43,18 @@ and releases their private storage after the assignment. Descriptor layout
 and ownership are unchanged. Types with pointers, nested derived components
 or user finalization keep their existing lifetime.
 
+The C++ backend normalizes array expressions in ASR before emitting Kokkos
+operations. It uses `implied_do_loops`, `array_struct_temporary`, `array_op`,
+`print_arr`, and then `update_array_dim_intrinsic_calls`, verifying the
+transformed ASR between stages. The constructor pass's
+`materialize_array_constants` policy creates typed RHS storage instead of
+named array constants; other backends retain their default policy.
+Fixed-cardinality constructor values are filled before the destination is
+written, including self-referential assignments. Remaining executable
+constructors are rejected at the C++ boundary rather than filled by a second,
+backend-specific constructor implementation. This normalization does not imply
+support for all dynamic allocations, sections, or array function results.
+
 LFortran is structured as a library, and so one can for example use the parser
 to obtain an AST and do something with it, or one can then use the semantic
 analyzer to obtain ASR and do something with it. One can generate the ASR
