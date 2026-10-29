@@ -394,6 +394,21 @@ public:
                 sub += "=" + init;
             }
         }
+        if (is_scalar_allocatable(&v)) {
+            std::string value_type = ASRUtils::is_character(*v.m_type)
+                ? "std::string" : CUtils::get_c_type_from_ttype_t(
+                    ASRUtils::type_get_past_allocatable(v.m_type), false);
+            sub = "std::optional<" + value_type + "> ";
+            if (dummy) {
+                if (v.m_intent == ASRUtils::intent_in) {
+                    sub = "const " + sub;
+                }
+                sub += "&";
+            } else if (v.m_storage == ASR::storage_typeType::Save && use_static) {
+                sub = "static " + sub;
+            }
+            sub += v.m_name;
+        }
         return sub;
     }
 
@@ -429,6 +444,8 @@ R"(#include <iostream>
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <algorithm>
+#include <optional>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -532,7 +549,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
                 decl += indent1;
                 decl += convert_variable_decl(*v) + ";\n";
-                decl += scalar_alloc_flag_decl(v, indent1);
             }
         }
 

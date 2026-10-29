@@ -778,10 +778,6 @@ R"(#include <stdio.h>
                 }
                 decl += ";\n\n";
                 contains += decl;
-                std::string alloc_flag_decl = scalar_alloc_flag_decl(v, "");
-                if (!alloc_flag_decl.empty()) {
-                    contains += alloc_flag_decl + "\n";
-                }
             }
         }
 
@@ -830,7 +826,6 @@ R"(#include <stdio.h>
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 std::string d = self().convert_variable_decl(*v) + ";\n";
                 decl += check_tmp_buffer() + d;
-                decl += scalar_alloc_flag_decl(v, "");
             }
         }
 
@@ -875,7 +870,6 @@ R"(#include <stdio.h>
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 std::string d = indent + self().convert_variable_decl(*v) + ";\n";
                 decl += check_tmp_buffer() + d;
-                decl += scalar_alloc_flag_decl(v, indent);
             }
         }
         for (size_t i=0; i<block->n_body; i++) {
@@ -1285,15 +1279,10 @@ R"(#include <stdio.h>
                             ASRUtils::get_common_block(v) == nullptr) {
                         std::string d = indent + self().convert_variable_decl(*v) + ";\n";
                         decl += check_tmp_buffer() + d;
-                        decl += scalar_alloc_flag_decl(v, indent);
                     } else if (!is_c && ASRUtils::is_arg_dummy(v->m_intent) &&
-                            is_scalar_allocatable(v)) {
-                        // Dummy scalar allocatables are declared in the
-                        // signature, so only the companion flag goes here.
-                        // intent(out) dummies are deallocated on entry, so
-                        // `false` is exact there; for other intents it is
-                        // best-effort (a caller-passed allocation is unseen).
-                        decl += scalar_alloc_flag_decl(v, indent);
+                            is_scalar_allocatable(v) &&
+                            v->m_intent == ASRUtils::intent_out) {
+                        decl += indent + scalar_allocatable_name(v) + ".reset();\n";
                     }
                     if (ASR::is_a<ASR::TypeParameter_t>(*v->m_type)) {
                         has_typevar = true;
@@ -1322,9 +1311,8 @@ R"(#include <stdio.h>
             }
 
             if (!visited_return && x.m_return_var) {
-                current_body += indent + "return "
-                    + ASRUtils::EXPR2VAR(x.m_return_var)->m_name
-                    + ";\n";
+                self().visit_expr(*x.m_return_var);
+                current_body += indent + "return " + src + ";\n";
             }
 
             if (decl.size() > 0 || current_body.size() > 0) {
@@ -1560,6 +1548,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
             self().visit_expr(*call_arg);
             src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
+            if (!is_c) {
+                ASR::symbol_t *formal = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*formal) &&
+                        is_scalar_allocatable(ASR::down_cast<ASR::Variable_t>(formal))) {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*call_arg));
+                    src = scalar_allocatable_name(ASRUtils::EXPR2VAR(call_arg));
+                }
+            }
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
             if (ASR::is_a<ASR::Var_t>(*call_arg)
                 && ASR::is_a<ASR::Variable_t>(
@@ -1757,7 +1754,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         std::string target;
-        std::string target_alloc_flag;
         ASR::ttype_t* m_target_type = ASRUtils::expr_type(x.m_target);
         ASR::ttype_t* m_value_type = ASRUtils::expr_type(x.m_value);
         bool is_target_list = ASR::is_a<ASR::List_t>(*m_target_type);
@@ -1806,13 +1802,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 target += "->data";
             }
             if (!is_c && !ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
-                // Plain assignment (re)allocates a scalar allocatable in
-                // Fortran; record it in the companion flag.
                 ASR::symbol_t *ts = ASRUtils::symbol_get_past_external(
                     x_m_target->m_v);
                 if (ASR::is_a<ASR::Variable_t>(*ts) && is_scalar_allocatable(
                         ASR::down_cast<ASR::Variable_t>(ts))) {
-                    target_alloc_flag = target + "_is_allocated = true;";
+                    target = scalar_allocatable_name(
+                        ASR::down_cast<ASR::Variable_t>(ts));
                 }
             }
             if (target == "_lpython_return_variable" && ASRUtils::is_character(*m_target_type)) {
@@ -1993,9 +1988,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 }
             } else {
                 src += indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
-                if (!target_alloc_flag.empty()) {
-                    src += indent + target_alloc_flag + "\n";
-                }
             }
         }
         from_std_vector_helper.clear();
@@ -2644,6 +2636,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
         } else {
             src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
+            if (is_scalar_allocatable(sv)) {
+                src = "(*" + src + ")";
+            }
         }
         last_expr_precedence = 2;
     }
@@ -3267,20 +3262,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
-            } else if (!is_c && ASRUtils::is_character(
-                    *ASRUtils::type_get_past_allocatable(type))) {
-                // A C++ allocatable string is a plain std::string, which
-                // grows on demand: honour only the requested length and
-                // record the allocation state in the companion flag.
-                if (x.m_args[i].m_len_expr) {
+            } else if (!is_c && is_scalar_allocatable(
+                    ASR::down_cast<ASR::Variable_t>(tmp_sym))) {
+                if (ASRUtils::is_character(*type) && x.m_args[i].m_len_expr) {
                     self().visit_expr(*x.m_args[i].m_len_expr);
-                    out += indent + sym + ".resize(" + src + ", ' ');\n";
+                    out += indent + sym + ".emplace(std::max<int64_t>(0, "
+                        + src + "), ' ');\n";
+                } else {
+                    out += indent + sym + ".emplace();\n";
                 }
-                out += indent + sym + "_is_allocated = true;\n";
-            } else if (!is_c && ASR::is_a<ASR::Allocatable_t>(*type)) {
-                // A C++ scalar allocatable is a plain value, so allocating
-                // it only records the state in the companion flag.
-                out += indent + sym + "_is_allocated = true;\n";
             } else {
                 std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
                 size_str = "sizeof(" + ty + ")";
@@ -3317,25 +3307,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    // Scalar allocatables lower to plain values in C++ (e.g. `int32_t`,
-    // `std::string`), so their allocation state is tracked in a companion
-    // `<name>_is_allocated` flag declared next to the variable. The C
-    // backend does not support scalar allocatables at all, hence `!is_c`.
-    // Struct-typed allocatables are excluded: their uses take the address
-    // of the variable, which a plain flag cannot follow.
-    bool is_scalar_allocatable(ASR::Variable_t *v) {
+    bool is_scalar_allocatable(const ASR::Variable_t *v) {
         return !ASRUtils::is_array(v->m_type) &&
             !ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_allocatable(v->m_type)) &&
             ASR::is_a<ASR::Allocatable_t>(*v->m_type);
     }
-    std::string scalar_alloc_flag_decl(ASR::Variable_t *v,
-            const std::string &indent) {
-        if (!is_c && is_scalar_allocatable(v)) {
-            return indent + "bool " + std::string(v->m_name)
-                + "_is_allocated = false;\n";
-        }
-        return "";
+    std::string scalar_allocatable_name(const ASR::Variable_t *v) {
+        return std::string(v->m_name);
     }
 
     // Neither deallocate statement releases anything in this backend yet; both
@@ -3360,17 +3339,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
     }
 
-    // A scalar allocatable named by `deallocate` only needs its companion
-    // flag cleared (C++ only); anything else keeps the FIXME comment below.
-    bool clear_scalar_alloc_flag(ASR::expr_t* e, const std::string &indent,
+    bool deallocate_scalar(ASR::expr_t* e, const std::string &indent,
             std::string &out) {
         if (!is_c && ASR::is_a<ASR::Var_t>(*e)) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(e)->m_v);
             if (ASR::is_a<ASR::Variable_t>(*s) && is_scalar_allocatable(
                     ASR::down_cast<ASR::Variable_t>(s))) {
-                self().visit_expr(*e);
-                out += indent + src + "_is_allocated = false;\n";
+                out += indent + scalar_allocatable_name(
+                    ASR::down_cast<ASR::Variable_t>(s)) + ".reset();\n";
                 return true;
             }
         }
@@ -3382,7 +3359,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out;
         std::string unfreed;
         for (size_t i=0; i<x.n_vars; i++) {
-            if (!clear_scalar_alloc_flag(x.m_vars[i], indent, out)) {
+            if (!deallocate_scalar(x.m_vars[i], indent, out)) {
                 unfreed += deallocate_operand_name(x.m_vars[i]) + ", ";
             }
         }
@@ -3397,7 +3374,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out;
         std::string unfreed;
         for (size_t i=0; i<x.n_vars; i++) {
-            if (!clear_scalar_alloc_flag(x.m_vars[i], indent, out)) {
+            if (!deallocate_scalar(x.m_vars[i], indent, out)) {
                 unfreed += deallocate_operand_name(x.m_vars[i]) + ", ";
             }
         }
@@ -3515,9 +3492,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     void visit_Return(const ASR::Return_t & /* x */) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (current_function && current_function->m_return_var) {
-            src = indent + "return "
-                + ASRUtils::EXPR2VAR(current_function->m_return_var)->m_name
-                + ";\n";
+            self().visit_expr(*current_function->m_return_var);
+            src = indent + "return " + src + ";\n";
         } else {
             src = indent + "return;\n";
         }
@@ -3865,8 +3841,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     throw CodeGenError("allocated() is only supported for scalar allocatable variables",
                         x.base.base.loc);
                 }
-                self().visit_expr(*arg);
-                src = src + "_is_allocated";
+                src = scalar_allocatable_name(
+                    ASR::down_cast<ASR::Variable_t>(s)) + ".has_value()";
                 last_expr_precedence = 2;
                 return;
             }

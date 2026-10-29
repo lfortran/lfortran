@@ -1,6 +1,4 @@
-! Allocatable arrays and scalars in C/C++ backends: declarations lower
-! to plain values/descriptors, allocation state is tracked in companion
-! flags so that allocated() works on arrays and scalars.
+! Allocation status is independent of the stored scalar or array values.
 program allocatable_01
 implicit none
 integer, allocatable :: a(:)
