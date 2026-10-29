@@ -25,6 +25,8 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+// The SDK's COM shorthand must not rewrite compiler identifiers.
+#undef interface
 #else
 #include <unistd.h>
 #endif
