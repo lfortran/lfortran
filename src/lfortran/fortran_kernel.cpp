@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <deque>
 
 #include <xeus/xinterpreter.hpp>
 #include <xeus/xkernel.hpp>
@@ -25,6 +26,143 @@ namespace nl = nlohmann;
 
 namespace LCompilers::LFortran {
 
+#ifndef __EMSCRIPTEN__
+    // Xeus's default native transport is single-threaded. Poll it on the
+    // evaluator's caller, dispatching only interrupts until execution returns.
+    class execution_server : public xeus::xserver_zmq {
+        std::deque<message_channel> pending;
+    public:
+        bool interrupted = false;
+        execution_server(xeus::xcontext &context, const xeus::xconfiguration &config,
+                nl::json::error_handler_t handler)
+            : xeus::xserver_zmq(context, config, handler) {}
+
+        bool pump() {
+            for (int n = 0; n < 32; n++) {
+                auto message = poll_channels(0);
+                if (!message) break;
+                if (message->second == xeus::channel::CONTROL &&
+                        message->first.header().value("msg_type", "") == "interrupt_request") {
+                    interrupted = true;
+                    notify_control_listener(std::move(message->first));
+                } else {
+                    pending.push_back(std::move(*message));
+                }
+            }
+            return interrupted;
+        }
+
+    private:
+        void start_impl(xeus::xpub_message message) override {
+            start_publisher_thread();
+            start_heartbeat_thread();
+            publish(std::move(message), xeus::channel::SHELL);
+            while (!is_stopped()) {
+                std::optional<message_channel> next;
+                if (!pending.empty()) {
+                    next.emplace(std::move(pending.front()));
+                    pending.pop_front();
+                } else {
+                    next = poll_channels(-1);
+                }
+                if (!next) continue;
+                if (next->second == xeus::channel::SHELL)
+                    notify_shell_listener(std::move(next->first));
+                else
+                    notify_control_listener(std::move(next->first));
+            }
+            stop_channels();
+        }
+        void stop_impl() override { set_request_stop(true); }
+        void abort_queue_impl(const listener &listener, long interval) override {
+            // Requests already polled by pump() belong to the same queue.
+            std::deque<message_channel> controls;
+            while (!pending.empty()) {
+                auto message = std::move(pending.front());
+                pending.pop_front();
+                if (message.second == xeus::channel::SHELL)
+                    listener(std::move(message.first));
+                else controls.push_back(std::move(message));
+            }
+            pending = std::move(controls);
+            // The public base entry point would dispatch back here.
+            // Drain the remaining shell requests through the same poll API.
+            for (;;) {
+                auto message = poll_channels(interval);
+                if (!message) break;
+                if (message->second == xeus::channel::SHELL)
+                    listener(std::move(message->first));
+                else pending.push_back(std::move(*message));
+            }
+        }
+    };
+
+    // Keep Xeus's public configuration accurate while replacing its blocking
+    // stdin transport with the existing cancellation-aware input channel.
+    class native_server : public xeus::xserver {
+        std::unique_ptr<execution_server> transport;
+        std::unique_ptr<jupyter::InputChannel> input;
+        std::string input_port;
+    public:
+        native_server(xeus::xcontext &context, const xeus::xconfiguration &configuration,
+                nl::json::error_handler_t handler) {
+            xeus::xconfiguration config = configuration;
+            auto &ports = std::get<xeus::xkernel_configuration>(config);
+            int port = ports.m_stdin_port.empty() ? 0 : std::stoi(ports.m_stdin_port);
+            input = std::make_unique<jupyter::InputChannel>(ports.m_ip, port, ports.m_key, true);
+            input_port = std::to_string(port);
+            ports.m_stdin_port = "0";
+            transport = std::make_unique<execution_server>(context, config, handler);
+            transport->register_shell_listener([this](xeus::xmessage m) {
+                notify_shell_listener(std::move(m));
+            });
+            transport->register_control_listener([this](xeus::xmessage m) {
+                notify_control_listener(std::move(m));
+            });
+            transport->register_internal_listener([this](nl::json m) {
+                return notify_internal_listener(std::move(m));
+            });
+        }
+        void begin_cell() { transport->interrupted = false; }
+        bool pump() { return transport->pump(); }
+        int read(const xeus::xrequest_context &context, std::string &record, bool interruptible) {
+            if (context.id().empty()) return 1;
+            nl::json header = xeus::make_header("input_request", "kernel", "");
+            const std::string parts[4] = {header.dump(), context.header().dump(),
+                "{}", nl::json{{"prompt", ""}, {"password", false},
+                    {"lfortran_interruptible", interruptible}}.dump()};
+            input->ask(context.id().back(), parts);
+            for (;;) {
+                if (pump() && interruptible) {
+                    input->cancel();
+                    return -1;
+                }
+                int answer = input->wait(record, 50);
+                if (answer > 0) return record == "\x04" ? -1 : 0;
+                if (answer < 0) return 1;
+            }
+        }
+    private:
+        xeus::xcontrol_messenger &get_control_messenger_impl() override {
+            return transport->get_control_messenger();
+        }
+        void send_shell_impl(xeus::xmessage m) override { transport->send_shell(std::move(m)); }
+        void send_control_impl(xeus::xmessage m) override { transport->send_control(std::move(m)); }
+        void send_stdin_impl(xeus::xmessage m) override { transport->send_stdin(std::move(m)); }
+        void publish_impl(xeus::xpub_message m, xeus::channel c) override {
+            transport->publish(std::move(m), c);
+        }
+        void start_impl(xeus::xpub_message m) override { transport->start(std::move(m)); }
+        void stop_impl() override { transport->stop(); }
+        void abort_queue_impl(const listener &l, long interval) override {
+            transport->abort_queue(l, interval);
+        }
+        void update_config_impl(xeus::xkernel_configuration &config) const override {
+            transport->update_config(config);
+            config.m_stdin_port = input_port;
+        }
+    };
+#endif
 
     // nlohmann::json throws on a string that is not UTF-8, which would leave
     // the request without a reply.
@@ -35,8 +173,20 @@ namespace LCompilers::LFortran {
     private:
         CompilerOptions compiler_options;
         FortranEvaluator e;
+#ifndef __EMSCRIPTEN__
+        xeus::xrequest_context request_context;
+        void set_request_context(xeus::xrequest_context context) override {
+            request_context = std::move(context);
+        }
+        const xeus::xrequest_context &get_request_context() const noexcept override {
+            return request_context;
+        }
+#endif
 
     public:
+#ifndef __EMSCRIPTEN__
+        native_server *server = nullptr;
+#endif
         explicit custom_interpreter(const CompilerOptions &options = {})
                 : compiler_options{options}, e{compiler_options} {
             e.compiler_options.interactive = true;
@@ -84,18 +234,22 @@ namespace LCompilers::LFortran {
     {
         const bool silent = config.silent;
         FortranEvaluator::CellIO io;
+#ifndef __EMSCRIPTEN__
+        if (server) {
+            server->begin_cell();
+            io.cancel_requested = [&]() { return server->pump(); };
+        }
+#endif
         io.display = [&](const std::string &mime, const std::string &data) {
             if (!silent) display_data(nl::json{{utf8(mime), utf8(data)}},
                 nl::json::object(), nl::json::object());
         };
         io.clear_output = [&]() { if (!silent) clear_output(false); };
         // A disabled input channel must not read the host terminal.
-        if (!config.allow_stdin) io.input = [](std::string &) { return 1; };
+        if (!config.allow_stdin) io.input = [](std::string &, bool) { return 1; };
 #ifndef __EMSCRIPTEN__
-        // Xeus's own stdin channel. It blocks until an input_reply arrives,
-        // including after the client that was asked has gone, so the clients
-        // behind this cell wait with it. "\x04" is end of file.
-        else io.input = [](std::string &record) {
+        else io.input = [&](std::string &record, bool interruptible) {
+            if (server) return server->read(get_request_context(), record, interruptible);
             record = xeus::blocking_input_request("", false);
             return record == "\x04" ? -1 : 0;
         };
@@ -130,6 +284,8 @@ namespace LCompilers::LFortran {
                 traceback.push_back(utf8(line));
             }
             result["traceback"] = traceback;
+            if (!silent && cell.error_name == "KeyboardInterrupt")
+                publish_execution_error(cell.error_name, utf8(cell.error_value), {});
         }
         cb(result);
     }
@@ -262,11 +418,22 @@ namespace LCompilers::LFortran {
         xeus::xconfiguration config = xeus::load_configuration(connection_filename);
 
         // Create kernel instance and start it
+        auto *interpreter_instance = interpreter.get();
         xeus::xkernel kernel(config,
                              xeus::get_user_name(),
                              std::move(context),
                              std::move(interpreter),
-                             xeus::make_xserver_default,
+                             [&](xeus::xcontext &context, const xeus::xconfiguration &config,
+                                     nl::json::error_handler_t handler) -> std::unique_ptr<xeus::xserver> {
+                                 const auto *ports = std::get_if<xeus::xkernel_configuration>(&config);
+                                 // Preserve Xeus's other transports/registration configurations.
+                                 if (!ports || ports->m_transport != "tcp" ||
+                                         ports->m_ip.find(':') != std::string::npos)
+                                     return xeus::make_xserver_default(context, config, handler);
+                                 auto server = std::make_unique<native_server>(context, config, handler);
+                                 interpreter_instance->server = server.get();
+                                 return server;
+                             },
                              std::move(hist),
                              xeus::make_console_logger(xeus::xlogger::msg_type,
                                                        xeus::make_file_logger(xeus::xlogger::content, "xeus.log")),

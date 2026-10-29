@@ -35,7 +35,7 @@ class Peer;
 // terminal.
 class Client {
     std::string key, session;
-    std::unique_ptr<Peer> shell, stdin_, iopub;
+    std::unique_ptr<Peer> shell, stdin_, iopub, control;
     // The kernel that start() started: its process ID, or its process
     // handle on Windows. Empty for a client that only joined.
     intptr_t process = 0;
@@ -58,16 +58,19 @@ public:
     // Starts `executable kernel` with `arguments` (the prompt's own) on a new
     // connection file in the temporary directory, which it returns in
     // `connection_file` for other clients, and connects to it. This client
-    // ends that kernel when it is destroyed, and on Ctrl-C.
+    // ends that kernel when it is destroyed, and on idle-prompt Ctrl-C.
     static std::unique_ptr<Client> start(const std::string &executable,
         const std::vector<std::string> &arguments, std::string &connection_file);
 
     // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
     // false if the kernel has gone.
-    // `input`, when supplied, also consumes keys saved by a terminal's cursor
-    // query before reading stdin. An absent source uses getchar as usual.
+    // `input` is nonblocking: -2 means no character is ready, EOF ends input.
+    // It may also consume keys saved by a terminal's cursor query.
     bool execute(const std::string &code, bool verbose = false,
         const InputSource &input = {});
+    // Nonblocking character input. The prompt makes libc stdin unbuffered
+    // before mixing its editor and READ input.
+    static int stdin_character();
     // Services a bounded batch without waiting. Visible other-client messages
     // go to `sink`, so an editor can render them without disturbing its input.
     PollResult poll_others(const DisplaySink &sink);
@@ -92,7 +95,8 @@ bool stop_with_parent(long long parent, const std::string &connection_file);
 // fails to start leaves the file alone.
 void kernel_started();
 
-// Makes Ctrl-C end the prompt, after it ends the kernel that the prompt
+// During execute(), Ctrl-C only marks an interrupt for the client loop.
+// Otherwise it ends the prompt, after it ends the kernel that the prompt
 // started (Client::start), removes the kernel's connection file and restores
 // the terminal. The prompt still ends as Ctrl-C ends it by default. Does
 // nothing if Ctrl-C is ignored, as for a background job.
@@ -113,8 +117,10 @@ class InputChannel {
     std::unique_ptr<Impl> impl;
 public:
     // Listens on `port` of `ip`, or on a free port if it is 0, which `port`
-    // then becomes; `key` signs the messages.
-    InputChannel(const std::string &ip, int &port, const std::string &key);
+    // then becomes; `key` signs the messages. `resolve_host` also accepts an
+    // IPv4 host name, for Xeus connection files.
+    InputChannel(const std::string &ip, int &port, const std::string &key,
+        bool resolve_host = false);
     ~InputChannel();
     InputChannel(const InputChannel &) = delete;
     InputChannel &operator=(const InputChannel &) = delete;
@@ -125,6 +131,8 @@ public:
     // Waits at most `timeout` ms for the answer: 1 with its value, -1 if that
     // client is not connected or has disconnected, 0 if it is still awaited.
     int wait(std::string &value, int timeout);
+    // Abandons a pending request; a later READ starts a fresh wait.
+    void cancel();
     // Asks and waits as long as the client is connected; false if it is not.
     bool request(const std::string &identity, const std::string parts[4],
         std::string &value);

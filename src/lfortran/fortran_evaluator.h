@@ -80,7 +80,9 @@ public:
         // Supplies the records a READ from stdin consumes: returns 0 with
         // `record` set (without a newline), -1 at end of file, or > 0 if no
         // input is available. Unset, the cell reads the process's stdin.
-        std::function<int(std::string &record)> input;
+        // `interruptible` is false during protected initialization/cleanup:
+        // service control there too, but do not abandon the input wait.
+        std::function<int(std::string &record, bool interruptible)> input;
         // Receives what the cell writes to stdout (stream 1) and stderr
         // (stream 2). Set, both are captured while the cell runs and passed
         // here incrementally on native builds, before each display,
