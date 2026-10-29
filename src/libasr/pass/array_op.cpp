@@ -1358,6 +1358,70 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return true;
     }
 
+    ASR::expr_t* contiguous_array_storage(ASR::expr_t* array,
+            const Location& loc) {
+        ASR::ttype_t* type = ASRUtils::expr_type(array);
+        if( !pass_options.fast || bounds_checking || !ASRUtils::is_array(type) ||
+                !ASRUtils::is_contiguous_array_designator(array) ||
+                ASRUtils::extract_physical_type(type) !=
+                    ASR::array_physical_typeType::DescriptorArray ) {
+            return array;
+        }
+        ASR::ttype_t* element = ASRUtils::extract_type(type);
+        if( !ASR::is_a<ASR::Integer_t>(*element) &&
+                !ASR::is_a<ASR::UnsignedInteger_t>(*element) &&
+                !ASR::is_a<ASR::Real_t>(*element) &&
+                !ASR::is_a<ASR::Complex_t>(*element) ) {
+            return array;
+        }
+        ASR::expr_t* base = array;
+        while( ASR::is_a<ASR::StructInstanceMember_t>(*base) ) {
+            base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+        }
+        if( !ASR::is_a<ASR::Var_t>(*base) ) {
+            return array;
+        }
+        // Expose the layout promised by the declaration without changing
+        // the descriptor's lower bounds.
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(type);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, rank);
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* index_type = get_index_type(loc);
+        for( size_t i = 0; i < rank; i++ ) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = PassUtils::get_bound(array, i + 1,
+                "lbound", al, get_index_kind());
+            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                array, b.i_t(i + 1, index_type), index_type, nullptr));
+            dims.push_back(al, dim);
+        }
+        ASR::ttype_t* storage_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable_pointer(type), &dims,
+            ASR::array_physical_typeType::PointerArray, true);
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, loc, array, ASR::array_physical_typeType::DescriptorArray,
+            ASR::array_physical_typeType::PointerArray, storage_type, nullptr));
+    }
+
+    ASR::expr_t* contiguous_array_item(ASR::expr_t* item,
+            const Location& loc) {
+        ASR::ArrayItem_t* ref = ASR::down_cast<ASR::ArrayItem_t>(item);
+        ref->m_v = contiguous_array_storage(ref->m_v, loc);
+        return item;
+    }
+
+    void visit_Associate(const ASR::Associate_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor>::visit_Associate(x);
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(x.m_value);
+        if( ASR::is_a<ASR::ArraySection_t>(*value) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(value);
+            section->m_v = contiguous_array_storage(section->m_v,
+                section->base.base.loc);
+        }
+    }
+
     // The element of the base array of `section` that the loop indices
     // `indices` select, one index for each subscript triplet.
     ASR::expr_t* index_section_through_base(ASR::ArraySection_t* section,
@@ -1374,10 +1438,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 section->m_args[i].m_right : indices[k++];
             args.push_back(al, arg);
         }
-        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+        return contiguous_array_item(ASRUtils::EXPR(
+            ASRUtils::make_ArrayItem_t_util(al, loc,
             section->m_v, args.p, args.size(),
             ASRUtils::extract_type(section->m_type),
-            ASR::arraystorageType::ColMajor, nullptr, in_bounds));
+            ASR::arraystorageType::ColMajor, nullptr, in_bounds)), loc);
     }
 
     enum IndexType {
@@ -1758,9 +1823,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::ttype_t* var_i_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(*vars[i]));
-            *vars[i] = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
+            *vars[i] = contiguous_array_item(ASRUtils::EXPR(
+                ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr,
-                in_bounds[i]));
+                in_bounds[i])), loc);
         }
 
         ASRUtils::RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);

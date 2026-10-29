@@ -607,6 +607,10 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& 
         al, loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
         nullptr, nullptr, ASR::storage_typeType::Default, value_type, type_decl, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
+    if( value != nullptr && ASRUtils::is_pointer(value_type) ) {
+        ASR::down_cast<ASR::Variable_t>(temporary_variable)->m_contiguous_attr =
+            ASRUtils::is_simply_contiguous(value);
+    }
     scope->add_symbol(var_name, temporary_variable);
 
     return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
@@ -1820,6 +1824,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
         return array_var_temporary;
     }
     if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) ) {
+        ASRUtils::EXPR2VAR(array_var_temporary)->m_contiguous_attr =
+            ASRUtils::is_simply_contiguous(array_expr);
         exprs_with_target[array_expr] = std::make_pair(array_var_temporary, targetType::GeneratedTargetPointerForArraySection);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, array_var_temporary, array_expr, ASR::pointer_bounds_formType::NoPointerBounds)));

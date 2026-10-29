@@ -898,6 +898,83 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
 
 };
 
+// Copying an input to contiguous storage must not make its descriptor or
+// address observable. In particular, do not forward such an array to another
+// procedure whose descriptor requirements are not known here.
+class DescriptorWrapperSafety : public ASR::BaseWalkVisitor<DescriptorWrapperSafety> {
+    std::set<ASR::symbol_t*> arrays;
+public:
+    bool safe = true;
+    explicit DescriptorWrapperSafety(const std::set<ASR::symbol_t*>& arrays_)
+        : arrays(arrays_) {}
+
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t&) { safe = false; }
+    void visit_CLoc(const ASR::CLoc_t&) { safe = false; }
+    void visit_GetPointer(const ASR::GetPointer_t&) { safe = false; }
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t&) { safe = false; }
+
+    void visit_BlockCall(const ASR::BlockCall_t& x) {
+        visit_Block(*ASR::down_cast<ASR::Block_t>(x.m_m));
+    }
+
+    bool uses_input(ASR::expr_t* expr) {
+        struct ArrayUse : public ASR::BaseWalkVisitor<ArrayUse> {
+            const std::set<ASR::symbol_t*>& arrays;
+            bool found = false;
+            explicit ArrayUse(const std::set<ASR::symbol_t*>& arrays_)
+                : arrays(arrays_) {}
+            void visit_Var(const ASR::Var_t& x) {
+                found |= arrays.count(x.m_v) != 0;
+            }
+        };
+        ArrayUse use(arrays);
+        use.visit_expr(*expr);
+        return use.found;
+    }
+
+    void visit_Associate(const ASR::Associate_t& x) {
+        if (uses_input(x.m_value)) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                arrays.insert(ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+            } else {
+                safe = false;
+            }
+        }
+        ASR::BaseWalkVisitor<DescriptorWrapperSafety>::visit_Associate(x);
+    }
+
+    void check_args(ASR::call_arg_t* args, size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_value && ASRUtils::is_array(
+                    ASRUtils::expr_type(args[i].m_value))) {
+                safe &= !uses_input(args[i].m_value);
+            }
+        }
+    }
+
+    void check_function(const ASR::Function_t& function) {
+        size_t previous;
+        do {
+            previous = arrays.size();
+            for (auto& item : function.m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    visit_Variable(*ASR::down_cast<ASR::Variable_t>(item.second));
+                }
+            }
+            for (size_t i = 0; i < function.n_body; i++) visit_stmt(*function.m_body[i]);
+        } while (safe && previous != arrays.size());
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        check_args(x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<DescriptorWrapperSafety>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+        check_args(x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<DescriptorWrapperSafety>::visit_SubroutineCall(x);
+    }
+};
+
 /*
     The following visitor replaces procedure calls with arrays as arguments
     to procedure calls having dimensional information passed as arguments. See example below,
@@ -1258,6 +1335,144 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
             }
             return new_args;
+        }
+
+        void wrap_descriptor_entries() {
+            for (auto& entry : v.proc2newproc) {
+                if (!ASR::is_a<ASR::Function_t>(*entry.first)) continue;
+                ASR::Function_t* original = ASR::down_cast<ASR::Function_t>(entry.first);
+                ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(original);
+                if (original->m_symtab->parent->get_symbol(original->m_name) != entry.first ||
+                        original->m_return_var || original->n_body == 0 ||
+                        ft->m_deftype != ASR::deftypeType::Implementation ||
+                        ft->m_abi != ASR::abiType::Source || original->m_gpu ||
+                        ASRUtils::runs_on_device(*original)) continue;
+
+                std::set<ASR::symbol_t*> arguments, arrays;
+                bool eligible = true;
+                for (size_t i = 0; i < original->n_args; i++) {
+                    ASR::Variable_t* arg = ASRUtils::expr_to_variable_or_null(original->m_args[i]);
+                    if (!arg) { eligible = false; break; }
+                    arguments.insert(&arg->base);
+                    if (arg->m_presence != ASR::presenceType::Required ||
+                            ASRUtils::is_allocatable(arg->m_type) ||
+                            ASRUtils::is_pointer(arg->m_type) || arg->m_target_attr ||
+                            arg->m_is_volatile || arg->m_is_asynchronous || arg->n_codims) {
+                        eligible = false;
+                        break;
+                    }
+                    if (!ASRUtils::is_array(arg->m_type)) {
+                        // Optional lowering replaces OPTIONAL with required
+                        // dummies and logical presence flags. Keep those
+                        // entries unchanged by accepting only numeric scalars
+                        // and derived-type receivers.
+                        bool receiver = ASR::is_a<ASR::StructType_t>(*arg->m_type);
+                        if (!(ASRUtils::is_integer(*arg->m_type) ||
+                              ASRUtils::is_real(*arg->m_type) ||
+                              ASRUtils::is_complex(*arg->m_type) ||
+                              receiver) ||
+                                (receiver && arg->m_intent == ASRUtils::intent_out)) eligible = false;
+                        continue;
+                    }
+                    ASR::ttype_t* element = ASRUtils::type_get_past_array(arg->m_type);
+                    ASR::dimension_t* dims;
+                    size_t rank = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
+                    bool assumed_shape = true;
+                    for (size_t j = 0; j < rank; j++) assumed_shape &= !dims[j].m_length;
+                    if (arg->m_intent != ASRUtils::intent_in || !assumed_shape ||
+                            !(ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                              ASRUtils::is_complex(*element)) ||
+                            std::find(entry.second.second.begin(), entry.second.second.end(), i)
+                                == entry.second.second.end()) {
+                        eligible = false;
+                        break;
+                    }
+                    arrays.insert(&arg->base);
+                }
+                if (!eligible || arrays.empty()) continue;
+
+                // Saved state and contained procedures belong to this entry;
+                // do not move their ownership to a specialised copy.
+                std::vector<SymbolTable*> scopes{original->m_symtab};
+                for (size_t i = 0; i < scopes.size() && eligible; i++) {
+                    for (auto& item : scopes[i]->get_scope()) {
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
+                        if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                            scopes.push_back(ASR::down_cast<ASR::Block_t>(
+                                item.second)->m_symtab);
+                            continue;
+                        }
+                        if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                            eligible = false;
+                            break;
+                        }
+                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
+                        if (arguments.count(item.second)) continue;
+                        ASR::ttype_t* element = ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(var->m_type));
+                        if (var->m_storage == ASR::storage_typeType::Save ||
+                                var->m_storage == ASR::storage_typeType::Threadprivate ||
+                                var->m_common_block ||
+                                !(ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                                  ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element))) {
+                            eligible = false;
+                            break;
+                        }
+                    }
+                }
+                if (!eligible) continue;
+                DescriptorWrapperSafety safety(arrays);
+                safety.check_function(*original);
+                if (!safety.safe) continue;
+
+                struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
+                    std::set<ASR::symbol_t*> needed;
+                    bool safe = true;
+                    void visit_Var(const ASR::Var_t& x) {
+                        if (needed.insert(x.m_v).second &&
+                                ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+                            visit_Variable(*ASR::down_cast<ASR::Variable_t>(x.m_v));
+                        }
+                    }
+                    // A specification function must not be evaluated twice.
+                    void visit_FunctionCall(const ASR::FunctionCall_t&) { safe = false; }
+                } signature;
+                for (size_t i = 0; i < original->n_args; i++) {
+                    signature.visit_expr(*original->m_args[i]);
+                }
+                if (!signature.safe) continue;
+
+                current_scope = original->m_symtab;
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, original->n_args);
+                for (size_t i = 0; i < original->n_args; i++) {
+                    ASR::call_arg_t arg;
+                    arg.loc = original->m_args[i]->base.loc;
+                    arg.m_value = original->m_args[i];
+                    args.push_back(al, arg);
+                }
+                Vec<ASR::call_arg_t> converted = construct_new_args(entry.first,
+                    args.size(), args.p, entry.second.second);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 1);
+                body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al,
+                    original->base.base.loc, entry.second.first, entry.second.first,
+                    converted.p, converted.size(), nullptr, false)));
+                original->m_body = body.p;
+                original->n_body = body.size();
+
+                // The old automatic arrays are owned by the data-ABI body.
+                // Retain only the declarations needed by the original signature,
+                // including the transitive dependencies of its bounds.
+                std::vector<std::string> unused;
+                for (auto& item : current_scope->get_scope()) {
+                    if ((ASR::is_a<ASR::Variable_t>(*item.second) &&
+                            !signature.needed.count(item.second)) ||
+                            ASR::is_a<ASR::Block_t>(*item.second)) unused.push_back(item.first);
+                }
+                for (auto& name : unused) current_scope->erase_symbol(name);
+            }
+            current_scope = nullptr;
         }
 
         bool can_edit_call(ASR::call_arg_t* args, size_t n_args) {
@@ -2107,6 +2322,10 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased,
         pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data);
     x.visit_TranslationUnit(unit);
+    // Keep exported descriptor signatures and vtable identities unchanged.
+    // The usual call conversion and later temporary pass provide the same
+    // runtime contiguity checks/copy-in as at an ordinary data-ABI call site.
+    u.wrap_descriptor_entries();
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }

@@ -112,6 +112,22 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+### Descriptor entry wrappers
+
+The array-by-data pass can make a retained descriptor-ABI subroutine an entry
+wrapper for its existing data-ABI specialization. The exported signature and
+type-bound procedure/vtable references still name the original descriptor entry,
+including across separately compiled modules. The normal call conversion handles
+runtime contiguity and copies strided inputs while preserving bounds and extents.
+Only required, ordinary numeric assumed-shape `intent(in)` arrays qualify;
+pointer, allocatable, TARGET, VOLATILE, ASYNCHRONOUS and coarray dummies do not.
+Scalar arguments must be numeric or derived-type receivers. In particular,
+logical presence flags introduced by optional-argument lowering exclude an entry.
+Procedures with saved local state, contained procedures, observable array
+addresses/contiguity, or forwarding of an input descriptor are left unchanged.
+Unused automatic locals are removed from the wrapper, but declarations needed
+by its signature remain.
+
 ## Repeated Pure Array Calls
 
 With `--fast`, the array-temporary ASR pass can reuse a pure real-array

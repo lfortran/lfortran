@@ -762,6 +762,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
         }
 
         void visit_Associate(const ASR::Associate_t& x) {
+            ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_Associate(x);
             if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
                 ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(
                     x.m_value);
