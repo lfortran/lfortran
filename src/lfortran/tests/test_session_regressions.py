@@ -19,11 +19,13 @@ import socket
 import subprocess
 import sys
 import time
+import threading
 import uuid
 
 from test_session import busy, check, parent_id
 from jupyter_client import BlockingKernelClient
 from jupyter_client.connect import write_connection_file
+from test_repl import PtyRepl, Screen, CTRL_D, ENTER
 
 
 def connect(connection):
@@ -589,7 +591,439 @@ def verbose(exe, cwd):
         shows_all(prompt(exe, cwd, ["-v", "--connect", ports["path"]], b"1+1\r\x04"))
 
 
-CASES = {f.__name__: f for f in [large_output, stalled_connections, read_disconnect,
+@contextlib.contextmanager
+def editing_prompt(exe, cwd, connection, expected_status=0):
+    try:
+        import fcntl
+        import pty
+        import struct
+        import termios
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        yield None
+        return
+    screen = Screen()
+    repl = PtyRepl(pty, termios, exe, cwd, timeout=30,
+        args=["--connect", str(connection)], screen=screen)
+    fcntl.ioctl(repl.fd, termios.TIOCSWINSZ,
+        struct.pack("HHHH", screen.rows, screen.cols, 0, 0))
+    reaped = False
+    try:
+        check(repl.wait(lambda: ">>> " in screen.text()
+            and not termios.tcgetattr(repl.fd)[3] & termios.ICANON,
+            "an editing prompt"), "prompt ended during startup")
+        yield repl
+        if expected_status == 0:
+            os.write(repl.fd, CTRL_D)
+        repl.wait(lambda: False, "prompt exit")
+        _, status = os.waitpid(repl.pid, 0)
+        reaped = True
+        check(os.waitstatus_to_exitcode(status) == expected_status, repl.text())
+    finally:
+        if not reaped:
+            os.kill(repl.pid, signal.SIGKILL)
+            os.waitpid(repl.pid, 0)
+        os.close(repl.fd)
+
+
+def test_idle_updates(exe, cwd):
+    """No keys are sent between prompt readiness and other-client output."""
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        with editing_prompt(exe, cwd, ports["path"]) as repl:
+            if repl is None:
+                return
+            reply, messages = run(client, "print *, 'IDLE_UPDATE_16303'")
+            check(reply["status"] == "ok", reply)
+            check(any(m["msg_type"] == "stream" for m in messages), messages)
+            check(repl.wait(lambda: "[other client] print *, 'IDLE_UPDATE_16303'"
+                in repl.screen.text()
+                and re.search(r"^\s*IDLE_UPDATE_16303\s*$",
+                    repl.screen.text(), re.M)
+                and repl.screen.lines[repl.screen.row].startswith(">>> "),
+                "idle code, stream and restored prompt"),
+                repl.screen.text())
+            check(repl.screen.lines[repl.screen.row].startswith(">>> "),
+                "output did not restore the idle prompt")
+
+
+def test_edited_updates(exe, cwd):
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        with editing_prompt(exe, cwd, ports["path"]) as repl:
+            if repl is None:
+                return
+            screen = repl.screen
+            cell = ("block\x0einteger :: local_probe = 4\x0e"
+                "print *, local_probe + 1\x0eend block")
+            os.write(repl.fd, cell.encode() + b"\x1b[A\x1b[A\x1b[F\x1b[D")
+            check(repl.wait(lambda: "2,26" in screen.text(),
+                "a multiline cell with a middle-of-line cursor"), screen.text())
+            scrolled_before = len(screen.scrolled)
+            # A key arriving just before the terminal's DSR response must
+            # remain input, not be discarded by the output refresh.
+            screen.before_report = b"4"
+            reply, _ = run(client, "print '(a)', 'SCROLL_' // repeat('x', 60)\n"
+                "print *, 'EDIT_UPDATE_16303'")
+            check(reply["status"] == "ok", reply)
+            check(repl.wait(lambda: "integer :: local_probe = 44" in screen.text()
+                and "EDIT_UPDATE_16303" in screen.text()
+                and "2,27" in screen.text()
+                and screen.lines[screen.row].startswith("... integer")
+                and screen.col == 30, "output and preserved edited cell"),
+                screen.text())
+            check(len(screen.scrolled) > scrolled_before,
+                "the multiline redraw did not exercise bottom scrolling")
+            check(screen.lines[screen.row + 2].startswith("... end block"),
+                "bottom scrolling lost part of the editor region")
+            # This evaluates 44 + 1 only if the logical cursor was preserved.
+            os.write(repl.fd, ENTER)
+            check(repl.wait(lambda: re.search(r"^\s*45\s*$", screen.text(), re.M)
+                and screen.lines[screen.row].startswith(">>> "),
+                "the preserved cell's result"), screen.text())
+            os.write(repl.fd, b"\x1b[A")
+            check(repl.wait(lambda: screen.lines[screen.row].startswith("... end block"),
+                "the unchanged multiline history"), screen.text())
+            os.write(repl.fd, ENTER)
+            check(repl.wait(lambda: len(re.findall(r"^\s*45\s*$",
+                screen.text(), re.M)) == 2
+                and screen.lines[screen.row].startswith(">>> "),
+                "the recalled cell's result"), screen.text())
+            # Saved keys may span submission, a READ and the next prompt.
+            # None may be lost when raw-mode Terminal instances are replaced.
+            screen.before_report = (b"block; integer :: n; read(*,*) n; "
+                b"print *, n+1000; end block\r41\r6*7\r")
+            reply, _ = run(client, "print *, 'BUFFERED_INPUT_16303'")
+            check(reply["status"] == "ok", reply)
+            check(repl.wait(lambda: re.search(r"^\s*1041\s*$",
+                screen.text(), re.M) and re.search(r"^\s*42\s*$",
+                screen.text(), re.M)
+                and screen.lines[screen.row].startswith(">>> "),
+                "saved READ input and the following cell"), screen.text())
+
+
+@contextlib.contextmanager
+def display_kernel(cwd):
+    """A signed Jupyter publisher for precisely fragmented output, independent
+    of either kernel's buffering. All sockets belong to the serving thread."""
+    import zmq
+    from jupyter_client.session import Session
+    commands, answers = queue.Queue(), queue.Queue()
+    connection = cwd / ("display-" + uuid.uuid4().hex + ".json")
+
+    def serve():
+        try:
+            with zmq.Context() as context:
+                pub, shell, stdin = [context.socket(t) for t in
+                    (zmq.PUB, zmq.ROUTER, zmq.ROUTER)]
+                sockets = [pub, shell, stdin]
+                for s in sockets:
+                    s.linger = 0
+                ports = [s.bind_to_random_port("tcp://127.0.0.1") for s in sockets]
+                session = Session(key=b"editor-test")
+                write_connection_file(str(connection), ip="127.0.0.1",
+                    key=session.key, iopub_port=ports[0], shell_port=ports[1],
+                    stdin_port=ports[2])
+                answers.put(connection)
+                try:
+                    while True:
+                        if shell.poll(10):
+                            identities, message = session.recv(shell)
+                            session.send(shell, "kernel_info_reply",
+                                content={"status": "ok"}, parent=message,
+                                ident=identities)
+                            session.send(pub, "status",
+                                content={"execution_state": "idle"}, parent=message)
+                        try:
+                            command = commands.get_nowait()
+                        except queue.Empty:
+                            continue
+                        if command is None:
+                            break
+                        for type_, content in command:
+                            session.send(pub, type_, content=content)
+                        answers.put(True)
+                finally:
+                    for s in sockets:
+                        s.close()
+        except BaseException as error:
+            answers.put(error)
+
+    thread = threading.Thread(target=serve)
+    thread.start()
+
+    def answer():
+        result = answers.get(timeout=20)
+        if isinstance(result, BaseException):
+            raise result
+        return result
+
+    def publish(messages):
+        commands.put(messages)
+        answer()
+
+    try:
+        yield answer(), publish
+    finally:
+        commands.put(None)
+        thread.join(timeout=20)
+        check(not thread.is_alive(), "display kernel did not stop")
+
+
+def test_fragmented_updates(exe, cwd):
+    with display_kernel(cwd) as (connection, publish):
+        with editing_prompt(exe, cwd, connection) as repl:
+            if repl is None:
+                return
+            screen = repl.screen
+            publish([("stream", {"name": "stdout", "text": "FRAG_A"})])
+            check(repl.wait(lambda: "FRAG_A" in screen.text()
+                and screen.lines[screen.row].startswith(">>> "), "first fragment"),
+                screen.text())
+            # Force each fragment to be displayed in a separate editor tick.
+            publish([("stream", {"name": "stderr", "text": "_B"})])
+            check(repl.wait(lambda: "FRAG_A_B" in screen.text()
+                and screen.lines[screen.row].startswith(">>> "), "joined fragments"),
+                screen.text())
+            publish([("stream", {"name": "stdout", "text": "_C\n"})])
+            check(repl.wait(lambda: "FRAG_A_B_C" in screen.text()
+                and screen.lines[screen.row].startswith(">>> "), "final fragment"),
+                screen.text())
+            for width in [screen.cols - 1, screen.cols, screen.cols + 1, 2 * screen.cols]:
+                prefix = "EDGE_%d_" % width
+                prefix += "x" * (width - len(prefix))
+                expected = "\n".join(prefix[i:i + screen.cols]
+                    for i in range(0, width, screen.cols))
+                publish([("stream", {"name": "stdout", "text": prefix})])
+                check(repl.wait(lambda: expected in screen.text()
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "a fragment at the right margin"), screen.text())
+                for fragment in ["\x1b", "[", "0", "m"]:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "split zero-width styling at the margin"), screen.text())
+                publish([("stream", {"name": "stdout", "text": "B\n"})])
+                expected = "\n".join((prefix + "B")[i:i + screen.cols]
+                    for i in range(0, width + 1, screen.cols))
+                check(repl.wait(lambda: expected in screen.text()
+                    and screen.lines[screen.row].startswith(">>> ")
+                    and screen.lines[screen.row - 1].rstrip() == expected.split("\n")[-1],
+                    "a fragment continuing at the right margin"), screen.text())
+            prefix = "LF_EDGE_" + "x" * (screen.cols - len("LF_EDGE_"))
+            publish([("stream", {"name": "stdout", "text": prefix})])
+            check(repl.wait(lambda: prefix in screen.text()
+                and screen.lines[screen.row].startswith(">>> "),
+                "a full-width fragment"), screen.text())
+            reports = repl.prompts
+            publish([("stream", {"name": "stdout", "text": "\n"})])
+            check(repl.wait(lambda: repl.prompts > reports
+                and screen.lines[screen.row].startswith(">>> "),
+                "a separate newline fragment"), screen.text())
+            check(screen.lines[screen.row - 1] == prefix,
+                "a newline after a full-width fragment added a blank line")
+            original = "OLD_" + "x" * (screen.cols - 5) + "Z"
+            replacement = "NEW_" + "y" * (screen.cols - 5)
+            for fragments in [[replacement], [replacement[:-1], replacement[-1]],
+                    ["\x1b", "[", "0", "m", replacement[:-1], replacement[-1]]]:
+                publish([("stream", {"name": "stdout", "text": original + "\r"})])
+                check(repl.wait(lambda: screen.lines[screen.row - 1] == original
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "an occupied final column before CR replacement"), screen.text())
+                for fragment in fragments:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "a separately rendered replacement fragment"), screen.text())
+                check(repl.wait(lambda:
+                    screen.lines[screen.row - 1] == replacement + "Z"
+                    and screen.lines[screen.row].startswith(">>> ")
+                    and screen.col == 4, "the untouched final column"),
+                    "CR replacement erased transcript data:\n" + screen.text())
+                publish([("stream", {"name": "stdout", "text": "Q"})])
+                check(repl.wait(lambda: screen.lines[screen.row - 1] == replacement + "Q"
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "replacement of the final column"), screen.text())
+                reports = repl.prompts
+                publish([("stream", {"name": "stdout", "text": "\n"})])
+                check(repl.wait(lambda: repl.prompts > reports
+                    and screen.lines[screen.row - 1] == replacement + "Q"
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "newline immediately after the final column"), screen.text())
+            for separate in [False, True]:
+                marker = "CR_SGR_%s_111" % ("SEPARATE" if separate else "COMBINED")
+                publish([("stream", {"name": "stdout",
+                    "text": marker + "\r" + ("" if separate else "\x1b[0m")})])
+                check(repl.wait(lambda: marker in screen.text()
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "a carriage return with zero-width styling"), screen.text())
+                if separate:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": "\x1b[0m"})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "a separate zero-width styling fragment"), screen.text())
+                check(screen.lines[screen.row - 1].rstrip() == marker
+                    and screen.col == 4,
+                    "zero-width styling erased the carriage-return transcript:\n"
+                    + screen.text())
+                replacement = marker.replace("111", "222")
+                publish([("stream", {"name": "stdout",
+                    "text": replacement + "\n\x1b[0m"})])
+                check(repl.wait(lambda: replacement in screen.text()
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "styled progress replacement and newline"), screen.text())
+                check(screen.lines[screen.row - 1].rstrip() == replacement
+                    and marker not in screen.text(),
+                    "styling changed carriage-return replacement or newline placement")
+            publish([("stream", {"name": "stdout", "text": "PROGRESS_111\r"})])
+            check(repl.wait(lambda: "PROGRESS_111" in screen.text()
+                and screen.lines[screen.row].startswith(">>> "),
+                "a carriage-return fragment"), screen.text())
+            publish([("stream", {"name": "stdout", "text": "PROGRESS_222\n"})])
+            check(repl.wait(lambda: "PROGRESS_222" in screen.text()
+                and screen.lines[screen.row].startswith(">>> "),
+                "a replacement progress fragment"), screen.text())
+            # More than one polling batch, with keys pending throughout.
+            progress = set()
+
+            def rendered(screen):
+                line = screen.lines[screen.row]
+                if line.startswith(">>> x"):
+                    if "END_OF_BURST" not in screen.text():
+                        progress.add("keyboard")
+                    elif not line.startswith(">>> " + "x" * 60):
+                        progress.add("client")
+
+            screen.on_render = rendered
+            publish([("stream", {"name": "stdout", "text": "tick\n"})] * 200
+                + [("stream", {"name": "stdout", "text": "END_OF_BURST\n"})])
+            os.write(repl.fd, b"x" * 60)
+            check(repl.wait(lambda: screen.lines[screen.row].startswith(">>> " + "x" * 60),
+                "keyboard progress during sustained output"), screen.text())
+            check("keyboard" in progress,
+                "output drained without yielding to a pending key")
+            check("client" in progress,
+                "continuous typing starved client servicing")
+            screen.on_render = None
+            publish([("execute_result", {"data": {"text/plain": "RESULT_16303"}}),
+                ("display_data", {"data": {"text/plain": "DISPLAY_16303"}}),
+                ("display_data", {"data": {"image/png": "test-only"}}),
+                ("error", {"traceback": ["DIAGNOSTIC_16303"]})])
+            check(repl.wait(lambda: all(s in screen.text() for s in
+                ["RESULT_16303", "DISPLAY_16303", "[image/png output]",
+                    "DIAGNOSTIC_16303"])
+                and screen.lines[screen.row].startswith(">>> " + "x" * 60),
+                "results, displays and diagnostics"), screen.text())
+            os.write(repl.fd, b"\x15")  # clear the unsubmitted input
+            check(repl.wait(lambda: screen.col == 4, "cleared input"), screen.text())
+
+
+def test_idle_disconnect(exe, cwd):
+    with kernel(exe, cwd) as (process, join, ports):
+        join()
+        with editing_prompt(exe, cwd, ports["path"], expected_status=1) as repl:
+            if repl is None:
+                return
+            process.terminate()
+            process.wait(timeout=20)
+            check(repl.wait(lambda: "error: the kernel has stopped" in repl.text(),
+                "an explicit idle disconnection error"), repl.text())
+
+
+def test_unicode_updates(exe, cwd):
+    cases = [
+        ("界" * 40 + "a" * 40 + "Z\n", ["界 " * 40, "a" * 40 + "Z"]),
+        ("e\u0301" * 40 + "a" * 40 + "Z\n", ["e\u0301" * 40 + "a" * 40, "Z"]),
+        ("x" * 79 + "界Z\n", ["x" * 79, "界 Z"]),
+        ("x" * 79 + "e\u0301Z\n", ["x" * 79 + "e\u0301", "Z"]),
+        ("界" * 40 + "\u0301Z\n", ["界 " * 39 + "界\u0301", "Z"]),
+    ]
+    with display_kernel(cwd) as (connection, publish):
+        with editing_prompt(exe, cwd, connection) as repl:
+            if repl is None:
+                return
+            screen = repl.screen
+            for payload, expected in cases:
+                control = Screen()
+                control.feed(payload.replace("\n", "\r\n").encode())
+                check([line.rstrip() for line in control.lines[:len(expected)]]
+                    == [line.rstrip() for line in expected],
+                    "the independent Unicode screen control is wrong")
+                # Separate every scalar to cross redraw boundaries, including
+                # a combining mark following a filled final cell.
+                for fragments in [[payload], list(payload)]:
+                    for fragment in fragments:
+                        reports = repl.prompts
+                        publish([("stream", {"name": "stdout", "text": fragment})])
+                        check(repl.wait(lambda: repl.prompts > reports
+                            and screen.lines[screen.row].startswith(">>> "),
+                            "a Unicode fragment and restored editor"), screen.text())
+                    actual = screen.lines[screen.row - len(expected):screen.row]
+                    check([line.rstrip() for line in actual]
+                        == [line.rstrip() for line in expected],
+                        "Unicode changed transcript rows:\n" + repr(actual))
+                    check(screen.col == 4, "Unicode output moved the editor cursor")
+
+
+def test_output_error_cleanup(exe, cwd):
+    cases = [
+        (["\x1b[" + "1" * 65535], "terminal output sequence is too long", None),
+        (["\x1b[", "1" * 65535], "terminal output sequence is too long", None),
+        (["\x1b[" + "1" * 65535 + "m"], "terminal output sequence is too long", None),
+        (["\x1b[2J"], "unsupported terminal output escape sequence", None),
+        (["\x0f"], "unsupported terminal output control character", None),
+        (["\u0085"], "unsupported terminal output character", None),
+        (["x" * 80 + "\u0301" * 32769], "terminal output sequence is too long", None),
+        (["\x1b["], "incomplete terminal output sequence", CTRL_D),
+        (["\x1b["], "incomplete terminal output sequence", b"1\r"),
+    ]
+    for fragments, diagnostic, keys in cases:
+        with display_kernel(cwd) as (connection, publish):
+            with editing_prompt(exe, cwd, connection, expected_status=1) as repl:
+                if repl is None:
+                    return
+                check(repl.screen.cursor_visible, "ready cursor is hidden")
+                for i, fragment in enumerate(fragments):
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    if i < len(fragments) - 1 or keys:
+                        check(repl.wait(lambda: repl.prompts > reports
+                            and repl.screen.lines[repl.screen.row].startswith(">>> "),
+                            "a retained incomplete suffix"), repl.text())
+                if keys:
+                    os.write(repl.fd, keys)
+                repl.wait(lambda: False, "rejected output through EOF")
+                check("error: " + diagnostic in repl.text(),
+                    "no explicit output diagnostic:\n" + repl.text())
+                lflag = repl.termios.tcgetattr(repl.fd)[3]
+                check(lflag & (repl.termios.ICANON | repl.termios.ECHO)
+                    == repl.termios.ICANON | repl.termios.ECHO,
+                    "output rejection left the terminal in raw mode")
+                check(repl.screen.cursor_visible,
+                    "output rejection left the terminal cursor hidden")
+
+
+def test_utf8_event_fragments(exe, cwd):
+    with editing_prompt(exe, cwd, cwd / "unused") as repl:
+        if repl is None:
+            return
+        screen = repl.screen
+        expected = ["界 " * 40, "a" * 40 + "Z", "x" * 79 + "e\u0301"]
+        check(repl.wait(lambda: screen.row >= 3
+            and [line.rstrip() for line in screen.lines[screen.row - 3:screen.row]]
+                == [line.rstrip() for line in expected]
+            and screen.lines[screen.row].startswith(">>> ")
+            and screen.col == 4, "bytewise UTF-8, SGR and margin combining"),
+            screen.text())
+
+
+CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
+    test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
+    test_output_error_cleanup,
+    large_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
@@ -603,6 +1037,8 @@ def main():
         help="run only this case (repeatable)")
     parser.add_argument("--builtin", action="store_true",
         help="the kernel is the built-in one, not the Xeus one")
+    parser.add_argument("--prompt-events-fixture",
+        help="also check bytewise output using the native editor fixture")
     args = parser.parse_args()
     exe = str(Path(args.lfortran).resolve())
     cwd = Path.cwd() / ("session-regressions-" + uuid.uuid4().hex)
@@ -624,6 +1060,14 @@ def main():
                     print(log.read_text(errors="replace"))
                     log.unlink()
                 failed.append(name)
+        if args.prompt_events_fixture:
+            try:
+                test_utf8_event_fragments(
+                    str(Path(args.prompt_events_fixture).resolve()), cwd)
+                print("test_utf8_event_fragments: passed", flush=True)
+            except Exception as error:
+                print("test_utf8_event_fragments: FAILED: %s" % error, flush=True)
+                failed.append("test_utf8_event_fragments")
     finally:
         shutil.rmtree(cwd, ignore_errors=True)
     if failed:

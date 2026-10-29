@@ -1258,45 +1258,49 @@ Client::~Client()
 
 namespace {
 
-// Prints an IOPub message as a terminal shows it: plain text only. A cell of
-// another client is shown with its code.
-void show(const Message &m, bool other)
+void terminal_output(const std::string &text, bool error)
+{
+    (error ? std::cerr : std::cout) << text << std::flush;
+}
+
+// Shows an IOPub message as plain text. A cell of another client includes
+// its code; the sink can be the terminal itself or its active line editor.
+void show(const Message &m, bool other,
+    const Client::DisplaySink &sink = terminal_output)
 {
     const std::string type = m.type();
     const Object *data = m.content.getObject("data");
     if (type == "execute_input" && other) {
         std::istringstream lines(get_string(m.content, "code"));
         for (std::string line; std::getline(lines, line);) {
-            std::cout << "[other client] " << line << "\n";
+            sink("[other client] " + line + "\n", false);
         }
-        std::cout << std::flush;
     } else if (type == "stream") {
-        (get_string(m.content, "name") == "stderr" ? std::cerr : std::cout)
-            << get_string(m.content, "text") << std::flush;
+        sink(get_string(m.content, "text"),
+            get_string(m.content, "name") == "stderr");
     } else if (type == "execute_result" && data) {
-        std::cout << get_string(*data, "text/plain") << std::endl;
+        sink(get_string(*data, "text/plain") + "\n", false);
     } else if (type == "display_data" && data) {
         if (data->getString("text/plain")) {
-            std::cout << get_string(*data, "text/plain") << std::endl;
+            sink(get_string(*data, "text/plain") + "\n", false);
         } else {
             for (const auto &item : *data) {
-                std::cout << "[" << llvm::StringRef(item.first).str() << " output]" << std::endl;
+                sink("[" + llvm::StringRef(item.first).str() + " output]\n", false);
                 break;
             }
         }
     } else if (type == "error") {
         if (const Array *traceback = m.content.getArray("traceback")) {
             for (const auto &line : *traceback) {
-                if (auto text = line.getAsString()) std::cerr << text->str() << "\n";
+                if (auto text = line.getAsString()) sink(text->str() + "\n", true);
             }
-            std::cerr << std::flush;
         }
     }
 }
 
 } // namespace
 
-bool Client::execute(const std::string &code, bool verbose)
+bool Client::execute(const std::string &code, bool verbose, const InputSource &input_source)
 {
     Object content{{"code", kernel::utf8(code)}, {"silent", false},
         {"store_history", true}, {"user_expressions", Object{}},
@@ -1324,7 +1328,8 @@ bool Client::execute(const std::string &code, bool verbose)
             std::cout << get_string(m.content, "prompt") << std::flush;
             std::string record;
             int c;
-            while ((c = getchar()) != EOF && c != '\n' && c != '\r' && c != 4) {
+            while ((c = input_source ? input_source() : getchar()) != EOF
+                    && c != '\n' && c != '\r' && c != 4) {
                 record += static_cast<char>(c);
             }
             if ((c == EOF || c == 4) && record.empty()) record = "\x04";
@@ -1356,13 +1361,27 @@ bool Client::execute(const std::string &code, bool verbose)
     return true;
 }
 
-void Client::show_others()
+Client::PollResult Client::poll_others(const DisplaySink &sink)
 {
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
-    Message m;
-    for (int i; (i = next_message(peers, key, m, 0)) >= 0;) {
-        if (i == 0 && get_string(m.parent, "session") != session) show(m, true);
+    PollResult result = PollResult::none;
+    const DisplaySink display = [&](const std::string &text, bool error) {
+        if (text.empty()) return;
+        result = PollResult::updates;
+        sink(text, error);
+    };
+    // Yield to the keyboard even when a publisher never stops. Do not retain
+    // a second output queue: the sink consumes each message as it is decoded.
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(2);
+    for (int n = 0; n < 32; n++) {
+        Message m;
+        const int i = next_message(peers, key, m, 0);
+        if (i == -2) return PollResult::disconnected;
+        if (i == -1) break;
+        if (i == 0 && get_string(m.parent, "session") != session) show(m, true, display);
+        if (std::chrono::steady_clock::now() >= deadline) break;
     }
+    return result;
 }
 
 void Client::show_last(const std::string &request_id)
@@ -2210,12 +2229,15 @@ Client::Client(const std::string &)
 
 Client::~Client() = default;
 
-bool Client::execute(const std::string &, bool)
+bool Client::execute(const std::string &, bool, const InputSource &)
 {
     return false;
 }
 
-void Client::show_others() {}
+Client::PollResult Client::poll_others(const DisplaySink &)
+{
+    return PollResult::disconnected;
+}
 
 int Client::kernel_status(int)
 {
