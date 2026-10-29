@@ -891,6 +891,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Variable: return "Variable";
         case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
         case ASR::symbolType::TraitConstraint: return "TraitConstraint";
+        case ASR::symbolType::TraitAssociatedType: return "TraitAssociatedType";
         case ASR::symbolType::TraitImplementation: return "TraitImplementation";
         case ASR::symbolType::TraitRuntimeContract: return "TraitRuntimeContract";
         case ASR::symbolType::TraitWitness: return "TraitWitness";
@@ -1146,6 +1147,12 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             res += ASRUtils::symbol_name(tc->m_trait);
             return res;
         }
+        case ASR::symbolType::TraitAssociatedType: {
+            const auto *mapping = ASR::down_cast<ASR::TraitAssociatedType_t>(&s);
+            return "! associated type " + std::string(ASRUtils::symbol_name(
+                mapping->m_associated_type)) + " of " +
+                ASRUtils::symbol_name(mapping->m_parameter);
+        }
         case ASR::symbolType::TraitImplementation: {
             const ASR::TraitImplementation_t *ti = ASR::down_cast<ASR::TraitImplementation_t>(&s);
             std::string res = "! trait implementation " + std::string(ti->m_name);
@@ -1313,6 +1320,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitConstraint: {
             return ASR::down_cast<ASR::TraitConstraint_t>(f)->m_name;
+        }
+        case ASR::symbolType::TraitAssociatedType: {
+            return ASR::down_cast<ASR::TraitAssociatedType_t>(f)->m_name;
         }
         case ASR::symbolType::TraitImplementation: {
             return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_name;
@@ -1825,6 +1835,7 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         }
         case ASR::symbolType::Trait:
         case ASR::symbolType::TraitConstraint:
+        case ASR::symbolType::TraitAssociatedType:
         case ASR::symbolType::TraitImplementation:
         case ASR::symbolType::TraitRuntimeContract:
         case ASR::symbolType::TraitErasure:
@@ -1916,6 +1927,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitConstraint: {
             return ASR::down_cast<ASR::TraitConstraint_t>(f)->m_parent_symtab;
+        }
+        case ASR::symbolType::TraitAssociatedType: {
+            return ASR::down_cast<ASR::TraitAssociatedType_t>(f)->m_parent_symtab;
         }
         case ASR::symbolType::TraitImplementation: {
             return ASR::down_cast<ASR::TraitImplementation_t>(f)->m_parent_symtab;
@@ -2015,6 +2029,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             //throw LCompilersException("StructMethodDeclaration does not have a symtab");
         }
         case ASR::symbolType::TraitConstraint: {
+            return nullptr;
+        }
+        case ASR::symbolType::TraitAssociatedType: {
             return nullptr;
         }
         case ASR::symbolType::TraitImplementation: {
@@ -11518,7 +11535,8 @@ struct TraitMethodMismatch {
 // their INTENT(OUT) cleanup: an OUT argument of `left` is INOUT in `right`.
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset = 0,
-    size_t right_offset = 0, bool forwarding = false);
+    size_t right_offset = 0, bool forwarding = false,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated = {});
 // Whether two messages agree on their explicit receivers: both have none, or
 // both have one with the same intent. A receiver's name and position are not
 // part of a message's contract.
@@ -11544,6 +11562,12 @@ std::vector<ASR::symbol_t*> trait_declared_associated_types(const ASR::Trait_t &
 // Whether a trait or one of its ancestors declares an associated type, which
 // makes it usable only as a generic constraint (no runtime views).
 bool trait_has_associated_types(const ASR::Trait_t &trait);
+
+std::map<ASR::symbol_t*, ASR::symbol_t*> trait_associated_parameters(
+    SymbolTable *scope, ASR::symbol_t *parameter);
+
+TraitAssociatedTypes trait_implementation_associated_types(
+    const ASR::TraitImplementation_t &implementation);
 // `trait_types_equal` where a dummy or result of type `type(Element)` takes
 // the type the actual has: the associated type is bound to it in `associated`
 // at its first use and compared with that binding at every later one.

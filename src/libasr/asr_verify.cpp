@@ -1262,6 +1262,12 @@ public:
                 auto same = [&](ASR::expr_t *required, ASR::expr_t *actual) {
                     ASR::ttype_t *a = ASRUtils::expr_type(required);
                     ASR::ttype_t *b = ASRUtils::expr_type(actual);
+                    if (ASRUtils::trait_associated_type(required)) {
+                        // The constraint checks the exact mapping below.
+                        return ASRUtils::extract_n_dims_from_ttype(a) ==
+                                ASRUtils::extract_n_dims_from_ttype(b) &&
+                            ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(b));
+                    }
                     if (!ASRUtils::contains_trait_itself(a)) {
                         return ASRUtils::trait_types_equal(required, actual);
                     }
@@ -1288,7 +1294,11 @@ public:
                 check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
                     "asr.verify.trait_requirement.procedure_is_restriction",
                     "A normalized trait requirement must be a restriction procedure");
-                auto mismatch = ASRUtils::trait_method_mismatch(*member_fn, *proc_fn, 0, 1);
+                auto associated = ASRUtils::trait_associated_parameters(
+                    proc_fn->m_symtab->parent,
+                    ASRUtils::trait_type_parameter(proc_fn->m_args[0]));
+                auto mismatch = ASRUtils::trait_method_mismatch(*member_fn, *proc_fn,
+                    0, 1, false, associated);
                 check(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                     "asr.verify.trait_requirement.signature_matches",
                     "A normalized trait requirement must preserve its member's signature: "
@@ -1966,6 +1976,56 @@ public:
         }
     }
 
+    void visit_TraitAssociatedType(const TraitAssociatedType_t &x) {
+        require_id(x.m_parent_symtab &&
+                x.m_parent_symtab->get_symbol(x.m_name) == &x.base,
+            "asr.verify.trait_associated_type.scope",
+            "An associated type mapping must belong to its generic scope");
+        if (!check_external) return;
+        auto *parameter = ASRUtils::symbol_get_past_external(x.m_parameter);
+        auto *declaration = ASRUtils::symbol_get_past_external(x.m_associated_type);
+        auto *placeholder = ASRUtils::symbol_get_past_external(x.m_type_parameter);
+        auto *owner = ASRUtils::get_asr_owner(declaration);
+        require_id(owner && ASR::is_a<Trait_t>(*owner) &&
+                ASRUtils::is_trait_type_declaration(*declaration) &&
+                std::string(ASRUtils::symbol_name(declaration)) !=
+                    ASRUtils::trait_itself_name,
+            "asr.verify.trait_associated_type.declaration",
+            "An associated type mapping must name a declared associated type");
+        require_id(parameter != placeholder &&
+                ASRUtils::symbol_parent_symtab(parameter) == x.m_parent_symtab &&
+                ASRUtils::symbol_parent_symtab(placeholder) == x.m_parent_symtab &&
+                ASRUtils::is_trait_type_declaration(*parameter) &&
+                ASRUtils::is_trait_type_declaration(*placeholder),
+            "asr.verify.trait_associated_type.parameter",
+            "The binder and its fresh associated parameter must be distinct type "
+            "declarations in the generic scope");
+        bool constrained = false;
+        size_t mappings = 0, uses = 0;
+        for (const auto &entry : x.m_parent_symtab->get_scope()) {
+            if (ASR::is_a<TraitConstraint_t>(*entry.second)) {
+                auto *constraint = ASR::down_cast<TraitConstraint_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(constraint->m_parameter) !=
+                        parameter) continue;
+                auto hierarchy = ASRUtils::trait_hierarchy(*ASR::down_cast<Trait_t>(
+                    ASRUtils::symbol_get_past_external(constraint->m_trait)));
+                constrained |= std::find(hierarchy.traits.begin(), hierarchy.traits.end(),
+                    ASR::down_cast<Trait_t>(owner)) != hierarchy.traits.end();
+            } else if (ASR::is_a<TraitAssociatedType_t>(*entry.second)) {
+                auto *mapping = ASR::down_cast<TraitAssociatedType_t>(entry.second);
+                mappings += ASRUtils::symbol_get_past_external(mapping->m_parameter) ==
+                        parameter &&
+                    ASRUtils::symbol_get_past_external(mapping->m_associated_type) ==
+                        declaration;
+                uses += ASRUtils::symbol_get_past_external(mapping->m_type_parameter) ==
+                    placeholder;
+            }
+        }
+        require_id(constrained && mappings == 1 && uses == 1,
+            "asr.verify.trait_associated_type.unique",
+            "Each constrained binder must have its own unique associated type parameter");
+    }
+
     void visit_TraitConstraint(const TraitConstraint_t &x) {
         require(x.m_name != nullptr,
             "The TraitConstraint::m_name cannot be nullptr");
@@ -2019,9 +2079,13 @@ public:
                 ASR::trait_kindType::IntrinsicTypeSet || x.n_intrinsic_requirements == 0,
             "asr.verify.trait_constraint.intrinsic_category",
             "Only a type-set constraint can have intrinsic requirements");
-        require_id(!ASRUtils::trait_has_associated_types(*ASR::down_cast<ASR::Trait_t>(trait)),
-            "asr.verify.trait_constraint.associated_types",
-            "A generic constraint by a trait with associated types is not supported");
+        auto associated = ASRUtils::trait_associated_parameters(x.m_parent_symtab, parameter);
+        for (auto *declaration : ASRUtils::trait_declared_associated_types(
+                *ASR::down_cast<Trait_t>(trait))) {
+            require_id(associated.count(declaration),
+                "asr.verify.trait_constraint.associated_types",
+                "A constraint must map each declared associated type to a fresh parameter");
+        }
         if (ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
                 ASR::trait_kindType::IntrinsicTypeSet) {
             verify_type_set_requirements(x, *ASR::down_cast<ASR::Trait_t>(trait));
@@ -2138,6 +2202,31 @@ public:
             } else if (!message) {
                 function = ASR::down_cast<ASR::Function_t>(procedure);
             }
+            if (!specialization) {
+                auto check_associated = [&](ASR::expr_t *formal, ASR::expr_t *actual) {
+                    auto *declaration = ASRUtils::trait_associated_type(formal);
+                    if (!declaration) return;
+                    auto found = associated.find(declaration);
+                    auto *type = ASRUtils::extract_type(ASRUtils::expr_type(actual));
+                    require_id(found != associated.end() &&
+                            ASR::is_a<TypeParameter_t>(*type) &&
+                            std::string(ASR::down_cast<TypeParameter_t>(type)->m_param) ==
+                                ASRUtils::symbol_name(found->second),
+                        "asr.verify.trait_constraint.associated_signature",
+                        "Requirements must share the binder's mapped associated types");
+                };
+                auto args = ASRUtils::trait_compared_arguments(*method);
+                size_t offset = ASRUtils::trait_member_operation(member) ? 0 : 1;
+                require_id(function->n_args == args.size() + offset,
+                    "asr.verify.trait_constraint.associated_signature",
+                    "A normalized requirement must preserve its ordinary arguments");
+                for (size_t j = 0; j < args.size(); j++) {
+                    check_associated(method->m_args[args[j]], function->m_args[j + offset]);
+                }
+                if (method->m_return_var && function->m_return_var) {
+                    check_associated(method->m_return_var, function->m_return_var);
+                }
+            }
             if (ASRUtils::trait_member_operation(member)) {
                 // No receiver: the constraint's parameter stands for itself.
                 std::string binder = ASR::down_cast<ASR::TypeParameter_t>(
@@ -2146,7 +2235,10 @@ public:
                     ASR::ttype_t *type = ASRUtils::extract_type(ASRUtils::expr_type(value));
                     return !ASR::is_a<ASR::TypeParameter_t>(*type) ||
                         std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ==
-                            binder;
+                            binder || std::any_of(associated.begin(), associated.end(),
+                                [&](const auto &entry) {
+                                    return ASRUtils::trait_type_parameter(value) == entry.second;
+                                });
                 };
                 bool binds = !function->m_return_var || of_binder(function->m_return_var);
                 for (size_t j = 0; j < function->n_args; j++) {

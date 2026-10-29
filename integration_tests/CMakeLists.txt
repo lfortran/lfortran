@@ -4520,6 +4520,9 @@ RUN(NAME traits_associated_06_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_associated_07 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_associated_07_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_associated_08 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_associated_08_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_protocol_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 # LFortran does not resolve the generic interface prod for the oracle's

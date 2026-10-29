@@ -9629,6 +9629,97 @@ end program
     }
 }
 
+TEST_CASE("Associated trait constraints serialize and verify dependent parameters") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module associated_constraints
+    implicit none
+    abstract interface :: ISubject
+        type :: ObsType
+        subroutine registerObserver(self, obs)
+            type(itself), intent(inout), pass :: self
+            type(ObsType), intent(in) :: obs
+        end subroutine
+        function observer(self) result(obs)
+            type(itself), intent(in), pass :: self
+            type(ObsType) :: obs
+        end function
+    end interface
+contains
+    subroutine refresh{ISubject :: U, ISubject :: V}(first, second)
+        type(U), intent(inout) :: first
+        type(V), intent(inout) :: second
+        call first%registerObserver(first%observer())
+        call second%registerObserver(second%observer())
+    end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source, "associated_constraints");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "associated_constraints.asr", loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("associated_constraints"));
+    auto *generic = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("refresh"));
+    std::vector<ASR::TraitAssociatedType_t*> mappings;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitAssociatedType_t>(*entry.second)) {
+            mappings.push_back(ASR::down_cast<ASR::TraitAssociatedType_t>(entry.second));
+        }
+    }
+    REQUIRE(mappings.size() == 2);
+    auto *mapping = mappings[0];
+    auto *original = mapping->m_type_parameter;
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("different binders cannot share one associated parameter") {
+        mapping->m_type_parameter = mappings[1]->m_type_parameter;
+        rejects("asr.verify.trait_associated_type.unique");
+        mapping->m_type_parameter = original;
+    }
+    SUBCASE("a constraint must retain its associated mapping") {
+        generic->m_symtab->erase_symbol(mapping->m_name);
+        rejects("asr.verify.trait_constraint.associated_types");
+        generic->m_symtab->add_symbol(mapping->m_name, &mapping->base);
+    }
+    SUBCASE("requirements must use the recorded associated parameter") {
+        // Swapping both placeholders keeps the mappings unique, but changes
+        // their meaning without updating either message's normalized signature.
+        std::swap(mapping->m_type_parameter, mappings[1]->m_type_parameter);
+        rejects("asr.verify.trait_requirement.signature_matches");
+        std::swap(mapping->m_type_parameter, mappings[1]->m_type_parameter);
+    }
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+}
+
 TEST_CASE("Generic derived types serialize and verify their packages and instances") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

@@ -1578,9 +1578,16 @@ binding of `integer` and another of `real` for the same associated type is
 diagnosed. A character binding needs a constant length. An associated type that
 no message uses cannot be inferred and is diagnosed. A trait with associated
 types is a generic constraint only (paper `sect:restrictions`): it has no
-runtime contract, and `class(IAppendable)` is diagnosed. Using such a trait as
-the constraint of a generic procedure or type, extending it, and generic
-messages with a dummy argument of an associated type are not implemented yet.
+runtime contract, and `class(IAppendable)` is diagnosed. Such a trait can constrain
+a generic procedure or derived type. Each constrained binder gets fresh dependent
+type parameters, shared by all its messages. Specialization infers these from
+the selected conformance; forwarding preserves the caller's associated types.
+Different binders can implement the same trait with different associated types.
+For example, a generic body can pass `subject%observer()` to
+`subject%registerObserver(...)` without naming their shared associated type.
+Extending a trait with associated types, generic messages with an associated-type
+dummy argument, and constraints using generic messages returning associated types
+are not implemented yet.
 A generic message may have a result of an associated type, which each binding
 must give the implementation's one type, such as `real(8)` or
 `character(len=5)`: a binding that returns a type parameter of its own generic
@@ -1639,8 +1646,10 @@ CTests), whose `append` message declares its `intent(inout)` receiver
 unconstrained storage, `traits_associated_02` mutating appends through
 variables, an `intent(inout)` dummy and a nested instance, `traits_associated_03`
 direct mutation through a universal trait next to its read-only views and
-generic calls, and `continue_compilation_traits_associated` the diagnostics;
-the `traits_receiver_intent` tests (see "Receivers") call mutating messages
+generic calls, and `continue_compilation_traits_associated` the diagnostics.
+`traits_associated_08` checks associated-type constraints, independent binders,
+generic derived-type method calls and generic-procedure forwarding.
+The `traits_receiver_intent` tests (see "Receivers") call mutating messages
 through views and constrained type parameters.
 
 ## Current boundaries

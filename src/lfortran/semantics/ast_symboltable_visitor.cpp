@@ -5212,8 +5212,14 @@ public:
                 !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ||
                 !ASR::is_a<ASR::Trait_t>(*ASR::down_cast<ASR::symbol_t>(
                     current_scope->asr_owner));
-            add_trait_parameter_constraints(generic->m_symtab, type_symbol,
-                parameter_traits[i], parameter.loc, generic_messages);
+            auto scope_before = generic->m_symtab->get_scope();
+            try {
+                add_trait_parameter_constraints(generic->m_symtab, type_symbol,
+                    parameter_traits[i], parameter.loc, generic_messages);
+            } catch (const SemanticAbort &) {
+                erase_failed_instantiation(generic->m_symtab, scope_before);
+                throw;
+            }
         }
         tmp = &generic->base.base;
     }
@@ -5231,11 +5237,36 @@ public:
         for (auto *trait_symbol : traits) {
             auto *trait = ASR::down_cast<ASR::Trait_t>(
                 ASRUtils::symbol_get_past_external(trait_symbol));
-            // Generic code would need the binder's associated types, which
-            // it cannot name yet.
-            if (ASRUtils::trait_has_associated_types(*trait)) {
-                trait_error("traits with associated types as generic constraints are "
-                    "not implemented yet", loc);
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> associated;
+            auto mappings = ASRUtils::trait_associated_parameters(scope, type_symbol);
+            for (auto *declaration : ASRUtils::trait_declared_associated_types(*trait)) {
+                ASR::symbol_t *placeholder = nullptr;
+                auto previous = mappings.find(declaration);
+                if (previous != mappings.end()) {
+                    placeholder = previous->second;
+                } else {
+                    std::string name = scope->get_unique_name("__type_" + parameter +
+                        "_" + ASRUtils::symbol_name(declaration));
+                    auto *type = ASRUtils::duplicate_type(al,
+                        ASRUtils::symbol_type(declaration));
+                    ASR::down_cast<ASR::TypeParameter_t>(type)->m_param = s2c(al, name);
+                    placeholder = ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, name),
+                            nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                            ASR::storage_typeType::Default, type, nullptr,
+                            ASR::abiType::Source, ASR::accessType::Private,
+                            ASR::presenceType::Required, false));
+                    scope->add_symbol(name, placeholder);
+                    std::string mapping = scope->get_unique_name(
+                        "__associated_" + parameter + "_" +
+                        ASRUtils::symbol_name(declaration));
+                    scope->add_symbol(mapping, ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_TraitAssociatedType_t(al, loc, scope,
+                            s2c(al, mapping), type_symbol,
+                            reference_trait_member(declaration, scope, loc), placeholder)));
+                }
+                associated[ASRUtils::symbol_name(declaration)] = {
+                    ASRUtils::symbol_type(placeholder), placeholder};
             }
             auto hierarchy = checked_trait_hierarchy(*trait, loc);
             Vec<ASR::trait_requirement_t> requirements;
@@ -5246,6 +5277,11 @@ public:
                 if (message && !generic_messages) {
                     trait_error("generic methods in generic type parameter constraints "
                         "are not implemented yet", loc);
+                }
+                if (message && method->m_return_var &&
+                        ASRUtils::trait_associated_type(method->m_return_var)) {
+                    trait_error("generic messages returning associated types in generic "
+                        "constraints are not implemented yet", loc);
                 }
                 auto found = methods.find(method->m_name);
                 ASR::symbol_t *procedure = nullptr;
@@ -5261,14 +5297,16 @@ public:
                     }
                     if (!procedure) {
                         procedure = trait_operation_requirement(*method, type_symbol,
-                            scope, loc);
+                            scope, loc, associated);
                         operations.push_back({member, procedure});
                     }
                 } else if (found == methods.end()) {
                     procedure = message
                         ? create_generic_trait_requirement(*method, *message,
                             type_symbol, scope, loc)
-                        : normalize_trait_requirement(method, type_symbol, scope, loc);
+                        : normalize_trait_requirement(method,
+                            ASRUtils::symbol_type(type_symbol), parameter, scope, loc,
+                            true, associated);
                     methods.emplace(method->m_name, std::make_pair(method, procedure));
                 } else {
                     check_trait_method_compatibility(*found->second.first, *method, loc);
@@ -5294,8 +5332,8 @@ public:
     // The requirement of a binder for an initializer or operator of its trait:
     // the member's signature, with `itself` the binder and no receiver.
     ASR::symbol_t *trait_operation_requirement(ASR::Function_t &member,
-            ASR::symbol_t *type_symbol, SymbolTable *scope, const Location &loc) {
-        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+            ASR::symbol_t *type_symbol, SymbolTable *scope, const Location &loc,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types = {}) {
         types[ASRUtils::trait_itself_name] = {ASRUtils::symbol_type(type_symbol), type_symbol};
         std::map<std::string, ASR::symbol_t*> symbols;
         std::string operation = member.m_name;

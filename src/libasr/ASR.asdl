@@ -122,6 +122,10 @@ symbol
     -- ordinary message; its receiver, if any, is its dummy with pass_attr Pass.
     | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types, trait_operation* operations)
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
+    -- A dependent type of a constrained binder. associated_type is the
+    -- declaration in the trait; type_parameter is a fresh Variable of this
+    -- generic scope, shared by every requirement that uses that declaration.
+    | TraitAssociatedType(symbol_table parent_symtab, identifier name, symbol parameter, symbol associated_type, symbol type_parameter)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
     | TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots, bool anonymous)
     -- The witnesses of a concrete derived type's conformances declared in its

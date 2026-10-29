@@ -437,7 +437,7 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((TraitImplementation_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
-        for name in ("TraitRuntimeContract", "TraitWitness", "TraitErasure",
+        for name in ("TraitAssociatedType", "TraitRuntimeContract", "TraitWitness", "TraitErasure",
                      "TraitDictionaryContract", "TraitDictionary", "IntentOutReset"):
             self.emit("case ASR::symbolType::%s: {" % name, 3)
             self.emit("node_to_return = ( ASR::asr_t* ) ((%s_t*)sym);" % name, 4)

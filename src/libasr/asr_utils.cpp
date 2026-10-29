@@ -6165,6 +6165,7 @@ ASR::intentType trait_member_receiver_intent(ASR::symbol_t *member)
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
 {
     if (!value) return nullptr;
+    if (auto *associated = trait_associated_type(value)) return associated;
     if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
         return trait_type_parameter(ASR::down_cast<ASR::ArrayItem_t>(value)->m_v);
     }
@@ -6222,6 +6223,13 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
     }
     for (; scope; scope = scope->parent) {
         for (const auto &entry : scope->get_scope()) {
+            if (ASR::is_a<ASR::TraitAssociatedType_t>(*entry.second)) {
+                auto *binder = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::TraitAssociatedType_t>(
+                        entry.second)->m_type_parameter);
+                if (parameter->m_param &&
+                        std::string(symbol_name(binder)) == parameter->m_param) return binder;
+            }
             if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
             auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
             auto *binder = symbol_get_past_external(constraint->m_parameter);
@@ -7803,6 +7811,51 @@ bool trait_has_associated_types(const ASR::Trait_t &trait)
     return false;
 }
 
+std::map<ASR::symbol_t*, ASR::symbol_t*> trait_associated_parameters(
+    SymbolTable *scope, ASR::symbol_t *parameter)
+{
+    std::map<ASR::symbol_t*, ASR::symbol_t*> result;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitAssociatedType_t>(*entry.second)) continue;
+        auto *mapping = ASR::down_cast<ASR::TraitAssociatedType_t>(entry.second);
+        if (symbol_get_past_external(mapping->m_parameter) ==
+                symbol_get_past_external(parameter)) {
+            result.emplace(symbol_get_past_external(mapping->m_associated_type),
+                symbol_get_past_external(mapping->m_type_parameter));
+        }
+    }
+    return result;
+}
+
+TraitAssociatedTypes trait_implementation_associated_types(
+    const ASR::TraitImplementation_t &implementation)
+{
+    TraitAssociatedTypes result;
+    if (!trait_has_associated_types(*ASR::down_cast<ASR::Trait_t>(
+            symbol_get_past_external(implementation.m_trait)))) return result;
+    for (size_t i = 0; i < implementation.n_bindings; i++) {
+        const auto &binding = implementation.m_bindings[i];
+        auto *required = trait_method_function(binding.m_member);
+        auto *actual = trait_method_function(binding.m_procedure);
+        auto bind = [&](ASR::expr_t *formal, ASR::expr_t *value) {
+            if (auto *declaration = trait_associated_type(formal)) {
+                result.emplace(declaration, trait_associated_actual(value));
+            }
+        };
+        auto args = trait_compared_arguments(*required);
+        for (size_t j = 0, k = 0; j < actual->n_args; j++) {
+            if (!binding.m_is_nopass && binding.m_self_argument &&
+                    std::string(EXPR2VAR(actual->m_args[j])->m_name) ==
+                        binding.m_self_argument) continue;
+            bind(required->m_args[args[k++]], actual->m_args[j]);
+        }
+        if (required->m_return_var && actual->m_return_var) {
+            bind(required->m_return_var, actual->m_return_var);
+        }
+    }
+    return result;
+}
+
 std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *value)
 {
     auto *type = value ? typed_expr_type(value) : nullptr;
@@ -8482,7 +8535,8 @@ ASR::symbol_t *import_trait_slot(Allocator &al, ASR::TraitRuntimeContract_t &con
 
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset, size_t right_offset,
-    bool forwarding)
+    bool forwarding,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated)
 {
     LCOMPILERS_ASSERT(left_offset <= left.n_args && right_offset <= right.n_args);
     if (!left.m_function_signature || !right.m_function_signature ||
@@ -8499,7 +8553,7 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     if (left_args.size() != right_args.size()) {
         return {TraitMethodDifference::Arguments, "argument counts differ"};
     }
-    std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> parameters = associated;
     auto generic_mismatch = trait_generic_correspondence(left, right, parameters);
     if (!generic_mismatch.empty()) {
         return {TraitMethodDifference::Contract, generic_mismatch};

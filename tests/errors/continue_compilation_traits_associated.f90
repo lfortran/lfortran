@@ -107,18 +107,6 @@ contains
     end subroutine text_append
 end module cc_traits_associated_assumed_length
 
-module cc_traits_associated_generic
-    use cc_traits_associated_contracts, only: IPeek
-    implicit none
-contains
-    ! A05: generic code cannot name a binder's associated types yet.
-    function peek_count{IPeek :: T}(x) result(n)
-        type(T), intent(in) :: x
-        integer             :: n
-        n = 0
-    end function peek_count
-end module cc_traits_associated_generic
-
 module cc_traits_associated_peek_counter
     use cc_traits_associated_contracts, only: IPeek
     implicit none
@@ -461,3 +449,21 @@ contains
         r = item
     end function mirror_echo
 end module cc_traits_associated_echo
+
+! A09: ordinary associated-type messages can constrain a binder, but a
+! generic message returning an associated type still needs separate support.
+module cc_traits_associated_generic_constraint
+    implicit none
+    abstract interface :: IResult
+        type :: Element
+        function make{integer :: T}(self, item) result(r)
+            type(itself), intent(in), pass :: self
+            type(T), intent(in) :: item
+            type(Element) :: r
+        end function
+    end interface
+contains
+    subroutine constrained{IResult :: U}(x)
+        type(U), intent(in) :: x
+    end subroutine
+end module

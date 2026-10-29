@@ -41,6 +41,17 @@ requirements are retained and all selected witnesses must agree.
 References to signatures in a trait's nested scope use canonical
 `ExternalSymbol` imports so serialization does not depend on symbol order.
 
+For a trait with associated types, the same scope also contains one
+`TraitAssociatedType(parent_symtab, name, parameter, associated_type,
+type_parameter)` mapping per associated declaration and constrained binder.
+`associated_type` references the declaration in the trait; `type_parameter`
+is a fresh private `Variable` of `TypeParameter` type. Every normalized
+requirement uses that placeholder for the associated declaration. These are
+dependent parameters, not additional arguments of the enclosing `Template`.
+Conformance selection substitutes the types inferred from its checked
+bindings, or the corresponding placeholders of a forwarding caller.
+The verifier requires complete, unique mappings and matching signatures.
+
 A generic message instead maps to a generic requirement: a `Template` in the
 same scope whose fresh binders keep the message's nominally equivalent
 constraints and whose function puts the receiver first in the same way. Each tuple of type

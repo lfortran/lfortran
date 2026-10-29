@@ -56,106 +56,106 @@ semantic error: associated type 'element' cannot be inferred as a character type
 101 |        end type Text
     | ...^^^^^^^^^^^^^^^^^^ 
 
-semantic error: traits with associated types as generic constraints are not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:115:25
-    |
-115 |     function peek_count{IPeek :: T}(x) result(n)
-    |                         ^^^^^^^^^^ 
-
 semantic error: the passed-object argument 'self' of 'reset_bump' has intent(out), but trait message 'bump' declares its receiver 'self' with intent(inout)
-   --> tests/errors/continue_compilation_traits_associated.f90:182:5 - 186:19
+   --> tests/errors/continue_compilation_traits_associated.f90:170:5 - 174:19
     |
-182 |        type, sealed, implements(ICounter) :: Reset
+170 |        type, sealed, implements(ICounter) :: Reset
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-186 |        end type Reset
+174 |        end type Reset
     | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' of trait 'iecho' cannot be bound to t, a type parameter of the generic procedure 'mirror_echo': it is one type for each implementation
-   --> tests/errors/continue_compilation_traits_associated.f90:453:5 - 455:19
+   --> tests/errors/continue_compilation_traits_associated.f90:441:5 - 443:19
     |
-453 |        implements IEcho :: Mirror
+441 |        implements IEcho :: Mirror
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-455 |        end implements
+443 |        end implements
     | ...^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: a character generic type argument requires a constant length
-   --> tests/errors/continue_compilation_traits_associated.f90:173:24
+semantic error: generic messages returning associated types in generic constraints are not implemented yet
+   --> tests/errors/continue_compilation_traits_associated.f90:466:28
     |
-173 |         print *, size([Box(s)])
+466 |     subroutine constrained{IResult :: U}(x)
+    |                            ^^^^^^^^^^^^ 
+
+semantic error: a character generic type argument requires a constant length
+   --> tests/errors/continue_compilation_traits_associated.f90:161:24
+    |
+161 |         print *, size([Box(s)])
     |                        ^^^^^^ 
 
 semantic error: Argument `c` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:229:9
+   --> tests/errors/continue_compilation_traits_associated.f90:217:9
     |
-229 |         call c%bump()
+217 |         call c%bump()
     |         ^^^^^^^^^^^^^ 
 
 semantic error: Argument `t` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:235:9
+   --> tests/errors/continue_compilation_traits_associated.f90:223:9
     |
-235 |         call t(1)%append(4)
+223 |         call t(1)%append(4)
     |         ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:242:9
+   --> tests/errors/continue_compilation_traits_associated.f90:230:9
     |
-242 |         call x%bump()
+230 |         call x%bump()
     |         ^^^^^^^^^^^^^ 
 
 semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:248:9
+   --> tests/errors/continue_compilation_traits_associated.f90:236:9
     |
-248 |         call x%bump()
+236 |         call x%bump()
     |         ^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical(4)`.
-   --> tests/errors/continue_compilation_traits_associated.f90:264:23
+   --> tests/errors/continue_compilation_traits_associated.f90:252:23
     |
-264 |     i = k%count_after(.true.)
+252 |     i = k%count_after(.true.)
     |                       ^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:269:5
+   --> tests/errors/continue_compilation_traits_associated.f90:257:5
     |
-269 |     call frozen%append(1)
+257 |     call frozen%append(1)
     |     ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:272:9
+   --> tests/errors/continue_compilation_traits_associated.f90:260:9
     |
-272 |         call fixed%append(1)
+260 |         call fixed%append(1)
     |         ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: default input/output of type(bag) for write(formatted) in 'show' of the generic type instance shelf{bag} is not implemented yet: component 'a' of bag is allocatable
-   --> tests/errors/continue_compilation_traits_associated.f90:321:9
+   --> tests/errors/continue_compilation_traits_associated.f90:309:9
     |
-321 |         type(Shelf{Bag}) :: bags
+309 |         type(Shelf{Bag}) :: bags
     |         ^^^^^^^^^^^^^^^^ 
 
 semantic error: default input/output of type(link) for write(formatted) in 'show' of the generic type instance shelf{link} is not implemented yet: component 'next' of link is a pointer
-   --> tests/errors/continue_compilation_traits_associated.f90:337:9
+   --> tests/errors/continue_compilation_traits_associated.f90:325:9
     |
-337 |         type(Shelf{Link}) :: links
+325 |         type(Shelf{Link}) :: links
     |         ^^^^^^^^^^^^^^^^^ 
 
 semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{label} is not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:374:9
+   --> tests/errors/continue_compilation_traits_associated.f90:362:9
     |
-374 |         type(Shelf{Label}) :: labels
+362 |         type(Shelf{Label}) :: labels
     |         ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{sleeve} is not implemented yet: it transfers component 'tag' of sleeve
-   --> tests/errors/continue_compilation_traits_associated.f90:386:9
+   --> tests/errors/continue_compilation_traits_associated.f90:374:9
     |
-386 |         type(Shelf{Sleeve}) :: sleeves
+374 |         type(Shelf{Sleeve}) :: sleeves
     |         ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: default input/output of type(coordinates) for read(formatted) in 'load' of the generic type instance loader{coordinates} is not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:427:9
+   --> tests/errors/continue_compilation_traits_associated.f90:415:9
     |
-427 |         type(Loader{Coordinates}) :: places
+415 |         type(Loader{Coordinates}) :: places
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 

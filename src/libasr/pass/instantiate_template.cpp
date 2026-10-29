@@ -1307,6 +1307,16 @@ public:
             case (ASR::symbolType::TraitConstraint) : {
                 return instantiate_TraitConstraint(ASR::down_cast<ASR::TraitConstraint_t>(sym));
             }
+            case (ASR::symbolType::TraitAssociatedType) : {
+                auto *x = ASR::down_cast<ASR::TraitAssociatedType_t>(sym);
+                auto *result = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitAssociatedType_t(
+                    al, x->base.base.loc, target_scope, s2c(al, new_sym_name),
+                    instantiate_reference(x->m_parameter, x->m_parent_symtab),
+                    instantiate_reference(x->m_associated_type, x->m_parent_symtab),
+                    instantiate_reference(x->m_type_parameter, x->m_parent_symtab)));
+                target_scope->add_symbol(new_sym_name, result);
+                return result;
+            }
             case (ASR::symbolType::Trait) : {
                 return instantiate_Trait(ASR::down_cast<ASR::Trait_t>(sym));
             }
@@ -2598,6 +2608,7 @@ public:
                 break;
             }
             case (ASR::symbolType::TraitConstraint) :
+            case (ASR::symbolType::TraitAssociatedType) :
             case (ASR::symbolType::Trait) : {
                 break;
             }
