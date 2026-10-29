@@ -129,6 +129,9 @@ host/use-associated variable without changing its declaration. Such regions
 also exclude the variable from whole-procedure alias promises and dead
 whole-array store elimination.
 
+Procedures with `HostAssociated` views are excluded from these alias promises:
+an ordinary dummy can share storage with a variable reached through the frame.
+
 The data class includes owned local automatic and fixed-size arrays, but not
 raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
 storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,

@@ -10576,6 +10576,15 @@ public:
         if (!alias_info_enabled()) {
             return false;
         }
+        // A host-associated view can reach the same storage as an ordinary
+        // dummy through the frame, rather than through that dummy.
+        for (const auto &item: x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                    ASRUtils::is_host_associated(
+                        *ASR::down_cast<ASR::Variable_t>(item.second))) {
+                return false;
+            }
+        }
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
         return ft->m_abi == ASR::abiType::Source &&
             ft->m_deftype == ASR::deftypeType::Implementation &&
