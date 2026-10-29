@@ -4274,6 +4274,15 @@ namespace Ibset {
             diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
         }
         result = val1 | (int64_t{1} << val2);
+        // Sign-extend the bit pattern from the result's declared integer kind.
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (kind == 1) {
+            result = checked_bit_pattern_cast<int8_t>(result);
+        } else if (kind == 2) {
+            result = checked_bit_pattern_cast<int16_t>(result);
+        } else if (kind == 4) {
+            result = checked_bit_pattern_cast<int32_t>(result);
+        }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
