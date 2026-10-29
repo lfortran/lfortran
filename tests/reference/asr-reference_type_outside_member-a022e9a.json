@@ -2,7 +2,7 @@
     "basename": "asr-reference_type_outside_member-a022e9a",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/reference_type_outside_member.asr",
-    "infile_hash": "833be1fe19300ae90d7d48462d3d62ace05db37ef008391e501b8a57",
+    "infile_hash": "4fb00890586701670137aebc23bce22f162d7818779468621d1ff65f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
