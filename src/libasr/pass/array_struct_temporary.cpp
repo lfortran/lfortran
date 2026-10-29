@@ -1679,8 +1679,10 @@ static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
                 for (ASR::expr_t** part: {&dim.m_start, &dim.m_length}) {
                     if (!*part || ASRUtils::is_value_constant(
                             ASRUtils::expr_value(*part))) continue;
-                    ASR::expr_t* snapshot = b.Variable(parent,
-                        parent->get_unique_name("__libasr_result_bound"),
+                    // Keep snapshot names unique across the nested blocks:
+                    // later procedure specialization resolves dependencies by name.
+                    ASR::expr_t* snapshot = b.Variable(scope,
+                        scope->get_unique_name("__libasr_result_bound"),
                         ASRUtils::expr_type(*part), ASR::intentType::Local);
                     out.push_back(al, b.Assignment(snapshot, *part));
                     *part = snapshot;
