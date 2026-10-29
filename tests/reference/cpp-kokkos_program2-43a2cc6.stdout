@@ -27,7 +27,7 @@ struct f32_10000_1
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[1];
-    bool is_allocated;
+    bool is_allocated = false;
 
     f32_10000_1(Kokkos::View<float*>* data_): data{data_} {};
 };

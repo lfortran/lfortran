@@ -395,6 +395,7 @@ public:
             }
         }
         if (is_scalar_allocatable(&v)) {
+            headers.insert("optional");
             std::string value_type = ASRUtils::is_character(*v.m_type)
                 ? "std::string" : CUtils::get_c_type_from_ttype_t(
                     ASRUtils::type_get_past_allocatable(v.m_type), false);
@@ -444,8 +445,6 @@ R"(#include <iostream>
 #include <cassert>
 #include <cmath>
 #include <complex>
-#include <algorithm>
-#include <optional>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
