@@ -2839,7 +2839,8 @@ bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
 // See reads_target_only_in_place
 bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         ASR::expr_t* target, ASR::expr_t* lhs_array_var, ASR::symbol_t* root,
-        ASR::symbol_t* component, std::set<ASR::expr_t*>& operands) {
+        ASR::symbol_t* component, std::set<ASR::expr_t*>& operands,
+        const DummiesSharingActualType& dummies_sharing_actual) {
     ASR::expr_t* d = ASRUtils::get_past_array_physical_cast(e);
     // A scalar broadcast to the shape of the target is a scalar operand
     if( ASR::is_a<ASR::ArrayBroadcast_t>(*d) &&
@@ -2863,12 +2864,13 @@ bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
     // reference or `matmul(m, v)`, must not read the target at all.
     auto operand = [&](ASR::expr_t* x) {
         return reads_target_in_place_operands_only(al, x, target,
-            lhs_array_var, root, component, operands);
+            lhs_array_var, root, component, operands, dummies_sharing_actual);
     };
     return ASRUtils::ElementwiseReduction::is_elementwise_operation_of(
             d, operand, false) ||
         (!may_read_target_storage(d, root, component) &&
-         !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d));
+         !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d,
+             dummies_sharing_actual));
 }
 
 // Whether every reference to the storage of the array assignment target
@@ -2880,7 +2882,8 @@ bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
 // collected into `operands`.
 bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
         ASR::expr_t* lhs_array_var, ASR::expr_t* value,
-        std::set<ASR::expr_t*>& operands) {
+        std::set<ASR::expr_t*>& operands,
+        const DummiesSharingActualType& dummies_sharing_actual) {
     ASR::ttype_t* type = ASRUtils::expr_type(target);
     if( !ASRUtils::is_array(type) || ASRUtils::is_simd_array(target) ||
         ASRUtils::is_simd_array(value) || ASRUtils::is_assumed_rank_array(type) ) {
@@ -2902,7 +2905,8 @@ bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
     }
     std::set<ASR::expr_t*> found_operands;
     if( !reads_target_in_place_operands_only(al, value, target, lhs_array_var,
-            root, component, found_operands) || found_operands.empty() ) {
+            root, component, found_operands, dummies_sharing_actual) ||
+        found_operands.empty() ) {
         return false;
     }
     operands.insert(found_operands.begin(), found_operands.end());
@@ -3432,7 +3436,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( lhs_array_var && !inside_where && x.m_overloaded == nullptr &&
             !x.m_move_allocation &&
             reads_target_only_in_place(al, xx.m_target, lhs_array_var,
-                xx.m_value, target_operands_read_in_place) ) {
+                xx.m_value, target_operands_read_in_place, dummies_sharing_actual) ) {
             assignments_reading_target_in_place.insert(&xx.base);
         }
         visit_expr(*xx.m_value);
