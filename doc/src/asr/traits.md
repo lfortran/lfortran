@@ -1089,6 +1089,13 @@ of a BLOCK of its body, use the parameters depends on them. An `implements`
 statement for the type repeats its parameter list:
 `implements ISum :: Box{ISum :: T}`.
 
+The POINTER attribute of a `type(U)` component or dummy is retained when `U`
+is specialized. Type inference does not infer or relax POINTER, TARGET or
+INTENT attributes. A pointer associated with a TARGET dummy can remain
+associated after return only when the actual argument satisfies the ordinary
+Fortran target-lifetime rules. `traits_generic_type_09` and its standard
+specialization check pointer association, mutation and reassociation.
+
 A client names an instance with concrete type arguments,
 `type(PairwiseSum{SimpleSum})`, or lets a constructor infer them:
 `PairwiseSum(SimpleSum())` tries the type's initializers before its structure

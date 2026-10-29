@@ -13165,6 +13165,9 @@ public:
                                         tp->m_deferred_attr, false));
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
+                if (is_pointer) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type));
+                }
             } else if (v && ASRUtils::is_iso_c_ptr_type_symbol(current_scope, v)) {
                 type_declaration = v;
                 type = ASRUtils::make_cptr_type(al, loc, current_scope, v);
