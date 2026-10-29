@@ -3889,3 +3889,39 @@ contains
         x = 1
     end subroutine
 end module cc1_asynchronous_no_entities
+
+module cc1_character_spec_function
+contains
+    pure function half(s) result(t)
+        character(*), intent(in) :: s
+        character(len(s)/2) :: t
+        t = s
+    end function
+    pure integer function length_value()
+        length_value = 5
+    end function
+end module
+
+module cc1_nonconstant_character_length
+    use cc1_character_spec_function
+    character(*), parameter :: text = 'abcdeedcba'
+    character(len(half(text))) :: inquiry  ! {Error} character length must be a constant expression in this context
+    character(1 + len(half(text))) :: composite  ! {Error} character length must be a constant expression in this context
+    character :: old*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+    character(1) :: overridden*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+    character(length_value()) :: direct  ! {Error} character length must be a constant expression in this context
+end module
+
+block data cc1_nonconstant_character_block_data
+    use cc1_character_spec_function
+    character(len(half('abcdeedcba'))) :: t  ! {Error} character length must be a constant expression in this context
+    common /cc1_character_common/ t  ! {Error} Variable 't' is not declared
+end block data
+
+module cc1_generic_character_length
+    interface generic_length
+        pure integer function cc1_length_value()
+        end function
+    end interface
+    character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
+end module
