@@ -81,6 +81,26 @@ symbols visible only in its declaration scope (for example a module function
 used as an array bound). Reusing the type directly would leave those references
 out of scope in a derived-type constructor.
 
+### Result assignment destinations
+
+The assignment target can be used as the result argument only when the
+function cannot otherwise access its storage before completing the result
+(F2018 10.2.1.3). This includes access through callbacks: a procedure-pointer
+actual, a procedure component or a dummy procedure may designate an internal
+procedure that reads the target by host association. Such unknown procedure
+actuals retain a result temporary, including when wrapped in a procedure
+cast or carried by a derived-type actual or passed object. Component types
+are followed recursively, including inherited components and recursive data
+pointers; an unknown dynamic extension can also carry a callback.
+
+A known implementation is not alone proof of noncapture: it may call an
+externally stored procedure pointer. Follow its calls, propagating known
+procedure actuals to dummy procedures, before reusing a local destination.
+Known noncapturing callbacks and data types without callback components
+remain eligible. The destination itself is checked along its entire
+designator: a nonpointer final component reached through an intervening
+pointer can still alias storage accessible to the callee.
+
 ### Runtime character result metadata
 
 Call preparation in `array_struct_temporary` saves result specification values

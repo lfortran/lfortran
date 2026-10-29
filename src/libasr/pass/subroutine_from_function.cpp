@@ -9,6 +9,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/intent_out_deallocate.h>
+#include <libasr/pass/access_paths.h>
 #include <unordered_map>
 
 namespace LCompilers {
@@ -50,21 +51,21 @@ public:
 
 
         void visit_Function(const ASR::Function_t& x) {
-            ASR::Function_t* x_ptr = &const_cast<ASR::Function_t&>(x);
+            ASR::Function_t& fn = const_cast<ASR::Function_t&>(x);
             if (ASRUtils::is_bare_implicit_interface(x)) {
                 // A procedure declared `external` with no interface. It has no
                 // signature to lower and is never code-generated; every call
                 // site references its own inferred interface instead.
                 return;
             }
-            ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
+            ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(fn)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr,
+            bool transform_success = PassUtils::handle_fn_return_var(al, &fn,
                 PassUtils::is_result_returned_through_argument);
             if(transform_success) {
-                Function__TO__ReturnType_MAP_[x_ptr] = return_type;
-                handle_finalizable_result(*x_ptr);
+                Function__TO__ReturnType_MAP_[&fn] = return_type;
+                handle_finalizable_result(fn);
             }
 
             visit_procedures_in_scope_and_constructs(x.m_symtab);
@@ -784,6 +785,166 @@ public :
         }
     }
 };
+
+// A local result destination can still be read through a captured callback.
+// Follow known procedure actuals through calls, but not unknown procedure
+// pointers or data objects that can carry them.
+class CallbackAccess : public ASR::BaseWalkVisitor<CallbackAccess> {
+    SymbolTable *routine;
+    std::set<ASR::symbol_t*> &active;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> bindings;
+    std::set<ASR::symbol_t*> blocks;
+
+    static bool carries_callback(ASR::ttype_t *type, ASR::symbol_t *declaration,
+            std::set<ASR::symbol_t*> &seen) {
+        type = ASRUtils::extract_type(type);
+        if (ASR::is_a<ASR::FunctionType_t>(*type)) return true;
+        if (ASR::is_a<ASR::StructType_t>(*type)) {
+            ASR::StructType_t *t = ASR::down_cast<ASR::StructType_t>(type);
+            // A dynamic extension may add procedure-pointer components.
+            if (!t->m_is_cstruct || t->m_is_unlimited_polymorphic) return true;
+            declaration = ASRUtils::symbol_get_past_external(declaration);
+            if (declaration == nullptr || !ASR::is_a<ASR::Struct_t>(*declaration)) {
+                return true;
+            }
+            if (!seen.insert(declaration).second) return false;
+            ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(declaration);
+            if (s->m_parent) {
+                ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(s->m_parent));
+                if (carries_callback(parent->m_struct_signature,
+                        s->m_parent, seen)) return true;
+            }
+            for (size_t i = 0; i < s->n_members; i++) {
+                ASR::symbol_t *member = ASRUtils::symbol_get_past_external(
+                    s->m_symtab->get_symbol(s->m_members[i]));
+                if (!ASR::is_a<ASR::Variable_t>(*member)) continue;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(member);
+                if (carries_callback(v->m_type, v->m_type_declaration, seen)) {
+                    return true;
+                }
+            }
+        } else if (ASR::is_a<ASR::UnionType_t>(*type)) {
+            ASR::UnionType_t *t = ASR::down_cast<ASR::UnionType_t>(type);
+            for (size_t i = 0; i < t->n_data_member_types; i++) {
+                if (carries_callback(t->m_data_member_types[i], nullptr, seen)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    ASR::symbol_t *procedure_symbol(ASR::expr_t *arg) {
+        while (ASR::is_a<ASR::FunctionPointerCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::FunctionPointerCast_t>(arg)->m_arg;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*arg)) return nullptr;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(arg)->m_v);
+        auto it = bindings.find(sym);
+        return it == bindings.end() ? sym : it->second;
+    }
+
+    bool argument(ASR::expr_t *arg) {
+        if (arg == nullptr) return false;
+        ASR::ttype_t *type = ASRUtils::extract_type(ASRUtils::expr_type(arg));
+        if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+            return call(procedure_symbol(arg), nullptr, 0, nullptr);
+        }
+        ASR::symbol_t *declaration = ASR::is_a<ASR::StructType_t>(*type)
+            ? ASRUtils::get_struct_sym_from_struct_expr(arg) : nullptr;
+        std::set<ASR::symbol_t*> seen;
+        return carries_callback(type, declaration, seen);
+    }
+
+    void declarations(SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            visit_ttype(*v->m_type);
+            if (v->m_symbolic_value) visit_expr(*v->m_symbolic_value);
+            if (captures) return;
+        }
+    }
+
+public:
+    bool captures = false;
+
+    CallbackAccess(SymbolTable *routine_, std::set<ASR::symbol_t*> &active_)
+        : routine(routine_), active(active_) {}
+
+    bool call(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+            ASR::expr_t *dt) {
+        if (argument(dt)) return true;
+        for (size_t i = 0; i < n_args; i++) {
+            if (argument(args[i].m_value)) return true;
+        }
+        name = ASRUtils::symbol_get_past_external(name);
+        auto binding = bindings.find(name);
+        if (binding != bindings.end()) name = binding->second;
+        if (name && ASR::is_a<ASR::StructMethodDeclaration_t>(*name)) {
+            name = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(name)->m_proc);
+        }
+        if (name == nullptr || !ASR::is_a<ASR::Function_t>(*name)) return true;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(name);
+        if (ASRUtils::get_FunctionType(fn)->m_deftype !=
+                ASR::deftypeType::Implementation ||
+                AccessPaths::contained_in(fn, routine)) return true;
+        // Recursive calls with changing procedure actuals are not a proof of
+        // noncapture. Do not lose their context in a symbol-only cache.
+        if (!active.insert(name).second) return true;
+        CallbackAccess body(routine, active);
+        for (size_t i = 0; i < n_args && i < fn->n_args; i++) {
+            ASR::expr_t *arg = args[i].m_value;
+            if (arg && ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(arg))) &&
+                    ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                body.bindings[ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v)] =
+                        procedure_symbol(arg);
+            }
+        }
+        body.declarations(fn->m_symtab);
+        for (size_t i = 0; i < fn->n_body && !body.captures; i++) {
+            body.visit_stmt(*fn->m_body[i]);
+        }
+        active.erase(name);
+        return body.captures;
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (!captures) BaseWalkVisitor::visit_stmt(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        captures |= call(x.m_name, x.m_args, x.n_args, x.m_dt);
+        if (!captures) BaseWalkVisitor::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        captures |= call(x.m_name, x.m_args, x.n_args, x.m_dt);
+        if (!captures) BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(sym).second) return;
+        ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
+        declarations(b->m_symtab);
+        for (size_t i = 0; i < b->n_body && !captures; i++) {
+            visit_stmt(*b->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(sym).second) return;
+        ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(sym);
+        declarations(b->m_symtab);
+        for (size_t i = 0; i < b->n_body && !captures; i++) {
+            visit_stmt(*b->m_body[i]);
+        }
+    }
+};
+
 class ReplaceFunctionCallWithSubroutineCallVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallWithSubroutineCallVisitor> {
 
@@ -957,6 +1118,39 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 return expr_has_pointer_component(a) || expr_has_pointer_component(b);
             }
             return false;
+        }
+
+        // True when the function `fc` calls may access the storage of the
+        // assignment target `target` other than through its arguments, by use
+        // or host association: the target is rooted at a module variable, a
+        // variable of a host, a variable in a common block or what a pointer
+        // may point to, or the function, or a procedure passed to it, may be
+        // contained in the procedure of the assignment and so may access
+        // its locals and dummy arguments. The result must then not be
+        // returned into the target: the function would see the target
+        // defined before the whole value is evaluated (F2018 10.2.1.3).
+        // A target that is itself a pointer keeps the behaviour of
+        // expr_may_alias, see there.
+        bool callee_may_access_target(ASR::FunctionCall_t *fc,
+                ASR::expr_t *target) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
+                return false;
+            }
+            if (expr_has_pointer_or_target(target)) {
+                return true;
+            }
+            ASR::symbol_t *root = designator_base_symbol(target);
+            if (root == nullptr) {
+                return false;
+            }
+            SymbolTable *routine = AccessPaths::enclosing_routine(current_scope);
+            if (ASR::down_cast<ASR::Variable_t>(root)->m_common_block != nullptr ||
+                    AccessPaths::reachable_elsewhere(root, routine)) {
+                return true;
+            }
+            std::set<ASR::symbol_t*> active;
+            CallbackAccess callbacks(routine, active);
+            return callbacks.call(fc->m_name, fc->m_args, fc->n_args, fc->m_dt);
         }
 
         // Remember what a pointer was associated with, so that a later call
@@ -1300,6 +1494,11 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             if (fc->m_dt && this->expr_may_alias(target, fc->m_dt)) {
+                use_temp_var_for_return = true;
+            }
+
+            if (ASR::is_a<ASR::Assignment_t>(xx) &&
+                    callee_may_access_target(fc, target)) {
                 use_temp_var_for_return = true;
             }
 

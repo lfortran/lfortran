@@ -2803,7 +2803,14 @@ public:
     // allocatable array member of a struct-typed function/subroutine
     // call argument, matching the parameter order in emit_function_def:
     // (data_member1, size_member1, data_member2, size_member2, ...)
-    void emit_struct_member_args_interleaved(ASR::expr_t *expr) {
+    void emit_struct_member_args_interleaved(ASR::expr_t *expr,
+            ASR::Function_t *callee, size_t argument) {
+        if (callee && argument < callee->n_args &&
+                gpu_struct_has_component_arguments(*callee,
+                    ASR::down_cast<ASR::Var_t>(
+                        callee->m_args[argument])->m_v)) {
+            return;
+        }
         ASR::Variable_t *var = nullptr;
         std::string var_name;
         if (ASR::is_a<ASR::Var_t>(*expr)) {
@@ -3408,7 +3415,8 @@ public:
                     src << get_struct_name(arg) << " " << arg->m_name;
                 }
                 // Add data pointer and size parameters for allocatable array members
-                if (arg->m_type_declaration) {
+                if (arg->m_type_declaration &&
+                        !gpu_struct_has_component_arguments(*fn, &arg->base)) {
                     ASR::symbol_t *st_sym =
                         ASRUtils::symbol_get_past_external(
                             arg->m_type_declaration);
@@ -4863,7 +4871,7 @@ public:
                                 sc->m_args[i].m_value, fn, i);
                         } else if (is_struct_type(arg_type)) {
                             emit_struct_member_args_interleaved(
-                                sc->m_args[i].m_value);
+                                sc->m_args[i].m_value, fn, i);
                         }
                     }
                 }
@@ -5417,7 +5425,7 @@ public:
                                     fc->m_args[i].m_value, fn, i);
                             } else if (formal_is_struct) {
                                 emit_struct_member_args_interleaved(
-                                    fc->m_args[i].m_value);
+                                    fc->m_args[i].m_value, fn, i);
                             }
                         }
                     }

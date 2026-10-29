@@ -18,6 +18,13 @@ void gpu_routine_scopes(SymbolTable *scope, std::vector<SymbolTable*> &out);
 bool gpu_give_struct_component_storage(Allocator &al,
     ASR::TranslationUnit_t &unit);
 
+// After promotion has inferred shapes and device-heap lowering has claimed
+// its whole-value copies, lower assignments involving the remaining stored
+// locals to inline member copies. Component data already has explicit copies;
+// opaque host descriptors must stay with their destination.
+void pass_gpu_struct_component_copies(Allocator &al,
+    ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
 // Gives an allocatable rank-one local of a device routine that the
 // routine allocates with an extent it only knows where it allocates it --
 // one that reads the index of a loop -- a buffer whose extent is an upper
@@ -29,9 +36,25 @@ bool gpu_bind_allocations_to_buffers(Allocator &al,
 
 // Whether `stmt` binds the allocatable array component of a derived-type
 // local of device code to the array that stores it: `s%v => storage`, as
-// gpu_give_struct_component_storage writes it. `component` is `s%v`.
+// gpu_give_struct_component_storage writes it. `component` is `s%v`;
+// `storage` is the bare array variable, past any physical casts.
 bool gpu_struct_component_storage(ASR::stmt_t *stmt,
     ASR::StructInstanceMember_t *&component, ASR::expr_t *&storage);
+
+struct GpuStructComponentStorage {
+    ASR::symbol_t *variable;
+    ASR::symbol_t *component;
+    ASR::symbol_t *storage;
+};
+
+// Canonical component-to-array bindings, including BLOCK/ASSOCIATE scopes.
+std::vector<GpuStructComponentStorage> gpu_struct_component_bindings(
+    ASR::Function_t &fn);
+
+// Whether this dummy's decomposed buffers are explicit array arguments,
+// bound to its components by Associate rather than synthesized by codegen.
+bool gpu_struct_has_component_arguments(ASR::Function_t &fn,
+    ASR::symbol_t *dummy);
 
 // Writes the dimensions `dims` of an array of the device routine `fn` as
 // the values they have on entry to the routine, over its dummy arguments
