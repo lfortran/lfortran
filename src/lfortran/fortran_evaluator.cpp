@@ -510,7 +510,12 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     const JITCancellation *cancellation = nullptr;
 #ifndef __EMSCRIPTEN__
     const JITCancellation native_cancellation{
-        poll_cell_cancellation, protect_cell_cancellation};
+        poll_cell_cancellation, protect_cell_cancellation,
+        [&](const std::string &name) {
+            // The owned-command runtime returns normally after cancellation,
+            // just like a checkpointed JIT procedure.
+            return defined_symbols.count(name) || name == "_lfortran_exec_command";
+        }};
     cancellation = &native_cancellation;
 #endif
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,

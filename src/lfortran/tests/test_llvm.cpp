@@ -13,8 +13,10 @@
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/fortran_kernel.h>
 #ifndef __EMSCRIPTEN__
+#include <atomic>
 #include <chrono>
 #include <thread>
+#include <llvm/Support/DynamicLibrary.h>
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -3637,6 +3639,93 @@ static CompilerOptions execute_options() {
 }
 
 #ifndef __EMSCRIPTEN__
+namespace {
+std::atomic<bool> foreign_callback_entered{false}, foreign_callback_release{false};
+int foreign_callback_value = 0;
+
+extern "C" void cancellation_foreign_wait() {
+    foreign_callback_entered.store(true);
+    while (!foreign_callback_release.load()) std::this_thread::yield();
+}
+
+extern "C" int cancellation_foreign_invoke(void *(*callback)()) {
+    auto *p = static_cast<int *>(callback());
+    // Record a bad return without crashing the test process on dereference.
+    foreign_callback_value = p ? *p : -1;
+    return foreign_callback_value;
+}
+
+extern "C" void cancellation_foreign_invoke_sub(void *(*callback)()) {
+    cancellation_foreign_invoke(callback);
+}
+}
+
+TEST_CASE("FortranEvaluator execute: defer cancellation across foreign callbacks") {
+    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_wait",
+        reinterpret_cast<void *>(&cancellation_foreign_wait));
+    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_invoke",
+        reinterpret_cast<void *>(&cancellation_foreign_invoke));
+    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_invoke_sub",
+        reinterpret_cast<void *>(&cancellation_foreign_invoke_sub));
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        REQUIRE(e.execute(R"(
+module foreign_cancellation
+use iso_c_binding
+implicit none
+integer(c_int), target :: retained = 41
+interface
+    subroutine cancellation_foreign_wait() bind(c)
+    end subroutine
+    integer(c_int) function cancellation_foreign_invoke(callback) bind(c)
+        import c_int, c_funptr
+        type(c_funptr), value :: callback
+    end function
+    subroutine cancellation_foreign_invoke_sub(callback) bind(c)
+        import c_funptr
+        type(c_funptr), value :: callback
+    end subroutine
+end interface
+contains
+function callback() bind(c) result(p)
+    type(c_ptr) :: p
+    p = c_loc(retained)
+    call cancellation_foreign_wait()
+    retained = 42
+end function
+end module
+use foreign_cancellation
+)").ok);
+        for (const std::string code : {
+                "cancellation_foreign_invoke(c_funloc(callback))",
+                "call cancellation_foreign_invoke_sub(c_funloc(callback))\nretained = -1"}) {
+            CAPTURE(code);
+            REQUIRE(e.execute("retained = 41").ok);
+            foreign_callback_entered = false;
+            foreign_callback_release = false;
+            foreign_callback_value = 0;
+            int polls = 0;
+            FortranEvaluator::CellIO io;
+            io.cancel_requested = [&]() {
+                if (!foreign_callback_entered.load()) return false;
+                if (++polls == 4) foreign_callback_release = true;
+                return true;
+            };
+            auto result = e.execute(code, false, io);
+            CHECK(foreign_callback_value == 42);
+            CHECK(!result.ok);
+            CHECK(result.error_name == "KeyboardInterrupt");
+            CHECK(result.value.type == FortranEvaluator::EvalResult::none);
+            CHECK(e.execute("retained").value.text() == "42");
+            CHECK(e.execute("6*7").value.text() == "42");
+        }
+    }
+}
+
 TEST_CASE("FortranEvaluator execute: cooperative native JIT cancellation") {
     for (int mode = 0; mode < 3; mode++) {
         CAPTURE(mode);

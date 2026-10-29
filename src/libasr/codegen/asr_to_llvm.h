@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
+#include <functional>
 
 namespace LCompilers {
 
@@ -11,6 +12,7 @@ namespace LCompilers {
     struct JITCancellation {
         int (*poll)(bool propagate_only);
         void (*protect)(bool begin);
+        std::function<bool(const std::string &)> cooperative_call;
     };
 
     Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,

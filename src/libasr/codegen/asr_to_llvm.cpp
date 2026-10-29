@@ -17787,9 +17787,26 @@ public:
         ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
     }
 
+    bool foreign_cancellation_boundary(const ASR::Function_t &fn,
+            bool indirect = false, llvm::Function *target = nullptr) {
+        const auto *type = ASRUtils::get_FunctionType(fn);
+        if (target && jit_cancellation &&
+                jit_cancellation->cooperative_call(target->getName().str())) {
+            return false;
+        }
+        // A known JIT implementation participates even with BIND(C). A C
+        // procedure pointer, however, may target an uninstrumented caller.
+        return indirect ? type->m_abi == ASR::abiType::BindC
+            || type->m_abi == ASR::abiType::ExternalUndefined
+            : type->m_deftype != ASR::deftypeType::Implementation
+                && type->m_abi != ASR::abiType::Intrinsic;
+    }
+
     llvm::CallInst *create_jit_call(llvm::Function *fn,
-            llvm::ArrayRef<llvm::Value *> args = {}) {
+            llvm::ArrayRef<llvm::Value *> args = {}, bool foreign = false) {
+        if (foreign) protect_cancellation(true);
         auto *result = builder->CreateCall(fn, args);
+        if (foreign) protect_cancellation(false);
         // A successful result must first acquire its normal temporary owner.
         // Here propagate only cancellation already completed in the callee.
         emit_cancellation_check(true);
@@ -17797,8 +17814,10 @@ public:
     }
 
     llvm::CallInst *create_jit_call(llvm::FunctionType *type, llvm::Value *fn,
-            llvm::ArrayRef<llvm::Value *> args) {
+            llvm::ArrayRef<llvm::Value *> args, bool foreign = false) {
+        if (foreign) protect_cancellation(true);
         auto *result = builder->CreateCall(type, fn, args);
+        if (foreign) protect_cancellation(false);
         emit_cancellation_check(true);
         return result;
     }
@@ -28487,7 +28506,9 @@ public:
                     fntype->getReturnType(), arg_types, false);
                 callee = builder->CreateBitCast(callee, fntype->getPointerTo());
             }
-            tmp = create_jit_call(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
+            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -28609,7 +28630,9 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = create_jit_call(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
+            if (foreign) emit_cancellation_check();
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -28623,7 +28646,9 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = create_jit_call(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
+            if (foreign) emit_cancellation_check();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -28659,7 +28684,10 @@ public:
                     }
                 }
             }
+            const bool foreign = foreign_cancellation_boundary(*s, false, fn);
+            if (foreign) protect_cancellation(true);
             builder->CreateCall(fn, args);
+            if (foreign) protect_cancellation(false);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
             for (auto& fc : pending_flat_copybacks) {
@@ -28668,7 +28696,7 @@ public:
             }
             pending_flat_copybacks.clear();
             apply_cfi_array_writebacks();
-            emit_cancellation_check(true);
+            emit_cancellation_check(!foreign);
         }
     }
 
@@ -28873,7 +28901,7 @@ public:
 
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
+                                ASR::ttype_t* asr_return_type, bool foreign) {
         if (fnty->getReturnType()->isVoidTy()) {
             // Windows complex(kind=8) uses a hidden first argument (sret-style):
             // the function returns `void` and writes the result into the first
@@ -28884,18 +28912,18 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                create_jit_call(fn, args);
+                create_jit_call(fn, args, foreign);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = create_jit_call(fn, args);
+        llvm::Value* return_value = create_jit_call(fn, args, foreign);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
 
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
-        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+                                ASR::ttype_t* asr_return_type, bool foreign) {
+        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type, foreign);
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
@@ -29113,8 +29141,10 @@ public:
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            tmp = create_jit_call(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             wrap_string_function_result(x.m_type);
+            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -29203,6 +29233,7 @@ public:
         } else {
             throw CodeGenError("ABI type not implemented yet.");
         }
+        bool foreign = foreign_cancellation_boundary(*s);
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
@@ -29216,7 +29247,8 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = create_jit_call(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -29226,7 +29258,8 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = create_jit_call(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -29234,10 +29267,13 @@ public:
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, false);
+            foreign = foreign_cancellation_boundary(*s, false, fn);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 auto call_bindc = [&]() {
+                    if (foreign) protect_cancellation(true);
                     auto *result = builder->CreateCall(fn, args);
+                    if (foreign) protect_cancellation(false);
                     // Copy descriptor ownership back even when the callee
                     // cancelled, before abandoning this frame.
                     if (cancellation_scope && !emitting_cancellation_cleanup) {
@@ -29266,7 +29302,7 @@ public:
                 }
                 apply_cfi_array_writebacks();
             } else {
-                tmp = CreateCallUtil(fn, args, return_var_type0);
+                tmp = CreateCallUtil(fn, args, return_var_type0, foreign);
             }
         }
         wrap_string_function_result(x.m_type);
@@ -29278,6 +29314,7 @@ public:
                     return_var_type0);
             }
         }
+        if (foreign) emit_cancellation_check();
     }
 
     // SIZE of `array` needs the extent of its dimension `i`, which ASR may
