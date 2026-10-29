@@ -686,7 +686,7 @@ TEST_CASE("LLVM statement-local stack storage for numeric function results") {
 implicit none
 type :: sigmoid
 contains
-    procedure :: evaluate, derivative
+    procedure :: evaluate, derivative, consume
 end type
 contains
 pure function evaluate(self, x) result(y)
@@ -701,6 +701,25 @@ pure function derivative(self, x) result(y)
     real :: y(size(x))
     y = self%evaluate(x) * (1.0 - self%evaluate(x))
 end function
+subroutine consume(self, y, x)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, intent(in) :: x(:)
+    y = y - x
+end subroutine
+subroutine argument_expression(self, y, x, scale)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, intent(in) :: x(:), scale
+    call self%consume(y, x / scale)
+end subroutine
+subroutine pointer_argument_expression(self, y, x, scale)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, pointer, intent(in) :: x(:)
+    real, intent(in) :: scale
+    call self%consume(y, x / scale)
+end subroutine
 subroutine user_allocation(n, y)
     integer, intent(in) :: n
     real, allocatable, intent(out) :: y(:)
@@ -710,10 +729,12 @@ end subroutine
 end module
 )";
     for (bool fast: {false, true}) {
-        unsigned heap_calls[2] = {};
+        unsigned heap_calls[3][2] = {};
         for (bool stack: {false, true}) {
             inspect_definitions(source, fast,
                 {{"derivative", "_derivative"},
+                 {"argument_expression", "_argument_expression_real____1_real____2"},
+                 {"pointer_argument_expression", "_pointer_argument_expression"},
                  {"user_allocation", "_user_allocation"}},
                 [&](const std::string &name, llvm::Function &fn) {
                     unsigned allocations = 0, saves = 0, restores = 0;
@@ -738,8 +759,11 @@ end module
                     if (name == "user_allocation") {
                         CHECK(allocations > 0);
                     } else {
-                        heap_calls[stack] = allocations;
+                        unsigned index = name == "derivative" ? 0 :
+                            name == "argument_expression" ? 1 : 2;
+                        heap_calls[index][stack] = allocations;
                         if (stack) {
+                            CHECK(allocations == (name == "derivative" ? 2 : 0));
                             CHECK(dynamic_arrays > 0);
                             CHECK(saves > 0);
                             CHECK(restores == saves);
@@ -747,7 +771,9 @@ end module
                     }
                 }, stack);
         }
-        CHECK(heap_calls[1] < heap_calls[0]);
+        for (auto& calls: heap_calls) {
+            CHECK(calls[1] < calls[0]);
+        }
     }
 }
 

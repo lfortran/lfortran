@@ -42,11 +42,19 @@ contains
         if (any(x /= 2.0)) error stop 9
     end subroutine
 
+    subroutine consume(y, x)
+        real, intent(out) :: y(:)
+        real, intent(in) :: x(:)
+        y = x
+    end subroutine
+
     subroutine check(skip, early)
         logical, intent(in) :: skip
         logical, intent(in) :: early
-        real :: x(-128:127), y(256), expected(256)
+        real, target :: x(-128:127)
+        real :: y(256), expected(256)
         real, allocatable :: a(:)
+        real, pointer :: px(:)
         integer :: i, n, divisor, before
         do i = -128, 127
             x(i) = real(i) * 0.125
@@ -62,9 +70,14 @@ contains
             expected(1:n) = 1.0/(1.0+exp(-x(-128:n-129)))
             expected(1:n) = expected(1:n)*(1.0-expected(1:n))
             if (any(abs(y(1:n)-expected(1:n)) > 1.e-6)) error stop 1
+            call consume(y(1:n), x(-128:n-129) / 2.0)
+            if (any(y(1:n) /= x(-128:n-129) / 2.0)) error stop 10
+            px => x(-128:n-129:2)
+            call consume(y(1:size(px)), px / 2.0)
+            if (any(y(1:size(px)) /= px / 2.0)) error stop 12
             if (early .and. i == 31) return
             if (mod(i, 7) == 0) cycle
-            y(1:11) = evaluate(x(10:-10:-2)) + evaluate(x(-10:10:2))
+            call consume(y(1:11), evaluate(x(10:-10:-2)) + evaluate(x(-10:10:2)))
             if (any(abs(y(1:11)-1.0) > 1.e-6)) error stop 2
         end do
         before = bound_calls
@@ -74,6 +87,9 @@ contains
         if (any(y(1:n) /= 3.0)) error stop 4
         y(1:5) = changing_extent(n) + 1.0
         if (n /= 6 .or. any(y(1:5) /= 5.0)) error stop 8
+        n = 5
+        call consume(y(1:5), changing_extent(n) + 1.0)
+        if (n /= 6 .or. any(y(1:5) /= 5.0)) error stop 11
         n = 5
         a = allocated_result(n)
         if (.not. allocated(a)) error stop 5

@@ -1554,11 +1554,11 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     }
 }
 
-// Only new, private numeric result temporaries of this assignment are
+// Only new, private numeric result temporaries of this statement are
 // candidates. Their allocation is replaced at its original position, not at
 // procedure entry: preceding argument/metadata evaluations must happen first.
 static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
-        Vec<ASR::stmt_t*>& body, size_t begin, size_t assignment_pos,
+        Vec<ASR::stmt_t*>& body, size_t begin, size_t statement_pos,
         const std::set<ASR::symbol_t*>& old_symbols,
         const ExprsWithTargetType& exprs_with_target) {
     for (SymbolTable* s = scope; s; s = s->parent) {
@@ -1570,12 +1570,19 @@ static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
             }
         }
     }
+    bool scope_argument_expressions =
+        ASR::is_a<ASR::SubroutineCall_t>(*body[statement_pos]);
     std::set<ASR::symbol_t*> candidates;
-    for (size_t i = begin; i < assignment_pos; i++) {
+    for (size_t i = begin; i < statement_pos; i++) {
         if (!ASR::is_a<ASR::Assignment_t>(*body[i])) continue;
         auto* assignment = ASR::down_cast<ASR::Assignment_t>(body[i]);
         ASR::expr_t* value = assignment->m_value;
-        if (!ASR::is_a<ASR::FunctionCall_t>(*value) ||
+        bool function_result = ASR::is_a<ASR::FunctionCall_t>(*value);
+        bool result_expression = function_result ||
+            (scope_argument_expressions &&
+             ASRUtils::ElementwiseReduction::is_elementwise_operation_of(value,
+                [](ASR::expr_t*) { return true; }, false));
+        if (!result_expression ||
                 !ASR::is_a<ASR::Var_t>(*assignment->m_target)) continue;
         auto entry = exprs_with_target.find(value);
         if (entry == exprs_with_target.end() ||
@@ -1584,17 +1591,19 @@ static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
             assignment->m_target)->m_v;
         ASR::ttype_t* type = ASRUtils::expr_type(value);
         ASR::ttype_t* element = ASRUtils::extract_type(type);
+        // Arithmetic can retain an operand's pointer type, but computes a
+        // value rather than returning a pointer to borrowed storage.
         if (old_symbols.count(sym) || !ASR::is_a<ASR::Variable_t>(*sym) ||
                 ASRUtils::symbol_parent_symtab(sym) != scope ||
                 !ASRUtils::is_array(type) ||
-                ASRUtils::is_allocatable_or_pointer(type) ||
+                (function_result && ASRUtils::is_allocatable_or_pointer(type)) ||
                 !ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)) ||
                 !(ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
                   ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element))) continue;
         candidates.insert(sym);
     }
     std::map<ASR::symbol_t*, ASR::Allocate_t*> allocations;
-    for (size_t i = begin; i < assignment_pos; i++) {
+    for (size_t i = begin; i < statement_pos; i++) {
         if (!ASR::is_a<ASR::Allocate_t>(*body[i])) continue;
         auto* allocation = ASR::down_cast<ASR::Allocate_t>(body[i]);
         if (allocation->n_args != 1 || allocation->m_source ||
@@ -1619,7 +1628,7 @@ static void scope_stack_result_temporaries(Allocator& al, SymbolTable* scope,
     }
     if (candidates.empty()) return;
 
-    // Each BLOCK ends with the original assignment. Nested BLOCKs retain
+    // Each BLOCK contains the original statement and its copy-out. Nested BLOCKs retain
     // allocation order and reclaim dynamic storage before any loop backedge.
     // Snapshot bounds once here, so a call cannot change the allocated shape.
     std::function<Vec<ASR::stmt_t*>(size_t, SymbolTable*)> scoped_body;
@@ -1728,7 +1737,8 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
         for (size_t i = 0; i < n_body; i++) {
             size_t statement_start = current_body->size();
             bool scope_results = stack_scope &&
-                ASR::is_a<ASR::Assignment_t>(*m_body[i]);
+                (ASR::is_a<ASR::Assignment_t>(*m_body[i]) ||
+                 ASR::is_a<ASR::SubroutineCall_t>(*m_body[i]));
             std::set<ASR::symbol_t*> old_symbols;
             if (scope_results) {
                 for (const auto& entry: stack_scope->get_scope()) {
@@ -1743,7 +1753,7 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
                 *body_after_curr_stmt = &body_after_curr_stmt_vec;
             }
             visit_stmt(*m_body[i]);
-            size_t assignment_pos = current_body->size();
+            size_t statement_pos = current_body->size();
             current_body->push_back(al, m_body[i]);
             if( body_after_curr_stmt != nullptr ) {
                 for (size_t j = 0; j < body_after_curr_stmt_vec.size(); j++) {
@@ -1753,7 +1763,7 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
             }
             if (scope_results) {
                 scope_stack_result_temporaries(al, stack_scope, *current_body,
-                    statement_start, assignment_pos, old_symbols, *exprs_with_target);
+                    statement_start, statement_pos, old_symbols, *exprs_with_target);
             }
         }
         m_body = current_body_vec.p; n_body = current_body_vec.size();

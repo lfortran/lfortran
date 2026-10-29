@@ -102,8 +102,9 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--legacy-array-sections`: Enables passing array items as sections if required, and lets the elements of a dummy array whose last dimension is `1`, as in `a(lda, 1)`, be referenced past that dimension, as for an assumed-size `a(lda, *)`
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate automatic arrays on the stack, including eligible
-  private numeric function-result temporaries. Temporary bounds are evaluated
-  at the original statement, and their storage is reclaimed at statement exit.
+  private numeric function-result temporaries and numeric elementwise-expression
+  temporaries passed to `CALL` statements. Temporary bounds are evaluated at
+  the original statement, and their storage is reclaimed at statement exit.
   User-declared allocatables and allocatable or pointer function results retain
   their allocation semantics.
 
