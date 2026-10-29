@@ -79,6 +79,7 @@
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_struct_component_args.h>
 #include <libasr/pass/gpu_device_heap.h>
 #include <libasr/pass/gpu_kernel_abi.h>
@@ -173,6 +174,7 @@ namespace LCompilers {
             {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
+            {"gpu_struct_component_copies", &pass_gpu_struct_component_copies},
             {"conditional_expr", &pass_replace_conditional_expr},
             {"array_struct_temporary", &pass_array_struct_temporary},
             {"function_result_scope", &pass_function_result_scope},
@@ -403,6 +405,10 @@ namespace LCompilers {
                 // on the device heap, and every `stop` of device code is
                 // lowered, once nothing else can add one.
                 "gpu_device_heap",
+                // Heap images own their whole-value copies. Locals still
+                // backed by separate component storage copy only values,
+                // never the opaque host descriptors in the struct layout.
+                "gpu_struct_component_copies",
                 // A run-time sized local of a device routine becomes an
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.

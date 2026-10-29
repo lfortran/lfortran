@@ -46,6 +46,10 @@ derived-type dummy argument. `__s_v` is then a run-time sized local like any oth
 gpu_device_workspace gives the callers of the routine, up to the kernel,
 where the host sizes it before the launch.
 
+Whole assignments involving these locals copy component data and inline
+members, not the host descriptor placeholders. A result temporary need not
+have those placeholders initialized; the destination keeps its own.
+
 A component whose shape cannot be told on entry to the routine -- it is
 given several different ones, or one that reads a value the routine
 computes -- keeps no storage, and the loop is reported as one that cannot be
@@ -838,6 +842,7 @@ public:
 class StructStorage {
     Allocator &al;
     ASR::TranslationUnit_t &unit;
+    bool lowering_copies = false;
     struct Summary {
         CallEffect effect = CallEffect::Unknown;
         Shape shape;
@@ -1062,9 +1067,71 @@ public:
             nullptr));
     }
 
-    // A derived-type value assigned to or from `var` as a whole carries its
-    // components with it, which are stored apart from the value: each is
-    // copied after the assignment into the storage the target has.
+    // The device's allocatable members are host descriptor placeholders,
+    // not values. Copy the data through its separate storage, and the
+    // ordinary members individually, leaving the target's descriptors intact.
+    void copy_inline_value(ASR::expr_t *target, ASR::expr_t *value,
+            ASR::Struct_t *st, SymbolTable *scope,
+            Vec<ASR::stmt_t*> &out) {
+        const Location &loc = target->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
+            std::vector<ASR::expr_t*> indices;
+            std::vector<ASR::expr_t*> lower, upper;
+            int rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(target));
+            for (int d = 0; d < rank; d++) {
+                indices.push_back(b.Variable(scope,
+                    scope->get_unique_name(
+                        "__gpu_component_index", false),
+                    b.int_type(4), ASR::intentType::Local));
+                lower.push_back(b.GetLBound(duplicate(al, target), d + 1));
+                upper.push_back(b.GetUBound(duplicate(al, target), d + 1));
+            }
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, st ? st->n_members : 1);
+            copy_inline_value(b.ArrayItem_01(target, indices),
+                b.ArrayItem_01(value, indices), st, scope, body);
+            if (body.empty()) return;
+            for (int d = 0; d < rank; d++) {
+                ASR::stmt_t *loop = b.DoLoop(indices[d], lower[d], upper[d],
+                    std::vector<ASR::stmt_t*>(body.p, body.p + body.n));
+                body.n = 0;
+                body.push_back(al, loop);
+            }
+            out.push_back(al, body[0]);
+            return;
+        }
+        if (st == nullptr) {
+            out.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+                loc, target, value, nullptr, false, false, false, false)));
+            return;
+        }
+        std::vector<ASR::symbol_t*> members;
+        gpu_collect_data_members(st, members);
+        for (ASR::symbol_t *member : members) {
+            if (!member || !ASR::is_a<ASR::Variable_t>(*member) ||
+                    gpu_component_is_opaque(member) ||
+                    gpu_component_is_decomposed(member)) continue;
+            ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(member);
+            ASR::expr_t *to = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc,
+                    duplicate(al, target), member, m->m_type, nullptr));
+            ASR::expr_t *from = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc,
+                    duplicate(al, value), member, m->m_type, nullptr));
+            ASR::Struct_t *nested = struct_of(m);
+            if (!ASRUtils::is_allocatable_or_pointer(m->m_type)) {
+                copy_inline_value(to, from, nested, scope, out);
+            } else {
+                out.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+                    loc, to, from, nullptr, false, false, false, false)));
+            }
+        }
+    }
+
+    // A whole assignment involving a local with separate component storage
+    // must not copy its uninitialized descriptor placeholders.
     void copy_components(ASR::stmt_t **&body, size_t &n_body,
             ASR::Variable_t &var,
             const std::map<std::string, ASR::symbol_t*> &stored,
@@ -1142,6 +1209,12 @@ public:
                                 variable_of(x->m_value) != &var.base)) {
                         break;
                     }
+                    if (lowering_copies) {
+                        out.n--;
+                        copy_inline_value(x->m_target, x->m_value,
+                            struct_of(&var), var.m_parent_symtab, out);
+                        break;
+                    }
                     for (auto &c : stored) {
                         ASR::expr_t *target = component_of(x->m_target, var,
                             c.first, stored);
@@ -1204,6 +1277,25 @@ public:
             if (give(*fn)) changed = true;
         }
         return changed;
+    }
+
+    void lower_copies() {
+        lowering_copies = true;
+        for (ASR::Function_t *fn : device_routines()) {
+            std::map<ASR::symbol_t*, std::map<std::string, ASR::symbol_t*>>
+                locals;
+            for (auto &binding : storage_bindings(*fn)) {
+                locals[binding.first.first][binding.first.second] =
+                    binding.second;
+            }
+            for (auto &local : locals) {
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(local.first);
+                std::set<ASR::symbol_t*> visited;
+                copy_components(fn->m_body, fn->n_body,
+                    *var, local.second, visited);
+            }
+        }
     }
 };
 
@@ -1722,6 +1814,12 @@ bool gpu_give_struct_component_storage(Allocator &al,
         ASR::TranslationUnit_t &unit) {
     StructStorage storage(al, unit);
     return storage.run();
+}
+
+void pass_gpu_struct_component_copies(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
+    StructStorage storage(al, unit);
+    storage.lower_copies();
 }
 
 bool gpu_write_extents_at_entry(Allocator &al, ASR::Function_t &fn,
