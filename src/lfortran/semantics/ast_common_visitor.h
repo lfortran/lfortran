@@ -11669,9 +11669,10 @@ public:
         ASR::symbol_t *previous = parent_scope->get_symbol(sym_name);
         if (!compiler_options.implicit_typing && previous != nullptr) {
             diag.add(diag::Diagnostic(
-                "DerivedType already defined",
+                "derived type '" + sym_name + "' conflicts with an existing declaration",
                 diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
+                    diag::Label("derived type declared here", {x.base.base.loc}),
+                    diag::Label("previous declaration", {previous->base.loc}, false)}));
             throw SemanticAbort();
         }
         current_scope = al.make_new<SymbolTable>(parent_scope);

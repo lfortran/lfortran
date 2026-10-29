@@ -289,11 +289,18 @@ semantic error: `protected` attribute is only allowed in specification part of a
 254 |     integer, parameter, protected :: protected_parameter_var
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Variable `n` cannot appear in the expression as it is not a constant
-   --> tests/errors/continue_compilation_1.f90:259:27
+semantic error: derived type 'matrix' conflicts with an existing declaration
+   --> tests/errors/continue_compilation_1.f90:258:5 - 260:13
     |
-259 |       integer :: elements(n)
-    |                           ^ 
+258 |        type :: matrix
+    |        ^^^^^^^^^^^^^^...
+...
+    |
+260 |        end type
+    | ...^^^^^^^^^^^^^ derived type declared here
+    |
+228 |     integer, dimension(2, 3) :: matrix
+    |                                 ~~~~~~ previous declaration
 
 semantic error: Derived type `bspline_3d` is not defined
    --> tests/errors/continue_compilation_1.f90:261:5
