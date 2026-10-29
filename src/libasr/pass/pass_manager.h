@@ -46,7 +46,6 @@
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
-#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/pass/list_expr.h>
 #include <libasr/pass/create_subroutine_from_function.h>
@@ -133,7 +132,6 @@ namespace LCompilers {
             {"select_case", &pass_replace_select_case},
             {"loop_vectorise", &pass_loop_vectorise},
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
-            {"explicit_shape_extent", &pass_explicit_shape_extent},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
@@ -314,11 +312,10 @@ namespace LCompilers {
                 // initializer here, which the passes below lower like any
                 // other procedure body.
                 "global_init",
-                "function_call_in_declaration",
                 // The bounds and the extent (never negative) of every
                 // explicit-shape array are fixed on entry here, before any
                 // pass below copies its type or sizes a temporary from it.
-                "explicit_shape_extent",
+                "function_call_in_declaration",
                 // Each defined output procedure that a formatted output
                 // statement uses gets a callback with the fixed interface
                 // the runtime formatter calls, lowered by the passes below

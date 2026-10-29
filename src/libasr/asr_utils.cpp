@@ -23,6 +23,151 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+class EntryInitializerReference : public ASR::BaseWalkVisitor<EntryInitializerReference>
+{
+public:
+    SymbolTable* scope;
+    const ASR::Variable_t* undefined = nullptr;
+    std::unordered_set<const ASR::Variable_t*> metadata_seen;
+
+    EntryInitializerReference(SymbolTable* scope_) : scope(scope_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t* sym = symbol_get_past_external(x.m_v);
+        if (undefined != nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
+        const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        // COMMON storage is defined before the procedure is entered.
+        if (v->m_parent_symtab == scope &&
+                v->m_intent == ASR::intentType::Local &&
+                v->m_storage != ASR::storage_typeType::Parameter &&
+                v->m_common_block == nullptr &&
+                !is_entry_initialized_local(*v)) {
+            undefined = v;
+        }
+    }
+
+    // Inquiries need no element values, but a deferred descriptor and the
+    // selectors of a designator must already be established on entry.
+    void visit_metadata(ASR::expr_t* expr) {
+        if (undefined || !expr) return;
+        switch (expr->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
+                const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_parent_symtab != scope ||
+                        v->m_intent != ASR::intentType::Local ||
+                        v->m_storage == ASR::storage_typeType::Parameter ||
+                        v->m_common_block != nullptr ||
+                        !metadata_seen.insert(v).second) return;
+                if (is_pointer(v->m_type) || is_allocatable(v->m_type)) {
+                    if (is_pointer_association_initializer(v->m_symbolic_value)) {
+                        visit_metadata(v->m_symbolic_value);
+                    } else {
+                        undefined = v;
+                    }
+                    return;
+                }
+                ASR::dimension_t* dims;
+                size_t n_dims = extract_dimensions_from_ttype(v->m_type, dims);
+                for (size_t i = 0; i < n_dims; i++) {
+                    if (dims[i].m_start) visit_expr(*dims[i].m_start);
+                    if (dims[i].m_length) visit_expr(*dims[i].m_length);
+                }
+                if (is_character(*type_get_past_array(v->m_type))) {
+                    ASR::String_t* type = get_string_type(v->m_type);
+                    if (type->m_len) visit_expr(*type->m_len);
+                }
+                return;
+            }
+            case ASR::exprType::ArrayPhysicalCast:
+                visit_metadata(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+                return;
+            case ASR::exprType::StringPhysicalCast:
+                visit_metadata(ASR::down_cast<ASR::StringPhysicalCast_t>(expr)->m_arg);
+                return;
+            case ASR::exprType::ArraySection: {
+                const auto& x = *ASR::down_cast<ASR::ArraySection_t>(expr);
+                visit_metadata(x.m_v);
+                for (size_t i = 0; i < x.n_args; i++) visit_array_index(x.m_args[i]);
+                return;
+            }
+            case ASR::exprType::ArrayItem: {
+                const auto& x = *ASR::down_cast<ASR::ArrayItem_t>(expr);
+                visit_metadata(x.m_v);
+                for (size_t i = 0; i < x.n_args; i++) visit_array_index(x.m_args[i]);
+                return;
+            }
+            case ASR::exprType::StringSection: {
+                const auto& x = *ASR::down_cast<ASR::StringSection_t>(expr);
+                visit_metadata(x.m_arg);
+                if (x.m_start) visit_expr(*x.m_start);
+                if (x.m_end) visit_expr(*x.m_end);
+                if (x.m_step) visit_expr(*x.m_step);
+                return;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                const auto& x = *ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                if (is_pointer(x.m_type) || is_allocatable(x.m_type)) {
+                    visit_expr(*x.m_v);
+                } else {
+                    visit_metadata(x.m_v);
+                }
+                return;
+            }
+            default:
+                visit_expr(*expr);
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_metadata(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_metadata(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        } else {
+            visit_metadata(x.m_arg);
+        }
+    }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        if (x.m_arr_intrinsic_id == static_cast<int64_t>(IntrinsicArrayFunctions::Shape)) {
+            if (x.m_value) {
+                visit_expr(*x.m_value);
+            } else {
+                visit_metadata(x.m_args[0]);
+            }
+        } else {
+            ASR::BaseWalkVisitor<EntryInitializerReference>::visit_IntrinsicArrayFunction(x);
+        }
+    }
+
+    void visit_TypeInquiry(const ASR::TypeInquiry_t & /*x*/) {}
+};
+
+const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* scope) {
+    EntryInitializerReference reference(scope);
+    if (expr) reference.visit_expr(*expr);
+    return reference.undefined;
+}
+
 
 /**
  * @param string_expr string to be casted
