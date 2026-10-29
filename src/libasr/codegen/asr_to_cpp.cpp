@@ -134,7 +134,7 @@ public:
         std::string array_data = format_type("*", type_name, "data", false, false, true, "*");
         new_array_type = struct_name + "\n{\n    " + array_data +
                             ";\n    dimension_descriptor dims[" +
-                            std::to_string(n_dims) + "];\n    bool is_allocated;\n\n";
+                            std::to_string(n_dims) + "];\n    bool is_allocated = false;\n\n";
         std::string constructor = "    " + name + "(" + array_data + "_): data{data_} {};\n};\n";
         new_array_type += constructor;
         type_name = name + "*";

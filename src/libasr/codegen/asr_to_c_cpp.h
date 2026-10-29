@@ -3230,7 +3230,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             std::string sym = ASRUtils::symbol_name(tmp_sym);
             if (ASRUtils::is_array(type)) {
                 std::string size_str = "1";
-                out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
+                if (is_c) {
+                    out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
+                }
                 std::string stride = "1";
                 for (int j = (int)x.m_args[i].n_dims - 1; j >= 0; j--) {
                     std::string st, l;
@@ -3255,12 +3257,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     out += stride + ";\n";
                     stride = "(" + stride + " * " + l + ")";
                 }
-                std::string ty = CUtils::get_c_type_from_ttype_t(
-                    ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(type)));
-                size_str += "*sizeof(" + ty + ")";
-                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
-                out += ";\n";
+                if (is_c) {
+                    std::string ty = CUtils::get_c_type_from_ttype_t(
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable(type)));
+                    size_str += "*sizeof(" + ty + ")";
+                    out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ");\n";
+                } else {
+                    out += indent + "Kokkos::resize(*" + sym + "->data, "
+                        + size_str + ");\n";
+                }
                 out += indent + sym + "->is_allocated = true;\n";
             } else if (!is_c && is_scalar_allocatable(
                     ASR::down_cast<ASR::Variable_t>(tmp_sym))) {
@@ -3317,9 +3323,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return std::string(v->m_name);
     }
 
-    // Neither deallocate statement releases anything in this backend yet; both
-    // only name what would be released, so a component is named the same way a
-    // whole variable is rather than being refused.
+    // Names for operands whose deallocation is not implemented.
     std::string deallocate_operand_name(ASR::expr_t* e) {
         if( ASR::is_a<ASR::Var_t>(*e) ) {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -3339,7 +3343,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
     }
 
-    bool deallocate_scalar(ASR::expr_t* e, const std::string &indent,
+    bool deallocate_allocatable(ASR::expr_t* e, const std::string &indent,
             std::string &out) {
         if (!is_c && ASR::is_a<ASR::Var_t>(*e)) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
@@ -3348,6 +3352,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASR::down_cast<ASR::Variable_t>(s))) {
                 out += indent + scalar_allocatable_name(
                     ASR::down_cast<ASR::Variable_t>(s)) + ".reset();\n";
+                return true;
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(e)) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(e))) {
+                self().visit_expr(*e);
+                out += indent + "Kokkos::resize(*" + src + "->data, 0);\n";
+                out += indent + src + "->is_allocated = false;\n";
                 return true;
             }
         }
@@ -3359,7 +3370,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out;
         std::string unfreed;
         for (size_t i=0; i<x.n_vars; i++) {
-            if (!deallocate_scalar(x.m_vars[i], indent, out)) {
+            if (!deallocate_allocatable(x.m_vars[i], indent, out)) {
                 unfreed += deallocate_operand_name(x.m_vars[i]) + ", ";
             }
         }
@@ -3374,7 +3385,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out;
         std::string unfreed;
         for (size_t i=0; i<x.n_vars; i++) {
-            if (!deallocate_scalar(x.m_vars[i], indent, out)) {
+            if (!deallocate_allocatable(x.m_vars[i], indent, out)) {
                 unfreed += deallocate_operand_name(x.m_vars[i]) + ", ";
             }
         }
