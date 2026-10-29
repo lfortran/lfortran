@@ -1008,7 +1008,7 @@ public:
             ASR::expr_t *symbolic_value, ASR::expr_t *value,
             ASR::storage_typeType storage, ASR::ttype_t *type,
             ASR::symbol_t *type_declaration, bool target = false,
-            bool is_volatile = false) {
+            bool is_volatile = false, bool is_asynchronous = false) {
         std::string name = scope->get_unique_name(hint, false);
         SetChar deps;
         deps.reserve(al, 1);
@@ -1019,7 +1019,7 @@ public:
                 deps.p, deps.size(), intent, symbolic_value, value, storage,
                 type, type_declaration, ASR::abiType::Source,
                 ASR::accessType::Public, ASR::presenceType::Required, false,
-                target, false, nullptr, is_volatile));
+                target, false, nullptr, is_volatile, is_asynchronous));
         scope->add_symbol(name, sym);
         return ASR::down_cast<ASR::Variable_t>(sym);
     }
@@ -1187,17 +1187,18 @@ public:
             ASR::down_cast<ASR::Array_t>(type)->m_physical_type =
                 ASR::array_physical_typeType::UnboundedPointerArray;
         }
-        bool target = false, is_volatile = false;
+        bool target = false, is_volatile = false, is_asynchronous = false;
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
             target = v->m_target_attr;
             is_volatile = v->m_is_volatile;
+            is_asynchronous = v->m_is_asynchronous;
         }
         return (ASR::symbol_t*) add_variable(child.proc->m_symtab,
             ASRUtils::symbol_name(sym), loc, ASR::intentType::Local,
             member_designator(loc, frame, child.frame, member), nullptr,
             ASR::storage_typeType::HostAssociated, type,
-            member->m_type_declaration, target, is_volatile);
+            member->m_type_declaration, target, is_volatile, is_asynchronous);
     }
 
     // A copy in `child` of the named constant `v` of the host
