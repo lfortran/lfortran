@@ -661,9 +661,19 @@ def test_interrupt_prompt(exe, cwd):
                     check(match is not None, repl.text())
                     connection = Path(match.group(1))
                 client = connect(connection)
+                rendered_prompt = 0
+
+                def rendered(screen):
+                    nonlocal rendered_prompt
+                    if screen.lines[screen.row].startswith(">>> ") and screen.col == 4:
+                        rendered_prompt = repl.prompts
+
+                repl.screen.on_render = rendered
+
                 def ready():
                     return (repl.screen.lines[repl.screen.row].startswith(">>> ")
                         and repl.screen.col == 4
+                        and repl.screen.cursor_visible
                         and not repl.termios.tcgetattr(repl.fd)[3] & repl.termios.ICANON)
 
                 def submit(code):
@@ -673,7 +683,8 @@ def test_interrupt_prompt(exe, cwd):
                     return queries
 
                 def finished(queries):
-                    check(repl.wait(lambda: repl.prompts > queries and ready(),
+                    # A DSR query starts a prompt; it is not a completed redraw.
+                    check(repl.wait(lambda: rendered_prompt > queries and ready(),
                         "prompt after cell"), repl.text())
 
                 finished(submit("integer :: kept_interrupt = 41"))
@@ -692,29 +703,29 @@ def test_interrupt_prompt(exe, cwd):
                     else:
                         check(repl.wait(lambda: repl.termios.tcgetattr(repl.fd)[3]
                             & repl.termios.ICANON, "silent cell in line mode"), repl.text())
-                        deadline = time.monotonic() + 6
-                        while time.monotonic() < deadline:
-                            try:
-                                message = client.get_iopub_msg(timeout=0.1)
-                            except queue.Empty:
-                                continue
-                            if (message["msg_type"] == "execute_input"
-                                    and message["content"]["code"].strip() == code):
-                                break
-                        else:
-                            raise AssertionError("silent loop did not start:\n" + repl.text())
+                        def executing():
+                            while client.iopub_channel.msg_ready():
+                                message = client.get_iopub_msg(timeout=0)
+                                if (message["msg_type"] == "execute_input"
+                                        and message["content"]["code"].strip() == code):
+                                    return True
+                            return False
+                        # Keep behaving as a terminal while observing the
+                        # independent subscriber, including cursor queries.
+                        check(repl.wait(executing, "cell execute_input"), repl.text())
                     children = []
                     if "sleep 4" in code:
-                        time.sleep(1)
                         # The observed execution belongs to this connection;
                         # capture only its kernel's own direct command children.
                         kernel_pids = [pid for pid, command in children_of(repl.pid)
                             if "kernel" in command]
                         if not owned:
                             kernel_pids = [process.pid]
-                        for pid in kernel_pids:
-                            children.extend(child for child, _ in children_of(pid))
-                        check(children, "running command has no owned child")
+                        def command_started():
+                            children[:] = [child for pid in kernel_pids
+                                for child, _ in children_of(pid)]
+                            return bool(children)
+                        check(repl.wait(command_started, "owned command child"), repl.text())
                     interrupted = time.monotonic()
                     if external:
                         request = client.session.msg("interrupt_request")

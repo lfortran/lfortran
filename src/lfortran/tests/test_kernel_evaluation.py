@@ -230,7 +230,8 @@ def interrupt_cell(client, code, *, silent=False, reading=False, started_text=No
             if msg["parent_header"].get("msg_id") != msg_id:
                 continue
             preceding.append(msg)
-            if msg["msg_type"] == "stream" and started_text in msg["content"]["text"]:
+            if (msg["msg_type"] == "stream"
+                    and started_text in msg["content"]["text"].replace("\r\n", "\n")):
                 break
         else:
             raise AssertionError("cell did not stream before interruption")
@@ -306,7 +307,8 @@ def check_command_interruption(client, directory):
         "from pathlib import Path\n"
         "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
         "Path(sys.argv[1]).write_text(json.dumps([os.getpid(), child.pid]))\n"
-        "print('owned-command-started', flush=True)\n"
+        "sys.stdout.buffer.write(b'owned-command-started\\r\\n')\n"
+        "sys.stdout.buffer.flush()\n"
         "child.wait()\n")
     command = waiter_command(helper, pids).replace("'", "''")
     owned = []
