@@ -6002,6 +6002,12 @@ RUN(NAME array_section_assign_05 FILE array_section_assign_04 LABELS llvm
 RUN(NAME array_section_assign_06 LABELS gfortran llvm)
 RUN(NAME array_section_assign_07 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 RUN(NAME array_section_assign_08 LABELS gfortran llvm)
+RUN(NAME array_section_assign_09 LABELS gfortran llvm)
+RUN(NAME array_section_assign_10 LABELS gfortran llvm)
+RUN(NAME array_section_assign_11 LABELS gfortran llvm)
+RUN(NAME array_section_assign_12 LABELS gfortran llvm)
+RUN(NAME array_section_assign_13 LABELS gfortran llvm)
+RUN(NAME array_section_assign_14 LABELS llvm)
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_item_in_bounds_02 LABELS gfortran)
 

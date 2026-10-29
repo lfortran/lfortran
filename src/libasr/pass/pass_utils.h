@@ -380,7 +380,8 @@ namespace LCompilers {
 
         bool is_nameable_array_constant(ASR::ArrayConstant_t* x);
 
-        bool is_reevaluable_integer_expr(ASR::expr_t* expr);
+        bool is_reevaluable_integer_expr(ASR::expr_t* expr,
+            bool through_components=false);
 
         ASR::expr_t* create_named_array_constant(Allocator& al,
             ASR::ArrayConstant_t* x, SymbolTable* current_scope);

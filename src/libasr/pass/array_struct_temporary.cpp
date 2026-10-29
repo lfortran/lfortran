@@ -2108,18 +2108,24 @@ ASR::symbol_t* get_root_var(ASR::expr_t* e) {
     }
 }
 
+// Whether `var` is an associate name of an ASSOCIATE construct
+bool is_associate_name(const ASR::Variable_t* var) {
+    ASR::asr_t* owner = var->m_parent_symtab->asr_owner;
+    return owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+        ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+}
+
 // The symbol whose storage `sym` names: for an associate name of an
 // ASSOCIATE construct, that of its selector, e.g. `a` for `b` in
 // `associate (b => a(2:6))`, otherwise `sym` itself.
 ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
     while (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
-        ASR::asr_t* owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
-        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
-                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!is_associate_name(variable)) {
             break;
         }
         ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
-            ASR::down_cast<ASR::symbol_t>(owner));
+            ASR::down_cast<ASR::symbol_t>(variable->m_parent_symtab->asr_owner));
         ASR::symbol_t* selector_sym = nullptr;
         for (size_t i = 0; i < block->n_body; i++) {
             if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
@@ -2287,6 +2293,224 @@ class MayReadAssignmentTarget:
     void visit_ttype(const ASR::ttype_t& /*x*/) {}
 };
 
+// The storage that the EQUIVALENCE view `var` is initialized to the
+// address of, if it is one: a pointer, or, in a module, a scalar of
+// non-pointer type
+ASR::expr_t* get_equivalenced_storage(const ASR::Variable_t* var) {
+    ASR::expr_t* init = var->m_symbolic_value;
+    if( init && ASR::is_a<ASR::BitCast_t>(*init) ) {
+        init = ASR::down_cast<ASR::BitCast_t>(init)->m_source;
+    }
+    return init && ASR::is_a<ASR::GetPointer_t>(*init) ?
+        ASR::down_cast<ASR::GetPointer_t>(init)->m_arg : nullptr;
+}
+
+// Whether another variable may share the storage of `var` by storage
+// association: `var` is in a common block, as a member or placed there by
+// EQUIVALENCE (the view of the same block in another scoping unit,
+// accessible by host or use association, is a different variable), it is
+// an EQUIVALENCE view of the storage of another variable (see
+// get_equivalenced_storage), or a variable of its scoping unit is such a
+// view of the storage of `var`. The first two cases are what
+// is_storage_associated checks in the fix of #16215.
+bool may_be_storage_associated(const ASR::Variable_t* var) {
+    if( var->m_common_block != nullptr || get_equivalenced_storage(var) ) {
+        return true;
+    }
+    for( auto& item: var->m_parent_symtab->get_scope() ) {
+        if( !ASR::is_a<ASR::Variable_t>(*item.second) ) {
+            continue;
+        }
+        ASR::expr_t* storage = get_equivalenced_storage(
+            ASR::down_cast<ASR::Variable_t>(item.second));
+        ASR::symbol_t* storage_root = storage ? get_root_var(storage) : nullptr;
+        if( storage_root &&
+            ASRUtils::symbol_get_past_external(storage_root) == &var->base ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The variable whose storage the array assignment target `target` (`v`,
+// `v(...)`, `s%c`, `s%c(...)`, `s%t(k)%c(...)`) is part of, with
+// `component` set to its last component, if any. It is nullptr unless every
+// element of the target is reached only through that variable: the
+// variable is neither a pointer, nor a target, nor an associate name, nor
+// storage associated (see may_be_storage_associated), no component on the
+// way is a pointer, only the last component is an array and every
+// subscript is reevaluable (see PassUtils::is_reevaluable_integer_expr),
+// so there are no vector subscripts. The assignment then defines no
+// variable or component that a subscript references: those are not
+// elements of an array of intrinsic type and are reached through no
+// pointer.
+ASR::symbol_t* get_unaliased_assignment_root(ASR::expr_t* target,
+        ASR::symbol_t*& component) {
+    component = nullptr;
+    auto is_reevaluable = [](ASR::expr_t* subscript) {
+        return subscript == nullptr ||
+            PassUtils::is_reevaluable_integer_expr(subscript, true);
+    };
+    ASR::expr_t* e = ASRUtils::get_past_array_physical_cast(target);
+    if( ASR::is_a<ASR::ArraySection_t>(*e) ) {
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(e);
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            if( !is_reevaluable(section->m_args[i].m_left) ||
+                !is_reevaluable(section->m_args[i].m_right) ||
+                !is_reevaluable(section->m_args[i].m_step) ) {
+                return nullptr;
+            }
+        }
+        e = ASRUtils::get_past_array_physical_cast(section->m_v);
+    } else if( !ASR::is_a<ASR::Var_t>(*e) &&
+               !ASR::is_a<ASR::StructInstanceMember_t>(*e) ) {
+        return nullptr;
+    }
+    while( true ) {
+        switch( e->type ) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                    return nullptr;
+                }
+                ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym);
+                if( variable->m_target_attr ||
+                    ASRUtils::is_pointer(variable->m_type) ||
+                    is_associate_name(variable) ||
+                    may_be_storage_associated(variable) ) {
+                    return nullptr;
+                }
+                return sym;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* member =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(e);
+                ASR::symbol_t* member_sym =
+                    ASRUtils::symbol_get_past_external(member->m_m);
+                if( ASRUtils::is_pointer(ASRUtils::symbol_type(member_sym)) ) {
+                    return nullptr;
+                }
+                if( component == nullptr ) {
+                    component = member_sym;
+                }
+                e = ASRUtils::get_past_array_physical_cast(member->m_v);
+                if( ASRUtils::is_array(ASRUtils::expr_type(e)) ) {
+                    return nullptr;
+                }
+                break;
+            }
+            case ASR::exprType::ArrayItem: {
+                // A scalar element, the base of a component
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(e);
+                if( ASRUtils::is_array(item->m_type) ) {
+                    return nullptr;
+                }
+                for( size_t i = 0; i < item->n_args; i++ ) {
+                    if( item->m_args[i].m_left || item->m_args[i].m_step ||
+                        !item->m_args[i].m_right ||
+                        !is_reevaluable(item->m_args[i].m_right) ) {
+                        return nullptr;
+                    }
+                }
+                e = ASRUtils::get_past_array_physical_cast(item->m_v);
+                break;
+            }
+            default: {
+                return nullptr;
+            }
+        }
+    }
+}
+
+// Whether `x` designates exactly the elements of the assignment target
+// `target`: the same variable or component, or the same section of it with
+// the same subscripts.
+bool is_same_designator_as_target(ASR::expr_t* x, ASR::expr_t* target) {
+    x = ASRUtils::get_past_array_physical_cast(x);
+    target = ASRUtils::get_past_array_physical_cast(target);
+    if( x->type != target->type ) {
+        return false;
+    }
+    if( !ASR::is_a<ASR::ArraySection_t>(*x) ) {
+        return (ASR::is_a<ASR::Var_t>(*x) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*x)) &&
+            PassUtils::same_expression(x, target);
+    }
+    ASR::ArraySection_t* x_section = ASR::down_cast<ASR::ArraySection_t>(x);
+    ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(target);
+    if( x_section->n_args != target_section->n_args ||
+        !PassUtils::same_expression(
+            ASRUtils::get_past_array_physical_cast(x_section->m_v),
+            ASRUtils::get_past_array_physical_cast(target_section->m_v)) ) {
+        return false;
+    }
+    for( size_t i = 0; i < x_section->n_args; i++ ) {
+        ASR::array_index_t& a = x_section->m_args[i];
+        ASR::array_index_t& b = target_section->m_args[i];
+        if( !PassUtils::same_expression(a.m_left, b.m_left) ||
+            !PassUtils::same_expression(a.m_right, b.m_right) ||
+            !PassUtils::same_expression(a.m_step, b.m_step) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Finds a reference that may read the storage of an assignment target
+// whose elements are reached only through `root` (see
+// get_unaliased_assignment_root): `root` itself or an associate name of it,
+// the target component `component` of any variable, or any pointer. Another
+// component of `root` is not part of the target. Function references, which
+// may read anything, are rejected before.
+class TargetStorageReadFinder: public ASR::BaseWalkVisitor<TargetStorageReadFinder> {
+    private:
+
+    ASR::symbol_t* root;
+    ASR::symbol_t* component;
+
+    bool is_pointer_variable(ASR::symbol_t* sym) {
+        return ASR::is_a<ASR::Variable_t>(*sym) &&
+            ASRUtils::is_pointer(ASRUtils::symbol_type(sym));
+    }
+
+    public:
+
+    bool found = false;
+
+    TargetStorageReadFinder(ASR::symbol_t* root_, ASR::symbol_t* component_):
+        root(root_), component(component_) {
+        visit_compile_time_value = false;
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if( sym == root || get_associated_symbol(sym) == root ||
+            is_pointer_variable(sym) ) {
+            found = true;
+        }
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(x.m_m);
+        if( member == component || is_pointer_variable(member) ) {
+            found = true;
+            return;
+        }
+        ASR::expr_t* base = ASRUtils::get_past_array_physical_cast(x.m_v);
+        if( ASR::is_a<ASR::Var_t>(*base) ) {
+            if( is_pointer_variable(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(base)->m_v)) ) {
+                found = true;
+            }
+            return;
+        }
+        visit_expr(*x.m_v);
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {}
+};
+
 // In `z = matmul(x, w) + b`, the matmul result has the shape of the value
 // and is read once per element, at the position of that element, so it can be
 // computed into `z` itself (`z = matmul(x, w); z = z + b`) instead of into a
@@ -2390,6 +2614,86 @@ ASR::expr_t* find_matmul_computable_into_target(ASR::expr_t* target,
     return may_read.found ? nullptr : matmul;
 }
 
+bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
+        ASR::symbol_t* component) {
+    TargetStorageReadFinder finder(root, component);
+    finder.visit_expr(*x);
+    return finder.found;
+}
+
+// See reads_target_only_in_place
+bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
+        ASR::expr_t* target, ASR::expr_t* lhs_array_var, ASR::symbol_t* root,
+        ASR::symbol_t* component, std::set<ASR::expr_t*>& operands) {
+    ASR::expr_t* d = ASRUtils::get_past_array_physical_cast(e);
+    // A scalar broadcast to the shape of the target is a scalar operand
+    if( ASR::is_a<ASR::ArrayBroadcast_t>(*d) &&
+        !ASRUtils::is_array(ASRUtils::expr_type(
+            ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array)) ) {
+        d = ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array;
+    }
+    if( !ASRUtils::is_array(ASRUtils::expr_type(d)) ) {
+        // A scalar operand is evaluated for every element, or once before
+        // the assignment, and must not read any element of the target.
+        return !may_read_target_storage(d, root, component);
+    }
+    if( is_same_designator_as_target(d, target) ) {
+        operands.insert(e);
+        operands.insert(d);
+        return true;
+    }
+    // The operands of an intrinsic elementwise operation are read element
+    // by element as well. Any other array operand, e.g. another array, a
+    // section of the target shifted against it, an elemental function
+    // reference or `matmul(m, v)`, must not read the target at all.
+    auto operand = [&](ASR::expr_t* x) {
+        return reads_target_in_place_operands_only(al, x, target,
+            lhs_array_var, root, component, operands);
+    };
+    return ASRUtils::ElementwiseReduction::is_elementwise_operation_of(
+            d, operand, false) ||
+        (!may_read_target_storage(d, root, component) &&
+         !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d));
+}
+
+// Whether every reference to the storage of the array assignment target
+// `target` in its value `value` is to the target itself, through intrinsic
+// elementwise operations only, as in `a(i,1:m) = a(i,1:m) + x(1:m)*2.0` or
+// `a = 2.0*a + 1.0`. Each element of the target is then read only to compute
+// that same element, before it is defined, so the value need not be
+// evaluated into a temporary first. The references to the target are
+// collected into `operands`.
+bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
+        ASR::expr_t* lhs_array_var, ASR::expr_t* value,
+        std::set<ASR::expr_t*>& operands) {
+    ASR::ttype_t* type = ASRUtils::expr_type(target);
+    if( !ASRUtils::is_array(type) || ASRUtils::is_simd_array(target) ||
+        ASRUtils::is_simd_array(value) || ASRUtils::is_assumed_rank_array(type) ) {
+        return false;
+    }
+    if( !ASRUtils::ElementwiseReduction::has_elementwise_element_type(target) ) {
+        return false;
+    }
+    ASR::symbol_t* component = nullptr;
+    ASR::symbol_t* root = get_unaliased_assignment_root(target, component);
+    if( root == nullptr || contains_function_reference(value) ) {
+        return false;
+    }
+    ASR::expr_t* v = ASRUtils::get_past_array_physical_cast(value);
+    if( !ASRUtils::is_array(ASRUtils::expr_type(v)) ||
+        is_same_designator_as_target(v, target) ||
+        ASR::is_a<ASR::ArrayBroadcast_t>(*v) ) {
+        return false;
+    }
+    std::set<ASR::expr_t*> found_operands;
+    if( !reads_target_in_place_operands_only(al, value, target, lhs_array_var,
+            root, component, found_operands) || found_operands.empty() ) {
+        return false;
+    }
+    operands.insert(found_operands.begin(), found_operands.end());
+    return true;
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -2420,8 +2724,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     bool matmul_target_realloc_lhs;
     std::vector<ASR::expr_t*> matmul_target_shape_check;
     bool bounds_checking;
+    // The references to the target of the current assignment in its value
+    // that read it in place (see reads_target_only_in_place)
+    std::set<ASR::expr_t*> target_operands_read_in_place;
 
     public:
+
+    // The assignments whose value reads the target only in place
+    std::set<ASR::stmt_t*> assignments_reading_target_in_place;
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -2454,8 +2764,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             x_m_args_i = expr;
         }
         ASR::expr_t* array_var_temporary = nullptr;
+        bool is_read_in_place = target_operands_read_in_place.count(expr) > 0 ||
+            target_operands_read_in_place.count(x_m_args_i) > 0;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
-                    !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr) &&
+                    (is_read_in_place ||
+                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr)) &&
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
@@ -2896,6 +3209,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 matmul_into_target = nullptr;
             }
         }
+        target_operands_read_in_place.clear();
+        if( lhs_array_var && !inside_where && x.m_overloaded == nullptr &&
+            !x.m_move_allocation &&
+            reads_target_only_in_place(al, xx.m_target, lhs_array_var,
+                xx.m_value, target_operands_read_in_place) ) {
+            assignments_reading_target_in_place.insert(&xx.base);
+        }
         visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
         // e.g., res%a = reshape([1.0,2.0,3.0,4.0],[2,2]) where res is an array
@@ -3016,6 +3336,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         matmul_into_target = nullptr;
         matmul_target = nullptr;
         matmul_target_operand = nullptr;
+        target_operands_read_in_place.clear();
     }
 
     void visit_Where(const ASR::Where_t &x) {
@@ -4856,6 +5177,10 @@ class ReplaceExprWithTemporaryVisitor:
 
     public:
 
+    // The assignments whose value reads the target only in place, found
+    // by ArgSimplifier before it replaced any part of the value
+    const std::set<ASR::stmt_t*>* assignments_reading_target_in_place = nullptr;
+
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation,
             const std::set<ASR::expr_t*>& sections_read_in_place):
@@ -5231,10 +5556,15 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_directly_addressable_expr(x.m_value);
+        bool reads_target_in_place = assignments_reading_target_in_place &&
+            assignments_reading_target_in_place->count(
+                const_cast<ASR::stmt_t*>(&x.base)) > 0;
         if(  is_assignment_target_array_section_item ||
-            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) &&
+            (!reads_target_in_place &&
+            (ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
-            (lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            (!reads_target_in_place &&
+            lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             !ASRUtils::is_simd_array(x.m_value) &&
             !ASRUtils::is_allocatable(x.m_target) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ||
@@ -5939,6 +6269,7 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place);
+    c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
