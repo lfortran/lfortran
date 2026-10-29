@@ -789,17 +789,27 @@ def test_fragmented_updates(exe, cwd):
             check(repl.wait(lambda: "FRAG_A_B_C" in screen.text()
                 and screen.lines[screen.row].startswith(">>> "), "final fragment"),
                 screen.text())
-            for width in [screen.cols - 1, screen.cols]:
+            for width in [screen.cols - 1, screen.cols, screen.cols + 1, 2 * screen.cols]:
                 prefix = "EDGE_%d_" % width
                 prefix += "x" * (width - len(prefix))
+                expected = "\n".join(prefix[i:i + screen.cols]
+                    for i in range(0, width, screen.cols))
                 publish([("stream", {"name": "stdout", "text": prefix})])
-                check(repl.wait(lambda: prefix in screen.text()
-                    and screen.lines[screen.row].startswith(">>> "),
-                    "a fragment at the right margin"), screen.text())
-                publish([("stream", {"name": "stdout", "text": "B\n"})])
-                expected = prefix + ("\n" if width == screen.cols else "") + "B"
                 check(repl.wait(lambda: expected in screen.text()
                     and screen.lines[screen.row].startswith(">>> "),
+                    "a fragment at the right margin"), screen.text())
+                for fragment in ["\x1b", "[", "0", "m"]:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "split zero-width styling at the margin"), screen.text())
+                publish([("stream", {"name": "stdout", "text": "B\n"})])
+                expected = "\n".join((prefix + "B")[i:i + screen.cols]
+                    for i in range(0, width + 1, screen.cols))
+                check(repl.wait(lambda: expected in screen.text()
+                    and screen.lines[screen.row].startswith(">>> ")
+                    and screen.lines[screen.row - 1].rstrip() == expected.split("\n")[-1],
                     "a fragment continuing at the right margin"), screen.text())
             prefix = "LF_EDGE_" + "x" * (screen.cols - len("LF_EDGE_"))
             publish([("stream", {"name": "stdout", "text": prefix})])
@@ -813,6 +823,35 @@ def test_fragmented_updates(exe, cwd):
                 "a separate newline fragment"), screen.text())
             check(screen.lines[screen.row - 1] == prefix,
                 "a newline after a full-width fragment added a blank line")
+            original = "OLD_" + "x" * (screen.cols - 5) + "Z"
+            replacement = "NEW_" + "y" * (screen.cols - 5)
+            for fragments in [[replacement], [replacement[:-1], replacement[-1]],
+                    ["\x1b", "[", "0", "m", replacement[:-1], replacement[-1]]]:
+                publish([("stream", {"name": "stdout", "text": original + "\r"})])
+                check(repl.wait(lambda: screen.lines[screen.row - 1] == original
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "an occupied final column before CR replacement"), screen.text())
+                for fragment in fragments:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "a separately rendered replacement fragment"), screen.text())
+                check(repl.wait(lambda:
+                    screen.lines[screen.row - 1] == replacement + "Z"
+                    and screen.lines[screen.row].startswith(">>> ")
+                    and screen.col == 4, "the untouched final column"),
+                    "CR replacement erased transcript data:\n" + screen.text())
+                publish([("stream", {"name": "stdout", "text": "Q"})])
+                check(repl.wait(lambda: screen.lines[screen.row - 1] == replacement + "Q"
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "replacement of the final column"), screen.text())
+                reports = repl.prompts
+                publish([("stream", {"name": "stdout", "text": "\n"})])
+                check(repl.wait(lambda: repl.prompts > reports
+                    and screen.lines[screen.row - 1] == replacement + "Q"
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "newline immediately after the final column"), screen.text())
             for separate in [False, True]:
                 marker = "CR_SGR_%s_111" % ("SEPARATE" if separate else "COMBINED")
                 publish([("stream", {"name": "stdout",

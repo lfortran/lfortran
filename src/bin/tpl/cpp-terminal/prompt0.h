@@ -91,14 +91,16 @@ struct PromptDisconnected {};
 using PromptOutput = std::function<void(const std::string &, bool /* stderr */)>;
 using PromptEvents = std::function<PromptEvent(const PromptOutput &)>;
 
-size_t skip_sgr(const std::string &text, size_t i) {
-    while (i + 2 < text.size() && text[i] == '\x1b' && text[i+1] == '[') {
-        size_t end = i + 2;
+size_t skip_sgr(const std::string &text, size_t i, bool &incomplete) {
+    if (text[i] != '\x1b') return i;
+    size_t end = i + 1;
+    if (end < text.size() && text[end] == '[') {
+        end++;
         while (end < text.size() && ((text[end] >= '0' && text[end] <= '9')
                 || text[end] == ';' || text[end] == ':')) end++;
-        if (end == text.size() || text[end] != 'm') break;
-        i = end + 1;
+        if (end < text.size() && text[end] == 'm') return end + 1;
     }
+    incomplete = end == text.size();
     return i;
 }
 
@@ -142,6 +144,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     bool output_line_open = false;
     bool wrap_pending = false;
     int output_row = row, output_col = 1;
+    int next_output_col = 1;
+    std::string pending_output;
     auto redraw = [&]() {
         const int scroll = row + static_cast<int>(scr.get_h()) - 1 - rows;
         if (scroll > 0) {
@@ -157,6 +161,10 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             bool visible = false;
             const PromptOutput display = [&](const std::string &text, bool error) {
                 if (text.empty()) return;
+                if (!term_attached) {
+                    (error ? std::cerr : std::cout) << text << std::flush;
+                    return;
+                }
                 if (!visible && term_attached) {
                     std::cout << cursor_off();
                     for (int j = row; j < row + static_cast<int>(scr.get_h()); j++) {
@@ -166,51 +174,68 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                         partial_output ? output_col : 1) << std::flush;
                 }
                 visible = true;
-                if (wrap_pending) {
-                    const size_t first = skip_sgr(text, 0);
-                    if (first < text.size()) {
-                        // Redrawing cancels the terminal's pending wrap.
-                        // Reapply it only for a printable character: LF, CR
-                        // and backspace must still act on the preceding row.
-                        if (static_cast<unsigned char>(text[first]) >= 32) {
-                            std::cout << "\r\n";
-                        }
-                        wrap_pending = false;
+                const std::string fragment = pending_output + text;
+                pending_output.clear();
+                std::string rendered;
+                size_t i = 0;
+                while (i < fragment.size()) {
+                    bool incomplete = false;
+                    const size_t end = skip_sgr(fragment, i, incomplete);
+                    if (incomplete) break;
+                    if (end != i) {
+                        rendered.append(fragment, i, end - i);
+                        i = end;
+                        continue;
                     }
-                }
-                // CR moves the cursor without emptying the transcript row.
-                // SGR must preserve that occupancy, even in a later batch.
-                for (size_t i = 0; i < text.size(); i++) {
-                    i = skip_sgr(text, i);
-                    if (i == text.size()) break;
-                    if (text[i] == '\n') {
+                    uint32_t codepoint = 0;
+                    uint8_t state = UTF8_ACCEPT;
+                    size_t next = i;
+                    do {
+                        state = Term::utf8_decode_step(state, fragment[next++], &codepoint);
+                    } while (state != UTF8_ACCEPT && state != UTF8_REJECT
+                        && next < fragment.size());
+                    if (state != UTF8_ACCEPT && state != UTF8_REJECT) break;
+                    if (codepoint == '\n') {
                         output_line_open = false;
-                    } else if (static_cast<unsigned char>(text[i]) >= 32) {
+                        next_output_col = 1;
+                        wrap_pending = false;
+                    } else if (codepoint == '\r') {
+                        next_output_col = 1;
+                        wrap_pending = false;
+                    } else if (codepoint == '\b') {
+                        next_output_col = std::max(1, next_output_col - 1);
+                        wrap_pending = false;
+                    } else if (codepoint == '\t') {
+                        next_output_col = std::min(cols,
+                            ((next_output_col - 1) / 8 + 1) * 8 + 1);
+                        wrap_pending = false;
+                    } else if (codepoint >= 32 && codepoint != 127) {
+                        // Cursor addressing for the editor cancels delayed
+                        // wrap. Track that state without probing (and thereby
+                        // overwriting) an occupied final transcript cell.
+                        if (wrap_pending) {
+                            rendered += "\r\n";
+                            next_output_col = 1;
+                        }
+                        wrap_pending = next_output_col == cols;
+                        if (!wrap_pending) next_output_col++;
                         output_line_open = true;
                     }
+                    rendered.append(fragment, i, next - i);
+                    i = next;
                 }
-                (error ? std::cerr : std::cout) << text << std::flush;
+                // Never let an editor cursor command split an SGR or UTF-8
+                // unit. Only the unfinished suffix survives between callbacks.
+                pending_output = fragment.substr(i);
+                if (pending_output.size() > 65536) {
+                    throw std::runtime_error("terminal output sequence is too long");
+                }
+                (error ? std::cerr : std::cout) << rendered << std::flush;
             };
             const PromptEvent event = events(display);
             if (visible && term_attached) {
                 term.get_cursor_position(output_row, output_col);
-                if (output_col == cols && !wrap_pending) {
-                    // DSR cannot distinguish "at the last column" from
-                    // "last column filled, wrap pending". A removable space
-                    // resolves it; keep the logical end on the preceding row
-                    // so a later LF does not accidentally insert a blank line.
-                    std::cout << ' ' << std::flush;
-                    int probe_row, probe_col;
-                    term.get_cursor_position(probe_row, probe_col);
-                    if (probe_col == 2) {
-                        wrap_pending = true;
-                        output_row = probe_row - 1;
-                        std::cout << move_cursor(probe_row, 1) << "\x1b[K";
-                    } else {
-                        std::cout << move_cursor(output_row, output_col) << "\x1b[K";
-                    }
-                    std::cout << move_cursor(output_row, output_col);
-                }
+                next_output_col = output_col;
                 partial_output = output_col != 1 || output_line_open;
                 row = output_row;
                 if (partial_output) {
@@ -261,6 +286,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     partial_output = false;
                     output_line_open = false;
                     wrap_pending = false;
+                    next_output_col = 1;
+                    pending_output.clear();
                     break;
                 case CTRL_KEY('u'):
                     m.lines[m.cursor_row-1] = 

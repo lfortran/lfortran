@@ -161,6 +161,8 @@ subscribe to every cell's output, as in Jupyter: at a terminal, the prompt shows
 another client's cell, marked `[other client]`, and its published output even
 while idle or editing, preserving the current input and cursor. Redirected
 input retains blocking reads; it does not refresh while waiting for input.
+Output fragments share a transcript line until a newline; a carriage return
+moves within that line without erasing its untouched suffix.
 A cell's output is shown when the cell finishes or reads input. A cell that fails
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
