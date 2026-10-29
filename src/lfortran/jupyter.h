@@ -2,6 +2,7 @@
 #define LFORTRAN_JUPYTER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -45,6 +46,9 @@ class Client {
     // Shows what the kernel published before it closed its connections.
     void show_last(const std::string &request_id);
 public:
+    using DisplaySink = std::function<void(const std::string &, bool /* stderr */)>;
+    using InputSource = std::function<int()>;
+    enum class PollResult { none, updates, disconnected };
     // Connects to the kernel of a connection file.
     explicit Client(const std::string &connection_file);
     ~Client();
@@ -60,9 +64,13 @@ public:
 
     // Runs a cell; `verbose` also shows its AST, ASR and LLVM IR. Returns
     // false if the kernel has gone.
-    bool execute(const std::string &code, bool verbose = false);
-    // Prints what the other clients ran since the last call.
-    void show_others();
+    // `input`, when supplied, also consumes keys saved by a terminal's cursor
+    // query before reading stdin. An absent source uses getchar as usual.
+    bool execute(const std::string &code, bool verbose = false,
+        const InputSource &input = {});
+    // Services a bounded batch without waiting. Visible other-client messages
+    // go to `sink`, so an editor can render them without disturbing its input.
+    PollResult poll_others(const DisplaySink &sink);
     // Waits at most `timeout` ms for the kernel that start() started to
     // exit; returns its exit status, or -1 if it has not exited, did not end
     // normally or was not started by this client.

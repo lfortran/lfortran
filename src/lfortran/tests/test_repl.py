@@ -4,6 +4,7 @@ pipe or a pseudo-terminal, also with Ctrl-C. Also run a compiled program on a
 pseudo-terminal."""
 
 import argparse
+import codecs
 import contextlib
 import os
 import re
@@ -123,19 +124,20 @@ def check_cell_output(lfortran):
 class PtyRepl:
     """The prompt on a pseudo-terminal, typed at as by a user."""
 
-    def __init__(self, pty, termios, lfortran, cwd, timeout):
+    def __init__(self, pty, termios, lfortran, cwd, timeout, args=(), screen=None):
         self.termios = termios
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
             try:
                 os.chdir(cwd)
-                os.execv(lfortran, [lfortran, "--no-color"])
+                os.execv(lfortran, [lfortran, "--no-color", *args])
             finally:
                 os._exit(127)
         self.deadline = time.monotonic() + timeout
         self.out = b""
         self.prompts = 0
         self.cells = 0
+        self.screen = screen
 
     def text(self):
         return re.sub(rb"\x1b\[[0-9;?]*[A-Za-z]", b"", self.out).decode(
@@ -159,9 +161,16 @@ class PtyRepl:
             if not data:
                 return False
             self.out += data
-            while self.prompts < self.out.count(b"\x1b[6n"):
-                os.write(self.fd, b"\x1b[1;1R")
-                self.prompts += 1
+            if len(self.out) > 8 << 20:
+                raise AssertionError("the prompt exceeded the PTY output cap")
+            if self.screen is not None:
+                for response in self.screen.feed(data):
+                    os.write(self.fd, response)
+                    self.prompts += 1
+            else:
+                while self.prompts < self.out.count(b"\x1b[6n"):
+                    os.write(self.fd, b"\x1b[1;1R")
+                    self.prompts += 1
         return True
 
     def cell(self, text, keys=None):
@@ -184,6 +193,83 @@ class PtyRepl:
             self.wait(lambda: False, "the prompt to exit")
         _, status = os.waitpid(self.pid, 0)
         return os.waitstatus_to_exitcode(status)
+
+
+class Screen:
+    """The small VT subset used by the editor; unlike stripping ANSI codes,
+    this detects overwritten output, scrolling and misplaced logical cursors."""
+
+    def __init__(self, rows=12, cols=80):
+        self.rows, self.cols = rows, cols
+        self.row = self.col = 0
+        self.lines = [" " * cols for _ in range(rows)]
+        self.scrolled = []
+        self.pending = ""
+        self.decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        # A test may type just before a cursor reply to exercise interleaving.
+        self.before_report = b""
+        self.on_render = None
+
+    def newline(self):
+        self.row += 1
+        if self.row == self.rows:
+            self.scrolled.append(self.lines.pop(0))
+            self.lines.append(" " * self.cols)
+            self.row -= 1
+
+    def feed(self, data):
+        text = self.pending + self.decoder.decode(data)
+        self.pending = ""
+        replies = []
+        i = 0
+        while i < len(text):
+            c = text[i]
+            if c == "\x1b":
+                match = re.match(r"\x1b\[([0-9;?]*)([A-Za-z])", text[i:])
+                if match is None:
+                    self.pending = text[i:]
+                    break
+                arg, command = match.groups()
+                nums = [int(n) if n else 1 for n in arg.split(";")
+                        if not arg.startswith("?")]
+                if command == "H":
+                    self.row = min(self.rows, nums[0]) - 1
+                    self.col = min(self.cols, nums[1] if len(nums) > 1 else 1) - 1
+                elif command == "K":
+                    if arg == "2":
+                        self.lines[self.row] = " " * self.cols
+                    else:
+                        self.lines[self.row] = self.lines[self.row][:self.col] \
+                            + " " * (self.cols - self.col)
+                elif command == "J" and arg == "2":
+                    self.lines = [" " * self.cols for _ in range(self.rows)]
+                elif command == "n" and arg == "6":
+                    replies.append(self.before_report
+                        + ("\x1b[%d;%dR" % (self.row + 1,
+                            min(self.col + 1, self.cols))).encode())
+                    self.before_report = b""
+                elif command == "h" and arg == "?25" and self.on_render:
+                    self.on_render(self)
+                elif command not in ("m", "h", "l"):
+                    raise AssertionError("unsupported screen command: " + match[0])
+                i += len(match[0])
+                continue
+            if c == "\r":
+                self.col = 0
+            elif c == "\n":
+                self.newline()
+            elif c >= " ":
+                if self.col == self.cols:
+                    self.col = 0
+                    self.newline()
+                line = self.lines[self.row]
+                self.lines[self.row] = line[:self.col] + c + line[self.col + 1:]
+                self.col += 1
+            i += 1
+        return replies
+
+    def text(self):
+        return "\n".join(line.rstrip() for line in self.scrolled + self.lines)
 
 
 def check_read_from_terminal(lfortran):

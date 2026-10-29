@@ -86,9 +86,25 @@ void render(Term::Window &scr, const Model &m, size_t cols) {
     scr.set_cursor_pos(m.prompt_string.size() + m.cursor_col, m.cursor_row);
 }
 
+enum class PromptEvent { none, updates, disconnected };
+struct PromptDisconnected {};
+using PromptOutput = std::function<void(const std::string &, bool /* stderr */)>;
+using PromptEvents = std::function<PromptEvent(const PromptOutput &)>;
+
+size_t skip_sgr(const std::string &text, size_t i) {
+    while (i + 2 < text.size() && text[i] == '\x1b' && text[i+1] == '[') {
+        size_t end = i + 2;
+        while (end < text.size() && ((text[end] >= '0' && text[end] <= '9')
+                || text[end] == ';' || text[end] == ':')) end++;
+        if (end == text.size() || text[end] != 'm') break;
+        i = end + 1;
+    }
+    return i;
+}
+
 std::string prompt0(const Terminal &term, const std::string &prompt_string,
         std::vector<std::string> &history, std::function<bool(std::string)>
-        &iscomplete) {
+        &iscomplete, const PromptEvents &events = {}) {
     int row, col;
     bool term_attached = term.is_stdin_a_tty();
     if (term_attached) {
@@ -119,9 +135,100 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     int key;
     render(scr, m, cols);
     std::cout << scr.render(1, row, term_attached) << std::flush;
+    // A non-newline-terminated stream ends above the prompt. The newline
+    // separating it from the editor is temporary: the next fragment resumes
+    // at this position, not at a newly committed transcript line.
+    bool partial_output = false;
+    bool wrap_pending = false;
+    int output_row = row, output_col = 1;
+    auto redraw = [&]() {
+        const int scroll = row + static_cast<int>(scr.get_h()) - 1 - rows;
+        if (scroll > 0) {
+            std::cout << move_cursor(rows, 1) << std::string(scroll, '\n');
+            row -= scroll;
+            output_row -= scroll;
+        }
+        std::cout << scr.render(1, row, term_attached) << std::flush;
+    };
     bool not_complete = true;
     while (not_complete) {
-        key = term.read_key();
+        if (events) {
+            bool visible = false;
+            bool line_return = false;
+            const PromptOutput display = [&](const std::string &text, bool error) {
+                if (text.empty()) return;
+                if (!visible && term_attached) {
+                    std::cout << cursor_off();
+                    for (int j = row; j < row + static_cast<int>(scr.get_h()); j++) {
+                        std::cout << move_cursor(j, 1) << "\x1b[2K";
+                    }
+                    std::cout << move_cursor(partial_output ? output_row : row,
+                        partial_output ? output_col : 1) << std::flush;
+                }
+                visible = true;
+                if (wrap_pending) {
+                    const size_t first = skip_sgr(text, 0);
+                    if (first < text.size()) {
+                        // Redrawing cancels the terminal's pending wrap.
+                        // Reapply it only for a printable character: LF, CR
+                        // and backspace must still act on the preceding row.
+                        if (static_cast<unsigned char>(text[first]) >= 32) {
+                            std::cout << "\r\n";
+                        }
+                        wrap_pending = false;
+                    }
+                }
+                line_return = text.back() == '\r';
+                (error ? std::cerr : std::cout) << text << std::flush;
+            };
+            const PromptEvent event = events(display);
+            if (visible && term_attached) {
+                term.get_cursor_position(output_row, output_col);
+                if (output_col == cols && !wrap_pending) {
+                    // DSR cannot distinguish "at the last column" from
+                    // "last column filled, wrap pending". A removable space
+                    // resolves it; keep the logical end on the preceding row
+                    // so a later LF does not accidentally insert a blank line.
+                    std::cout << ' ' << std::flush;
+                    int probe_row, probe_col;
+                    term.get_cursor_position(probe_row, probe_col);
+                    if (probe_col == 2) {
+                        wrap_pending = true;
+                        output_row = probe_row - 1;
+                        std::cout << move_cursor(probe_row, 1) << "\x1b[K";
+                    } else {
+                        std::cout << move_cursor(output_row, output_col) << "\x1b[K";
+                    }
+                    std::cout << move_cursor(output_row, output_col);
+                }
+                partial_output = output_col != 1 || line_return;
+                row = output_row;
+                if (partial_output) {
+                    std::cout << "\r\n";
+                    if (row == rows) {
+                        output_row--;
+                    } else {
+                        row++;
+                    }
+                }
+                redraw();
+            }
+            if (event == PromptEvent::disconnected) {
+                std::cout << "\n" << std::flush;
+                throw PromptDisconnected{};
+            }
+        }
+        // read_key0 is nonblocking only on a terminal. Redirected input keeps
+        // the existing blocking/EOF behavior, including the cell's READs.
+        if (term_attached && events) {
+            key = term.read_key0();
+            if (key == 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+        } else {
+            key = term.read_key();
+        }
         if  (key >= 32 && key <= 126) {
             std::string before = m.lines[m.cursor_row-1].substr(0,
                     m.cursor_col-1);
@@ -141,6 +248,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                 case CTRL_KEY('l'):
                     std::cout<< "\x1b[2J" << move_cursor(1,1) << std::flush;
                     row = 1;
+                    partial_output = false;
+                    wrap_pending = false;
                     break;
                 case CTRL_KEY('u'):
                     m.lines[m.cursor_row-1] = 
@@ -262,10 +371,10 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             }
         }
         render(scr, m, cols);
-        std::cout << scr.render(1, row, term_attached) << std::flush;
-        if (row+(int)scr.get_h()-1 > rows) {
-            row = rows - ((int)scr.get_h()-1);
-            std::cout << scr.render(1, row, term_attached) << std::flush;
+        if (term_attached) {
+            redraw();
+        } else {
+            std::cout << scr.render(1, row, false) << std::flush;
         }
     }
     // REPL currently supports pressing enter at any cursor position, so

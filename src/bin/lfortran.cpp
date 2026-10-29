@@ -461,15 +461,37 @@ int prompt(bool verbose, const std::string &connect,
         << "`" << std::endl;
 
     std::vector<std::string> history;
+    std::deque<char> pending_input;
+    const LCompilers::LFortran::jupyter::Client::InputSource read_character = [&]() {
+        if (pending_input.empty()) return getchar();
+        const int c = static_cast<unsigned char>(pending_input.front());
+        pending_input.pop_front();
+        return c;
+    };
     std::function<bool(std::string)> iscomplete = determine_completeness;
+    const PromptEvents events = [&](const PromptOutput &display) {
+        using Result = LCompilers::LFortran::jupyter::Client::PollResult;
+        switch (kernel->poll_others(display)) {
+            case Result::none: return PromptEvent::none;
+            case Result::updates: return PromptEvent::updates;
+            case Result::disconnected: return PromptEvent::disconnected;
+        }
+        return PromptEvent::disconnected;
+    };
     while (true) {
-        kernel->show_others();
         std::string input;
-        {
+        try {
             // The terminal is in raw mode only while a line is edited, so
             // that the cell can read the terminal as usual (#15284).
-            Terminal term(true, false);
-            input = prompt0(term, ">>> ", history, iscomplete);
+            Terminal term(true, false, &pending_input);
+            input = prompt0(term, ">>> ", history, iscomplete, events);
+        } catch (const PromptDisconnected &) {
+            std::cerr << "error: the kernel has stopped" << std::endl;
+            const int status = kernel->kernel_status(5000);
+            return status >= 0 ? status : 1;
+        } catch (const std::runtime_error &error) {
+            std::cerr << "error: " << error.what() << std::endl;
+            return 1;
         }
         // A READ ended by Ctrl-D in an earlier cell must not end later READs
         clearerr(stdin);
@@ -484,7 +506,7 @@ int prompt(bool verbose, const std::string &connect,
             std::cout << input << std::endl;
         }
 
-        if (!kernel->execute(input, verbose)) {
+        if (!kernel->execute(input, verbose, read_character)) {
             // A cell that ends the kernel, with STOP or ERROR STOP, ends the
             // prompt that started it with the kernel's exit status, as when
             // the prompt ran its cells itself.

@@ -357,6 +357,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --case xeus_connection_files --case implicit_typing
                     --case prompt_departure --case prompt_killed_in_cell
                     --case kernel_parent --case stop_ends_session --case verbose
+                    --case test_idle_updates --case test_edited_updates
+                    --case test_fragmented_updates --case test_idle_disconnect
             )
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)
