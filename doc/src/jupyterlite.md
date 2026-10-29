@@ -389,6 +389,11 @@ Points to get right:
 * Keep the cell split of the original notebook. Merging cells that the notebook
   kept separate (or splitting a cell the notebook kept together) can make the
   bug disappear — that split *is* the reproducer.
+* Preserve evaluator lifetimes too. To test independent sessions reusing a
+  symbol name, construct multiple `FortranEvaluator` objects in one `TEST_CASE`,
+  including overlapping and destroyed sessions. WASM side modules share a
+  process-wide dynamic-linker namespace: each executor qualifies its definitions
+  and subsequent imports of them, but leaves runtime imports unchanged.
 * Check the value, not only `r.ok`. `EvalResult::type` is one of
   `integer4/integer8/real4/real8/complex4/complex8/boolean/statement/none`; a
   bare expression cell returns the typed value, a statement cell returns
