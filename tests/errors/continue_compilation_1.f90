@@ -4033,3 +4033,15 @@ contains
         end block
     end subroutine
 end module
+
+module cc1_ibset_pos
+    integer(1), parameter :: lower_ok = ibset(0_1, 0), upper_ok = ibset(0_1, 7)
+    integer(8), parameter :: widest_ok = ibset(0_8, 63_8)
+    integer(1), parameter :: above8 = ibset(0_1, 8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(2), parameter :: above16 = ibset(0_2, 16)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(4), parameter :: above32 = ibset(0_4, 32)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: above64 = ibset(0_8, 64_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: large_pos = ibset(0_8, 9223372036854775807_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+    integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+end module
