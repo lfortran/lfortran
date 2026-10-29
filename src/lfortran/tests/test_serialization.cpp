@@ -10099,6 +10099,154 @@ end module
     }
 }
 
+TEST_CASE("Failed nominal declarations discard only their pending bindings") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string prefix = R"(
+module rollback_bindings
+implicit none
+abstract interface
+    subroutine callback_interface()
+    end subroutine
+end interface
+type :: BeforeBinding
+contains
+    procedure, nopass :: before_binding
+    generic :: run_before => before_binding
+    initial :: new_before
+end type
+type :: BeforeBinding
+    integer :: duplicate
+end type
+type, abstract :: FailedBinding
+    type(FailedBinding) :: item
+    procedure(callback_interface), pointer, nopass :: callback => abandoned_target
+contains
+    procedure, nopass :: harmless
+    procedure(abandoned_interface), nopass, deferred :: abandoned_deferred
+    generic :: abandoned_generic => harmless
+    initial :: abandoned_initializer
+end type
+)";
+    const std::string suffix = R"(
+type :: IndependentBinding
+    integer :: value
+    procedure(callback_interface), pointer, nopass :: callback => independent_binding
+contains
+    procedure, nopass :: independent_binding
+    generic :: run => independent_binding
+    initial :: new_independent
+end type
+contains
+subroutine before_binding()
+end subroutine
+subroutine harmless()
+end subroutine
+subroutine independent_binding()
+end subroutine
+function new_before() result(value)
+    type(BeforeBinding) :: value
+end function
+function new_independent() result(value)
+    type(IndependentBinding) :: value
+    value%value = 42
+end function
+end module
+module after_binding
+implicit none
+contains
+subroutine independent()
+    missing_after_binding_failure = 1
+end subroutine
+end module
+)";
+    for (bool redeclare : {false, true}) {
+        std::string replacement = redeclare ? R"(
+type :: FailedBinding
+contains
+    procedure, pass :: abandoned_deferred => harmless
+end type
+)" : "";
+        std::string source = prefix + replacement + suffix;
+        if (redeclare) {
+            std::string procedure = "subroutine harmless()\n";
+            source.replace(source.find(procedure), procedure.size(),
+                "subroutine harmless(self)\nclass(FailedBinding) :: self\n");
+        }
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        size_t errors = 0;
+        for (const auto &diagnostic : diagnostics.diagnostics) {
+            CHECK(diagnostic.code.find("asr.verify.") != 0);
+            if (diagnostic.level == LCompilers::diag::Level::Error) errors++;
+        }
+        CHECK(errors == 3);
+        auto messages = diagnostics.render2();
+        CHECK(messages.find("conflicts with an existing declaration") != std::string::npos);
+        CHECK(messages.find("recursive type components require pointer or allocatable "
+            "storage") != std::string::npos);
+        CHECK(messages.find("missing_after_binding_failure") != std::string::npos);
+        auto *module_symbol = result.result->m_symtab->get_symbol("rollback_bindings");
+        REQUIRE(module_symbol != nullptr);
+        auto *scope = ASR::down_cast<ASR::Module_t>(module_symbol)->m_symtab;
+        auto *failed = scope->get_symbol("failedbinding");
+        if (redeclare) {
+            REQUIRE(failed != nullptr);
+            auto *type = ASR::down_cast<ASR::Struct_t>(failed);
+            auto *binding = type->m_symtab->get_symbol("abandoned_deferred");
+            REQUIRE(binding != nullptr);
+            auto *method = ASR::down_cast<ASR::StructMethodDeclaration_t>(binding);
+            CHECK_FALSE(method->m_is_deferred);
+            CHECK_FALSE(method->m_is_nopass);
+            CHECK(method->m_proc == scope->get_symbol("harmless"));
+            CHECK(type->m_symtab->get_symbol("abandoned_generic") == nullptr);
+        } else {
+            CHECK(failed == nullptr);
+        }
+        CHECK(scope->get_symbol("~failedbinding") == nullptr);
+        for (const auto &entry : {
+                std::pair<std::string, std::string>{"beforebinding", "run_before"},
+                {"independentbinding", "run"}}) {
+            auto *symbol = scope->get_symbol(entry.first);
+            REQUIRE(symbol != nullptr);
+            auto *type = ASR::down_cast<ASR::Struct_t>(symbol);
+            auto *generic = type->m_symtab->get_symbol(entry.second);
+            REQUIRE(generic != nullptr);
+            auto *procedure = ASR::down_cast<ASR::GenericProcedure_t>(generic);
+            REQUIRE(procedure->n_procs == 1);
+            CHECK(ASR::is_a<ASR::StructMethodDeclaration_t>(*procedure->m_procs[0]));
+        }
+        for (const auto &entry : {
+                std::pair<std::string, std::string>{"~beforebinding", "new_before"},
+                {"~independentbinding", "new_independent"}}) {
+            auto *constructor = scope->get_symbol(entry.first);
+            REQUIRE(constructor != nullptr);
+            auto *generic = ASR::down_cast<ASR::GenericProcedure_t>(constructor);
+            REQUIRE(generic->n_procs == 1);
+            CHECK(generic->m_procs[0] == scope->get_symbol(entry.second));
+        }
+        auto *independent = ASR::down_cast<ASR::Struct_t>(
+            scope->get_symbol("independentbinding"));
+        auto *callback = ASR::down_cast<ASR::Variable_t>(
+            independent->m_symtab->get_symbol("callback"));
+        REQUIRE(callback->m_symbolic_value != nullptr);
+        CHECK(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(
+            callback->m_symbolic_value)->m_v) == scope->get_symbol("independent_binding"));
+        CHECK(result.result->m_symtab->get_symbol("after_binding") != nullptr);
+        LCompilers::diag::Diagnostics verified;
+        CHECK(LCompilers::asr_verify(*result.result, true, verified));
+    }
+}
+
 TEST_CASE("Generic derived types serialize and verify their packages and instances") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

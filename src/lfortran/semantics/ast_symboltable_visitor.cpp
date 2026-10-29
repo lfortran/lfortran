@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <exception>
+#include <type_traits>
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
@@ -3876,8 +3877,45 @@ public:
     }
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
-        dt_name = to_lower(x.m_name);
-        visit_DerivedTypeUtil(x);
+        const std::string name = to_lower(x.m_name);
+        dt_name = name;
+        std::string deferred_name = name;
+        if (current_module_sym) {
+            auto *module = ASR::down_cast<ASR::Module_t>(
+                ASRUtils::symbol_get_past_external(current_module_sym));
+            deferred_name = std::string(module->m_name) + "_" + name;
+        }
+        // These queues belong to the declaration, although their bindings are
+        // resolved only when its enclosing unit is complete. A rejected type
+        // must not leave work targeting its abandoned nominal identity.
+        auto saved_entry = [](const auto &bindings, const std::string &name) {
+            auto it = bindings.find(name);
+            using Map = std::decay_t<decltype(bindings)>;
+            return it == bindings.end() ? typename Map::mapped_type{} : it->second;
+        };
+        auto procedures = saved_entry(class_procedures, name);
+        auto attributes = saved_entry(class_deferred_procedures, deferred_name);
+        auto generics = saved_entry(generic_class_procedures, name);
+        auto constructors = saved_entry(generic_procedures, name);
+        size_t initializers = pending_type_initializers.size();
+        try {
+            visit_DerivedTypeUtil(x);
+        } catch (const SemanticAbort &) {
+            auto restore_entry = [](auto &bindings, const std::string &name,
+                    auto &saved) {
+                if (saved.empty()) {
+                    bindings.erase(name);
+                } else {
+                    bindings[name] = std::move(saved);
+                }
+            };
+            restore_entry(class_procedures, name, procedures);
+            restore_entry(class_deferred_procedures, deferred_name, attributes);
+            restore_entry(generic_class_procedures, name, generics);
+            restore_entry(generic_procedures, name, constructors);
+            pending_type_initializers.resize(initializers);
+            throw;
+        }
     }
 
     void visit_Union(const AST::Union_t&x) {

@@ -31409,6 +31409,17 @@ public:
         for (auto &record : deferred_generic_evidence) {
             while (discarded(record.scope)) record.scope = record.scope->parent;
         }
+        pending_proc_ptr_inits.erase(std::remove_if(
+            pending_proc_ptr_inits.begin(), pending_proc_ptr_inits.end(),
+            [&](const PendingProcPtrInit &record) {
+                return discarded(record.var->m_parent_symtab);
+            }), pending_proc_ptr_inits.end());
+        postponed_genericProcedure_calls_vec.erase(std::remove_if(
+            postponed_genericProcedure_calls_vec.begin(),
+            postponed_genericProcedure_calls_vec.end(),
+            [&](const postponed_genericProcedure_call &record) {
+                return discarded(record.current_scope);
+            }), postponed_genericProcedure_calls_vec.end());
         for (auto it = vars_with_deferred_struct_declaration.begin();
                 it != vars_with_deferred_struct_declaration.end();) {
             auto &variables = it->second;

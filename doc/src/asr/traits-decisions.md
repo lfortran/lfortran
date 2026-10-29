@@ -1671,8 +1671,11 @@ specification action, that is, what the paper should say.
   enclosing Subject without copying an incomplete declaration. Pointer and
   allocatable links allow finite recursive layouts; inline cycles are
   rejected. Abandoning an invalid nominal declaration also discards generic
-  instances that transitively name it and their pending evidence; independent
-  shared instances and later declarations remain available during recovery.
+  instances that transitively name it and their pending evidence. Its queued
+  type-bound bindings, deferred attributes, generics and initializers are
+  rolled back, and deferred component work in discarded scopes is removed;
+  independent shared instances, bindings and later declarations remain
+  available during recovery.
   Pending generic evidence still waits for the unit's completed
   conformance signatures, and every explicit equality must then hold.
   `traits_generic_type_10` tests nested self arguments, pointer identity,

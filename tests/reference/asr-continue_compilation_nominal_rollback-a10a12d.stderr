@@ -36,8 +36,24 @@ semantic error: Symbol is already declared in the same scope
 54 |         integer :: value
    |                    ~~~~~ original declaration
 
+semantic error: recursive type components require pointer or allocatable storage
+  --> tests/errors/continue_compilation_nominal_rollback.f90:86:5 - 94:13
+   |
+86 |        type, abstract :: FailedBinding
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+94 |        end type
+   | ...^^^^^^^^^^^^^ 
+
 semantic error: Variable 'missing_after_nominal_failure' is not declared
   --> tests/errors/continue_compilation_nominal_rollback.f90:71:9
    |
 71 |         missing_after_nominal_failure = 1
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'missing_after_nominal_failure' is undeclared
+
+semantic error: Variable 'missing_after_binding_failure' is not declared
+   --> tests/errors/continue_compilation_nominal_rollback.f90:120:9
+    |
+120 |         missing_after_binding_failure = 1
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'missing_after_binding_failure' is undeclared
