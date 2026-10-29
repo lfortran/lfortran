@@ -3593,8 +3593,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
+                // Only an ordinary read-only descriptor dummy may receive a
+                // section value. Definable and identity-sensitive actuals
+                // retain the existing association/copy-out path.
+                bool snapshot_actual = snapshot_sections && is_call &&
+                    !inside_where && !is_elemental_array_call && dummy &&
+                    dummy->m_intent == ASRUtils::intent_in &&
+                    !dummy->m_target_attr &&
+                    !ASRUtils::is_pointer(dummy->m_type) &&
+                    !ASRUtils::is_allocatable(dummy->m_type) &&
+                    ASRUtils::is_array(dummy->m_type) &&
+                    ASRUtils::extract_physical_type(dummy->m_type) ==
+                        ASR::array_physical_typeType::DescriptorArray &&
+                    is_section_value_snapshot(x_m_args[i].m_value);
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(
+                    x_m_args[i].m_value, al, current_body, name_hint,
+                    current_scope, exprs_with_target, snapshot_actual);
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = rebuild_array_physical_cast(
