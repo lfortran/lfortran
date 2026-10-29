@@ -679,7 +679,12 @@ def test_interrupt_prompt(exe, cwd):
                 def submit(code):
                     check(repl.wait(ready, "editing prompt"), repl.text())
                     queries = repl.prompts
+                    before = len(repl.out)
                     os.write(repl.fd, code.encode() + ENTER)
+                    # Drain the editor's final redraw before Ctrl-C can flush
+                    # the PTY output queue, possibly halfway through an escape.
+                    check(repl.wait(lambda: b"\r\n\x1b[0m\x1b[?25h"
+                        in repl.out[before:], "submitted cell"), repl.text())
                     return queries
 
                 def finished(queries):
