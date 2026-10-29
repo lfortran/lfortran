@@ -5219,6 +5219,8 @@ public:
                     parameter_traits[i], parameter.loc, generic_messages, same_types);
             } catch (const SemanticAbort &) {
                 erase_failed_instantiation(generic->m_symtab, scope_before);
+                // The body cannot be checked without its declared constraints.
+                current_scope->erase_symbol(to_lower(name));
                 throw;
             }
         }
