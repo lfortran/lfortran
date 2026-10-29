@@ -4,6 +4,8 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <map>
@@ -32,6 +34,10 @@ A device routine is then written once per combination of spaces its arguments
 have. A routine called with a kernel argument and a thread temporary at the
 same time needs a signature that mixes the two, which no single definition
 can provide; a clone per combination gives every call site an exact match.
+This includes decomposed derived-type components. When one is not Global,
+the clone takes the component buffers and their bounds as explicit ASR
+arguments, bound to the dummy's components by Associate. Their ordinary
+array types then carry the spaces, including through further device calls.
 The code generators emit what the type says, with no overloading of their
 own, which also keeps this dialect neutral: CUDA does not qualify a pointer
 by address space, so the clones collapse to identical bodies there and
@@ -495,7 +501,7 @@ private:
         // resolved already and the passed object is among the arguments.
         for (ASR::FunctionCall_t *call : collector.function_calls) {
             ASR::symbol_t *target = specialise(call->m_name, call->m_args,
-                call->n_args);
+                call->n_args, *fn);
             if (target) {
                 call->m_name = target;
                 call->m_dt = nullptr;
@@ -503,7 +509,7 @@ private:
         }
         for (ASR::SubroutineCall_t *call : collector.subroutine_calls) {
             ASR::symbol_t *target = specialise(call->m_name, call->m_args,
-                call->n_args);
+                call->n_args, *fn);
             if (target) {
                 call->m_name = target;
                 call->m_dt = nullptr;
@@ -511,11 +517,138 @@ private:
         }
     }
 
+    struct ComponentArgument {
+        size_t argument;
+        GpuComponentLayout layout;
+        ASR::expr_t *actual;
+    };
+
+    ASR::expr_t* component_actual(ASR::Function_t &caller,
+            ASR::expr_t *actual, const GpuComponentLayout &component) {
+        ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(actual);
+        if (ASR::is_a<ASR::Var_t>(*base)) {
+            ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(base)->m_v);
+            for (auto &binding : gpu_struct_component_bindings(caller)) {
+                if (binding.variable == variable &&
+                        ASRUtils::symbol_name(binding.component)
+                            == component.name()) {
+                    return ASRUtils::EXPR(ASR::make_Var_t(al,
+                        actual->base.loc, binding.storage));
+                }
+            }
+        }
+        ASR::symbol_t *member = gpu_struct_lookup_member(
+            ASRUtils::get_struct_sym_from_struct_expr(base),
+            component.name());
+        LCOMPILERS_ASSERT(member != nullptr);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(al,
+            actual->base.loc, (ASR::asr_t*)duplicator.duplicate_expr(base),
+            nullptr, member, caller.m_symtab));
+    }
+
+    // Expose the formerly implicit component ABI as ordinary array/bound
+    // arguments before specializing. Associate is the same storage binding
+    // used for a local component, so forwarding a dummy preserves its buffer.
+    void add_component_arguments(ASR::Function_t &clone,
+            const std::vector<ComponentArgument> &components) {
+        if (components.empty()) return;
+        const Location &loc = clone.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        Vec<ASR::expr_t*> arguments;
+        arguments.reserve(al, clone.n_args + components.size());
+        for (size_t i = 0; i < clone.n_args; i++) {
+            arguments.push_back(al, clone.m_args[i]);
+        }
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, clone.n_body + components.size());
+        for (auto &component : components) {
+            ASR::expr_t *dummy = clone.m_args[component.argument];
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+            std::string name = std::string(variable->m_name) + "_"
+                + component.layout.name();
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, component.layout.rank);
+            std::vector<ASR::expr_t*> bounds;
+            for (size_t d = 0; d < component.layout.rank; d++) {
+                ASR::expr_t *extent = b.Variable(clone.m_symtab,
+                    clone.m_symtab->get_unique_name(name + "_extent", false),
+                    b.int_type(4), ASR::intentType::In);
+                ASR::expr_t *lower = b.Variable(clone.m_symtab,
+                    clone.m_symtab->get_unique_name(name + "_lower", false),
+                    b.int_type(4), ASR::intentType::In);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = lower;
+                dim.m_length = extent;
+                dims.push_back(al, dim);
+                bounds.push_back(extent);
+                bounds.push_back(lower);
+            }
+            ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::duplicate_type(al, component.layout.element_type),
+                dims.p, dims.n, ASR::array_physical_typeType::PointerArray,
+                expr_memory_space(component.actual)));
+            ASR::Variable_t *member = ASR::down_cast<ASR::Variable_t>(
+                component.layout.component);
+            ASR::expr_t *data = b.Variable(clone.m_symtab,
+                clone.m_symtab->get_unique_name(name + "_data", false),
+                type, ASR::intentType::InOut, member->m_type_declaration);
+            arguments.push_back(al, data);
+            for (ASR::expr_t *bound : bounds) arguments.push_back(al, bound);
+            ASR::symbol_t *component_symbol = gpu_struct_lookup_member(
+                variable->m_type_declaration, component.layout.name());
+            LCOMPILERS_ASSERT(component_symbol != nullptr);
+            ASR::expr_t *target = ASRUtils::EXPR(
+                ASRUtils::getStructInstanceMember_t(al, loc,
+                    (ASR::asr_t*)dummy, nullptr, component_symbol,
+                    clone.m_symtab));
+            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al,
+                loc, target, data, ASR::pointer_bounds_formType::NoPointerBounds)));
+        }
+        for (size_t i = 0; i < clone.n_body; i++) {
+            body.push_back(al, clone.m_body[i]);
+        }
+        clone.m_body = body.p;
+        clone.n_body = body.n;
+        clone.m_args = arguments.p;
+        clone.n_args = arguments.n;
+        clone.m_function_signature = ASRUtils::TYPE(
+            ASRUtils::make_FunctionType_t_util(al, loc,
+                clone.m_args, clone.n_args, clone.m_return_var,
+                ASRUtils::get_FunctionType(clone), clone.m_symtab));
+    }
+
+    void pass_component_arguments(ASR::call_arg_t *&args, size_t &n_args,
+            const std::vector<ComponentArgument> &components) {
+        Vec<ASR::call_arg_t> arguments;
+        arguments.reserve(al, n_args + components.size());
+        for (size_t i = 0; i < n_args; i++) arguments.push_back(al, args[i]);
+        for (auto &component : components) {
+            ASR::expr_t *actual = component.actual;
+            ASRUtils::ASRBuilder b(al, actual->base.loc);
+            ASR::call_arg_t arg;
+            arg.loc = actual->base.loc;
+            arg.m_value = actual;
+            arguments.push_back(al, arg);
+            for (size_t d = 0; d < component.layout.rank; d++) {
+                arg.m_value = b.ArraySize(actual, b.i32(d + 1), b.int_type(4));
+                arguments.push_back(al, arg);
+                arg.m_value = b.ArrayLBound(actual, d + 1);
+                arguments.push_back(al, arg);
+            }
+        }
+        args = arguments.p;
+        n_args = arguments.n;
+    }
+
     // The routine this call should reach, cloning the callee when the call
     // mixes memory spaces the callee was not written for. Returns nullptr
     // when the call already reaches the right routine.
     ASR::symbol_t* specialise(ASR::symbol_t *called,
-            ASR::call_arg_t *args, size_t n_args) {
+            ASR::call_arg_t *&args, size_t &n_args, ASR::Function_t &caller) {
         ASR::symbol_t *target = ASRUtils::symbol_get_past_external(called);
         if (target && ASR::is_a<ASR::StructMethodDeclaration_t>(*target)) {
             target = ASRUtils::symbol_get_past_external(
@@ -535,6 +668,8 @@ private:
         std::vector<ASR::memory_spaceType> spaces(n_args,
             ASR::memory_spaceType::Global);
         std::string signature;
+        std::string component_signature;
+        std::vector<ComponentArgument> components;
         bool needs_clone = ftype->m_exec_space == ASR::exec_spaceType::Host ||
             ftype->m_exec_space == ASR::exec_spaceType::HostDevice;
         for (size_t i = 0; i < n_args; i++) {
@@ -545,6 +680,17 @@ private:
             if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) continue;
             ASR::Variable_t *dummy =
                 ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            if (ASR::is_a<ASR::StructType_t>(*dummy->m_type) &&
+                    !gpu_struct_has_component_arguments(*callee, dummy_sym)) {
+                for (auto &component : gpu_decomposed_components(
+                        gpu_struct_definition(dummy->m_type_declaration))) {
+                    ASR::expr_t *actual = component_actual(caller,
+                        args[i].m_value, component);
+                    components.push_back({i, component, actual});
+                    spaces.push_back(expr_memory_space(actual));
+                    component_signature += memory_space_tag(spaces.back());
+                }
+            }
             if (!ASRUtils::is_array(dummy->m_type)) continue;
             if (!ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
                 continue;
@@ -555,6 +701,18 @@ private:
                 needs_clone = true;
             }
         }
+        bool component_spaces_differ = false;
+        for (size_t i = n_args; i < spaces.size(); i++) {
+            component_spaces_differ = component_spaces_differ ||
+                spaces[i] != ASR::memory_spaceType::Global;
+        }
+        if (!component_spaces_differ) {
+            components.clear();
+            spaces.resize(n_args);
+        } else {
+            needs_clone = true;
+            signature += component_signature;
+        }
         if (!needs_clone) {
             process_function(callee, false);
             return nullptr;
@@ -563,6 +721,7 @@ private:
         auto key = std::make_pair(target, spaces);
         auto it = clones.find(key);
         if (it != clones.end()) {
+            pass_component_arguments(args, n_args, components);
             return reachable_symbol(called, it->second);
         }
 
@@ -605,6 +764,8 @@ private:
             }
         }
 
+        add_component_arguments(*clone, components);
+        pass_component_arguments(args, n_args, components);
         process_function(clone, false);
         return reachable_symbol(called, clone_sym);
     }

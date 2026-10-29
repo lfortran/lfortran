@@ -41,6 +41,21 @@ bool gpu_bind_allocations_to_buffers(Allocator &al,
 bool gpu_struct_component_storage(ASR::stmt_t *stmt,
     ASR::StructInstanceMember_t *&component, ASR::expr_t *&storage);
 
+struct GpuStructComponentStorage {
+    ASR::symbol_t *variable;
+    ASR::symbol_t *component;
+    ASR::symbol_t *storage;
+};
+
+// Canonical component-to-array bindings, including BLOCK/ASSOCIATE scopes.
+std::vector<GpuStructComponentStorage> gpu_struct_component_bindings(
+    ASR::Function_t &fn);
+
+// Whether this dummy's decomposed buffers are explicit array arguments,
+// bound to its components by Associate rather than synthesized by codegen.
+bool gpu_struct_has_component_arguments(ASR::Function_t &fn,
+    ASR::symbol_t *dummy);
+
 // Writes the dimensions `dims` of an array of the device routine `fn` as
 // the values they have on entry to the routine, over its dummy arguments
 // and named constants alone: a local the routine binds once stands for

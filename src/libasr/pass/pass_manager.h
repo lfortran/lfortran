@@ -418,7 +418,8 @@ namespace LCompilers {
                 "gpu_kernel_storage",
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
-                // with, and before the code generators read those types.
+                // with. Decomposed component buffers needing specialization
+                // become explicit array arguments with their storage's space.
                 "gpu_memory_space",
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.

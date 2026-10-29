@@ -80,6 +80,59 @@ bool gpu_struct_component_storage(ASR::stmt_t *stmt,
         ASR::is_a<ASR::Var_t>(*storage);
 }
 
+std::vector<GpuStructComponentStorage> gpu_struct_component_bindings(
+        ASR::Function_t &fn) {
+    std::vector<GpuStructComponentStorage> bindings;
+    std::vector<SymbolTable*> scopes;
+    gpu_routine_scopes(fn.m_symtab, scopes);
+    for (SymbolTable *scope : scopes) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        ASR::stmt_t **body = nullptr;
+        size_t n_body = 0;
+        if (ASR::is_a<ASR::Function_t>(*owner)) {
+            body = ASR::down_cast<ASR::Function_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::Function_t>(owner)->n_body;
+        } else if (ASR::is_a<ASR::Block_t>(*owner)) {
+            body = ASR::down_cast<ASR::Block_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::Block_t>(owner)->n_body;
+        } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+            body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->n_body;
+        }
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::StructInstanceMember_t *component = nullptr;
+            ASR::expr_t *array = nullptr;
+            if (!gpu_struct_component_storage(body[i], component, array)) {
+                continue;
+            }
+            bindings.push_back({
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(component->m_v)->m_v),
+                ASRUtils::symbol_get_past_external(component->m_m),
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(array)->m_v)});
+        }
+    }
+    return bindings;
+}
+
+bool gpu_struct_has_component_arguments(ASR::Function_t &fn,
+        ASR::symbol_t *dummy) {
+    dummy = ASRUtils::symbol_get_past_external(dummy);
+    for (auto &binding : gpu_struct_component_bindings(fn)) {
+        if (binding.variable != dummy) continue;
+        for (size_t i = 0; i < fn.n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*fn.m_args[i]) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v)
+                        == binding.storage) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 namespace {
 
 ASR::expr_t* duplicate(Allocator &al, ASR::expr_t *e) {
@@ -685,32 +738,9 @@ public:
 // their storage, as gpu_give_struct_component_storage writes them.
 StorageMap storage_bindings(ASR::Function_t &fn) {
     StorageMap bound;
-    std::vector<SymbolTable*> scopes;
-    gpu_routine_scopes(fn.m_symtab, scopes);
-    for (SymbolTable *scope : scopes) {
-        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-        ASR::stmt_t **body = nullptr;
-        size_t n_body = 0;
-        if (ASR::is_a<ASR::Function_t>(*owner)) {
-            body = ASR::down_cast<ASR::Function_t>(owner)->m_body;
-            n_body = ASR::down_cast<ASR::Function_t>(owner)->n_body;
-        } else if (ASR::is_a<ASR::Block_t>(*owner)) {
-            body = ASR::down_cast<ASR::Block_t>(owner)->m_body;
-            n_body = ASR::down_cast<ASR::Block_t>(owner)->n_body;
-        } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-            body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->m_body;
-            n_body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->n_body;
-        }
-        for (size_t i = 0; i < n_body; i++) {
-            ASR::StructInstanceMember_t *component = nullptr;
-            ASR::expr_t *array = nullptr;
-            if (!gpu_struct_component_storage(body[i], component, array)) {
-                continue;
-            }
-            bound[{variable_of(component->m_v), ASRUtils::symbol_name(
-                ASRUtils::symbol_get_past_external(component->m_m))}] =
-                variable_of(array);
-        }
+    for (auto &binding : gpu_struct_component_bindings(fn)) {
+        bound[{binding.variable, ASRUtils::symbol_name(binding.component)}] =
+            binding.storage;
     }
     return bound;
 }
