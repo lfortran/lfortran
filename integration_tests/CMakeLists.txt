@@ -6938,6 +6938,7 @@ RUN(NAME gpu_derived_component_15 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_16 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_17 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_18 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_derived_component_19 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

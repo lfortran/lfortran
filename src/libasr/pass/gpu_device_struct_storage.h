@@ -29,7 +29,8 @@ bool gpu_bind_allocations_to_buffers(Allocator &al,
 
 // Whether `stmt` binds the allocatable array component of a derived-type
 // local of device code to the array that stores it: `s%v => storage`, as
-// gpu_give_struct_component_storage writes it. `component` is `s%v`.
+// gpu_give_struct_component_storage writes it. `component` is `s%v`;
+// `storage` is the bare array variable, past any physical casts.
 bool gpu_struct_component_storage(ASR::stmt_t *stmt,
     ASR::StructInstanceMember_t *&component, ASR::expr_t *&storage);
 

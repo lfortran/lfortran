@@ -71,7 +71,7 @@ bool gpu_struct_component_storage(ASR::stmt_t *stmt,
     ASR::Associate_t *x = ASR::down_cast<ASR::Associate_t>(stmt);
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*x->m_target)) return false;
     component = ASR::down_cast<ASR::StructInstanceMember_t>(x->m_target);
-    storage = x->m_value;
+    storage = ASRUtils::get_past_array_physical_cast(x->m_value);
     return ASR::is_a<ASR::Var_t>(*component->m_v) &&
         ASR::is_a<ASR::Var_t>(*storage);
 }
@@ -618,7 +618,8 @@ public:
     }
 
     void replace_ArrayBound(ASR::ArrayBound_t *x) {
-        if (dummy_shape(x->m_v) && storage_of(x->m_v) == nullptr) {
+        if (dummy_shape(x->m_v) && storage_of(x->m_v) == nullptr &&
+                explicit_shape(variable_of(x->m_v)) == nullptr) {
             bool outer = in_shape;
             in_shape = true;
             Base::replace_ArrayBound(x);
