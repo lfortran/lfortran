@@ -310,7 +310,21 @@ jobs:
       # LLVM versions, so run them for every version.
       - name: Test unit tests
         shell: bash -e -l {0}
-        run: ctest --output-on-failure
+        run: |
+            if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then
+                bash ci/diagnose_llvm11_unit.sh ./src/lfortran/tests/test_lfortran ./src/lfortran/tests ctest --output-on-failure
+            else
+                ctest --output-on-failure
+            fi
+
+      - name: Save LLVM 11 first-fault evidence
+        if: always() && inputs.scope == 'quick' && matrix.llvm-version == '11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvm11-compatibility-first-fault-${{ github.run_attempt }}
+          path: .fix-issue/pr-16329/ci-llvm11-unit
+          include-hidden-files: true
+          retention-days: 7
 
       - name: Test Debug reference coverage
         if: inputs.scope == 'quick' && matrix.llvm-version == '11'
