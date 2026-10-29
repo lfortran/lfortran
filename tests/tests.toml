@@ -3417,6 +3417,10 @@ filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_nominal_rollback.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/conditional_expr_syntax_1.f90"
 syntax_only_cc = true
 semantics_only_cc = true

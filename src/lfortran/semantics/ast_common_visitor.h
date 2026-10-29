@@ -11693,9 +11693,11 @@ public:
             parent_scope->add_symbol(sym_name, derived_type_sym);
         }
         struct RestoreDeclaration {
+            CommonVisitor &visitor;
             SymbolTable *&scope;
             bool &is_type;
             SymbolTable *parent;
+            ASR::Struct_t *declaration;
             std::string name;
             ASR::symbol_t *previous;
             bool complete = false;
@@ -11703,11 +11705,12 @@ public:
                 scope = parent;
                 is_type = false;
                 if (complete) return;
+                visitor.erase_failed_nominal_instances(*declaration);
                 parent->erase_symbol(name);
                 if (previous) parent->add_symbol(name, previous);
             }
-        } restore_declaration{current_scope, is_derived_type, parent_scope,
-            sym_name, previous};
+        } restore_declaration{*this, current_scope, is_derived_type, parent_scope,
+            struct_, sym_name, previous};
         data_member_names.reserve(al, 0);
         final_proc_names.reserve(al, 0);
         is_derived_type = true;
@@ -11799,9 +11802,6 @@ public:
         check_layout(struct_);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
         struct_->m_struct_signature = struct_signature;
-        if (obligations.size()) {
-            static_cast<Derived&>(*this).defer_type_adoption(parent_scope, struct_);
-        }
         check_runtime_trait_components(current_scope, data_member_names.p,
             data_member_names.size(), is_bindc, is_sequence, false, parent_scope);
 
@@ -11890,6 +11890,9 @@ public:
         }
 
 
+        if (obligations.size()) {
+            static_cast<Derived&>(*this).defer_type_adoption(parent_scope, struct_);
+        }
         current_scope = parent_scope;
         is_derived_type = false;
         restore_declaration.complete = true;
@@ -31352,6 +31355,78 @@ public:
         Location loc;
     };
     std::vector<DeferredGenericEvidence> deferred_generic_evidence;
+
+    // Instances live in the enclosing unit, not in the nominal declaration
+    // that requested them. Remove its transitive dependents before abandoning
+    // that declaration, retaining independent instances even if it created them.
+    void erase_failed_nominal_instances(ASR::Struct_t &declaration) {
+        SymbolTable *owner = generic_instance_unit_scope(declaration.m_symtab);
+        std::set<ASR::symbol_t*> removed{&declaration.base};
+        std::set<SymbolTable*> discarded_scopes{declaration.m_symtab};
+        bool changed;
+        do {
+            changed = false;
+            for (const auto &entry : owner->get_scope()) {
+                if (removed.count(entry.second)) continue;
+                bool dependent = false;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*entry.second)) {
+                    dependent = removed.count(ASRUtils::symbol_get_past_external(
+                        entry.second));
+                } else if (ASR::is_a<ASR::Struct_t>(*entry.second)) {
+                    auto *instance = ASR::down_cast<ASR::Struct_t>(entry.second);
+                    auto *metadata = ASRUtils::generic_type_instance(*instance);
+                    if (!metadata) continue;
+                    for (size_t i = 0; i < metadata->n_arguments; i++) {
+                        auto *argument = metadata->m_arguments[i].m_type_declaration;
+                        if (argument && removed.count(
+                                ASRUtils::symbol_get_past_external(argument))) {
+                            dependent = true;
+                            break;
+                        }
+                    }
+                    if (dependent) {
+                        discarded_scopes.insert(instance->m_symtab);
+                        completed_generic_instances.erase(instance);
+                    }
+                }
+                if (dependent) {
+                    removed.insert(entry.second);
+                    changed = true;
+                }
+            }
+        } while (changed);
+        auto discarded = [&](SymbolTable *scope) {
+            for (; scope; scope = scope->parent) {
+                if (discarded_scopes.count(scope)) return true;
+            }
+            return false;
+        };
+        deferred_generic_evidence.erase(std::remove_if(
+            deferred_generic_evidence.begin(), deferred_generic_evidence.end(),
+            [&](const DeferredGenericEvidence &record) {
+                return removed.count(&record.instance->base);
+            }), deferred_generic_evidence.end());
+        for (auto &record : deferred_generic_evidence) {
+            while (discarded(record.scope)) record.scope = record.scope->parent;
+        }
+        for (auto it = vars_with_deferred_struct_declaration.begin();
+                it != vars_with_deferred_struct_declaration.end();) {
+            auto &variables = it->second;
+            variables.erase(std::remove_if(variables.begin(), variables.end(),
+                [&](ASR::Variable_t *variable) {
+                    return discarded(variable->m_parent_symtab);
+                }), variables.end());
+            if (variables.empty()) {
+                it = vars_with_deferred_struct_declaration.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        for (auto *symbol : removed) {
+            if (symbol == &declaration.base) continue;
+            owner->erase_symbol(ASRUtils::symbol_name(symbol));
+        }
+    }
 
     // Once the symbol table visitor has completed the conformances of a unit,
     // selects the deferred evidence of the unit's instances, each in the scope

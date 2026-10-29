@@ -1,0 +1,43 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/continue_compilation_nominal_rollback.f90:3:5 - 4:18
+  |
+3 |        abstract interface :: IMarker
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+4 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/continue_compilation_nominal_rollback.f90:29:20
+   |
+29 |         integer :: value
+   |                    ^^^^^ redeclaration
+   |
+28 |         integer :: value
+   |                    ~~~~~ original declaration
+
+semantic error: recursive type components require pointer or allocatable storage
+  --> tests/errors/continue_compilation_nominal_rollback.f90:31:5 - 33:13
+   |
+31 |        type :: InlineSubject
+   |        ^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+33 |        end type
+   | ...^^^^^^^^^^^^^ 
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/continue_compilation_nominal_rollback.f90:55:20
+   |
+55 |         integer :: value
+   |                    ^^^^^ redeclaration
+   |
+54 |         integer :: value
+   |                    ~~~~~ original declaration
+
+semantic error: Variable 'missing_after_nominal_failure' is not declared
+  --> tests/errors/continue_compilation_nominal_rollback.f90:71:9
+   |
+71 |         missing_after_nominal_failure = 1
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'missing_after_nominal_failure' is undeclared

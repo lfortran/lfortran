@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_nominal_rollback-a10a12d",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_nominal_rollback.f90",
+    "infile_hash": "b69bb8326332ba42fd778775c6f29bc2f7f9eedc4f162b391989ec83",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_nominal_rollback-a10a12d.stderr",
+    "stderr_hash": "bc3fb3c68ccf2910c71aa985b7d7710cc128e92f2a81809b4e248b55",
+    "returncode": 1
+}

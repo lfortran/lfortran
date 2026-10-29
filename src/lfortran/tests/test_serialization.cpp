@@ -9995,6 +9995,110 @@ subroutine put(self, value)
     }
 }
 
+TEST_CASE("Failed nominal declarations discard only dependent generic instances") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string prefix = R"(
+module rollback_templates
+implicit none
+abstract interface :: IMarker
+end interface
+type :: Ref{T}
+    type(T), pointer :: target
+end type
+type :: Box{T}
+    type(T) :: item
+end type
+type :: Guard{IMarker :: T}
+    type(T), pointer :: target
+end type
+end module
+module rollback_clients
+use rollback_templates
+implicit none
+type(Ref{integer}) :: shared_before
+type, sealed, implements(IMarker) :: Anchor
+    integer :: value
+end type
+type, sealed, implements(IMarker) :: FailedSubject
+    type(Ref{integer}) :: shared
+    type(Box{real}) :: independent
+    type(Guard{Anchor}) :: pending_independent
+    type(Box{Ref{FailedSubject}}) :: observer
+)";
+    const std::string suffix = R"(
+end type
+type, sealed, implements(IMarker) :: GoodSubject
+    type(Box{Ref{GoodSubject}}) :: observer
+    type(Guard{GoodSubject}) :: guarded
+end type
+type(Ref{integer}) :: shared_after
+type(Box{real}) :: independent_after
+contains
+subroutine valid(self)
+    type(GoodSubject), intent(inout) :: self
+    self%observer%item%target => self%guarded%target
+    shared_after%target => shared_before%target
+    independent_after%item = 42.0
+end subroutine
+end module
+module after_rollback
+implicit none
+contains
+subroutine independent()
+    missing_after_nominal_failure = 1
+end subroutine
+end module
+)";
+    for (const std::string failure : {
+            "integer :: value\ninteger :: value\n",
+            "type(Box{FailedSubject}) :: inline_cycle\n",
+            "type(Guard{FailedSubject}) :: guarded\n"
+                "integer :: value\ninteger :: value\n"}) {
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        options.continue_compilation = true;
+        auto parsed = LCompilers::LFortran::parse(al, prefix + failure + suffix,
+            diagnostics, options);
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        size_t errors = 0;
+        for (const auto &diagnostic : diagnostics.diagnostics) {
+            CHECK(diagnostic.code.find("asr.verify.") != 0);
+            if (diagnostic.level == LCompilers::diag::Level::Error) errors++;
+        }
+        CHECK(errors == 2);
+        CHECK(diagnostics.render2().find("missing_after_nominal_failure") !=
+            std::string::npos);
+        auto *symbol = result.result->m_symtab->get_symbol("rollback_clients");
+        REQUIRE(symbol != nullptr);
+        auto *module = ASR::down_cast<ASR::Module_t>(symbol);
+        CHECK(module->m_symtab->get_symbol("failedsubject") == nullptr);
+        CHECK(module->m_symtab->get_symbol("goodsubject") != nullptr);
+        auto *before = ASR::down_cast<ASR::Variable_t>(
+            module->m_symtab->get_symbol("shared_before"));
+        auto *after = ASR::down_cast<ASR::Variable_t>(
+            module->m_symtab->get_symbol("shared_after"));
+        CHECK(ASRUtils::symbol_get_past_external(before->m_type_declaration) ==
+            ASRUtils::symbol_get_past_external(after->m_type_declaration));
+        size_t instances = 0;
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*entry.second) &&
+                    ASRUtils::generic_type_instance(
+                        *ASR::down_cast<ASR::Struct_t>(entry.second))) instances++;
+        }
+        CHECK(instances == 6);
+        LCompilers::diag::Diagnostics verified;
+        CHECK(LCompilers::asr_verify(*result.result, true, verified));
+        CHECK(result.result->m_symtab->get_symbol("after_rollback") != nullptr);
+    }
+}
+
 TEST_CASE("Generic derived types serialize and verify their packages and instances") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
