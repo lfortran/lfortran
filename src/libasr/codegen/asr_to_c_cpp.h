@@ -2726,6 +2726,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
+            case (ASR::cast_kindType::ComplexToInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                if (is_c) {
+                    headers.insert("complex.h");
+                    src = "(int" + std::to_string(dest_kind * 8)
+                        + "_t)creal(" + src + ")";
+                } else {
+                    src = "(int" + std::to_string(dest_kind * 8)
+                        + "_t)std::real(" + src + ")";
+                }
+                last_expr_precedence = 2;
+                break;
+            }
             case (ASR::cast_kindType::RealToComplex) : {
                 if (is_c) {
                     headers.insert("complex.h");
@@ -3707,8 +3720,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 if (ASRUtils::is_real(*t)) {
                     src = "(copysign(fabs(" + a + "), " + b + "))";
                 } else {
-                    headers.insert("stdlib.h");
-                    src = "(((" + b + ") >= 0) ? abs(" + a + ") : -abs(" + a + "))";
+                    src = "(((" + b + ") >= 0) ? (" + a + ") : -(" + a + "))";
                 }
                 return;
             }
@@ -3738,9 +3750,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 } else {
                     // Exact integer modulo with the sign of P (Fortran semantics),
                     // unlike C/C++ % which takes the sign of A.
-                    src = "(((" + a + ") % (" + p + ") == 0) ? 0 : (((((" + a + ") % (" + p
-                        + ")) > 0) == ((" + p + ") > 0)) ? ((" + a + ") % (" + p
-                        + ")) : (((" + a + ") % (" + p + ")) + (" + p + "))))";
+                    std::string rem = "((" + a + ") % (" + p + "))";
+                    std::string rem_pos = "(" + rem + " > 0)";
+                    std::string p_pos = "((" + p + ") > 0)";
+                    src = "(" + rem + " == 0 ? 0 : (" + rem_pos + " == "
+                        + p_pos + " ? " + rem + " : (" + rem + " + (" + p
+                        + "))))";
                 }
                 return;
             }
