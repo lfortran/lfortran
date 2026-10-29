@@ -800,6 +800,7 @@ R"(#include <stdio.h>
         intrinsic_module = false;
     }
 
+    void define_types_in_scope(SymbolTable* /*scope*/) {}
     void visit_Program(const ASR::Program_t &x) {
         // Generate code for nested subroutines and functions first:
         SymbolTable* current_scope_copy = current_scope;
@@ -1266,6 +1267,7 @@ R"(#include <stdio.h>
         if( generate_body ) {
             sub += "\n";
 
+            self().define_types_in_scope(x.m_symtab);
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;

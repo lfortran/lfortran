@@ -848,7 +848,28 @@ R"(
         intrinsic_module = false;
     }
 
+    void define_types_in_scope(SymbolTable* scope) {
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = scope->get_symbol(item);
+            visit_symbol(*struct_sym);
+        }
+    }
     void visit_Program(const ASR::Program_t &x) {
+        define_types_in_scope(x.m_symtab);
         // Topologically sort all program functions
         // and then define them in the right order
         std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(x.m_symtab);
