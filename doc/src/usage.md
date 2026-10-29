@@ -275,6 +275,20 @@ compilation options, output options, link options and so on.
 * `-o <value>`, Specify the file to place the compiler's output into
 * `--static`, Create a static executable
 
+### WebAssembly output
+
+Linking for `--target=wasm32-wasi` uses the WASI SDK in `WASI_SDK_PATH`.
+Linking for `--target=wasm32-unknown-emscripten` uses an `emcc` driver,
+taken from `LFORTRAN_EMCC`, otherwise the emsdk checkout in `EMSDK_PATH`,
+otherwise `PATH`. Emscripten settings are passed with `-s`, documented in
+the option list above.
+
+Building LFortran itself with `-DWITH_TARGET_WASM=yes` cross-compiles the
+runtime objects; the toolchains are chosen at configure time, so these
+variables must be set then, with no implicit `PATH` fallback for `emcc`
+(set `LFORTRAN_EMCC=emcc` for that). A normal native build needs none of
+this.
+
 ### Compiler debugging
 
 A number of command-line options select various text outputs useful
