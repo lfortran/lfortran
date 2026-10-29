@@ -14,8 +14,11 @@ inline int f_gpu_10(int m, device int* work) {
             int __libasr_index_0_;
             __do_loop_end = (1 + max(0, m) - 1);
             __libasr_index_0_ = (1 - 1);
-            while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            while (1) {
                 __libasr_index_0_ = (__libasr_index_0_ + 1);
+                if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+                    break;
+                }
                 work[((int)(__libasr_index_0_) - (1))] = 2;
             }
             __gpu_sum_res = 0;
@@ -128,8 +131,11 @@ kernel void __lfortran_gpu_kernel_1(
         __do_loop_end = max(0, n);
         __do_loop_inc = (1 * ((int)__gpu_lanes));
         __gpu_bc_i = ((1 + (((int)__gpu_lane) * 1)) - __do_loop_inc);
-        while (((int)(((int)((__do_loop_inc > 0) && ((__gpu_bc_i + __do_loop_inc) <= __do_loop_end))) || ((int)((__do_loop_inc <= 0) && ((__gpu_bc_i + __do_loop_inc) >= __do_loop_end)))))) {
+        while (1) {
             __gpu_bc_i = (__gpu_bc_i + __do_loop_inc);
+            if (((int)(!(((int)(((int)((__do_loop_inc > 0) && (__gpu_bc_i <= __do_loop_end))) || ((int)((__do_loop_inc <= 0) && (__gpu_bc_i >= __do_loop_end))))))))) {
+                break;
+            }
             work[((int)(__gpu_bc_i) - (1))] = 3;
         }
         if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
