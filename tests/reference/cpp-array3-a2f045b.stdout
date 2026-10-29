@@ -50,8 +50,16 @@ void main2() {
     f32_3_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 3;
-    a->data = &r;
-    b->data = &r;
+    Kokkos::View<float*> arrtmp0("arrtmp0", 3);
+    arrtmp0 = from_std_vector<float>({1.00000000e+00, 2.00000000e+00, 3.00000000e+00});
+    for (size_t __lfortran_broadcast_idx = 0; __lfortran_broadcast_idx < a->dims[0].length; __lfortran_broadcast_idx++) {
+        a->data->operator[](__lfortran_broadcast_idx) = arrtmp0.operator[](__lfortran_broadcast_idx);
+    }
+    Kokkos::View<float*> arrtmp1("arrtmp1", 3);
+    arrtmp1 = from_std_vector<float>({1.00000000e+00, 2.00000000e+00, 3.00000000e+00});
+    for (size_t __lfortran_broadcast_idx = 0; __lfortran_broadcast_idx < b->dims[0].length; __lfortran_broadcast_idx++) {
+        b->data->operator[](__lfortran_broadcast_idx) = arrtmp1.operator[](__lfortran_broadcast_idx);
+    }
 }
 
 }

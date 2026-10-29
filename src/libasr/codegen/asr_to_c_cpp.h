@@ -2217,6 +2217,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             (void)m_dims;
             return n == target_rank;
         }
+        if (is_linear_array_const(e, target_rank)) {
+            return true;
+        }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
             ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
             if (!ASR::is_a<ASR::Var_t>(*s->m_v)) {
@@ -2333,10 +2336,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
 
     // Lowers `e` for one element of a single-ranged-dim section
     // assignment; the position loop variable is `kk`. Pre-materialized
-    // call results in `call_tmp` lower linearly.
+    // call results and constants lower linearly.
     std::string nested_src(ASR::expr_t* e, const std::string &kk,
             size_t target_rank,
-            std::map<ASR::expr_t*, std::string> *call_tmp = nullptr) {
+            std::map<ASR::expr_t*, std::string> *call_tmp = nullptr,
+            std::map<ASR::expr_t*, std::string> *const_tmp = nullptr) {
         (void)target_rank;
         return elementwise_impl(e,
             [&](ASR::expr_t* v) -> std::string {
@@ -2346,6 +2350,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         if (it != call_tmp->end()) {
                             return it->second + "->data->operator[]("
                                 + kk + ")";
+                        }
+                    }
+                    self().visit_expr(*v);
+                    return src;
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*v)) {
+                    if (const_tmp) {
+                        auto it = const_tmp->find(v);
+                        if (it != const_tmp->end()) {
+                            return it->second + ".operator[](" + kk + ")";
                         }
                     }
                     self().visit_expr(*v);
@@ -2400,21 +2414,24 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             });
     }
 
-    // Collect array-valued function calls in elementwise position, in
-    // left-to-right walk order. Calls under an ArrayBroadcast change
-    // shape (replication) and are not supported: collection fails, so
-    // the caller falls back instead of emitting wrong indexing.
-    bool collect_array_calls(ASR::expr_t* e,
-            std::vector<ASR::expr_t*> &out, bool under_broadcast = false) {
+    // Collect elementwise leaves needing statement-level temps in
+    // left-to-right walk order: array-valued function calls and array
+    // constants. Nodes under an ArrayBroadcast change shape
+    // (replication) and are not supported: collection fails, so the
+    // caller falls back instead of emitting wrong indexing.
+    bool collect_array_temps(ASR::expr_t* e,
+            std::vector<ASR::expr_t*> &calls,
+            std::vector<ASR::expr_t*> &consts,
+            bool under_broadcast = false) {
         if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
-            return collect_array_calls(
+            return collect_array_temps(
                 ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array,
-                out, true);
+                calls, consts, true);
         }
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
-            return collect_array_calls(
+            return collect_array_temps(
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
-                out, under_broadcast);
+                calls, consts, under_broadcast);
         }
         if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
             if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
@@ -2423,7 +2440,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             if (under_broadcast) {
                 return false;
             }
-            out.push_back(e);
+            calls.push_back(e);
+            return true;
+        }
+        if (ASR::is_a<ASR::ArrayConstant_t>(*e)) {
+            if (under_broadcast) {
+                return false;
+            }
+            consts.push_back(e);
             return true;
         }
         if (ASR::is_a<ASR::Var_t>(*e) ||
@@ -2437,8 +2461,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return true;
         }
         if (ASR::is_a<ASR::Cast_t>(*e)) {
-            return collect_array_calls(
-                ASR::down_cast<ASR::Cast_t>(e)->m_arg, out,
+            return collect_array_temps(
+                ASR::down_cast<ASR::Cast_t>(e)->m_arg, calls, consts,
                 under_broadcast);
         }
         ASR::expr_t *l = nullptr, *r = nullptr;
@@ -2504,10 +2528,33 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else {
             return false;
         }
-        if (!collect_array_calls(l, out, under_broadcast)) {
+        if (!collect_array_temps(l, calls, consts, under_broadcast)) {
             return false;
         }
-        return is_unary || collect_array_calls(r, out, under_broadcast);
+        return is_unary || collect_array_temps(r, calls, consts,
+            under_broadcast);
+    }
+
+    // Whether `e` is a rank-1 fixed-size integer/real array constant:
+    // the only array constants lowered as linear elementwise leaves
+    // (constants are column-major, so anything wider would index wrong).
+    bool is_linear_array_const(ASR::expr_t* e, size_t target_rank) {
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*e)) {
+            return false;
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(e), m_dims);
+        (void)m_dims;
+        if (n != 1 || n != target_rank) {
+            return false;
+        }
+        if (ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(e)) <= 0) {
+            return false;
+        }
+        ASR::ttype_t* el = ASRUtils::type_get_past_array(
+            ASRUtils::expr_type(e));
+        return ASRUtils::is_integer(*el) || ASRUtils::is_real(*el);
     }
 
     // Whether `e` fits the call-aware elementwise lowering for a
@@ -2529,6 +2576,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 ASRUtils::expr_type(e), m_dims);
             (void)m_dims;
             return n == target_rank;
+        }
+        if (is_linear_array_const(e, target_rank)) {
+            return true;
         }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
             return is_whole_array_ref(e) || is_partial_rank1_section(e);
@@ -2655,16 +2705,55 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return true;
     }
 
+    // Materialize each collected rank-1 array constant into a plain
+    // Kokkos view filled from its literals; leaves index it directly.
+    // Only called after is_linear_array_const established suitability.
+    bool materialize_array_consts(std::vector<ASR::expr_t*> &consts,
+            std::map<ASR::expr_t*, std::string> &const_tmp) {
+        if (consts.empty()) {
+            return false;
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        for (size_t i = 0; i < consts.size(); i++) {
+            ASR::ArrayConstant_t *a =
+                ASR::down_cast<ASR::ArrayConstant_t>(consts[i]);
+            ASR::ttype_t* el = ASRUtils::type_get_past_array(a->m_type);
+            std::string ctype = CUtils::get_c_type_from_ttype_t(el);
+            int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
+            std::string tmp = "arrtmp" + std::to_string(array_temp_count++);
+            std::string lits;
+            for (int64_t k = 0; k < n; k++) {
+                if (k > 0) lits += ", ";
+                lits += ASRUtils::fetch_ArrayConstant_value(a, k);
+            }
+            tmp_buffer_src.push_back(indent + "Kokkos::View<" + ctype
+                + "*> " + tmp + "(\"" + tmp + "\", " + std::to_string(n)
+                + ");\n" + indent + tmp + " = from_std_vector<" + ctype
+                + ">({" + lits + "});\n");
+            const_tmp[consts[i]] = tmp;
+        }
+        return true;
+    }
+
     // Lowers `e` for one element of a whole-array assignment whose
-    // array-valued calls were pre-materialized into `call_tmp`.
+    // array-valued calls and constants were pre-materialized.
     std::string call_elementwise_src(ASR::expr_t* e, const std::string &idx,
-            std::map<ASR::expr_t*, std::string> &call_tmp) {
+            std::map<ASR::expr_t*, std::string> &call_tmp,
+            std::map<ASR::expr_t*, std::string> &const_tmp) {
         return elementwise_impl(e,
             [&](ASR::expr_t* v) -> std::string {
                 if (ASR::is_a<ASR::FunctionCall_t>(*v)) {
                     auto it = call_tmp.find(v);
                     if (it != call_tmp.end()) {
                         return it->second + "->data->operator[](" + idx + ")";
+                    }
+                    self().visit_expr(*v);
+                    return src;
+                }
+                if (ASR::is_a<ASR::ArrayConstant_t>(*v)) {
+                    auto it = const_tmp.find(v);
+                    if (it != const_tmp.end()) {
+                        return it->second + ".operator[](" + idx + ")";
                     }
                     self().visit_expr(*v);
                     return src;
@@ -2837,6 +2926,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             // Array-valued calls are only reached after the call-aware
             // checker established suitability; the leaf callback maps
             // the node to its pre-materialized result temp.
+            return array_leaf(e);
+        }
+        if (ASR::is_a<ASR::ArrayConstant_t>(*e)) {
+            // Rank-1 constants are only reached after the const-aware
+            // checker established suitability; the leaf callback maps
+            // the node to its pre-materialized view.
             return array_leaf(e);
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
@@ -3021,17 +3116,22 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     }
                     std::string rhs;
                     std::vector<ASR::expr_t*> array_calls;
+                    std::vector<ASR::expr_t*> array_consts;
                     std::map<ASR::expr_t*, std::string> call_tmp;
+                    std::map<ASR::expr_t*, std::string> const_tmp;
                     if (scalar_rhs) {
                         self().visit_expr(*v);
                         rhs = src;
                     } else if (is_elementwise_assignable(x.m_value)) {
                         rhs = elementwise_src(x.m_value, idx);
-                    } else if (collect_array_calls(x.m_value, array_calls) &&
-                            !array_calls.empty() &&
+                    } else if (collect_array_temps(x.m_value, array_calls,
+                            array_consts) &&
+                            (!array_calls.empty() || !array_consts.empty()) &&
                             is_call_elementwise(x.m_value, n_dims)) {
                         materialize_array_calls(array_calls, call_tmp);
-                        rhs = call_elementwise_src(x.m_value, idx, call_tmp);
+                        materialize_array_consts(array_consts, const_tmp);
+                        rhs = call_elementwise_src(x.m_value, idx, call_tmp,
+                            const_tmp);
                     } else {
                         base = nullptr;
                     }
@@ -3061,17 +3161,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         }
                         std::string rhs;
                         std::vector<ASR::expr_t*> array_calls;
+                        std::vector<ASR::expr_t*> array_consts;
                         std::map<ASR::expr_t*, std::string> call_tmp;
+                        std::map<ASR::expr_t*, std::string> const_tmp;
                         if (scalar_rhs) {
                             self().visit_expr(*v);
                             rhs = src;
-                        } else if (collect_array_calls(x.m_value, array_calls) &&
+                        } else if (collect_array_temps(x.m_value, array_calls,
+                                array_consts) &&
                                 is_nested_elementwise(x.m_value, t_rank)) {
                             if (!array_calls.empty()) {
                                 materialize_array_calls(array_calls, call_tmp);
                             }
+                            if (!array_consts.empty()) {
+                                materialize_array_consts(array_consts,
+                                    const_tmp);
+                            }
                             rhs = nested_src(x.m_value, idx, t_rank,
-                                array_calls.empty() ? nullptr : &call_tmp);
+                                array_calls.empty() ? nullptr : &call_tmp,
+                                array_consts.empty() ? nullptr : &const_tmp);
                         } else {
                             base = nullptr;
                         }
