@@ -1006,7 +1006,7 @@ end module
                 size_t allocations = 0;
                 for (llvm::BasicBlock &block: fn) {
                     for (llvm::Instruction &instruction: block) {
-                        auto *call = llvm::dyn_cast<llvm::CallBase>(&instruction);
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction);
                         if (!call) continue;
                         llvm::Function *callee = call->getCalledFunction();
                         if (callee && callee->getName() == "_lfortran_malloc_alloc") {
