@@ -96,7 +96,8 @@
                 []
             )
             [(T
-            [integer]
+            [(integer
+            [])]
             [])]
         )
         (TraitProcedure
@@ -165,7 +166,8 @@
                 []
             )
             [(T
-            [real]
+            [(real
+            [])]
             [])]
         )
         (TraitProcedure
@@ -601,7 +603,8 @@
                 []
             )
             [(T
-            [integer]
+            [(integer
+            [])]
             [])]
         )
         (TraitProcedure
@@ -670,7 +673,8 @@
                 []
             )
             [(T
-            [real]
+            [(real
+            [])]
             [])]
         )
         (TraitProcedure

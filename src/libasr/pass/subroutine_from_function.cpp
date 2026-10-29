@@ -57,8 +57,9 @@ public:
                 // site references its own inferred interface instead.
                 return;
             }
-            if (ASRUtils::is_type_set_capability(x)) {
-                // A type-set restriction or witness keeps the function form
+            if (ASRUtils::get_FunctionType(x)->m_is_restriction ||
+                    ASRUtils::is_type_set_capability(x)) {
+                // A generic restriction or type-set witness keeps the function form
                 // its verified proof states. Only the concrete copies
                 // instantiated into executable scopes are code-generated, and
                 // they are transformed there like any other function.
@@ -770,8 +771,9 @@ public :
         }
 
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
-        if (func && ASRUtils::is_type_set_capability(*func)) {
-            // A call of a type-set restriction in a template body keeps the
+        if (func && (ASRUtils::get_FunctionType(func)->m_is_restriction ||
+                ASRUtils::is_type_set_capability(*func))) {
+            // A call of a generic restriction in a template body keeps the
             // function form of its untransformed callee.
             return;
         }
@@ -1388,6 +1390,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
             if(ASR::is_a<ASR::Function_t>(*func_sym)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+                if (ASRUtils::get_FunctionType(func)->m_is_restriction) {
+                    return false;
+                }
                 ASR::ttype_t* func_type = func->m_function_signature;
                 if(ASR::is_a<ASR::FunctionType_t>(*func_type)){
                     ASR::FunctionType_t* func_type_type = ASR::down_cast<ASR::FunctionType_t>(func_type);

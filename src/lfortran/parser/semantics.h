@@ -1138,13 +1138,34 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
     return a;
 }
 
+static inline associated_type_binding_t *ASSOCIATED_TYPE_BINDING(Allocator &al,
+        const ast_t *name, ast_t *type, Location &loc)
+{
+    auto *r = al.allocate<associated_type_binding_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_type = down_cast<decl_attribute_t>(type);
+    return r;
+}
+
+static inline trait_spec_t *CONSTRAINT_TRAIT(Allocator &al, const ast_t *name,
+        const Vec<associated_type_binding_t> &bindings, Location &loc)
+{
+    auto *r = al.allocate<trait_spec_t>(1);
+    r->loc = loc;
+    r->m_name = name2char(name);
+    r->m_bindings = bindings.p;
+    r->n_bindings = bindings.size();
+    return r;
+}
+
 static inline trait_parameter_t *TRAIT_PARAMETER(Allocator &al,
-        const ast_t *name, const Vec<ast_t*> &traits, Location &loc)
+        const ast_t *name, const Vec<trait_spec_t> &traits, Location &loc)
 {
     trait_parameter_t *r = al.allocate<trait_parameter_t>(1);
     r->loc = loc;
     r->m_name = name2char(name);
-    r->m_traits = REDUCE_ARGS(al, traits);
+    r->m_traits = traits.p;
     r->n_traits = traits.size();
     r->m_member_types = nullptr;
     r->n_member_types = 0;

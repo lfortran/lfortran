@@ -27076,16 +27076,17 @@ public:
             SymbolTable *scope, const Location &loc,
             ASR::TraitWitness_t *witness = nullptr, size_t slot = 0,
             const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
-                &types = {}) {
+                &types = {},
+            const std::map<std::string, ASR::symbol_t*> &substitutions = {}) {
         if (!witness && ASRUtils::trait_member_operation(binding.m_member)) {
             return trait_operation_adapter(required, type, type_declaration, binding,
-                scope, loc, types);
+                scope, loc, types, substitutions);
         }
         ASRUtils::SymbolDuplicator duplicator(al);
         std::string name = scope->get_unique_name(witness
             ? std::string(witness->m_name) + "_" + std::to_string(slot)
             : "__trait_adapter");
-        std::map<std::string, ASR::symbol_t*> symbols;
+        auto symbols = substitutions;
         size_t n_diagnostics = diag.diagnostics.size();
         ASR::symbol_t *copy = types.empty()
             ? duplicator.duplicate_Function(required, scope)
@@ -27186,7 +27187,8 @@ public:
             ASR::ttype_t *type, ASR::symbol_t *type_declaration,
             const ASR::trait_binding_t &binding, SymbolTable *scope,
             const Location &loc,
-            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types = {}) {
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types = {},
+            const std::map<std::string, ASR::symbol_t*> &substitutions = {}) {
         auto bind = [&](ASR::ttype_t *formal) {
             formal = ASRUtils::extract_type(formal);
             if (formal && ASR::is_a<ASR::TypeParameter_t>(*formal)) {
@@ -27198,7 +27200,7 @@ public:
             bind(ASRUtils::expr_type(required->m_args[i]));
         }
         if (required->m_return_var) bind(ASRUtils::expr_type(required->m_return_var));
-        std::map<std::string, ASR::symbol_t*> symbols;
+        auto symbols = substitutions;
         std::string name = scope->get_unique_name("__trait_adapter");
         size_t n_diagnostics = diag.diagnostics.size();
         auto *adapter = ASRUtils::trait_method_function(instantiate_symbol(al, scope,
@@ -28616,7 +28618,21 @@ public:
     void bind_trait_associated_types(ASR::TraitConstraint_t &constraint,
             const ASRUtils::TraitAssociatedTypes &associated,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
-            const Location &loc) {
+            const Location &loc, ASR::symbol_t *definition = nullptr,
+            ASR::symbol_t *instance = nullptr) {
+        for (size_t i = 0; i < constraint.n_same_types; i++) {
+            const auto &bound = constraint.m_same_types[i];
+            auto *declaration = ASRUtils::symbol_get_past_external(bound.m_associated_type);
+            auto actual = associated.find(declaration);
+            auto expected = ASRUtils::substitute_trait_type_argument(
+                {bound.m_type, bound.m_type_declaration}, types, definition, instance);
+            if (actual == associated.end() ||
+                    !ASRUtils::trait_type_argument_equal(expected, actual->second)) {
+                trait_call_error("associated type equality '" +
+                    std::string(ASRUtils::symbol_name(declaration)) +
+                    "' is not satisfied", loc);
+            }
+        }
         auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
             ASRUtils::symbol_get_past_external(constraint.m_trait)), loc);
         for (const auto &[declaration, parameter] : ASRUtils::trait_associated_parameters(
@@ -28771,13 +28787,8 @@ public:
                     if (std::find(hierarchy.traits.begin(), hierarchy.traits.end(), trait)
                             == hierarchy.traits.end()) continue;
                     matched = true;
-                    ASRUtils::TraitAssociatedTypes associated;
-                    for (const auto &[declaration, parameter] :
-                            ASRUtils::trait_associated_parameters(
-                                source->m_parent_symtab, source_parameter)) {
-                        associated[declaration] = {
-                            ASRUtils::symbol_type(parameter), parameter};
-                    }
+                    auto associated = ASRUtils::trait_effective_associated_types(
+                        source->m_parent_symtab, source_parameter);
                     bind_trait_associated_types(*constraint, associated, types, loc);
                     for (size_t i = 0; i < constraint->n_requirements; i++) {
                         if (ASRUtils::trait_requirement_specialization(*constraint, i)) continue;
@@ -30542,6 +30553,7 @@ public:
                     LCOMPILERS_ASSERT(source.scope == generic->m_symtab);
                     auto types = source.types;
                     for (auto &entry : types) {
+                        if (!ASR::is_a<ASR::TypeParameter_t>(*entry.second.first)) continue;
                         auto *parameter =
                             ASR::down_cast<ASR::TypeParameter_t>(entry.second.first);
                         LCOMPILERS_ASSERT(ASRUtils::symbol_get_past_external(
@@ -30589,6 +30601,7 @@ public:
                         std::map<std::string, std::vector<ASR::TraitImplementation_t*>>
                             conformances;
                         for (const auto &entry : source.types) {
+                            if (!ASR::is_a<ASR::TypeParameter_t>(*entry.second.first)) continue;
                             auto selected = p.conformances.find(
                                 ASR::down_cast<ASR::TypeParameter_t>(
                                     entry.second.first)->m_param);
@@ -31332,7 +31345,41 @@ public:
             argument.m_evidence = selected.p;
             argument.n_evidence = selected.size();
         }
+        std::set<ASR::Struct_t*> checked;
+        for (const auto &record : records) {
+            if (record.instance->m_symtab->parent != current_scope ||
+                    !checked.insert(record.instance).second) continue;
+            try {
+                validate_generic_instance_equalities(*record.instance, record.loc);
+            } catch (const SemanticAbort &) {
+                if (!compiler_options.continue_compilation) throw;
+                valid = false;
+            }
+        }
         return valid;
+    }
+
+    void validate_generic_instance_equalities(ASR::Struct_t &instance,
+            const Location &loc) {
+        auto *metadata = ASRUtils::generic_type_instance(instance);
+        auto *definition = ASRUtils::generic_instance_definition(*metadata);
+        auto *package = ASR::down_cast<ASR::Template_t>(
+            ASRUtils::get_asr_owner(&definition->base));
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        for (size_t i = 0; i < metadata->n_arguments; i++) {
+            types[package->m_args[i]] = {metadata->m_arguments[i].m_type,
+                metadata->m_arguments[i].m_type_declaration};
+        }
+        for (auto *constraint : trait_constraints(package)) {
+            if (!constraint->n_same_types) continue;
+            size_t i = ASRUtils::trait_binder_position(*package, constraint->m_parameter);
+            // A declaration can wait for its own unit's conformance signatures.
+            if (!metadata->m_arguments[i].n_evidence) continue;
+            auto selected = generic_type_constraint_evidence(*package, *metadata, *constraint);
+            bind_trait_associated_types(*constraint,
+                ASRUtils::trait_implementation_associated_types(*selected.second),
+                types, loc, &definition->base, &instance.base);
+        }
     }
 
     // The instance `declaration` resolves to when its unit created it but has
@@ -31481,9 +31528,28 @@ public:
                 }
             }
         };
+        std::vector<ASR::Struct_t*> candidates;
         for (const auto &entry : owner->get_scope()) {
-            if (!ASR::is_a<ASR::Struct_t>(*entry.second)) continue;
-            auto *candidate = ASR::down_cast<ASR::Struct_t>(entry.second);
+            if (ASR::is_a<ASR::Struct_t>(*entry.second)) {
+                candidates.push_back(ASR::down_cast<ASR::Struct_t>(entry.second));
+            }
+        }
+        // An associated mapping can already name this exact specialization,
+        // including one exported through another module's method signature.
+        // Reuse that nominal node rather than materializing a second layout.
+        for (const auto &selected : evidence) {
+            for (auto *implementation : selected) {
+                for (const auto &[declaration, type] :
+                        ASRUtils::trait_implementation_associated_types(*implementation)) {
+                    auto *symbol = type.second
+                        ? ASRUtils::symbol_get_past_external(type.second) : nullptr;
+                    if (symbol && ASR::is_a<ASR::Struct_t>(*symbol)) {
+                        candidates.push_back(ASR::down_cast<ASR::Struct_t>(symbol));
+                    }
+                }
+            }
+        }
+        for (auto *candidate : candidates) {
             auto *instance = ASRUtils::generic_type_instance(*candidate);
             if (!instance || ASRUtils::generic_instance_definition(*instance) != definition ||
                     instance->n_arguments != arguments.size()) continue;
@@ -31504,9 +31570,12 @@ public:
                     selected);
             }
             if (!same) continue;
-            defer(*candidate);
-            if (is_body_visitor) complete_generic_instance(*candidate);
-            return entry.second;
+            if (candidate->m_symtab->parent == owner) {
+                defer(*candidate);
+                if (is_body_visitor) complete_generic_instance(*candidate);
+                return &candidate->base;
+            }
+            return ASRUtils::import_nested_symbol(al, &candidate->base, owner);
         }
         // Its type arguments, definition and evidence are referenced from the
         // instance's own scope.
@@ -31579,6 +31648,12 @@ public:
         instance->n_dependencies = dependencies.size();
         instance->m_struct_signature = ASRUtils::make_StructType_t_util(al, loc,
             &instance->base, true);
+        try {
+            validate_generic_instance_equalities(*instance, loc);
+        } catch (const SemanticAbort &) {
+            owner->erase_symbol(name);
+            throw;
+        }
         defer(*instance);
         if (is_body_visitor) complete_generic_instance(*instance);
         return &instance->base;
@@ -31651,9 +31726,10 @@ public:
     // definition in its package) calls first: the initializer generic that
     // belongs to the type, else the type itself for its structure
     // constructor.
-    static ASR::symbol_t *generic_type_constructor_target(ASR::symbol_t *type) {
+    ASR::symbol_t *generic_type_constructor_target(ASR::symbol_t *type) {
         ASR::symbol_t *initializers = type_initializer_generic(type);
-        return initializers ? initializers : type;
+        return initializers
+            ? ASRUtils::import_nested_symbol(al, initializers, current_scope) : type;
     }
 
     // Binds the parameters of a generic type from the actual arguments of a
@@ -32167,7 +32243,7 @@ public:
                 auto *evidence = selected.second;
                 bind_trait_associated_types(*constraint,
                     ASRUtils::trait_implementation_associated_types(*evidence),
-                    type_subs, loc);
+                    type_subs, loc, &definition->base, &instance.base);
             }
             for (auto *constraint : constraints) {
                 auto selected = generic_type_constraint_evidence(*package, *metadata,
@@ -32189,7 +32265,7 @@ public:
                         record.m_type_declaration, *binding, owner, loc,
                         nullptr, 0, ASRUtils::trait_has_associated_types(*trait) ? type_subs :
                             std::map<std::string,
-                                std::pair<ASR::ttype_t*, ASR::symbol_t*>>{});
+                                std::pair<ASR::ttype_t*, ASR::symbol_t*>>{}, symbol_subs);
                 }
             }
             std::map<ASR::symbol_t*, ASR::symbol_t*> copies;

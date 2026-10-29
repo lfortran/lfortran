@@ -2134,7 +2134,18 @@ public:
     void visit_trait_parameter(const trait_parameter_t &x) {
         std::string r;
         for (size_t i=0; i<x.n_traits; i++) {
-            r.append(x.m_traits[i]);
+            const auto &trait = x.m_traits[i];
+            r.append(trait.m_name);
+            if (trait.n_bindings) {
+                r += "(";
+                for (size_t j = 0; j < trait.n_bindings; j++) {
+                    if (j) r += ", ";
+                    r += std::string(trait.m_bindings[j].m_name) + "=";
+                    visit_decl_attribute(*trait.m_bindings[j].m_type);
+                    r += s;
+                }
+                r += ")";
+            }
             if (i < x.n_traits-1) r.append(" + ");
         }
         for (size_t i=0; i<x.n_member_types; i++) {

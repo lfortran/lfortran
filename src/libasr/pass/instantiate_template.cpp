@@ -1383,13 +1383,24 @@ public:
         }
         ASR::symbol_t* parameter = instantiate_reference(x->m_parameter, source);
         ASR::symbol_t* trait = instantiate_reference(x->m_trait, source);
+        Vec<ASR::trait_same_type_requirement_t> same_types;
+        same_types.reserve(al, x->n_same_types);
+        for (size_t i = 0; i < x->n_same_types; i++) {
+            auto bound = x->m_same_types[i];
+            auto type = ASRUtils::substitute_trait_type_argument(
+                {bound.m_type, bound.m_type_declaration}, type_subs);
+            bound.m_associated_type = instantiate_reference(bound.m_associated_type, source);
+            bound.m_type = ASRUtils::duplicate_type(al, type.first);
+            bound.m_type_declaration = instantiate_reference(type.second, source);
+            same_types.push_back(al, bound);
+        }
         if (target_scope->get_symbol(new_sym_name) != nullptr) {
             return target_scope->get_symbol(new_sym_name);
         }
         ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitConstraint_t(
             al, x->base.base.loc, target_scope, s2c(al, new_sym_name), parameter, trait,
             requirements.p, requirements.size(), intrinsic_requirements.p,
-            intrinsic_requirements.size()));
+            intrinsic_requirements.size(), same_types.p, same_types.size()));
         target_scope->add_symbol(new_sym_name, result);
         return result;
     }

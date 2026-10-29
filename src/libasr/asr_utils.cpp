@@ -7847,10 +7847,37 @@ TraitAssociatedTypes trait_implementation_associated_types(
             if (!binding.m_is_nopass && binding.m_self_argument &&
                     std::string(EXPR2VAR(actual->m_args[j])->m_name) ==
                         binding.m_self_argument) continue;
-            bind(required->m_args[args[k++]], actual->m_args[j]);
+            if (k < args.size()) {
+                bind(required->m_args[args[k++]], actual->m_args[j]);
+            } else if (required->m_return_var && !actual->m_return_var &&
+                    j + 1 == actual->n_args) {
+                // Struct-return lowering moves the result to the final dummy.
+                bind(required->m_return_var, actual->m_args[j]);
+            }
         }
         if (required->m_return_var && actual->m_return_var) {
             bind(required->m_return_var, actual->m_return_var);
+        }
+    }
+    return result;
+}
+
+TraitAssociatedTypes trait_effective_associated_types(
+    SymbolTable *scope, ASR::symbol_t *parameter)
+{
+    TraitAssociatedTypes result;
+    for (const auto &[declaration, placeholder] : trait_associated_parameters(scope, parameter)) {
+        result[declaration] = {symbol_type(placeholder), placeholder};
+    }
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        if (symbol_get_past_external(constraint->m_parameter) !=
+                symbol_get_past_external(parameter)) continue;
+        for (size_t i = 0; i < constraint->n_same_types; i++) {
+            const auto &bound = constraint->m_same_types[i];
+            result[symbol_get_past_external(bound.m_associated_type)] = {
+                bound.m_type, bound.m_type_declaration};
         }
     }
     return result;
@@ -7861,6 +7888,9 @@ std::pair<ASR::ttype_t*, ASR::symbol_t*> trait_associated_actual(ASR::expr_t *va
     auto *type = value ? typed_expr_type(value) : nullptr;
     if (!type) return {nullptr, nullptr};
     auto *element = extract_type(type);
+    if (ASR::is_a<ASR::TypeParameter_t>(*element)) {
+        return {element, trait_type_parameter(value)};
+    }
     if (!ASR::is_a<ASR::StructType_t>(*element)) return {element, nullptr};
     auto *declaration = get_struct_sym_from_struct_expr(value);
     return {element, declaration ? symbol_get_past_external(declaration) : nullptr};
@@ -8092,7 +8122,20 @@ bool trait_requirement_type_arguments(const ASR::Template_t &requirement,
         if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol)) return false;
         auto *declaration = ASR::down_cast<ASR::Variable_t>(symbol);
         if (!declaration->m_type || is_array(declaration->m_type)) return false;
-        arguments.push_back({declaration->m_type, declaration->m_type_declaration});
+        ASR::symbol_t *type_declaration = declaration->m_type_declaration;
+        if (ASR::is_a<ASR::TypeParameter_t>(*declaration->m_type)) {
+            const char *name = ASR::down_cast<ASR::TypeParameter_t>(
+                declaration->m_type)->m_param;
+            type_declaration = nullptr;
+            for (auto *scope = specialization.m_symtab->parent; scope; scope = scope->parent) {
+                auto *binder = scope->get_symbol(name);
+                if (binder && is_trait_type_declaration(*binder)) {
+                    type_declaration = binder;
+                    break;
+                }
+            }
+        }
+        arguments.push_back({declaration->m_type, type_declaration});
     }
     return true;
 }
@@ -8235,15 +8278,39 @@ bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &l
     auto *a = extract_type(left.first), *b = extract_type(right.first);
     if (!a || !b || a->type != b->type) return false;
     if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
+        if (left.second || right.second) {
+            return left.second && right.second &&
+                symbol_get_past_external(left.second) == symbol_get_past_external(right.second);
+        }
         auto *x = ASR::down_cast<ASR::TypeParameter_t>(a);
         auto *y = ASR::down_cast<ASR::TypeParameter_t>(b);
         return x->m_param && y->m_param && std::string(x->m_param) == y->m_param;
     }
     if (ASR::is_a<ASR::StructType_t>(*a)) {
-        return left.second && right.second &&
-            symbol_get_past_external(left.second) == symbol_get_past_external(right.second);
+        if (!left.second || !right.second) return false;
+        auto *x = symbol_get_past_external(left.second);
+        auto *y = symbol_get_past_external(right.second);
+        return x == y || (ASR::is_a<ASR::Struct_t>(*x) && ASR::is_a<ASR::Struct_t>(*y) &&
+            same_generic_instance(*ASR::down_cast<ASR::Struct_t>(x),
+                *ASR::down_cast<ASR::Struct_t>(y)));
     }
     return type_argument_types_equal(a, b);
+}
+
+std::pair<ASR::ttype_t*, ASR::symbol_t*> substitute_trait_type_argument(
+    const std::pair<ASR::ttype_t*, ASR::symbol_t*> &type,
+    const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+    ASR::symbol_t *definition, ASR::symbol_t *instance)
+{
+    if (ASR::is_a<ASR::TypeParameter_t>(*type.first)) {
+        auto found = types.find(ASR::down_cast<ASR::TypeParameter_t>(type.first)->m_param);
+        if (found != types.end()) return found->second;
+    }
+    if (type.second && definition && instance &&
+            symbol_get_past_external(type.second) == symbol_get_past_external(definition)) {
+        return {ASR::down_cast<ASR::Struct_t>(instance)->m_struct_signature, instance};
+    }
+    return type;
 }
 
 // The traits constraining a binder in its own scope.
@@ -8536,7 +8603,8 @@ ASR::symbol_t *import_trait_slot(Allocator &al, ASR::TraitRuntimeContract_t &con
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset, size_t right_offset,
     bool forwarding,
-    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated)
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated,
+    const TraitAssociatedTypes &same_types)
 {
     LCOMPILERS_ASSERT(left_offset <= left.n_args && right_offset <= right.n_args);
     if (!left.m_function_signature || !right.m_function_signature ||
@@ -8598,7 +8666,11 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
             return {TraitMethodDifference::Contract,
                 argument + " has different array shapes"};
         }
-        if (!trait_types_equal(a_expr, b_expr, parameters)) {
+        auto bounded = same_types;
+        bool equal = trait_associated_type(a_expr) && bounded.count(trait_associated_type(a_expr))
+            ? trait_types_equal_impl(a_expr, b_expr, parameters, &bounded)
+            : trait_types_equal(a_expr, b_expr, parameters);
+        if (!equal) {
             return {TraitMethodDifference::Arguments, argument + " has type " +
                 type_to_str_with_kind(a->m_type, a_expr) + " and " +
                 type_to_str_with_kind(b->m_type, b_expr)};
@@ -8639,7 +8711,12 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
         if (!trait_shapes_equal(a, b, parameters)) {
             return {TraitMethodDifference::Contract, "result array shapes differ"};
         }
-        if (!trait_types_equal(left.m_return_var, right.m_return_var, parameters)) {
+        auto bounded = same_types;
+        bool equal = trait_associated_type(left.m_return_var) &&
+                bounded.count(trait_associated_type(left.m_return_var))
+            ? trait_types_equal_impl(left.m_return_var, right.m_return_var, parameters, &bounded)
+            : trait_types_equal(left.m_return_var, right.m_return_var, parameters);
+        if (!equal) {
             return {TraitMethodDifference::Contract, "results have type " +
                 type_to_str_with_kind(a, left.m_return_var) + " and " +
                 type_to_str_with_kind(b, right.m_return_var)};

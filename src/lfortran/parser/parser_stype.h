@@ -75,6 +75,10 @@ union YYSTYPE {
 
     AST::trait_parameter_t *trait_parameter;
     Vec<AST::trait_parameter_t> vec_trait_parameter;
+    AST::trait_spec_t *trait_spec;
+    Vec<AST::trait_spec_t> vec_trait_spec;
+    AST::associated_type_binding_t *associated_type_binding;
+    Vec<AST::associated_type_binding_t> vec_associated_type_binding;
 
     AST::var_sym_t *var_sym;
     Vec<AST::var_sym_t> vec_var_sym;

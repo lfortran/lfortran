@@ -1266,7 +1266,8 @@ public:
                         // The constraint checks the exact mapping below.
                         return ASRUtils::extract_n_dims_from_ttype(a) ==
                                 ASRUtils::extract_n_dims_from_ttype(b) &&
-                            ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(b));
+                            ASRUtils::is_pointer(a) == ASRUtils::is_pointer(b) &&
+                            ASRUtils::is_allocatable(a) == ASRUtils::is_allocatable(b);
                     }
                     if (!ASRUtils::contains_trait_itself(a)) {
                         return ASRUtils::trait_types_equal(required, actual);
@@ -1298,7 +1299,9 @@ public:
                     proc_fn->m_symtab->parent,
                     ASRUtils::trait_type_parameter(proc_fn->m_args[0]));
                 auto mismatch = ASRUtils::trait_method_mismatch(*member_fn, *proc_fn,
-                    0, 1, false, associated);
+                    0, 1, false, associated, ASRUtils::trait_effective_associated_types(
+                        proc_fn->m_symtab->parent,
+                        ASRUtils::trait_type_parameter(proc_fn->m_args[0])));
                 check(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                     "asr.verify.trait_requirement.signature_matches",
                     "A normalized trait requirement must preserve its member's signature: "
@@ -2092,6 +2095,45 @@ public:
         }
         auto hierarchy = verify_trait_hierarchy(
             *ASR::down_cast<ASR::Trait_t>(trait), x.base.base.loc);
+        auto effective = ASRUtils::trait_effective_associated_types(x.m_parent_symtab, parameter);
+        std::set<ASR::symbol_t*> bounded;
+        for (size_t i = 0; i < x.n_same_types; i++) {
+            const auto &bound = x.m_same_types[i];
+            auto *declaration = ASRUtils::symbol_get_past_external(bound.m_associated_type);
+            require_id(associated.count(declaration) && bounded.insert(declaration).second,
+                "asr.verify.trait_constraint.same_type_declaration",
+                "An equality must name a unique associated declaration of its binder");
+            auto *owner = ASRUtils::get_asr_owner(declaration);
+            require_id(owner && ASR::is_a<Trait_t>(*owner) &&
+                    std::find(hierarchy.traits.begin(), hierarchy.traits.end(),
+                        ASR::down_cast<Trait_t>(owner)) != hierarchy.traits.end(),
+                "asr.verify.trait_constraint.same_type_declaration",
+                "An equality's associated declaration must belong to its trait hierarchy");
+            auto *type = bound.m_type;
+            auto *rhs = bound.m_type_declaration
+                ? ASRUtils::symbol_get_past_external(bound.m_type_declaration) : nullptr;
+            bool nominal = type && (ASR::is_a<StructType_t>(*type) ||
+                ASR::is_a<TypeParameter_t>(*type));
+            require_id(type && !ASRUtils::is_array(type) && !ASRUtils::is_pointer(type) &&
+                    !ASRUtils::is_allocatable(type) && !ASRUtils::is_class_type(type) &&
+                    (nominal ? rhs && symtab_in_scope(x.m_parent_symtab,
+                        bound.m_type_declaration) &&
+                        (ASR::is_a<StructType_t>(*type) ? ASR::is_a<Struct_t>(*rhs) &&
+                            ASRUtils::types_equal(type,
+                                ASR::down_cast<Struct_t>(rhs)->m_struct_signature,
+                                nullptr, nullptr)
+                            : ASRUtils::is_trait_type_declaration(*rhs) &&
+                                ASRUtils::types_equal(type, ASRUtils::symbol_type(rhs),
+                                    nullptr, nullptr))
+                    : !rhs && (type_set_concrete_kind(type) || constant_length_character(type))),
+                "asr.verify.trait_constraint.same_type_rhs",
+                "An equality requires a scalar type with visible declaration metadata");
+            require_id(effective.count(declaration) &&
+                    ASRUtils::trait_type_argument_equal(effective.at(declaration),
+                        {type, bound.m_type_declaration}),
+                "asr.verify.trait_constraint.same_type_consistency",
+                "Composed constraints must agree on each associated equality");
+        }
         std::set<ASR::symbol_t*> trait_members(
             hierarchy.members.begin(), hierarchy.members.end());
         std::set<ASR::symbol_t*> required_members;
@@ -2206,12 +2248,10 @@ public:
                 auto check_associated = [&](ASR::expr_t *formal, ASR::expr_t *actual) {
                     auto *declaration = ASRUtils::trait_associated_type(formal);
                     if (!declaration) return;
-                    auto found = associated.find(declaration);
-                    auto *type = ASRUtils::extract_type(ASRUtils::expr_type(actual));
-                    require_id(found != associated.end() &&
-                            ASR::is_a<TypeParameter_t>(*type) &&
-                            std::string(ASR::down_cast<TypeParameter_t>(type)->m_param) ==
-                                ASRUtils::symbol_name(found->second),
+                    auto found = effective.find(declaration);
+                    require_id(found != effective.end() &&
+                            ASRUtils::trait_type_argument_equal(found->second,
+                                ASRUtils::trait_associated_actual(actual)),
                         "asr.verify.trait_constraint.associated_signature",
                         "Requirements must share the binder's mapped associated types");
                 };
@@ -5244,6 +5284,11 @@ public:
             "A generic type's instance must instantiate a generic type's definition "
             "with one type argument per parameter");
         if (!definition || !package || instance.n_arguments != package->n_args) return;
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        for (size_t i = 0; i < instance.n_arguments; i++) {
+            types[package->m_args[i]] = {instance.m_arguments[i].m_type,
+                instance.m_arguments[i].m_type_declaration};
+        }
         for (size_t i = 0; i < instance.n_arguments; i++) {
             const auto &argument = instance.m_arguments[i];
             ASR::ttype_t *type = argument.m_type;
@@ -5306,6 +5351,20 @@ public:
                     "A generic type argument's evidence must be a visible conformance of "
                     "the argument to its constraint's trait");
                 if (!implementation) continue;
+                auto associated = constraints[j]->n_same_types
+                    ? ASRUtils::trait_implementation_associated_types(*implementation)
+                    : ASRUtils::TraitAssociatedTypes{};
+                for (size_t k = 0; k < constraints[j]->n_same_types; k++) {
+                    const auto &bound = constraints[j]->m_same_types[k];
+                    auto *declaration = ASRUtils::symbol_get_past_external(bound.m_associated_type);
+                    auto expected = ASRUtils::substitute_trait_type_argument(
+                        {bound.m_type, bound.m_type_declaration}, types,
+                        definition_symbol, const_cast<ASR::symbol_t*>(&x.base));
+                    require_id(associated.count(declaration) &&
+                            ASRUtils::trait_type_argument_equal(expected, associated.at(declaration)),
+                        "asr.verify.generic_type.same_type_evidence",
+                        "An instance's selected conformance must satisfy its associated equalities");
+                }
                 // Each binding implements its message's receiver intent
                 // exactly (verified with the conformance), which the
                 // generic's calls were checked against.

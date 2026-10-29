@@ -19,6 +19,9 @@ trait_requirement
 trait_evidence
     = (symbol constraint, symbol implementation)
 
+trait_same_type_requirement
+    = (symbol associated_type, ttype type, symbol? type_declaration)
+
 trait_binding
     = (symbol member, symbol procedure, identifier? self_argument, bool is_nopass)
 
@@ -121,7 +124,7 @@ symbol
     -- (TypeSetConversion) and operator requirements. Every other member is an
     -- ordinary message; its receiver, if any, is its dummy with pass_attr Pass.
     | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types, trait_operation* operations)
-    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
+    | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements, trait_same_type_requirement* same_types)
     -- A dependent type of a constrained binder. associated_type is the
     -- declaration in the trait; type_parameter is a fresh Variable of this
     -- generic scope, shared by every requirement that uses that declaration.

@@ -446,6 +446,11 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_trait_parameter> generic_type_parameter_list
 %type <vec_ast> trait_name_list
 %type <vec_ast> trait_name_spec
+%type <trait_spec> constraint_trait
+%type <vec_trait_spec> constraint_trait_list constraint_trait_spec
+%type <associated_type_binding> associated_type_binding
+%type <vec_associated_type_binding> associated_type_bindings
+%type <ast> constraint_type_argument
 %type <vec_ast> implements_traits
 %type <vec_ast> procedure_list_opt
 %type <vec_ast> instantiate_symbol_list
@@ -910,8 +915,45 @@ implements_traits
     | %empty { LIST_NEW($$); }
     ;
 
+constraint_trait
+    : id { Vec<associated_type_binding_t> bindings; LIST_NEW(bindings);
+        $$ = CONSTRAINT_TRAIT(p.m_a, $1, bindings, @$); }
+    | id "(" associated_type_bindings ")" {
+        $$ = CONSTRAINT_TRAIT(p.m_a, $1, $3, @$); }
+    ;
+
+associated_type_binding
+    : id "=" constraint_type_argument {
+        $$ = ASSOCIATED_TYPE_BINDING(p.m_a, $1, $3, @$); }
+    ;
+
+constraint_type_argument
+    : var_type %dprec 2 { $$ = $1; }
+    | id %dprec 1 { $$ = instantiate_arg_expr(p.m_a, $1, @$); }
+    | id "{" instantiate_symbol_list "}" {
+        $$ = instantiate_arg_expr(p.m_a,
+            generic_procedure_value(p.m_a, @$, $1, $3), @$); }
+    ;
+
+associated_type_bindings
+    : associated_type_binding { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | associated_type_bindings "," associated_type_binding {
+        $$ = $1; PLIST_ADD($$, $3); }
+    ;
+
+constraint_trait_list
+    : constraint_trait { LIST_NEW($$); PLIST_ADD($$, $1); }
+    | constraint_trait_list "+" constraint_trait {
+        $$ = $1; PLIST_ADD($$, $3); }
+    ;
+
+constraint_trait_spec
+    : constraint_trait_list { $$ = $1; }
+    | "(" constraint_trait_list ")" { $$ = $2; }
+    ;
+
 trait_parameter
-    : trait_name_spec "::" id %dprec 2 { $$ = TRAIT_PARAMETER(p.m_a, $3, $1, @$); }
+    : constraint_trait_spec "::" id %dprec 2 { $$ = TRAIT_PARAMETER(p.m_a, $3, $1, @$); }
     | finite_type_set "::" id %dprec 1 {
         $$ = TRAIT_TYPE_PARAMETER(p.m_a, $3, $1, @$); }
     ;
@@ -920,7 +962,7 @@ trait_parameter
 // unconstrained, as if constrained by the empty trait IAnyType.
 generic_type_parameter
     : trait_parameter { $$ = $1; }
-    | id { Vec<ast_t*> traits; LIST_NEW(traits);
+    | id { Vec<trait_spec_t> traits; LIST_NEW(traits);
         $$ = TRAIT_PARAMETER(p.m_a, $1, traits, @$); }
     ;
 

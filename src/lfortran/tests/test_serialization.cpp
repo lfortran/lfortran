@@ -573,7 +573,8 @@ end module
         scope->add_symbol(constraint->m_name, &constraint->base);
         auto *extra = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitConstraint_t(
             al, constraint->base.base.loc, scope, LCompilers::s2c(al, "extra"),
-            constraint->m_parameter, constraint->m_trait, nullptr, 0, nullptr, 0));
+            constraint->m_parameter, constraint->m_trait, nullptr, 0, nullptr, 0,
+            nullptr, 0));
         scope->add_symbol("extra", extra);
         rejected("asr.verify.trait.inline_has_one_binder");
         scope->erase_symbol("extra");
@@ -9718,6 +9719,192 @@ end module
         std::swap(mapping->m_type_parameter, mappings[1]->m_type_parameter);
     }
     CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+}
+
+TEST_CASE("Explicit associated equalities serialize and verify their typed contracts") {
+    namespace ASR = LCompilers::ASR;
+    const std::string source = R"(
+module explicit_associated
+implicit none
+abstract interface :: ISubject
+    type :: ObsType
+    subroutine put(self, value)
+        type(itself), pass, intent(inout) :: self
+        type(ObsType), intent(in) :: value
+    end subroutine
+end interface
+contains
+subroutine write{ISubject(ObsType=integer) :: T}(data, value)
+    type(T), intent(inout) :: data
+    integer, intent(in) :: value
+    call data%put(value)
+end subroutine
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "explicit_associated");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics loaded_diagnostics;
+        LCompilers::LocationManager loaded_lm;
+        auto loaded = LCompilers::asr_from_text(
+            al, text, "explicit_associated.asr", loaded_lm, loaded_diagnostics);
+        INFO(loaded_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(LCompilers::asr_verify(*loaded.result, true, loaded_diagnostics));
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+    }
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("explicit_associated"));
+    auto *generic = ASR::down_cast<ASR::Template_t>(
+        module->m_symtab->get_symbol("write"));
+    ASR::TraitConstraint_t *constraint = nullptr;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+            constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        }
+    }
+    REQUIRE(constraint);
+    REQUIRE(constraint->n_same_types == 1);
+    auto &bound = constraint->m_same_types[0];
+    SUBCASE("a fully bound equality cannot be replaced without updating the signature") {
+        bound.m_type = LCompilers::ASRUtils::TYPE(ASR::make_Real_t(al, bound.loc, 4));
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    }
+    SUBCASE("an intrinsic equality cannot carry a declaration") {
+        bound.m_type_declaration = constraint->m_parameter;
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    }
+    SUBCASE("the equality cannot bind itself") {
+        bound.m_associated_type = constraint->m_parameter;
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+    }
+}
+
+TEST_CASE("Explicit associated equalities reject undeclared and unsatisfied contracts") {
+    const std::string prefix = R"(
+module equality_errors
+implicit none
+abstract interface :: ISubject
+    type :: ObsType
+    subroutine put(self, value)
+        type(itself), pass, intent(inout) :: self
+        type(ObsType), intent(in) :: value
+    end subroutine
+end interface
+type :: Item
+    integer :: value
+end type
+type :: Other
+    integer :: value
+end type
+type, sealed, implements(ISubject) :: Subject
+contains
+    procedure :: put
+end type
+contains
+subroutine put(self, value)
+    type(Subject), intent(inout) :: self
+    type(Item), intent(in) :: value
+end subroutine
+)";
+    auto reject = [&](const std::string &bound, const std::string &body,
+            const std::string &caller, const std::string &message,
+            const std::string &declaration = "") {
+        std::string source = prefix +
+            "subroutine require{" + bound + " :: T}(data)\n"
+            "type(T), intent(inout) :: data\n" + body +
+            "\nend subroutine\nend module\n" + caller;
+        if (!declaration.empty()) {
+            source.insert(source.find("type, sealed"), declaration);
+        }
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        CHECK_FALSE(result.ok);
+        CHECK(diagnostics.render2().find(message) != std::string::npos);
+    };
+    const std::string caller = R"(
+program check_equality
+use equality_errors
+implicit none
+type(Subject) :: data
+call require(data)
+end program
+)";
+    SUBCASE("structurally identical types do not satisfy nominal equality") {
+        reject("ISubject(ObsType=Other)", "", caller,
+            "associated type equality 'obstype' is not satisfied");
+    }
+    SUBCASE("an unused equality is still an instantiation obligation") {
+        reject("ISubject(ObsType=integer)", "", caller,
+            "associated type equality 'obstype' is not satisfied");
+    }
+    SUBCASE("generic types enforce equalities even without a method call") {
+        reject("ISubject", "",
+            "program check_instance\nuse equality_errors\nimplicit none\n"
+            "type(Box{Subject}) :: object\nend program\n",
+            "associated type equality 'obstype' is not satisfied",
+            "type :: Box{ISubject(ObsType=Other) :: U}\n"
+            "type(U) :: data\nend type\n");
+    }
+    SUBCASE("unknown associated names are rejected") {
+        reject("ISubject(Missing=integer)", "", "", "unknown associated type 'missing'");
+    }
+    SUBCASE("itself cannot be rebound") {
+        reject("ISubject(itself=integer)", "", "", "unknown associated type 'itself'");
+    }
+    SUBCASE("duplicate names are case insensitive") {
+        reject("ISubject(ObsType=integer,obstype=integer)", "", "",
+            "duplicate associated type equality 'obstype'");
+    }
+    SUBCASE("composed contradictory equalities are rejected") {
+        reject("ISubject(ObsType=integer)+ISubject(ObsType=real)", "", "",
+            "contradictory associated type equality 'obstype'");
+    }
+    SUBCASE("values are not equality RHS types") {
+        Allocator al(256 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        auto parsed = LCompilers::LFortran::parse(al,
+            "subroutine invalid{ISubject(ObsType=1) :: T}()\nend subroutine\n",
+            diagnostics, options);
+        CHECK_FALSE(parsed.ok);
+    }
+    SUBCASE("missing equality is not inferred from a generic body") {
+        reject("ISubject", "call data%put(42)", "", "Type mismatch");
+    }
+    SUBCASE("forwarding requires the caller's declared equality") {
+        reject("ISubject(ObsType=integer)", "",
+            "module missing_equality\nuse equality_errors\ncontains\n"
+            "subroutine forward{ISubject :: U}(data)\n"
+            "type(U), intent(inout) :: data\ncall require(data)\n"
+            "end subroutine\nend module\n",
+            "associated type equality 'obstype' is not satisfied");
+    }
 }
 
 TEST_CASE("Generic derived types serialize and verify their packages and instances") {

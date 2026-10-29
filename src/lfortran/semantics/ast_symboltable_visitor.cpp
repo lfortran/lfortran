@@ -5160,7 +5160,7 @@ public:
                     parameter.loc);
             }
             for (size_t j = 0; j < parameter.n_traits; j++) {
-                std::string trait_name = to_lower(parameter.m_traits[j]);
+                std::string trait_name = to_lower(parameter.m_traits[j].m_name);
                 ASR::symbol_t *symbol = current_scope->resolve_symbol(trait_name);
                 // Bare intrinsic keywords remain names in the AST. A visible
                 // trait wins; an explicit kind or union takes the type-set path.
@@ -5214,8 +5214,9 @@ public:
                     current_scope->asr_owner));
             auto scope_before = generic->m_symtab->get_scope();
             try {
+                auto same_types = resolve_trait_same_types(generic->m_symtab, parameter);
                 add_trait_parameter_constraints(generic->m_symtab, type_symbol,
-                    parameter_traits[i], parameter.loc, generic_messages);
+                    parameter_traits[i], parameter.loc, generic_messages, same_types);
             } catch (const SemanticAbort &) {
                 erase_failed_instantiation(generic->m_symtab, scope_before);
                 throw;
@@ -5224,11 +5225,85 @@ public:
         tmp = &generic->base.base;
     }
 
+    ASRUtils::TraitAssociatedTypes resolve_trait_same_types(SymbolTable *scope,
+            const AST::trait_parameter_t &parameter) {
+        ASRUtils::TraitAssociatedTypes result;
+        auto *saved_scope = current_scope;
+        current_scope = scope;
+        try {
+            for (size_t i = 0; i < parameter.n_traits; i++) {
+                const auto &spec = parameter.m_traits[i];
+                if (!spec.n_bindings) continue;
+                auto *trait = resolve_trait(spec.m_name, spec.loc);
+                auto hierarchy = checked_trait_hierarchy(*trait, spec.loc);
+                std::set<std::string> names;
+                for (size_t j = 0; j < spec.n_bindings; j++) {
+                    const auto &binding = spec.m_bindings[j];
+                    std::string name = to_lower(binding.m_name);
+                    if (!names.insert(name).second) {
+                        trait_error("duplicate associated type equality '" + name + "'",
+                            binding.loc);
+                    }
+                    ASR::symbol_t *declaration = nullptr;
+                    for (auto *parent : hierarchy.traits) {
+                        for (auto *associated : ASRUtils::trait_declared_associated_types(*parent)) {
+                            if (name != ASRUtils::symbol_name(associated)) continue;
+                            if (declaration && declaration != associated) {
+                                trait_error("ambiguous associated type '" + name + "'",
+                                    binding.loc);
+                            }
+                            declaration = associated;
+                        }
+                    }
+                    if (!declaration) {
+                        trait_error("unknown associated type '" + name + "' in trait '" +
+                            to_lower(spec.m_name) + "'", binding.loc);
+                    }
+                    std::pair<ASR::ttype_t*, ASR::symbol_t*> type;
+                    auto *argument = binding.m_type;
+                    if (AST::is_a<AST::AttrName_t>(*argument)) {
+                        std::string rhs = to_lower(AST::down_cast<AST::AttrName_t>(
+                            argument)->m_name);
+                        auto *symbol = scope->resolve_symbol(rhs);
+                        auto *canonical = symbol ? ASRUtils::symbol_get_past_external(symbol)
+                            : nullptr;
+                        if (canonical && ASRUtils::is_trait_type_declaration(*canonical)) {
+                            type = {ASRUtils::symbol_type(canonical), symbol};
+                        } else if (auto *intrinsic = bare_type_set_member(rhs, binding.loc)) {
+                            type = generic_type_argument(intrinsic, name, binding.loc);
+                        } else {
+                            type = generic_type_argument(argument, name, binding.loc);
+                        }
+                    } else {
+                        type = generic_type_argument(argument, name, binding.loc);
+                    }
+                    auto previous = result.find(declaration);
+                    if (previous != result.end() &&
+                            !ASRUtils::trait_type_argument_equal(previous->second, type)) {
+                        bool dependent = ASR::is_a<ASR::TypeParameter_t>(*type.first) ||
+                            ASR::is_a<ASR::TypeParameter_t>(*previous->second.first);
+                        trait_error(dependent
+                            ? "comparing distinct dependent associated type equalities is "
+                                "not implemented yet; use a shared type parameter"
+                            : "contradictory associated type equality '" + name + "'",
+                            binding.loc);
+                    }
+                    result[declaration] = type;
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
+        return result;
+    }
+
     // The constraints of one generic type parameter, one per trait. Same-name
     // methods of its traits share one normalized requirement.
     void add_trait_parameter_constraints(SymbolTable *scope, ASR::symbol_t *type_symbol,
             const std::vector<ASR::symbol_t*> &traits, const Location &loc,
-            bool generic_messages) {
+            bool generic_messages, const ASRUtils::TraitAssociatedTypes &same_types = {}) {
         std::string parameter = ASRUtils::symbol_name(type_symbol);
         std::map<std::string, std::pair<ASR::Function_t*, ASR::symbol_t*>> methods;
         // Equal initializer or operator requirements of several traits share
@@ -5265,8 +5340,10 @@ public:
                             s2c(al, mapping), type_symbol,
                             reference_trait_member(declaration, scope, loc), placeholder)));
                 }
-                associated[ASRUtils::symbol_name(declaration)] = {
-                    ASRUtils::symbol_type(placeholder), placeholder};
+                auto bound = same_types.find(declaration);
+                associated[ASRUtils::symbol_name(declaration)] = bound != same_types.end()
+                    ? bound->second
+                    : std::make_pair(ASRUtils::symbol_type(placeholder), placeholder);
             }
             auto hierarchy = checked_trait_hierarchy(*trait, loc);
             Vec<ASR::trait_requirement_t> requirements;
@@ -5321,10 +5398,24 @@ public:
                 requirements.push_back(al, requirement);
             }
             std::string constraint_name = scope->get_unique_name("__constraint_" + parameter);
+            Vec<ASR::trait_same_type_requirement_t> equalities;
+            equalities.reserve(al, same_types.size());
+            for (const auto &[declaration, type] : same_types) {
+                auto *owner = ASR::down_cast<ASR::Trait_t>(ASRUtils::get_asr_owner(declaration));
+                if (std::find(hierarchy.traits.begin(), hierarchy.traits.end(), owner) ==
+                        hierarchy.traits.end()) continue;
+                ASR::trait_same_type_requirement_t equality;
+                equality.loc = loc;
+                equality.m_associated_type = reference_trait_member(declaration, scope, loc);
+                equality.m_type = type.first;
+                equality.m_type_declaration = type.second;
+                equalities.push_back(al, equality);
+            }
             ASR::symbol_t *constraint = ASR::down_cast<ASR::symbol_t>(
                 ASR::make_TraitConstraint_t(al, loc, scope,
                     s2c(al, constraint_name), type_symbol, trait_symbol,
-                    requirements.p, requirements.size(), nullptr, 0));
+                    requirements.p, requirements.size(), nullptr, 0,
+                    equalities.p, equalities.size()));
             scope->add_symbol(constraint_name, constraint);
         }
     }
@@ -8609,7 +8700,7 @@ public:
             std::set<ASR::symbol_t*> traits;
             for (size_t i = 0; i < parameter.n_traits; i++) {
                 ASR::symbol_t *symbol = current_scope->resolve_symbol(
-                    to_lower(parameter.m_traits[i]));
+                    to_lower(parameter.m_traits[i].m_name));
                 traits.insert(symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr);
             }
             return traits;
@@ -8620,6 +8711,15 @@ public:
             same = to_lower(left.m_name) == to_lower(right.m_name) &&
                 left.n_member_types == 0 && right.n_member_types == 0 &&
                 resolved(left) == resolved(right);
+            if (same) {
+                auto a = resolve_trait_same_types(current_scope, left);
+                auto b = resolve_trait_same_types(current_scope, right);
+                same = a.size() == b.size();
+                for (const auto &[declaration, type] : a) {
+                    same = same && b.count(declaration) &&
+                        ASRUtils::trait_type_argument_equal(type, b.at(declaration));
+                }
+            }
         }
         if (!same) {
             trait_error("this prototype requires the implements statement to repeat "
@@ -8748,18 +8848,13 @@ public:
                 }
                 // An unconstrained parameter admits any type (the empty trait
                 // IAnyType): it has no constraint and its arguments no evidence.
-                std::vector<ASR::symbol_t*> traits;
                 for (size_t j = 0; j < parameter.n_traits; j++) {
-                    auto *trait = resolve_trait(parameter.m_traits[j], parameter.loc);
+                    auto *trait = resolve_trait(parameter.m_traits[j].m_name, parameter.loc);
                     if (trait->m_kind != ASR::trait_kindType::UniversalTrait) {
                         trait_error("type-set constrained generic type parameters are not "
                             "implemented yet", parameter.loc);
                     }
-                    traits.push_back(current_scope->resolve_symbol(
-                        to_lower(parameter.m_traits[j])));
                 }
-                add_trait_parameter_constraints(scope, binders[i], traits,
-                    parameter.loc, true);
             }
             for (const auto &foreign : package.foreign) {
                 trait_error("procedure '" + std::get<0>(foreign) + "' depends on the generic "
@@ -8829,6 +8924,19 @@ public:
             definition->m_generic = ASR::down_cast<ASR::struct_generic_t>(
                 ASR::make_GenericTypeDefinition_t(al, generic.base.base.loc,
                     binders.p, binders.size()));
+            // The nominal definition is now available to an equality such as
+            // ISubject(ObsType=Display{U}); no symbolic instance is created.
+            for (size_t i = 0; i < generic.n_parameters; i++) {
+                const auto &parameter = generic.m_parameters[i];
+                std::vector<ASR::symbol_t*> traits;
+                for (size_t j = 0; j < parameter.n_traits; j++) {
+                    traits.push_back(scope->resolve_symbol(
+                        to_lower(parameter.m_traits[j].m_name)));
+                }
+                auto same_types = resolve_trait_same_types(scope, parameter);
+                add_trait_parameter_constraints(scope, binders[i], traits,
+                    parameter.loc, true, same_types);
+            }
             if (definition->m_parent) {
                 trait_error("extending a type by a generic derived type is not "
                     "implemented yet", generic.base.base.loc);

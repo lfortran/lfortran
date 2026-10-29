@@ -6022,8 +6022,12 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
  * 2) one is parent of another, or
  * 3) both are unlimited polymorphic types
  */
+// Two instances of the same definition with equal type arguments and
+// agreeing evidence denote one type.
+bool same_generic_instance(const ASR::Struct_t &left, const ASR::Struct_t &right);
+
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    if (a == b || is_parent(a, b) || is_parent(b, a) ||
+    if (same_generic_instance(*a, *b) || is_parent(a, b) || is_parent(b, a) ||
         (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b))) {
         return true;
     }
@@ -6040,7 +6044,8 @@ inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
 
 // Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
 inline bool can_pass_derviedtype_arg_to_parameter(ASR::Struct_t* arg, ASR::Struct_t* param) {
-    return arg == param || is_parent(param, arg) || is_unlimited_polymorphic_type(param);
+    return same_generic_instance(*arg, *param) || is_parent(param, arg) ||
+        is_unlimited_polymorphic_type(param);
 }
 
 // Helper: check if IntegerBinOp is identity (x+0, 0+x, x-0)
@@ -11346,6 +11351,10 @@ bool trait_requirement_specialization_matches(const ASR::Template_t &requirement
 // enclosing generic, one derived type declaration, or equal intrinsic types.
 bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &left,
     const std::pair<ASR::ttype_t*, ASR::symbol_t*> &right);
+std::pair<ASR::ttype_t*, ASR::symbol_t*> substitute_trait_type_argument(
+    const std::pair<ASR::ttype_t*, ASR::symbol_t*> &type,
+    const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types,
+    ASR::symbol_t *definition = nullptr, ASR::symbol_t *instance = nullptr);
 // Whether two intrinsic types are the same type argument: equal types and,
 // for character, equal constant lengths.
 bool type_argument_types_equal(ASR::ttype_t *a, ASR::ttype_t *b);
@@ -11536,7 +11545,9 @@ struct TraitMethodMismatch {
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset = 0,
     size_t right_offset = 0, bool forwarding = false,
-    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated = {});
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &associated = {},
+    const std::map<ASR::symbol_t*, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
+        &same_types = {});
 // Whether two messages agree on their explicit receivers: both have none, or
 // both have one with the same intent. A receiver's name and position are not
 // part of a message's contract.
@@ -11552,6 +11563,9 @@ bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
 // conformance binds to each declared associated type of its trait.
 typedef std::map<ASR::symbol_t*, std::pair<ASR::ttype_t*, ASR::symbol_t*>>
     TraitAssociatedTypes;
+// Declared equality RHS types, otherwise the binder's fresh projections.
+TraitAssociatedTypes trait_effective_associated_types(
+    SymbolTable *scope, ASR::symbol_t *parameter);
 
 // The declaration of the associated type of a trait (`type :: Element`) that
 // a dummy argument or result of one of the trait's messages has, or nullptr.
@@ -11636,9 +11650,6 @@ ASR::Template_t *generic_type_package(ASR::symbol_t *symbol);
 ASR::Struct_t *generic_instance_definition(const ASR::GenericTypeInstance_t &x);
 bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
     const ASR::generic_type_argument_t &right);
-// Two instances of the same definition with equal type arguments and
-// agreeing evidence denote one type.
-bool same_generic_instance(const ASR::Struct_t &left, const ASR::Struct_t &right);
 // `Name{args}` for diagnostics; the plain name for any other Struct.
 std::string generic_type_spelling(const ASR::Struct_t &x);
 // Whether `procedure` (or the method Template of its function) is one of the

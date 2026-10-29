@@ -178,7 +178,8 @@
                         []
                     )
                     [(T
-                    [INumeric]
+                    [(INumeric
+                    [])]
                     [])]
                 )
             )]
@@ -384,7 +385,8 @@
                 []
             )
             [(T
-            [INumeric]
+            [(INumeric
+            [])]
             [])]
         )
         (TraitProcedure
@@ -505,7 +507,8 @@
                 []
             )
             [(T
-            [INumeric]
+            [(INumeric
+            [])]
             [])]
         )
         (TraitProcedure
@@ -609,10 +612,12 @@
                 []
             )
             [(Adder
-            [ISum]
+            [(ISum
+            [])]
             [])
             (Elem
-            [INumeric]
+            [(INumeric
+            [])]
             [])]
         )]
     )
