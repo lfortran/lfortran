@@ -62,61 +62,61 @@ void main2() {
     b->dims[0].length = 4;
     int32_t i;
     for (i=1; i<=3; i++) {
-        a->data->operator[](i - a->dims[0].lower_bound) = i + 10;
+        a->data->operator[](((i) - a->dims[0].lower_bound)) = i + 10;
     }
-    if (a->data->operator[](1 - a->dims[0].lower_bound) != 11) {
+    if (a->data->operator[](((1) - a->dims[0].lower_bound)) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (a->data->operator[](2 - a->dims[0].lower_bound) != 12) {
+    if (a->data->operator[](((2) - a->dims[0].lower_bound)) != 12) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (a->data->operator[](3 - a->dims[0].lower_bound) != 13) {
+    if (a->data->operator[](((3) - a->dims[0].lower_bound)) != 13) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
     for (i=11; i<=14; i++) {
-        b->data->operator[](i - 10 - b->dims[0].lower_bound) = i;
+        b->data->operator[](((i - 10) - b->dims[0].lower_bound)) = i;
     }
-    if (b->data->operator[](1 - b->dims[0].lower_bound) != 11) {
+    if (b->data->operator[](((1) - b->dims[0].lower_bound)) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b->data->operator[](2 - b->dims[0].lower_bound) != 12) {
+    if (b->data->operator[](((2) - b->dims[0].lower_bound)) != 12) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b->data->operator[](3 - b->dims[0].lower_bound) != 13) {
+    if (b->data->operator[](((3) - b->dims[0].lower_bound)) != 13) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b->data->operator[](4 - b->dims[0].lower_bound) != 14) {
+    if (b->data->operator[](((4) - b->dims[0].lower_bound)) != 14) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
     for (i=1; i<=3; i++) {
-        b->data->operator[](i - b->dims[0].lower_bound) = a->data->operator[](i - a->dims[0].lower_bound) - 10;
+        b->data->operator[](((i) - b->dims[0].lower_bound)) = a->data->operator[](((i) - a->dims[0].lower_bound)) - 10;
     }
-    if (b->data->operator[](1 - b->dims[0].lower_bound) != 1) {
+    if (b->data->operator[](((1) - b->dims[0].lower_bound)) != 1) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b->data->operator[](2 - b->dims[0].lower_bound) != 2) {
+    if (b->data->operator[](((2) - b->dims[0].lower_bound)) != 2) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (b->data->operator[](3 - b->dims[0].lower_bound) != 3) {
+    if (b->data->operator[](((3) - b->dims[0].lower_bound)) != 3) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    b->data->operator[](4 - b->dims[0].lower_bound) = b->data->operator[](1 - b->dims[0].lower_bound) + b->data->operator[](2 - b->dims[0].lower_bound) + b->data->operator[](3 - b->dims[0].lower_bound) + a->data->operator[](1 - a->dims[0].lower_bound);
-    if (b->data->operator[](4 - b->dims[0].lower_bound) != 17) {
+    b->data->operator[](((4) - b->dims[0].lower_bound)) = b->data->operator[](((1) - b->dims[0].lower_bound)) + b->data->operator[](((2) - b->dims[0].lower_bound)) + b->data->operator[](((3) - b->dims[0].lower_bound)) + a->data->operator[](((1) - a->dims[0].lower_bound));
+    if (b->data->operator[](((4) - b->dims[0].lower_bound)) != 17) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    b->data->operator[](4 - b->dims[0].lower_bound) = a->data->operator[](1 - a->dims[0].lower_bound);
-    if (b->data->operator[](4 - b->dims[0].lower_bound) != 11) {
+    b->data->operator[](((4) - b->dims[0].lower_bound)) = a->data->operator[](((1) - a->dims[0].lower_bound));
+    if (b->data->operator[](((4) - b->dims[0].lower_bound)) != 11) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }

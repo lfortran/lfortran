@@ -33,7 +33,7 @@ void sum_reduce(T0* a, float &s)
     n = a->data->extent(0);
     s = (float)(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i__dc) {
-        s = s + a->data->operator[](i__dc - a->dims[0].lower_bound);
+        s = s + a->data->operator[](((i__dc) - a->dims[0].lower_bound));
     });
 }
 

@@ -859,22 +859,23 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string out = array;
         ASR::dimension_t* m_dims;
         ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
-        out += "->data->operator[](";
-        std::string index = "";
+        std::string flat;
         for (size_t i=0; i<x.n_args; i++) {
-            std::string current_index = "";
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
             } else {
                 src = "/* FIXME right index */";
             }
-            out += src;
-            out += " - " + array + "->dims[" + std::to_string(i) + "].lower_bound";
-            if (i < x.n_args - 1) {
-                out += ", ";
+            std::string term = "((" + src + ") - " + array + "->dims["
+                + std::to_string(i) + "].lower_bound)";
+            if (i == 0) {
+                flat = term;
+            } else {
+                flat = "(((" + flat + ")*(" + array + "->dims["
+                    + std::to_string(i) + "].length)) + " + term + ")";
             }
         }
-        out += ")";
+        out += "->data->operator[](" + flat + ")";
         last_expr_precedence = 2;
         src = out;
     }

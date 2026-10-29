@@ -63,7 +63,7 @@ float sum(T0* a)
 std::cout<< "sum"<<std::endl;
     r = (float)(0);
     for (i=1; i<=a->data->extent(0); i++) {
-        r = r + a->data->operator[](i - a->dims[0].lower_bound);
+        r = r + a->data->operator[](((i) - a->dims[0].lower_bound));
     }
     return r;
 }
@@ -76,9 +76,9 @@ void main2() {
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 3;
     float b;
-    a->data->operator[](1 - a->dims[0].lower_bound) = (float)(3);
-    a->data->operator[](2 - a->dims[0].lower_bound) = (float)(2);
-    a->data->operator[](3 - a->dims[0].lower_bound) = (float)(1);
+    a->data->operator[](((1) - a->dims[0].lower_bound)) = (float)(3);
+    a->data->operator[](((2) - a->dims[0].lower_bound)) = (float)(2);
+    a->data->operator[](((3) - a->dims[0].lower_bound)) = (float)(1);
     b = sum(a);
     if (abs(b - (float)(6)) >   9.99999974737875164e-06) {
         std::cerr << "ERROR STOP" << std::endl;

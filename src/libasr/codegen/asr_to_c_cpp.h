@@ -2033,6 +2033,82 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             is_ubound_of_dim(idx.m_right, base, dim);
     }
 
+    // One section dimension for nested lowering: scalar index, whole
+    // dimension (`:`), or explicit range with computable bounds.
+    struct SectionDim {
+        int kind; // 0 = scalar index, 1 = whole dim, 2 = explicit range
+        ASR::expr_t* index; // scalar index (kind 0)
+        ASR::expr_t* start; // range start (kind 2)
+        ASR::expr_t* end; // range end (kind 2)
+        ASR::expr_t* step; // range step, null means 1 (kind 2)
+    };
+
+    // Classify every dimension of an array section over a plain variable:
+    // scalar indices (by position, using the rank drop between the base
+    // variable and the section), whole dimensions (`:`), and explicit
+    // ranges whose bounds contain no lbound/ubound calls (those need the
+    // ArrayBound lowering). Returns false unless every dimension fits
+    // and at least one dimension is ranged; `ranged` counts those.
+    bool classify_section_dims(ASR::expr_t* e, ASR::symbol_t* base,
+            std::vector<SectionDim> &dims, size_t &n_ranged) {
+        dims.clear();
+        n_ranged = 0;
+        if (!ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return false;
+        }
+        ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
+        if (!ASR::is_a<ASR::Var_t>(*s->m_v) ||
+                !ASR::is_a<ASR::Variable_t>(*base)) {
+            return false;
+        }
+        ASR::dimension_t* base_mdims = nullptr;
+        size_t base_ndims = ASRUtils::extract_dimensions_from_ttype(
+            ASR::down_cast<ASR::Variable_t>(base)->m_type, base_mdims);
+        (void)base_mdims;
+        ASR::dimension_t* sec_mdims = nullptr;
+        size_t sec_ndims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(e), sec_mdims);
+        (void)sec_mdims;
+        if (s->n_args != base_ndims) {
+            return false;
+        }
+        int64_t drops = (int64_t)base_ndims - (int64_t)sec_ndims;
+        if (drops < 0) {
+            return false;
+        }
+        int64_t scalars = 0;
+        for (size_t d = 0; d < s->n_args; d++) {
+            ASR::array_index_t &ix = s->m_args[d];
+            SectionDim sd;
+            sd.index = nullptr;
+            sd.start = nullptr;
+            sd.end = nullptr;
+            sd.step = nullptr;
+            if (is_full_section_dim(ix, base, d)) {
+                sd.kind = 1;
+                n_ranged++;
+            } else if (ix.m_left && ix.m_right &&
+                    !contains_arraybound(ix.m_left) &&
+                    !contains_arraybound(ix.m_right) &&
+                    !contains_arraybound(ix.m_step)) {
+                sd.kind = 2;
+                sd.start = ix.m_left;
+                sd.end = ix.m_right;
+                sd.step = ix.m_step;
+                n_ranged++;
+            } else if (!ix.m_left && ix.m_right && !ix.m_step &&
+                    scalars < drops) {
+                sd.kind = 0;
+                sd.index = ix.m_right;
+                scalars++;
+            } else {
+                return false;
+            }
+            dims.push_back(sd);
+        }
+        return scalars == drops && n_ranged > 0;
+    }
+
     // Whether `e` is a rank-1 partial section with explicit,
     // computable bounds (no lbound/ubound calls, which need the
     // ArrayBound lowering): `a(2:5)`, `a(4:1:-1)`, `a(i:j:k)`.
@@ -2077,6 +2153,222 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return false;
     }
 
+    // Row-major flat index into the 1D Kokkos view backing a C++
+    // descriptor: `subs[d]` are Fortran subscript expressions.
+    std::string cpp_flat_index(const std::string &arr,
+            const std::vector<std::string> &subs) {
+        std::string flat = "((" + subs[0] + ") - " + arr
+            + "->dims[0].lower_bound)";
+        for (size_t d = 1; d < subs.size(); d++) {
+            flat = "(((" + flat + ")*(" + arr + "->dims["
+                + std::to_string(d) + "].length)) + ((" + subs[d]
+                + ") - " + arr + "->dims[" + std::to_string(d)
+                + "].lower_bound))";
+        }
+        return flat;
+    }
+
+    std::string section_trip_count(const std::string &start,
+            const std::string &end, const std::string &step) {
+        return "((" + step + ") > 0 ? (((" + end + ") >= (" + start
+            + ")) ? (((" + end + ")-(" + start + "))/(" + step
+            + ")+1) : 0) : (((" + end + ") <= (" + start + ")) ? ((("
+            + start + ")-(" + end + "))/(-(" + step + "))+1) : 0))";
+    }
+
+    // Whether `e` fits the single-ranged-dim nested lowering for a
+    // section target of rank `target_rank`: scalar leaves, whole/single
+    // ranged sections, scalar ArrayItems and broadcasts combined with
+    // numeric/logical scalar operators.
+    bool is_nested_elementwise(ASR::expr_t* e, size_t target_rank) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return is_nested_elementwise(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
+                target_rank);
+        }
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            ASR::ArrayBroadcast_t *b = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
+            return !ASRUtils::is_array(ASRUtils::expr_type(b->m_array));
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                return true;
+            }
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(e), m_dims);
+            (void)m_dims;
+            return n == target_rank;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
+            if (!ASR::is_a<ASR::Var_t>(*s->m_v)) {
+                return false;
+            }
+            ASR::symbol_t* b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(s->m_v)->m_v);
+            std::vector<SectionDim> dims;
+            size_t n_ranged = 0;
+            if (!classify_section_dims(e, b, dims, n_ranged)) {
+                return false;
+            }
+            if (n_ranged != 1) {
+                return false;
+            }
+            ASR::dimension_t* m_dims = nullptr;
+            size_t sec_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(e), m_dims);
+            (void)m_dims;
+            return sec_rank == target_rank;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            return !ASRUtils::is_array(ASRUtils::expr_type(e));
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+            if (c->m_kind != ASR::cast_kindType::IntegerToReal &&
+                c->m_kind != ASR::cast_kindType::RealToInteger &&
+                c->m_kind != ASR::cast_kindType::RealToReal &&
+                c->m_kind != ASR::cast_kindType::IntegerToInteger) {
+                return false;
+            }
+            return is_nested_elementwise(c->m_arg, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::RealBinOp_t>(*e) ||
+            ASR::is_a<ASR::ComplexBinOp_t>(*e) ||
+            ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+                ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else {
+                ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            }
+            return is_nested_elementwise(l, target_rank) &&
+                is_nested_elementwise(r, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::RealCompare_t>(*e) ||
+            ASR::is_a<ASR::ComplexCompare_t>(*e) ||
+            ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+                ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+                ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else {
+                ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            }
+            return is_nested_elementwise(l, target_rank) &&
+                is_nested_elementwise(r, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::RealUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            ASR::expr_t *a = nullptr;
+            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
+            } else {
+                a = ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg;
+            }
+            return is_nested_elementwise(a, target_rank);
+        }
+        if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            return is_nested_elementwise(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg, target_rank);
+        }
+        return false;
+    }
+
+    // Lowers `e` for one element of a single-ranged-dim section
+    // assignment; the position loop variable is `kk`.
+    std::string nested_src(ASR::expr_t* e, const std::string &kk,
+            size_t target_rank) {
+        return elementwise_impl(e,
+            [&](ASR::expr_t* v) -> std::string {
+                if (ASR::is_a<ASR::Var_t>(*v) &&
+                        ASRUtils::is_array(ASRUtils::expr_type(v))) {
+                    self().visit_expr(*v);
+                    return src + "->data->operator[](" + kk + ")";
+                }
+                ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(v);
+                self().visit_expr(*s->m_v);
+                std::string arr = src;
+                ASR::symbol_t* b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(s->m_v)->m_v);
+                std::vector<SectionDim> dims;
+                size_t n_ranged = 0;
+                bool ok = classify_section_dims(v, b, dims, n_ranged);
+                (void)ok;
+                size_t rd = 0;
+                for (size_t d = 0; d < dims.size(); d++) {
+                    if (dims[d].kind != 0) {
+                        rd = d;
+                        break;
+                    }
+                }
+                std::string start, step = "1";
+                if (dims[rd].kind == 1) {
+                    start = arr + "->dims[" + std::to_string(rd)
+                        + "].lower_bound";
+                } else {
+                    self().visit_expr(*dims[rd].start);
+                    start = src;
+                    if (dims[rd].step) {
+                        self().visit_expr(*dims[rd].step);
+                        step = src;
+                    }
+                }
+                std::string cur = "((" + start + ") + " + kk + "*("
+                    + step + "))";
+                std::vector<std::string> subs;
+                for (size_t d = 0; d < dims.size(); d++) {
+                    if (d == rd) {
+                        subs.push_back(cur);
+                    } else {
+                        self().visit_expr(*dims[d].index);
+                        subs.push_back(src);
+                    }
+                }
+                return arr + "->data->operator[]("
+                    + cpp_flat_index(arr, subs) + ")";
+            });
+    }
+
     // Whether `e` can be lowered element-by-element for a C++ array
     // assignment: leaves are scalars, whole-array references or
     // broadcasts; interior nodes are numeric/logical scalar operators.
@@ -2096,6 +2388,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         if (ASR::is_a<ASR::Var_t>(*e)) {
             return true;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            return !ASRUtils::is_array(ASRUtils::expr_type(e));
         }
         if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
             ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
@@ -2185,50 +2480,33 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return false;
     }
 
-    // Lowers `e` to a scalar C++ expression for one element of an
-    // elementwise array assignment; array leaves are indexed by `idx`.
-    // Only called after is_elementwise_assignable().
-    std::string elementwise_src(ASR::expr_t* e, const std::string &idx) {
+    // Shared elementwise operator walk; array leaves are lowered by
+    // the caller-supplied callback (linear index or per-dim indices).
+    // Only called after the matching checker established suitability.
+    template <typename LeafFn>
+    std::string elementwise_impl(ASR::expr_t* e, LeafFn array_leaf) {
         if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
-            return elementwise_src(
-                ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array, idx);
+            return elementwise_impl(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array,
+                array_leaf);
         }
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
-            return elementwise_src(
-                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, idx);
+            return elementwise_impl(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
+                array_leaf);
         }
-        if (ASR::is_a<ASR::Var_t>(*e) ||
-            ASR::is_a<ASR::ArraySection_t>(*e)) {
-            // Whole-array sections (checked before) index like the base
-            // variable, whose storage they share in full. Partial rank-1
-            // sections carry their own offset and step.
-            ASR::expr_t* v = e;
-            ASR::array_index_t* six = nullptr;
-            if (ASR::is_a<ASR::ArraySection_t>(*e)) {
-                ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
-                v = s->m_v;
-                if (s->n_args == 1 && !is_whole_array_ref(e)) {
-                    six = &s->m_args[0];
-                }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                self().visit_expr(*e);
+                return src;
             }
-            self().visit_expr(*v);
-            if (ASRUtils::is_array(ASRUtils::expr_type(v))) {
-                std::string base = src;
-                if (!six) {
-                    return base + "->data->operator[](" + idx + ")";
-                }
-                self().visit_expr(*six->m_left);
-                std::string start = src;
-                std::string step = "1";
-                if (six->m_step) {
-                    self().visit_expr(*six->m_step);
-                    step = src;
-                }
-                std::string off = "((" + start + ") - " + base
-                    + "->dims[0].lower_bound)";
-                return base + "->data->operator[](" + off + " + " + idx
-                    + "*(" + step + "))";
-            }
+            return array_leaf(e);
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return array_leaf(e);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            self().visit_expr(*e);
             return src;
         }
         if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
@@ -2241,7 +2519,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         if (ASR::is_a<ASR::Cast_t>(*e)) {
             ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
-            std::string arg = elementwise_src(c->m_arg, idx);
+            std::string arg = elementwise_impl(c->m_arg, array_leaf);
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(c->m_type);
             if (c->m_kind == ASR::cast_kindType::IntegerToReal) {
                 return (dest_kind == 4 ? "(float)(" : "(double)(") + arg + ")";
@@ -2299,13 +2577,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             LCOMPILERS_ASSERT(false);
         }
         if (is_neg) {
-            return "(-" + elementwise_src(l, idx) + ")";
+            return "(-" + elementwise_impl(l, array_leaf) + ")";
         }
         if (is_not) {
-            return "(!" + elementwise_src(l, idx) + ")";
+            return "(!" + elementwise_impl(l, array_leaf) + ")";
         }
-        std::string left = elementwise_src(l, idx);
-        std::string right = elementwise_src(r, idx);
+        std::string left = elementwise_impl(l, array_leaf);
+        std::string right = elementwise_impl(r, array_leaf);
         if (is_compare) {
             return "(" + left + ASRUtils::cmpop_to_str(cmpop) + right + ")";
         }
@@ -2316,6 +2594,43 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return "std::pow(" + left + ", " + right + ")";
         }
         return "(" + left + ASRUtils::binop_to_str_python(binop) + right + ")";
+    }
+
+    // Lowers `e` to a scalar C++ expression for one element of an
+    // elementwise array assignment; array leaves are indexed by `idx`.
+    // Only called after is_elementwise_assignable().
+    std::string elementwise_src(ASR::expr_t* e, const std::string &idx) {
+        return elementwise_impl(e,
+            [&](ASR::expr_t* v) -> std::string {
+                // Whole-array sections (checked before) index like the base
+                // variable, whose storage they share in full. Partial rank-1
+                // sections carry their own offset and step.
+                ASR::expr_t* b = v;
+                ASR::array_index_t* six = nullptr;
+                if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+                    ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(v);
+                    b = s->m_v;
+                    if (s->n_args == 1 && !is_whole_array_ref(v)) {
+                        six = &s->m_args[0];
+                    }
+                }
+                self().visit_expr(*b);
+                std::string base = src;
+                if (!six) {
+                    return base + "->data->operator[](" + idx + ")";
+                }
+                self().visit_expr(*six->m_left);
+                std::string start = src;
+                std::string step = "1";
+                if (six->m_step) {
+                    self().visit_expr(*six->m_step);
+                    step = src;
+                }
+                std::string off = "((" + start + ") - " + base
+                    + "->dims[0].lower_bound)";
+                return base + "->data->operator[](" + off + " + " + idx
+                    + "*(" + step + "))";
+            });
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -2386,40 +2701,68 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             + rhs + ";\n" + indent + "}\n";
                         return;
                     }
-                } else if (sec && is_partial_rank1_section(x.m_target)) {
-                    ASR::array_index_t &six = sec->m_args[0];
-                    std::string rhs;
-                    if (scalar_rhs) {
-                        self().visit_expr(*v);
-                        rhs = src;
-                    } else if (is_elementwise_assignable(x.m_value)) {
-                        rhs = elementwise_src(x.m_value, idx);
-                    } else {
-                        base = nullptr;
-                    }
-                    if (base) {
-                        self().visit_expr(*six.m_left);
-                        std::string start = src;
-                        self().visit_expr(*six.m_right);
-                        std::string end = src;
-                        std::string step = "1";
-                        if (six.m_step) {
-                            self().visit_expr(*six.m_step);
-                            step = src;
+                } else if (sec) {
+                    std::vector<SectionDim> tdims;
+                    size_t tn_ranged = 0;
+                    ASR::dimension_t* t_mdims = nullptr;
+                    size_t t_rank = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(x.m_target), t_mdims);
+                    (void)t_mdims;
+                    if (classify_section_dims(x.m_target, base, tdims,
+                            tn_ranged) && tn_ranged == 1) {
+                        size_t rd = 0;
+                        for (size_t d = 0; d < tdims.size(); d++) {
+                            if (tdims[d].kind != 0) {
+                                rd = d;
+                                break;
+                            }
                         }
-                        std::string off = "((" + start + ") - "
-                            + arr + "->dims[0].lower_bound)";
-                        std::string n = "((" + step + ") > 0 ? (((" + end
-                            + ") >= (" + start + ")) ? (((" + end + ")-("
-                            + start + "))/(" + step + ")+1) : 0) : ((("
-                            + end + ") <= (" + start + ")) ? (((" + start
-                            + ")-(" + end + "))/(-(" + step + "))+1) : 0))";
-                        src = indent + "for (size_t " + idx + " = 0; " + idx
-                            + " < (size_t)(" + n + "); " + idx + "++) {\n"
-                            + indent1 + arr + "->data->operator[](" + off
-                            + " + " + idx + "*(" + step + ")) = "
-                            + rhs + ";\n" + indent + "}\n";
-                        return;
+                        std::string rhs;
+                        if (scalar_rhs) {
+                            self().visit_expr(*v);
+                            rhs = src;
+                        } else if (is_nested_elementwise(x.m_value, t_rank)) {
+                            rhs = nested_src(x.m_value, idx, t_rank);
+                        } else {
+                            base = nullptr;
+                        }
+                        if (base) {
+                            std::string start, step = "1", n;
+                            if (tdims[rd].kind == 1) {
+                                start = arr + "->dims[" + std::to_string(rd)
+                                    + "].lower_bound";
+                                n = arr + "->dims[" + std::to_string(rd)
+                                    + "].length";
+                            } else {
+                                self().visit_expr(*tdims[rd].start);
+                                start = src;
+                                std::string end;
+                                self().visit_expr(*tdims[rd].end);
+                                end = src;
+                                if (tdims[rd].step) {
+                                    self().visit_expr(*tdims[rd].step);
+                                    step = src;
+                                }
+                                n = section_trip_count(start, end, step);
+                            }
+                            std::string cur = "((" + start + ") + " + idx
+                                + "*(" + step + "))";
+                            std::vector<std::string> subs;
+                            for (size_t d = 0; d < tdims.size(); d++) {
+                                if (d == rd) {
+                                    subs.push_back(cur);
+                                } else {
+                                    self().visit_expr(*tdims[d].index);
+                                    subs.push_back(src);
+                                }
+                            }
+                            std::string flat = cpp_flat_index(arr, subs);
+                            src = indent + "for (size_t " + idx + " = 0; " + idx
+                                + " < (size_t)(" + n + "); " + idx + "++) {\n"
+                                + indent1 + arr + "->data->operator[](" + flat
+                                + ") = " + rhs + ";\n" + indent + "}\n";
+                            return;
+                        }
                     }
                 }
             }
