@@ -1161,6 +1161,18 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 return ;
             }
 
+            if (replacer.materialize_constants && !x.m_overloaded &&
+                    ASR::is_a<ASR::ArrayReshape_t>(*x.m_value)) {
+                ASR::expr_t* value =
+                    ASR::down_cast<ASR::ArrayReshape_t>(x.m_value)->m_value;
+                if (value && ASR::is_a<ASR::ArrayConstant_t>(*value) &&
+                        ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value))) {
+                    // Materialize the folded result with its result rank and
+                    // element order, not the SOURCE and SHAPE operands.
+                    const_cast<ASR::Assignment_t&>(x).m_value = value;
+                }
+            }
+
             if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
                 ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(x.m_value);
                 if( ASR::is_a<ASR::ArrayConstructor_t>(*reshape->m_array) ) {
