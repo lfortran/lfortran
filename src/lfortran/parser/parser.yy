@@ -479,7 +479,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> var_modifier
 %type <ast> statement
 %type <ast> statement1
+%type <ast> interactive_statement
+%type <ast> interactive_statement1
 %type <ast> single_line_statement
+%type <ast> other_single_line_statement
 %type <ast> multi_line_statement
 %type <ast> multi_line_statement0
 %type <ast> assign_statement
@@ -660,7 +663,13 @@ script_unit
     | derived_type_decl
     | union_type_decl
     | enum_decl
-    | statement          %dprec 7
+    | interactive_statement %dprec 7
+    // expr sep outranks a statement, so a bare allocate(a) would be a call.
+    // These two are the statement. A call in an expression (y = allocate(n))
+    // is still an expression. Do not keep sep on the node: a blank line would
+    // become trivia, and the previous AST left that separator off.
+    | allocate_statement sep %dprec 9
+    | deallocate_statement sep %dprec 9
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     | TK_LABEL KW_END sep { $$ = LABELED_END($1, $2, @$); }
@@ -1830,15 +1839,34 @@ statement1
     | multi_line_statement
     ;
 
+// Top-level script units give expr a higher precedence than a statement, so
+// allocate and deallocate are recognized on their own there. Every other
+// statement keeps the previous precedence. A labeled statement is unchanged:
+// a label cannot be an expression.
+interactive_statement
+    : interactive_statement1 sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
+    | TK_LABEL statement1 sep { $$ = $2;
+            LABEL($$, $1); TRIVIA_($$, TRIVIA_AFTER($3, @$)); }
+    ;
+
+interactive_statement1
+    : other_single_line_statement
+    | multi_line_statement
+    ;
+
 single_line_statement
     : allocate_statement
-    | assign_statement
+    | deallocate_statement
+    | other_single_line_statement
+    ;
+
+other_single_line_statement
+    : assign_statement
     | assignment_statement
     | associate_statement
     | close_statement
     | continue_statement
     | cycle_statement
-    | deallocate_statement
     | entry_statement
     | error_stop_statement
     | event_post_statement

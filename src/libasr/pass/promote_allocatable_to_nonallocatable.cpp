@@ -547,14 +547,23 @@ class PromoteAllocatableToNonAllocatable:
                     }
                     is_class_array = ASRUtils::is_class_type(element_type);
                 }
-                if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) &&
+                ASR::symbol_t* var_sym = nullptr;
+                if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
+                    var_sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                }
+                // A variable declared in the translation unit, as an interactive
+                // cell does, has no symbol owner. It is not a module variable.
+                ASR::symbol_t* owner = (var_sym != nullptr
+                        && ASR::is_a<ASR::Variable_t>(*var_sym))
+                    ? ASRUtils::get_asr_owner(var_sym) : nullptr;
+                bool in_module = owner != nullptr
+                    && ASR::is_a<ASR::Module_t>(*owner);
+                if( var_sym != nullptr &&
                     is_allocatable_array &&
                     !is_deferred_len_character_array &&
                     !is_class_array &&
-                    ASR::is_a<ASR::Variable_t>(
-                        *ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) &&
-                    !ASR::is_a<ASR::Module_t>(
-                        *ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v)) &&
+                    ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                    !in_module &&
                     (!device_only || in_device) &&
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
                      (in_device && ASRUtils::expr_intent(alloc_arg.m_a) ==
