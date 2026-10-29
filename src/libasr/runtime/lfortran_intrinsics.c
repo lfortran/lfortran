@@ -8681,8 +8681,29 @@ LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num) {
     return 0; // processor_defined
 }
 
+static int64_t inquire_file_size(FILE *fp)
+{
+#if defined(_WIN32)
+    int64_t current_pos = _ftelli64(fp);
+    if (current_pos < 0 || _fseeki64(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = _ftelli64(fp);
+    if (_fseeki64(fp, current_pos, SEEK_SET) != 0) return -1;
+#elif defined(__linux__) && !defined(COMPILE_TO_WASM)
+    int64_t current_pos = ftello64(fp);
+    if (current_pos < 0 || fseeko64(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = ftello64(fp);
+    if (fseeko64(fp, current_pos, SEEK_SET) != 0) return -1;
+#else
+    int64_t current_pos = ftello(fp);
+    if (current_pos < 0 || fseeko(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = ftello(fp);
+    if (fseeko(fp, current_pos, SEEK_SET) != 0) return -1;
+#endif
+    return size;
+}
+
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
-                                    bool *opened, int32_t *size, int32_t *pos,
+                                    bool *opened, int64_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
@@ -8708,6 +8729,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *action, int64_t action_len,
                                     char *position, int64_t position_len,
                                     char *delim, int64_t delim_len) {
+    if (size != NULL) {
+        *size = -1;
+    }
     if (f_name_data && unit_num != -1) {
         if (iostat != NULL) {
             *iostat = 1;
@@ -8748,8 +8772,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
-                fseek(fp, 0, SEEK_END);
-                *size = ftell(fp);
+                *size = inquire_file_size(fp);
             }
             fclose(fp); // close the file
         } else {
@@ -8860,10 +8883,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (size != NULL && fp != NULL) {
-            long current_pos = ftell(fp);
-            fseek(fp, 0, SEEK_END);
-            *size = ftell(fp);
-            fseek(fp, current_pos, SEEK_SET);
+            *size = inquire_file_size(fp);
         }
         if (recl != NULL && access_id == 2) {
             *recl = unit_recl;
@@ -9177,10 +9197,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             }
         }
         if (size != NULL && fp != NULL) {
-            long current_pos = ftell(fp);
-            fseek(fp, 0, SEEK_END);
-            *size = ftell(fp);
-            fseek(fp, current_pos, SEEK_SET);
+            *size = inquire_file_size(fp);
         }
         if (recl != NULL) {
             if (access_id == 1) {

@@ -196,6 +196,16 @@ public:
         current_symtab = nullptr;
     }
 
+    void visit_FileInquire(const FileInquire_t &x) {
+        if (x.m_size) {
+            ASR::ttype_t *type = ASRUtils::expr_type(x.m_size);
+            require(ASRUtils::is_integer(*type) && !ASRUtils::is_array(type)
+                && ASRUtils::extract_kind_from_ttype_t(type) == 8,
+                "FileInquire size must be a scalar integer(8)");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileInquire(x);
+    }
+
     void visit_Select(const Select_t& x) {
         bool fall_through = false;
         for( size_t i = 0; i < x.n_body; i++ ) {

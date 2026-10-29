@@ -3979,6 +3979,16 @@ public:
             }
         }
 
+        ASR::expr_t *size_target = nullptr;
+        if (size && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(size)) != 8) {
+            size_target = size;
+            ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
+            std::string size_name = current_scope->get_unique_name("__lfortran_inquire_size");
+            ASR::symbol_t *size_sym = declare_implicit_variable2(
+                x.base.base.loc, size_name, ASRUtils::intent_local, size_type);
+            size = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, size_sym));
+        }
+
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,
@@ -3991,6 +4001,15 @@ public:
                                   iolength_args.p, iolength_args.n, decimal,
                                   sign, encoding, stream, iomsg, round,
                                   pending, asynchronous);
+        if (size_target) {
+            current_body->push_back(al, ASRUtils::STMT(tmp));
+            ASR::expr_t *value = size;
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                ASRUtils::expr_type(value),
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(size_target)), diag);
+            tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                size_target, value, nullptr, false, false);
+        }
     }
 
     void visit_Flush(const AST::Flush_t& x) {
