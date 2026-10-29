@@ -74,6 +74,8 @@ def check_interruption(client, directory):
         assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
                        for m in messages), messages
         check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    # Interruption is an error: only the interrupted request's False allows
+    # already queued cells to run, regardless of the next request's default.
     msg_id = client.execute("do\nend do", stop_on_error=False)
     deadline = time.monotonic() + 10
     while True:
@@ -82,10 +84,10 @@ def check_interruption(client, directory):
                 msg["msg_type"] == "execute_input"):
             break
         assert time.monotonic() < deadline, "loop did not start"
+    queued = client.execute("interrupt_plus(saved_interrupt)")
     time.sleep(0.2)
     request = client.session.msg("interrupt_request")
     client.control_channel.send(request)
-    queued = client.execute("interrupt_plus(saved_interrupt)", stop_on_error=False)
     replies = {}
     deadline = time.monotonic() + 4
     while len(replies) != 2 and time.monotonic() < deadline:
