@@ -7,6 +7,12 @@
 
 namespace LCompilers {
 
+    // Same-process native JIT only; never serialized into file compilation.
+    struct JITCancellation {
+        int (*poll)(bool propagate_only);
+        void (*protect)(bool begin);
+    };
+
     Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
             diag::Diagnostics &diagnostics,
             llvm::LLVMContext &context,
@@ -16,7 +22,7 @@ namespace LCompilers {
             const std::string &run_fn,
             const std::string &/*global_underscore*/,
             const std::string &infile,
-            LocationManager &lm);
+            LocationManager &lm, const JITCancellation *cancellation = nullptr);
 
 } // namespace LCompilers
 

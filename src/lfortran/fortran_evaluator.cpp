@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -61,6 +62,37 @@
 #include <libasr/pickle.h>
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
+
+#ifndef __EMSCRIPTEN__
+namespace {
+struct CellCancellation {
+    std::atomic<bool> requested{false};
+    bool observed = false; // Worker-owned, read by the caller only after join.
+    unsigned protected_depth = 0;
+};
+thread_local CellCancellation *active_cancellation = nullptr;
+
+#ifdef HAVE_LFORTRAN_LLVM
+int poll_cell_cancellation(bool propagate_only) {
+    auto *state = active_cancellation;
+    if (!state || state->protected_depth) return 0;
+    if (!propagate_only && state->requested.load(std::memory_order_relaxed)) {
+        state->observed = true;
+    }
+    return state->observed;
+}
+
+void protect_cell_cancellation(bool begin) {
+    if (!active_cancellation) return;
+    if (begin) active_cancellation->protected_depth++;
+    else {
+        LCOMPILERS_ASSERT(active_cancellation->protected_depth > 0);
+        active_cancellation->protected_depth--;
+    }
+}
+#endif
+}
+#endif
 
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -543,9 +575,15 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // ASR -> LLVM. The passes rewrite this tree; that is fine, it is this
     // cell's own and is discarded afterwards. What later cells resolve
     // against is the snapshot taken in get_asr3().
+    const JITCancellation *cancellation = nullptr;
+#ifndef __EMSCRIPTEN__
+    const JITCancellation native_cancellation{
+        poll_cell_cancellation, protect_cell_cancellation};
+    cancellation = &native_cancellation;
+#endif
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
-        nullptr);
+        nullptr, cancellation);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -614,6 +652,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
     if (has_program) {
         e.execfn<void>(program_fn);
+#ifndef __EMSCRIPTEN__
+        if (active_cancellation && active_cancellation->observed) return result;
+#endif
     }
     if (return_type == "integer4") {
         int32_t r = e.execfn<int32_t>(run_fn);
@@ -676,6 +717,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     } else if (return_type == "character") {
         StringDescriptor descriptor;
         e.execfn<void>(run_fn, descriptor.pointer());
+#ifndef __EMSCRIPTEN__
+        if (active_cancellation && active_cancellation->observed) return result;
+#endif
         result.type = EvalResult::character;
         char *data = descriptor.data();
         int64_t length = descriptor.length();
@@ -794,14 +838,28 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
 #ifndef __EMSCRIPTEN__
     CellMailbox mailbox;
-    const bool threaded = bool(io.output);
+    CellCancellation cancellation;
+    const bool threaded = bool(io.output) || bool(io.cancel_requested);
     const auto owner = std::this_thread::get_id();
     bool process_exiting = false; // Only accessed by the caller.
+    auto poll_cancellation = [&]() {
+        try {
+            if (io.cancel_requested && io.cancel_requested()) {
+                cancellation.requested.store(true, std::memory_order_relaxed);
+            }
+        } catch (...) {
+            output_error = std::current_exception();
+            cancellation.requested.store(true, std::memory_order_relaxed);
+        }
+    };
 #endif
     auto dispatch = [&](const std::function<void()> &action) {
 #ifndef __EMSCRIPTEN__
         if (threaded && std::this_thread::get_id() != owner) {
-            mailbox.call(action);
+            mailbox.call([&]() {
+                action();
+                poll_cancellation();
+            });
             return;
         }
 #endif
@@ -837,7 +895,11 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
     std::optional<FlushAtExit> flush_at_exit_guard;
     CellIO hooks_io = io;
-    if (io.output) {
+    if (io.output
+#ifndef __EMSCRIPTEN__
+            || threaded
+#endif
+            ) {
         flush_at_exit_guard.emplace(&flush_output);
         if (io.display) {
             hooks_io.display = [&](const std::string &mime, const std::string &data) {
@@ -886,6 +948,13 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     passes.use_default_passes();
     passes.skip_llvm_backend_passes();
     auto execute_cell = [&]() {
+#ifndef __EMSCRIPTEN__
+        struct ActiveCancellation {
+            CellCancellation *previous = active_cancellation;
+            ActiveCancellation(CellCancellation &state) { active_cancellation = &state; }
+            ~ActiveCancellation() { active_cancellation = previous; }
+        } active(cancellation);
+#endif
         try {
             const auto newline = code.find('\n');
             auto magic = code.substr(0, newline);
@@ -963,6 +1032,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             });
             bool done;
             do {
+                poll_cancellation();
                 try { drain_output(false); }
                 catch (...) {} // Saved above; keep servicing hooks until join.
                 done = mailbox.service();
@@ -977,6 +1047,16 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             execute_cell();
         }
         drain_output(true);
+#ifndef __EMSCRIPTEN__
+        if (cancellation.observed) {
+            out.ok = false;
+            out.value = {};
+            out.internal_error = false;
+            out.error_traceback.clear();
+            out.error_name = "KeyboardInterrupt";
+            out.error_value = "cell execution interrupted";
+        }
+#endif
     } catch (const std::exception &error) {
         execution_error(error.what());
     } catch (...) {
@@ -1133,6 +1213,8 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
     // a finalizer of a type, is private to its module: it does not clash with
     // the one of an earlier cell, and that one cannot be called from here.
     for (llvm::Function &fn : *m.m_m) {
+        // Cleanup helpers with local linkage belong to this module; the JIT
+        // cannot resolve a declaration of one against a previous cell.
         if (fn.isDeclaration() || fn.hasLocalLinkage()) continue;
         std::string name = fn.getName().str();
         if (!defined_symbols.insert(name).second) {
@@ -1506,7 +1588,8 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
-  [[maybe_unused]] int64_t* time_opt=nullptr)
+  [[maybe_unused]] int64_t* time_opt,
+  [[maybe_unused]] const JITCancellation *cancellation)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
@@ -1545,7 +1628,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             ctx, target_config, al, pass_manager,
-            compiler_options, run_fn, "", infile, lm);
+            compiler_options, run_fn, "", infile, lm, cancellation);
     if (res.ok) {
         m = std::move(res.result);
     } else {

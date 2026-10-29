@@ -71,3 +71,36 @@ exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
 relying on the C++ `std::complex` return convention.
+
+## Cooperative cancellation in the native evaluator
+
+Native callers can set `CellIO::cancel_requested` to a bounded, nonblocking
+callback returning whether to cancel the current cell. Like the output and
+display hooks, it runs on the `execute()` caller, not on the execution worker.
+It is pumped even without output capture or output from the cell. The worker
+reads only an atomic request; transport and socket ownership stay with the
+caller. Only one cell may execute at a time.
+
+Native JIT lowering receives an explicit `JITCancellation` callback contract
+from `evaluate()`, never from file compilation or inspection. Checkpoints
+follow structured ASR statements and loop tests after local descriptors have
+been initialized. Calls propagate an already observed cancellation before
+consuming a function result. Initialization and user finalizers defer
+cancellation; a cancelled frame leaves enclosing BLOCK/ASSOCIATE constructs,
+reuses procedure cleanup, and copies CFI descriptors back before returning.
+It abandons its result instead of loading an incomplete return variable.
+The callbacks refer to the current cell's thread-local execution context, so
+procedures defined by earlier cells can cancel too.
+
+After the worker returns normally and is joined, a completed cancellation
+becomes a failed `CellResult` named `KeyboardInterrupt`, with no result value.
+The session, procedure definitions and completed side effects survive; there
+is no transactional rollback. A request is not carried into the next cell.
+An idle request, or one arriving after the last checkpoint, need not turn a
+completed cell into a failure.
+
+This is an evaluator-level native-JIT facility, not yet Jupyter interrupt
+protocol or prompt Ctrl-C integration. It does not interrupt compilation,
+blocking READ, arbitrary foreign calls, subprocesses, or WASM execution.
+Initialization and cleanup must finish before cancellation can proceed.
+No exception, signal unwind, or nonlocal jump crosses a generated/C frame.
