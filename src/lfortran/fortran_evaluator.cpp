@@ -18,6 +18,18 @@
 #include <thread>
 #endif
 
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+#include <sys/stat.h>
+
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/codegen/asr_to_c.h>
@@ -42,18 +54,6 @@
 #include <libasr/utils.h>
 #include <libasr/asr_lookup_name.h>
 
-
-#ifdef _WIN32
-#include <io.h>
-#include <fcntl.h>
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <windows.h>
-#else
-#include <unistd.h>
-#endif
-#include <sys/stat.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
