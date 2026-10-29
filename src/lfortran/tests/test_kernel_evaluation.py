@@ -60,10 +60,18 @@ def check(client, code, expected):
     return messages
 
 
+def waiter_command(waiter, *paths):
+    command = " ".join('"%s"' % path.as_posix()
+                       for path in (Path(sys.executable), waiter, *paths))
+    if os.name == "nt":
+        # cmd /c removes the outer quotes before parsing the quoted paths.
+        command = '"' + command + '"'
+    return command
+
+
 def streaming_code(gate, partial=False):
     first = ("write(*,'(a)',advance='no')" if partial else "print '(a)',")
-    command = '"%s" "%s" "%s"' % (Path(sys.executable).as_posix(),
-        gate.with_name("wait.py").as_posix(), gate.as_posix())
+    command = waiter_command(gate.with_name("wait.py"), gate)
     argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
         for i in range(0, len(command), 60))
     return ("program streaming_gate%s\n" % ("_partial" if partial else "") +
@@ -139,9 +147,7 @@ def check_transport_progress(client, directory):
     msg_id = None
     try:
         time.sleep(0.3)
-        command = '"%s" "%s" "%s" "%s"' % (
-            Path(sys.executable).as_posix(), waiter.as_posix(),
-            gate.as_posix(), waiting.as_posix())
+        command = waiter_command(waiter, gate, waiting)
         argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
             for i in range(0, len(command), 60))
         code = ("program transport_progress\ninteger :: j\n"
