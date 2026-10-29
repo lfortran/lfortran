@@ -987,6 +987,10 @@ public:
         throw CodeGenError("array constant must be materialized before C++ code generation",
             x.base.base.loc);
     }
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
+        throw CodeGenError("array section must be lowered before C++ code generation",
+            x.base.base.loc);
+    }
 };
 
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
@@ -999,7 +1003,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     array_options.materialize_array_constants = true;
     pass_replace_implied_do_loops(al, asr, array_options);
     if (!asr_verify(asr, true, diagnostics)) return Error();
-    pass_array_struct_temporary(al, asr, co.po);
+    pass_array_struct_temporary(al, asr, co.po, ArraySectionLowering::ValueSnapshot);
     if (!asr_verify(asr, true, diagnostics)) return Error();
     pass_replace_array_op(al, asr, co.po);
     if (!asr_verify(asr, true, diagnostics)) return Error();
