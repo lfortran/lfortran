@@ -263,13 +263,17 @@ C++17 for Kokkos 3 and 4. If the installed headers do not expose a recognized
 numeric Kokkos version, it defaults to C++17. The installed Kokkos build's
 other compiler and linker requirements (such as OpenMP) still apply.
 
-For example, the Pixi `llvm11` environment on macOS ARM64 supplies Kokkos
-5.2.2 with OpenMP and a native GNU `g++` supporting `-fopenmp`. From a
-development build, compile and run using:
+The C++ driver invokes `g++` from `PATH`; the build's `CXX` setting does not
+override it. A working C++ backend requires this compiler and its C++ standard
+library to be ABI-compatible with Kokkos and each other. Kokkos is an optional
+prerequisite, not provisioned by the default Pixi `llvm11` environment.
+
+With a compatible `g++` and an OpenMP-enabled Kokkos installation, a
+development build can compile and run using:
 
 ```bash
+LFORTRAN_KOKKOS_DIR=/path/to/kokkos \
 pixi run -e llvm11 bash -c '
-    export LFORTRAN_KOKKOS_DIR="$CONDA_PREFIX"
     export LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR="$LFORTRAN_BUILD_DIR/src/libasr/runtime"
     lfortran --backend=cpp --openmp example.f90 -o example
     ./example'
@@ -281,12 +285,21 @@ These settings do not make an unaugmented `--backend=cpp` invocation work with
 an OpenMP-enabled package: `--openmp` and a compatible `g++` remain required.
 Other Kokkos installations can have different requirements.
 
+On macOS ARM64, the default Pixi environment does not supply a validated C++
+backend toolchain. Apple's `g++` rejects `-fopenmp`; installing conda-forge
+`gxx` 16.2.0 with libc++ 23.1.4 is **not** a supported workaround: that
+combination misexecutes ordinary `std::string` operations in both C++17 and
+C++20. An integer-only Kokkos smoke test passing with it does not demonstrate
+ABI compatibility. A compatible toolchain is still required; no general
+macOS recipe is established here.
+
 The registered `test_kokkos_standard` CTest checks version-selection fixtures.
 When `LFORTRAN_KOKKOS_DIR` (or a Conda/Pixi prefix containing Kokkos) is
-available, it also compiles and executes the integration regression using
-the actual C++ driver, both directly and via a separate object/link step,
-in normal, `--fast`, and `--std=f23` modes. It checks the selected standard
-against the real package version and enables OpenMP if its headers require it.
+available, it also requires a compatible `g++` and compiles and executes the
+integration regression using the actual C++ driver, both directly and via a
+separate object/link step, in normal, `--fast`, and `--std=f23` modes.
+It checks the selected standard against the real package version and enables
+OpenMP if its headers require it.
 Without a package, it explicitly reports that real-package execution was not
 tested. The `kokkos_cpp_standard` integration test also has a `cpp` label,
 alongside `gfortran` and `llvm`.
