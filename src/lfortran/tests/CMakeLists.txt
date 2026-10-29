@@ -318,6 +318,10 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                 --lfortran $<TARGET_FILE:lfortran>
         )
+        add_executable(prompt_events_fixture prompt_events_fixture.cpp)
+        target_include_directories(prompt_events_fixture PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/bin/tpl)
+        target_link_libraries(prompt_events_fixture lfortran_lib)
         # The prompt starts the kernel that is built: the built-in one here.
         # These cases assume that kernel: a READ whose client leaves fails,
         # and a failed cell is aborted with an idle status.
@@ -335,6 +339,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
                     --lfortran $<TARGET_FILE:lfortran> --builtin
+                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
             )
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
                 SKIP_RETURN_CODE 77)
@@ -359,6 +364,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --case kernel_parent --case stop_ends_session --case verbose
                     --case test_idle_updates --case test_edited_updates
                     --case test_fragmented_updates --case test_idle_disconnect
+                    --case test_unicode_updates --case test_output_error_cleanup
+                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
             )
             set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)

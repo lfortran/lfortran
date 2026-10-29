@@ -16,6 +16,7 @@ import sys
 import tempfile
 import threading
 import time
+import unicodedata
 
 ENTER = b"\r"
 CTRL_D = b"\x04"
@@ -202,7 +203,7 @@ class Screen:
     def __init__(self, rows=12, cols=80):
         self.rows, self.cols = rows, cols
         self.row = self.col = 0
-        self.lines = [" " * cols for _ in range(rows)]
+        self.cells = [[" "] * cols for _ in range(rows)]
         self.scrolled = []
         self.pending = ""
         self.decoder = codecs.getincrementaldecoder("utf-8")("replace")
@@ -211,11 +212,17 @@ class Screen:
         self.on_render = None
         self.cursor_visible = True
 
+    @property
+    def lines(self):
+        return ["".join(c if c is not None else " " for c in line)
+            for line in self.cells]
+
     def newline(self):
         self.row += 1
         if self.row == self.rows:
-            self.scrolled.append(self.lines.pop(0))
-            self.lines.append(" " * self.cols)
+            self.scrolled.append(self.lines[0])
+            self.cells.pop(0)
+            self.cells.append([" "] * self.cols)
             self.row -= 1
 
     def feed(self, data):
@@ -238,12 +245,11 @@ class Screen:
                     self.col = min(self.cols, nums[1] if len(nums) > 1 else 1) - 1
                 elif command == "K":
                     if arg == "2":
-                        self.lines[self.row] = " " * self.cols
+                        self.cells[self.row] = [" "] * self.cols
                     else:
-                        self.lines[self.row] = self.lines[self.row][:self.col] \
-                            + " " * (self.cols - self.col)
+                        self.cells[self.row][self.col:] = [" "] * (self.cols - self.col)
                 elif command == "J" and arg == "2":
-                    self.lines = [" " * self.cols for _ in range(self.rows)]
+                    self.cells = [[" "] * self.cols for _ in range(self.rows)]
                 elif command == "n" and arg == "6":
                     replies.append(self.before_report
                         + ("\x1b[%d;%dR" % (self.row + 1,
@@ -262,12 +268,23 @@ class Screen:
             elif c == "\n":
                 self.newline()
             elif c >= " ":
-                if self.col == self.cols:
+                # Cell storage is independent of scalar count. A wide glyph
+                # owns its continuation cell; a mark extends the preceding base.
+                if unicodedata.category(c) in ("Mn", "Me"):
+                    col = max(0, self.col - 1)
+                    while col > 0 and self.cells[self.row][col] is None:
+                        col -= 1
+                    self.cells[self.row][col] += c
+                    i += 1
+                    continue
+                width = 2 if unicodedata.east_asian_width(c) in ("W", "F") else 1
+                if self.col + width > self.cols:
                     self.col = 0
                     self.newline()
-                line = self.lines[self.row]
-                self.lines[self.row] = line[:self.col] + c + line[self.col + 1:]
-                self.col += 1
+                self.cells[self.row][self.col] = c
+                if width == 2:
+                    self.cells[self.row][self.col + 1] = None
+                self.col += width
             i += 1
         return replies
 

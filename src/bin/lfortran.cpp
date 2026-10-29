@@ -63,6 +63,7 @@
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/Error.h>
+#include <llvm/Support/Unicode.h>
 #endif
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -469,6 +470,10 @@ int prompt(bool verbose, const std::string &connect,
         return c;
     };
     std::function<bool(std::string)> iscomplete = determine_completeness;
+    const std::function<int(const std::string &)> character_width =
+        [](const std::string &character) {
+            return llvm::sys::unicode::columnWidthUTF8(character);
+        };
     const PromptEvents events = [&](const PromptOutput &display) {
         using Result = LCompilers::LFortran::jupyter::Client::PollResult;
         switch (kernel->poll_others(display)) {
@@ -484,7 +489,7 @@ int prompt(bool verbose, const std::string &connect,
             // The terminal is in raw mode only while a line is edited, so
             // that the cell can read the terminal as usual (#15284).
             Terminal term(true, false, &pending_input);
-            input = prompt0(term, ">>> ", history, iscomplete, events);
+            input = prompt0(term, ">>> ", history, iscomplete, character_width, events);
         } catch (const PromptDisconnected &) {
             std::cerr << "error: the kernel has stopped" << std::endl;
             const int status = kernel->kernel_status(5000);

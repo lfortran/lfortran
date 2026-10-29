@@ -106,14 +106,15 @@ size_t skip_sgr(const std::string &text, size_t i, bool &incomplete) {
 
 std::string prompt0(const Terminal &term, const std::string &prompt_string,
         std::vector<std::string> &history, std::function<bool(std::string)>
-        &iscomplete, const PromptEvents &events = {}) {
+        &iscomplete, const std::function<int(const std::string &)> &character_width,
+        const PromptEvents &events = {}) {
     int row, col;
     bool term_attached = term.is_stdin_a_tty();
     struct RestoreCursor {
         const Terminal &term;
         bool attached;
         ~RestoreCursor() {
-            if (attached) term.write(cursor_on());
+            if (attached) term.write("\x1b[0m" + cursor_on());
         }
     } restore_cursor{term, term_attached};
     if (term_attached) {
@@ -153,6 +154,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     int output_row = row, output_col = 1;
     int next_output_col = 1;
     std::string pending_output;
+    std::string margin_glyph, margin_style;
+    int margin_glyph_col = 1;
     auto redraw = [&]() {
         const int scroll = row + static_cast<int>(scr.get_h()) - 1 - rows;
         if (scroll > 0) {
@@ -166,6 +169,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     while (not_complete) {
         if (events) {
             bool visible = false;
+            bool resume_wrap = false;
+            std::string output_style;
             const PromptOutput display = [&](const std::string &text, bool error) {
                 if (text.empty()) return;
                 if (!term_attached) {
@@ -179,6 +184,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     }
                     std::cout << move_cursor(partial_output ? output_row : row,
                         partial_output ? output_col : 1) << std::flush;
+                    resume_wrap = wrap_pending;
                 }
                 visible = true;
                 const std::string fragment = pending_output + text;
@@ -190,9 +196,21 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     const size_t end = skip_sgr(fragment, i, incomplete);
                     if (incomplete) break;
                     if (end != i) {
+                        const std::string sgr = fragment.substr(i, end - i);
+                        if (sgr == "\x1b[0m" || sgr == "\x1b[m") {
+                            output_style.clear();
+                        } else {
+                            output_style += sgr;
+                        }
+                        if (end - i > 65536 || output_style.size() > 65536) {
+                            throw std::runtime_error("terminal output sequence is too long");
+                        }
                         rendered.append(fragment, i, end - i);
                         i = end;
                         continue;
+                    }
+                    if (fragment[i] == '\x1b') {
+                        throw std::runtime_error("unsupported terminal output escape sequence");
                     }
                     uint32_t codepoint = 0;
                     uint8_t state = UTF8_ACCEPT;
@@ -202,31 +220,68 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     } while (state != UTF8_ACCEPT && state != UTF8_REJECT
                         && next < fragment.size());
                     if (state != UTF8_ACCEPT && state != UTF8_REJECT) break;
+                    if (state == UTF8_REJECT) {
+                        throw std::runtime_error("invalid utf-8 in terminal output");
+                    }
                     if (codepoint == '\n') {
                         output_line_open = false;
                         next_output_col = 1;
                         wrap_pending = false;
+                        resume_wrap = false;
                     } else if (codepoint == '\r') {
                         next_output_col = 1;
                         wrap_pending = false;
+                        resume_wrap = false;
                     } else if (codepoint == '\b') {
                         next_output_col = std::max(1, next_output_col - 1);
                         wrap_pending = false;
+                        resume_wrap = false;
                     } else if (codepoint == '\t') {
                         next_output_col = std::min(cols,
                             ((next_output_col - 1) / 8 + 1) * 8 + 1);
                         wrap_pending = false;
+                        resume_wrap = false;
                     } else if (codepoint >= 32 && codepoint != 127) {
                         // Cursor addressing for the editor cancels delayed
                         // wrap. Track that state without probing (and thereby
                         // overwriting) an occupied final transcript cell.
-                        if (wrap_pending) {
+                        const int width = codepoint < 128 ? 1
+                            : character_width(fragment.substr(i, next - i));
+                        if (width < 0 || width > cols) {
+                            throw std::runtime_error("unsupported terminal output character");
+                        }
+                        if (width > 0 && (wrap_pending
+                                || next_output_col + width - 1 > cols)) {
                             rendered += "\r\n";
                             next_output_col = 1;
                         }
-                        wrap_pending = next_output_col == cols;
-                        if (!wrap_pending) next_output_col++;
+                        if (width > 0) {
+                            wrap_pending = next_output_col + width - 1 == cols;
+                            if (wrap_pending) {
+                                margin_glyph = fragment.substr(i, next - i);
+                                margin_style = output_style;
+                                margin_glyph_col = next_output_col;
+                            }
+                            next_output_col = std::min(cols, next_output_col + width);
+                            resume_wrap = false;
+                        } else if (wrap_pending) {
+                            // CUP during redraw cancels delayed wrap. A mark
+                            // belongs to the occupied final cell, not W-1.
+                            // Repaint its original base, never a probe space.
+                            if (resume_wrap) {
+                                rendered += move_cursor(output_row, margin_glyph_col)
+                                    + "\x1b[0m" + margin_style + margin_glyph
+                                    + "\x1b[0m" + output_style;
+                                resume_wrap = false;
+                            }
+                            margin_glyph.append(fragment, i, next - i);
+                            if (margin_glyph.size() > 65536) {
+                                throw std::runtime_error("terminal output sequence is too long");
+                            }
+                        }
                         output_line_open = true;
+                    } else if (codepoint < 32 && codepoint != '\a') {
+                        throw std::runtime_error("unsupported terminal output control character");
                     }
                     rendered.append(fragment, i, next - i);
                     i = next;
@@ -280,6 +335,9 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             m.cursor_col++;
         } else if (key == CTRL_KEY('d')) {
             if (m.lines.size() == 1 && m.lines[m.cursor_row-1].size() == 0) {
+                if (!pending_output.empty()) {
+                    throw std::runtime_error("incomplete terminal output sequence");
+                }
                 m.lines[m.cursor_row-1].push_back(CTRL_KEY('d'));
                 std::cout << "\n" << std::flush;
                 history.push_back(m.lines[0]);
@@ -295,6 +353,8 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     wrap_pending = false;
                     next_output_col = 1;
                     pending_output.clear();
+                    margin_glyph.clear();
+                    margin_style.clear();
                     break;
                 case CTRL_KEY('u'):
                     m.lines[m.cursor_row-1] = 
@@ -421,6 +481,9 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
         } else {
             std::cout << scr.render(1, row, false) << std::flush;
         }
+    }
+    if (!pending_output.empty()) {
+        throw std::runtime_error("incomplete terminal output sequence");
     }
     // REPL currently supports pressing enter at any cursor position, so
     // correctly draw if the user presses enter at a line other than the bottom

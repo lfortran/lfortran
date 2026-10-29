@@ -933,27 +933,96 @@ def test_idle_disconnect(exe, cwd):
                 "an explicit idle disconnection error"), repl.text())
 
 
-def test_output_error_cleanup(exe, cwd):
+def test_unicode_updates(exe, cwd):
+    cases = [
+        ("界" * 40 + "a" * 40 + "Z\n", ["界 " * 40, "a" * 40 + "Z"]),
+        ("e\u0301" * 40 + "a" * 40 + "Z\n", ["e\u0301" * 40 + "a" * 40, "Z"]),
+        ("x" * 79 + "界Z\n", ["x" * 79, "界 Z"]),
+        ("x" * 79 + "e\u0301Z\n", ["x" * 79 + "e\u0301", "Z"]),
+        ("界" * 40 + "\u0301Z\n", ["界 " * 39 + "界\u0301", "Z"]),
+    ]
     with display_kernel(cwd) as (connection, publish):
-        with editing_prompt(exe, cwd, connection, expected_status=1) as repl:
+        with editing_prompt(exe, cwd, connection) as repl:
             if repl is None:
                 return
-            check(repl.screen.cursor_visible, "ready cursor is hidden")
-            publish([("stream", {"name": "stdout",
-                "text": "\x1b[" + "1" * 65535})])
-            repl.wait(lambda: False, "rejected output through EOF")
-            check("error: terminal output sequence is too long" in repl.text(),
-                "no explicit oversized-sequence diagnostic:\n" + repl.text())
-            lflag = repl.termios.tcgetattr(repl.fd)[3]
-            check(lflag & (repl.termios.ICANON | repl.termios.ECHO)
-                == repl.termios.ICANON | repl.termios.ECHO,
-                "output rejection left the terminal in raw mode")
-            check(repl.screen.cursor_visible,
-                "output rejection left the terminal cursor hidden")
+            screen = repl.screen
+            for payload, expected in cases:
+                control = Screen()
+                control.feed(payload.replace("\n", "\r\n").encode())
+                check([line.rstrip() for line in control.lines[:len(expected)]]
+                    == [line.rstrip() for line in expected],
+                    "the independent Unicode screen control is wrong")
+                # Separate every scalar to cross redraw boundaries, including
+                # a combining mark following a filled final cell.
+                for fragments in [[payload], list(payload)]:
+                    for fragment in fragments:
+                        reports = repl.prompts
+                        publish([("stream", {"name": "stdout", "text": fragment})])
+                        check(repl.wait(lambda: repl.prompts > reports
+                            and screen.lines[screen.row].startswith(">>> "),
+                            "a Unicode fragment and restored editor"), screen.text())
+                    actual = screen.lines[screen.row - len(expected):screen.row]
+                    check([line.rstrip() for line in actual]
+                        == [line.rstrip() for line in expected],
+                        "Unicode changed transcript rows:\n" + repr(actual))
+                    check(screen.col == 4, "Unicode output moved the editor cursor")
+
+
+def test_output_error_cleanup(exe, cwd):
+    cases = [
+        (["\x1b[" + "1" * 65535], "terminal output sequence is too long", None),
+        (["\x1b[", "1" * 65535], "terminal output sequence is too long", None),
+        (["\x1b[" + "1" * 65535 + "m"], "terminal output sequence is too long", None),
+        (["\x1b[2J"], "unsupported terminal output escape sequence", None),
+        (["\x0f"], "unsupported terminal output control character", None),
+        (["\u0085"], "unsupported terminal output character", None),
+        (["x" * 80 + "\u0301" * 32769], "terminal output sequence is too long", None),
+        (["\x1b["], "incomplete terminal output sequence", CTRL_D),
+        (["\x1b["], "incomplete terminal output sequence", b"1\r"),
+    ]
+    for fragments, diagnostic, keys in cases:
+        with display_kernel(cwd) as (connection, publish):
+            with editing_prompt(exe, cwd, connection, expected_status=1) as repl:
+                if repl is None:
+                    return
+                check(repl.screen.cursor_visible, "ready cursor is hidden")
+                for i, fragment in enumerate(fragments):
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": fragment})])
+                    if i < len(fragments) - 1 or keys:
+                        check(repl.wait(lambda: repl.prompts > reports
+                            and repl.screen.lines[repl.screen.row].startswith(">>> "),
+                            "a retained incomplete suffix"), repl.text())
+                if keys:
+                    os.write(repl.fd, keys)
+                repl.wait(lambda: False, "rejected output through EOF")
+                check("error: " + diagnostic in repl.text(),
+                    "no explicit output diagnostic:\n" + repl.text())
+                lflag = repl.termios.tcgetattr(repl.fd)[3]
+                check(lflag & (repl.termios.ICANON | repl.termios.ECHO)
+                    == repl.termios.ICANON | repl.termios.ECHO,
+                    "output rejection left the terminal in raw mode")
+                check(repl.screen.cursor_visible,
+                    "output rejection left the terminal cursor hidden")
+
+
+def test_utf8_event_fragments(exe, cwd):
+    with editing_prompt(exe, cwd, cwd / "unused") as repl:
+        if repl is None:
+            return
+        screen = repl.screen
+        expected = ["界 " * 40, "a" * 40 + "Z", "x" * 79 + "e\u0301"]
+        check(repl.wait(lambda: screen.row >= 3
+            and [line.rstrip() for line in screen.lines[screen.row - 3:screen.row]]
+                == [line.rstrip() for line in expected]
+            and screen.lines[screen.row].startswith(">>> ")
+            and screen.col == 4, "bytewise UTF-8, SGR and margin combining"),
+            screen.text())
 
 
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
-    test_fragmented_updates, test_idle_disconnect, test_output_error_cleanup,
+    test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
+    test_output_error_cleanup,
     large_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
@@ -968,6 +1037,8 @@ def main():
         help="run only this case (repeatable)")
     parser.add_argument("--builtin", action="store_true",
         help="the kernel is the built-in one, not the Xeus one")
+    parser.add_argument("--prompt-events-fixture",
+        help="also check bytewise output using the native editor fixture")
     args = parser.parse_args()
     exe = str(Path(args.lfortran).resolve())
     cwd = Path.cwd() / ("session-regressions-" + uuid.uuid4().hex)
@@ -989,6 +1060,14 @@ def main():
                     print(log.read_text(errors="replace"))
                     log.unlink()
                 failed.append(name)
+        if args.prompt_events_fixture:
+            try:
+                test_utf8_event_fragments(
+                    str(Path(args.prompt_events_fixture).resolve()), cwd)
+                print("test_utf8_event_fragments: passed", flush=True)
+            except Exception as error:
+                print("test_utf8_event_fragments: FAILED: %s" % error, flush=True)
+                failed.append("test_utf8_event_fragments")
     finally:
         shutil.rmtree(cwd, ignore_errors=True)
     if failed:

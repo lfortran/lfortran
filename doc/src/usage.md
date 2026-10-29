@@ -163,6 +163,14 @@ while idle or editing, preserving the current input and cursor. Redirected
 input retains blocking reads; it does not refresh while waiting for input.
 Output fragments share a transcript line until a newline; a carriage return
 moves within that line without erasing its untouched suffix.
+Wrapping uses LLVM's Unicode terminal-cell widths, including wide CJK glyphs
+and zero-width combining marks, rather than counting UTF-8 bytes or scalars.
+Terminal-specific emoji/grapheme and ambiguous-width settings may differ from
+these widths. The editor supports SGR styling, not arbitrary terminal control
+sequences. Unsupported controls, invalid UTF-8, and unfinished sequences when
+leaving a cell produce an explicit error. Retained incomplete sequences,
+styling metadata per refresh, and a final-cell combining cluster are each
+limited to 64 KiB; rejection restores terminal mode and cursor visibility.
 A cell's output is shown when the cell finishes or reads input. A cell that fails
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
