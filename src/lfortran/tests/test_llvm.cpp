@@ -962,6 +962,66 @@ end module
     CHECK(tbaa_accesses(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM private array function result slots") {
+    std::string source = R"(module private_result_m
+implicit none
+type :: operation_t
+contains
+    procedure :: evaluate
+    procedure :: derivative
+    procedure :: with_internal
+end type
+contains
+pure function evaluate(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = 2*x
+end function
+pure function derivative(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = self%evaluate(x)*(1 - self%evaluate(x))
+end function
+pure function with_internal(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = self%evaluate(x)*(1 - self%evaluate(x))
+    if (size(x) > 0) res(1) = res(1) + probe()
+contains
+    pure function probe() result(value)
+        real :: value
+        value = sum(res)
+    end function
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"derivative", "_m_derivative"},
+             {"with_internal", "_m_with_internal"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                size_t allocations = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &instruction: block) {
+                        auto *call = llvm::dyn_cast<llvm::CallBase>(&instruction);
+                        if (!call) continue;
+                        llvm::Function *callee = call->getCalledFunction();
+                        if (callee && callee->getName() == "_lfortran_malloc_alloc") {
+                            allocations++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CAPTURE(procedure);
+                CAPTURE(allocations);
+                CHECK(allocations == (procedure == "derivative" ? 2 : 4));
+            });
+    }
+}
+
 TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
     std::string source = R"(module saved_volatile_m
 implicit none

@@ -90,6 +90,32 @@ function values(object) result(r)
     real :: r(3)
     r = [100., object%value + 10., object%value + 20.]
 end function
+
+subroutine assign_dummy(object, v)
+    type(callbacks), intent(in) :: object
+    real, intent(inout) :: v(3)
+    v = object%evaluate()
+end subroutine
+
+recursive function saved_target(read_only) result(r)
+    logical, intent(in) :: read_only
+    real :: r(3)
+    real, save :: v(3) = [1., 2., 3.]
+    if (read_only) then
+        r = v
+    else
+        v = read_saved()
+        r = v
+    end if
+end function
+
+recursive function read_saved() result(r)
+    real :: r(3), previous(3)
+    r(1) = 100.
+    previous = saved_target(.true.)
+    r(2) = previous(1) + 10.
+    r(3) = previous(1) + 20.
+end function
 end module
 
 program functions_72
@@ -141,6 +167,13 @@ v = values(data)
 if (any(v /= [100., 11., 21.])) error stop 11
 v = indirect(safe_dispatch)
 if (any(v /= [100., 11., 21.])) error stop 12
+
+v = [1., 2., 3.]
+call assign_dummy(object, v)
+if (any(v /= [100., 11., 21.])) error stop 13
+
+v = saved_target(.false.)
+if (any(v /= [100., 11., 21.])) error stop 14
 contains
 function first() result(q)
     real :: q
