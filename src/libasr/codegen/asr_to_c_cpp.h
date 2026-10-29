@@ -769,7 +769,7 @@ R"(#include <stdio.h>
                 bool used_define_for_const = (v->m_storage == ASR::storage_typeType::Parameter &&
                         v->m_intent == ASRUtils::intent_local);
                 if (used_define_for_const) {
-                    contains += decl + "\n";
+                    contains += decl + ";\n";
                     continue;
                 }
                 if (v->m_value) {

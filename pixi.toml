@@ -154,6 +154,7 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [feature.test.dependencies]
 python = "==3.12"
+kokkos = "==4.4.01"
 toml = "==0.10.2"
 tomli = ">=2,<3"
 edn_format = "==0.8.0"
