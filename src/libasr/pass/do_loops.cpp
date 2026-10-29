@@ -128,6 +128,18 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         if (unroll_device_loop(x)) return;
+        bool preserve_native_doloop = pass_options.preserve_do_loops_for_llvm &&
+            !device_code;
+        if (preserve_native_doloop) {
+            ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
+            ASR::do_loop_head_t normalized_head = xx.m_head;
+            PassUtils::normalize_doloop_head(al, xx, this->current_scope,
+                normalized_head);
+            xx.m_head = normalized_head;
+            this->transform_stmts(xx.m_body, xx.n_body);
+            this->transform_stmts(xx.m_orelse, xx.n_orelse);
+            return;
+        }
         pass_result = PassUtils::replace_doloop(al, x, -1,
             this->current_scope, pass_options.fast);
     }
@@ -143,7 +155,18 @@ public:
             body.push_back(al,ASRUtils::STMT(do_loop));
         }
         ASR::asr_t* do_loop = ASR::make_DoLoop_t(al, x.base.base.loc, s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0);
-        const ASR::DoLoop_t &do_loop_ref = (const ASR::DoLoop_t&)(*do_loop);
+        ASR::DoLoop_t &do_loop_ref = *ASR::down_cast<ASR::DoLoop_t>(
+            ASRUtils::STMT(do_loop));
+        bool preserve_native_doloop = pass_options.preserve_do_loops_for_llvm &&
+            !device_code;
+        if (preserve_native_doloop) {
+            ASR::do_loop_head_t normalized_head = do_loop_ref.m_head;
+            PassUtils::normalize_doloop_head(al, do_loop_ref, this->current_scope,
+                normalized_head);
+            do_loop_ref.m_head = normalized_head;
+            pass_result.push_back(al, ASRUtils::STMT(do_loop));
+            return;
+        }
         pass_result = PassUtils::replace_doloop(al, do_loop_ref, -1,
             this->current_scope, pass_options.fast);
     }

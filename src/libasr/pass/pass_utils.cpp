@@ -1702,43 +1702,65 @@ namespace LCompilers {
             }
         }
 
-        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp,
-                                         SymbolTable* current_scope,
-                                         bool exact_unit_step_exit) {
-            Location loc = loop.base.base.loc;
-            ASR::expr_t *a=loop.m_head.m_start;
-            ASR::expr_t *b=loop.m_head.m_end;
-            ASR::expr_t *c=loop.m_head.m_increment;
-            ASR::expr_t *loop_var = loop.m_head.m_v;
-            ASR::expr_t *cond = nullptr;
-            ASR::stmt_t *inc_stmt = nullptr;
-            ASR::stmt_t *loop_init_stmt = nullptr;
-            ASR::expr_t *zero_trip_guard = nullptr;
-            ASR::stmt_t *completion_stmt = nullptr;
-            Vec<ASR::stmt_t*> pre_loop_stmts;
-            pre_loop_stmts.reserve(al, 2);
-            if( !loop_var && a && current_scope ) {
+        void normalize_doloop_head(Allocator &al, const ASR::DoLoop_t &loop,
+                                   SymbolTable* current_scope,
+                                   ASR::do_loop_head_t &normalized_head) {
+            normalized_head = loop.m_head;
+            ASR::expr_t *&a = normalized_head.m_start;
+            ASR::expr_t *&b = normalized_head.m_end;
+            ASR::expr_t *&c = normalized_head.m_increment;
+            ASR::expr_t *&loop_var = normalized_head.m_v;
+
+            if (!loop_var && a && current_scope) {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loop.base.base.loc, a_kind));
                 std::string tmp_name = current_scope->get_unique_name("__do_loop_var");
                 ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                    ASRUtils::make_Variable_t_util(al, loop.base.base.loc, current_scope,
                         s2c(al, tmp_name), nullptr, 0,
                         ASR::intentType::Local, nullptr, nullptr,
                         ASR::storage_typeType::Default, type, nullptr,
                         ASR::abiType::Source, ASR::accessType::Public,
                         ASR::presenceType::Required, false));
                 current_scope->add_symbol(tmp_name, tmp_sym);
-                loop_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+                loop_var = ASRUtils::EXPR(ASR::make_Var_t(al, loop.base.base.loc, tmp_sym));
             }
-            if( loop_var ) {
+
+            if (loop_var) {
                 cast_util(loop_var, a, al, true);
                 cast_util(loop_var, b, al, true);
-                if( c ) {
+                if (c) {
                     cast_util(loop_var, c, al, true);
                 }
             }
+            if (!a || !b) {
+                return;
+            }
+            if (!c) {
+                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop_var));
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loop.base.base.loc, a_kind));
+                c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loop.base.base.loc, 1, type));
+            }
+        }
+
+        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
+                                         int comp,
+                                         SymbolTable* current_scope,
+                                         bool exact_unit_step_exit) {
+            Location loc = loop.base.base.loc;
+            ASR::do_loop_head_t normalized_head = loop.m_head;
+            Vec<ASR::stmt_t*> pre_loop_stmts;
+            pre_loop_stmts.reserve(al, 2);
+            normalize_doloop_head(al, loop, current_scope, normalized_head);
+            ASR::expr_t *a=normalized_head.m_start;
+            ASR::expr_t *b=normalized_head.m_end;
+            ASR::expr_t *c=normalized_head.m_increment;
+            ASR::expr_t *loop_var = normalized_head.m_v;
+            ASR::expr_t *cond = nullptr;
+            ASR::stmt_t *inc_stmt = nullptr;
+            ASR::stmt_t *loop_init_stmt = nullptr;
+            ASR::expr_t *zero_trip_guard = nullptr;
+            ASR::stmt_t *completion_stmt = nullptr;
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop_var ) {
@@ -1749,26 +1771,15 @@ namespace LCompilers {
             } else {
                 LCOMPILERS_ASSERT(a);
                 LCOMPILERS_ASSERT(b);
-                if (!c) {
-                    int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop_var));
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-                    c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
-                }
                 LCOMPILERS_ASSERT(c);
-
-                // Per the Fortran standard, do loop bounds are evaluated once
-                // before the loop begins. Save non-constant upper bound and
-                // increment expressions to temporary variables so they are not
-                // re-evaluated each iteration.
-                if (current_scope && b &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(*b)) {
+                if (current_scope && !ASR::is_a<ASR::IntegerConstant_t>(*b)) {
                     std::string name = current_scope->get_unique_name("__do_loop_end");
                     ASR::stmt_t* assign;
                     b = create_auxiliary_variable_for_expr(b, name, al,
                             current_scope, assign);
                     pre_loop_stmts.push_back(al, assign);
                 }
-                if (current_scope && c &&
+                if (current_scope &&
                         !ASR::is_a<ASR::IntegerConstant_t>(*c) &&
                         !(ASR::is_a<ASR::IntegerUnaryMinus_t>(*c) &&
                           ASR::is_a<ASR::IntegerConstant_t>(

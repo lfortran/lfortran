@@ -8,40 +8,29 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca i32, align 4
   %i = alloca i32, align 4
-  store i32 0, i32* %i, align 4
-  br label %loop.head
+  store i32 1, i32* %i, align 4
+  br label %do_loop.cond
 
-loop.head:                                        ; preds = %ifcont, %.entry
-  br i1 true, label %loop.body, label %loop.end
+do_loop.cond:                                     ; preds = %.entry
+  br i1 true, label %do_loop.body, label %do_loop.end
 
-loop.body:                                        ; preds = %loop.head
-  %2 = load i32, i32* %i, align 4
-  %3 = add i32 %2, 1
-  store i32 %3, i32* %i, align 4
-  %4 = load i32, i32* %i, align 4
-  %5 = icmp sle i32 %4, 10
-  %6 = xor i1 %5, true
-  br i1 %6, label %then, label %else
-
-then:                                             ; preds = %loop.body
-  br label %loop.end
-
-unreachable_after_exit:                           ; No predecessors!
-  br label %ifcont
-
-else:                                             ; preds = %loop.body
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %unreachable_after_exit
+do_loop.body:                                     ; preds = %do_loop.head, %do_loop.cond
   store i32 5, i32* %call_arg_value, align 4
-  %7 = call i32 @do7.f(i32* %call_arg_value)
-  store i32 %7, i32* %a, align 4
-  br label %loop.head
+  %2 = call i32 @do7.f(i32* %call_arg_value)
+  store i32 %2, i32* %a, align 4
+  br label %do_loop.head
 
-loop.end:                                         ; preds = %then, %loop.head
+do_loop.head:                                     ; preds = %do_loop.body
+  %do_loop.iv.mem = load i32, i32* %i, align 4
+  %do_loop.next = add nsw i32 %do_loop.iv.mem, 1
+  store i32 %do_loop.next, i32* %i, align 4
+  %3 = icmp eq i32 %do_loop.iv.mem, 10
+  br i1 %3, label %do_loop.end, label %do_loop.body
+
+do_loop.end:                                      ; preds = %do_loop.head, %do_loop.cond
   br label %return
 
-return:                                           ; preds = %loop.end
+return:                                           ; preds = %do_loop.end
   br label %FINALIZE_SYMTABLE_do7
 
 FINALIZE_SYMTABLE_do7:                            ; preds = %return

@@ -42,7 +42,6 @@ FINALIZE_SYMTABLE_common_60_bump:                 ; preds = %return
 
 define void @common_60_bump_all_real____0(double* %a, i32* %__1a) {
 .entry:
-  %__do_loop_end = alloca i32, align 4
   %__libasr_index_0_ = alloca i32, align 4
   %__libasr_index_0_1 = alloca i32, align 4
   %0 = load i32, i32* %__1a, align 1
@@ -59,63 +58,51 @@ ifcont:                                           ; preds = %.entry
   %3 = load i32, i32* %__1a, align 1
   %4 = add i32 %3, 1
   %5 = sub i32 %4, 1
-  store i32 %5, i32* %__do_loop_end, align 4
-  store i32 0, i32* %__libasr_index_0_, align 4
-  br label %loop.head
+  store i32 1, i32* %__libasr_index_0_, align 4
+  br label %do_loop.cond
 
-loop.head:                                        ; preds = %ifcont2, %ifcont
-  br i1 true, label %loop.body, label %loop.end
+do_loop.cond:                                     ; preds = %ifcont
+  %6 = icmp sle i32 1, %5
+  br i1 %6, label %do_loop.body, label %do_loop.end
 
-loop.body:                                        ; preds = %loop.head
-  %6 = load i32, i32* %__libasr_index_0_, align 4
-  %7 = add i32 %6, 1
-  store i32 %7, i32* %__libasr_index_0_, align 4
-  %8 = load i32, i32* %__libasr_index_0_, align 4
-  %9 = load i32, i32* %__do_loop_end, align 4
-  %10 = icmp sle i32 %8, %9
-  %11 = xor i1 %10, true
-  br i1 %11, label %then1, label %else
+do_loop.body:                                     ; preds = %do_loop.head, %do_loop.cond
+  %7 = load i32, i32* %__libasr_index_0_, align 4
+  %8 = load i32, i32* %__1a, align 1
+  %9 = sext i32 %7 to i64
+  %10 = sub i64 %9, 1
+  %11 = mul i64 1, %10
+  %12 = add i64 0, %11
+  %13 = sext i32 %8 to i64
+  %14 = mul i64 1, %13
+  %15 = getelementptr inbounds double, double* %a, i64 %12
+  %16 = load i32, i32* %__libasr_index_0_1, align 4
+  %17 = load i32, i32* %__1a, align 1
+  %18 = sext i32 %16 to i64
+  %19 = sub i64 %18, 1
+  %20 = mul i64 1, %19
+  %21 = add i64 0, %20
+  %22 = sext i32 %17 to i64
+  %23 = mul i64 1, %22
+  %24 = getelementptr inbounds double, double* %a, i64 %21
+  %25 = load double, double* %24, align 1
+  %26 = fadd double %25, 1.000000e+00
+  store double %26, double* %15, align 1
+  %27 = load i32, i32* %__libasr_index_0_1, align 4
+  %28 = add i32 %27, 1
+  store i32 %28, i32* %__libasr_index_0_1, align 4
+  br label %do_loop.head
 
-then1:                                            ; preds = %loop.body
-  br label %loop.end
+do_loop.head:                                     ; preds = %do_loop.body
+  %do_loop.iv.mem = load i32, i32* %__libasr_index_0_, align 4
+  %do_loop.next = add nsw i32 %do_loop.iv.mem, 1
+  store i32 %do_loop.next, i32* %__libasr_index_0_, align 4
+  %29 = icmp eq i32 %do_loop.iv.mem, %5
+  br i1 %29, label %do_loop.end, label %do_loop.body
 
-unreachable_after_exit:                           ; No predecessors!
-  br label %ifcont2
-
-else:                                             ; preds = %loop.body
-  br label %ifcont2
-
-ifcont2:                                          ; preds = %else, %unreachable_after_exit
-  %12 = load i32, i32* %__libasr_index_0_, align 4
-  %13 = load i32, i32* %__1a, align 1
-  %14 = sext i32 %12 to i64
-  %15 = sub i64 %14, 1
-  %16 = mul i64 1, %15
-  %17 = add i64 0, %16
-  %18 = sext i32 %13 to i64
-  %19 = mul i64 1, %18
-  %20 = getelementptr inbounds double, double* %a, i64 %17
-  %21 = load i32, i32* %__libasr_index_0_1, align 4
-  %22 = load i32, i32* %__1a, align 1
-  %23 = sext i32 %21 to i64
-  %24 = sub i64 %23, 1
-  %25 = mul i64 1, %24
-  %26 = add i64 0, %25
-  %27 = sext i32 %22 to i64
-  %28 = mul i64 1, %27
-  %29 = getelementptr inbounds double, double* %a, i64 %26
-  %30 = load double, double* %29, align 1
-  %31 = fadd double %30, 1.000000e+00
-  store double %31, double* %20, align 1
-  %32 = load i32, i32* %__libasr_index_0_1, align 4
-  %33 = add i32 %32, 1
-  store i32 %33, i32* %__libasr_index_0_1, align 4
-  br label %loop.head
-
-loop.end:                                         ; preds = %then1, %loop.head
+do_loop.end:                                      ; preds = %do_loop.head, %do_loop.cond
   br label %return
 
-return:                                           ; preds = %loop.end
+return:                                           ; preds = %do_loop.end
   br label %FINALIZE_SYMTABLE_common_60_bump_all_real____0
 
 FINALIZE_SYMTABLE_common_60_bump_all_real____0:   ; preds = %return
@@ -131,12 +118,11 @@ define i32 @main(i32 %0, i8** %1) {
   %array_bound1 = alloca i32, align 4
   %array_bound = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %__do_loop_end = alloca i32, align 4
   %__libasr_index_0_ = alloca i32, align 4
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 7, i32* %array_bound, align 4
+  store i32 1, i32* %array_bound, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
@@ -144,11 +130,10 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %2 = load i32, i32* %array_bound, align 4
-  store i32 %2, i32* %__do_loop_end, align 4
   br i1 true, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
-  store i32 1, i32* %array_bound1, align 4
+  store i32 7, i32* %array_bound1, align 4
   br label %ifcont4
 
 else3:                                            ; preds = %ifcont
@@ -156,82 +141,84 @@ else3:                                            ; preds = %ifcont
 
 ifcont4:                                          ; preds = %else3, %then2
   %3 = load i32, i32* %array_bound1, align 4
-  %4 = sub i32 %3, 1
-  store i32 %4, i32* %__libasr_index_0_, align 4
-  br label %loop.head
+  store i32 %2, i32* %__libasr_index_0_, align 4
+  br label %do_loop.cond
 
-loop.head:                                        ; preds = %ifcont7, %ifcont4
-  br i1 true, label %loop.body, label %loop.end
+do_loop.cond:                                     ; preds = %ifcont4
+  %4 = icmp sle i32 %2, %3
+  br i1 %4, label %do_loop.body, label %do_loop.end
 
-loop.body:                                        ; preds = %loop.head
+do_loop.body:                                     ; preds = %do_loop.head, %do_loop.cond
   %5 = load i32, i32* %__libasr_index_0_, align 4
-  %6 = add i32 %5, 1
-  store i32 %6, i32* %__libasr_index_0_, align 4
-  %7 = load i32, i32* %__libasr_index_0_, align 4
-  %8 = load i32, i32* %__do_loop_end, align 4
-  %9 = icmp sle i32 %7, %8
-  %10 = xor i1 %9, true
-  br i1 %10, label %then5, label %else6
+  %6 = sext i32 %5 to i64
+  %7 = sub i64 %6, 1
+  %8 = mul i64 1, %7
+  %9 = add i64 0, %8
+  %10 = getelementptr [7 x i32], [7 x i32]* bitcast ([28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk to [7 x i32]*), i32 0, i64 %9
+  store i32 0, i32* %10, align 4
+  br label %do_loop.head
 
-then5:                                            ; preds = %loop.body
-  br label %loop.end
+do_loop.head:                                     ; preds = %do_loop.body
+  %do_loop.iv.mem = load i32, i32* %__libasr_index_0_, align 4
+  %do_loop.next = add nsw i32 %do_loop.iv.mem, 1
+  store i32 %do_loop.next, i32* %__libasr_index_0_, align 4
+  %11 = icmp eq i32 %do_loop.iv.mem, %3
+  br i1 %11, label %do_loop.end, label %do_loop.body
 
-unreachable_after_exit:                           ; No predecessors!
-  br label %ifcont7
-
-else6:                                            ; preds = %loop.body
-  br label %ifcont7
-
-ifcont7:                                          ; preds = %else6, %unreachable_after_exit
-  %11 = load i32, i32* %__libasr_index_0_, align 4
-  %12 = sext i32 %11 to i64
-  %13 = sub i64 %12, 1
-  %14 = mul i64 1, %13
-  %15 = add i64 0, %14
-  %16 = getelementptr [7 x i32], [7 x i32]* bitcast ([28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk to [7 x i32]*), i32 0, i64 %15
-  store i32 0, i32* %16, align 4
-  br label %loop.head
-
-loop.end:                                         ; preds = %then5, %loop.head
+do_loop.end:                                      ; preds = %do_loop.head, %do_loop.cond
   store double 2.500000e+00, double* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to double*), align 4
   call void @common_60_bump(double* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to double*))
-  %17 = load double, double* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to double*), align 4
-  %18 = fcmp une double %17, 3.500000e+00
-  br i1 %18, label %then8, label %else9
+  %12 = load double, double* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to double*), align 4
+  %13 = fcmp une double %12, 3.500000e+00
+  br i1 %13, label %then5, label %else6
 
-then8:                                            ; preds = %loop.end
+then5:                                            ; preds = %do_loop.end
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
-  br label %ifcont10
+  br label %ifcont7
 
-else9:                                            ; preds = %loop.end
-  br label %ifcont10
+else6:                                            ; preds = %do_loop.end
+  br label %ifcont7
 
-ifcont10:                                         ; preds = %else9, %then8
+ifcont7:                                          ; preds = %else6, %then5
   store double 1.000000e+00, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 1), align 4
   store double 7.000000e+00, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 2), align 4
-  br i1 false, label %then11, label %ifcont12
+  br i1 false, label %then8, label %ifcont9
 
-then11:                                           ; preds = %ifcont10
+then8:                                            ; preds = %ifcont7
   call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @16 to i8*), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @11, i32 0, i32 0), i32 3, i32 1, i32 1, i32 3)
   unreachable
 
-ifcont12:                                         ; preds = %ifcont10
+ifcont9:                                          ; preds = %ifcont7
   store i32 3, i32* %call_arg_value, align 4
   call void @common_60_bump_all_real____0(double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i32 0), i32* %call_arg_value)
-  %19 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 0), align 4
-  %20 = fcmp une double %19, 4.500000e+00
-  %21 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 1), align 4
-  %22 = fcmp une double %21, 2.000000e+00
-  %23 = or i1 %20, %22
-  %24 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 2), align 4
-  %25 = fcmp une double %24, 8.000000e+00
-  %26 = or i1 %23, %25
-  br i1 %26, label %then13, label %else14
+  %14 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 0), align 4
+  %15 = fcmp une double %14, 4.500000e+00
+  %16 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 1), align 4
+  %17 = fcmp une double %16, 2.000000e+00
+  %18 = or i1 %15, %17
+  %19 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 2), align 4
+  %20 = fcmp une double %19, 8.000000e+00
+  %21 = or i1 %18, %20
+  br i1 %21, label %then10, label %else11
+
+then10:                                           ; preds = %ifcont9
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont9
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %then10
+  %22 = load i32, i32* getelementptr ([7 x i32], [7 x i32]* bitcast ([28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk to [7 x i32]*), i32 0, i64 0), align 4
+  %23 = icmp ne i32 %22, 0
+  br i1 %23, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
   br label %ifcont15
@@ -240,23 +227,9 @@ else14:                                           ; preds = %ifcont12
   br label %ifcont15
 
 ifcont15:                                         ; preds = %else14, %then13
-  %27 = load i32, i32* getelementptr ([7 x i32], [7 x i32]* bitcast ([28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk to [7 x i32]*), i32 0, i64 0), align 4
-  %28 = icmp ne i32 %27, 0
-  br i1 %28, label %then16, label %else17
-
-then16:                                           ; preds = %ifcont15
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
-  call void @_lfortran_internal_alloc_finalize()
-  call void @exit(i32 1)
-  br label %ifcont18
-
-else17:                                           ; preds = %ifcont15
-  br label %ifcont18
-
-ifcont18:                                         ; preds = %else17, %then16
   br label %return
 
-return:                                           ; preds = %ifcont18
+return:                                           ; preds = %ifcont15
   br label %FINALIZE_SYMTABLE_common_60
 
 FINALIZE_SYMTABLE_common_60:                      ; preds = %return

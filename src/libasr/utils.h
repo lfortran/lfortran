@@ -109,6 +109,9 @@ struct PassOptions {
     // but does not require it); off by default.
     bool logical_short_circuit = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
+    // Keep counted DoLoop nodes until LLVM code generation in the default
+    // LLVM pipeline. Explicit pass selections keep existing do_loops behavior.
+    bool preserve_do_loops_for_llvm = false;
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;
     // Set by the pass manager so that a pass can report a diagnostic. It is
