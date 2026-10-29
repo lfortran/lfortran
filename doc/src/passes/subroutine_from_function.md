@@ -2,9 +2,12 @@
 
 The C++ preparation pipeline uses the shared pass with
 `FunctionResultLowering::ExplicitArraySnapshot`. This policy lowers only
-Source-ABI explicit-shape numeric and logical array results, leaving pointer,
-allocatable, character, structure and foreign-ABI results unchanged. Signatures
-and calls use the same converted-function map.
+Source-ABI explicit-shape numeric and logical array results, and host
+allocatable results of those intrinsic types with a global-memory descriptor
+representation (integer/logical kinds 1, 2, 4, 8 and real/complex kinds 4, 8).
+Pointer, character, structure, coarray and foreign-ABI
+allocatable results retain their existing paths. Signatures, callbacks and
+calls use the same converted-function map.
 
 Each call completes in an independent temporary of the call expression's
 result type before the existing array-operation pass copies it to its
@@ -13,6 +16,20 @@ assignment target as the result argument. Argument-dependent extents use the
 metadata prepared by `array_struct_temporary`, not the destination's shape.
 The C++ emitter retains its typed descriptor/View representation and lowers
 explicit allocation and shape-guarded reallocation of local array owners.
+An allocatable result uses a distinct caller-local allocatable slot per call
+site, reset before each invocation, including repeated calls in loops. The
+lowered `ResultArgument` output dummy allocates, reallocates and releases
+through that caller's descriptor and View; it creates no callee-local owner
+or borrowed-descriptor adapter. This preserves runtime result bounds and
+allocated zero extents without returning pointers to callee storage. Ordinary
+borrowed dummies do not gain allocation or release rights. Caller-local View
+destruction releases the storage on scope exit, including early returns.
+Copies prepared from an allocatable function expression receive an explicit
+shape-guarded `ReAlloc` after the result call, since their extents cannot be
+known before it. Newly allocated copy destinations have unit lower bounds;
+an existing conforming destination retains its bounds. The result descriptor
+itself retains the bounds established by the callee. Allocation metadata uses
+the C++ representation's contiguous, last-subscript-fastest strides.
 The default three-argument pass entry point retains aggregate lowering and
 its existing destination-forwarding optimizations for other backends.
 

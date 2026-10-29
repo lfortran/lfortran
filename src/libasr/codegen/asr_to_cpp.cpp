@@ -209,6 +209,13 @@ public:
                             "->dims[" + std::to_string(i) + "].length = 0" + ";\n";
                     }
                 }
+                if (is_allocatable) {
+                    for (size_t i = 0; i < n_dims; i++) {
+                        sub += indent + v_m_name + "->dims[" +
+                            std::to_string(i) + "].stride = " +
+                            (i + 1 == n_dims ? "1" : "0") + ";\n";
+                    }
+                }
                 sub += indent + v_m_name + "->is_allocated = " +
                     (is_allocatable ? "false" : "true");
             }
@@ -345,9 +352,10 @@ public:
         }
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
-        if (is_allocatable && (!is_array || dummy ||
-                v.m_intent != ASR::intentType::Local)) {
-            throw CodeGenError("only local allocatable array storage is supported "
+        if (is_allocatable && (!is_array ||
+                (v.m_intent != ASR::intentType::Local &&
+                 !is_array_result_argument(v)))) {
+            throw CodeGenError("only local or caller-owned result allocatable array storage is supported "
                 "by the C++ backend", v.base.base.loc);
         }
 
@@ -449,22 +457,41 @@ public:
         return sub;
     }
 
-    bool is_local_array_owner(ASR::expr_t* expr) {
+    bool is_array_result_argument(const ASR::Variable_t &variable) {
+        if (variable.m_storage != ASR::storage_typeType::ResultArgument ||
+                variable.m_intent != ASR::intentType::Out ||
+                !is_source_allocatable_descriptor_array(variable)) return false;
+        ASR::asr_t *owner = variable.m_parent_symtab->asr_owner;
+        if (!ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return false;
+        }
+        ASR::Function_t *function = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(function);
+        return !function->m_return_var &&
+            ASRUtils::is_dummy_argument(*function, &variable.base) &&
+            signature->m_abi == ASR::abiType::Source &&
+            signature->m_exec_space == ASR::exec_spaceType::Host;
+    }
+
+    bool is_array_owner_storage(ASR::expr_t* expr) {
         if (!ASR::is_a<ASR::Var_t>(*expr)) return false;
         ASR::Variable_t* variable = ASRUtils::EXPR2VAR(expr);
-        return variable->m_intent == ASR::intentType::Local &&
-            ASRUtils::is_allocatable(variable->m_type) &&
-            ASRUtils::is_array(variable->m_type);
+        return (variable->m_intent == ASR::intentType::Local &&
+                ASRUtils::is_allocatable(variable->m_type) &&
+                ASRUtils::is_array(variable->m_type)) ||
+            is_array_result_argument(*variable);
     }
 
     std::string allocate_array_owner(const ASR::alloc_arg_t& arg) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out;
-        if (!is_local_array_owner(arg.m_a) || arg.n_codims ||
+        if (!is_array_owner_storage(arg.m_a) || arg.n_codims ||
                 arg.m_len_expr || arg.m_type || arg.m_sym_subclass ||
                 arg.n_dims != ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(arg.m_a))) {
-            throw CodeGenError("allocation requires local typed array storage "
+            throw CodeGenError("allocation requires local or caller-owned result typed array storage "
                 "in the C++ backend", arg.loc);
         }
         visit_expr(*arg.m_a);
@@ -486,6 +513,12 @@ public:
             out += indent + dim + ".length = " + src + ";\n";
             size += " * " + dim + ".length";
         }
+        std::string stride = "1";
+        for (size_t j = arg.n_dims; j-- > 0;) {
+            std::string dim = array + "->dims[" + std::to_string(j) + "]";
+            out += indent + dim + ".stride = " + stride + ";\n";
+            stride = "(" + stride + " * " + dim + ".length)";
+        }
         out += indent + "*" + array + "->data = std::decay_t<decltype(*" +
             array + "->data)>(\"" + array + "\", " + size + ");\n";
         out += indent + array + "->is_allocated = true;\n";
@@ -505,8 +538,8 @@ public:
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t &x) {
-        if (x.n_args != 1 || !is_local_array_owner(x.m_args[0].m_a)) {
-            throw CodeGenError("reallocation requires local typed array storage "
+        if (x.n_args != 1 || !is_array_owner_storage(x.m_args[0].m_a)) {
+            throw CodeGenError("reallocation requires local or caller-owned result typed array storage "
                 "in the C++ backend", x.base.base.loc);
         }
         visit_expr(*x.m_args[0].m_a);
@@ -529,7 +562,12 @@ public:
         out += indent + array + "->is_allocated = false;\n";
         for (size_t i = 0; i < ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(expr)); i++) {
-            out += indent + array + "->dims[" + std::to_string(i) + "].length = 0;\n";
+            std::string dim = array + "->dims[" + std::to_string(i) + "]";
+            out += indent + dim + ".lower_bound = 0;\n";
+            out += indent + dim + ".length = 0;\n";
+            out += indent + dim + ".stride = " +
+                (i + 1 == ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(expr)) ? "1" : "0") + ";\n";
         }
         return out;
     }
@@ -537,7 +575,7 @@ public:
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string out;
         for (size_t i = 0; i < x.n_vars; i++) {
-            if (is_local_array_owner(x.m_vars[i]) && !x.m_stat && !x.m_errmsg) {
+            if (is_array_owner_storage(x.m_vars[i]) && !x.m_stat && !x.m_errmsg) {
                 out += release_array_owner(x.m_vars[i]);
             } else {
                 ASR::ExplicitDeallocate_t single = x;
@@ -553,7 +591,7 @@ public:
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
         std::string out;
         for (size_t i = 0; i < x.n_vars; i++) {
-            if (is_local_array_owner(x.m_vars[i])) {
+            if (is_array_owner_storage(x.m_vars[i])) {
                 out += release_array_owner(x.m_vars[i]);
             } else {
                 ASR::ImplicitDeallocate_t single = x;
@@ -564,6 +602,18 @@ public:
             }
         }
         src = out;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        if (x.m_impure_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                x.n_args == 1 && is_array_owner_storage(x.m_args[0])) {
+            visit_expr(*x.m_args[0]);
+            src = "(" + src + "->is_allocated)";
+            last_expr_precedence = 2;
+            return;
+        }
+        BaseCCPPVisitor<ASRToCPPVisitor>::visit_IntrinsicImpureFunction(x);
     }
 
 
@@ -820,7 +870,8 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         ASR::expr_t* array = ASRUtils::get_expr_size_expr(x.m_v);
         if (array && ASR::is_a<ASR::Var_t>(*array)) {
             ASR::Variable_t* variable = ASRUtils::EXPR2VAR(array);
-            if (ASRUtils::is_arg_dummy(variable->m_intent)) {
+            if (ASRUtils::is_arg_dummy(variable->m_intent) &&
+                    !is_array_result_argument(*variable)) {
                 throw CodeGenError("bounds of this dummy array with this dim "
                     "expression are not supported by the C++ backend", x.base.base.loc);
             }

@@ -17,6 +17,28 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+bool is_source_allocatable_descriptor_array(const ASR::Variable_t &variable) {
+    if (variable.m_abi != ASR::abiType::Source || variable.n_codims ||
+            !ASR::is_a<ASR::Allocatable_t>(*variable.m_type)) return false;
+    ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(variable.m_type);
+    if (!ASR::is_a<ASR::Array_t>(*type)) return false;
+    ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+    if (array->n_dims == 0 ||
+            array->m_physical_type != ASR::array_physical_typeType::DescriptorArray ||
+            array->m_memory_space != ASR::memory_spaceType::Global) return false;
+    if (ASRUtils::is_integer(*array->m_type) ||
+            ASRUtils::is_logical(*array->m_type)) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+        return kind == 1 || kind == 2 || kind == 4 || kind == 8;
+    }
+    if (ASRUtils::is_real(*array->m_type) ||
+            ASRUtils::is_complex(*array->m_type)) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+        return kind == 4 || kind == 8;
+    }
+    return false;
+}
+
 static bool is_explicit_array_result(ASR::expr_t* result) {
     ASR::ttype_t* type = ASRUtils::expr_type(result);
     if (!ASR::is_a<ASR::Array_t>(*type)) return false;
@@ -81,7 +103,11 @@ public:
             /* Transform This Function Into Subroutine IF NEEDED */
             bool eligible = lowering == FunctionResultLowering::AllAggregates ||
                 (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::Source &&
-                 fn.m_return_var && is_explicit_array_result(fn.m_return_var));
+                 fn.m_return_var &&
+                 (is_explicit_array_result(fn.m_return_var) ||
+                  (ASRUtils::get_FunctionType(fn)->m_exec_space == ASR::exec_spaceType::Host &&
+                   is_source_allocatable_descriptor_array(
+                       *ASRUtils::EXPR2VAR(fn.m_return_var)))));
             bool transform_success = eligible &&
                 PassUtils::handle_fn_return_var(al, &fn,
                     PassUtils::is_result_returned_through_argument);
@@ -1766,10 +1792,49 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         void visit_Assignment(const ASR::Assignment_t &x) {
             if (lowering == FunctionResultLowering::ExplicitArraySnapshot) {
+                ASR::expr_t *value = ASRUtils::get_past_array_physical_cast(x.m_value);
+                bool allocatable_result = false;
+                if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                    ASR::Function_t *function = ASRUtils::get_function(
+                        ASR::down_cast<ASR::FunctionCall_t>(value)->m_name);
+                    allocatable_result = function && !function->m_return_var &&
+                        function->n_args > 0 &&
+                        ASRUtils::get_FunctionType(function)->m_abi == ASR::abiType::Source &&
+                        ASRUtils::get_FunctionType(function)->m_exec_space == ASR::exec_spaceType::Host &&
+                        ASRUtils::EXPR2VAR(function->m_args[function->n_args - 1])
+                            ->m_storage == ASR::storage_typeType::ResultArgument &&
+                        is_source_allocatable_descriptor_array(
+                            *ASRUtils::EXPR2VAR(function->m_args[function->n_args - 1]));
+                }
                 // Finish the result in independent, result-typed storage before
                 // array_op copies it to a possibly aliased destination.
                 ASR::CallReplacerOnExpressionsVisitor \
                 <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
+                if (allocatable_result && ASR::is_a<ASR::Var_t>(*x.m_target) &&
+                        is_source_allocatable_descriptor_array(
+                            *ASRUtils::EXPR2VAR(x.m_target))) {
+                    // Earlier call preparation cannot size an allocatable
+                    // result. Size its copy only after the callee has returned;
+                    // a function expression has unit lower bounds.
+                    ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                    ASR::ttype_t *index_type = ASRUtils::expr_type(b.i32(0));
+                    size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(x.m_target));
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, rank);
+                    for (size_t i = 0; i < rank; i++) {
+                        dims.push_back(al, {x.base.base.loc, b.i32(1),
+                            ASRUtils::EXPR(ASR::make_ArraySize_t(al,
+                                x.base.base.loc, x.m_value, b.i32(i + 1),
+                                index_type, nullptr))});
+                    }
+                    ASR::Allocate_t *allocation = ASR::down_cast<ASR::Allocate_t>(
+                        b.Allocate(x.m_target, dims));
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
+                        al, x.base.base.loc, allocation->m_args, allocation->n_args,
+                        PassUtils::make_shape_differs(al, x.base.base.loc,
+                            allocation->m_args[0], index_type))));
+                }
                 return;
             }
             if(is_function_call_returning_aggregate_type(x.m_value)) {
