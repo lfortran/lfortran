@@ -124,9 +124,20 @@ session. At an idle prompt, Ctrl-C retains its existing exit behavior.
 Protected READs advertise `lfortran_interruptible: false` in input_request;
 the prompt keeps accepting their input after Ctrl-C so cleanup can finish.
 
-Compilation, arbitrary foreign calls without safepoints, subprocesses
-(including EXECUTE_COMMAND_LINE children), and WASM execution are not
-interrupted. Foreign calls may defer cancellation until they return.
+During native execution with a cancellation callback, EXECUTE_COMMAND_LINE
+waits poll that same cell state. POSIX commands run in their own process group;
+Windows commands run in an owned job. Cancellation terminates the owned shell
+and descendants and waits for the shell before returning through normal JIT
+cleanup. Captured stdout/stderr and the process stdin are inherited as before.
+Protected initialization/finalization commands must finish. Ordinary compiled
+files and executions without a cancellation callback still use `system()`.
+WAIT=.false. retains its existing synchronous behavior; this is not an
+implementation of asynchronous commands. Ownership lasts for the synchronous
+command wait, not for background jobs after its shell has returned. POSIX
+descendants that deliberately leave the process group are not tracked.
+
+Compilation, arbitrary foreign calls without safepoints, and WASM execution
+are not interrupted. Foreign calls may defer cancellation until they return.
 Initialization and cleanup, including their input waits, must finish before
 cancellation can proceed. Xeus registration configurations, IPv6 and non-TCP
 transports retain their legacy server and blocking input behavior.

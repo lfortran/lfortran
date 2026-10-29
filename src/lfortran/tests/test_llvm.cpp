@@ -3861,6 +3861,62 @@ use cancel_core
     }
 }
 
+TEST_CASE("FortranEvaluator execute: protected commands and runtime hook lifetime") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        REQUIRE(e.execute(R"(
+module protected_command
+use lfortran_display, only: clear_output
+integer :: command_cleaned = 0
+type :: command_owner
+contains
+    final :: finish_command
+end type
+contains
+subroutine finish_command(x)
+type(command_owner), intent(inout) :: x
+integer :: status, command_status
+call clear_output()
+call execute_command_line('echo protected-command', exitstat=status, cmdstat=command_status)
+if (status /= 0 .or. command_status /= 0) error stop
+command_cleaned = command_cleaned + 1
+end subroutine
+end module
+use protected_command
+)").ok);
+        bool requested = false;
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.cancel_requested = [&]() { return requested; };
+        io.clear_output = [&]() { requested = true; };
+        io.output = [&](int, const std::string &text) { output += text; };
+        for (int repeat = 1; repeat <= 2; repeat++) {
+            requested = false;
+            output.clear();
+            auto cell = e.execute("block\ntype(command_owner) :: x\nend block\n"
+                "print *, 'not-reached'", false, io);
+            CHECK(!cell.ok);
+            CHECK(cell.error_name == "KeyboardInterrupt");
+            CHECK(output.find("protected-command") != std::string::npos);
+            CHECK(output.find("not-reached") == std::string::npos);
+            CHECK(e.execute("command_cleaned").value.text() == std::to_string(repeat));
+            // A completed cancellation must not leave the runtime polling that
+            // cell when later execution has no cancellation callback.
+            FortranEvaluator::CellIO capture;
+            capture.output = io.output;
+            output.clear();
+            auto next = e.execute("call execute_command_line('echo next-command')",
+                false, capture);
+            CHECK(next.ok);
+            CHECK(output.find("next-command") != std::string::npos);
+        }
+    }
+}
+
 TEST_CASE("FortranEvaluator execute: cancellable stdin and protected input") {
     for (int mode = 0; mode < 3; mode++) {
         CAPTURE(mode);

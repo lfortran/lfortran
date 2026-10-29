@@ -648,7 +648,7 @@ def editing_prompt(exe, cwd, connection=None, expected_status=0):
 
 def test_interrupt_prompt(exe, cwd):
     """Ctrl-C keeps owning/attached prompts and their state alive, also in
-    READ; a control interrupt can end READ without a key at that prompt."""
+    READ and commands; a control interrupt can end READ without a key."""
     def exercise(connection=None):
         client = None
         owned = connection is None
@@ -679,6 +679,8 @@ def test_interrupt_prompt(exe, cwd):
                 finished(submit("integer :: kept_interrupt = 41"))
                 for code, external in [
                         ("do while (.true.); end do", False),
+                        ("call execute_command_line('sleep 4'); print *, 'command-done'", False),
+                        ("call execute_command_line('sleep 4'); print *, 'command-done'", False),
                         ("print '(a)', 'waiting-one'; read *, kept_interrupt", False),
                         ("print '(a)', 'waiting-two'; read *, kept_interrupt", True)]:
                     before = len(repl.out)
@@ -701,6 +703,19 @@ def test_interrupt_prompt(exe, cwd):
                                 break
                         else:
                             raise AssertionError("silent loop did not start:\n" + repl.text())
+                    children = []
+                    if "sleep 4" in code:
+                        time.sleep(1)
+                        # The observed execution belongs to this connection;
+                        # capture only its kernel's own direct command children.
+                        kernel_pids = [pid for pid, command in children_of(repl.pid)
+                            if "kernel" in command]
+                        if not owned:
+                            kernel_pids = [process.pid]
+                        for pid in kernel_pids:
+                            children.extend(child for child, _ in children_of(pid))
+                        check(children, "running command has no owned child")
+                    interrupted = time.monotonic()
                     if external:
                         request = client.session.msg("interrupt_request")
                         client.control_channel.send(request)
@@ -709,6 +724,17 @@ def test_interrupt_prompt(exe, cwd):
                     else:
                         os.write(repl.fd, b"\x03")
                     finished(queries)
+                    if "sleep 4" in code:
+                        check(time.monotonic() - interrupted < 2,
+                            "Ctrl-C waited for command completion")
+                        check(b"command-done\r\n" not in repl.out[before:],
+                            "interrupted command executed its following statement")
+                        for pid in children:
+                            try:
+                                os.kill(pid, 0)
+                            except ProcessLookupError:
+                                continue
+                            raise AssertionError("owned command child was not reaped: %d" % pid)
                     check(b"cell execution interrupted" in repl.out[before:], repl.text())
                     check(connection.exists(), "Ctrl-C removed the connection file")
                     finished(submit("kept_interrupt+1"))
@@ -730,7 +756,7 @@ def test_interrupt_prompt(exe, cwd):
 
     exercise()
     for managed in (False, True):
-        with kernel(exe, cwd, managed=managed) as (_, join, ports):
+        with kernel(exe, cwd, managed=managed) as (process, join, ports):
             join()
             exercise(Path(ports["path"]))
 

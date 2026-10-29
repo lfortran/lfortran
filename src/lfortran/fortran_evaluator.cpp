@@ -46,6 +46,7 @@
 #include <libasr/exception.h>
 #include <libasr/stacktrace.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_cancellation.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -881,9 +882,21 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
 #ifndef __EMSCRIPTEN__
         struct ActiveCancellation {
             CellCancellation *previous = active_cancellation;
-            ActiveCancellation(CellCancellation &state) { active_cancellation = &state; }
-            ~ActiveCancellation() { active_cancellation = previous; }
-        } active(cancellation);
+            lfortran_cancel_poll previous_poll = nullptr;
+            ActiveCancellation(CellCancellation &state, [[maybe_unused]] bool enabled) {
+                active_cancellation = &state;
+#ifdef HAVE_LFORTRAN_LLVM
+                previous_poll = _lfortran_set_cancel_poll(enabled
+                    ? +[]() { return poll_cell_cancellation(false); } : nullptr);
+#endif
+            }
+            ~ActiveCancellation() {
+#ifdef HAVE_LFORTRAN_LLVM
+                _lfortran_set_cancel_poll(previous_poll);
+#endif
+                active_cancellation = previous;
+            }
+        } active(cancellation, bool(io.cancel_requested));
 #endif
         try {
             const auto newline = code.find('\n');
