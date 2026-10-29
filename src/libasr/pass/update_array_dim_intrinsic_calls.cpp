@@ -164,7 +164,10 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     ASR::expr_t* declared_bound(ASR::ArrayBound_t* x,
             ASR::dimension_t* dims, int64_t dim) {
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
-        ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
+        ASR::expr_t* length = dims[dim - 1].m_length
+            ? copy_of(dims[dim - 1].m_length)
+            : ASRUtils::EXPR(ASR::make_ArraySize_t(al, x->base.base.loc,
+                copy_of(x->m_v), b.i32(dim), x->m_type, nullptr));
         ASR::expr_t* start = copy_of(dims[dim - 1].m_start);
         length = b.t2t(length, ASRUtils::expr_type(length), x->m_type);
         start = b.t2t(start, ASRUtils::expr_type(start), x->m_type);
@@ -186,7 +189,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         // is never negative, so only other starts need the test.
         int64_t length_value = 0, start_value = 0;
         bool constant_length = ASRUtils::extract_value(
-            ASRUtils::expr_value(dims[dim - 1].m_length), length_value);
+            ASRUtils::expr_value(length), length_value);
         bool unit_start = ASRUtils::extract_value(
             ASRUtils::expr_value(dims[dim - 1].m_start), start_value)
             && start_value == 1;
@@ -223,9 +226,18 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         ASR::dimension_t* dims = nullptr;
         int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
             ASRUtils::expr_type(x->m_v), dims));
-        if( !(n > 0 && ASRUtils::is_arg_dummy(v->m_intent) &&
-              !ASRUtils::is_dimension_empty(dims, n)) ) {
+        if( !(n > 0 && ASRUtils::is_arg_dummy(v->m_intent)) ) {
             return ;
+        }
+        if (ASRUtils::is_dimension_empty(dims, n)) {
+            if (ASRUtils::is_allocatable_or_pointer(v->m_type) ||
+                    ASRUtils::extract_physical_type(v->m_type) !=
+                        ASR::array_physical_typeType::DescriptorArray) {
+                return;
+            }
+            for (int i = 0; i < n; i++) {
+                if (!dims[i].m_start) return;
+            }
         }
         if( constant_dim ) {
             *current_expr = declared_bound(x, dims, dim);

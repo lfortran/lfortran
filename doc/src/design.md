@@ -58,6 +58,14 @@ constructors are rejected at the C++ boundary rather than filled by a second,
 backend-specific constructor implementation. This normalization does not imply
 support for all dynamic allocations, sections, or array function results.
 
+Generated array-intrinsic inputs carry explicit unit lower bounds in their
+assumed-shape ASR types, leaving extents dynamic. The dimension-inquiry pass
+uses these formal bounds and runtime `ArraySize` expressions, retaining the
+inquiry's integer kind. C++ captures each such descriptor locally and applies
+its declared lower bounds before indexing; data and extents are shared, but
+the caller's descriptor is not changed. This keeps generated PACK and COUNT
+loops in the formal coordinate system even when actual lower bounds differ.
+
 LFortran is structured as a library, and so one can for example use the parser
 to obtain an AST and do something with it, or one can then use the semantic
 analyzer to obtain ASR and do something with it. One can generate the ASR

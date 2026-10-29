@@ -252,6 +252,35 @@ public:
         return value;
     }
 
+    std::string capture_array_arguments(const ASR::Function_t& x) {
+        std::string result;
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t* formal = ASRUtils::EXPR2VAR(x.m_args[i]);
+            if (!ASRUtils::is_array(formal->m_type) ||
+                    ASRUtils::is_allocatable_or_pointer(formal->m_type)) {
+                continue;
+            }
+            ASR::dimension_t* dims = nullptr;
+            size_t rank = ASRUtils::extract_dimensions_from_ttype(formal->m_type, dims);
+            std::string bounds;
+            for (size_t j = 0; j < rank; j++) {
+                if (dims[j].m_start && !dims[j].m_length) {
+                    visit_expr(*dims[j].m_start);
+                    bounds += indent + std::string(formal->m_name) + "->dims["
+                        + std::to_string(j) + "].lower_bound = " + src + ";\n";
+                }
+            }
+            if (!bounds.empty()) {
+                std::string capture = current_scope->get_unique_name(
+                    std::string(formal->m_name) + "_descriptor");
+                result += indent + "auto " + capture + " = *" + formal->m_name + ";\n"
+                    + indent + formal->m_name + " = &" + capture + ";\n" + bounds;
+            }
+        }
+        return result;
+    }
+
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
     {
         if (v.m_storage == ASR::storage_typeType::Threadprivate) {
