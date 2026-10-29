@@ -2217,7 +2217,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             (void)m_dims;
             return n == target_rank;
         }
-        if (is_linear_array_const(e, target_rank)) {
+        if (is_linear_array_const(e, target_rank) ||
+                is_materializable_array_ctor(e, target_rank)) {
             return true;
         }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -2355,7 +2356,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     self().visit_expr(*v);
                     return src;
                 }
-                if (ASR::is_a<ASR::ArrayConstant_t>(*v)) {
+                if (ASR::is_a<ASR::ArrayConstant_t>(*v) ||
+                        ASR::is_a<ASR::ArrayConstructor_t>(*v)) {
                     if (const_tmp) {
                         auto it = const_tmp->find(v);
                         if (it != const_tmp->end()) {
@@ -2444,6 +2446,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return true;
         }
         if (ASR::is_a<ASR::ArrayConstant_t>(*e)) {
+            if (under_broadcast) {
+                return false;
+            }
+            consts.push_back(e);
+            return true;
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
             if (under_broadcast) {
                 return false;
             }
@@ -2557,6 +2566,27 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return ASRUtils::is_integer(*el) || ASRUtils::is_real(*el);
     }
 
+    // Whether `e` is a rank-1 integer/real array constructor (implied-do
+    // included) fitting the const-temp elementwise lowering for a target
+    // of rank `target_rank`. Unlike is_linear_array_const the size may be
+    // runtime-dependent; the temp view is then sized and filled at run
+    // time instead of from literals.
+    bool is_materializable_array_ctor(ASR::expr_t* e, size_t target_rank) {
+        if (!ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            return false;
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(e), m_dims);
+        (void)m_dims;
+        if (n != 1 || n != target_rank) {
+            return false;
+        }
+        ASR::ttype_t* el = ASRUtils::type_get_past_array(
+            ASRUtils::expr_type(e));
+        return ASRUtils::is_integer(*el) || ASRUtils::is_real(*el);
+    }
+
     // Whether `e` fits the call-aware elementwise lowering for a
     // whole-array target of rank `target_rank`: like
     // is_elementwise_assignable, but array-valued function calls are
@@ -2577,7 +2607,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             (void)m_dims;
             return n == target_rank;
         }
-        if (is_linear_array_const(e, target_rank)) {
+        if (is_linear_array_const(e, target_rank) ||
+                is_materializable_array_ctor(e, target_rank)) {
             return true;
         }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -2705,9 +2736,116 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return true;
     }
 
+    // Element count of one array-constructor argument; implied-do
+    // loops contribute their trip count, anything else a single item.
+    void ctor_arg_count(ASR::expr_t* e, std::string &count) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+            self().visit_expr(*idl->m_start);
+            std::string start = src;
+            self().visit_expr(*idl->m_end);
+            std::string end = src;
+            std::string step = "1";
+            if (idl->m_increment) {
+                self().visit_expr(*idl->m_increment);
+                step = src;
+            }
+            count += " + (" + section_trip_count(start, end, step) + ")";
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            ASR::ArrayConstructor_t *c =
+                ASR::down_cast<ASR::ArrayConstructor_t>(e);
+            for (size_t i = 0; i < c->n_args; i++) {
+                ctor_arg_count(c->m_args[i], count);
+            }
+            return;
+        }
+        count += " + 1";
+    }
+
+    // Stores one array-constructor element (or implied-do iteration)
+    // into the flat C++ data view, counting positions with `k`.
+    void emit_ctor_fill(ASR::expr_t* e, const std::string &tmp,
+            const std::string &k, const std::string &indent,
+            std::string &out) {
+        std::string indent1 = indent + std::string(indentation_spaces, ' ');
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+            self().visit_expr(*idl->m_var);
+            std::string lvname = src;
+            ASR::expr_t *a = idl->m_start;
+            ASR::expr_t *b = idl->m_end;
+            ASR::expr_t *c = idl->m_increment;
+            int increment;
+            bool is_c_constant = false;
+            if (!c) {
+                increment = 1;
+                is_c_constant = true;
+            } else {
+                ASR::expr_t* c_value = ASRUtils::expr_value(c);
+                is_c_constant = ASRUtils::extract_value(c_value, increment);
+            }
+            std::string loop = indent + "for (" + lvname + " = ";
+            self().visit_expr(*a);
+            loop += src + "; " + lvname;
+            std::string step;
+            if (is_c_constant) {
+                loop += (increment > 0) ? " <= " : " >= ";
+                self().visit_expr(*b);
+                loop += src + "; " + lvname;
+                if (increment == 1) {
+                    step = "++";
+                } else if (increment == -1) {
+                    step = "--";
+                } else {
+                    step = "+=" + std::to_string(increment);
+                }
+                loop += step;
+            } else {
+                self().visit_expr(*c);
+                std::string incr = src;
+                self().visit_expr(*b);
+                std::string end_name = current_scope->get_unique_name(
+                    "ctor_end___" + std::to_string(loop_end_count));
+                loop_end_count += 1;
+                out += indent + CUtils::get_c_type_from_ttype_t(
+                    ASRUtils::expr_type(b), is_c) + " " + end_name
+                    + " = " + src + ";\n";
+                loop += "; ((" + incr + " >= 0) && (" + lvname + " <= "
+                    + end_name + ")) || ((" + incr + " < 0) && ("
+                    + lvname + " >= " + end_name + ")); " + lvname
+                    + " += " + incr;
+            }
+            loop += ") {\n";
+            out += loop;
+            for (size_t i = 0; i < idl->n_values; i++) {
+                self().visit_expr(*idl->m_values[i]);
+                out += indent1 + tmp + "->data->operator[](" + k + "++) = "
+                    + src + ";\n";
+            }
+            out += indent + "}\n";
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            ASR::ArrayConstructor_t *nested =
+                ASR::down_cast<ASR::ArrayConstructor_t>(e);
+            for (size_t i = 0; i < nested->n_args; i++) {
+                emit_ctor_fill(nested->m_args[i], tmp, k, indent, out);
+            }
+            return;
+        }
+        self().visit_expr(*e);
+        out += indent + tmp + "->data->operator[](" + k + "++) = "
+            + src + ";\n";
+    }
+
     // Materialize each collected rank-1 array constant into a plain
-    // Kokkos view filled from its literals; leaves index it directly.
-    // Only called after is_linear_array_const established suitability.
+    // Kokkos view; fixed-size literals fill from `from_std_vector`,
+    // runtime constructors (implied-do included) get a sized view plus
+    // an element fill loop. Leaves index the temp directly. Returns
+    // false when a constructor needs lowering the fill cannot express;
+    // the caller then abandons the statement-level lowering.
     bool materialize_array_consts(std::vector<ASR::expr_t*> &consts,
             std::map<ASR::expr_t*, std::string> &const_tmp) {
         if (consts.empty()) {
@@ -2715,21 +2853,46 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         std::string indent(indentation_level*indentation_spaces, ' ');
         for (size_t i = 0; i < consts.size(); i++) {
-            ASR::ArrayConstant_t *a =
-                ASR::down_cast<ASR::ArrayConstant_t>(consts[i]);
-            ASR::ttype_t* el = ASRUtils::type_get_past_array(a->m_type);
-            std::string ctype = CUtils::get_c_type_from_ttype_t(el);
-            int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
-            std::string tmp = "arrtmp" + std::to_string(array_temp_count++);
-            std::string lits;
-            for (int64_t k = 0; k < n; k++) {
-                if (k > 0) lits += ", ";
-                lits += ASRUtils::fetch_ArrayConstant_value(a, k);
+            if (ASR::is_a<ASR::ArrayConstant_t>(*consts[i])) {
+                ASR::ArrayConstant_t *a =
+                    ASR::down_cast<ASR::ArrayConstant_t>(consts[i]);
+                ASR::ttype_t* el = ASRUtils::type_get_past_array(a->m_type);
+                std::string ctype = CUtils::get_c_type_from_ttype_t(el);
+                int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
+                std::string tmp = "arrtmp" + std::to_string(array_temp_count++);
+                std::string lits;
+                for (int64_t k = 0; k < n; k++) {
+                    if (k > 0) lits += ", ";
+                    lits += ASRUtils::fetch_ArrayConstant_value(a, k);
+                }
+                tmp_buffer_src.push_back(indent + "Kokkos::View<" + ctype
+                    + "*> " + tmp + "(\"" + tmp + "\", " + std::to_string(n)
+                    + ");\n" + indent + tmp + " = from_std_vector<" + ctype
+                    + ">({" + lits + "});\n");
+                const_tmp[consts[i]] = tmp;
+                continue;
             }
-            tmp_buffer_src.push_back(indent + "Kokkos::View<" + ctype
-                + "*> " + tmp + "(\"" + tmp + "\", " + std::to_string(n)
-                + ");\n" + indent + tmp + " = from_std_vector<" + ctype
-                + ">({" + lits + "});\n");
+            if (!ASR::is_a<ASR::ArrayConstructor_t>(*consts[i])) {
+                return false;
+            }
+            ASR::ArrayConstructor_t *c =
+                ASR::down_cast<ASR::ArrayConstructor_t>(consts[i]);
+            ASR::ttype_t* el = ASRUtils::type_get_past_array(c->m_type);
+            std::string ctype = CUtils::get_c_type_from_ttype_t(el);
+            std::string count = "0";
+            for (size_t j = 0; j < c->n_args; j++) {
+                ctor_arg_count(c->m_args[j], count);
+            }
+            size_t id = array_temp_count++;
+            std::string tmp = "arrtmp" + std::to_string(id);
+            std::string k = "arrtmp_k" + std::to_string(id);
+            std::string out = indent + "Kokkos::View<" + ctype + "*> "
+                + tmp + "(\"" + tmp + "\", " + count + ");\n" + indent
+                + "size_t " + k + " = 0;\n";
+            for (size_t j = 0; j < c->n_args; j++) {
+                emit_ctor_fill(c->m_args[j], tmp, k, indent, out);
+            }
+            tmp_buffer_src.push_back(out);
             const_tmp[consts[i]] = tmp;
         }
         return true;
@@ -2750,7 +2913,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     self().visit_expr(*v);
                     return src;
                 }
-                if (ASR::is_a<ASR::ArrayConstant_t>(*v)) {
+                if (ASR::is_a<ASR::ArrayConstant_t>(*v) ||
+                        ASR::is_a<ASR::ArrayConstructor_t>(*v)) {
                     auto it = const_tmp.find(v);
                     if (it != const_tmp.end()) {
                         return it->second + ".operator[](" + idx + ")";
@@ -2932,6 +3096,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             // Rank-1 constants are only reached after the const-aware
             // checker established suitability; the leaf callback maps
             // the node to its pre-materialized view.
+            return array_leaf(e);
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            // Same for rank-1 constructors (implied-do included).
             return array_leaf(e);
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
@@ -3128,10 +3296,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             array_consts) &&
                             (!array_calls.empty() || !array_consts.empty()) &&
                             is_call_elementwise(x.m_value, n_dims)) {
+                        size_t tmp_mark = tmp_buffer_src.size();
                         materialize_array_calls(array_calls, call_tmp);
-                        materialize_array_consts(array_consts, const_tmp);
-                        rhs = call_elementwise_src(x.m_value, idx, call_tmp,
-                            const_tmp);
+                        if (!materialize_array_consts(array_consts,
+                                const_tmp)) {
+                            tmp_buffer_src.resize(tmp_mark);
+                            base = nullptr;
+                        } else {
+                            rhs = call_elementwise_src(x.m_value, idx,
+                                call_tmp, const_tmp);
+                        }
                     } else {
                         base = nullptr;
                     }
@@ -3170,16 +3344,21 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         } else if (collect_array_temps(x.m_value, array_calls,
                                 array_consts) &&
                                 is_nested_elementwise(x.m_value, t_rank)) {
+                            size_t tmp_mark = tmp_buffer_src.size();
                             if (!array_calls.empty()) {
                                 materialize_array_calls(array_calls, call_tmp);
                             }
-                            if (!array_consts.empty()) {
-                                materialize_array_consts(array_consts,
-                                    const_tmp);
+                            if (!array_consts.empty() &&
+                                    !materialize_array_consts(array_consts,
+                                        const_tmp)) {
+                                tmp_buffer_src.resize(tmp_mark);
+                                base = nullptr;
+                            } else {
+                                rhs = nested_src(x.m_value, idx, t_rank,
+                                    array_calls.empty() ? nullptr : &call_tmp,
+                                    array_consts.empty() ? nullptr
+                                        : &const_tmp);
                             }
-                            rhs = nested_src(x.m_value, idx, t_rank,
-                                array_calls.empty() ? nullptr : &call_tmp,
-                                array_consts.empty() ? nullptr : &const_tmp);
                         } else {
                             base = nullptr;
                         }
