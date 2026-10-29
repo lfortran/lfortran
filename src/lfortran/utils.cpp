@@ -7,6 +7,7 @@
 
 #include <config.h>
 
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -189,7 +190,7 @@ std::string get_kokkos_includedir()
 #endif
 }
 
-// Kokkos >= 4 requires C++20 (std::type_identity, concepts, ...),
+// Kokkos >= 5 requires C++20 (std::type_identity, concepts, ...),
 // while older Kokkos releases build as C++17. Detect the installed
 // Kokkos major version from its headers so that the C++ backend stays
 // compatible with all supported Kokkos versions. Falls back to C++17
@@ -206,22 +207,17 @@ std::string get_kokkos_cxx_standard(const std::string &kokkos_includedir)
         std::string line;
         while (std::getline(f, line)) {
             std::istringstream iss(line);
-            std::string hash, name, value;
-            if (!(iss >> hash >> name >> value)) continue;
-            if (hash != "#define") continue;
-            if (name == "KOKKOS_VERSION_MAJOR") {
-                try {
-                    return std::stoi(value) >= 4 ? "c++20" : "c++17";
-                } catch (...) {
-                    continue;
-                }
-            } else if (name == "KOKKOS_VERSION") {
-                try {
-                    return std::stoi(value) / 10000 >= 4 ? "c++20" : "c++17";
-                } catch (...) {
-                    continue;
-                }
-            }
+            char hash;
+            std::string directive, name, value;
+            if (!(iss >> hash) || hash != '#') continue;
+            if (!(iss >> directive >> name >> value) || directive != "define") continue;
+            if (name != "KOKKOS_VERSION_MAJOR" && name != "KOKKOS_VERSION") continue;
+            unsigned int version;
+            const char *end = value.data() + value.size();
+            auto result = std::from_chars(value.data(), end, version);
+            if (result.ec != std::errc() || result.ptr != end) continue;
+            unsigned int major = name == "KOKKOS_VERSION" ? version / 10000 : version;
+            return major >= 5 ? "c++20" : "c++17";
         }
     }
     return "c++17";

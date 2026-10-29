@@ -258,6 +258,11 @@ compilation options, output options, link options and so on.
   - `fortran`: For generating Fortran code.
   - `julia`: For generating Julia code.
 
+The C++ backend selects C++20 for installed Kokkos 5 or later and retains
+C++17 for Kokkos 3 and 4. If the installed headers do not expose a recognized
+numeric Kokkos version, it defaults to C++17. The installed Kokkos build's
+other compiler and linker requirements (such as OpenMP) still apply.
+
 ### Compiler text outputs
 
 * `--error-format <value>`, Control how errors are produced (human, short)
