@@ -1011,6 +1011,66 @@ end module
     }
 }
 
+TEST_CASE("LLVM conditional constructor temporaries allocate only in their branch") {
+    std::string source = R"(module constructor_scope_ir_m
+implicit none
+type :: base
+    real :: learning_rate = 0.25
+end type
+type, extends(base) :: optimizer
+    real :: momentum = 0
+    real, allocatable :: velocity(:)
+end type
+type :: finalizable
+    real, allocatable :: values(:)
+contains
+    final :: finish
+end type
+type :: pointer_owner
+    real, allocatable :: values(:)
+    real, pointer :: link => null()
+end type
+contains
+subroutine initialize(slot, enabled)
+    class(base), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = optimizer()
+end subroutine
+subroutine initialize_finalizable(slot, enabled)
+    class(finalizable), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = finalizable()
+end subroutine
+subroutine initialize_pointer(slot, enabled)
+    class(pointer_owner), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = pointer_owner()
+end subroutine
+subroutine finish(self)
+    type(finalizable), intent(inout) :: self
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"initialize", "_m_initialize"},
+             {"initialize_finalizable", "_m_initialize_finalizable"},
+             {"initialize_pointer", "_m_initialize_pointer"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                unsigned entry_allocations = 0;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                    if (call && call->getCalledFunction() &&
+                            call->getCalledFunction()->getName() ==
+                                "_lfortran_malloc_alloc") {
+                        entry_allocations++;
+                    }
+                }
+                CHECK(entry_allocations == (procedure == "initialize" ? 0 : 1));
+            });
+    }
+}
+
 // The runtime allocation functions whose declarations in the module of the
 // LLVM definition of `procedure` have a noalias return value, as
 // "name name ...".
