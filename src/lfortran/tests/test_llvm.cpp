@@ -787,6 +787,52 @@ end module
     }
 }
 
+TEST_CASE("LLVM rank-one SIZE avoids a runtime rank loop") {
+    std::string source = R"(module size_calls
+implicit none
+contains
+function extent(x) result(n)
+    real, target, intent(in) :: x(:)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+function matrix_extent(x) result(n)
+    real, target, intent(in) :: x(:, :)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+function dynamic_extent(x) result(n)
+    real, target, intent(in) :: x(..)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"extent", "_calls_extent"},
+             {"matrix_extent", "_matrix_extent"},
+             {"dynamic_extent", "_dynamic_extent"}},
+            [&](const std::string &name, llvm::Function &fn) {
+                unsigned conditional_branches = 0;
+                for (llvm::BasicBlock &block: fn) {
+#if LLVM_VERSION_MAJOR >= 23
+                    if (llvm::isa<llvm::CondBrInst>(block.getTerminator())) {
+                        conditional_branches++;
+                    }
+#else
+                    if (auto* branch = llvm::dyn_cast<llvm::BranchInst>(
+                            block.getTerminator())) {
+                        if (branch->isConditional()) conditional_branches++;
+                    }
+#endif
+                }
+                INFO(name, ", fast=", fast);
+                CHECK(conditional_branches == (fast && name == "extent" ? 0 : 1));
+            });
+    }
+}
+
 // The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
 // backend marks noalias when it compiles `source`.
 std::string noalias_parameters(const std::string &source, bool fast,

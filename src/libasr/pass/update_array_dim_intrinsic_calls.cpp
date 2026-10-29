@@ -49,13 +49,14 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     private:
 
     Allocator& al;
+    bool fast;
 
     public:
 
     // Device code keeps the declared extents (see entry_initialized_locals).
     bool zero_extent_bounds = true;
 
-    ReplaceArrayDimIntrinsicCalls(Allocator& al_) : al(al_)
+    ReplaceArrayDimIntrinsicCalls(Allocator& al_, bool fast_) : al(al_), fast(fast_)
     {}
 
     // The size of an array section follows from its subscripts, so it is
@@ -105,6 +106,14 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::expr_t* size_v = ASRUtils::get_expr_size_expr(x->m_v);
+        if( fast && !x->m_value && !x->m_dim && size_v &&
+                ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(size_v)) == 1 &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(size_v)) !=
+                    ASR::array_physical_typeType::AssumedRankArray ) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            x->m_dim = b.i32(1);
+        }
         if( x->m_value == nullptr && size_v != nullptr &&
                 ASR::is_a<ASR::ArraySection_t>(*size_v) ) {
             *current_expr = section_size(size_v, x->m_dim, x->m_type,
@@ -237,7 +246,7 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
 
     public:
 
-        ArrayDimIntrinsicCallsVisitor(Allocator& al_) : replacer(al_) {}
+        ArrayDimIntrinsicCallsVisitor(Allocator& al_, bool fast_) : replacer(al_, fast_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -254,8 +263,8 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
 };
 
 void pass_update_array_dim_intrinsic_calls(Allocator &al, ASR::TranslationUnit_t &unit,
-                                           const LCompilers::PassOptions& /*pass_options*/) {
-    ArrayDimIntrinsicCallsVisitor v(al);
+                                           const LCompilers::PassOptions& pass_options) {
+    ArrayDimIntrinsicCallsVisitor v(al, pass_options.fast);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
