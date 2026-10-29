@@ -1574,6 +1574,18 @@ semantic error: selected_real_kind requires at least one of p, r or radix
 3872 |     integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
      |                               ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the volatile statement requires a list of entities
+    --> tests/errors/continue_compilation_1.f90:3879:9
+     |
+3879 |         volatile  ! {Error} the volatile statement requires a list of entities
+     |         ^^^^^^^^ 
+
+semantic error: the asynchronous statement requires a list of entities
+    --> tests/errors/continue_compilation_1.f90:3888:9
+     |
+3888 |         asynchronous  ! {Error} the asynchronous statement requires a list of entities
+     |         ^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

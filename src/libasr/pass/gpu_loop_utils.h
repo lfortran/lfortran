@@ -284,7 +284,7 @@ void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
 // which the analyses of a statement list do not see: a pointer, a variable
 // with the TARGET attribute, one in `address_taken`
 // (gpu_collect_address_taken), a variable of a common block, or a volatile
-// one. Named constants never change.
+// or asynchronous one. Named constants never change.
 bool gpu_may_be_aliased(ASR::symbol_t *s,
     const std::set<ASR::symbol_t*> &address_taken);
 // Every variable whose value an expression reads: as gpu_collect_symbols,

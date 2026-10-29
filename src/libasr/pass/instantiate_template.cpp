@@ -1286,6 +1286,20 @@ public:
         }
 
         switch (sym->type) {
+            case (ASR::symbolType::ScopedVariableAttribute) : {
+                auto *x = ASR::down_cast<ASR::ScopedVariableAttribute_t>(sym);
+                SymbolInstantiator t(al, template_scope, target_scope,
+                    type_subs, symbol_subs, ASRUtils::symbol_name(x->m_variable),
+                    x->m_variable, diagnostics);
+                t.source_scope = x->m_parent_symtab;
+                ASR::symbol_t *variable = t.instantiate();
+                ASR::symbol_t *attribute = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ScopedVariableAttribute_t(al, x->base.base.loc,
+                        target_scope, s2c(al, new_sym_name), variable,
+                        x->m_is_volatile, x->m_is_asynchronous));
+                target_scope->add_symbol(new_sym_name, attribute);
+                return attribute;
+            }
             case (ASR::symbolType::Function) : {
                 ASR::Function_t* x = ASR::down_cast<ASR::Function_t>(sym);
                 return instantiate_Function(x);
@@ -1540,7 +1554,7 @@ public:
             x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
             x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
-            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
+            x->m_is_asynchronous, x->m_is_protected, x->m_pass_attr, x->m_self_argument));
         target_scope->add_symbol(new_sym_name, s);
 
         // The initializer of a named constant may refer to the template's
@@ -2751,6 +2765,12 @@ public:
                 break;
             }
             case (ASR::symbolType::ExternalSymbol) : {
+                break;
+            }
+            case (ASR::symbolType::ScopedVariableAttribute) : {
+                // Its variable reference was remapped with the declaration;
+                // there is no executable body to instantiate.
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::ScopedVariableAttribute_t>(*new_sym));
                 break;
             }
             case (ASR::symbolType::CustomOperator) : {

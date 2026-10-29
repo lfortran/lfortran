@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.assignment.new_allocation_is_allocatable]: An assignment to a target allocated for it requires an allocatable target
-  --> tests/asr/verify/assignment_new_allocation_nonallocatable.asr:40:12
+  --> tests/asr/verify/assignment_new_allocation_nonallocatable.asr:41:12
    |
-40 |           (Assignment
+41 |           (Assignment
    |            ^^^^^^^^^^ failed here

@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.storage_size.character_argument]: StorageSize without a compile-time value must have a character argument; any other storage_size is a TypeInquiry
-  --> tests/asr/verify/storage_size_noncharacter_argument.asr:75:21
+  --> tests/asr/verify/storage_size_noncharacter_argument.asr:77:21
    |
-75 |             :value (IntrinsicElementalFunction
+77 |             :value (IntrinsicElementalFunction
    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ failed here

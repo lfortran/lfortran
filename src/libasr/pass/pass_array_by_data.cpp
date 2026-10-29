@@ -1646,7 +1646,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         sym_val, m_val, x.m_storage, new_var_type,
                         new_sym, x.m_abi, x.m_access, x.m_presence, x.m_value_attr,
                         x.m_target_attr, x.m_contiguous_attr, x.m_bindc_name,
-                        x.m_is_volatile, x.m_is_protected, x.m_pass_attr, x.m_self_argument));
+                        x.m_is_volatile, x.m_is_asynchronous, x.m_is_protected, x.m_pass_attr, x.m_self_argument));
                 v.proc2newproc[(ASR::symbol_t *) &x] = {new_func_sym_, {}};
                 x.m_parent_symtab->add_symbol(new_sym_name, new_func_sym_);
                 not_to_be_erased.insert(new_func_sym_);

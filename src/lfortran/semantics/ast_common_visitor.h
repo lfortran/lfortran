@@ -2289,31 +2289,40 @@ public:
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
     std::set<std::string> assgnd_target;
-    // A PARAMETER, POINTER, ALLOCATABLE or TARGET statement that names an
-    // entity not declared yet is recorded above and applied to the entity
-    // when it is declared. Such a statement applies only to the scoping unit
-    // or BLOCK construct in which it appears (8.6), so this guard gives the
-    // unit empty records and restores the host's when it ends, also when a
-    // diagnostic aborts the visit. Otherwise `parameter (m = 10)` in one
-    // subroutine would make a later `integer m` in another one a constant.
+    std::set<std::string> assgnd_volatile;
+    std::set<std::string> assgnd_asynchronous;
+    // A PARAMETER, POINTER, ALLOCATABLE, TARGET, VOLATILE or ASYNCHRONOUS
+    // statement that names an entity not declared yet is recorded above and
+    // applied to the entity when it is declared. Such a statement applies only
+    // to the scoping unit or BLOCK construct in which it appears (8.6), so
+    // this guard gives the unit empty records and restores the host's when it
+    // ends, also when a diagnostic aborts the visit. Otherwise
+    // `parameter (m = 10)` in one subroutine would make a later `integer m` in
+    // another one a constant.
     struct PendingAttributeScope {
         CommonVisitor &v;
         std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> storage;
         std::set<std::string> pointer;
         std::set<std::string> allocatable;
         std::set<std::string> target;
+        std::set<std::string> volatile_;
+        std::set<std::string> asynchronous;
 
         PendingAttributeScope(CommonVisitor &v_) : v{v_} {
             storage.swap(v.assgnd_storage);
             pointer.swap(v.assgnd_pointer);
             allocatable.swap(v.assgnd_allocatable);
             target.swap(v.assgnd_target);
+            volatile_.swap(v.assgnd_volatile);
+            asynchronous.swap(v.assgnd_asynchronous);
         }
         ~PendingAttributeScope() {
             v.assgnd_storage.swap(storage);
             v.assgnd_pointer.swap(pointer);
             v.assgnd_allocatable.swap(allocatable);
             v.assgnd_target.swap(target);
+            v.assgnd_volatile.swap(volatile_);
+            v.assgnd_asynchronous.swap(asynchronous);
         }
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
@@ -8220,6 +8229,30 @@ public:
             is_dimension_star, true, array_type->m_memory_space);
     }
 
+    void set_scoped_variable_attribute(const std::string &name,
+            bool asynchronous, const Location &loc) {
+        ASR::symbol_t *symbol = current_scope->resolve_symbol(name);
+        if (symbol == nullptr) return;
+        ASR::symbol_t *canonical = ASRUtils::symbol_get_past_external(symbol);
+        if (!ASR::is_a<ASR::Variable_t>(*canonical)) return;
+        auto *variable = ASR::down_cast<ASR::Variable_t>(canonical);
+        if (variable->m_parent_symtab == current_scope) {
+            if (asynchronous) {
+                variable->m_is_asynchronous = true;
+            } else {
+                variable->m_is_volatile = true;
+            }
+            return;
+        }
+        std::string attribute_name = current_scope->get_unique_name(
+            "__scoped_attribute_" + name);
+        current_scope->add_symbol(attribute_name,
+            ASR::down_cast<ASR::symbol_t>(ASR::make_ScopedVariableAttribute_t(
+                al, loc, current_scope, s2c(al, attribute_name),
+                symbol,
+                !asynchronous, asynchronous)));
+    }
+
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
         current_variable_type_ = nullptr;
@@ -8279,10 +8312,18 @@ public:
                             // TODO: Implement it for CPP backend
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrAsynchronous) {
+                            diag.add(Diagnostic(
+                                "the asynchronous statement requires a list of entities",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
                         } else if (sa->m_attr == AST::simple_attributeType
                                 ::AttrVolatile) {
-                            // no-op: LFortran does not perform optimizations
-                            // that VOLATILE would need to suppress
+                            diag.add(Diagnostic(
+                                "the volatile statement requires a list of entities",
+                                Level::Error, Stage::Semantic, {
+                                    Label("",{x.base.base.loc})
+                                }));
                         } else {
                             diag.add(Diagnostic(
                                 "Attribute declaration not supported yet",
@@ -8726,10 +8767,11 @@ public:
                                         assgnd_target.insert(to_lower(sym));
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
-                                    // no-op: valid Fortran 2003, LFortran's runtime is synchronous
+                                    assgnd_asynchronous.insert(to_lower(sym));
+                                    set_scoped_variable_attribute(sym, true, x.base.base.loc);
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
-                                    // no-op: LFortran does not perform optimizations
-                                    // that VOLATILE would need to suppress
+                                    assgnd_volatile.insert(to_lower(sym));
+                                    set_scoped_variable_attribute(sym, false, x.base.base.loc);
                                 } else {
                                     diag.add(Diagnostic(
                                         "Attribute declaration not supported",
@@ -8761,6 +8803,10 @@ public:
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
                                             }
+                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                            ASR::down_cast<ASR::Variable_t>(sym_)->m_is_volatile = true;
+                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
+                                            ASR::down_cast<ASR::Variable_t>(sym_)->m_is_asynchronous = true;
                                         }
                                     }
                                 }
@@ -9352,7 +9398,7 @@ public:
                                                     current_scope, s2c(al, storage_name), nullptr, 0, ASR::intentType::Local,
                                                     nullptr, nullptr, ASR::storage_typeType::Default, storage_array_type, nullptr,
                                                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
-                                                    false, false, false, nullptr, false, false,
+                                                    false, false, false, nullptr, false, false, false,
                                                     ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
 
                                                 current_scope->add_symbol(storage_name, ASR::down_cast<ASR::symbol_t>(storage_var));
@@ -9954,6 +10000,7 @@ public:
                 bool value_attr = false;
                 char *bindc_name = nullptr;
                 bool is_volatile = false;
+                bool is_asynchronous = false;
                 bool is_protected = false;
                 int64_t corank = 0;
                 Vec<ASR::codimension_t> codims;
@@ -10008,6 +10055,22 @@ public:
                 if (assgnd_target.count(sym)) {
                     target_attr = true;
                 }
+                if (assgnd_volatile.count(sym)) {
+                    is_volatile = true;
+                }
+                if (assgnd_asynchronous.count(sym)) {
+                    is_asynchronous = true;
+                }
+                std::vector<std::string> shadowed_attributes;
+                for (auto &item: current_scope->get_scope()) {
+                    if (!ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) continue;
+                    auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(item.second);
+                    ASR::symbol_t *entity = attribute->m_variable;
+                    if (sym == ASRUtils::symbol_name(entity)) {
+                        shadowed_attributes.push_back(item.first);
+                    }
+                }
+                for (const auto &name: shadowed_attributes) current_scope->erase_symbol(name);
                 // A procedure declaration statement without an interface,
                 // `procedure() :: f`, gives no type: a type declaration
                 // statement may give the type of `f`, before or after it.
@@ -10192,6 +10255,7 @@ public:
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
                                 is_protected = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
+                                is_asynchronous = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrDeferred) {
                                 // F2028 R1618 marks a deferred constant, whose
                                 // declaration check_deferred_const_decl() has
@@ -10744,7 +10808,7 @@ public:
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
                                 value_attr, target_attr, contig_attr, bindc_name, is_volatile,
-                                is_protected, pass_attr, self_argument, codims.p, codims.n
+                                is_asynchronous, is_protected, pass_attr, self_argument, codims.p, codims.n
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -29128,6 +29192,9 @@ public:
                 // A common block is not made accessible by use association:
                 // the module's view of it lays out the storage of the
                 // module's own variables, which are imported themselves.
+            } else if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+                // These declarations apply only in the declaring scope,
+                // not in scopes that use its variables.
             } else {
                 return item.first;
             }

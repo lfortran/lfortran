@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.common_block.back_link]: CommonBlock 'common~blk' member 'a' must name the view as its common block
-  --> tests/asr/verify/common_block_member_back_link.asr:57:27
+  --> tests/asr/verify/common_block_member_back_link.asr:58:27
    |
-57 |             "common~blk" (CommonBlock
+58 |             "common~blk" (CommonBlock
    |                           ^^^^^^^^^^^ failed here

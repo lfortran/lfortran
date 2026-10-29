@@ -630,6 +630,10 @@ std::string type_to_str_fortran_expr(const ASR::ttype_t *t, ASR::expr_t* expr);
 std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym, bool show_kind = false);
 
 char *symbol_name(const ASR::symbol_t *f);
+// Includes contained scopes: whole-routine restrictions must also respect
+// regions granting asynchronous/volatile access to the canonical entity.
+bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
+    const SymbolTable *scope);
 
 std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers);
 
@@ -2174,7 +2178,8 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
-    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false,
+    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_asynchronous = false,
+    bool a_is_protected = false,
     ASR::pass_attrType a_pass_attr = ASR::pass_attrType::NotMethod, char* a_self_argument = nullptr,
     ASR::codimension_t* a_codims = nullptr, size_t n_codims = 0,
     ASR::symbol_t* a_common_block = nullptr

@@ -2723,7 +2723,7 @@ class ParallelRegionVisitor :
                                         ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
                                         local_var->m_abi, local_var->m_access, local_var->m_presence,
                                         local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
-                                        local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected,
+                                        local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_asynchronous, local_var->m_is_protected,
                                         ASR::pass_attrType::NotMethod, nullptr,
                                         local_var->m_codims, local_var->n_codims)
                                         );
@@ -4020,7 +4020,7 @@ class ParallelRegionVisitor :
                     ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
                     local_var->m_abi, local_var->m_access, local_var->m_presence,
                     local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
-                    local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected,
+                    local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_asynchronous, local_var->m_is_protected,
                     ASR::pass_attrType::NotMethod, nullptr,
                     local_var->m_codims, local_var->n_codims)
                 );

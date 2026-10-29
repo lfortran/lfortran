@@ -1895,6 +1895,7 @@ namespace LCompilers {
                     if( curr_sym->type == ASR::symbolType::Variable ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(curr_sym);
                         if ( return_var_sym && return_var_sym == curr_sym ){
+                            var->m_storage = ASR::storage_typeType::ResultArgument;
                             if( var->m_intent == ASR::intentType::Unspecified ) {
                                 var->m_intent = ASR::intentType::In;
                             } else if( var->m_intent == ASR::intentType::ReturnVar ) {

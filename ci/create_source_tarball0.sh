@@ -26,6 +26,13 @@ cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_tile_high_bounds_i8.f90 \
     integration_tests/runtime_input_records.f90 \
     $dest/integration_tests
+# test_scoped_attribute_roundtrip regenerates these kernels and links their
+# separately compiled pending operations.
+cmake -E copy integration_tests/noalias_dummy_06.f90 \
+    integration_tests/noalias_dummy_06_pending.f90 \
+    integration_tests/dead_array_store_03.f90 \
+    integration_tests/dead_array_store_03_pending.f90 \
+    $dest/integration_tests
 
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest

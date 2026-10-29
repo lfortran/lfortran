@@ -1,0 +1,13 @@
+{
+    "basename": "asr-asynchronous_03-af7658c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/asynchronous_03.f90",
+    "infile_hash": "4b86e859711dff9f54627050e73bdd043933b3f8acdf83454e84ad2b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-asynchronous_03-af7658c.stdout",
+    "stdout_hash": "1f6763911b63e00f8f2a96a819fd1071754a7cfbf2bc928f6ee2cac2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

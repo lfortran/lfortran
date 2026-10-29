@@ -1695,7 +1695,38 @@ public:
         visit_UserDefinedType(x);
     }
 
+    void visit_ScopedVariableAttribute(const ScopedVariableAttribute_t &x) {
+        require(x.m_parent_symtab == current_symtab,
+            "scoped attribute must belong to its declaring scope");
+        require(x.m_is_volatile || x.m_is_asynchronous,
+            "scoped attribute must specify volatile or asynchronous");
+        require(x.m_variable != nullptr,
+            "scoped attribute must reference a variable");
+        require(symtab_in_scope(current_symtab, x.m_variable),
+            "scoped attribute's variable must be visible in its scope");
+        // Module files are verified before their externals are resolved.
+        if (!check_external && is_a<ExternalSymbol_t>(*x.m_variable)) return;
+        symbol_t *symbol = ASRUtils::symbol_get_past_external(x.m_variable);
+        require(symbol != nullptr,
+            "scoped attribute's variable must be resolved");
+        require(is_a<Variable_t>(*symbol),
+            "scoped attribute must reference a variable entity");
+        require(ASRUtils::symbol_parent_symtab(symbol) != current_symtab,
+            "local attributes must be recorded on the local variable");
+    }
+
     void visit_Variable(const Variable_t &x) {
+        if (x.m_storage == storage_typeType::ResultArgument) {
+            asr_t *owner = x.m_parent_symtab->asr_owner;
+            require(is_a<symbol_t>(*owner) &&
+                is_a<Function_t>(*down_cast<symbol_t>(owner)),
+                "result argument must belong to a procedure");
+            auto *function = down_cast<Function_t>(down_cast<symbol_t>(owner));
+            require(function->m_return_var == nullptr &&
+                ASRUtils::is_dummy_argument(*function, &x.base) &&
+                (x.m_intent == intentType::Out || x.m_intent == intentType::InOut),
+                "result argument must be an output dummy of a lowered function");
+        }
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();

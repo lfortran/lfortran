@@ -393,6 +393,22 @@ public:
         src = r;
     }
 
+    void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &x) {
+        std::string name = call_name(x.m_variable);
+        src.clear();
+        if (x.m_is_volatile) src += indent + "volatile :: " + name + "\n";
+        if (x.m_is_asynchronous) src += indent + "asynchronous :: " + name + "\n";
+    }
+
+    void append_scoped_variable_attributes(SymbolTable *symtab, std::string &r) {
+        for (auto &item : symtab->get_scope()) {
+            if (is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+    }
+
     void append_namelist_declarations(SymbolTable *symtab, std::string &r) {
         for (auto &item : symtab->get_scope()) {
             if (is_a<ASR::Namelist_t>(*item.second)) {
@@ -632,6 +648,7 @@ public:
         }
         append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)
@@ -716,6 +733,7 @@ public:
         }
         append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -786,6 +804,7 @@ public:
             }
         }
         append_common_block_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
         r += "end block data" + name + "\n";
         src = r;
     }
@@ -861,8 +880,10 @@ public:
         bool is_return_var_declared = false;
         if (x.m_return_var) {
             bool return_var_in_function_header = true;
-            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var))) {
-                // Keep character result type declarations in the specification part.
+            ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var)) ||
+                    return_var->m_is_volatile || return_var->m_is_asynchronous) {
+                // These declarations need the specification part.
                 return_var_in_function_header = false;
             }
             if (return_var_in_function_header &&
@@ -935,6 +956,7 @@ public:
             }
             append_common_block_declarations(x.m_symtab, variable_declaration);
             append_namelist_declarations(x.m_symtab, variable_declaration);
+            append_scoped_variable_attributes(x.m_symtab, variable_declaration);
             for (size_t i = 0; i < import_struct_type.size(); i ++) {
                 if (i == 0) {
                     r += indent;
@@ -1038,6 +1060,7 @@ public:
                 r += src;
             }
         }
+        append_scoped_variable_attributes(x.m_symtab, r);
         visit_body(x, r);
         dec_indent();
         r += indent;
@@ -1274,6 +1297,12 @@ public:
         if (x.m_target_attr) {
             r += ", target";
         }
+        if (x.m_is_volatile) {
+            r += ", volatile";
+        }
+        if (x.m_is_asynchronous) {
+            r += ", asynchronous";
+        }
         r += " :: ";
         r.append(x.m_name);
         if (ASRUtils::get_common_block(&x) != nullptr) {
@@ -1388,6 +1417,7 @@ public:
             }
         }
 
+        append_scoped_variable_attributes(x.m_symtab, r);
         // Emit the block body
         for (size_t i = 0; i < x.n_body; i++) {
             visit_stmt(*x.m_body[i]);
@@ -2514,6 +2544,7 @@ public:
                 r += src;
             }
         }
+        append_scoped_variable_attributes(block->m_symtab, r);
         // If this block is a goto target (used by select-case lowering), emit the label target
         if (x.m_label != -1) {
             r += std::to_string(x.m_label) + " continue\n";

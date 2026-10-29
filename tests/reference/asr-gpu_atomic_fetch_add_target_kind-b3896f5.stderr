@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.gpu_atomic_fetch_add.target_type]: GpuAtomicFetchAdd::m_target must be an integer(4) scalar
-   --> tests/asr/verify/gpu_atomic_fetch_add_target_kind.asr:101:73
+   --> tests/asr/verify/gpu_atomic_fetch_add_target_kind.asr:104:73
     |
-101 |         :body [(Assignment :target (Var :v (SymbolRef 1 "old")) :value (GpuAtomicFetchAdd :target (ArrayItem :v (Var :v (SymbolRef 1 "a")) :args [(array_index :left nil :right (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :step nil)] :type (Integer :kind 8) :storage_format :ColMajor :value nil :in_bounds false) :increment (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :type (Integer :kind 4) :value nil) :overloaded nil :realloc_lhs false :move_allocation false :new_target false :new_allocation false)]
+104 |         :body [(Assignment :target (Var :v (SymbolRef 1 "old")) :value (GpuAtomicFetchAdd :target (ArrayItem :v (Var :v (SymbolRef 1 "a")) :args [(array_index :left nil :right (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :step nil)] :type (Integer :kind 8) :storage_format :ColMajor :value nil :in_bounds false) :increment (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :type (Integer :kind 4) :value nil) :overloaded nil :realloc_lhs false :move_allocation false :new_target false :new_allocation false)]
     |                                                                         ^^^^^^^^^^^^^^^^^ failed here

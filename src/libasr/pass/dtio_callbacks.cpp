@@ -217,7 +217,7 @@ public:
                     ASR::array_physical_typeType::PointerArray,
                     ASR::memory_spaceType::Global)),
                 nullptr, ASR::abiType::Source, ASR::Public,
-                ASR::presenceType::Required, false, false, false, nullptr, false,
+                ASR::presenceType::Required, false, false, false, nullptr, false, false,
                 false, ASR::pass_attrType::NotMethod, nullptr));
         fn_symtab->add_symbol("v_list", v_list_sym);
         ASR::expr_t* v_list = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v_list_sym));

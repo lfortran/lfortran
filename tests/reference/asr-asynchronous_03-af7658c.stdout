@@ -1,0 +1,593 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            asynchronous_03:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __scoped_attribute_a3:
+                                (ScopedVariableAttribute
+                                    2
+                                    __scoped_attribute_a3
+                                    2 a3
+                                    .false.
+                                    .true.
+                                ),
+                            a1:
+                                (ExternalSymbol
+                                    2
+                                    a1
+                                    4 a1
+                                    asynchronous_03_module
+                                    []
+                                    a1
+                                    Public
+                                ),
+                            a2:
+                                (ExternalSymbol
+                                    2
+                                    a2
+                                    4 a2
+                                    asynchronous_03_module
+                                    []
+                                    a2
+                                    Public
+                                ),
+                            a3:
+                                (ExternalSymbol
+                                    2
+                                    a3
+                                    4 a3
+                                    asynchronous_03_module
+                                    []
+                                    a3
+                                    Public
+                                ),
+                            fill:
+                                (ExternalSymbol
+                                    2
+                                    fill
+                                    4 fill
+                                    asynchronous_03_module
+                                    []
+                                    fill
+                                    Public
+                                )
+                        })
+                    asynchronous_03
+                    [asynchronous_03_module]
+                    [(SubroutineCall
+                        2 fill
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 2 a1)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((RealConstant
+                            1.000000
+                            (Real 4)
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 fill
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 2 a2)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((RealConstant
+                            2.000000
+                            (Real 4)
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 fill
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 2 a3)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((RealConstant
+                            3.000000
+                            (Real 4)
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (RealCompare
+                                    (Var 2 a1)
+                                    NotEq
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (RealCompare
+                                    (Var 2 a2)
+                                    NotEq
+                                    (Cast
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            2.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (RealCompare
+                                    (Var 2 a3)
+                                    NotEq
+                                    (Cast
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            3.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(RealBinOp
+                                (RealBinOp
+                                    (IntrinsicArrayFunction
+                                        Sum
+                                        [(ArrayPhysicalCast
+                                            (Var 2 a1)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntrinsicArrayFunction
+                                        Sum
+                                        [(ArrayPhysicalCast
+                                            (Var 2 a2)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                Add
+                                (IntrinsicArrayFunction
+                                    Sum
+                                    [(ArrayPhysicalCast
+                                        (Var 2 a3)
+                                        FixedSizeArray
+                                        DescriptorArray
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                (Real 4)
+                                ()
+                            )]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                ),
+            asynchronous_03_module:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            a1:
+                                (Variable
+                                    4
+                                    a1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .true.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a2:
+                                (Variable
+                                    4
+                                    a2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .true.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            a3:
+                                (Variable
+                                    4
+                                    a3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            fill:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            v:
+                                                (Variable
+                                                    5
+                                                    v
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    fill
+                                    (FunctionType
+                                        [(Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 x)
+                                    (Var 5 v)]
+                                    [(Assignment
+                                        (Var 5 x)
+                                        (ArrayBroadcast
+                                            (Var 5 v)
+                                            (IntrinsicArrayFunction
+                                                Shape
+                                                [(Var 5 x)]
+                                                0
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    asynchronous_03_module
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

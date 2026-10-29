@@ -1,0 +1,13 @@
+{
+    "basename": "asr-volatile_05-7eb910a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/volatile_05.f90",
+    "infile_hash": "62cf1541087a47c108fed8a4a09cc007c718318ac68cbb836225b124",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-volatile_05-7eb910a.stdout",
+    "stdout_hash": "d819dbee65539cf9174bcb1feff529d72c922d251d5c8755d9e88c63",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

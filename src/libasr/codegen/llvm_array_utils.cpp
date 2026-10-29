@@ -245,6 +245,7 @@ namespace LCompilers {
             llvm::StructType* new_array_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
+            array_descriptor_types.insert(new_array_type);
             if( get_pointer ) {
                 return tkr2array[array_key].first->getPointerTo();
             }
@@ -280,7 +281,12 @@ namespace LCompilers {
             llvm::StructType* new_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             rank_array_cache[key] = new_type;
+            array_descriptor_types.insert(new_type);
             return new_type;
+        }
+
+        bool SimpleCMODescriptor::is_array_descriptor_type(llvm::Type* type) {
+            return array_descriptor_types.find(type) != array_descriptor_types.end();
         }
 
         llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(

@@ -6,6 +6,8 @@ module template_host_var_01_m
         deferred type :: t
     contains
         subroutine bump()
+            volatile :: gcounter
+            asynchronous :: ghist
             gcounter = gcounter + 3
             ghist(1) = ghist(1) + 1
         end subroutine

@@ -2,7 +2,7 @@
     "basename": "asr-block_data_contains_procedure-9f8f905",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/block_data_contains_procedure.asr",
-    "infile_hash": "078158032524119a782c3f0933932347f5a506ce45015968fbb8cca5",
+    "infile_hash": "ed17406693b4cd97541889c448d30a033f57299b806f9b753764c1b4",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

@@ -6,6 +6,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
+#include <functional>
+#include <set>
+#include <vector>
 
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -24,10 +27,13 @@
 
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
@@ -561,7 +567,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 2 f) Public .true. .true. ())}) [] ())");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -603,7 +609,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false. .false. .false. NotMethod () [] ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false. Host) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false. .false. .false. .false.)] (Var 4 f) Public .true. .true. ())}) [] ())");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
@@ -620,6 +626,619 @@ end function)";
     // LLVM -> Machine code -> Execution
     e.add_module(std::move(m));
     CHECK(e.execfn<int32_t>("f") == 4);
+}
+
+namespace {
+
+// Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
+// `inspect` with each of the given procedures and its LLVM definition, before
+// any LLVM pass runs. Each procedure is given as {name, end of the name of its
+// LLVM definition}.
+void inspect_definitions(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures,
+        const std::function<void(const std::string &, llvm::Function &)>
+            &inspect) {
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    co.platform = LCompilers::get_platform();
+    co.po.fast = fast;
+    LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
+        LCompilers::LFortran::parse(al, source, diagnostics, co));
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "inspect.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    LCompilers::ASR::TranslationUnit_t* asr = TRY(
+        LCompilers::LFortran::ast_to_asr(al, *tu, diagnostics, nullptr, false,
+            co, lm));
+    LCompilers::LLVMEvaluator e;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    REQUIRE(res.ok);
+    for (const auto &[procedure, suffix]: procedures) {
+        llvm::Function *fn = nullptr;
+        for (llvm::Function &f: *res.result->m_m) {
+            std::string name = f.getName().str();
+            if (!f.isDeclaration() && name.size() >= suffix.size() &&
+                    name.compare(name.size() - suffix.size(),
+                        suffix.size(), suffix) == 0) {
+                fn = &f;
+            }
+        }
+        REQUIRE(fn != nullptr);
+        inspect(procedure, *fn);
+    }
+}
+
+// The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
+// backend marks noalias when it compiles `source`.
+std::string noalias_parameters(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures) {
+    std::string result;
+    inspect_definitions(source, fast, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            for (llvm::Argument &arg: fn.args()) {
+                if (arg.hasNoAliasAttr()) {
+                    result += procedure + ":" + arg.getName().str() + " ";
+                }
+            }
+        });
+    return result;
+}
+
+// The kinds of loads and stores with TBAA metadata in the LLVM definitions
+// of `procedures`, as sorted "procedure:load|store pointer|<type>:<TBAA
+// type>; ...".
+std::string tbaa_accesses(const std::string &source, bool fast,
+        const std::vector<std::pair<std::string, std::string>> &procedures) {
+    std::set<std::string> result;
+    inspect_definitions(source, fast, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            for (llvm::BasicBlock &bb: fn) {
+                for (llvm::Instruction &inst: bb) {
+                    llvm::MDNode *tag = inst.getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (tag == nullptr) {
+                        continue;
+                    }
+                    llvm::Type *type = nullptr;
+                    std::string access;
+                    if (llvm::LoadInst *load =
+                            llvm::dyn_cast<llvm::LoadInst>(&inst)) {
+                        type = load->getType();
+                        access = "load";
+                    } else if (llvm::StoreInst *store =
+                            llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                        type = store->getValueOperand()->getType();
+                        access = "store";
+                    }
+                    REQUIRE(type != nullptr);
+                    std::string type_name = "pointer";
+                    if (!type->isPointerTy()) {
+                        llvm::raw_string_ostream os(type_name);
+                        type_name.clear();
+                        type->print(os);
+                        os.flush();
+                    }
+                    llvm::MDNode *access_type = llvm::cast<llvm::MDNode>(
+                        tag->getOperand(1));
+                    llvm::MDNode *root = llvm::cast<llvm::MDNode>(
+                        access_type->getOperand(1));
+                    REQUIRE(llvm::cast<llvm::MDString>(root->getOperand(0))
+                        ->getString() == "LFortran TBAA");
+                    result.insert(procedure + ":" + access + " " + type_name
+                        + ":" + llvm::cast<llvm::MDString>(
+                            access_type->getOperand(0))->getString().str());
+                }
+            }
+        });
+    std::string joined;
+    for (const std::string &access: result) {
+        joined += access + "; ";
+    }
+    return joined;
+}
+
+}
+
+TEST_CASE("LLVM noalias dummy arguments under --fast") {
+    std::string source = R"(module noalias_ir_m
+use iso_c_binding, only: c_ptr, c_f_pointer
+implicit none
+type :: t
+    real, allocatable :: c(:)
+end type
+contains
+
+subroutine plain(y, x, n, s)
+    integer, intent(in) :: n
+    real, intent(inout) :: y(n)
+    real, intent(in) :: x(n)
+    real, intent(out) :: s
+    y(1) = x(1) + n
+    s = y(1)
+end subroutine
+
+subroutine assumed(x, y, str)
+    real, intent(in) :: x(:)
+    real, intent(inout) :: y(:)
+    character(len=*), intent(in) :: str
+    y(1) = x(1) + len(str)
+end subroutine
+
+subroutine attributes(p, tg, v, as, k, r)
+    real, pointer, intent(in) :: p
+    real, target, intent(in) :: tg
+    real, volatile :: v
+    real, asynchronous :: as
+    integer, value :: k
+    real, intent(out) :: r
+    r = p + tg + v + as + k
+end subroutine
+
+subroutine last_inout(x, y)
+    real, intent(in) :: x(3)
+    real, intent(inout) :: y(3)
+    y(2) = x(2)
+end subroutine
+
+subroutine cptr(p, q, r)
+    type(c_ptr), intent(in) :: p, q
+    real, intent(out) :: r
+    real, pointer :: a, b
+    call c_f_pointer(p, a)
+    call c_f_pointer(q, b)
+    a = 1
+    b = 2
+    r = a
+end subroutine
+
+subroutine scoped_async(a)
+    real :: a(4)
+    block
+        asynchronous :: a
+        a = 1
+    end block
+end subroutine
+
+subroutine scoped_volatile(a)
+    real :: a(4)
+    block
+        volatile :: a
+        a = 1
+    end block
+end subroutine
+
+subroutine scoped_contained(a)
+    real :: a(4)
+    call inner()
+contains
+    subroutine inner()
+        asynchronous :: a
+        a = 1
+    end subroutine
+end subroutine
+
+subroutine shadow(a)
+    real :: a(4)
+    block
+        asynchronous :: a
+        real :: a(4)
+        a = 1
+    end block
+    a = 2
+end subroutine
+
+function f(x) result(res)
+    real, intent(in) :: x(3)
+    real :: res(3)
+    res = x + 1
+end function
+
+subroutine self_first(self, i, v)
+    class(t), intent(inout) :: self
+    integer, intent(in) :: i
+    real, intent(out) :: v
+    v = self%c(i)
+end subroutine
+
+subroutine bits(i, j)
+    integer, intent(inout) :: i, j
+    call mvbits(i, 0, 4, j, 4)
+end subroutine
+
+subroutine bind_c(x) bind(c)
+    real, intent(inout) :: x
+    x = 1
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        {"plain", "_m_plain"},
+        {"assumed", "_m_assumed_real____0_real____1"},
+        {"attributes", "_m_attributes"},
+        {"last_inout", "_m_last_inout"},
+        {"cptr", "_m_cptr"},
+        {"scoped_async", "_m_scoped_async"},
+        {"scoped_volatile", "_m_scoped_volatile"},
+        {"scoped_contained", "_m_scoped_contained"},
+        {"shadow", "_m_shadow"},
+        {"f", "_m_f"},
+        {"self_first", "_m_self_first"},
+        {"bits", "_m_bits"},
+        {"mvbits", "_lcompilers_mvbits_integer"},
+        {"bind_c", "bind_c"}};
+    std::string expected =
+        "plain:y plain:x plain:n plain:s "
+        // pass_array_by_data passes the data and the extents of x and y.
+        "assumed:x assumed:__1x assumed:y assumed:__1y "
+        "assumed:str "
+        // Not POINTER p, TARGET tg, VOLATILE v, ASYNCHRONOUS as or VALUE k.
+        "attributes:r "
+        "last_inout:x last_inout:y "
+        // C addresses may designate the same storage. Scoped attributes
+        // exclude a, but a locally redeclared name does not affect its host.
+        "cptr:r shadow:a "
+        // Not res, the function result.
+        "f:x "
+        "self_first:self self_first:i self_first:v "
+        "bits:i bits:j "
+        // Not FROM and TO of MVBITS, which can be the same variable; nor
+        // the dummy argument of the bind(c) procedure.
+        "mvbits:frompos mvbits:len mvbits:topos ";
+    CHECK(noalias_parameters(source, true, procedures) == expected);
+    CHECK(noalias_parameters(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM TBAA metadata under --fast") {
+    std::string source = R"(module tbaa_ir_m
+implicit none
+type :: layer_t
+    real, allocatable :: w(:,:)
+    real, allocatable :: out(:)
+end type
+contains
+
+subroutine forward(self, x)
+    class(layer_t), intent(inout) :: self
+    real, intent(in) :: x(:)
+    integer :: i, j
+    do j = 1, size(self%w, 2)
+        do i = 1, size(self%w, 1)
+            self%out(i) = self%out(i) + self%w(i, j)*x(j)
+        end do
+    end do
+end subroutine
+
+subroutine pun(x, k)
+    real, intent(in) :: x(4)
+    integer, intent(out) :: k(4)
+    k = transfer(x, k)
+end subroutine
+
+subroutine bind_c(x, n) bind(c)
+    integer, value :: n
+    real, intent(out) :: x
+    real, allocatable :: a(:)
+    allocate(a(n))
+    a(n) = 1
+    x = a(n)
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        // pass_array_by_data passes the data and the extent of x.
+        {"forward", "_m_forward_real____1"},
+        {"pun", "_m_pun"},
+        {"bind_c", "bind_c"}};
+    // Nothing in the bind(c) procedure.
+    std::string expected =
+        // Elements of self%out and self%w.
+        "forward:load float:data; "
+        // Offsets, lower bounds and strides of the descriptors.
+        "forward:load i64:descriptor; "
+        // The class wrapper (self), the descriptor pointers of the
+        // components and the base addresses of their data.
+        "forward:load pointer:descriptor; "
+        "forward:store float:data; "
+        // TRANSFER reinterprets each element through an untagged scalar;
+        // only the integer elements of the local fixed-size temporary that
+        // holds its result are tagged.
+        "pun:load i32:data; "
+        "pun:store i32:data; ";
+    CHECK(tbaa_accesses(source, true, procedures) == expected);
+    CHECK(tbaa_accesses(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
+    std::string source = R"(module saved_volatile_m
+implicit none
+contains
+subroutine accumulate(result)
+    integer, intent(out) :: result
+    block
+        integer, save :: counter = 7
+        volatile :: counter
+        counter = counter + 1
+        result = counter
+    end block
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"accumulate", "_m_accumulate"}},
+            [&](const std::string &, llvm::Function &fn) {
+                unsigned saved_stores = 0;
+                unsigned saved_loads = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        if (auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                            auto *global = llvm::dyn_cast<llvm::GlobalVariable>(
+                                store->getPointerOperand());
+                            if (!global) continue;
+                            auto *initial = llvm::dyn_cast<llvm::ConstantInt>(
+                                global->getInitializer());
+                            REQUIRE(initial != nullptr);
+                            CHECK(initial->getSExtValue() == 7);
+                            CHECK(!llvm::isa<llvm::Constant>(store->getValueOperand()));
+                            CHECK(store->getMetadata(llvm::LLVMContext::MD_tbaa)
+                                == nullptr);
+                            saved_stores++;
+                        } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst)) {
+                            if (!llvm::isa<llvm::GlobalVariable>(
+                                    load->getPointerOperand())) continue;
+                            CHECK(load->getMetadata(llvm::LLVMContext::MD_tbaa)
+                                == nullptr);
+                            saved_loads++;
+                        }
+                    }
+                }
+                CHECK(saved_stores == 1);
+                CHECK(saved_loads == 2);
+            });
+    }
+}
+
+// The runtime allocation functions whose declarations in the module of the
+// LLVM definition of `procedure` have a noalias return value, as
+// "name name ...".
+std::string noalias_allocators(const std::string &source, bool fast,
+        const std::pair<std::string, std::string> &procedure) {
+    std::string result;
+    inspect_definitions(source, fast, {procedure},
+        [&](const std::string &, llvm::Function &fn) {
+            for (const char *name: {"_lfortran_malloc_alloc",
+                    "_lfortran_realloc_alloc",
+                    "_lfortran_get_default_allocator"}) {
+                llvm::Function *f = fn.getParent()->getFunction(name);
+                if (f != nullptr && f->returnDoesNotAlias()) {
+                    result += std::string(name) + " ";
+                }
+            }
+        });
+    return result;
+}
+
+TEST_CASE("LLVM TBAA of local arrays and noalias allocations under --fast") {
+    std::string source = R"(module tbaa_local_ir_m
+use iso_c_binding, only: c_loc, c_ptr
+implicit none
+contains
+
+subroutine automatic(x, n, s)
+    integer, intent(in) :: n
+    real, intent(in) :: x(n)
+    real, intent(out) :: s
+    real :: a(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        a(i) = 2*x(i)
+        s = s + a(i)
+    end do
+end subroutine
+
+subroutine fixed(s)
+    integer, intent(out) :: s
+    integer :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine equivalenced(s)
+    integer, intent(out) :: s
+    real :: r(8)
+    integer :: k(8)
+    equivalence (r, k)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine in_common(s)
+    integer, intent(out) :: s
+    integer :: k(8)
+    common /tbaa_local_blk/ k
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine address_taken(n, s, p)
+    integer, intent(in) :: n
+    integer, intent(out) :: s
+    type(c_ptr), intent(out) :: p
+    integer, target :: k(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        k(i) = i
+        s = s + k(i)
+    end do
+    p = c_loc(k)
+end subroutine
+
+subroutine bind_c(n, s) bind(c)
+    integer, value :: n
+    integer, intent(out) :: s
+    integer :: k(n)
+    integer :: i
+    s = 0
+    do i = 1, n
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine volatile_local(s)
+    integer, intent(out) :: s
+    integer, volatile :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine asynchronous_local(s)
+    integer, intent(out) :: s
+    integer, asynchronous :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+subroutine saved_local(s)
+    integer, intent(out) :: s
+    integer, save :: k(8)
+    integer :: i
+    s = 0
+    do i = 1, 8
+        k(i) = i
+        s = s + k(i)
+    end do
+end subroutine
+
+end module
+)";
+    std::vector<std::pair<std::string, std::string>> procedures = {
+        {"automatic", "_m_automatic"},
+        {"fixed", "_m_fixed"},
+        {"equivalenced", "_m_equivalenced"},
+        {"in_common", "_m_in_common"},
+        {"address_taken", "_m_address_taken"},
+        {"bind_c", "bind_c"},
+        {"volatile_local", "_m_volatile_local"},
+        {"asynchronous_local", "_m_asynchronous_local"},
+        {"saved_local", "_m_saved_local"}};
+    // The elements of the automatic array a and of the fixed-size array k
+    // are data. The elements of an array of EQUIVALENCE (k, the storage of
+    // r), of a common block or whose address C_LOC takes are not tagged,
+    // nor is anything in a bind(c) procedure. In equivalenced only the
+    // setup of the descriptor of r, a pointer to k, and its independent
+    // local shape array are tagged.
+    std::string expected =
+        "automatic:load float:data; "
+        "automatic:store float:data; "
+        "equivalenced:store i32:data; "
+        "equivalenced:store i64:descriptor; "
+        "equivalenced:store i8:descriptor; "
+        "equivalenced:store pointer:descriptor; "
+        "fixed:load i32:data; "
+        "fixed:store i32:data; ";
+    std::string expected_shape_load = expected;
+    expected_shape_load.insert(expected_shape_load.find("equivalenced:store"),
+        "equivalenced:load i32:data; ");
+    std::string accesses = tbaa_accesses(source, true, procedures);
+    CHECK((accesses == expected || accesses == expected_shape_load));
+    CHECK(tbaa_accesses(source, false, procedures).empty());
+    // EQUIVALENCE also creates an independent local shape array [8].
+    // With opaque pointers its extent load needs no bitcast and may have
+    // data TBAA. Check storage provenance, not a procedure-wide load type.
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"equivalenced", "_m_equivalenced"}},
+            [&](const std::string &, llvm::Function &fn) {
+                unsigned aliased_loads = 0, aliased_stores = 0;
+                unsigned shape_loads = 0, shape_stores = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        llvm::Value *ptr = nullptr;
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                        auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                        if (load) ptr = load->getPointerOperand();
+                        if (store) ptr = store->getPointerOperand();
+                        if (!ptr) continue;
+                        llvm::MDNode *tag = inst.getMetadata(
+                            llvm::LLVMContext::MD_tbaa);
+                        if (!fast) CHECK(tag == nullptr);
+                        ptr = ptr->stripPointerCasts();
+                        while (auto *gep =
+                                llvm::dyn_cast<llvm::GetElementPtrInst>(ptr)) {
+                            ptr = gep->getPointerOperand()->stripPointerCasts();
+                        }
+                        auto *storage = llvm::dyn_cast<llvm::AllocaInst>(ptr);
+                        if (tag && load && load->getType()->isIntegerTy(32)) {
+                            REQUIRE(storage != nullptr);
+                            CHECK(storage->getAllocatedType() ==
+                                llvm::ArrayType::get(load->getType(), 1));
+                        }
+                        if (!storage) continue;
+                        auto *array = llvm::dyn_cast<llvm::ArrayType>(
+                            storage->getAllocatedType());
+                        if (!array) continue;
+                        REQUIRE(array->getElementType()->isIntegerTy(32));
+                        if (storage->getName() == "k") {
+                            CHECK(array->getNumElements() == 8);
+                            CHECK(tag == nullptr);
+                            if (load) aliased_loads++;
+                            if (store) aliased_stores++;
+                        } else {
+                            REQUIRE(array->getNumElements() == 1);
+                            if (load) shape_loads++;
+                            if (store) {
+                                auto *extent = llvm::dyn_cast<llvm::ConstantInt>(
+                                    store->getValueOperand());
+                                REQUIRE(extent != nullptr);
+                                CHECK(extent->getSExtValue() == 8);
+                                CHECK((tag != nullptr) == fast);
+                                shape_stores++;
+                            }
+                        }
+                    }
+                }
+                CHECK(aliased_loads == 1);
+                CHECK(aliased_stores == 1);
+                CHECK(shape_loads == 1);
+                CHECK(shape_stores == 1);
+            });
+    }
+    // The storage of an automatic array comes from _lfortran_malloc_alloc,
+    // which returns fresh memory; realloc may return its argument.
+    CHECK(noalias_allocators(source, true, procedures[0]) ==
+        "_lfortran_malloc_alloc ");
+    CHECK(noalias_allocators(source, false, procedures[0]).empty());
 }
 
 #endif // __EMSCRIPTEN__

@@ -263,7 +263,8 @@ private:
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
         return ASR::is_a<ASR::Integer_t>(*v->m_type)
             && v->m_intent == ASR::intentType::Local
-            && !v->m_is_volatile && v->m_common_block == nullptr
+            && !v->m_is_volatile && !v->m_is_asynchronous
+            && v->m_common_block == nullptr
             && !reachable_elsewhere(s, access.procedure())
             && host_associated.count(s) == 0;
     }
@@ -981,7 +982,8 @@ GpuOffloadVisitor::iteration_array_candidates(
                 v->m_intent != ASR::intentType::Local ||
                 v->m_storage != ASR::storage_typeType::Default ||
                 v->m_symbolic_value || v->m_value ||
-                v->m_is_volatile || v->m_common_block || v->n_codims > 0 ||
+                v->m_is_volatile || v->m_is_asynchronous ||
+                v->m_common_block || v->n_codims > 0 ||
                 reachable_elsewhere(sym, proc_scope) ||
                 host_associated.count(sym)) {
             continue;

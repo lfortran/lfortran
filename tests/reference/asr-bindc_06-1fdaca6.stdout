@@ -99,6 +99,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -284,6 +285,7 @@
                                     "c_int4"
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -307,6 +309,7 @@
                                     .false.
                                     .false.
                                     "c_int8"
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -334,6 +337,7 @@
                                     "c_logical"
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -359,6 +363,7 @@
                                     .false.
                                     .false.
                                     "c_type_c_ptr"
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod

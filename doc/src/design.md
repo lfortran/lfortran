@@ -94,6 +94,31 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## LLVM Alias Information
+
+With `--fast`, the LLVM backend uses Fortran dummy-argument restrictions to
+mark eligible parameters `noalias`. It also distinguishes array data from
+compiler-managed descriptors and struct pointer fields using TBAA. Numeric
+and logical elements share one data class, so this metadata does not claim
+that two data arrays cannot overlap.
+
+Lowered function results retain the explicit `ResultArgument` storage role;
+the backend does not infer that role from dummy position or type. A C_PTR
+passed as a C address is not a restricted Fortran object's address and is
+not annotated `noalias`. Scoped ASYNCHRONOUS/VOLATILE redeclarations are
+represented by `ScopedVariableAttribute`, referring to the canonical
+host/use-associated variable without changing its declaration. Such regions
+also exclude the variable from whole-procedure alias promises and dead
+whole-array store elimination.
+
+The data class includes owned local automatic and fixed-size arrays, but not
+raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
+storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,
+and coarray storage is excluded too. Ambiguous accesses, byte accesses, and
+memory-copy intrinsics remain untagged. Fresh `_lfortran_malloc_alloc` results
+are `noalias`; reallocations are not. These optimizer hints are disabled in
+default mode and for OpenMP, coarray, and GPU offload configurations.
+
 ## COMMON Blocks
 
 A COMMON block is storage that every scoping unit declaring it shares, while

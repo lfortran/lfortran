@@ -46,7 +46,7 @@ class ASRBuilder {
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
-            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
+            nullptr, false, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
@@ -58,7 +58,7 @@ class ASRBuilder {
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
-            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
+            nullptr, false, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return;
     }
@@ -70,7 +70,7 @@ class ASRBuilder {
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
-            nullptr, false, false, ASR::pass_attrType::NotMethod, nullptr));
+            nullptr, false, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }

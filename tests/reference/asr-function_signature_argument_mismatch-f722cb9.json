@@ -2,12 +2,12 @@
     "basename": "asr-function_signature_argument_mismatch-f722cb9",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/function_signature_argument_mismatch.asr",
-    "infile_hash": "33d07ed4aa9017e34f6ee0a1ff66db6db91f425299167d73cb9afe44",
+    "infile_hash": "6c038e82fa6a2a5ffb6e652b935e6b4a39e96df06d5edb37e31b3c33",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-function_signature_argument_mismatch-f722cb9.stderr",
-    "stderr_hash": "83349286d32558b4cd5c92204d5939fcdcd5b7f380c7488ccbbd2e51",
+    "stderr_hash": "9eea140eb35d74a2e0b5d07e357726935cb3569796a229fa28dd2b49",
     "returncode": 2
 }

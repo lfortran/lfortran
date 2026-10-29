@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.struct.parent_is_struct]: Struct::m_parent of 'base' must be a derived type, not Function
-   --> tests/asr/verify/struct_parent_is_function.asr:100:21
+   --> tests/asr/verify/struct_parent_is_function.asr:102:21
     |
-100 |             "base" (Struct
+102 |             "base" (Struct
     |                     ^^^^^^ failed here
