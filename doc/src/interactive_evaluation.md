@@ -95,6 +95,16 @@ It abandons its result instead of loading an incomplete return variable.
 The callbacks refer to the current cell's thread-local execution context, so
 procedures defined by earlier cells can cancel too.
 
+An uninstrumented foreign call protects its entire dynamic extent, including
+Fortran callbacks it invokes: a callback must return its normal, initialized
+result to C, not a cancellation placeholder. The pending request is observed
+after the foreign call returns and descriptor copyback/result ownership are
+complete. Known JIT-defined procedures (including `BIND(C)` procedures from
+earlier cells) and the cooperative owned-command runtime still participate in
+cancellation. Unknown C procedure pointers are conservatively protected.
+An infinite foreign call or callback therefore still needs to return before
+its cell can be interrupted.
+
 After the worker returns normally and is joined, a completed cancellation
 becomes a failed `CellResult` named `KeyboardInterrupt`, with no result value.
 The session, procedure definitions and completed side effects survive; there
