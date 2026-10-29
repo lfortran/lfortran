@@ -10681,7 +10681,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         uint64_t dim_des_size = data_layout.getTypeAllocSize(dim_des);
         unsigned index_bit_width = llvm_utils->arr_api->get_index_type()->getIntegerBitWidth();
 
-        llvm::Value* r = llvm_utils->CreateAlloca(*builder, i32_ty);
+        llvm::Value* r = llvm_utils->CreateAlloca(i32_ty);
         builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
         llvm_utils->create_loop("copy_dim_desc", [&]() {
             return builder->CreateICmpSLT(
@@ -11016,7 +11016,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.body");
             llvm::BasicBlock *loopEnd  = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.end");
 
-            llvm::Value* i = llvm_utils->CreateAlloca(*builder, index_type);
+            llvm::Value* i = llvm_utils->CreateAlloca(index_type);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)), i);
 
             // head
