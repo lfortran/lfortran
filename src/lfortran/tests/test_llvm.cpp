@@ -34,6 +34,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
@@ -752,8 +753,9 @@ end module
                             if (!call || !call->getCalledFunction()) continue;
                             llvm::StringRef callee = call->getCalledFunction()->getName();
                             if (callee == "_lfortran_malloc_alloc") allocations++;
-                            if (callee == "llvm.stacksave") saves++;
-                            if (callee == "llvm.stackrestore") restores++;
+                            auto intrinsic = call->getCalledFunction()->getIntrinsicID();
+                            if (intrinsic == llvm::Intrinsic::stacksave) saves++;
+                            if (intrinsic == llvm::Intrinsic::stackrestore) restores++;
                         }
                     }
                     if (name == "user_allocation") {
