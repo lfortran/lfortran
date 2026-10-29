@@ -6,8 +6,17 @@
 
 namespace LCompilers {
 
+    enum class FunctionResultLowering {
+        AllAggregates,
+        ExplicitArraySnapshot
+    };
+
     void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
+
+    void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
+                                const PassOptions &pass_options,
+                                FunctionResultLowering lowering);
 
 } // namespace LCompilers
 

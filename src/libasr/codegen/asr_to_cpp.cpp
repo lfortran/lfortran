@@ -15,6 +15,7 @@
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_print_arr.h>
+#include <libasr/pass/create_subroutine_from_function.h>
 
 
 namespace LCompilers {
@@ -426,46 +427,67 @@ public:
             ASRUtils::is_array(variable->m_type);
     }
 
+    std::string allocate_array_owner(const ASR::alloc_arg_t& arg) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string out;
+        if (!is_local_array_owner(arg.m_a) || arg.n_codims ||
+                arg.m_len_expr || arg.m_type || arg.m_sym_subclass ||
+                arg.n_dims != ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(arg.m_a))) {
+            throw CodeGenError("allocation requires local typed array storage "
+                "in the C++ backend", arg.loc);
+        }
+        visit_expr(*arg.m_a);
+        std::string array = src;
+        std::string size = "1";
+        for (size_t j = 0; j < arg.n_dims; j++) {
+            std::string dim = array + "->dims[" + std::to_string(j) + "]";
+            std::string lower = "1";
+            if (arg.m_dims[j].m_start) {
+                visit_expr(*arg.m_dims[j].m_start);
+                lower = src;
+            }
+            out += indent + dim + ".lower_bound = " + lower + ";\n";
+            if (!arg.m_dims[j].m_length) {
+                throw CodeGenError("allocation requires an explicit extent "
+                    "in the C++ backend", arg.loc);
+            }
+            visit_expr(*arg.m_dims[j].m_length);
+            out += indent + dim + ".length = " + src + ";\n";
+            size += " * " + dim + ".length";
+        }
+        out += indent + "*" + array + "->data = std::decay_t<decltype(*" +
+            array + "->data)>(\"" + array + "\", " + size + ");\n";
+        out += indent + array + "->is_allocated = true;\n";
+        return out;
+    }
+
     void visit_Allocate(const ASR::Allocate_t &x) {
         if (x.m_stat || x.m_errmsg || x.m_source) {
             throw CodeGenError("allocation options are not supported by the C++ backend",
                 x.base.base.loc);
         }
-        std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out;
         for (size_t i = 0; i < x.n_args; i++) {
-            const ASR::alloc_arg_t& arg = x.m_args[i];
-            if (!is_local_array_owner(arg.m_a) || arg.n_codims ||
-                    arg.m_len_expr || arg.m_type || arg.m_sym_subclass ||
-                    arg.n_dims != ASRUtils::extract_n_dims_from_ttype(
-                        ASRUtils::expr_type(arg.m_a))) {
-                throw CodeGenError("allocation requires local typed array storage "
-                    "in the C++ backend", arg.loc);
-            }
-            visit_expr(*arg.m_a);
-            std::string array = src;
-            std::string size = "1";
-            for (size_t j = 0; j < arg.n_dims; j++) {
-                std::string dim = array + "->dims[" + std::to_string(j) + "]";
-                std::string lower = "1";
-                if (arg.m_dims[j].m_start) {
-                    visit_expr(*arg.m_dims[j].m_start);
-                    lower = src;
-                }
-                out += indent + dim + ".lower_bound = " + lower + ";\n";
-                if (!arg.m_dims[j].m_length) {
-                    throw CodeGenError("allocation requires an explicit extent "
-                        "in the C++ backend", arg.loc);
-                }
-                visit_expr(*arg.m_dims[j].m_length);
-                out += indent + dim + ".length = " + src + ";\n";
-                size += " * " + dim + ".length";
-            }
-            out += indent + "*" + array + "->data = std::decay_t<decltype(*" +
-                array + "->data)>(\"" + array + "\", " + size + ");\n";
-            out += indent + array + "->is_allocated = true;\n";
+            out += allocate_array_owner(x.m_args[i]);
         }
         src = out;
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        if (x.n_args != 1 || !is_local_array_owner(x.m_args[0].m_a)) {
+            throw CodeGenError("reallocation requires local typed array storage "
+                "in the C++ backend", x.base.base.loc);
+        }
+        visit_expr(*x.m_args[0].m_a);
+        std::string array = src;
+        visit_expr(*x.m_shape_differs);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string out = indent + "if (!" + array + "->is_allocated || (" + src + ")) {\n";
+        indentation_level++;
+        out += allocate_array_owner(x.m_args[0]);
+        indentation_level--;
+        src = out + indent + "}\n";
     }
 
     std::string release_array_owner(ASR::expr_t* expr) {
@@ -978,6 +1000,11 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     pass_replace_implied_do_loops(al, asr, array_options);
     if (!asr_verify(asr, true, diagnostics)) return Error();
     pass_array_struct_temporary(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_array_op(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_create_subroutine_from_function(al, asr, co.po,
+        FunctionResultLowering::ExplicitArraySnapshot);
     if (!asr_verify(asr, true, diagnostics)) return Error();
     pass_replace_array_op(al, asr, co.po);
     if (!asr_verify(asr, true, diagnostics)) return Error();

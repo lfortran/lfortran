@@ -17,6 +17,21 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+static bool is_explicit_array_result(ASR::expr_t* result) {
+    ASR::ttype_t* type = ASRUtils::expr_type(result);
+    if (!ASR::is_a<ASR::Array_t>(*type)) return false;
+    ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(type);
+    if (array->n_dims == 0) return false;
+    if (!(ASRUtils::is_integer(*array->m_type) ||
+            ASRUtils::is_real(*array->m_type) ||
+            ASRUtils::is_complex(*array->m_type) ||
+            ASRUtils::is_logical(*array->m_type))) return false;
+    for (size_t i = 0; i < array->n_dims; i++) {
+        if (!array->m_dims[i].m_length) return false;
+    }
+    return true;
+}
+
 
 /**
  * @class CreateFunctionFromSubroutine
@@ -28,6 +43,7 @@ class CreateFunctionFromSubroutine: public ASR::BaseWalkVisitor<CreateFunctionFr
 private :
 
         Allocator& al;
+        FunctionResultLowering lowering;
         // Mapping Modified Functions With What Used To Be Its Return Type -- It's Useful Later When Allocating a Temporary is Needed For FuncCall Return.
         std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP_;
 
@@ -36,8 +52,10 @@ public:
         /* Constructor */
         CreateFunctionFromSubroutine(
             Allocator &al_,
-            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP)
-            : al(al_), Function__TO__ReturnType_MAP_(Function__ReturnType_MAP){}
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__ReturnType_MAP,
+            FunctionResultLowering lowering_)
+            : al(al_), lowering(lowering_),
+              Function__TO__ReturnType_MAP_(Function__ReturnType_MAP){}
 
         void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
             ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
@@ -61,8 +79,12 @@ public:
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(fn)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, &fn,
-                PassUtils::is_result_returned_through_argument);
+            bool eligible = lowering == FunctionResultLowering::AllAggregates ||
+                (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::Source &&
+                 fn.m_return_var && is_explicit_array_result(fn.m_return_var));
+            bool transform_success = eligible &&
+                PassUtils::handle_fn_return_var(al, &fn,
+                    PassUtils::is_result_returned_through_argument);
             if(transform_success) {
                 Function__TO__ReturnType_MAP_[&fn] = return_type;
                 handle_finalizable_result(fn);
@@ -190,6 +212,8 @@ public:
                     ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
                     if (decl_sym && ASR::is_a<ASR::Function_t>(*decl_sym)) {
                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl_sym);
+                        if (lowering == FunctionResultLowering::ExplicitArraySnapshot &&
+                                !Function__TO__ReturnType_MAP_.count(func)) return;
                         ASR::ttype_t* new_type = ASRUtils::import_procedure_type(al,
                             func->m_function_signature, x.m_parent_symtab);
                         if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
@@ -559,6 +583,7 @@ class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<Repla
 private :
 
     Allocator & al;
+    FunctionResultLowering lowering;
     int result_counter = 0;
     SymbolTable* &current_scope;
     Vec<ASR::stmt_t*> &pass_result;
@@ -571,8 +596,10 @@ public:
         Allocator                                           &al_,
         SymbolTable*                                        &current_scope,
         Vec<ASR::stmt_t*>                                   &pass_result_,
-        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP) 
+        std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP,
+        FunctionResultLowering lowering_)
         :al(al_),
+         lowering(lowering_),
          current_scope(current_scope),
          pass_result(pass_result_),
          Function__TO__ReturnType_MAP_(Function__TO__ReturnType_MAP) {}
@@ -704,6 +731,8 @@ public :
 
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
+        if (lowering == FunctionResultLowering::ExplicitArraySnapshot &&
+                !was_converted) return;
         // Elemental functions returning primitive scalars are not converted
         // to subroutines, but the call expression type is an array (due to
         // elemental expansion with array args). Extract the call into a
@@ -951,6 +980,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
     private:
 
         Allocator& al;
+        FunctionResultLowering lowering;
         Vec<ASR::stmt_t*> pass_result;
         ReplaceFunctionCallWithSubroutineCall replacer;
         bool remove_original_statement = false;
@@ -1207,8 +1237,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
         ReplaceFunctionCallWithSubroutineCallVisitor(
             Allocator& al_,
-            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP)
-            :al(al_), replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP)
+            std::unordered_map<ASR::Function_t*, ASR::ttype_t*> &Function__TO__ReturnType_MAP,
+            FunctionResultLowering lowering_)
+            :al(al_), lowering(lowering_),
+             replacer(al, current_scope, pass_result, Function__TO__ReturnType_MAP, lowering_)
         {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
@@ -1733,6 +1765,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {
+            if (lowering == FunctionResultLowering::ExplicitArraySnapshot) {
+                // Finish the result in independent, result-typed storage before
+                // array_op copies it to a possibly aliased destination.
+                ASR::CallReplacerOnExpressionsVisitor \
+                <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
+                return;
+            }
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
                     // User-defined assignment(=) where the RHS is a function
@@ -1759,7 +1798,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
         void visit_Associate(const ASR::Associate_t &x) {
             record_pointer_association(x.m_target, x.m_value);
             ASR::ttype_t* t = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
-            if(is_function_call_returning_aggregate_type(x.m_value) && ASR::is_a<ASR::StructType_t>(*t)) {
+            if(lowering == FunctionResultLowering::AllAggregates &&
+                    is_function_call_returning_aggregate_type(x.m_value) &&
+                    ASR::is_a<ASR::StructType_t>(*t)) {
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
                 if (subroutine_call_from_function(x.base.base.loc, (ASR::stmt_t &)xx)) {
                     return;
@@ -1810,17 +1851,23 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 };
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                                          const LCompilers::PassOptions& /*pass_options*/) {
+                                          const LCompilers::PassOptions& /*pass_options*/,
+                                          FunctionResultLowering lowering) {
     std::unordered_map<ASR::Function_t*, ASR::ttype_t*> Function__TO__ReturnType_MAP;
-    CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP);
+    CreateFunctionFromSubroutine v(al,Function__TO__ReturnType_MAP, lowering);
     v.visit_TranslationUnit(unit);
     UpdateFunctionPointerCastTypes c(al, Function__TO__ReturnType_MAP);
     c.visit_TranslationUnit(unit);
-    ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP);
+    ReplaceFunctionCallWithSubroutineCallVisitor u(al, Function__TO__ReturnType_MAP, lowering);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }
 
+void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
+                                          const LCompilers::PassOptions& pass_options) {
+    pass_create_subroutine_from_function(al, unit, pass_options,
+        FunctionResultLowering::AllAggregates);
+}
 
 } // namespace LCompilers

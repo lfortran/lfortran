@@ -1,3 +1,21 @@
+### C++ explicit array results
+
+The C++ preparation pipeline uses the shared pass with
+`FunctionResultLowering::ExplicitArraySnapshot`. This policy lowers only
+Source-ABI explicit-shape numeric and logical array results, leaving pointer,
+allocatable, character, structure and foreign-ABI results unchanged. Signatures
+and calls use the same converted-function map.
+
+Each call completes in an independent temporary of the call expression's
+result type before the existing array-operation pass copies it to its
+destination. Unlike the default policy, this mode does not forward the
+assignment target as the result argument. Argument-dependent extents use the
+metadata prepared by `array_struct_temporary`, not the destination's shape.
+The C++ emitter retains its typed descriptor/View representation and lowers
+explicit allocation and shape-guarded reallocation of local array owners.
+The default three-argument pass entry point retains aggregate lowering and
+its existing destination-forwarding optimizations for other backends.
+
 ### Class `AllocateVarBasedOnFuncCall`
 
 ======== What Is It Doing? ========
