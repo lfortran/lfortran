@@ -85,6 +85,19 @@ that the LLVM 11 environment's bundled Clang assembler rejects by default.
 This tool selection does not pass GFortran-specific flags to LFortran or
 change the LLVM version used for reference outputs.
 
+Native test environments include Kokkos 4.4.01 for the C++ backend. Inside
+the selected Pixi environment, set `LFORTRAN_KOKKOS_DIR="$CONDA_PREFIX"`.
+For an uninstalled development build, also set
+`LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR="$LFORTRAN_BUILD_DIR/src/libasr/runtime"`.
+The packaged Kokkos enables OpenMP, so C++ compilation must enable OpenMP too.
+On macOS, Xcode Clang accepts `-Xpreprocessor -fopenmp`, with
+`-I"$CONDA_PREFIX/include"` and `-L"$CONDA_PREFIX/lib" -lomp`.
+The C++ driver's `--openmp` currently passes `-fopenmp`, which Xcode Clang
+rejects; to validate generated C++ on that platform, emit it with
+`--backend=cpp --show-cpp` and compile/link it explicitly with these flags,
+the runtime header directory, and `-lkokkoscontainers -lkokkoscore`.
+Keep `-Wl,-rpath,"$CONDA_PREFIX/lib"` when linking against the Pixi libraries.
+
 The integration task uses Make from the selected environment. The runner is
 currently intended for Unix-like shells; use WSL
 for that suite on Windows. CTest uses the selected native build. Append `-t
