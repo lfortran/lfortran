@@ -4843,3 +4843,63 @@ semantic error: selected_real_kind requires at least one of p, r or radix
      |
 3868 |     print *, selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
      |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3938:26
+     |
+3938 |         inquire(6, delim=trim(delim))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3939:26
+     |
+3939 |         inquire(6, delim='NONE')  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3940:26
+     |
+3940 |         inquire(6, delim=fixed)  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3941:26
+     |
+3941 |         inquire(6, delim=fixed(1:2))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3942:26
+     |
+3942 |         inquire(6, delim=input)  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3943:26
+     |
+3943 |         inquire(6, delim=input(1:2))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3944:26
+     |
+3944 |         inquire(6, delim=number)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3945:26
+     |
+3945 |         inquire(6, delim=delim_array)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3946:26
+     |
+3946 |         inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3947:26
+     |
+3947 |         inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^ 

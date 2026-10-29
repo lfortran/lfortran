@@ -3925,3 +3925,25 @@ module cc1_generic_character_length
     end interface
     character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
 end module
+
+module cc1_inquire_delim
+contains
+    subroutine cc1_inquire_delim_sub(input)
+        character(*), intent(in) :: input
+        character(20) :: delim
+        character(20) :: delim_array(2)
+        character(kind=4, len=20) :: wide_delim
+        character(*), parameter :: fixed = 'NONE'
+        integer :: number
+        inquire(6, delim=trim(delim))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim='NONE')  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=fixed)  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=fixed(1:2))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=input)  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=input(1:2))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=number)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=delim_array)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
+    end subroutine
+end module cc1_inquire_delim
