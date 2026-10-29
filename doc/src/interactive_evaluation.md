@@ -99,6 +99,9 @@ After the worker returns normally and is joined, a completed cancellation
 becomes a failed `CellResult` named `KeyboardInterrupt`, with no result value.
 The session, procedure definitions and completed side effects survive; there
 is no transactional rollback. A request is not carried into the next cell.
+Interruption remains an execution error and honors Jupyter `stop_on_error`:
+the interrupted request's default `true` may abort already queued cells;
+`false` lets them continue. A newly submitted cell can run with either setting.
 An idle request, or one arriving after the last checkpoint, need not turn a
 completed cell into a failure.
 

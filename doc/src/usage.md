@@ -171,9 +171,10 @@ sequences. Unsupported controls, invalid UTF-8, and unfinished sequences when
 leaving a cell produce an explicit error. Retained incomplete sequences,
 styling metadata per refresh, and a final-cell combining cluster are each
 limited to 64 KiB; rejection restores terminal mode and cursor visibility.
-A cell's output is shown when the cell finishes or reads input. A cell that fails
-aborts the cells waiting behind it, unless it was sent with `stop_on_error`
-false.
+A cell's output is shown when the cell finishes or reads input. A cell that fails,
+including one interrupted with `KeyboardInterrupt`, aborts the cells waiting
+behind it, unless the failing request was sent with `stop_on_error=false`.
+Newly submitted cells can run after interruption with either setting.
 Delivery is not guaranteed if a client cannot consume output fast enough.
 
 A READ asks the client that ran the cell. If that client disconnects, the
@@ -196,9 +197,14 @@ until the kernel itself stops. Jupyter's Interrupt cooperatively stops native
 JIT loops, procedure calls and stdin READ waits in the built-in and native
 Xeus TCP/IPv4 kernels. Completed effects are retained, not rolled back.
 Initialization/finalization must finish; foreign calls without safepoints may
-defer interruption until return. Subprocess interruption, including
-`execute_command_line`, is not yet supported. Whoever can read the connection file can run
-code as its owner. The file is readable by its owner only.
+defer interruption until return. During native execution,
+`execute_command_line` cancellation stops its owned POSIX process group or
+Windows job and waits for the shell. Descendants that leave the POSIX group and
+background jobs after the shell returns are not tracked. `WAIT=.false.` retains
+its existing synchronous behavior; it does not start an asynchronous command.
+See [interactive evaluation](interactive_evaluation.md) for cancellation limits.
+Whoever can read the connection file can run code as its owner. The file is
+readable by its owner only.
 
 The client is LFortran's own. The kernel is LFortran's own implementation of
 the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
