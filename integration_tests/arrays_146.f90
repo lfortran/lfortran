@@ -1,4 +1,4 @@
-program arrays_138
+program arrays_146
 implicit none
 real :: a(6), b(3,4)
 logical :: flags(2,3)
