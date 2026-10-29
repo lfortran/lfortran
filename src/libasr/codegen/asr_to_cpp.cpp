@@ -198,11 +198,39 @@ public:
         }
     }
 
-    std::string generate_templates_for_arrays(std::string v_name) {
+    std::string generate_template_parameter(std::string v_name, bool is_array=false) {
         std::string typename_T = "T" + std::to_string(template_number);
         template_for_Kokkos += "typename " + typename_T + ", ";
         template_number += 1;
-        return typename_T + "* " + v_name;
+        return typename_T + (is_array ? "* " : " ") + v_name;
+    }
+
+    std::string convert_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy,
+                                        const std::string& value) {
+        if (!ASR::is_a<ASR::Var_t>(*actual)
+                || !ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(actual)->m_v))
+                || !ASR::is_a<ASR::Var_t>(*dummy)) {
+            return value;
+        }
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+        if (ASR::is_a<ASR::Variable_t>(*symbol)) {
+            ASR::Function_t* iface = get_dummy_procedure_interface(
+                ASR::down_cast<ASR::Variable_t>(symbol));
+            if (iface && ASRUtils::get_FunctionType(*iface)->m_abi == ASR::abiType::Source) {
+                std::string args = current_scope->get_unique_name("args");
+                // The actual's emitted name may come from an enclosing scope.
+                if (args == value) {
+                    args = current_scope->get_unique_name(args + "_");
+                }
+                // Delay specialization of array templates until the callback is invoked.
+                return "[](auto&&... " + args + ") -> decltype(auto) { return "
+                    + value + "(" + args + "...); }";
+            }
+        }
+        return value;
     }
 
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
@@ -229,6 +257,42 @@ public:
                         v.m_intent == ASRUtils::intent_unspecified
                         );
         ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(v.m_type);
+        if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
+            ASR::Function_t* iface = nullptr;
+            if (v.m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(v.m_type_declaration);
+                if (td && ASR::is_a<ASR::Function_t>(*td)) {
+                    iface = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+            if (!iface) {
+                diag.codegen_error_label("Procedure variable '"
+                    + std::string(v.m_name)
+                    + "' has no interface. Add explicit interface.",
+                    {v.base.base.loc}, "");
+                throw Abort();
+            }
+            if (use_templates_for_arrays && ASRUtils::is_arg_dummy(v.m_intent)
+                    && ASRUtils::get_FunctionType(*iface)->m_abi == ASR::abiType::Source) {
+                return generate_template_parameter(v.m_name);
+            }
+            std::string ret = "void ";
+            if (iface->m_return_var) {
+                ASR::Variable_t* rv = ASRUtils::EXPR2VAR(iface->m_return_var);
+                ret = get_return_var_type(rv);
+            }
+            std::string params;
+            for (size_t i=0; i<iface->n_args; i++) {
+                ASR::Variable_t* arg = ASRUtils::EXPR2VAR(iface->m_args[i]);
+                CPPDeclarationOptions inner_opts;
+                inner_opts.use_static = false;
+                inner_opts.use_templates_for_arrays = true;
+                params += convert_variable_decl(*arg, &inner_opts);
+                if (i < iface->n_args-1) params += ", ";
+            }
+            sub = ret + "(*" + std::string(v.m_name) + ")(" + params + ")";
+            return sub;
+        }
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
 
@@ -240,7 +304,7 @@ public:
             std::string dims = convert_dims(n_dims, m_dims, size); \
             if( is_array ) { \
                 if( use_templates_for_arrays ) { \
-                    sub += generate_templates_for_arrays(std::string(v.m_name)); \
+                    sub += generate_template_parameter(std::string(v.m_name), true); \
                 } else { \
                     generate_array_decl(sub, std::string(v.m_name), type_name, dims, \
                                         encoded_type_name, m_dims, n_dims, size, \

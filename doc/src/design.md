@@ -82,6 +82,15 @@ The ASR is designed to have the following features:
   construction, the ASR classes always contain valid Fortran code and the rest
   of LFortran can depend on it.
 
+## C++ procedure arguments
+
+The C++ backend represents source-ABI procedure dummies as callable template
+parameters. Actual procedures are wrapped in generic lambdas so that array
+descriptor templates are specialized when the callback is invoked. Each array
+dummy has its own template parameter: equal element kind and rank do not imply
+equal descriptor types or extents. This is a C++ representation choice; the
+Fortran interface and argument conversion remain determined by ASR.
+
 ## Compilation Modes
 
 We support two compilation modes:

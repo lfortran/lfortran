@@ -78,6 +78,9 @@ pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
 pixi run -e llvm11 integration_tests -b gfortran -j8 > gfortran.log 2>&1
 ```
 
+The `llvm11` Pixi environment also provisions Kokkos for generated C++ tests
+and sets `LFORTRAN_KOKKOS_DIR` to that environment's prefix.
+
 The `gfortran` backend honors `FC` when set, otherwise it uses `gfortran`.
 On macOS ARM, the `llvm11` environment sets `FC="gfortran -B/usr/bin/"` to
 select Xcode's assembler and linker. Recent GFortran emits M1/LSE instructions
