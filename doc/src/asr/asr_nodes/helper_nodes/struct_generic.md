@@ -45,6 +45,10 @@ owned by the same module or program. The instance and these copies are
 private to that module or program. A module or program has at most one
 instance for equal type arguments with agreeing evidence.
 
+Substitution includes the types of component initializer expressions, not
+just component declarations. Each instance owns a specialized copy, preserving
+pointer and array wrappers without modifying the shared definition.
+
 Verification checks that a definition is the symbol of its package's name in
 a module and records the package's binders, that an instance names such a
 definition with one concrete argument per parameter and the evidence of each
@@ -57,6 +61,8 @@ neither a definition nor an instance extends or is extended by a type. An
 instance its module or program has not completed yet, between the symbol
 table and body visitors, has no obligations, bindings or copies; the
 verifier cannot tell it apart from one whose completion was lost.
+Component initializer expressions of an instance must contain no deferred
+types, including inside typed null pointer constants.
 
 ## Examples
 

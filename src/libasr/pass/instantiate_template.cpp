@@ -2438,6 +2438,25 @@ public:
         return call;
     }
 
+    ASR::asr_t* duplicate_PointerNullConstant(ASR::PointerNullConstant_t* x) {
+        auto *copy = ASR::down_cast2<ASR::PointerNullConstant_t>(
+            BaseExprStmtDuplicator::duplicate_PointerNullConstant(x));
+        auto *original_type = ASRUtils::extract_type(x->m_type);
+        if (!copy->m_var_expr && ASR::is_a<ASR::TypeParameter_t>(*original_type) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(copy->m_type))) {
+            // A deferred type has no nominal mold yet. A concrete derived
+            // type needs its declaration as well as its specialized layout.
+            auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(original_type);
+            auto argument = type_subs.find(parameter->m_param);
+            if (argument != type_subs.end() && argument->second.second) {
+                copy->m_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                    x->base.base.loc, ASRUtils::import_type_declaration(al,
+                        argument->second.second, new_scope)));
+            }
+        }
+        return &copy->base.base;
+    }
+
     /* require */
 
     ASR::require_instantiation_t* duplicate_Require(ASR::Require_t* x) {
@@ -2453,6 +2472,13 @@ public:
     }
 
     /* utility */
+
+    // Initializer expression types are duplicated recursively, including
+    // pointer/array wrappers; substitute their leaves without changing the
+    // shared generic definition.
+    ASR::asr_t* duplicate_TypeParameter(ASR::TypeParameter_t* x) {
+        return &substitute_type(nullptr, &x->base)->base;
+    }
 
     // The scope of this instantiation that corresponds to `source_ancestor`,
     // a scope of the template enclosing the symbol being instantiated.

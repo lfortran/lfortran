@@ -78,6 +78,16 @@ public:
     void visit_TypeInquiry(const TypeInquiry_t & /*x*/) {}
 };
 
+class ConcreteInitializer : public BaseWalkVisitor<ConcreteInitializer>
+{
+public:
+    bool concrete = true;
+
+    void visit_TypeParameter(const TypeParameter_t & /*x*/) {
+        concrete = false;
+    }
+};
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -5390,6 +5400,17 @@ public:
                     ASR::down_cast<Variable_t>(original)->m_type_declaration,
                     ASR::down_cast<Variable_t>(copy)->m_type,
                     ASR::down_cast<Variable_t>(copy)->m_type_declaration);
+            if (copy && ASR::is_a<Variable_t>(*copy)) {
+                auto *component = ASR::down_cast<Variable_t>(copy);
+                ConcreteInitializer initializer;
+                for (auto *value : {component->m_symbolic_value, component->m_value}) {
+                    if (value) initializer.visit_expr(*value);
+                }
+                require_id(initializer.concrete,
+                    "asr.verify.generic_type.instance_initializer",
+                    "A generic type instance's component initializer must not "
+                    "contain deferred types");
+            }
         }
         bool obligations = x.n_trait_obligations == 0 ||
             x.n_trait_obligations == definition->n_trait_obligations;

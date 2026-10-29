@@ -10275,6 +10275,24 @@ end program gt_main
         instance->n_members = 0;
         rejects("asr.verify.generic_type.instance_layout");
     }
+    SUBCASE("an instance's component initializers contain no deferred types") {
+        auto *component = ASR::down_cast<ASR::Variable_t>(
+            instance->m_symtab->get_symbol(instance->m_members[0]));
+        auto loc = component->base.base.loc;
+        auto *deferred = ASRUtils::TYPE(ASR::make_TypeParameter_t(
+            al, loc, LCompilers::s2c(al, "u"),
+            ASR::deferred_type_attrType::NonExtensible, false));
+        auto *pointer = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, deferred));
+        auto *initial = ASRUtils::EXPR(
+            ASR::make_PointerNullConstant_t(al, loc, pointer, nullptr));
+        SUBCASE("symbolic initializer") {
+            component->m_symbolic_value = initial;
+        }
+        SUBCASE("compile-time value") {
+            component->m_value = initial;
+        }
+        rejects("asr.verify.generic_type.instance_initializer");
+    }
     SUBCASE("a program's generic entries capture no program variable") {
         auto *method = ASRUtils::trait_method_function(
             ASRUtils::find_trait_binding(*conformance,
