@@ -1836,7 +1836,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             if (fn_name == "main") {
                 fn_name = "_xx_lcompilers_changed_main_xx";
             }
-            src = fn_name + "(" + construct_call_args(fn, x.n_args, x.m_args) + ")";
+            src = fn_name + "(" + construct_call_args(fn, x.n_args, x.m_args, !is_c) + ")";
         }
         last_expr_precedence = 2;
         if( ASR::is_a<ASR::List_t>(*x.m_type) ) {
@@ -1860,7 +1860,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = const_name;
             return;
         }
-        src = check_tmp_buffer() + src;
+        // C++ callers leave argument temps buffered so the enclosing
+        // statement can emit them before itself; flushing here would
+        // inline multi-statement declarations into the expression.
+        // The C backend keeps the old behavior (it never buffers
+        // array argument temps).
+        if (is_c) {
+            src = check_tmp_buffer() + src;
+        }
     }
 
     void visit_SizeOfType(const ASR::SizeOfType_t& x) {
@@ -2200,6 +2207,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             (void)m_dims;
             return n == target_rank;
         }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                return true;
+            }
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(e), m_dims);
+            (void)m_dims;
+            return n == target_rank;
+        }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
             ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
             if (!ASR::is_a<ASR::Var_t>(*s->m_v)) {
@@ -2315,11 +2332,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     // Lowers `e` for one element of a single-ranged-dim section
-    // assignment; the position loop variable is `kk`.
+    // assignment; the position loop variable is `kk`. Pre-materialized
+    // call results in `call_tmp` lower linearly.
     std::string nested_src(ASR::expr_t* e, const std::string &kk,
-            size_t target_rank) {
+            size_t target_rank,
+            std::map<ASR::expr_t*, std::string> *call_tmp = nullptr) {
+        (void)target_rank;
         return elementwise_impl(e,
             [&](ASR::expr_t* v) -> std::string {
+                if (ASR::is_a<ASR::FunctionCall_t>(*v)) {
+                    if (call_tmp) {
+                        auto it = call_tmp->find(v);
+                        if (it != call_tmp->end()) {
+                            return it->second + "->data->operator[]("
+                                + kk + ")";
+                        }
+                    }
+                    self().visit_expr(*v);
+                    return src;
+                }
                 if (ASR::is_a<ASR::Var_t>(*v) &&
                         ASRUtils::is_array(ASRUtils::expr_type(v))) {
                     self().visit_expr(*v);
@@ -2366,6 +2397,303 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 }
                 return arr + "->data->operator[]("
                     + cpp_flat_index(arr, subs) + ")";
+            });
+    }
+
+    // Collect array-valued function calls in elementwise position, in
+    // left-to-right walk order. Calls under an ArrayBroadcast change
+    // shape (replication) and are not supported: collection fails, so
+    // the caller falls back instead of emitting wrong indexing.
+    bool collect_array_calls(ASR::expr_t* e,
+            std::vector<ASR::expr_t*> &out, bool under_broadcast = false) {
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            return collect_array_calls(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array,
+                out, true);
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return collect_array_calls(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
+                out, under_broadcast);
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                return true;
+            }
+            if (under_broadcast) {
+                return false;
+            }
+            out.push_back(e);
+            return true;
+        }
+        if (ASR::is_a<ASR::Var_t>(*e) ||
+            ASR::is_a<ASR::ArraySection_t>(*e) ||
+            ASR::is_a<ASR::ArrayItem_t>(*e) ||
+            ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            return collect_array_calls(
+                ASR::down_cast<ASR::Cast_t>(e)->m_arg, out,
+                under_broadcast);
+        }
+        ASR::expr_t *l = nullptr, *r = nullptr;
+        bool is_unary = false;
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::RealBinOp_t>(*e) ||
+            ASR::is_a<ASR::ComplexBinOp_t>(*e) ||
+            ASR::is_a<ASR::LogicalBinOp_t>(*e) ||
+            ASR::is_a<ASR::IntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::RealCompare_t>(*e) ||
+            ASR::is_a<ASR::ComplexCompare_t>(*e) ||
+            ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+                ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::ComplexBinOp_t>(*e)) {
+                ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+                ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+                ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else {
+                ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            }
+        } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::RealUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                l = ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+                l = ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                l = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
+            } else {
+                l = ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg;
+            }
+            is_unary = true;
+        } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            l = ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg;
+            is_unary = true;
+        } else {
+            return false;
+        }
+        if (!collect_array_calls(l, out, under_broadcast)) {
+            return false;
+        }
+        return is_unary || collect_array_calls(r, out, under_broadcast);
+    }
+
+    // Whether `e` fits the call-aware elementwise lowering for a
+    // whole-array target of rank `target_rank`: like
+    // is_elementwise_assignable, but array-valued function calls are
+    // allowed as leaves (pre-materialized into result temps).
+    bool is_call_elementwise(ASR::expr_t* e, size_t target_rank) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            return is_call_elementwise(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
+                target_rank);
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            if (!ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                return true;
+            }
+            ASR::dimension_t* m_dims = nullptr;
+            size_t n = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(e), m_dims);
+            (void)m_dims;
+            return n == target_rank;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return is_whole_array_ref(e) || is_partial_rank1_section(e);
+        }
+        if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+            ASR::ArrayBroadcast_t *b = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
+            return !ASRUtils::is_array(ASRUtils::expr_type(b->m_array));
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            return !ASRUtils::is_array(ASRUtils::expr_type(e));
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerConstant_t>(*e) ||
+            ASR::is_a<ASR::RealConstant_t>(*e) ||
+            ASR::is_a<ASR::LogicalConstant_t>(*e) ||
+            ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Cast_t>(*e)) {
+            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+            if (c->m_kind != ASR::cast_kindType::IntegerToReal &&
+                c->m_kind != ASR::cast_kindType::RealToInteger &&
+                c->m_kind != ASR::cast_kindType::RealToReal &&
+                c->m_kind != ASR::cast_kindType::IntegerToInteger) {
+                return false;
+            }
+            return is_call_elementwise(c->m_arg, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e) ||
+            ASR::is_a<ASR::RealBinOp_t>(*e) ||
+            ASR::is_a<ASR::ComplexBinOp_t>(*e) ||
+            ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
+                ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                ASR::IntegerBinOp_t *b = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerBinOp_t>(*e)) {
+                ASR::UnsignedIntegerBinOp_t *b = ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                ASR::RealBinOp_t *b = ASR::down_cast<ASR::RealBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            } else {
+                ASR::ComplexBinOp_t *b = ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                l = b->m_left; r = b->m_right;
+            }
+            return is_call_elementwise(l, target_rank) &&
+                is_call_elementwise(r, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e) ||
+            ASR::is_a<ASR::RealCompare_t>(*e) ||
+            ASR::is_a<ASR::ComplexCompare_t>(*e) ||
+            ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+            ASR::expr_t *l = nullptr, *r = nullptr;
+            if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
+                ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::UnsignedIntegerCompare_t>(*e)) {
+                ASR::UnsignedIntegerCompare_t *c = ASR::down_cast<ASR::UnsignedIntegerCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
+                ASR::RealCompare_t *c = ASR::down_cast<ASR::RealCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else if (ASR::is_a<ASR::ComplexCompare_t>(*e)) {
+                ASR::ComplexCompare_t *c = ASR::down_cast<ASR::ComplexCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            } else {
+                ASR::LogicalCompare_t *c = ASR::down_cast<ASR::LogicalCompare_t>(e);
+                l = c->m_left; r = c->m_right;
+            }
+            return is_call_elementwise(l, target_rank) &&
+                is_call_elementwise(r, target_rank);
+        }
+        if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::RealUnaryMinus_t>(*e) ||
+            ASR::is_a<ASR::ComplexUnaryMinus_t>(*e)) {
+            ASR::expr_t *a = nullptr;
+            if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::UnsignedIntegerUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::UnsignedIntegerUnaryMinus_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+                a = ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
+            } else {
+                a = ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg;
+            }
+            return is_call_elementwise(a, target_rank);
+        }
+        if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            return is_call_elementwise(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg, target_rank);
+        }
+        return false;
+    }
+
+    // Materialize each collected array call into `auto tmp = call();`.
+    // Argument expression temps buffer ahead of the result temp, so a
+    // single statement-level flush emits everything in order. Returns
+    // false when there is nothing to do.
+    bool materialize_array_calls(std::vector<ASR::expr_t*> &calls,
+            std::map<ASR::expr_t*, std::string> &call_tmp) {
+        if (calls.empty()) {
+            return false;
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        for (size_t i = 0; i < calls.size(); i++) {
+            ASR::FunctionCall_t *c =
+                ASR::down_cast<ASR::FunctionCall_t>(calls[i]);
+            self().visit_FunctionCall(*c);
+            std::string tmp = "arrtmp" + std::to_string(array_temp_count++);
+            tmp_buffer_src.push_back(indent + "auto " + tmp + " = "
+                + src + ";\n");
+            call_tmp[calls[i]] = tmp;
+        }
+        return true;
+    }
+
+    // Lowers `e` for one element of a whole-array assignment whose
+    // array-valued calls were pre-materialized into `call_tmp`.
+    std::string call_elementwise_src(ASR::expr_t* e, const std::string &idx,
+            std::map<ASR::expr_t*, std::string> &call_tmp) {
+        return elementwise_impl(e,
+            [&](ASR::expr_t* v) -> std::string {
+                if (ASR::is_a<ASR::FunctionCall_t>(*v)) {
+                    auto it = call_tmp.find(v);
+                    if (it != call_tmp.end()) {
+                        return it->second + "->data->operator[](" + idx + ")";
+                    }
+                    self().visit_expr(*v);
+                    return src;
+                }
+                ASR::expr_t* b = v;
+                ASR::array_index_t* six = nullptr;
+                if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+                    ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(v);
+                    b = s->m_v;
+                    if (s->n_args == 1 && !is_whole_array_ref(v)) {
+                        six = &s->m_args[0];
+                    }
+                }
+                self().visit_expr(*b);
+                std::string base = src;
+                if (!six) {
+                    return base + "->data->operator[](" + idx + ")";
+                }
+                self().visit_expr(*six->m_left);
+                std::string start = src;
+                std::string step = "1";
+                if (six->m_step) {
+                    self().visit_expr(*six->m_step);
+                    step = src;
+                }
+                std::string off = "((" + start + ") - " + base
+                    + "->dims[0].lower_bound)";
+                return base + "->data->operator[](" + off + " + " + idx
+                    + "*(" + step + "))";
             });
     }
 
@@ -2503,6 +2831,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return array_leaf(e);
         }
         if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return array_leaf(e);
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            // Array-valued calls are only reached after the call-aware
+            // checker established suitability; the leaf callback maps
+            // the node to its pre-materialized result temp.
             return array_leaf(e);
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
@@ -2686,16 +3020,24 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         total += arr + "->dims[" + std::to_string(d) + "].length";
                     }
                     std::string rhs;
+                    std::vector<ASR::expr_t*> array_calls;
+                    std::map<ASR::expr_t*, std::string> call_tmp;
                     if (scalar_rhs) {
                         self().visit_expr(*v);
                         rhs = src;
                     } else if (is_elementwise_assignable(x.m_value)) {
                         rhs = elementwise_src(x.m_value, idx);
+                    } else if (collect_array_calls(x.m_value, array_calls) &&
+                            !array_calls.empty() &&
+                            is_call_elementwise(x.m_value, n_dims)) {
+                        materialize_array_calls(array_calls, call_tmp);
+                        rhs = call_elementwise_src(x.m_value, idx, call_tmp);
                     } else {
                         base = nullptr;
                     }
                     if (base) {
-                        src = indent + "for (size_t " + idx + " = 0; " + idx + " < "
+                        src = check_tmp_buffer() + indent + "for (size_t "
+                            + idx + " = 0; " + idx + " < "
                             + total + "; " + idx + "++) {\n"
                             + indent1 + arr + "->data->operator[](" + idx + ") = "
                             + rhs + ";\n" + indent + "}\n";
@@ -2718,11 +3060,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                             }
                         }
                         std::string rhs;
+                        std::vector<ASR::expr_t*> array_calls;
+                        std::map<ASR::expr_t*, std::string> call_tmp;
                         if (scalar_rhs) {
                             self().visit_expr(*v);
                             rhs = src;
-                        } else if (is_nested_elementwise(x.m_value, t_rank)) {
-                            rhs = nested_src(x.m_value, idx, t_rank);
+                        } else if (collect_array_calls(x.m_value, array_calls) &&
+                                is_nested_elementwise(x.m_value, t_rank)) {
+                            if (!array_calls.empty()) {
+                                materialize_array_calls(array_calls, call_tmp);
+                            }
+                            rhs = nested_src(x.m_value, idx, t_rank,
+                                array_calls.empty() ? nullptr : &call_tmp);
                         } else {
                             base = nullptr;
                         }
@@ -2757,7 +3106,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                                 }
                             }
                             std::string flat = cpp_flat_index(arr, subs);
-                            src = indent + "for (size_t " + idx + " = 0; " + idx
+                            src = check_tmp_buffer() + indent + "for (size_t "
+                                + idx + " = 0; " + idx
                                 + " < (size_t)(" + n + "); " + idx + "++) {\n"
                                 + indent1 + arr + "->data->operator[](" + flat
                                 + ") = " + rhs + ";\n" + indent + "}\n";

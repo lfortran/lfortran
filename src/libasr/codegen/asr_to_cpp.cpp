@@ -778,7 +778,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             }
         }
         out += "<< std::endl;\n";
-        src = out;
+        src = check_tmp_buffer() + out;
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -816,7 +816,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             out += "<< (" + src + ") ";
         }
         out += "<< std::endl;\n";
-        src = out;
+        src = check_tmp_buffer() + out;
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
