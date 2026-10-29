@@ -36,7 +36,7 @@ std::string format_type(const std::string &dims, const std::string &type,
                 fmt = "Kokkos::View<" + type + dims + ">" + kokko_ref + " " + name;
                 if( use_name ) {
                    fmt += "(\"" + name + "\"";
-                   if( size > 0 ) {
+                   if( dims == "*" || size > 0 ) {
                     fmt += ", " + std::to_string(size);
                    }
                    fmt += ")";
@@ -74,6 +74,7 @@ public:
 
     std::map<std::string, std::map<std::string,
              std::map<size_t, std::string>>> eltypedims2arraytype;
+    std::string array_bound_helper;
 
     ASRToCPPVisitor(diag::Diagnostics &diag, CompilerOptions &co,
                     int64_t default_lower_bound)
@@ -647,22 +648,37 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        ASR::ttype_t* array_type = ASRUtils::expr_type(x.m_v);
+        if (ASRUtils::is_logical(*array_type) ||
+                ASRUtils::is_character(*array_type)) {
+            throw CodeGenError("bounds of this array require a descriptor "
+                "in the C++ backend", x.base.base.loc);
+        }
+        if (!x.m_dim) {
+            throw CodeGenError("array bounds without dim must be lowered "
+                "before C++ code generation", x.base.base.loc);
+        }
+        if (array_bound_helper.empty()) {
+            array_bound_helper = global_scope->get_unique_name("array_bound");
+            array_types_decls += "\ntemplate <typename I>\nI " + array_bound_helper
+                + "(const dimension_descriptor &dim, bool upper)\n{\n"
+                  "    if (dim.length == 0) return upper ? I(0) : I(1);\n"
+                  "    return upper ? I(dim.lower_bound) + I(dim.length) - I(1)\n"
+                  "                 : I(dim.lower_bound);\n}\n";
+        }
         visit_expr(*x.m_v);
         std::string var_name = src;
         std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
         visit_expr(*x.m_dim);
         std::string idx = src;
-        if (x.m_bound == ASR::arrayboundType::LBound) {
-            src = "((" + result_type + ")" + var_name
-                + "->dims[" + idx + "-1].lower_bound)";
-        } else {
-            std::string lower_bound = var_name
-                + "->dims[" + idx + "-1].lower_bound";
-            std::string length = var_name
-                + "->dims[" + idx + "-1].length";
-            std::string upper_bound = length + " + " + lower_bound + " - 1";
-            src = "((" + result_type + ") " + upper_bound + ")";
-        }
+        src = array_bound_helper + "<" + result_type + ">((" + var_name
+            + ")->dims[(" + idx + ")-1], "
+            + (x.m_bound == ASR::arrayboundType::UBound ? "true" : "false") + ")";
+        last_expr_precedence = 2;
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
