@@ -3278,6 +3278,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     out += indent + sym + ".emplace();\n";
                 }
             } else {
+                if (is_c && ASRUtils::is_allocatable(type)) {
+                    throw CodeGenError(
+                        "scalar allocatables are not supported by the C backend yet",
+                        tmp_expr->base.loc);
+                }
                 std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
                 size_str = "sizeof(" + ty + ")";
                 out += indent + sym + " = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
