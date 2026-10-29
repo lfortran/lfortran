@@ -12,9 +12,9 @@
 // socket for the heartbeat; DEALER and SUB sockets on the client side.
 // Messages are signed with HMAC-SHA256 and encoded with LLVM's JSON library.
 //
-// The kernel runs the cells on one thread: a long cell holds the other
-// requests back (they wait in their sockets), and its output is sent when it
-// reads input, displays or ends. Two threads keep connections that must not
+// A cell worker holds other requests back (they wait in their sockets).
+// The calling thread streams output and services the cell's hooks.
+// Two threads keep connections that must not
 // wait for a cell: the heartbeat, which clients expect to answer while a cell
 // runs, and the stdin channel. A third watches the clients while a cell runs.
 // No connection holds the others back: the kernel's connections do not block.
@@ -1907,6 +1907,7 @@ class Kernel {
     // Set while the execute_requests that wait behind a failed cell are
     // aborted
     bool aborting = false;
+    const std::thread::id owner = std::this_thread::get_id();
 
 public:
     Kernel(FortranEvaluator &e, const std::string &key, Endpoint &shell, Endpoint &control,
@@ -1919,7 +1920,8 @@ public:
         // A cell that ends the process (STOP, a fatal error) has its output
         // passed on as the process exits; this sends it to the subscribers.
         static const int registered = std::atexit([]() {
-            if (exiting_kernel) exiting_kernel->flush_subscribers(1000);
+            if (exiting_kernel && std::this_thread::get_id() == exiting_kernel->owner)
+                exiting_kernel->flush_subscribers(1000);
         });
         (void)registered;
         exiting_kernel = this;
@@ -1998,7 +2000,12 @@ private:
         const Peer::Delivery delivery = type == "status" || type == "shutdown_reply"
             ? Peer::Delivery::reliable : Peer::Delivery::droppable;
         for (auto &peer : iopub_.peers) {
-            if (peer->ready()) peer->send(frames, delivery);
+            if (peer->ready()) {
+                peer->send(frames, delivery);
+                // execute() pumps callbacks without returning to run().
+                // Make nonblocking progress without servicing new requests.
+                peer->flush();
+            }
         }
     }
 
@@ -2079,6 +2086,7 @@ private:
                 Object{{"code", code}, {"execution_count", execution_count}});
         }
         FortranEvaluator::CellIO io;
+        io.flush_on_exit = [&]() { flush_subscribers(1000); };
         io.display = [&](const std::string &mime, const std::string &data) {
             if (!silent) publish("display_data", request.header,
                 Object{{"data", Object{{kernel::utf8(mime), kernel::utf8(data)}}},
