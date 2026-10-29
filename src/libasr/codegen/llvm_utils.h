@@ -1138,6 +1138,8 @@ class ASRToLLVMVisitor;
 
     private:
 
+        // User FINAL procedures must complete even while a JIT cell cancels.
+        void call_final(llvm::Function *fn, llvm::Value *arg);
 
         /**
          * Finalizes type by directly dispatching to the corresponding finalizer.
@@ -1159,8 +1161,8 @@ class ASRToLLVMVisitor;
             }
         }
 
-        void finalize_variable(ASR::Variable_t* const v){
-            if(not_finalizable_variable(v)) return;
+        void finalize_variable(ASR::Variable_t* const v, bool abandon_result = false){
+            if(not_finalizable_variable(v, abandon_result)) return;
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
@@ -1238,7 +1240,7 @@ class ASRToLLVMVisitor;
                 if (final_fn == nullptr) { return; }
                 uint64_t const fh = get_hash((ASR::asr_t*)final_fn);
                 LCOMPILERS_ASSERT(llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end());
-                builder_->CreateCall(llvm_symtab_fn_[fh], {llvm_var});
+                call_final(llvm_symtab_fn_[fh], llvm_var);
             });
         }
 
@@ -1310,8 +1312,8 @@ class ASRToLLVMVisitor;
             int dummy_rank = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(final_proc->m_args[0]));
             if (rank == 0) {
-                builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr,
-                    final_fn->getFunctionType()->getParamType(0))});
+                call_final(final_fn, builder_->CreateBitCast(ptr,
+                    final_fn->getFunctionType()->getParamType(0)));
             } else if (dummy_rank == rank) {
                 call_array_final(final_fn, final_proc, ptr, type, struct_sym,
                     final_struct == nullptr ? struct_sym : final_struct);
@@ -1384,8 +1386,8 @@ class ASRToLLVMVisitor;
                 auto* elem = get_array_element(ptr, arr_type, struct_sym, data_ptr, idx);
                 // The parent component is at the start of the element, so
                 // a final subroutine of a parent type gets the element.
-                builder_->CreateCall(final_fn, {builder_->CreateBitCast(elem,
-                    final_fn->getFunctionType()->getParamType(0))});
+                call_final(final_fn, builder_->CreateBitCast(elem,
+                    final_fn->getFunctionType()->getParamType(0)));
             };
             llvm_utils_->create_loop("Final_array_elems", cond_fn, body_fn);
         }
@@ -2558,7 +2560,8 @@ class ASRToLLVMVisitor;
         }
 
         /// Check if the nature of the variable can't be finalized
-        static bool not_finalizable_variable(ASR::Variable_t* const v){
+        static bool not_finalizable_variable(ASR::Variable_t* const v,
+                bool abandon_result = false){
             // The storage of a common block outlives every scope that
             // declares the block.
             if (v->m_common_block != nullptr) {
@@ -2584,7 +2587,7 @@ class ASRToLLVMVisitor;
                     if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                         ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(
                             fn->m_return_var)->m_v;
-                        if (ret_sym == &v->base) {
+                        if (ret_sym == &v->base && !abandon_result) {
                             return true;
                         }
                     }
@@ -2928,8 +2931,8 @@ class ASRToLLVMVisitor;
             uint64_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                 llvm::Function* const fn = llvm_symtab_fn_[fh];
-                builder_->CreateCall(fn, {builder_->CreateBitCast(ptr,
-                    fn->getFunctionType()->getParamType(0))});
+                call_final(fn, builder_->CreateBitCast(ptr,
+                    fn->getFunctionType()->getParamType(0)));
             }
         }
 
@@ -3047,8 +3050,11 @@ class ASRToLLVMVisitor;
          * @param call_final_subroutines False when the program terminates:
          *        the variables are then not finalized (F2018 7.5.6.4), only
          *        their memory is freed.
+         * @param abandon_result Also free the initialized function result:
+         *        a cancelled JIT call will not transfer it to its caller.
          */
-        void finalize_symtab(SymbolTable* symtab, const bool call_final_subroutines = true){
+        void finalize_symtab(SymbolTable* symtab, const bool call_final_subroutines = true,
+                const bool abandon_result = false){
             LCOMPILERS_ASSERT(!non_deallocatable_construct(symtab->asr_owner))
             auto const finalize_str = std::string("FINALIZE_SYMTABLE_") + 
                                       std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(symtab->asr_owner)));
@@ -3060,7 +3066,7 @@ class ASRToLLVMVisitor;
                 for(auto &str_sym_pair : MAP){
                     ASR::symbol_t* const sym = str_sym_pair.second;
                     if (is_variable(sym)){
-                        finalize_variable(ASR::down_cast<ASR::Variable_t>(sym));
+                        finalize_variable(ASR::down_cast<ASR::Variable_t>(sym), abandon_result);
                     }
                 }
             });
