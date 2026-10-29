@@ -1665,13 +1665,20 @@ specification action, that is, what the paper should say.
   application's WeatherData nongeneric. A reduced finite pair with a subject
   method accepting `Display{Subject}`, a typed subject backreference and
   constructor registration is tested (`traits_associated_10`). This does not
-  establish full recursive application support: the adapted observer compiles
-  Display and Vector, then stops at WeatherData's own name used as a nested
-  generic argument in its component declaration. Ordinary nominal types are
-  not yet declared before their components are visited. That separate
-  declaration-order limitation, and the earlier dependent `Vector{U}` limit,
-  are not solved by silently strengthening the contract or by an acyclic
-  rewrite. No implicit recursive inference has been approved or implemented.
+  establish full recursive application support. Ordinary nominal types are
+  now declared before their components are visited and completed in place:
+  a component such as `Ref{Subject}` or `Box{Ref{Subject}}` can name its
+  enclosing Subject without copying an incomplete declaration. Pointer and
+  allocatable links allow finite recursive layouts; inline cycles are
+  rejected. Pending generic evidence still waits for the unit's completed
+  conformance signatures, and every explicit equality must then hold.
+  `traits_generic_type_10` tests nested self arguments, pointer identity,
+  completed components and methods, and ordinary recursive pointers.
+  This is nominal declaration/completion, not recursive generic inference.
+  The earlier dependent `Vector{U}` limit remains separate; neither it nor
+  missing contracts are solved by silently strengthening constraints or by
+  an acyclic rewrite. No implicit recursive inference has been approved or
+  implemented.
 - **Specification action.** Define explicit same-type requirements, their
   binder scope and independent body checking, equality consistency and
   instantiation diagnostics. Specify any finite recursive naming mechanism

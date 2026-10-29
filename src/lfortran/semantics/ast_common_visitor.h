@@ -11665,7 +11665,48 @@ public:
             return;
         }
         SymbolTable *parent_scope = current_scope;
+        std::string sym_name = to_lower(x.m_name);
+        ASR::symbol_t *previous = parent_scope->get_symbol(sym_name);
+        if (!compiler_options.implicit_typing && previous != nullptr) {
+            diag.add(diag::Diagnostic(
+                "DerivedType already defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        // Reserve the nominal identity before resolving component types, as
+        // for PDTs above. Specializations must reference this same declaration,
+        // not a copy of an incomplete type.
+        auto *struct_ = ASR::down_cast2<ASR::Struct_t>(ASR::make_Struct_t(
+            al, x.base.base.loc, current_scope, s2c(al, sym_name), nullptr,
+            nullptr, 0, nullptr, 0, nullptr, 0,
+            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source,
+            struct_access, false, is_abstract, false, nullptr, 0, nullptr,
+            parent_sym, nullptr, 0, is_sealed, obligations.p, obligations.size(),
+            nullptr));
+        ASR::symbol_t *derived_type_sym = &struct_->base;
+        if (compiler_options.implicit_typing) {
+            parent_scope->add_or_overwrite_symbol(sym_name, derived_type_sym);
+        } else {
+            parent_scope->add_symbol(sym_name, derived_type_sym);
+        }
+        struct RestoreDeclaration {
+            SymbolTable *&scope;
+            bool &is_type;
+            SymbolTable *parent;
+            std::string name;
+            ASR::symbol_t *previous;
+            bool complete = false;
+            ~RestoreDeclaration() {
+                scope = parent;
+                is_type = false;
+                if (complete) return;
+                parent->erase_symbol(name);
+                if (previous) parent->add_symbol(name, previous);
+            }
+        } restore_declaration{current_scope, is_derived_type, parent_scope,
+            sym_name, previous};
         data_member_names.reserve(al, 0);
         final_proc_names.reserve(al, 0);
         is_derived_type = true;
@@ -11680,14 +11721,6 @@ public:
         }
         for (size_t i=0; i<x.n_contains; i++) {
             this->visit_procedure_decl(*x.m_contains[i]);
-        }
-        std::string sym_name = to_lower(x.m_name);
-        if (!compiler_options.implicit_typing && parent_scope->get_symbol(sym_name) != nullptr) {
-            diag.add(diag::Diagnostic(
-                "DerivedType already defined",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
@@ -11731,18 +11764,39 @@ public:
                 }
             }
         }
-        tmp = ASR::make_Struct_t(al, x.base.base.loc, current_scope,
-            s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
-            data_member_names.p, data_member_names.size(),
-            final_proc_names.p, final_proc_names.size(),
-            is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
-            is_sequence,
-            nullptr, 0, nullptr, parent_sym,
-            nullptr, 0, is_sealed, obligations.p, obligations.size(), nullptr);
-
-        ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        struct_->m_dependencies = struct_dependencies.p;
+        struct_->n_dependencies = struct_dependencies.size();
+        struct_->m_members = data_member_names.p;
+        struct_->n_members = data_member_names.size();
+        struct_->m_member_functions = final_proc_names.p;
+        struct_->n_member_functions = final_proc_names.size();
+        struct_->m_is_sequence = is_sequence;
+        // A nominal self argument may form a finite pointer/allocatable cycle,
+        // but must not introduce an infinitely nested inline layout.
+        std::set<ASR::Struct_t*> active, checked;
+        std::function<void(ASR::Struct_t*)> check_layout = [&](ASR::Struct_t *type) {
+            if (checked.count(type)) return;
+            if (!active.insert(type).second) {
+                trait_error("recursive type components require pointer or allocatable "
+                    "storage", x.base.base.loc);
+            }
+            for (size_t i = 0; i < type->n_members; i++) {
+                auto *member = ASR::down_cast<ASR::Variable_t>(
+                    type->m_symtab->get_symbol(type->m_members[i]));
+                auto *storage = ASRUtils::type_get_past_array(member->m_type);
+                if (ASR::is_a<ASR::Pointer_t>(*storage) ||
+                        ASR::is_a<ASR::Allocatable_t>(*storage)) continue;
+                auto *declaration = member->m_type_declaration
+                    ? ASRUtils::symbol_get_past_external(member->m_type_declaration) : nullptr;
+                if (declaration && ASR::is_a<ASR::Struct_t>(*declaration)) {
+                    check_layout(ASR::down_cast<ASR::Struct_t>(declaration));
+                }
+            }
+            active.erase(type);
+            checked.insert(type);
+        };
+        check_layout(struct_);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
-        ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
         struct_->m_struct_signature = struct_signature;
         if (obligations.size()) {
             static_cast<Derived&>(*this).defer_type_adoption(parent_scope, struct_);
@@ -11784,12 +11838,6 @@ public:
         }
 
         tmp = (ASR::asr_t*) derived_type_sym;
-        derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
-        if (compiler_options.implicit_typing) {
-            parent_scope->add_or_overwrite_symbol(sym_name, derived_type_sym);
-        } else {
-            parent_scope->add_symbol(sym_name, derived_type_sym);
-        }
 
         // Resolve type-declaration for self-pointing variable declarations inside structs and
         // variables declared with deferred struct declarations. For an example, see
@@ -11843,6 +11891,7 @@ public:
 
         current_scope = parent_scope;
         is_derived_type = false;
+        restore_declaration.complete = true;
     }
 
     void visit_TraitDerivedType(const AST::TraitDerivedType_t &/*x*/) {

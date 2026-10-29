@@ -9907,6 +9907,94 @@ end program
     }
 }
 
+TEST_CASE("Nominal self type arguments preserve deferred conformance obligations") {
+    const std::string prefix = R"(
+module self_contracts
+implicit none
+type :: Ref{T}
+    type(T), pointer :: target
+end type
+type :: Box{T}
+    type(T) :: item
+end type
+abstract interface :: ISubject
+    type :: ObsType
+    subroutine put(self, value)
+        type(itself), pass, intent(inout) :: self
+        type(ObsType), intent(in) :: value
+    end subroutine
+end interface
+type :: Display{ISubject(ObsType=Display{U}) :: U}
+    type(U), pointer :: subject
+end type
+end module
+module self_clients
+use self_contracts
+implicit none
+)";
+    auto check = [&](const std::string &declarations, const std::string &message) {
+        std::string source = prefix + declarations + "\nend module\n";
+        Allocator al(1024 * 1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        LCompilers::CompilerOptions options;
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        LCompilers::LocationManager lm;
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, nullptr, false, options, lm);
+        INFO(diagnostics.render2());
+        if (message.empty()) {
+            REQUIRE(result.ok);
+            CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+            asr_ser(source);
+        } else {
+            CHECK_FALSE(result.ok);
+            CHECK(diagnostics.render2().find(message) != std::string::npos);
+        }
+    };
+    const std::string subject = R"(
+type, sealed, implements(ISubject) :: Subject
+    type(Display{Subject}) :: observer
+contains
+    procedure :: put
+end type
+contains
+subroutine put(self, value)
+    type(Subject), intent(inout) :: self
+)";
+    SUBCASE("a pending nominal conformance satisfies its explicit equality") {
+        check(subject + "type(Display{Subject}), intent(in) :: value\n"
+            "self%observer = value\nend subroutine\n", "");
+    }
+    SUBCASE("recursive lookup does not discharge an unused equality") {
+        check(subject + "integer, intent(in) :: value\nend subroutine\n",
+            "associated type equality 'obstype' is not satisfied");
+    }
+    SUBCASE("recursive lookup does not prove trait membership") {
+        check("type :: Subject\n"
+            "type(Display{Subject}) :: observer\nend type\n",
+            "no visible nominal implementation of trait 'isubject'");
+    }
+    SUBCASE("a value name is not a type argument") {
+        check("integer :: n\ntype :: Subject\n"
+            "type(Ref{n}) :: observer\nend type\n",
+            "a generic type argument must name a type");
+    }
+    SUBCASE("a literal is not a type argument") {
+        check("type :: Subject\ntype(Ref{1}) :: observer\nend type\n",
+            "a generic type argument must name a type");
+    }
+    SUBCASE("a direct inline self component is invalid") {
+        check("type :: Subject\ntype(Subject) :: item\nend type\n",
+            "recursive type components require pointer or allocatable storage");
+    }
+    SUBCASE("substitution cannot introduce an infinite inline layout") {
+        check("type :: Subject\ntype(Box{Subject}) :: observer\nend type\n",
+            "recursive type components require pointer or allocatable storage");
+    }
+}
+
 TEST_CASE("Generic derived types serialize and verify their packages and instances") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
