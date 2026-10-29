@@ -1763,6 +1763,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bool is_target_dict = ASR::is_a<ASR::Dict_t>(*m_target_type);
         bool is_value_dict = ASR::is_a<ASR::Dict_t>(*m_value_type);
         bool alloc_return_var = false;
+        ASR::expr_t *declared_string_len = nullptr;
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (ASRUtils::is_simd_array(x.m_target)) {
             this->visit_expr(*x.m_target);
@@ -1808,6 +1809,12 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         ASR::down_cast<ASR::Variable_t>(ts))) {
                     target = scalar_allocatable_name(
                         ASR::down_cast<ASR::Variable_t>(ts));
+                    if (ASRUtils::is_character(*m_target_type)) {
+                        ASR::String_t *string_type = ASRUtils::get_string_type(m_target_type);
+                        if (string_type->m_len_kind == ASR::ExpressionLength) {
+                            declared_string_len = string_type->m_len;
+                        }
+                    }
                 }
             }
             if (target == "_lpython_return_variable" && ASRUtils::is_character(*m_target_type)) {
@@ -1988,6 +1995,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 }
             } else {
                 src += indent + c_ds_api->get_deepcopy(m_target_type, value, target) + "\n";
+                if (declared_string_len) {
+                    std::string assignment = src;
+                    self().visit_expr(*declared_string_len);
+                    headers.insert("algorithm");
+                    src = assignment + indent + target
+                        + "->resize(std::max<int64_t>(0, " + src + "), ' ');\n";
+                }
             }
         }
         from_std_vector_helper.clear();
@@ -3270,8 +3284,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 out += indent + sym + "->is_allocated = true;\n";
             } else if (!is_c && is_scalar_allocatable(
                     ASR::down_cast<ASR::Variable_t>(tmp_sym))) {
-                if (ASRUtils::is_character(*type) && x.m_args[i].m_len_expr) {
-                    self().visit_expr(*x.m_args[i].m_len_expr);
+                ASR::expr_t *length = x.m_args[i].m_len_expr;
+                if (ASRUtils::is_character(*type) && !length) {
+                    length = ASRUtils::get_string_type(type)->m_len;
+                }
+                if (ASRUtils::is_character(*type) && length) {
+                    self().visit_expr(*length);
+                    headers.insert("algorithm");
                     out += indent + sym + ".emplace(std::max<int64_t>(0, "
                         + src + "), ' ');\n";
                 } else {
