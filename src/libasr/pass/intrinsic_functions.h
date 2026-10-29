@@ -3293,23 +3293,21 @@ namespace Anint {
         declare_basic_variables("_lcompilers_anint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * if (x > 0) then
-        *     r = aint(x+0.5)
-        * else
-        *     r = aint(x-0.5)
-        * end if
-        */
-        // Make the calls one by one, so the helpers get the same names with every C++ compiler.
-        ASR::expr_t *aint_up = b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
-                                    return_type, 0, Aint::instantiate_Aint);
-        ASR::expr_t *aint_down = b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
-                                    return_type, 0, Aint::instantiate_Aint);
-        body.push_back(al, b.If(b.Gt(args[0], b.f_t(0, arg_types[0])), {
-            b.Assignment(result, aint_up)
+        auto integral = declare("integral", arg_types[0], Local);
+        body.push_back(al, b.Assignment(integral,
+            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]},
+                arg_types[0], 0, Aint::instantiate_Aint)));
+        // Adding 0.5 to the input can change exact integers or round a value
+        // just below a tie upwards. Compare the fraction in the input kind.
+        auto fraction = b.Sub(args[0], integral);
+        body.push_back(al, b.If(b.GtE(fraction, b.f_t(0.5, arg_types[0])), {
+            b.Assignment(integral, b.Add(integral, b.f_t(1, arg_types[0])))
         }, {
-            b.Assignment(result, aint_down)
+            b.If(b.LtE(fraction, b.f_t(-0.5, arg_types[0])), {
+                b.Assignment(integral, b.Sub(integral, b.f_t(1, arg_types[0])))
+            }, {})
         }));
+        body.push_back(al, b.Assignment(result, b.r2r_t(integral, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

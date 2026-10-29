@@ -100,23 +100,18 @@ __device__ inline float _lcompilers_aint_f32_gpu_29(float a) {
     return _lcompilers_aint_f32;
 }
 
-__device__ inline float _lcompilers_aint_f321_gpu_30(float a) {
-    float _lcompilers_aint_f321;
-    if ((abs(a) <   9.22337203685477581e+18f)) {
-        _lcompilers_aint_f321 = ((float)((long)a));
-    } else {
-        _lcompilers_aint_f321 = a;
-    }
-    return _lcompilers_aint_f321;
-}
-
 __device__ inline float _lcompilers_anint_f32_gpu_28(float a) {
     float _lcompilers_anint_f32;
-    if ((a >   0.00000000000000000e+00f)) {
-        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_29((a +   5.00000000000000000e-01f));
+    float integral;
+    integral = _lcompilers_aint_f32_gpu_29(a);
+    if (((a - integral) >=   5.00000000000000000e-01f)) {
+        integral = (integral +   1.00000000000000000e+00f);
     } else {
-        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_30((a -   5.00000000000000000e-01f));
+        if (((a - integral) <=  -5.00000000000000000e-01f)) {
+            integral = (integral -   1.00000000000000000e+00f);
+        }
     }
+    _lcompilers_anint_f32 = integral;
     return _lcompilers_anint_f32;
 }
 
