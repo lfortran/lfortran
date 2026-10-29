@@ -17787,7 +17787,7 @@ public:
         ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
     }
 
-    llvm::CallInst *create_jit_call(llvm::FunctionCallee fn,
+    llvm::CallInst *create_jit_call(llvm::Function *fn,
             llvm::ArrayRef<llvm::Value *> args = {}) {
         auto *result = builder->CreateCall(fn, args);
         // A successful result must first acquire its normal temporary owner.
