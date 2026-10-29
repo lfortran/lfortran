@@ -220,9 +220,14 @@ public:
             ASR::Function_t* iface = get_dummy_procedure_interface(
                 ASR::down_cast<ASR::Variable_t>(symbol));
             if (iface && ASRUtils::get_FunctionType(*iface)->m_abi == ASR::abiType::Source) {
+                std::string args = current_scope->get_unique_name("args");
+                // The actual's emitted name may come from an enclosing scope.
+                if (args == value) {
+                    args = current_scope->get_unique_name(args + "_");
+                }
                 // Delay specialization of array templates until the callback is invoked.
-                return "[](auto&&... args) -> decltype(auto) { return "
-                    + value + "(args...); }";
+                return "[](auto&&... " + args + ") -> decltype(auto) { return "
+                    + value + "(" + args + "...); }";
             }
         }
         return value;

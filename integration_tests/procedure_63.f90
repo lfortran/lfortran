@@ -13,18 +13,20 @@ real :: a(1), b(2), result
 a(1) = 1.0
 b(1) = 3.0
 b(2) = 4.0
-call apply_order(a, fun)
+call apply_order(a, args)
 if (a(1) /= 2.0) error stop
-call apply_late(a, fun, b)
+call apply_late(a, args, b)
 if (a(1) /= 3.0 .or. b(2) /= 4.0) error stop
-call apply_early(fun, a, b)
+call apply_early(args, a, b)
 if (a(1) /= 4.0 .or. b(2) /= 4.0) error stop
-call apply_sub(a, increment, b)
+call apply_sub(a, args1, b)
 if (a(1) /= 14.0 .or. b(1) /= 13.0) error stop
-call apply_local(fun, result)
+call apply_local(args, result)
 if (result /= 6.0) error stop
-call forward(fun, a, b)
-if (a(1) /= 15.0 .or. b(2) /= 14.0) error stop
+call forward(args, a, b)
+if (a(1) /= 16.0 .or. b(2) /= 14.0) error stop
+call forward_named_sub(a, b)
+if (a(1) /= 26.0 .or. b(1) /= 23.0) error stop
 
 contains
 
@@ -67,14 +69,23 @@ subroutine forward(f, x, z)
     procedure(callback) :: f
     real, intent(inout) :: x(1), z(2)
     call apply_late(x, f, z)
+    call apply_late(x, args, z)
 end subroutine
 
-real function fun(y)
+subroutine forward_named_sub(x, z)
+    real, intent(inout) :: x(1), z(2)
+    integer :: args
+    args = 7
+    call apply_sub(x, args1, z)
+    if (args /= 7) error stop
+end subroutine
+
+real function args(y)
     real, intent(in) :: y(:)
-    fun = y(1) + 1.0
+    args = y(1) + 1.0
 end function
 
-subroutine increment(y)
+subroutine args1(y)
     real, intent(inout) :: y(:)
     y(1) = y(1) + 10.0
 end subroutine
