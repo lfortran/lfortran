@@ -813,6 +813,32 @@ def test_fragmented_updates(exe, cwd):
                 "a separate newline fragment"), screen.text())
             check(screen.lines[screen.row - 1] == prefix,
                 "a newline after a full-width fragment added a blank line")
+            for separate in [False, True]:
+                marker = "CR_SGR_%s_111" % ("SEPARATE" if separate else "COMBINED")
+                publish([("stream", {"name": "stdout",
+                    "text": marker + "\r" + ("" if separate else "\x1b[0m")})])
+                check(repl.wait(lambda: marker in screen.text()
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "a carriage return with zero-width styling"), screen.text())
+                if separate:
+                    reports = repl.prompts
+                    publish([("stream", {"name": "stdout", "text": "\x1b[0m"})])
+                    check(repl.wait(lambda: repl.prompts > reports
+                        and screen.lines[screen.row].startswith(">>> "),
+                        "a separate zero-width styling fragment"), screen.text())
+                check(screen.lines[screen.row - 1].rstrip() == marker
+                    and screen.col == 4,
+                    "zero-width styling erased the carriage-return transcript:\n"
+                    + screen.text())
+                replacement = marker.replace("111", "222")
+                publish([("stream", {"name": "stdout",
+                    "text": replacement + "\n\x1b[0m"})])
+                check(repl.wait(lambda: replacement in screen.text()
+                    and screen.lines[screen.row].startswith(">>> "),
+                    "styled progress replacement and newline"), screen.text())
+                check(screen.lines[screen.row - 1].rstrip() == replacement
+                    and marker not in screen.text(),
+                    "styling changed carriage-return replacement or newline placement")
             publish([("stream", {"name": "stdout", "text": "PROGRESS_111\r"})])
             check(repl.wait(lambda: "PROGRESS_111" in screen.text()
                 and screen.lines[screen.row].startswith(">>> "),

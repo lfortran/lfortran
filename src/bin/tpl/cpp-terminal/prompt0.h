@@ -139,6 +139,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     // separating it from the editor is temporary: the next fragment resumes
     // at this position, not at a newly committed transcript line.
     bool partial_output = false;
+    bool output_line_open = false;
     bool wrap_pending = false;
     int output_row = row, output_col = 1;
     auto redraw = [&]() {
@@ -154,7 +155,6 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     while (not_complete) {
         if (events) {
             bool visible = false;
-            bool line_return = false;
             const PromptOutput display = [&](const std::string &text, bool error) {
                 if (text.empty()) return;
                 if (!visible && term_attached) {
@@ -178,7 +178,17 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                         wrap_pending = false;
                     }
                 }
-                line_return = text.back() == '\r';
+                // CR moves the cursor without emptying the transcript row.
+                // SGR must preserve that occupancy, even in a later batch.
+                for (size_t i = 0; i < text.size(); i++) {
+                    i = skip_sgr(text, i);
+                    if (i == text.size()) break;
+                    if (text[i] == '\n') {
+                        output_line_open = false;
+                    } else if (static_cast<unsigned char>(text[i]) >= 32) {
+                        output_line_open = true;
+                    }
+                }
                 (error ? std::cerr : std::cout) << text << std::flush;
             };
             const PromptEvent event = events(display);
@@ -201,7 +211,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     }
                     std::cout << move_cursor(output_row, output_col);
                 }
-                partial_output = output_col != 1 || line_return;
+                partial_output = output_col != 1 || output_line_open;
                 row = output_row;
                 if (partial_output) {
                     std::cout << "\r\n";
@@ -249,6 +259,7 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
                     std::cout<< "\x1b[2J" << move_cursor(1,1) << std::flush;
                     row = 1;
                     partial_output = false;
+                    output_line_open = false;
                     wrap_pending = false;
                     break;
                 case CTRL_KEY('u'):
