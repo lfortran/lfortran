@@ -2122,8 +2122,8 @@ RUN(NAME intrinsics_499 LABELS gfortran llvm fortran) # spread of a scalar sourc
 RUN(NAME intrinsics_502 LABELS gfortran llvm) # pack/count with a negated complex comparison of array sections (#15926)
 RUN(NAME intrinsics_503 LABELS gfortran llvm c cpp) # elemental intrinsics lowered in the C/C++ backend
 RUN(NAME intrinsic_sign_magnitude LABELS gfortran llvm c cpp)
-RUN(NAME modulo_03 LABELS gfortran llvm c cpp) # elemental intrinsics lowered in the C/C++ backend
- # elemental intrinsics lowered in the C/C++ backend
+RUN(NAME modulo_03 LABELS gfortran llvm c cpp)
+RUN(NAME modulo_04 LABELS gfortran llvm c cpp wasm)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)

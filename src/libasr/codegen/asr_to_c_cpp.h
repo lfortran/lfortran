@@ -3727,6 +3727,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Sqrt, "sqrt");
             SET_INTRINSIC_NAME(Log, "log");
             SET_INTRINSIC_NAME(Log10, "log10");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Atan2)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string y = src;
+                this->visit_expr(*x.m_args[1]);
+                headers.insert("math.h");
+                src = "atan2(" + y + ", " + src + ")";
+                return;
+            }
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");

@@ -66,7 +66,9 @@ R"(async function main() {
     const importObject = {
         wasi_snapshot_preview1: wasi.wasiImport,
         js: {
-            cpu_time: (time) => (Date.now() / 1000) // Date.now() returns milliseconds, so divide by 1000
+            cpu_time: (time) => (Date.now() / 1000), // Date.now() returns milliseconds, so divide by 1000
+            fmod: (x, y) => x % y,
+            fmodf: (x, y) => x % y
         }
     };
     const wasm = await WebAssembly.compile(fs.readFileSync(")" + filename + R"("));

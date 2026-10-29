@@ -809,7 +809,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     using Intrinsic = ASRUtils::IntrinsicElementalFunctions;
     for (Intrinsic intrinsic : {Intrinsic::Sign, Intrinsic::Mod, Intrinsic::Modulo,
             Intrinsic::Merge, Intrinsic::Floor, Intrinsic::Ceiling,
-            Intrinsic::Nint, Intrinsic::Real, Intrinsic::Int, Intrinsic::Atan2}) {
+            Intrinsic::Nint, Intrinsic::Real, Intrinsic::Int}) {
         pass_options.elemental_intrinsics_to_lower.push_back(
             static_cast<int64_t>(intrinsic));
     }
