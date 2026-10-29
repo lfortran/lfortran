@@ -598,17 +598,6 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
     return vec[index];
 }
 
-// Whether an expression has a section of an array among its operands.
-class ArraySectionFinder: public ASR::BaseWalkVisitor<ArraySectionFinder> {
-    public:
-
-    bool found = false;
-
-    void visit_ArraySection(const ASR::ArraySection_t& /*x*/) {
-        found = true;
-    }
-};
-
 // Collect the array expressions which should be of the same size
 class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
 private:
@@ -3103,8 +3092,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::down_cast<ASR::ArrayItem_t>(expr))))
         // A section target with scalar and triplet subscripts only, such as
         // `a(:, i)`, is assigned element by element through its base array
-        // in the general loop below, once every section in the value has
-        // been replaced by a temporary.
+        // in the general loop below. Any section left in the value by
+        // array_struct_temporary is safe to index through its base too.
         bool is_target_section_indexed_through_base = false;
         if( ASR::is_a<ASR::ArraySection_t>(*xx.m_target) &&
             !ASRUtils::is_array_indexed_with_array_indices(
@@ -3113,9 +3102,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             !is_array_indexed_with_array_indices_check(xx.m_value) &&
             !call_replace_on_expr(xx.m_value->type) &&
             !ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value) ) {
-            ArraySectionFinder value_section_finder;
-            value_section_finder.visit_expr(*xx.m_value);
-            is_target_section_indexed_through_base = !value_section_finder.found;
+            is_target_section_indexed_through_base = true;
         }
         if( ( is_array_indexed_with_array_indices_check(xx.m_value) ) ||
             ( is_array_indexed_with_array_indices_check(xx.m_target) &&
@@ -3237,7 +3224,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         } else {
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         }
-        ArrayVarAddressCollector var_collector_value(al, vars);
+        ArrayVarAddressCollector var_collector_value(al, vars, true);
         var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         if (!is_value_assumed_rank) {
             var_collector_value.call_replacer();
@@ -3288,6 +3275,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             components.reserve(al, 1);
             CollectComponentsFromElementalExpr collect_components(al, components);
             collect_components.visit_expr(*x.m_value);
+            for (size_t i = 0; i < vars.size(); i++) {
+                if (*vars[i] != x.m_target && ASR::is_a<ASR::ArraySection_t>(**vars[i])) {
+                    components.push_back(al, *vars[i]);
+                }
+            }
             bool conforms_at_compile_time = false;
             if (have_same_rank(x.m_target, components)) {
                 conforming_operands.insert(x.m_target);
