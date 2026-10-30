@@ -50,14 +50,20 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float* res = __workspace_9 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = __sizes_s_b_[(((int)(jj__dc) - (__lb_s_0))) * 2 + 0];
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             res[((int)(k) - (1))] = (  2.00000000000000000e+00f * __data_s_b_[__offsets_s_b_[((int)(jj__dc) - (__lb_s_0))] + ((int)(k) - (__sizes_s_b_[(((int)(jj__dc) - (__lb_s_0))) * 2 + 1]))]);
         }
         __do_loop_end1 = ((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1);
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+        while (1) {
             __gpu_sec_i = (__gpu_sec_i + 1);
+            if (((int)(!((__gpu_sec_i <= __do_loop_end1))))) {
+                break;
+            }
             out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj__dc) - (__lb_out_1)))] = res[((int)((1 + (__gpu_sec_i - 1))) - (1))];
         }
     }

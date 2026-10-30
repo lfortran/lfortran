@@ -31,6 +31,15 @@ public:
         loop_stack.pop();
     }
 
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        ASR::stmt_t *do_stmt = (ASR::stmt_t*)(&x);
+        loop_stack.push(do_stmt);
+        ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        loop_stack.pop();
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+    }
+
     void visit_Exit(const ASR::Exit_t &x) {
         if (loop_stack.empty() ||
             flag_map.find(loop_stack.top()) == flag_map.end())

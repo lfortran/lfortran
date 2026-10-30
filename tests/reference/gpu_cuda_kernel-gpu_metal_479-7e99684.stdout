@@ -26,8 +26,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         float t[16];
         __gpu_bc_i = (1 - 1);
-        while (((__gpu_bc_i + 1) <= 16)) {
+        while (1) {
             __gpu_bc_i = (__gpu_bc_i + 1);
+            if (((int)(!((__gpu_bc_i <= 16))))) {
+                break;
+            }
             t[((int)(__gpu_bc_i) - (1))] = ((float)j__dc);
         }
         y[((int)(j__dc) - (1))] = first_device_t_gpu_17(t, 16);

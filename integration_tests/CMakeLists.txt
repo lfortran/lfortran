@@ -4838,13 +4838,18 @@ RUN(NAME array_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray f
 RUN(NAME do_loop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop)
-RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
+RUN(NAME do_loop_04 LABELS gfortran llvm)
 RUN(NAME do_loop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME do_loop_09 LABELS gfortran llvm)
 RUN(NAME do_loop_10 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
+RUN(NAME do_loop_11 LABELS gfortran llvm)
+RUN(NAME do_loop_12 LABELS gfortran llvm)
+RUN(NAME do_loop_13 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=do)
+RUN(NAME do_loop_mlir_01 LABELS gfortran llvm mlir)
+RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) #TODO: fix mlir, commented in PR: #6060

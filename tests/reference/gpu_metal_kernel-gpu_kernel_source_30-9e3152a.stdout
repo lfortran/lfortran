@@ -189,8 +189,11 @@ kernel void __lfortran_gpu_kernel_6(
     __libasr_index_0_1 = 1;
     __do_loop_end = (1 + ((((2 * 8) - (8 + 1)) / 1) + 1) - 1);
     __libasr_index_0_ = (1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
+        if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+            break;
+        }
         __libasr_created__array_section_[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }

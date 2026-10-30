@@ -32,15 +32,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float* w = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             w[((int)(k) - (1))] = ((float)((1000 * i__dc) + k));
         }
         o[((int)(i__dc) - (1))] =   0.00000000000000000e+00f;
         __do_loop_end1 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end1)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end1))))) {
+                break;
+            }
             o[((int)(i__dc) - (1))] = (o[((int)(i__dc) - (1))] + w[((int)(k) - (1))]);
         }
     }
@@ -74,15 +80,21 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         float* w = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         __do_loop_end = (__sizes_c_m_[(((int)(1) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 4 + 1]);
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             w[((int)(k) - (1))] = ((float)((100 * i__dc1) + k));
         }
         p[((int)(i__dc1) - (1))] =   0.00000000000000000e+00f;
         __do_loop_end1 = (__sizes_c_m_[(((int)(1) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 4 + 1]);
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end1)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end1))))) {
+                break;
+            }
             p[((int)(i__dc1) - (1))] = (p[((int)(i__dc1) - (1))] + w[((int)(k) - (1))]);
         }
     }

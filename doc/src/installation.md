@@ -190,6 +190,16 @@ Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
 are no duplicate or skipped Exhaustive copies of these jobs.
 
+To build and test the MLIR backend locally with Quick's MLIR 19.1.6 SDK:
+
+```sh
+pixi run -e mlir19 build -DWITH_MLIR=yes
+pixi run -e mlir19 integration_tests -b mlir -j2
+```
+
+Use `pixi run -e mlir19 rebuild` after source edits. This configuration has
+its own `build/mlir19` directory; reference tests still require `llvm11`.
+
 The full LLVM-WASM suite runs in two parallel jobs that build the same
 compiler: `Test LLVM 19 WASM` runs the WASI backend (`llvm_wasm`, wasmtime)
 and the unit tests, and `Test LLVM 19 WASM Emscripten` runs the Emscripten

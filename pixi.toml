@@ -58,6 +58,10 @@ llvmdev = "==17.0.6"
 llvmdev = "==18.1.8"
 [feature.llvm19.dependencies]
 llvmdev = "==19.1.4"
+[feature.mlir19.dependencies]
+llvmdev = "==19.1.6"
+mlir = "==19.1.6"
+llvm-openmp = "==19.1.6"
 [feature.llvm20.dependencies]
 llvmdev = "==20.1.8"
 [feature.llvm21.dependencies]
@@ -316,6 +320,7 @@ llvm16 = {features = ["llvm16", "build", "test"]}
 llvm17 = {features = ["llvm17", "build", "test"]}
 llvm18 = {features = ["llvm18", "build", "test"]}
 llvm19 = {features = ["llvm19", "build", "test"]}
+mlir19 = {features = ["mlir19", "build", "test"]}
 llvm20 = {features = ["llvm20", "build", "test"]}
 llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}

@@ -208,12 +208,29 @@ public:
 
 // For each statement label of a procedure body, the BLOCK and ASSOCIATE
 // constructs that contain the labeled statement, outermost first.
+struct GoToConstructScope {
+    enum class Kind { SymbolScope, DoLoop, WhileLoop };
+    Kind kind;
+    SymbolTable* symtab;
+    const ASR::stmt_t* stmt;
+};
+
+static inline bool same_goto_scope(const GoToConstructScope &a,
+        const GoToConstructScope &b) {
+    if (a.kind != b.kind) return false;
+    if (a.kind == GoToConstructScope::Kind::SymbolScope) {
+        return a.symtab == b.symtab;
+    }
+    return a.stmt == b.stmt;
+}
+
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
 public:
-    std::map<uint64_t, std::vector<SymbolTable*>> &scopes;
-    std::vector<SymbolTable*> enclosing;
+    std::map<uint64_t, std::vector<GoToConstructScope>> &scopes;
+    std::vector<GoToConstructScope> enclosing;
 
-    GoToTargetScopes(std::map<uint64_t, std::vector<SymbolTable*>> &scopes_):
+    GoToTargetScopes(
+        std::map<uint64_t, std::vector<GoToConstructScope>> &scopes_):
         scopes(scopes_) {}
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
@@ -226,7 +243,8 @@ public:
             scopes[x.m_label] = enclosing;
         }
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        enclosing.push_back(block->m_symtab);
+        enclosing.push_back({GoToConstructScope::Kind::SymbolScope,
+            block->m_symtab, nullptr});
         for (size_t i = 0; i < block->n_body; i++) {
             visit_stmt(*block->m_body[i]);
         }
@@ -236,9 +254,33 @@ public:
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
         ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
             x.m_m);
-        enclosing.push_back(block->m_symtab);
+        enclosing.push_back({GoToConstructScope::Kind::SymbolScope,
+            block->m_symtab, nullptr});
         for (size_t i = 0; i < block->n_body; i++) {
             visit_stmt(*block->m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        enclosing.push_back({GoToConstructScope::Kind::DoLoop, nullptr,
+            (const ASR::stmt_t*)(&x)});
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        enclosing.pop_back();
+        // A branch from outside cannot enter the loop body, but may target
+        // statements in the loop orelse if present.
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        enclosing.push_back({GoToConstructScope::Kind::WhileLoop, nullptr,
+            (const ASR::stmt_t*)(&x)});
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
         }
         enclosing.pop_back();
     }
@@ -743,9 +785,10 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
-    // The BLOCK and ASSOCIATE constructs that contain each labeled statement
-    // of the procedure being generated (see GoToTargetScopes).
-    std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
+    // The BLOCK/ASSOCIATE and loop constructs that contain each labeled
+    // statement of the procedure being generated (see GoToTargetScopes).
+    std::map<uint64_t, std::vector<GoToConstructScope>> goto_target_scopes;
+    std::vector<GoToConstructScope> current_goto_scopes;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint64_t> global_string_allocated;
     // The procedure or program whose contained procedures are being
@@ -1160,6 +1203,25 @@ public:
         }
     }
 
+    void push_loop_targets(llvm::BasicBlock *cycle_target,
+                           const std::string &cycle_name,
+                           llvm::BasicBlock *exit_target,
+                           const std::string &exit_name) {
+        loop_head.push_back(cycle_target);
+        loop_head_names.push_back(cycle_name);
+        loop_end_index.push_back(loop_or_block_end.size());
+        loop_or_block_end.push_back(exit_target);
+        loop_or_block_end_names.push_back(exit_name);
+    }
+
+    void pop_loop_targets() {
+        loop_head.pop_back();
+        loop_head_names.pop_back();
+        loop_end_index.pop_back();
+        loop_or_block_end.pop_back();
+        loop_or_block_end_names.pop_back();
+    }
+
     template <typename Cond, typename Body>
     void create_loop(char *name, Cond condition, Body loop_body) {
 
@@ -1178,11 +1240,7 @@ public:
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, loopbody_name);
         llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, loopend_name);
 
-        loop_head.push_back(loophead);
-        loop_head_names.push_back(loophead_name);
-        loop_end_index.push_back(loop_or_block_end.size());
-        loop_or_block_end.push_back(loopend);
-        loop_or_block_end_names.push_back(loopend_name);
+        push_loop_targets(loophead, loophead_name, loopend, loopend_name);
 
         // head
         start_new_block(loophead); {
@@ -1197,11 +1255,7 @@ public:
         }
 
         // end
-        loop_head.pop_back();
-        loop_head_names.pop_back();
-        loop_end_index.pop_back();
-        loop_or_block_end.pop_back();
-        loop_or_block_end_names.pop_back();
+        pop_loop_targets();
         start_new_block(loopend);
     }
 
@@ -8309,6 +8363,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        current_goto_scopes.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -8534,6 +8589,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        current_goto_scopes.clear();
         strings_to_be_deallocated.reserve(al, 1);
 
 #ifdef HAVE_TARGET_WASM
@@ -10957,6 +11013,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        current_goto_scopes.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -11004,6 +11061,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        current_goto_scopes.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
     }
@@ -14035,6 +14093,40 @@ public:
         return llvm_utils->CreateLoad2(t, ptr, is_volatile);
     }
 
+    llvm::Value* get_var_target_address(ASR::expr_t *target_expr,
+            bool allocate_allocatable_scalar=false) {
+        if (!ASR::is_a<ASR::Var_t>(*target_expr)) {
+            throw CodeGenError("target must be a scalar variable", target_expr->base.loc);
+        }
+        ASR::Variable_t *asr_target = EXPR2VAR(target_expr);
+        uint64_t h = get_hash((ASR::asr_t*)asr_target);
+        auto it = llvm_symtab.find(h);
+        if (it == llvm_symtab.end()) {
+            throw CodeGenError("variable target has no LLVM storage",
+                target_expr->base.loc);
+        }
+        llvm::Value *target = it->second;
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target_expr);
+        if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
+                !ASRUtils::is_character(*asr_target->m_type) &&
+                !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
+            llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(
+                target_expr, asr_target->m_type, module.get());
+            target = llvm_utils->CreateLoad2(target_load_type, target);
+        } else if (allocate_allocatable_scalar &&
+                ASRUtils::is_allocatable(target_type) &&
+                !ASRUtils::is_array(target_type) &&
+                !ASRUtils::is_string_only(target_type) &&
+                !ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_allocatable(target_type))) {
+            check_and_allocate_scalar(target_expr);
+            llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+                target_expr, target_type, module.get());
+            target = llvm_utils->CreateLoad2(target_ptr_type, target);
+        }
+        return target;
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -15187,7 +15279,6 @@ public:
         }
 
         llvm::Value *target, *value;
-        uint64_t h;
         ASR::expr_t* target_expr_for_type = x.m_target;
         if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
             ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
@@ -15278,14 +15369,7 @@ public:
                 throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
             }
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-            h = get_hash((ASR::asr_t*)asr_target);
-            target = llvm_symtab[h];
-            if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASRUtils::is_character(*asr_target->m_type) &&
-                !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
-                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
-                target = llvm_utils->CreateLoad2(target_load_type, target);
-            }
+            target = get_var_target_address(x.m_target);
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
             if ( ASRUtils::is_array(cont_type) ) {
                 if( is_value_list_to_array ) {
@@ -16646,9 +16730,12 @@ public:
         block_cleanups.push_back({associate_block->m_symtab, heap_arrays_before,
             pending_char_writebacks.size(), saved_stack, loop_or_block_end.size(),
             false});
+        current_goto_scopes.push_back({GoToConstructScope::Kind::SymbolScope,
+            associate_block->m_symtab, nullptr});
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+        current_goto_scopes.pop_back();
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
@@ -16712,11 +16799,14 @@ public:
         in_block_context = false;
         block_cleanups.push_back({block->m_symtab, heap_arrays_before,
             wb_before, saved_stack, loop_or_block_end.size(), true});
+        current_goto_scopes.push_back({GoToConstructScope::Kind::SymbolScope,
+            block->m_symtab, nullptr});
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+        current_goto_scopes.pop_back();
 
         start_new_block(blockend);
         emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
@@ -17623,9 +17713,234 @@ public:
         tmp = res;
     }
 
-    // TODO: Implement visit_DooLoop
-    //void visit_DoLoop(const ASR::DoLoop_t &x) {
-    //}
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (!x.m_head.m_start && !x.m_head.m_end && !x.m_head.m_increment) {
+            create_loop(x.m_name, [&]() {
+                return llvm::ConstantInt::getTrue(context);
+            }, [&]() {
+                current_goto_scopes.push_back({GoToConstructScope::Kind::DoLoop, nullptr,
+                    (const ASR::stmt_t*)(&x)});
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                }
+                current_goto_scopes.pop_back();
+            });
+            return;
+        }
+        if (!x.m_head.m_v || !x.m_head.m_start || !x.m_head.m_end) {
+            throw CodeGenError("do loop control must be present", x.base.base.loc);
+        }
+
+        ASR::expr_t* loop_var_expr = x.m_head.m_v;
+        ASR::ttype_t* loop_var_type = ASRUtils::expr_type(loop_var_expr);
+        ASR::ttype_t* iv_asr_type = ASRUtils::type_get_past_allocatable_pointer(loop_var_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*iv_asr_type));
+        [[maybe_unused]] auto same_integer_kind = [](ASR::ttype_t* a, ASR::ttype_t* b) {
+            return ASR::is_a<ASR::Integer_t>(*a) && ASR::is_a<ASR::Integer_t>(*b) &&
+                ASRUtils::extract_kind_from_ttype_t(a) ==
+                    ASRUtils::extract_kind_from_ttype_t(b);
+        };
+        [[maybe_unused]] ASR::ttype_t* start_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(x.m_head.m_start));
+        [[maybe_unused]] ASR::ttype_t* end_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(x.m_head.m_end));
+        LCOMPILERS_ASSERT(same_integer_kind(start_type, iv_asr_type));
+        LCOMPILERS_ASSERT(same_integer_kind(end_type, iv_asr_type));
+
+        llvm::Value **saved_strings = strings_to_be_deallocated.p;
+        size_t saved_strings_n = strings_to_be_deallocated.n;
+        strings_to_be_deallocated.reserve(al, 1);
+
+        auto eval_integer_expr = [&](ASR::expr_t* expr) -> llvm::Value* {
+            this->visit_expr_load_wrapper(expr,
+                LLVM::is_llvm_pointer(*expr_type(expr)) ? 2 : 1, true);
+            llvm::Value *value = tmp;
+            load_non_array_non_character_pointers(expr, ASRUtils::expr_type(expr), value);
+            return value;
+        };
+
+        llvm::Type *iv_type = llvm_utils->get_type_from_ttype_t_util(
+            loop_var_expr, iv_asr_type, module.get());
+        llvm::Value *start_value = eval_integer_expr(x.m_head.m_start);
+        llvm::Value *end_value = eval_integer_expr(x.m_head.m_end);
+        ASR::expr_t* increment = x.m_head.m_increment;
+        int64_t step_const = 1;
+        bool step_is_const = true;
+        llvm::Value *step_value = nullptr;
+        if (increment) {
+            [[maybe_unused]] ASR::ttype_t* step_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(increment));
+            LCOMPILERS_ASSERT(same_integer_kind(step_type, iv_asr_type));
+            step_value = eval_integer_expr(increment);
+            step_is_const = ASRUtils::extract_value(
+                ASRUtils::expr_value(increment), step_const);
+        } else {
+            step_value = llvm::ConstantInt::get(iv_type, 1, true);
+            step_const = 1;
+        }
+        LCOMPILERS_ASSERT(start_value->getType() == iv_type);
+        LCOMPILERS_ASSERT(end_value->getType() == iv_type);
+        LCOMPILERS_ASSERT(step_value->getType() == iv_type);
+        if (step_is_const && step_const == 0) {
+            throw CodeGenError("do loop step must not be zero",
+                increment ? increment->base.loc : x.m_head.loc);
+        }
+
+        llvm::Value* loop_var_ptr = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*loop_var_expr)) {
+            loop_var_ptr = get_var_target_address(loop_var_expr, true);
+        } else {
+            bool saved_iat = is_assignment_target;
+            is_assignment_target = true;
+            this->visit_expr(*loop_var_expr);
+            is_assignment_target = saved_iat;
+            loop_var_ptr = tmp;
+        }
+        LLVM::CreateStore(*builder, start_value, loop_var_ptr);
+        free_strings_to_be_deallocated(0);
+
+        std::string loop_name = (x.m_name && x.m_name[0]) ?
+            std::string(x.m_name) : "do_loop";
+        std::string loop_cond_name = loop_name + ".cond";
+        std::string loop_body_name = loop_name + ".body";
+        std::string loop_latch_name = loop_name + ".head";
+        std::string loop_end_name = loop_name + ".end";
+        std::string loop_orelse_name = loop_name + ".orelse";
+        std::string loop_prep_name = loop_name + ".prep";
+
+        llvm::BasicBlock *loop_cond = llvm::BasicBlock::Create(context, loop_cond_name);
+        llvm::BasicBlock *loop_body = llvm::BasicBlock::Create(context, loop_body_name);
+        llvm::BasicBlock *loop_latch = llvm::BasicBlock::Create(context, loop_latch_name);
+        llvm::BasicBlock *loop_end = llvm::BasicBlock::Create(context, loop_end_name);
+        llvm::BasicBlock *loop_orelse = x.n_orelse > 0
+            ? llvm::BasicBlock::Create(context, loop_orelse_name) : loop_end;
+
+        bool unit_step_path = step_is_const && (step_const == 1 || step_const == -1);
+        llvm::BasicBlock *loop_prep = unit_step_path ?
+            nullptr : llvm::BasicBlock::Create(context, loop_prep_name);
+
+        push_loop_targets(loop_latch, loop_latch_name, loop_end, loop_end_name);
+
+        builder->CreateBr(loop_cond);
+        start_new_block(loop_cond);
+        llvm::Value* entry_cond = nullptr;
+        if (unit_step_path) {
+            entry_cond = (step_const == 1)
+                ? builder->CreateICmpSLE(start_value, end_value)
+                : builder->CreateICmpSGE(start_value, end_value);
+            builder->CreateCondBr(entry_cond, loop_body, loop_orelse);
+        } else {
+            llvm::Value* zero = llvm::ConstantInt::get(iv_type, 0, true);
+            if (!step_is_const) {
+                llvm::Value* step_is_zero = builder->CreateICmpEQ(step_value, zero);
+                llvm_utils->generate_runtime_error(step_is_zero,
+                    "do loop step must not be zero",
+                    {LLVMUtils::RuntimeLabel("zero step here",
+                        {x.m_head.loc}, {})},
+                    infile, location_manager);
+            }
+            llvm::Value* step_positive = step_is_const
+                ? llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), step_const > 0)
+                : builder->CreateICmpSGT(step_value, zero);
+            llvm::Value* step_negative = step_is_const
+                ? llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), step_const < 0)
+                : builder->CreateICmpSLT(step_value, zero);
+            llvm::Value* pos_guard = builder->CreateAnd(step_positive,
+                builder->CreateICmpSLE(start_value, end_value));
+            llvm::Value* neg_guard = builder->CreateAnd(step_negative,
+                builder->CreateICmpSGE(start_value, end_value));
+            entry_cond = builder->CreateOr(pos_guard, neg_guard);
+            builder->CreateCondBr(entry_cond, loop_prep, loop_orelse);
+        }
+
+        llvm::Value* init_remaining = nullptr;
+        if (!unit_step_path) {
+            start_new_block(loop_prep);
+            llvm::Value* zero = llvm::ConstantInt::get(iv_type, 0, true);
+            llvm::Value* distance_up = builder->CreateSub(end_value, start_value);
+            llvm::Value* distance_down = builder->CreateSub(start_value, end_value);
+            llvm::Value* step_positive = step_is_const
+                ? llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), step_const > 0)
+                : builder->CreateICmpSGT(step_value, zero);
+            llvm::Value* distance = step_is_const
+                ? ((step_const > 0) ? distance_up : distance_down)
+                : builder->CreateSelect(step_positive, distance_up, distance_down);
+            llvm::Value* step_magnitude = step_is_const
+                ? ((step_const > 0) ? step_value : builder->CreateSub(zero, step_value))
+                : builder->CreateSelect(step_positive, step_value,
+                    builder->CreateSub(zero, step_value));
+            init_remaining = builder->CreateUDiv(distance, step_magnitude);
+            builder->CreateBr(loop_body);
+        }
+
+        start_new_block(loop_body);
+        bool use_explicit_iv_phi = compiler_options.po.fast;
+        llvm::PHINode* iv_phi = nullptr;
+        if (use_explicit_iv_phi) {
+            iv_phi = builder->CreatePHI(iv_type, 2, loop_name + ".iv");
+            iv_phi->addIncoming(start_value, unit_step_path ? loop_cond : loop_prep);
+        }
+        llvm::PHINode* remaining_phi = nullptr;
+        if (!unit_step_path) {
+            remaining_phi = builder->CreatePHI(iv_type, 2, loop_name + ".remaining");
+            remaining_phi->addIncoming(init_remaining, loop_prep);
+        }
+        current_goto_scopes.push_back({GoToConstructScope::Kind::DoLoop, nullptr,
+            (const ASR::stmt_t*)(&x)});
+        for (size_t i = 0; i < x.n_body; i++) {
+            this->visit_stmt(*x.m_body[i]);
+        }
+        current_goto_scopes.pop_back();
+        if (LLVM::get_terminator(builder->GetInsertBlock()) == nullptr) {
+            builder->CreateBr(loop_latch);
+        }
+
+        start_new_block(loop_latch);
+        llvm::Value* current_iv = use_explicit_iv_phi ?
+            static_cast<llvm::Value*>(iv_phi) :
+            builder->CreateLoad(iv_type, loop_var_ptr, loop_name + ".iv.mem");
+        // Fortran do-variable updates must stay representable when they execute,
+        // so the semantic loop update can carry NSW. (No user-facing wrap option
+        // currently relaxes this contract.) This does not apply to synthetic
+        // predecrement forms or unsigned trip-count arithmetic.
+        llvm::Value* next_iv = builder->CreateNSWAdd(
+            current_iv, step_value, loop_name + ".next");
+        LLVM::CreateStore(*builder, next_iv, loop_var_ptr);
+        if (unit_step_path) {
+            llvm::Value* last = builder->CreateICmpEQ(current_iv, end_value);
+            if (use_explicit_iv_phi) {
+                iv_phi->addIncoming(next_iv, loop_latch);
+            }
+            builder->CreateCondBr(last, loop_orelse, loop_body);
+        } else {
+            llvm::Value* last = builder->CreateICmpEQ(
+                remaining_phi, llvm::ConstantInt::get(iv_type, 0));
+            llvm::Value* next_remaining = builder->CreateSub(
+                remaining_phi, llvm::ConstantInt::get(iv_type, 1));
+            if (use_explicit_iv_phi) {
+                iv_phi->addIncoming(next_iv, loop_latch);
+            }
+            remaining_phi->addIncoming(next_remaining, loop_latch);
+            builder->CreateCondBr(last, loop_orelse, loop_body);
+        }
+
+        pop_loop_targets();
+
+        if (x.n_orelse > 0) {
+            start_new_block(loop_orelse);
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                this->visit_stmt(*x.m_orelse[i]);
+            }
+            if (LLVM::get_terminator(builder->GetInsertBlock()) == nullptr) {
+                builder->CreateBr(loop_end);
+            }
+        }
+        start_new_block(loop_end);
+
+        strings_to_be_deallocated.reserve(al, saved_strings_n);
+        strings_to_be_deallocated.n = saved_strings_n;
+        strings_to_be_deallocated.p = saved_strings;
+    }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
@@ -17637,9 +17952,12 @@ public:
             free_strings_to_be_deallocated(0);
             return tmp;
         }, [&]() {
+            current_goto_scopes.push_back({GoToConstructScope::Kind::WhileLoop,
+                nullptr, (const ASR::stmt_t*)(&x)});
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
+            current_goto_scopes.pop_back();
         });
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
@@ -17767,19 +18085,26 @@ public:
         auto target_scopes = goto_target_scopes.find(x.m_target_id);
         bool enters_construct = false;
         if (target_scopes != goto_target_scopes.end()) {
-            const std::vector<SymbolTable*> &scopes = target_scopes->second;
+            const std::vector<GoToConstructScope> &scopes = target_scopes->second;
             size_t kept = 0;
-            while (kept < block_cleanups.size() && kept < scopes.size() &&
-                    block_cleanups[kept].symtab == scopes[kept]) {
+            size_t max_kept = std::min(current_goto_scopes.size(), scopes.size());
+            while (kept < max_kept &&
+                    same_goto_scope(current_goto_scopes[kept], scopes[kept])) {
                 kept++;
             }
             // A branch cannot enter a construct from outside it. Semantics
             // makes such a GoTo, which is never executed, for the labels of
             // an assigned GO TO without a label list: a branch into the
-            // BLOCK or ASSOCIATE construct would skip its declarations.
+            // BLOCK/ASSOCIATE or loop construct is rejected here.
             enters_construct = kept < scopes.size();
             if (!enters_construct) {
-                leave_innermost_blocks(kept);
+                size_t kept_blocks = 0;
+                for (size_t i = 0; i < kept; i++) {
+                    if (scopes[i].kind == GoToConstructScope::Kind::SymbolScope) {
+                        kept_blocks++;
+                    }
+                }
+                leave_innermost_blocks(kept_blocks);
             }
         }
         if (enters_construct) {
@@ -30056,7 +30381,17 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     // pipeline has to stop here: continuing would emit an object file for a
     // program the passes just refused to translate.
     bool had_error_before_passes = diagnostics.has_error();
-    pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    {
+        struct ScopedBoolRestore {
+            bool &value;
+            bool saved;
+            ScopedBoolRestore(bool &value_) : value(value_), saved(value_) {}
+            ~ScopedBoolRestore() { value = saved; }
+        };
+        ScopedBoolRestore preserve_do_loops_restore(co.po.preserve_do_loops_for_llvm);
+        co.po.preserve_do_loops_for_llvm = !pass_manager.has_user_defined_passes();
+        pass_manager.apply_passes(al, &asr, co.po, diagnostics);
+    }
     if (!had_error_before_passes && diagnostics.has_error()) {
         return Error();
     }

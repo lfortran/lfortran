@@ -7,8 +7,11 @@ __device__ inline void row_sum_gpu_12(float* a, int __1a, float& r) {
     __gpu_sum_res =   0.00000000000000000e+00f;
     __do_loop_end = __1a;
     __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end)) {
+    while (1) {
         __gpu_sum_k = (__gpu_sum_k + 1);
+        if (((int)(!((__gpu_sum_k <= __do_loop_end))))) {
+            break;
+        }
         __gpu_sum_res = (__gpu_sum_res + a[((int)((((int)1) + (__gpu_sum_k - 1))) - (1))]);
     }
     r = __gpu_sum_res;
@@ -42,8 +45,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float t[10000];
         __do_loop_end = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             t[((int)(k) - (1))] = ((float)(j__dc + k));
         }
         {
@@ -52,8 +58,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             int __gpu_gather_i;
             __do_loop_end = ((((int)120000) + ((int)1)) - 1);
             __gpu_gather_i = (1 - 1);
-            while (((__gpu_gather_i + 1) <= __do_loop_end)) {
+            while (1) {
                 __gpu_gather_i = (__gpu_gather_i + 1);
+                if (((int)(!((__gpu_gather_i <= __do_loop_end))))) {
+                    break;
+                }
                 __gpu_gather[((int)(__gpu_gather_i) - (1))] = xr[((int)(j__dc) - (1)) + (4 * ((int)(__gpu_gather_i) - (1)))];
             }
             row_sum_gpu_12(__gpu_gather, 120000, r);
@@ -70,8 +79,11 @@ __device__ inline void row_sum_device_t_gpu_56(float* a, int __1a, float& r) {
     __gpu_sum_res =   0.00000000000000000e+00f;
     __do_loop_end = __1a;
     __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end)) {
+    while (1) {
         __gpu_sum_k = (__gpu_sum_k + 1);
+        if (((int)(!((__gpu_sum_k <= __do_loop_end))))) {
+            break;
+        }
         __gpu_sum_res = (__gpu_sum_res + a[((int)((((int)1) + (__gpu_sum_k - 1))) - (1))]);
     }
     r = __gpu_sum_res;
@@ -104,8 +116,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         float t[10000];
         __do_loop_end = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             t[((int)(k) - (1))] = ((float)((2 * j__dc1) + k));
         }
         {
@@ -114,8 +129,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
             int __gpu_gather_i;
             __do_loop_end = ((((int)64) + ((int)1)) - 1);
             __gpu_gather_i = (1 - 1);
-            while (((__gpu_gather_i + 1) <= __do_loop_end)) {
+            while (1) {
                 __gpu_gather_i = (__gpu_gather_i + 1);
+                if (((int)(!((__gpu_gather_i <= __do_loop_end))))) {
+                    break;
+                }
                 __gpu_gather[((int)(__gpu_gather_i) - (1))] = xs[((int)(j__dc1) - (1)) + (4 * ((int)(__gpu_gather_i) - (1)))];
             }
             __gpu_scalar_argument = r;
@@ -152,8 +170,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
         float t[10000];
         __do_loop_end = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             t[((int)(k) - (1))] = ((float)((3 * j__dc2) + k));
         }
         {
@@ -162,14 +183,20 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
             float __gpu_alias[60000];
             __do_loop_end = ((((int)60000) + ((int)1)) - 1);
             __gpu_sec_i = (1 - 1);
-            while (((__gpu_sec_i + 1) <= __do_loop_end)) {
+            while (1) {
                 __gpu_sec_i = (__gpu_sec_i + 1);
+                if (((int)(!((__gpu_sec_i <= __do_loop_end))))) {
+                    break;
+                }
                 __gpu_alias[((int)(__gpu_sec_i) - (1))] = w1[((int)((60000 + ((__gpu_sec_i - 1) * (-(1))))) - (1)) + (60000 * ((int)(j__dc2) - (1)))];
             }
             __do_loop_end1 = ((((int)60000) + ((int)1)) - 1);
             __gpu_sec_i1 = (1 - 1);
-            while (((__gpu_sec_i1 + 1) <= __do_loop_end1)) {
+            while (1) {
                 __gpu_sec_i1 = (__gpu_sec_i1 + 1);
+                if (((int)(!((__gpu_sec_i1 <= __do_loop_end1))))) {
+                    break;
+                }
                 w1[((int)(__gpu_sec_i1) - (1)) + (60000 * ((int)(j__dc2) - (1)))] = __gpu_alias[((int)(__gpu_sec_i1) - (1))];
             }
         }
@@ -204,8 +231,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
         float t[10000];
         __do_loop_end = m;
         k = (1 - 1);
-        while (((k + 1) <= __do_loop_end)) {
+        while (1) {
             k = (k + 1);
+            if (((int)(!((k <= __do_loop_end))))) {
+                break;
+            }
             t[((int)(k) - (1))] = ((float)((4 * j__dc3) + k));
         }
         {
@@ -214,14 +244,20 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
             float* __gpu_alias = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 120000;
             __do_loop_end = ((((int)120000) + ((int)1)) - 1);
             __gpu_sec_i2 = (1 - 1);
-            while (((__gpu_sec_i2 + 1) <= __do_loop_end)) {
+            while (1) {
                 __gpu_sec_i2 = (__gpu_sec_i2 + 1);
+                if (((int)(!((__gpu_sec_i2 <= __do_loop_end))))) {
+                    break;
+                }
                 __gpu_alias[((int)(__gpu_sec_i2) - (1))] = w2[((int)((120000 + ((__gpu_sec_i2 - 1) * (-(1))))) - (1)) + (120000 * ((int)(j__dc3) - (1)))];
             }
             __do_loop_end1 = ((((int)120000) + ((int)1)) - 1);
             __gpu_sec_i3 = (1 - 1);
-            while (((__gpu_sec_i3 + 1) <= __do_loop_end1)) {
+            while (1) {
                 __gpu_sec_i3 = (__gpu_sec_i3 + 1);
+                if (((int)(!((__gpu_sec_i3 <= __do_loop_end1))))) {
+                    break;
+                }
                 w2[((int)(__gpu_sec_i3) - (1)) + (120000 * ((int)(j__dc3) - (1)))] = __gpu_alias[((int)(__gpu_sec_i3) - (1))];
             }
         }

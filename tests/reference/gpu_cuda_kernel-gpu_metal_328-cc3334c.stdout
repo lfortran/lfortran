@@ -12,8 +12,11 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
     int __libasr_index_0_3;
     __do_loop_end = ((((int)2) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
+        if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+            break;
+        }
         r[((int)(__libasr_index_0_) - (1))] = ((float)n);
     }
     if ((((n) % (2)) == 0)) {
@@ -25,16 +28,22 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
         __libasr_index_0_2 = 1;
         __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __libasr_index_0_1 = (((int)1) - 1);
-        while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
+        while (1) {
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+            if (((int)(!((__libasr_index_0_1 <= __do_loop_end1))))) {
+                break;
+            }
             r[((int)(__libasr_index_0_1) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__libasr_index_0_2) - (1))];
             __libasr_index_0_2 = (__libasr_index_0_2 + 1);
         }
     } else {
         __do_loop_end2 = ((((int)2) + ((int)1)) - 1);
         __libasr_index_0_3 = (((int)1) - 1);
-        while (((__libasr_index_0_3 + 1) <= __do_loop_end2)) {
+        while (1) {
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+            if (((int)(!((__libasr_index_0_3 <= __do_loop_end2))))) {
+                break;
+            }
             r[((int)(__libasr_index_0_3) - (1))] = (-(((float)n)));
         }
     }
@@ -63,16 +72,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + 2 - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
+            if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+                break;
+            }
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = (2);
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+        while (1) {
             __gpu_sum_k = (__gpu_sum_k + 1);
+            if (((int)(!((__gpu_sum_k <= __do_loop_end1))))) {
+                break;
+            }
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         results[((int)(i__dc) - (1))] = __gpu_sum_res;
@@ -86,14 +101,20 @@ __device__ inline void reallocated_result_device_t_gpu_53(int n, float* r) {
     int __libasr_index_0_1;
     __do_loop_end = ((((int)2) + ((int)1)) - 1);
     __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+    while (1) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
+        if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+            break;
+        }
         r[((int)(__libasr_index_0_) - (1))] = (-(((float)n)));
     }
     __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
     __libasr_index_0_1 = (((int)1) - 1);
-    while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
+    while (1) {
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        if (((int)(!((__libasr_index_0_1 <= __do_loop_end1))))) {
+            break;
+        }
         r[((int)(__libasr_index_0_1) - (1))] = ((float)n);
     }
 }
@@ -121,16 +142,22 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + 2 - 1);
         __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        while (1) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
+            if (((int)(!((__libasr_index_0_ <= __do_loop_end))))) {
+                break;
+            }
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         __do_loop_end1 = (2);
         __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+        while (1) {
             __gpu_sum_k = (__gpu_sum_k + 1);
+            if (((int)(!((__gpu_sum_k <= __do_loop_end1))))) {
+                break;
+            }
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         reallocated[((int)(i__dc1) - (1))] = __gpu_sum_res;

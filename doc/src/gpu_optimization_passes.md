@@ -324,8 +324,7 @@ do while (t0 < n)                 ! s iterations of the nest at a time
 ```
 
 and then sets the DO variables to the values the original nest leaves in
-them (the last iteration's, or one step past it with
-`--use-loop-variable-after-loop`), so that the result does not depend on
+them (one step past the last iteration's), so that the result does not depend on
 the run-time choice between the skewed and the original loop.
 
 The window is computed in `integer(8)`, whatever the kinds of the loop

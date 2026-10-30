@@ -399,8 +399,12 @@ namespace LCompilers {
             Allocator& al, ASR::TranslationUnit_t& unit,
             SymbolTable*& global_scope, Location& loc);
 
+        void normalize_doloop_head(Allocator &al, const ASR::DoLoop_t &loop,
+                                   SymbolTable* current_scope,
+                                   ASR::do_loop_head_t &normalized_head);
+
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp=-1, bool use_loop_variable_after_loop=false,
+                                         int comp=-1,
                                          SymbolTable* current_scope=nullptr,
                                          bool exact_unit_step_exit=false);
 
