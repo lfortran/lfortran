@@ -176,6 +176,10 @@ jobs:
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
+            # GCC 15.2 loses saved deferred character lengths (GCC PR120713).
+            micromamba install -y 'gfortran>=15.3,<16'
+            export FC="$CONDA_PREFIX/bin/gfortran"
+            "$FC" --version
             cd integration_tests
             ./run_tests.py -b gfortran
 
