@@ -1027,7 +1027,14 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string array = src;
         std::string out = array;
         ASR::dimension_t* m_dims;
-        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_v);
+        ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+        // Explicit-shape dummies index the borrowed storage in their declared
+        // coordinates, including a ResultArgument backed by a unit-bound slot.
+        // Allocatable/pointer bounds instead belong to the owning descriptor.
+        bool declared_shape = !ASRUtils::is_allocatable_or_pointer(type) &&
+            ASR::is_a<ASR::Var_t>(*x.m_v) &&
+            ASRUtils::is_arg_dummy(ASRUtils::EXPR2VAR(x.m_v)->m_intent);
         std::string flat;
         for (size_t i=0; i<x.n_args; i++) {
             if (x.m_args[i].m_right) {
@@ -1035,13 +1042,22 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             } else {
                 src = "/* FIXME right index */";
             }
-            std::string term = "((" + src + ") - " + array + "->dims["
-                + std::to_string(i) + "].lower_bound)";
+            std::string index = src;
+            std::string lower = array + "->dims[" + std::to_string(i) + "].lower_bound";
+            std::string length = array + "->dims[" + std::to_string(i) + "].length";
+            if (declared_shape && m_dims[i].m_length) {
+                if (m_dims[i].m_start) {
+                    visit_expr(*m_dims[i].m_start);
+                    lower = "(" + src + ")";
+                }
+                visit_expr(*m_dims[i].m_length);
+                length = src;
+            }
+            std::string term = "((" + index + ") - " + lower + ")";
             if (i == 0) {
                 flat = term;
             } else {
-                flat = "(((" + flat + ")*(" + array + "->dims["
-                    + std::to_string(i) + "].length)) + " + term + ")";
+                flat = "(((" + flat + ")*(" + length + ")) + " + term + ")";
             }
         }
         out += "->data->operator[](" + flat + ")";

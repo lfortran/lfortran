@@ -136,6 +136,16 @@ remain eligible. The destination itself is checked along its entire
 designator: a nonpointer final component reached through an intervening
 pointer can still alias storage accessible to the callee.
 
+### Explicit-shape result coordinates
+
+On the C++ descriptor path, an explicit-shape result dummy retains its
+declared coordinates, while the independent caller slot retains the
+unit-bound function-expression coordinates. Element addressing uses the
+explicit dummy dimensions already recorded in ASR, not the caller slot's
+lower bounds. The same rule applies to ordinary explicit-shape dummies.
+No descriptor capture or rebasing is needed, and allocatable result
+allocation, bounds and ownership remain with the caller's descriptor.
+
 ### Runtime character result metadata
 
 Call preparation in `array_struct_temporary` saves result specification values
