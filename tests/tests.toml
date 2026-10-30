@@ -3686,6 +3686,12 @@ run = true
 filename = "../integration_tests/realloc_lhs_22.f90"
 run = true
 
+# The PACK result owns storage, but the user assignment must not emit ReAlloc.
+[[test]]
+filename = "../integration_tests/intrinsic_pack_allocatable_03.f90"
+pass = "array_struct_temporary,array_op"
+options = "--std=f23 --disable-realloc-lhs-arrays"
+
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true

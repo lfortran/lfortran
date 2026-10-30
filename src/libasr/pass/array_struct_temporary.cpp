@@ -5372,13 +5372,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 target != exprs_with_target.end() &&
                 target->second.second == targetType::OriginalTarget &&
                 ASRUtils::is_allocatable(target->second.first)) {
-            ASR::expr_t* destination = target->second.first;
             // PACK's output dummy does not allocate. Finish its value in
-            // independent storage before resizing a possibly aliased target.
+            // independent storage before the ordinary assignment applies
+            // user-LHS reallocation policy to a possibly aliased target.
             force_replace_current_expr_for_array(current_expr, name_hint, al,
                 current_body, current_scope, exprs_with_target, false);
-            insert_allocate_stmt_for_array(al, destination, *current_expr,
-                current_body, nullptr, true);
             return;
         }
         if (!(is_current_expr_linked_to_target(exprs_with_target, current_expr) || ASRUtils::is_array(x->m_type))) {
