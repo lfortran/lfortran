@@ -880,6 +880,8 @@ R"(
     }
 
     void visit_Program(const ASR::Program_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
         // Topologically sort all program functions
         // and then define them in the right order
         std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(x.m_symtab);
@@ -965,6 +967,7 @@ R"(    // Initialise Numpy
                 + decl + body
                 + indent1 + "return 0;\n}\n";
         indentation_level -= 2;
+        current_scope = current_scope_copy;
     }
 
     template <typename T>
