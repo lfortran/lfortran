@@ -935,7 +935,7 @@ struct InputChannel::Impl {
                 std::lock_guard<std::mutex> lock(mutex);
                 endpoint.watch(fds, owners);
             }
-            const int n = poll_sockets(fds, 100);
+            const int n = poll_sockets(fds, 20);
             std::lock_guard<std::mutex> lock(mutex);
             for (size_t i = 0; n > 0 && i < fds.size(); i++) {
                 if (fds[i].revents) endpoint.progress(fds[i], owners[i].second);
@@ -1781,7 +1781,7 @@ bool stop_with_parent(long long parent, const std::string &connection_file)
         // As ipykernel does: once the parent has exited, this process has
         // another parent.
         while (getppid() == static_cast<pid_t>(parent)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 #endif
         std::remove(connection_file.c_str());
@@ -1885,7 +1885,7 @@ public:
 void answer_heartbeats(Endpoint &beats, const std::atomic<bool> &stop)
 {
     while (!stop) {
-        progress({&beats}, 250);
+        progress({&beats}, 20);
         for (auto &peer : beats.peers) {
             std::vector<std::string> frames;
             while (peer->next(frames)) peer->send(frames);
