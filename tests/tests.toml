@@ -102,6 +102,14 @@ pass = "closure_lowering"
 options = "--cumulative"
 
 [[test]]
+filename = "../integration_tests/procedure_bounds_01.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/procedure_bounds_02.f90"
+run = true
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true

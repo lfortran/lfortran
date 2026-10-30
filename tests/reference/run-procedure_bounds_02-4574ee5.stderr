@@ -1,0 +1,11 @@
+runtime error: Array shape mismatch in subroutine 'f'. Tried to match size 2 of dimension 1 of argument number 1, but expected size is 3
+  --> tests/../integration_tests/procedure_bounds_02.f90:16:16
+   |
+16 |     print *, f(values)
+   |                ^^^^^^
+  |
+4 |     integer function callback(values)
+  |                      ~~~~~~~~ Here
+  |
+5 |         integer, intent(in) :: values(3)
+  |                                       ~ Parameter is size 3, argument is size 2

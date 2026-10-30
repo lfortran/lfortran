@@ -4979,6 +4979,11 @@ RUN(NAME procedure_61 LABELS gfortran llvm EXTRAFILES procedure_61_module.f90 EX
 RUN(NAME procedure_62 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_63 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_64 LABELS gfortran llvm)
+RUN(NAME procedure_65 LABELS gfortran llvm)
+# GFortran does not check the explicit-shape dummy at the call site.
+# --fast deliberately disables bounds checking.
+RUN(NAME procedure_bounds_01 FAIL NO_FAST LABELS llvm)
+RUN(NAME procedure_bounds_02 FAIL NO_FAST LABELS llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)

@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in subroutine 'p'. Tried to match size 2 of dimension 1 of argument number 1, but expected size is 3
+  --> tests/../integration_tests/procedure_bounds_01.f90:13:8
+   |
+13 | call p(values)
+   |        ^^^^^^
+  |
+5 |         integer, intent(inout) :: values(3)
+  |                                          ~ Parameter is size 3, argument is size 2

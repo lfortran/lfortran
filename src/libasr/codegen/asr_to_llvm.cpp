@@ -28646,7 +28646,6 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        if (call_procedure_value(x)) return;
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(x.m_name));
@@ -28659,6 +28658,7 @@ public:
         if (compiler_options.po.bounds_checking) {
             bounds_check_call(x, x.m_strict_bounds_checking);
         }
+        if (call_procedure_value(x)) return;
 
         std::vector<llvm::Value*> args;
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -29277,17 +29277,6 @@ public:
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if ( compiler_options.emit_debug_info ) debug_emit_loc(x);
-        if (call_procedure_value(x)) {
-            auto *interface = ASRUtils::get_function(x.m_name);
-            if (interface->m_return_var) {
-                auto *type = ASRUtils::expr_type(interface->m_return_var);
-                if (ASR::is_a<ASR::Complex_t>(*type)) {
-                    tmp = llvm_utils->complex_function_return_abi_to_internal(tmp, type);
-                }
-            }
-            wrap_string_function_result(x.m_type);
-            return;
-        }
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
             ASR::Function_t* routine = ASR::down_cast<ASR::Function_t>(
                         ASRUtils::symbol_get_past_external(x.m_name));
@@ -29303,6 +29292,17 @@ public:
         // Generate runtime error if array arguments' shape doesn't match
         if (compiler_options.po.bounds_checking) {
             bounds_check_call(x);
+        }
+        if (call_procedure_value(x)) {
+            auto *interface = ASRUtils::get_function(x.m_name);
+            if (interface->m_return_var) {
+                auto *type = ASRUtils::expr_type(interface->m_return_var);
+                if (ASR::is_a<ASR::Complex_t>(*type)) {
+                    tmp = llvm_utils->complex_function_return_abi_to_internal(tmp, type);
+                }
+            }
+            wrap_string_function_result(x.m_type);
+            return;
         }
 
         std::vector<llvm::Value*> args;

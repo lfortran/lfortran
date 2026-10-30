@@ -1,0 +1,13 @@
+{
+    "basename": "run-procedure_bounds_01-9b28e29",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/procedure_bounds_01.f90",
+    "infile_hash": "13730d85d2730930b4d48f28f72056ed7182538be55093a059e04278",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-procedure_bounds_01-9b28e29.stderr",
+    "stderr_hash": "735cb17abcb5f5a2077eea09ca712f63bb80c25c5612d0516a5f754f",
+    "returncode": 1
+}
