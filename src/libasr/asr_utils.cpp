@@ -5141,9 +5141,14 @@ bool constructor_has_runtime_extent(ASR::expr_t* expr) {
         return constructor_has_runtime_extent(
             ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
     } else if (ASRUtils::is_array(ASRUtils::expr_type(expr))) {
+        // SHAPE has one element per source dimension, independently of
+        // the source's runtime extents. Its values need not be constant.
+        bool shape = ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr) &&
+            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr)->m_arr_intrinsic_id ==
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape);
         return !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr)) ||
             !(ASR::is_a<ASR::Var_t>(*expr) ||
-              ASR::is_a<ASR::ArrayConstant_t>(*expr));
+              ASR::is_a<ASR::ArrayConstant_t>(*expr) || shape);
     }
     return false;
 }
