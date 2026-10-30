@@ -299,7 +299,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Give array-valued calls their owning temporaries before planning
     // inlining: a deferred result nested in arithmetic has no caller-side
     // shape until its allocation-producing body is spliced into that owner.
-    hoist_array_function_results(work);
+    std::vector<std::string> call_arg_names;
+    collect_kernel_arg_names(work, enclosing_block_scopes, call_arg_names);
+    hoist_array_function_results(work, call_arg_names);
 
     // What can be asked of the loop as it was written is asked before the
     // inline_* helpers below rewrite the body, so that an error names what
