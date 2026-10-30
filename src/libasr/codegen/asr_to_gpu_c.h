@@ -6197,6 +6197,10 @@ public:
             src << "exp(";
             visit_expr(f->m_args[0]);
             src << ")";
+        } else if (id == static_cast<int64_t>(IEF::Log)) {
+            src << "log(";
+            visit_expr(f->m_args[0]);
+            src << ")";
         } else if (id == static_cast<int64_t>(IEF::Mod)) {
             // mod(a,b) in Fortran → a % b for integers, fmod for reals
             ASR::ttype_t *type = ASRUtils::expr_type(f->m_args[0]);

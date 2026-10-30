@@ -63,6 +63,13 @@ components are all offloaded, or are an error until the pipeline supports them.
 Adding an entry to the list is a design decision, not a way to make a failing
 loop compile.
 
+### Scalar logarithms
+
+Real `log` in a kernel or a device-only procedure retains its intrinsic
+identity through the intrinsic-function pass and lowers to the device's native
+`log` operation. This includes transitive helper calls. Host procedures retain
+their normal runtime lowering; Metal still requires `real(real32)`.
+
 ## The unsupported-construct check
 
 The check decides from the program as written, before any lowering, whether a
