@@ -365,7 +365,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             this_tuple: str,
             that_tuple: str,
             this_is_pointer: bool = False,
-            that_is_pointer: bool = False
+            that_is_pointer: bool = False,
+            init_tuple: Optional[Callable[[str], None]] = None
     ) -> None:
         item_specs = tuple_spec["items"]
         for item_spec in item_specs:
@@ -380,7 +381,10 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.type_declaration_options(wrap_ptr=False):
                 tuple_type = self.get_type_declaration(tuple_spec)
                 this_expr = f'std::make_unique<{tuple_type}>({this_expr})'
-        self.gen_assign(this_tuple, this_expr)
+        if init_tuple is None:
+            self.gen_assign(this_tuple, this_expr)
+        else:
+            init_tuple(this_expr)
 
     def gen_struct_copy_tuple_1(
             self,
@@ -1079,13 +1083,18 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                         )
                     )
                 case LspSymbolKind.TUPLE:
+                    with self.type_declaration_options(wrap_ptr=False):
+                        tuple_type = self.get_type_declaration(symbol.spec)
                     that_tuple = f'{qualifier}{field_name}'
                     self.gen_copy_tuple_1(
                         symbol.spec,
                         f'_{field_name}',
                         that_tuple,
                         this_is_pointer=True,
-                        that_is_pointer=self._type_declaration_wrap_ptr
+                        that_is_pointer=self._type_declaration_wrap_ptr,
+                        init_tuple=lambda value: self.update_union_field(
+                            f'_{field_name}', tuple_type, value
+                        )
                     )
                 case _:
                     raise ValueError(
@@ -1211,7 +1220,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             union_symbol: LspSymbol,
             union_name: str,
             enum_name: str,
-            item_specs: List[LspSpec]
+            item_specs: List[LspSpec],
+            has_pointer: bool
     ) -> None:
         with self.gen_fn(
                 f'{union_name}::operator=',
@@ -1221,18 +1231,24 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 ],
         ):
             with self.gen_if('this != &other'):
-                self.write('_type = other._type;')
-                with self.type_declaration_options(
-                        wrap_ptr=True,
-                        wrap_nested_ptr=False,
-                        string_ptr=True,
-                        nested_string_ptr=False,
-                ):
-                    self.generate_union_copy_body(
-                        union_symbol,
-                        enum_name,
-                        item_specs
-                    )
+                if has_pointer:
+                    # The source may be recursively owned by this union.
+                    self.write(f'{union_name} copy(other);')
+                    self.gen_call('reset')
+                    self.write('*this = std::move(copy);')
+                else:
+                    self.write('_type = other._type;')
+                    with self.type_declaration_options(
+                            wrap_ptr=True,
+                            wrap_nested_ptr=False,
+                            string_ptr=True,
+                            nested_string_ptr=False,
+                    ):
+                        self.generate_union_copy_body(
+                            union_symbol,
+                            enum_name,
+                            item_specs
+                        )
             self.write('return *this;')
         self.newline()
 
@@ -1453,7 +1469,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
         self.gen_union_move_constructor(union_name, enum_name, item_specs)
         self.gen_union_copy_constructor(union_symbol, union_name, enum_name, item_specs)
         self.gen_union_move_assign(union_name, enum_name, item_specs)
-        self.gen_union_copy_assign(union_symbol, union_name, enum_name, item_specs)
+        self.gen_union_copy_assign(union_symbol, union_name, enum_name, item_specs, has_pointer)
         if has_pointer:
             self.gen_union_reset(union_symbol, enum_name)
         self.generate_union_tag_getter(union_name)
