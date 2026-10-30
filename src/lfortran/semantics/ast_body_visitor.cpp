@@ -767,6 +767,9 @@ public:
                 if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
                     ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                     omp_region_body.push_back(tmp_stmt);
+                } else if (!tmp_vec.empty()) {
+                    for (auto &x : tmp_vec) omp_region_body.push_back(ASRUtils::STMT(x));
+                    tmp_vec.clear();
                 }
             } else {
                 if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
@@ -4002,13 +4005,16 @@ public:
                                   sign, encoding, stream, iomsg, round,
                                   pending, asynchronous);
         if (size_target) {
-            current_body->push_back(al, ASRUtils::STMT(tmp));
+            // Return the query and conversion together to the enclosing region.
+            tmp_vec.push_back(tmp);
             ASR::expr_t *value = size;
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                 ASRUtils::expr_type(value),
                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(size_target)), diag);
             tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
                 size_target, value, nullptr, false, false);
+            tmp_vec.push_back(tmp);
+            tmp = nullptr;
         }
     }
 

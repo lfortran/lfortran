@@ -23777,7 +23777,7 @@ public:
         llvm::Value *opened_actual = nullptr;
         if (x.m_opened) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_opened));
             this->visit_expr_wrapper(x.m_opened, true);
             opened_actual = tmp;
             ptr_loads = ptr_loads_copy;
@@ -23787,7 +23787,7 @@ public:
 
         if (x.m_size) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_size));
             this->visit_expr_wrapper(x.m_size, false);
             ptr_loads = ptr_loads_copy;
             size_val = tmp;
