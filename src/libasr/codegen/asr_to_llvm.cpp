@@ -11695,6 +11695,7 @@ public:
             uint64_t const h = get_hash((ASR::asr_t*)v);
             LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
             llvm::Value* const ptr = llvm_symtab[h];
+            if (compiler_options.emit_debug_info) debug_emit_loc(*v);
             llvm_symtab_finalizer.call_array_final_of_intent_out(ptr, v->m_type, struct_sym);
         }
     }
