@@ -190,6 +190,11 @@ public:
                     ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(x_ptr->m_type_declaration);
                     if (decl_sym && ASR::is_a<ASR::Function_t>(*decl_sym)) {
                         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(decl_sym);
+                        if (ASRUtils::is_bare_implicit_interface(*func)) {
+                            // This declaration has no ABI to lower and may not
+                            // carry the result type of the procedure variable.
+                            return;
+                        }
                         ASR::ttype_t* new_type = ASRUtils::import_procedure_type(al,
                             func->m_function_signature, x.m_parent_symtab);
                         if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {

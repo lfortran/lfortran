@@ -81,6 +81,12 @@ symbols visible only in its declaration scope (for example a module function
 used as an array bound). Reusing the type directly would leave those references
 out of scope in a derived-type constructor.
 
+Bare implicit-interface declarations have no ABI to lower. Keep the result
+type recorded on their procedure variables rather than replacing it with the
+declaration's potentially untyped signature, including in `ENTRY` wrappers.
+Semantic analysis refreshes each wrapper's signature from its own dummy
+declarations and applies the usual late-procedure-actual casts before lowering.
+
 ### Result assignment destinations
 
 The assignment target can be used as the result argument only when the

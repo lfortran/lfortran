@@ -6694,23 +6694,14 @@ public:
                 }
             }
 
-            // Step 2: Update wrapper function signature arg types
-            ASR::FunctionType_t* wrapper_ftype = ASR::down_cast<ASR::FunctionType_t>(
-                wrapper_func->m_function_signature);
-            ASR::FunctionType_t* master_ftype = ASR::down_cast<ASR::FunctionType_t>(
-                master_func->m_function_signature);
-            for (size_t i = 0; i < wrapper_func->n_args; i++) {
-                ASR::Var_t* w_var = ASR::down_cast<ASR::Var_t>(wrapper_func->m_args[i]);
-                std::string w_arg_name = ASRUtils::symbol_name(w_var->m_v);
-                for (auto &[idx, arg_name]: func_type_args) {
-                    if (w_arg_name == arg_name && i < wrapper_ftype->n_arg_types) {
-                        if (idx - 1 < master_ftype->n_arg_types) {
-                            wrapper_ftype->m_arg_types[i] = master_ftype->m_arg_types[idx - 1];
-                        }
-                        break;
-                    }
-                }
-            }
+            // These dummies became procedures after calls to the wrapper
+            // could have been built. Reuse the late-actual cast normalization.
+            ASR::FunctionType_t* wrapper_ftype = ASRUtils::get_FunctionType(wrapper_func);
+            wrapper_func->m_function_signature = ASRUtils::TYPE(
+                ASRUtils::make_FunctionType_t_util(al, wrapper_ftype->base.base.loc,
+                    wrapper_func->m_args, wrapper_func->n_args,
+                    wrapper_func->m_return_var, wrapper_ftype, wrapper_func->m_symtab));
+            procedures_with_late_procedure_dummies.insert(wrapper_sym);
 
             // Step 3: Fix call arguments in wrapper body
             // The wrapper body has a SubroutineCall to the master function.
