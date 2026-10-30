@@ -29,8 +29,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_arr_0;
     int __lb_arr_0;
     int __loop_end_0;
-    int __workspace_extent;
-    int __workspace_extent1;
+    int __gpu_heap_cap_r4;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -40,16 +39,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ __sizes_arr_v,
     float* __restrict__ out,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __restrict__ __workspace_7,
-    float* __restrict__ __workspace_8)
+    float* __restrict__ __gpu_heap_r4,
+    int* __restrict__ __gpu_heap_state,
+    int* __restrict__ __gpu_stop_status,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int n = __scalar_args.n;
     int __lb_arr_0 = __scalar_args.__lb_arr_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __workspace_extent = __scalar_args.__workspace_extent;
-    int __workspace_extent1 = __scalar_args.__workspace_extent1;
+    int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     int __flat_idx;
+    float* __gpu_heap_view___libasr_created__subroutine_from_function_;
     int __gpu_sec_i;
     int i__dc;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
@@ -60,24 +60,86 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __do_loop_end;
         int __do_loop_end1;
+        int __do_loop_end2;
+        int __gpu_heap___libasr_created__function_call_get_v_base;
+        int __gpu_heap___libasr_created__function_call_get_v_lb1;
+        int __gpu_heap___libasr_created__function_call_get_v_n1;
+        int __gpu_heap___libasr_created__subroutine_from_function__base;
+        int __gpu_heap___libasr_created__subroutine_from_function__lb1;
+        int __gpu_heap___libasr_created__subroutine_from_function__n1;
+        int __gpu_heap_y_base;
+        int __gpu_heap_y_lb1;
+        int __gpu_heap_y_n1;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        float* y = __workspace_8 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
+        __gpu_heap___libasr_created__function_call_get_v_base = -1;
+        __gpu_heap___libasr_created__subroutine_from_function__base = -1;
+        __gpu_heap_y_base = -1;
+        __gpu_heap_y_lb1 = 1;
+        __gpu_heap_y_n1 = __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0];
+        __gpu_heap_y_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_y_n1);
+        if ((__gpu_heap_y_base > (__gpu_heap_cap_r4 - __gpu_heap_y_n1))) {
+            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                __gpu_stop_status[((int)(1) - (1))] = 1;
+            }
+            return;
+        }
         __libasr_created__result_metadata_ = __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0];
-        get_v_gpu_17(arr[((int)(i__dc) - (__lb_arr_0))], __data_arr_v + __offsets_arr_v[((int)(i__dc) - (__lb_arr_0))], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 1], __libasr_created__subroutine_from_function_);
-        __libasr_index_0_1 = 1;
-        __do_loop_end = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (__lb_arr_0))) * 2 + 0]);
-        __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        __gpu_heap___libasr_created__function_call_get_v_base = -1;
+        __gpu_heap___libasr_created__function_call_get_v_lb1 = 1;
+        __gpu_heap___libasr_created__function_call_get_v_n1 = max(0, __libasr_created__result_metadata_);
+        __gpu_heap___libasr_created__function_call_get_v_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_get_v_n1);
+        if ((__gpu_heap___libasr_created__function_call_get_v_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_get_v_n1))) {
+            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                __gpu_stop_status[((int)(1) - (1))] = 2;
+            }
+            return;
+        }
+        __gpu_heap___libasr_created__subroutine_from_function__base = -1;
+        __gpu_heap___libasr_created__subroutine_from_function__lb1 = 1;
+        __gpu_heap___libasr_created__subroutine_from_function__n1 = max(0, __libasr_created__result_metadata_);
+        __gpu_heap___libasr_created__subroutine_from_function__base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__subroutine_from_function__n1);
+        if ((__gpu_heap___libasr_created__subroutine_from_function__base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__subroutine_from_function__n1))) {
+            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                __gpu_stop_status[((int)(1) - (1))] = 3;
+            }
+            return;
+        }
+        __gpu_heap_view___libasr_created__subroutine_from_function_ = __gpu_heap_r4 + ((int)((__gpu_heap___libasr_created__subroutine_from_function__base + 1)) - (1));
+        get_v_gpu_17(arr[((int)(i__dc) - (__lb_arr_0))], __data_arr_v + __offsets_arr_v[((int)(i__dc) - (__lb_arr_0))], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 1], __gpu_heap_view___libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = __gpu_heap___libasr_created__subroutine_from_function__lb1;
+        __do_loop_end = ((__gpu_heap___libasr_created__function_call_get_v_lb1 + __gpu_heap___libasr_created__function_call_get_v_n1) - 1);
+        __libasr_index_0_2 = (__gpu_heap___libasr_created__function_call_get_v_lb1 - 1);
+        while (((__libasr_index_0_2 + 1) <= __do_loop_end)) {
+            __libasr_index_0_2 = (__libasr_index_0_2 + 1);
+            __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__function_call_get_v_base + 1) + (__libasr_index_0_2 - __gpu_heap___libasr_created__function_call_get_v_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__subroutine_from_function__base + 1) + (__libasr_index_0_3 - __gpu_heap___libasr_created__subroutine_from_function__lb1))) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
+        if (((int)(!(((int)((__gpu_heap_y_base >= 0) && (__gpu_heap_y_n1 == max(0, __gpu_heap___libasr_created__function_call_get_v_n1)))))))) {
+            __gpu_heap_y_lb1 = 1;
+            __gpu_heap_y_n1 = max(0, __gpu_heap___libasr_created__function_call_get_v_n1);
+            __gpu_heap_y_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_y_n1);
+            if ((__gpu_heap_y_base > (__gpu_heap_cap_r4 - __gpu_heap_y_n1))) {
+                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                    __gpu_stop_status[((int)(1) - (1))] = 4;
+                }
+                return;
+            }
+        }
+        __libasr_index_0_1 = __gpu_heap___libasr_created__function_call_get_v_lb1;
+        __do_loop_end1 = ((__gpu_heap_y_lb1 + __gpu_heap_y_n1) - 1);
+        __libasr_index_0_ = (__gpu_heap_y_lb1 - 1);
+        while (((__libasr_index_0_ + 1) <= __do_loop_end1)) {
             __libasr_index_0_ = (__libasr_index_0_ + 1);
-            y[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
+            __gpu_heap_r4[((int)(((__gpu_heap_y_base + 1) + (__libasr_index_0_ - __gpu_heap_y_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__function_call_get_v_base + 1) + (__libasr_index_0_1 - __gpu_heap___libasr_created__function_call_get_v_lb1))) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
-        __do_loop_end1 = n;
+        __do_loop_end2 = n;
         __gpu_sec_i = (1 - 1);
-        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+        while (((__gpu_sec_i + 1) <= __do_loop_end2)) {
             __gpu_sec_i = (__gpu_sec_i + 1);
             out[((int)(__gpu_sec_i) - (1))] = f_gpu_16(z[((int)(__gpu_sec_i) - (1))]);
         }

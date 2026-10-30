@@ -5,11 +5,11 @@
             __lfortran_gpu_kernel_0:
                 (Function
                     (SymbolTable
-                        5
+                        7
                         {
                             __dim_a_0:
                                 (Variable
-                                    5
+                                    7
                                     __dim_a_0
                                     []
                                     InOut
@@ -35,7 +35,7 @@
                                 ),
                             __dim_b_0:
                                 (Variable
-                                    5
+                                    7
                                     __dim_b_0
                                     []
                                     InOut
@@ -61,7 +61,7 @@
                                 ),
                             __flat_idx:
                                 (Variable
-                                    5
+                                    7
                                     __flat_idx
                                     []
                                     Local
@@ -87,7 +87,7 @@
                                 ),
                             __lb_a_0:
                                 (Variable
-                                    5
+                                    7
                                     __lb_a_0
                                     []
                                     InOut
@@ -113,7 +113,7 @@
                                 ),
                             __lb_b_0:
                                 (Variable
-                                    5
+                                    7
                                     __lb_b_0
                                     []
                                     InOut
@@ -139,14 +139,14 @@
                                 ),
                             __libasr_extent_a_1:
                                 (Variable
-                                    5
+                                    7
                                     __libasr_extent_a_1
                                     [__dim_a_0]
                                     Local
                                     (IntrinsicElementalFunction
                                         Max
                                         [(IntegerConstant 0 (Integer 4) Decimal)
-                                        (Var 5 __dim_a_0)]
+                                        (Var 7 __dim_a_0)]
                                         0
                                         (Integer 4)
                                         ()
@@ -172,14 +172,14 @@
                                 ),
                             __libasr_extent_b_1:
                                 (Variable
-                                    5
+                                    7
                                     __libasr_extent_b_1
                                     [__dim_b_0]
                                     Local
                                     (IntrinsicElementalFunction
                                         Max
                                         [(IntegerConstant 0 (Integer 4) Decimal)
-                                        (Var 5 __dim_b_0)]
+                                        (Var 7 __dim_b_0)]
                                         0
                                         (Integer 4)
                                         ()
@@ -205,11 +205,11 @@
                                 ),
                             __libasr_lbound_a_1:
                                 (Variable
-                                    5
+                                    7
                                     __libasr_lbound_a_1
                                     [__lb_a_0]
                                     Local
-                                    (Var 5 __lb_a_0)
+                                    (Var 7 __lb_a_0)
                                     ()
                                     Default
                                     (Integer 4)
@@ -231,11 +231,11 @@
                                 ),
                             __libasr_lbound_b_1:
                                 (Variable
-                                    5
+                                    7
                                     __libasr_lbound_b_1
                                     [__lb_b_0]
                                     Local
-                                    (Var 5 __lb_b_0)
+                                    (Var 7 __lb_b_0)
                                     ()
                                     Default
                                     (Integer 4)
@@ -257,7 +257,7 @@
                                 ),
                             __loop_end_0:
                                 (Variable
-                                    5
+                                    7
                                     __loop_end_0
                                     []
                                     InOut
@@ -283,7 +283,7 @@
                                 ),
                             a:
                                 (Variable
-                                    5
+                                    7
                                     a
                                     [__libasr_lbound_a_1
                                     __libasr_extent_a_1]
@@ -293,8 +293,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 5 __libasr_lbound_a_1)
-                                        (Var 5 __libasr_extent_a_1))]
+                                        [((Var 7 __libasr_lbound_a_1)
+                                        (Var 7 __libasr_extent_a_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -316,7 +316,7 @@
                                 ),
                             b:
                                 (Variable
-                                    5
+                                    7
                                     b
                                     [__libasr_lbound_b_1
                                     __libasr_extent_b_1]
@@ -326,8 +326,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 5 __libasr_lbound_b_1)
-                                        (Var 5 __libasr_extent_b_1))]
+                                        [((Var 7 __libasr_lbound_b_1)
+                                        (Var 7 __libasr_extent_b_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -349,7 +349,7 @@
                                 ),
                             i__dc:
                                 (Variable
-                                    5
+                                    7
                                     i__dc
                                     []
                                     Local
@@ -375,7 +375,7 @@
                                 ),
                             n:
                                 (Variable
-                                    5
+                                    7
                                     n
                                     []
                                     InOut
@@ -436,14 +436,14 @@
                         Kernel
                     )
                     []
-                    [(Var 5 a)
-                    (Var 5 b)
-                    (Var 5 n)
-                    (Var 5 __dim_a_0)
-                    (Var 5 __lb_a_0)
-                    (Var 5 __dim_b_0)
-                    (Var 5 __lb_b_0)
-                    (Var 5 __loop_end_0)]
+                    [(Var 7 a)
+                    (Var 7 b)
+                    (Var 7 n)
+                    (Var 7 __dim_a_0)
+                    (Var 7 __lb_a_0)
+                    (Var 7 __dim_b_0)
+                    (Var 7 __lb_b_0)
+                    (Var 7 __loop_end_0)]
                     [(If
                         ()
                         (IntegerCompare
@@ -475,7 +475,7 @@
                             GtE
                             (IfExp
                                 (IntegerCompare
-                                    (Var 5 __loop_end_0)
+                                    (Var 7 __loop_end_0)
                                     GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Logical 4)
@@ -483,7 +483,7 @@
                                 )
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 5 __loop_end_0)
+                                        (Var 7 __loop_end_0)
                                         Sub
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
@@ -505,7 +505,7 @@
                         []
                     )
                     (Assignment
-                        (Var 5 __flat_idx)
+                        (Var 7 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
                                 (GpuBlockIndex
@@ -538,9 +538,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 5 i__dc)
+                        (Var 7 i__dc)
                         (IntegerBinOp
-                            (Var 5 __flat_idx)
+                            (Var 7 __flat_idx)
                             Add
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
@@ -554,9 +554,9 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (Var 5 a)
+                            (Var 7 a)
                             [(()
-                            (Var 5 i__dc)
+                            (Var 7 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -577,7 +577,7 @@
                             Mul
                             (IntrinsicElementalFunction
                                 Real
-                                [(Var 5 i__dc)]
+                                [(Var 7 i__dc)]
                                 0
                                 (Real 4)
                                 ()
@@ -593,9 +593,9 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (Var 5 b)
+                            (Var 7 b)
                             [(()
-                            (Var 5 i__dc)
+                            (Var 7 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -604,9 +604,9 @@
                         )
                         (RealBinOp
                             (ArrayItem
-                                (Var 5 b)
+                                (Var 7 b)
                                 [(()
-                                (Var 5 i__dc)
+                                (Var 7 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -615,9 +615,9 @@
                             )
                             Add
                             (ArrayItem
-                                (Var 5 a)
+                                (Var 7 a)
                                 [(()
-                                (Var 5 i__dc)
+                                (Var 7 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -644,58 +644,6 @@
                     (SymbolTable
                         2
                         {
-                            __1__libasr_index_:
-                                (Variable
-                                    2
-                                    __1__libasr_index_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __1__libasr_index_1:
-                                (Variable
-                                    2
-                                    __1__libasr_index_1
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
                             __gpu_iteration_count:
                                 (Variable
                                     2
@@ -748,125 +696,1462 @@
                                     []
                                     ()
                                 ),
-                            __libasr__created__var__0__array_constructor_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__0__array_constructor_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Array
-                                            (Real 4)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                            Global
-                                        )
+                            _constructor_activation:
+                                (Block
+                                    (SymbolTable
+                                        3
+                                        {
+                                            __libasr__created__var__0__constructor_buffer:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__0__constructor_buffer
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__0__idl_save_:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__0__idl_save_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__1__constructor_scratch:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__1__constructor_scratch
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__2__constructor_used:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__2__constructor_used
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__3__constructor_capacity:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__3__constructor_capacity
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__4__constructor_result:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__4__constructor_result
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__5__constructor_copy:
+                                                (Variable
+                                                    3
+                                                    __libasr__created__var__5__constructor_copy
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _constructor_leaf:
+                                                (Variable
+                                                    3
+                                                    _constructor_leaf
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _idl_control:
+                                                (Variable
+                                                    3
+                                                    _idl_control
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _idl_control1:
+                                                (Variable
+                                                    3
+                                                    _idl_control1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    _constructor_activation
+                                    [(Assignment
+                                        (Var 3 __libasr__created__var__2__constructor_used)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
                                     )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__0__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__0__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__1__array_constructor_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__1__array_constructor_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Allocatable
-                                        (Array
-                                            (Real 4)
-                                            [(()
-                                            ())]
-                                            DescriptorArray
-                                            Global
-                                        )
+                                    (Assignment
+                                        (Var 3 __libasr__created__var__3__constructor_capacity)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
                                     )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
+                                    (ExplicitDeallocate
+                                        [(Var 3 __libasr__created__var__0__constructor_buffer)]
+                                        ()
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 3 __libasr__created__var__0__constructor_buffer)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
+                                        []
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (Var 3 __libasr__created__var__0__idl_save_)
+                                        (Var 2 i)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 _idl_control)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 3 _idl_control1)
+                                        (Var 2 n)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 2 i)
+                                        (Var 3 _idl_control)
+                                        (Var 3 _idl_control1)
+                                        ())
+                                        [(Assignment
+                                            (Var 3 _constructor_leaf)
+                                            (RealBinOp
+                                                (Cast
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        2.000000
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                )
+                                                Mul
+                                                (IntrinsicElementalFunction
+                                                    Real
+                                                    [(Var 2 i)]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )
+                                        (If
+                                            ()
+                                            (IntegerCompare
+                                                (Var 3 __libasr__created__var__2__constructor_used)
+                                                Eq
+                                                (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                            )]
+                                            []
+                                        )
+                                        (If
+                                            ()
+                                            (IntegerCompare
+                                                (Var 3 __libasr__created__var__2__constructor_used)
+                                                Eq
+                                                (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                    Gt
+                                                    (IntegerConstant 1073741823 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(ErrorStop
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                )]
+                                                []
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 3 __libasr__created__var__2__constructor_used)
+                                                    Gt
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(Allocate
+                                                    [((Var 3 __libasr__created__var__1__constructor_scratch)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 3 __libasr__created__var__2__constructor_used))]
+                                                    []
+                                                    ()
+                                                    ()
+                                                    ())]
+                                                    ()
+                                                    ()
+                                                    ()
+                                                )
+                                                (DoLoop
+                                                    ()
+                                                    ((Var 3 __libasr__created__var__5__constructor_copy)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 3 __libasr__created__var__2__constructor_used)
+                                                    ())
+                                                    [(Assignment
+                                                        (ArrayItem
+                                                            (Var 3 __libasr__created__var__1__constructor_scratch)
+                                                            [(()
+                                                            (Var 3 __libasr__created__var__5__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        (ArrayItem
+                                                            (Var 3 __libasr__created__var__0__constructor_buffer)
+                                                            [(()
+                                                            (Var 3 __libasr__created__var__5__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                )]
+                                                []
+                                            )
+                                            (ExplicitDeallocate
+                                                [(Var 3 __libasr__created__var__0__constructor_buffer)]
+                                                ()
+                                                ()
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                    Eq
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(Assignment
+                                                    (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )]
+                                                [(Assignment
+                                                    (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                    (IntegerBinOp
+                                                        (Var 3 __libasr__created__var__3__constructor_capacity)
+                                                        Mul
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )]
+                                            )
+                                            (Allocate
+                                                [((Var 3 __libasr__created__var__0__constructor_buffer)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (Var 3 __libasr__created__var__3__constructor_capacity))]
+                                                []
+                                                ()
+                                                ()
+                                                ())]
+                                                ()
+                                                ()
+                                                ()
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 3 __libasr__created__var__2__constructor_used)
+                                                    Gt
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(DoLoop
+                                                    ()
+                                                    ((Var 3 __libasr__created__var__5__constructor_copy)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 3 __libasr__created__var__2__constructor_used)
+                                                    ())
+                                                    [(Assignment
+                                                        (ArrayItem
+                                                            (Var 3 __libasr__created__var__0__constructor_buffer)
+                                                            [(()
+                                                            (Var 3 __libasr__created__var__5__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        (ArrayItem
+                                                            (Var 3 __libasr__created__var__1__constructor_scratch)
+                                                            [(()
+                                                            (Var 3 __libasr__created__var__5__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                )
+                                                (ExplicitDeallocate
+                                                    [(Var 3 __libasr__created__var__1__constructor_scratch)]
+                                                    ()
+                                                    ()
+                                                )]
+                                                []
+                                            )]
+                                            []
+                                        )
+                                        (Assignment
+                                            (Var 3 __libasr__created__var__2__constructor_used)
+                                            (IntegerBinOp
+                                                (Var 3 __libasr__created__var__2__constructor_used)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (ArrayItem
+                                                (Var 3 __libasr__created__var__0__constructor_buffer)
+                                                [(()
+                                                (Var 3 __libasr__created__var__2__constructor_used)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (Var 3 _constructor_leaf)
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 2 i)
+                                        (Var 3 __libasr__created__var__0__idl_save_)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 3 __libasr__created__var__4__constructor_result)]
+                                        ()
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 3 __libasr__created__var__4__constructor_result)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 3 __libasr__created__var__2__constructor_used))]
+                                        []
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 3 __libasr__created__var__5__constructor_copy)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 3 __libasr__created__var__2__constructor_used)
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 3 __libasr__created__var__4__constructor_result)
+                                                [(()
+                                                (Var 3 __libasr__created__var__5__constructor_copy)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (ArrayItem
+                                                (Var 3 __libasr__created__var__0__constructor_buffer)
+                                                [(()
+                                                (Var 3 __libasr__created__var__5__constructor_copy)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 3 __libasr__created__var__0__constructor_buffer)]
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicArrayFunction
+                                            Any
+                                            [(RealCompare
+                                                (Var 2 a)
+                                                NotEq
+                                                (Var 3 __libasr__created__var__4__constructor_result)
+                                                (Array
+                                                    (Logical 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 3 __libasr__created__var__4__constructor_result)]
+                                        ()
+                                        ()
+                                    )]
                                 ),
-                            __libasr__created__var__1__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__1__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
+                            _constructor_activation1:
+                                (Block
+                                    (SymbolTable
+                                        4
+                                        {
+                                            __libasr__created__var__10__constructor_result:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__10__constructor_result
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__11__constructor_copy:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__11__constructor_copy
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__1__idl_save_:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__1__idl_save_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__6__constructor_buffer:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__6__constructor_buffer
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__7__constructor_scratch:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__7__constructor_scratch
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__8__constructor_used:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__8__constructor_used
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr__created__var__9__constructor_capacity:
+                                                (Variable
+                                                    4
+                                                    __libasr__created__var__9__constructor_capacity
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _constructor_leaf:
+                                                (Variable
+                                                    4
+                                                    _constructor_leaf
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _idl_control:
+                                                (Variable
+                                                    4
+                                                    _idl_control
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            _idl_control1:
+                                                (Variable
+                                                    4
+                                                    _idl_control1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    _constructor_activation1
+                                    [(Assignment
+                                        (Var 4 __libasr__created__var__8__constructor_used)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 __libasr__created__var__9__constructor_capacity)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 4 __libasr__created__var__6__constructor_buffer)]
+                                        ()
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 4 __libasr__created__var__6__constructor_buffer)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 0 (Integer 4) Decimal))]
+                                        []
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (Var 4 __libasr__created__var__1__idl_save_)
+                                        (Var 2 i)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 _idl_control)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 4 _idl_control1)
+                                        (Var 2 n)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 2 i)
+                                        (Var 4 _idl_control)
+                                        (Var 4 _idl_control1)
+                                        ())
+                                        [(Assignment
+                                            (Var 4 _constructor_leaf)
+                                            (RealBinOp
+                                                (Cast
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                )
+                                                Add
+                                                (RealBinOp
+                                                    (Cast
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                        IntegerToReal
+                                                        (Real 4)
+                                                        (RealConstant
+                                                            2.000000
+                                                            (Real 4)
+                                                        )
+                                                        ()
+                                                    )
+                                                    Mul
+                                                    (IntrinsicElementalFunction
+                                                        Real
+                                                        [(Var 2 i)]
+                                                        0
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )
+                                        (If
+                                            ()
+                                            (IntegerCompare
+                                                (Var 4 __libasr__created__var__8__constructor_used)
+                                                Eq
+                                                (IntegerConstant 2147483647 (Integer 4) Decimal)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                            )]
+                                            []
+                                        )
+                                        (If
+                                            ()
+                                            (IntegerCompare
+                                                (Var 4 __libasr__created__var__8__constructor_used)
+                                                Eq
+                                                (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                    Gt
+                                                    (IntegerConstant 1073741823 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(ErrorStop
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                )]
+                                                []
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 4 __libasr__created__var__8__constructor_used)
+                                                    Gt
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(Allocate
+                                                    [((Var 4 __libasr__created__var__7__constructor_scratch)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 4 __libasr__created__var__8__constructor_used))]
+                                                    []
+                                                    ()
+                                                    ()
+                                                    ())]
+                                                    ()
+                                                    ()
+                                                    ()
+                                                )
+                                                (DoLoop
+                                                    ()
+                                                    ((Var 4 __libasr__created__var__11__constructor_copy)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 4 __libasr__created__var__8__constructor_used)
+                                                    ())
+                                                    [(Assignment
+                                                        (ArrayItem
+                                                            (Var 4 __libasr__created__var__7__constructor_scratch)
+                                                            [(()
+                                                            (Var 4 __libasr__created__var__11__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        (ArrayItem
+                                                            (Var 4 __libasr__created__var__6__constructor_buffer)
+                                                            [(()
+                                                            (Var 4 __libasr__created__var__11__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                )]
+                                                []
+                                            )
+                                            (ExplicitDeallocate
+                                                [(Var 4 __libasr__created__var__6__constructor_buffer)]
+                                                ()
+                                                ()
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                    Eq
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(Assignment
+                                                    (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )]
+                                                [(Assignment
+                                                    (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                    (IntegerBinOp
+                                                        (Var 4 __libasr__created__var__9__constructor_capacity)
+                                                        Mul
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                )]
+                                            )
+                                            (Allocate
+                                                [((Var 4 __libasr__created__var__6__constructor_buffer)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (Var 4 __libasr__created__var__9__constructor_capacity))]
+                                                []
+                                                ()
+                                                ()
+                                                ())]
+                                                ()
+                                                ()
+                                                ()
+                                            )
+                                            (If
+                                                ()
+                                                (IntegerCompare
+                                                    (Var 4 __libasr__created__var__8__constructor_used)
+                                                    Gt
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (Logical 4)
+                                                    ()
+                                                )
+                                                [(DoLoop
+                                                    ()
+                                                    ((Var 4 __libasr__created__var__11__constructor_copy)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 4 __libasr__created__var__8__constructor_used)
+                                                    ())
+                                                    [(Assignment
+                                                        (ArrayItem
+                                                            (Var 4 __libasr__created__var__6__constructor_buffer)
+                                                            [(()
+                                                            (Var 4 __libasr__created__var__11__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        (ArrayItem
+                                                            (Var 4 __libasr__created__var__7__constructor_scratch)
+                                                            [(()
+                                                            (Var 4 __libasr__created__var__11__constructor_copy)
+                                                            ())]
+                                                            (Real 4)
+                                                            RowMajor
+                                                            ()
+                                                            .false.
+                                                        )
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                )
+                                                (ExplicitDeallocate
+                                                    [(Var 4 __libasr__created__var__7__constructor_scratch)]
+                                                    ()
+                                                    ()
+                                                )]
+                                                []
+                                            )]
+                                            []
+                                        )
+                                        (Assignment
+                                            (Var 4 __libasr__created__var__8__constructor_used)
+                                            (IntegerBinOp
+                                                (Var 4 __libasr__created__var__8__constructor_used)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (ArrayItem
+                                                (Var 4 __libasr__created__var__6__constructor_buffer)
+                                                [(()
+                                                (Var 4 __libasr__created__var__8__constructor_used)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (Var 4 _constructor_leaf)
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 2 i)
+                                        (Var 4 __libasr__created__var__1__idl_save_)
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 4 __libasr__created__var__10__constructor_result)]
+                                        ()
+                                        ()
+                                    )
+                                    (Allocate
+                                        [((Var 4 __libasr__created__var__10__constructor_result)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 4 __libasr__created__var__8__constructor_used))]
+                                        []
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (DoLoop
+                                        ()
+                                        ((Var 4 __libasr__created__var__11__constructor_copy)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 4 __libasr__created__var__8__constructor_used)
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 4 __libasr__created__var__10__constructor_result)
+                                                [(()
+                                                (Var 4 __libasr__created__var__11__constructor_copy)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (ArrayItem
+                                                (Var 4 __libasr__created__var__6__constructor_buffer)
+                                                [(()
+                                                (Var 4 __libasr__created__var__11__constructor_copy)
+                                                ())]
+                                                (Real 4)
+                                                RowMajor
+                                                ()
+                                                .false.
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 4 __libasr__created__var__6__constructor_buffer)]
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        ()
+                                        (IntrinsicArrayFunction
+                                            Any
+                                            [(RealCompare
+                                                (Var 2 b)
+                                                NotEq
+                                                (Var 4 __libasr__created__var__10__constructor_result)
+                                                (Array
+                                                    (Logical 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 4 __libasr__created__var__10__constructor_result)]
+                                        ()
+                                        ()
+                                    )]
                                 ),
                             a:
                                 (Variable
@@ -1224,308 +2509,13 @@
                         )]
                         []
                     )
-                    (ExplicitDeallocate
-                        [(Var 2 __libasr__created__var__0__array_constructor_)]
-                        ()
-                        ()
+                    (BlockCall
+                        -1
+                        2 _constructor_activation
                     )
-                    (Allocate
-                        [((Var 2 __libasr__created__var__0__array_constructor_)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            Mul
-                            (Var 2 n)
-                            (Integer 4)
-                            ()
-                        ))]
-                        []
-                        ()
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 __1__libasr_index_)
-                        (ArrayBound
-                            (Var 2 __libasr__created__var__0__array_constructor_)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (DoLoop
-                        ()
-                        ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 n)
-                        ())
-                        [(Assignment
-                            (ArrayItem
-                                (Var 2 __libasr__created__var__0__array_constructor_)
-                                [(()
-                                (Var 2 __1__libasr_index_)
-                                ())]
-                                (Real 4)
-                                RowMajor
-                                ()
-                                .false.
-                            )
-                            (RealBinOp
-                                (Cast
-                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        2.000000
-                                        (Real 4)
-                                    )
-                                    ()
-                                )
-                                Mul
-                                (IntrinsicElementalFunction
-                                    Real
-                                    [(Var 2 i)]
-                                    0
-                                    (Real 4)
-                                    ()
-                                )
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 __1__libasr_index_)
-                            (IntegerBinOp
-                                (Var 2 __1__libasr_index_)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )]
-                        []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (If
-                        ()
-                        (IntrinsicArrayFunction
-                            Any
-                            [(RealCompare
-                                (Var 2 a)
-                                NotEq
-                                (Var 2 __libasr__created__var__0__array_constructor_)
-                                (Array
-                                    (Logical 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                    Global
-                                )
-                                ()
-                            )]
-                            0
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                        )]
-                        []
-                    )
-                    (ExplicitDeallocate
-                        [(Var 2 __libasr__created__var__1__array_constructor_)]
-                        ()
-                        ()
-                    )
-                    (Allocate
-                        [((Var 2 __libasr__created__var__1__array_constructor_)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            Mul
-                            (Var 2 n)
-                            (Integer 4)
-                            ()
-                        ))]
-                        []
-                        ()
-                        ()
-                        ())]
-                        ()
-                        ()
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 __1__libasr_index_1)
-                        (ArrayBound
-                            (Var 2 __libasr__created__var__1__array_constructor_)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (DoLoop
-                        ()
-                        ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 n)
-                        ())
-                        [(Assignment
-                            (ArrayItem
-                                (Var 2 __libasr__created__var__1__array_constructor_)
-                                [(()
-                                (Var 2 __1__libasr_index_1)
-                                ())]
-                                (Real 4)
-                                RowMajor
-                                ()
-                                .false.
-                            )
-                            (RealBinOp
-                                (Cast
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )
-                                    ()
-                                )
-                                Add
-                                (RealBinOp
-                                    (Cast
-                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                        IntegerToReal
-                                        (Real 4)
-                                        (RealConstant
-                                            2.000000
-                                            (Real 4)
-                                        )
-                                        ()
-                                    )
-                                    Mul
-                                    (IntrinsicElementalFunction
-                                        Real
-                                        [(Var 2 i)]
-                                        0
-                                        (Real 4)
-                                        ()
-                                    )
-                                    (Real 4)
-                                    ()
-                                )
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 __1__libasr_index_1)
-                            (IntegerBinOp
-                                (Var 2 __1__libasr_index_1)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )]
-                        []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (If
-                        ()
-                        (IntrinsicArrayFunction
-                            Any
-                            [(RealCompare
-                                (Var 2 b)
-                                NotEq
-                                (Var 2 __libasr__created__var__1__array_constructor_)
-                                (Array
-                                    (Logical 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                    Global
-                                )
-                                ()
-                            )]
-                            0
-                            (Logical 4)
-                            ()
-                        )
-                        [(ErrorStop
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                        )]
-                        []
+                    (BlockCall
+                        -1
+                        2 _constructor_activation1
                     )
                     (Print
                         (StringConstant
