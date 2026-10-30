@@ -3493,12 +3493,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         ASR::expr_t *c=x.m_head.m_increment;
         LCOMPILERS_ASSERT(a);
         LCOMPILERS_ASSERT(b);
-        int increment;
+        int increment = 1;
         bool is_c_constant = false;
         if (!c) {
-            increment = 1;
             is_c_constant = true;
-        } else {
+        } else if (ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
             ASR::expr_t* c_value = ASRUtils::expr_value(c);
             is_c_constant = ASRUtils::extract_value(c_value, increment);
         }
