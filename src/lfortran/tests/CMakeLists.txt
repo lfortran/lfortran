@@ -140,7 +140,25 @@ if (XEUS_LFORTRAN_WASM_BUILD)
         set_property(TARGET test_lfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_TEST_MOD_FILES})
     endif()
 endif()
-add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
+# test_lfortran runs as several tests, which run in parallel and are each
+# short: the test cases of each slow `file` in shards of `size`, and those of
+# the other files. The last shard of a file also takes the cases after it.
+function(add_test_lfortran_shards name file shards size)
+    foreach(shard RANGE 1 ${shards})
+        math(EXPR first "(${shard} - 1) * ${size} + 1")
+        math(EXPR last "${shard} * ${size}")
+        set(range --first=${first})
+        if (shard LESS shards)
+            list(APPEND range --last=${last})
+        endif()
+        add_test(NAME test_lfortran_${name}_${shard}
+            COMMAND ${PROJECT_BINARY_DIR}/test_lfortran --source-file=*${file} ${range})
+    endforeach()
+endfunction()
+add_test_lfortran_shards(gpu test_gpu.cpp 14 1)
+add_test_lfortran_shards(llvm test_llvm.cpp 10 10)
+add_test(NAME test_lfortran COMMAND ${PROJECT_BINARY_DIR}/test_lfortran
+    --source-file-exclude=*test_gpu.cpp,*test_llvm.cpp)
 
 # These tests drive the lfortran executable. This directory is configured
 # before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
