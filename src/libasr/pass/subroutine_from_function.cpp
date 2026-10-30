@@ -1148,6 +1148,29 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     AccessPaths::reachable_elsewhere(root, routine)) {
                 return true;
             }
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(root);
+            ASR::ttype_t *element_type = ASRUtils::extract_type(variable->m_type);
+            if (variable->m_intent == ASR::intentType::Local &&
+                    variable->m_storage == ASR::storage_typeType::Default &&
+                    ASRUtils::is_array(variable->m_type) &&
+                    (ASR::is_a<ASR::Integer_t>(*element_type) ||
+                     ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+                     ASR::is_a<ASR::Real_t>(*element_type) ||
+                     ASR::is_a<ASR::Complex_t>(*element_type)) &&
+                    !may_be_storage_associated(variable) &&
+                    variable->n_codims == 0 &&
+                    !variable->m_is_volatile && !variable->m_is_asynchronous &&
+                    !ASRUtils::has_scoped_variable_attribute(*variable, routine)) {
+                bool has_contained_procedure = false;
+                ASRUtils::for_each_symbol_in_scope_and_constructs(routine,
+                    [&](ASR::symbol_t *symbol) {
+                        has_contained_procedure |= ASR::is_a<ASR::Function_t>(*symbol) ||
+                            ASR::is_a<ASR::Template_t>(*symbol);
+                    });
+                // Without a contained procedure, a callback cannot capture
+                // a nonescaping automatic local, including a fresh result slot.
+                if (!has_contained_procedure) return false;
+            }
             std::set<ASR::symbol_t*> active;
             CallbackAccess callbacks(routine, active);
             return callbacks.call(fc->m_name, fc->m_args, fc->n_args, fc->m_dt);
