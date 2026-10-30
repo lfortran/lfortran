@@ -488,11 +488,27 @@ namespace LCompilers {
             ASR::expr_t* idx_var = nullptr;
             std::string str_name = "__libasr__created__var__" + std::to_string(counter) + "_" + suffix;
 
-            if( current_scope->get_symbol(str_name) == nullptr ||
+            ASR::symbol_t* existing_symbol = current_scope->get_symbol(str_name);
+            ASR::ttype_t* requested_type = ASRUtils::type_get_past_allocatable_pointer(var_type);
+            ASR::ttype_t* existing_type = existing_symbol
+                ? ASRUtils::symbol_type(existing_symbol) : nullptr;
+            bool same_storage = existing_type && existing_type->type == var_type->type;
+            if( same_storage ) {
+                existing_type = ASRUtils::type_get_past_allocatable_pointer(existing_type);
+                same_storage = existing_type->type == requested_type->type;
+                if( same_storage && ASR::is_a<ASR::Array_t>(*requested_type) ) {
+                    ASR::Array_t* existing_array = ASR::down_cast<ASR::Array_t>(existing_type);
+                    ASR::Array_t* requested_array = ASR::down_cast<ASR::Array_t>(requested_type);
+                    same_storage = existing_array->m_physical_type == requested_array->m_physical_type
+                        && existing_array->n_dims == requested_array->n_dims;
+                }
+            }
+            // Semantic compatibility alone permits different ownership and
+            // array representations, which cannot share a temporary's storage.
+            if( !same_storage ||
                 !ASRUtils::check_equal_type(
-                    ASRUtils::symbol_type(current_scope->get_symbol(str_name)),
-                    var_type, ASRUtils::get_expr_from_sym(
-                        al, current_scope->get_symbol(str_name)), var, true
+                    existing_type, requested_type,
+                    ASRUtils::get_expr_from_sym(al, existing_symbol), var, true
                 ) ) {
                 ASR::symbol_t* type_decl = nullptr;
                 // Only a derived type is declared by a symbol. Carrying one
