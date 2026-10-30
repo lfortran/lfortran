@@ -55,7 +55,8 @@ named array constants; other backends retain their default policy.
 Fixed-cardinality constructor values are filled before the destination is
 written, including self-referential assignments. Runtime numeric constructors
 use the same recursive fill traversal with an append buffer. Converted DO
-controls are saved immediately before each loop in its parent activation;
+controls recursively prepare any nested constructors before being saved
+immediately before each loop in its parent activation;
 array-valued leaves are independently snapshotted before element-order
 traversal, including preparation of constructors nested inside leaf expressions.
 Buffer growth doubles capacity, explicitly preserving only the live

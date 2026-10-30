@@ -1146,6 +1146,8 @@ RUN(NAME arrays_157 LABELS gfortran llvm cpp)
 RUN(NAME arrays_158 LABELS gfortran llvm cpp EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME arrays_159 LABELS gfortran llvm cpp)
 RUN(NAME arrays_160 LABELS gfortran llvm cpp)
+RUN(NAME arrays_161 LABELS gfortran llvm cpp)
+RUN(NAME arrays_162 LABELS gfortran llvm cpp)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -615,7 +615,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     }
 
     void prepare_constructor_leaf(ASR::expr_t*& value, Vec<ASR::stmt_t*>& body) {
-        // Nested constructors must be evaluated in this leaf's parent
+        // Nested constructors must be evaluated in this expression's parent
         // activation, including when the outer cardinality is already known.
         bool redirect = &body != &pass_result;
         if (redirect) std::swap(pass_result, body);
@@ -778,10 +778,14 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     append_scalar(leaf, body);
                 }
             };
+        PassUtils::ReplacerUtils::ConstructorPrepare prepare_control =
+            [&](ASR::expr_t*& value, Vec<ASR::stmt_t*>& body) {
+                prepare_constructor_leaf(value, body);
+            };
         PassUtils::ReplacerUtils::visit_ArrayConstructor(x, al, context.buffer,
             &pass_result, context.used, current_scope, false,
             ASR::cast_kindType::IntegerToInteger, nullptr,
-            skip_idl_save_restore, &append);
+            skip_idl_save_restore, &append, &prepare_control);
         pass_result.push_back(al, b.Deallocate(result));
         pass_result.push_back(al, allocate(result, context.used));
         pass_result.push_back(al, copy_prefix(result, context.buffer));
@@ -980,6 +984,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         LCOMPILERS_ASSERT(result_var != nullptr);
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
         ASR::expr_t* constructor_index = nullptr;
+        PassUtils::ReplacerUtils::ConstructorPrepare prepare_control =
+            [&](ASR::expr_t*& value, Vec<ASR::stmt_t*>& body) {
+                prepare_constructor_leaf(value, body);
+            };
         PassUtils::ReplacerUtils::ConstructorLeaf prepare =
             [&](ASR::expr_t* value, Vec<ASR::stmt_t*>& body,
                     bool perform_cast, ASR::cast_kindType cast_kind,
@@ -991,7 +999,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 PassUtils::ReplacerUtils::visit_ArrayConstructor(&leaf, al,
                     result_var, &body, constructor_index, current_scope,
                     perform_cast, cast_kind, casted_type,
-                    skip_idl_save_restore, nullptr);
+                    skip_idl_save_restore, nullptr, nullptr);
             };
         class RuntimeConstructorVisitor:
             public ASR::BaseWalkVisitor<RuntimeConstructorVisitor> {
@@ -1020,7 +1028,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             PassUtils::ReplacerUtils::visit_ArrayConstructor(x, al, result_var,
                 result_vec, constructor_index, current_scope, false,
                 ASR::cast_kindType::IntegerToInteger, nullptr,
-                skip_idl_save_restore, &prepare);
+                skip_idl_save_restore, &prepare, &prepare_control);
         } else {
             PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var,
                 result_vec, current_scope, false, ASR::cast_kindType::IntegerToInteger,

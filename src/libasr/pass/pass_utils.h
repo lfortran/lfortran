@@ -1183,20 +1183,23 @@ namespace LCompilers {
 
         using ConstructorLeaf = std::function<void(ASR::expr_t*,
             Vec<ASR::stmt_t*>&, bool, ASR::cast_kindType, ASR::ttype_t*)>;
+        using ConstructorPrepare = std::function<void(ASR::expr_t*&,
+            Vec<ASR::stmt_t*>&)>;
 
         void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind,
             ASR::ttype_t* casted_type, bool skip_save_restore,
-            const ConstructorLeaf* append);
+            const ConstructorLeaf* append, const ConstructorPrepare* prepare);
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
         ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
         ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
         ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false,
-        const ConstructorLeaf* append=nullptr) {
+        const ConstructorLeaf* append=nullptr,
+        const ConstructorPrepare* prepare=nullptr) {
             // According to Fortran standard, the loop variable in an implied-DO
             // within an array constructor is local to the implied-DO and should
             // not affect any outer variable with the same name. To implement this,
@@ -1233,6 +1236,7 @@ namespace LCompilers {
                     &head.m_start, &head.m_end, &head.m_increment};
                 for (ASR::expr_t** control: controls) {
                     if (!*control) continue;
+                    if (prepare) (*prepare)(*control, *result_vec);
                     LCOMPILERS_ASSERT(ASRUtils::types_equal(
                         ASRUtils::expr_type(*control), loop_var_type,
                         nullptr, nullptr));
@@ -1267,7 +1271,7 @@ namespace LCompilers {
                         nullptr, ASR::arraystorageType::ColMajor, nullptr)));
                 visit_ArrayConstructor(values, al, arr_var, &doloop_body,
                     arr_idx, current_scope, perform_cast, cast_kind,
-                    casted_type, skip_save_restore, append);
+                    casted_type, skip_save_restore, append, prepare);
             } else for( size_t i = 0; i < idoloop->n_values; i++ ) {
                 Vec<ASR::array_index_t> args;
                 ASR::array_index_t ai;
@@ -1299,7 +1303,7 @@ namespace LCompilers {
                 } else if( ASR::is_a<ASR::ArrayConstructor_t>(*idoloop->m_values[i]) ) {
                     ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(idoloop->m_values[i]);
                     visit_ArrayConstructor(array_constructor, al, arr_var, &doloop_body,
-                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore, nullptr);
+                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore, nullptr, prepare);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
                     ASR::ttype_t* curr_init_type = ASRUtils::expr_type(curr_init);
@@ -1679,7 +1683,8 @@ namespace LCompilers {
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false,
-            const ConstructorLeaf* append=nullptr);
+            const ConstructorLeaf* append=nullptr,
+            const ConstructorPrepare* prepare=nullptr);
 
         template <typename T>
         static inline void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,
