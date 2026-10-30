@@ -1284,7 +1284,6 @@ public:
         if (procs.empty()) {
             return;
         }
-        const Location &loc = host_sym->base.loc;
 
         // Keep the logical interface separate from the framed implementation.
         std::set<ASR::symbol_t*> proc_set;
