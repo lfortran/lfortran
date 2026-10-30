@@ -568,6 +568,16 @@ class WorkflowPolicyTests(unittest.TestCase):
         for path in ("ci/environment.yml", "ci/environment_linux_llvm.yml"):
             self.assertNotRegex((ROOT / path).read_text(), r"(?m)^\s*-\s*openmpi\b")
 
+    def test_coarray_pixi_setup_is_lazy_and_does_not_activate_over_caffeine(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        setup = source.split("      - uses: prefix-dev/setup-pixi@", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}", setup)
+        self.assertIn("run-install: false", setup)
+        self.assertIn("cache: false", setup)
+        self.assertNotIn("activate-environment: true", setup)
+        self.assertLess(source.index("prefix-dev/setup-pixi@"),
+                        source.index("      - name: Test coarray runtime with Caffeine"))
+
     def test_quick_coverage_is_event_independent_and_never_replayed(self):
         workflows = ROOT / ".github/workflows"
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
@@ -1386,6 +1396,7 @@ class CaffeineTests(unittest.TestCase):
             shutil.copyfile(helper, self.directory / "ci/coarray_tests.py")
         (self.directory / "ci/test_caffeine.sh").write_text("# harness input\n")
         (self.directory / "ci/environment_linux_llvm.yml").write_text("dependencies: []\n")
+        shutil.copyfile(ROOT / "pixi.toml", self.directory / "pixi.toml")
         self.git_run("init", "-q")
         self.git_run("config", "user.email", "ci-tests@example.invalid")
         self.git_run("config", "user.name", "CI Tests")
@@ -1399,10 +1410,25 @@ class CaffeineTests(unittest.TestCase):
             "key = name\n"
             "if name == 'run-fpm.sh': key = 'unit' if args[0] == 'test' else 'info'\n"
             "if name == 'lfortran' and args == ['--version']: key = 'version'\n"
+            "if name == 'pixi': key = args[3]\n"
             "with open(os.environ['CI_CALLS'], 'a') as log:\n"
             "    log.write(json.dumps({'command': name, 'args': args, 'key': key,\n"
+            "        'reference': os.environ.get('CI_REFERENCE_ENV'),\n"
             "        'env': {k: os.environ.get(k) for k in ('FC', 'CC', 'CXX', 'CAF_IMAGES')}}) + '\\n')\n"
             "if os.environ.get('CI_FAIL') == key: sys.exit(42)\n"
+            "if name == 'pixi':\n"
+            "    if os.environ.get('CI_PIXI_MISSING') == 'true': sys.exit(127)\n"
+            "    assert args[:3] == ['run', '-e', 'coarray-reference'], args\n"
+            "    try: import tomllib\n"
+            "    except ImportError: import toml as tomllib\n"
+            "    manifest = tomllib.loads(Path('pixi.toml').read_text())\n"
+            "    feature = manifest['feature']['coarray-reference']\n"
+            "    env = dict(os.environ, CI_REFERENCE_ENV='coarray-reference',\n"
+            "               PIXI_PROJECT_ROOT=str(Path.cwd()), CONDA_PREFIX=str(Path.cwd() / 'reference'))\n"
+            "    env.update(feature['activation']['env'])\n"
+            "    task = feature['tasks'].get(args[3])\n"
+            "    command = ['bash', '-c', task['cmd'] + ' \"$@\"', 'task', *args[4:]] if task else args[3:]\n"
+            "    sys.exit(subprocess.call(command, env=env))\n"
             "if name == 'git':\n"
             "    if os.environ.get('CI_GIT_FAIL') == args[0]: sys.exit(42)\n"
             "    if args[0] == 'clone':\n"
@@ -1413,11 +1439,18 @@ class CaffeineTests(unittest.TestCase):
             "                target = dest / tool\n"
             "                target.write_text(Path(__file__).read_text())\n"
             "                target.chmod(0o755)\n"
+            "        else:\n"
+            "            (dest / 'inst/bin').mkdir(parents=True)\n"
+            "            for tool in ('caf', 'cafrun'):\n"
+            "                target = dest / 'inst/bin' / tool\n"
+            "                target.write_text(Path(__file__).read_text())\n"
+            "                target.chmod(0o755)\n"
             "    elif args[0] != 'checkout':\n"
             "        os.execv(os.environ['CI_REAL_GIT'], [os.environ['CI_REAL_GIT'], *args])\n"
             "elif name == 'uname': print(os.environ['CI_OS'])\n"
             "elif name in ('fpm', 'mpifort'):\n"
             "    present = os.environ['CI_FPM_PRESENT' if name == 'fpm' else 'CI_MPI_PRESENT']\n"
+            "    if name == 'mpifort' and os.environ.get('CI_REFERENCE_ENV'): present = 'true'\n"
             "    marker = Path(os.environ['HOME']) / (name + '-installed')\n"
             "    if present != 'true' and not marker.exists(): sys.exit(127)\n"
             "    if (name == 'mpifort' and args == ['--version'] and\n"
@@ -1433,7 +1466,7 @@ class CaffeineTests(unittest.TestCase):
             "elif name == 'sed': sys.stdout.write(sys.stdin.read())\n"
         )
         for name in ("git", "uname", "micromamba", "mpifort", "fpm", "clang", "cmake",
-                     "make", "gasnetrun_smp", "caf", "cafrun", "lfortran", "sed"):
+                     "make", "gasnetrun_smp", "caf", "cafrun", "lfortran", "sed", "pixi"):
             target = self.bin / name
             target.write_text(mock)
             target.chmod(0o755)
@@ -1499,7 +1532,7 @@ class CaffeineTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assert_capability_coverage(calls, default_images="3")
         self.assertFalse({call["command"] for call in calls} &
-                         {"micromamba", "mpifort", "cmake", "caf", "cafrun"})
+                         {"micromamba", "mpifort", "cmake", "caf", "cafrun", "pixi"})
         self.assertTrue((sentinel / "unowned").exists())
         self.assertIn("unchanged", result.stdout + result.stderr)
 
@@ -1528,7 +1561,7 @@ class CaffeineTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assert_capability_coverage(calls)
         self.assertFalse({call["command"] for call in calls} &
-                         {"mpifort", "cmake", "caf", "cafrun"})
+                         {"mpifort", "cmake", "caf", "cafrun", "pixi"})
 
     def test_missing_fpm_installs_the_existing_pin_before_unit_tests(self):
         result, calls = self.run_caffeine(CI_FPM_PRESENT="false")
@@ -1541,26 +1574,30 @@ class CaffeineTests(unittest.TestCase):
         self.assertEqual(len(versions), 2)
         self.assertLess(calls.index(versions[0]), calls.index(installs[0]))
 
-    def test_reference_probe_does_not_require_mpi_build_time_compiler(self):
+    def test_reference_uses_owned_pixi_toolchain_not_runner_compilers(self):
         for scope in ("quick", "exhaustive"):
-            for present in ("true", "false"):
-                with self.subTest(scope=scope, mpi_present=present):
-                    (self.directory / "mpifort-installed").unlink(missing_ok=True)
-                    result, calls = self.run_caffeine(
-                        scope, base="", CI_MPI_PRESENT=present,
-                        CI_MPI_BUILD_COMPILER_MISSING="true",
-                    )
-                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assert_capability_coverage(calls)
-                    probes = [call["args"] for call in calls if call["command"] == "mpifort"]
-                    self.assertEqual(probes, [["--showme:version"]] * (1 if present == "true" else 2))
-                    installs = [call["args"] for call in calls if call["command"] == "micromamba"]
-                    self.assertEqual(installs, [] if present == "true" else [
-                        ["install", "-y", "-c", "conda-forge", "openmpi=5.0.6=hb85ec53_102"],
-                    ])
-                    references = [call for call in calls if call["command"] == "caf" and
-                                  call["args"] != ["--version"]]
-                    self.assertEqual(len(references), 2)
+            with self.subTest(scope=scope):
+                result, calls = self.run_caffeine(
+                    scope, base="", CI_MPI_PRESENT="true", FC="/usr/bin/gfortran-15",
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assert_capability_coverage(calls)
+                reference = [call for call in calls if call["command"] in
+                             ("mpifort", "cmake", "caf", "cafrun")]
+                self.assertTrue(reference)
+                for call in reference:
+                    self.assertEqual(call["reference"], "coarray-reference", call)
+                    self.assertEqual(call["env"]["FC"], "gfortran", call)
+                configure = next(call for call in reference if call["command"] == "cmake")
+                self.assertIn(f"-DCMAKE_Fortran_COMPILER={self.directory}/reference/bin/gfortran",
+                              configure["args"])
+                self.assertFalse(any(call["command"] == "micromamba" for call in calls))
+
+    def test_missing_pixi_fails_without_runner_fallback(self):
+        result, calls = self.run_caffeine("exhaustive", CI_PIXI_MISSING="true")
+        self.assertEqual(result.returncode, 127, result.stdout + result.stderr)
+        self.assertFalse({call["command"] for call in calls} &
+                         {"mpifort", "cmake", "caf", "cafrun", "micromamba"})
 
     def test_unit_failure_stops_before_smoke_and_integration(self):
         result, calls = self.run_caffeine(CI_FAIL="unit")
@@ -1573,6 +1610,9 @@ class CaffeineTests(unittest.TestCase):
             ("install.sh", "quick", "true"), ("info", "quick", "true"),
             ("make", "quick", "true"), ("lfortran", "quick", "true"),
             ("gasnetrun_smp", "quick", "true"), ("mpifort", "exhaustive", "true"),
+            ("opencoarrays-configure", "exhaustive", "true"),
+            ("opencoarrays-build", "exhaustive", "true"),
+            ("opencoarrays-install", "exhaustive", "true"),
             ("cmake", "exhaustive", "true"), ("caf", "exhaustive", "true"),
             ("cafrun", "exhaustive", "true"), ("sed", "exhaustive", "true"),
         )
@@ -1602,6 +1642,7 @@ class CaffeineTests(unittest.TestCase):
             ("ci/coarray_tests.py", "# selector edit\n"),
             ("ci/environment_linux_llvm.yml", "# dependency edit\n"),
             ("ci/environment.yml", "dependencies: []\n"),
+            ("pixi.toml", "# reference toolchain edit\n"),
             (".github/workflows/Compiler-Compatibility-CI.yml", "# workflow edit\n"),
             (".github/workflows/Quick-Checks-CI.yml", "# caller edit\n"),
             ("integration_tests/unrelated.f90", "! unrelated integration edit\n"),

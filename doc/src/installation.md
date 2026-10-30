@@ -366,6 +366,15 @@ The missing-tool installer uses the same `fpm=0.12.0` pin as the application
 harness. A failed installed tool or unit test is an error, not a reason to
 skip coverage or reinstall speculatively.
 
+Linux OpenCoarrays references use the separate Pixi `coarray-reference`
+environment, not the runner's Fortran compiler or Caffeine's LFortran toolchain.
+It owns GNU Fortran 13 and OpenMPI 5.0.6: OpenCoarrays currently rejects
+OpenMPI with GNU Fortran >=14 because of the changed coarray ABI.
+The `opencoarrays-configure`, `opencoarrays-build`, `opencoarrays-install`,
+`caf` and `cafrun` tasks keep configuration, compilation and execution in that
+same environment. The harness still owns reference selection and test metadata;
+the shared workflow installs Pixi without eagerly installing this environment.
+
 Only the Linux **GFortran/OpenCoarrays reference validation** is source-dependent
 in Quick. The shared workflow supplies `LFORTRAN_COARRAY_BASE` (the PR base SHA
 or push's previous SHA) and `LFORTRAN_COARRAY_HEAD` (the actual checkout SHA).

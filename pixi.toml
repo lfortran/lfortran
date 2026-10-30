@@ -11,6 +11,33 @@ ctest = {cmd = 'ctest --test-dir "$LFORTRAN_BUILD_DIR" --output-on-failure', def
 tests = {cmd = 'python run_tests.py --require-llvm 11 --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin" --build-dir "$LFORTRAN_BUILD_DIR/reference_tests"', default-environment = "llvm11"}
 integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR/integration_tests" --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin"', cwd = "integration_tests", default-environment = "llvm11"}
 
+[feature.coarray-reference]
+platforms = ["osx-arm64", "linux-64"]
+
+[feature.coarray-reference.dependencies]
+# OpenCoarrays rejects OpenMPI with GNU Fortran >=14 (the newer coarray ABI).
+gfortran = ">=13,<14"
+openmpi = "==5.0.6"
+cmake = "==3.29.1"
+make = "*"
+
+[feature.coarray-reference.target.linux-64.dependencies]
+c-compiler = "*"
+
+[feature.coarray-reference.activation.env]
+FC = "gfortran"
+
+[feature.coarray-reference.target.osx-arm64.activation.env]
+CC = "/usr/bin/clang"
+CXX = "/usr/bin/clang++"
+
+[feature.coarray-reference.tasks]
+opencoarrays-configure = {cmd = 'cmake -S OpenCoarrays -B OpenCoarrays/build -DCMAKE_Fortran_COMPILER="$CONDA_PREFIX/bin/gfortran" -DCMAKE_INSTALL_PREFIX="$PIXI_PROJECT_ROOT/OpenCoarrays/inst"'}
+opencoarrays-build = {cmd = 'cmake --build OpenCoarrays/build -j2'}
+opencoarrays-install = {cmd = 'cmake --install OpenCoarrays/build'}
+caf = {cmd = '"$PIXI_PROJECT_ROOT/OpenCoarrays/inst/bin/caf"'}
+cafrun = {cmd = '"$PIXI_PROJECT_ROOT/OpenCoarrays/inst/bin/cafrun"'}
+
 [feature.llvm7]
 platforms = ["win-64", "linux-64"]
 [feature.llvm7.target.linux-64.dependencies]
@@ -324,3 +351,4 @@ test = {features = ["llvm11", "build", "test"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
 lite = {features = ["lite"], no-default-feature = true}
+coarray-reference = {features = ["native", "coarray-reference"], no-default-feature = true}
