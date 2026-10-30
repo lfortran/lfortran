@@ -9517,15 +9517,18 @@ public:
                 erase_from_external_mapping(sub_name);
             }
 
-            // Update arguments if the symbol belonged to a function
-            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
-                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
-                for (size_t i = 0; i < current_function->n_args; i++) {
-                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
-                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
-                        if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
-                            var->m_v = original_sym;
+            // Update arguments if the symbol belonged to a function. In an
+            // interactive cell the owner is the translation unit, not a symbol.
+            if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                    ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                    for (size_t i = 0; i < current_function->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                            if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
+                                var->m_v = original_sym;
+                            }
                         }
                     }
                 }
@@ -9767,7 +9770,10 @@ public:
                 }
                 // The call names a generic bound to a type through an import
                 // of it. Any other generic is a symbol of this scope or a host.
-                if( ASR::is_a<ASR::Struct_t>(*original_sym_owner) ) {
+                // A generic of the translation unit, as an intrinsic in an
+                // interactive cell, has no symbol owner at all.
+                if( original_sym_owner != nullptr
+                        && ASR::is_a<ASR::Struct_t>(*original_sym_owner) ) {
                     std::string s_name = "1_" + std::string(p->m_name);
                     std::string original_sym_owner_name = ASRUtils::symbol_name(original_sym_owner);
                     if( current_scope->resolve_symbol(original_sym_owner_name) == nullptr ) {

@@ -4271,6 +4271,27 @@ call deallocate(n)
     CHECK(r.result.i32 == 8);
 }
 
+// The notebook cell from issue 13452. A bare open, write, read or close is
+// that statement, so a file round trip runs across cells of one session.
+TEST_CASE("FortranEvaluator file I/O in an interactive cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    // open and read need the runtime module modfiles.
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: u, v").ok);
+    REQUIRE(e.evaluate2("open(newunit=u, file=\"iostmt_cell.dat\", status=\"replace\")").ok);
+    REQUIRE(e.evaluate2("write(u, *) 42").ok);
+    REQUIRE(e.evaluate2("close(u)").ok);
+    REQUIRE(e.evaluate2("open(newunit=u, file=\"iostmt_cell.dat\", status=\"old\")").ok);
+    REQUIRE(e.evaluate2("read(u, *) v").ok);
+    REQUIRE(e.evaluate2("close(u, status=\"delete\")").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("v");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 42);
+}
+
 TEST_CASE("FortranEvaluator allocate source mold and type parameter") {
     CompilerOptions cu;
     cu.interactive = true;

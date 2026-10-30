@@ -4,6 +4,8 @@
 #include <sstream>
 #include <chrono>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -1482,5 +1484,68 @@ TEST_CASE("Interactive allocate statement") {
     CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Allocate_t>(
         *prog->m_items[0]));
     CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Deallocate_t>(
+        *prog->m_items[1]));
+}
+
+// A bare I/O statement at interactive top level is that statement, not a call
+// to an undeclared function. A keyword used as a name in an expression stays a
+// call.
+TEST_CASE("Interactive I/O statement") {
+    Allocator al(1024*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
+
+    auto parse_ok = [&](const std::string &input) {
+        diagnostics.diagnostics.clear();
+        Result<LCompilers::LFortran::AST::TranslationUnit_t*> res =
+            parse(al, input, diagnostics, co);
+        REQUIRE(res.ok);
+        return res.result;
+    };
+
+    using K = LCompilers::LFortran::AST::decl_stmtType;
+    const std::vector<std::pair<std::string, K>> cases = {
+        {"open(newunit=u, file=\"x\")\n", K::Open},
+        {"open(unit=10, file=\"x\", status=\"replace\")\n", K::Open},
+        {"close(u)\n", K::Close},
+        {"rewind(u)\n", K::Rewind},
+        {"backspace(u)\n", K::Backspace},
+        {"endfile(u)\n", K::Endfile},
+        {"flush(u)\n", K::Flush},
+        {"inquire(unit=u, opened=ok)\n", K::Inquire},
+        {"nullify(p)\n", K::Nullify},
+        {"write(u, *)\n", K::Write},
+        {"write(u, \"(A)\") \"text\"\n", K::Write},
+        {"read(u, *)\n", K::Read},
+    };
+    for (auto &c : cases) {
+        auto *tu = parse_ok(c.first);
+        INFO(c.first);
+        REQUIRE(tu->n_items == 1);
+        REQUIRE(tu->m_items[0]->type == LCompilers::LFortran::AST::astType::decl_stmt);
+        CHECK(LCompilers::LFortran::AST::down_cast<
+            LCompilers::LFortran::AST::decl_stmt_t>(tu->m_items[0])->type == c.second);
+    }
+
+    auto *tu = parse_ok("y = open(x)\n");
+    REQUIRE(tu->n_items == 1);
+    REQUIRE(tu->m_items[0]->type == LCompilers::LFortran::AST::astType::decl_stmt);
+    auto *asg = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Assignment_t>(
+        LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_stmt_t>(
+            tu->m_items[0]));
+    REQUIRE(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::FuncCallOrArray_t>(
+        *asg->m_value));
+    CHECK(std::string(LCompilers::LFortran::AST::down_cast<
+        LCompilers::LFortran::AST::FuncCallOrArray_t>(asg->m_value)->m_func) == "open");
+
+    tu = parse_ok("program p\nopen(unit=10, file=\"x\")\nclose(10)\nend program\n");
+    REQUIRE(tu->n_items == 1);
+    auto *prog = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Program_t>(
+        LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::mod_t>(tu->m_items[0]));
+    REQUIRE(prog->n_items == 2);
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Open_t>(
+        *prog->m_items[0]));
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Close_t>(
         *prog->m_items[1]));
 }
