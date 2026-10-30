@@ -60,6 +60,9 @@
 #if LLVM_VERSION_MAJOR >= 17
     // TODO: removed from LLVM 17
     #include <llvm/Passes/PassBuilder.h>
+    #include <llvm/Transforms/Scalar/LICM.h>
+    #include <llvm/Transforms/Scalar/LoopPassManager.h>
+    #include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #else
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #endif
@@ -1027,6 +1030,12 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     PB.registerLoopAnalyses(LAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
     llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+    // Late simplifications expose invariant conditions guarding descriptor loads.
+    llvm::LoopPassManager LPM;
+    LPM.addPass(llvm::SimpleLoopUnswitchPass(/*NonTrivial=*/true));
+    LPM.addPass(llvm::LICMPass(llvm::LICMOptions()));
+    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
+        llvm::createFunctionToLoopPassAdaptor(std::move(LPM), /*UseMemorySSA=*/true)));
     MPM.run(m, MAM);
 
 #else

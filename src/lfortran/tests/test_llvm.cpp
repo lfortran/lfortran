@@ -1364,6 +1364,70 @@ end module
     }
 }
 
+#if LLVM_VERSION_MAJOR >= 17
+TEST_CASE("LLVM late cleanup hoists conditional window descriptors") {
+    std::ifstream file(std::string(LFORTRAN_PROJECT_SOURCE_DIR) +
+        "/integration_tests/array_conditional_window_updates.f90");
+    REQUIRE(file.good());
+    std::ostringstream contents;
+    contents << file.rdbuf();
+    std::string source = contents.str();
+    size_t program = source.find("\nprogram ");
+    REQUIRE(program != std::string::npos);
+    source.resize(program);
+    inspect_definitions(source, true,
+        {{"update", "_update_real_______1_real_______2"}},
+        [&](const std::string &, llvm::Function &fn) {
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            struct Accesses {
+                unsigned data_stores = 0, component_stores = 0, descriptor_loads = 0;
+            };
+            auto accesses = [](llvm::Loop *loop) {
+                Accesses result;
+                for (llvm::BasicBlock *block: loop->blocks()) {
+                    for (llvm::Instruction &inst: *block) {
+                        llvm::MDNode *tag = inst.getMetadata(llvm::LLVMContext::MD_tbaa);
+                        if (!tag) continue;
+                        auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                        auto *name = llvm::cast<llvm::MDString>(type->getOperand(0));
+                        if (auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                            if (!store->getValueOperand()->getType()->isFPOrFPVectorTy()) continue;
+                            result.data_stores += name->getString() == "data";
+                            result.component_stores += name->getString() == "allocated component";
+                        } else if (llvm::isa<llvm::LoadInst>(inst)) {
+                            result.descriptor_loads += name->getString() == "descriptor";
+                        }
+                    }
+                }
+                return result;
+            };
+            std::vector<llvm::Loop *> pending(loops.begin(), loops.end());
+            unsigned update_loops = 0;
+            while (!pending.empty()) {
+                llvm::Loop *loop = pending.back();
+                pending.pop_back();
+                pending.insert(pending.end(), loop->begin(), loop->end());
+                Accesses found = accesses(loop);
+                if (!found.data_stores || !found.component_stores) continue;
+                bool nested_update = false;
+                for (llvm::Loop *child: *loop) {
+                    Accesses nested = accesses(child);
+                    nested_update |= nested.data_stores && nested.component_stores;
+                }
+                if (nested_update) continue;
+                update_loops++;
+                CHECK(found.data_stores == 1);
+                CHECK(found.component_stores == 1);
+                CHECK(found.descriptor_loads == 0);
+                REQUIRE(loop->getParentLoop() != nullptr);
+                CHECK(accesses(loop->getParentLoop()).descriptor_loads == 0);
+            }
+            CHECK(update_loops == 1);
+        }, false, true);
+}
+#endif
+
 TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
     std::string source = R"(module saved_volatile_m
 implicit none
