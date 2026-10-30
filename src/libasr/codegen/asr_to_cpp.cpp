@@ -264,8 +264,8 @@ public:
         std::string result;
         std::string indent(indentation_level*indentation_spaces, ' ');
         for (size_t i = 0; i < x.n_args; i++) {
-            ASR::Variable_t* formal = ASRUtils::EXPR2VAR(x.m_args[i]);
-            if (!ASRUtils::is_array(formal->m_type) ||
+            ASR::Variable_t* formal = ASRUtils::expr_to_variable_or_null(x.m_args[i]);
+            if (!formal || !ASRUtils::is_array(formal->m_type) ||
                     ASRUtils::is_allocatable_or_pointer(formal->m_type)) {
                 continue;
             }
