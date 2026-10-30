@@ -1636,6 +1636,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "IntegerBinop kind 4: only x**2 implemented so far "
+                            "for powers", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
                             ASR::down_cast<ASR::IntegerConstant_t>(val);
@@ -1702,6 +1708,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "IntegerBinop kind 8: only x**2 implemented so far "
+                            "for powers", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
                             ASR::down_cast<ASR::IntegerConstant_t>(val);
@@ -1822,6 +1834,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "RealBinop: only x**2 implemented so far for "
+                            "powers", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
@@ -1880,6 +1898,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "RealBinop: only x**2 implemented so far for "
+                            "powers", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
