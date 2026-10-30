@@ -17,6 +17,7 @@
 #include <chrono>
 #include <thread>
 #include <llvm/Support/DynamicLibrary.h>
+#include <libasr/codegen/KaleidoscopeJIT.h>
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -55,6 +56,31 @@ using LCompilers::CompilerOptions;
 // Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
 // FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
 #ifndef __EMSCRIPTEN__
+
+TEST_CASE("JIT code sections share one reservation") {
+    llvm::orc::ContiguousSectionMemoryManager memory;
+#if LLVM_VERSION_MAJOR >= 16
+    const llvm::Align alignment(64);
+#else
+    const uint32_t alignment = 64;
+#endif
+    memory.reserveAllocationSpace(65536 + 128, alignment,
+        131072, alignment, 0, alignment);
+    uint8_t *first = memory.allocateCodeSection(33, 32, 0, ".text.first");
+    REQUIRE(first != nullptr);
+    REQUIRE(memory.allocateDataSection(131072, 64, 1, ".rodata", true)
+        != nullptr);
+    uint8_t *second = memory.allocateCodeSection(65536, 64, 2, ".text.second");
+    REQUIRE(second != nullptr);
+    uint8_t *third = memory.allocateCodeSection(8, 16, 3, ".text.third");
+    REQUIRE(third != nullptr);
+    CHECK(second == first + 64);
+    CHECK(third == second + 65536);
+    CHECK(reinterpret_cast<uintptr_t>(second) % 64 == 0);
+    std::string error;
+    INFO(error);
+    CHECK_FALSE(memory.finalizeMemory(&error));
+}
 
 TEST_CASE("LLVM target configuration") {
     CompilerOptions default_options;
