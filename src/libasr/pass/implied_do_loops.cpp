@@ -928,6 +928,17 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         result_var = result_var_copy;
     }
 
+    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        if (materialize_constants && x->m_value &&
+                ASR::is_a<ASR::ArrayConstant_t>(*x->m_value)) {
+            // Materialize the whole folded result before IO preparation can
+            // capture it as a parameter initializer, not its cached metadata.
+            replace_ArrayConstant(ASR::down_cast<ASR::ArrayConstant_t>(x->m_value));
+            return;
+        }
+        ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_IntrinsicArrayFunction(x);
+    }
+
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         [[maybe_unused]] bool is_arr_construct_arg = ASR::is_a<ASR::ArrayConstructor_t>(*x->m_arg);
         ASR::BaseExprReplacer<ReplaceArrayConstant>::replace_ArrayPhysicalCast(x);

@@ -36,4 +36,9 @@ program array_07_pack
     if (wide(1) /= 10000000007_8 .or. wide(2) /= 10000000008_8) error stop 9
     if (wide(3) /= 10000000009_8 .or. wide(4) /= 10000000010_8) error stop 10
     if (matrix(-1,4) /= 10000000007_8) error stop 11
+
+    print *, pack([1.0], .true.)
+    print *, 7.0_8, pack([1.0_8, 2.0_8, 3.0_8], [.true., .false., .true.]), 9.0_8
+    selected = pack([1, 2, 3], [.true., .false., .true.])
+    if (selected(1) /= 1 .or. selected(2) /= 3) error stop 12
 end program
