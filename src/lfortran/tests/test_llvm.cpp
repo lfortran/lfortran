@@ -795,6 +795,132 @@ end module
     }
 }
 
+TEST_CASE("LLVM reuses repeated pure array calls within arithmetic assignments") {
+    std::string source = R"(module pure_array_calls
+implicit none
+type :: activation
+contains
+    procedure :: evaluate
+end type
+contains
+pure function evaluate(self, x) result(y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = x + 1.0
+end function
+subroutine repeated(self, x, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine different_arguments(self, x, z, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:), z(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) + self%evaluate(z)
+end subroutine
+subroutine different_receivers(self, other, x, y)
+    class(activation), intent(in) :: self, other
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) + other%evaluate(x)
+end subroutine
+function impure_scalar() result(x)
+    real :: x
+    x = 1.0
+end function
+subroutine impure_surroundings(self, x, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x)) + impure_scalar()
+end subroutine
+subroutine volatile_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, volatile, intent(inout) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine asynchronous_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, asynchronous, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine target_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, target, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine pointer_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, pointer, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+pure function invoke(callback, x) result(y)
+    interface
+        pure real function callback(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = x + callback(1.0)
+end function
+subroutine procedure_actual(callback, x, y)
+    interface
+        pure real function callback(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = invoke(callback, x) + invoke(callback, x)
+end subroutine
+end module
+)";
+    for (int mode = 0; mode < 7; mode++) {
+        inspect_definitions(source, mode != 0,
+            {{"repeated", "_repeated_real____1_real____2"},
+             {"different_arguments", "_different_arguments_real____1_real____2_real____3"},
+             {"different_receivers", "_different_receivers_real____2_real____3"},
+             {"impure_surroundings", "_impure_surroundings_real____1_real____2"},
+             {"volatile_actual", "_volatile_actual_real____1_real____2"},
+             {"asynchronous_actual", "_asynchronous_actual_real____1_real____2"},
+             {"target_actual", "_target_actual_real____2"},
+             {"pointer_actual", "_pointer_actual"},
+             {"procedure_actual", "_procedure_actual_real____1_real____2"}},
+            [&](const std::string &name, llvm::Function &fn) {
+                unsigned indirect_calls = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                        if (call && (!call->getCalledFunction() ||
+                                (name == "procedure_actual" &&
+                                call->getCalledFunction()->getName().contains("invoke")))) {
+                            indirect_calls++;
+                        }
+                    }
+                }
+                INFO("mode: " << mode << ", procedure: " << name);
+                CHECK(indirect_calls == ((mode == 1 || mode == 6) &&
+                    name == "repeated" ? 1 : 2));
+            }, false, false, false,
+            [&](CompilerOptions &co) {
+                co.po.openmp = mode == 2;
+                co.po.coarray = mode == 3;
+                co.po.gpu_offload_metal = mode == 4;
+                co.po.gpu_offload_cuda = mode == 5;
+                co.po.stack_arrays = mode == 6;
+                co.po.verify_all_passes = true;
+            });
+    }
+}
+
 TEST_CASE("LLVM rank-one SIZE avoids a runtime rank loop") {
     std::string source = R"(module size_calls
 implicit none
