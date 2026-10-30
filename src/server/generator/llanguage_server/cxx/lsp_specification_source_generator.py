@@ -169,7 +169,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             that_array: str,
             this_is_pointer: bool = False,
             that_is_pointer: bool = False,
-            init_array: Callable[[], None] = noop
+            init_array: Callable[[], None] = noop,
+            init_copy: Optional[Callable[[str], None]] = None
     ) -> None:
         array_spec = array_symbol.spec
         that_expr = that_array
@@ -180,10 +181,17 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.type_declaration_options(wrap_ptr=False):
                 type_name = self.get_type_declaration(array_spec)
             this_expr = f'std::make_unique<{type_name}>({that_expr})'
+
+        def assign_copy() -> None:
+            if init_copy is None:
+                self.gen_assign(this_array, this_expr)
+            else:
+                init_copy(this_expr)
+
         elem_spec: LspSpec = array_spec["element"]
         match elem_spec["kind"]:
             case "base":
-                self.gen_assign(this_array, this_expr)
+                assign_copy()
             case "reference":
                 elem_type_name = elem_spec["name"]
                 match elem_type_name:
@@ -209,11 +217,11 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                                     init_array
                                 )
                             case LspSymbolKind.ENUMERATION | LspSymbolKind.UNION:
-                                self.gen_assign(this_array, this_expr)
+                                assign_copy()
                             case _:
                                 raise ValueError(f'Unsupported array type ({elem_symbol.kind}): {elem_symbol.spec}')
             case "or":
-                self.gen_assign(this_array, this_expr)
+                assign_copy()
             case "literal":
                 self.gen_copy_array_2(
                     array_symbol,
@@ -1064,6 +1072,9 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                         init_array=lambda: self.update_union_field(
                             f'_{field_name}', array_type,
                             f'std::make_unique<{array_type}>()'
+                        ),
+                        init_copy=lambda value: self.update_union_field(
+                            f'_{field_name}', array_type, value
                         )
                     )
                 case LspSymbolKind.MAP:
