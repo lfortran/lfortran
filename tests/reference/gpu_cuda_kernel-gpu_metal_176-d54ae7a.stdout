@@ -8,8 +8,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int mbs;
     int n;
     int __loop_end_0;
+    int __gpu_heap_cap_r4;
     int __workspace_extent;
-    int __workspace_extent1;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -18,14 +18,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ __offsets_arr_values_,
     int* __restrict__ __sizes_arr_values_,
     float* __restrict__ cost,
+    float* __restrict__ __gpu_heap_r4,
+    int* __restrict__ __gpu_heap_state,
+    int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __restrict__ __workspace_6,
-    float* __restrict__ __workspace_7)
+    float* __restrict__ __workspace_9)
 {
     int n = __scalar_args.n;
     int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     int __workspace_extent = __scalar_args.__workspace_extent;
-    int __workspace_extent1 = __scalar_args.__workspace_extent1;
     int __flat_idx;
     int __gpu_elem_i;
     int __gpu_elem_i1;
@@ -39,22 +41,34 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __do_loop_end;
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* a = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        float* a = __workspace_9 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         {
             int __do_loop_end;
             int __do_loop_end1;
-            float* v = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-            __do_loop_end = (__sizes_arr_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+            int __gpu_heap_v_base;
+            int __gpu_heap_v_lb1;
+            int __gpu_heap_v_n1;
+            __gpu_heap_v_base = -1;
+            __gpu_heap_v_lb1 = 1;
+            __gpu_heap_v_n1 = __sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 0];
+            __gpu_heap_v_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_v_n1);
+            if ((__gpu_heap_v_base > (__gpu_heap_cap_r4 - __gpu_heap_v_n1))) {
+                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                    __gpu_stop_status[((int)(1) - (1))] = 1;
+                }
+                return;
+            }
+            __do_loop_end = __gpu_heap_v_n1;
             __gpu_elem_i = (1 - 1);
             while (((__gpu_elem_i + 1) <= __do_loop_end)) {
                 __gpu_elem_i = (__gpu_elem_i + 1);
-                v[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_values_[__offsets_arr_values_[((int)(i__dc) - (1))] + ((int)((__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1]))];
+                __gpu_heap_r4[((int)(((__gpu_heap_v_base + 1) + ((__gpu_heap_v_lb1 + (__gpu_elem_i - 1)) - __gpu_heap_v_lb1))) - (1))] = __data_arr_values_[__offsets_arr_values_[((int)(i__dc) - (1))] + ((int)((__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1]))];
             }
             __do_loop_end1 = max(0, n);
             __gpu_elem_i1 = (1 - 1);
             while (((__gpu_elem_i1 + 1) <= __do_loop_end1)) {
                 __gpu_elem_i1 = (__gpu_elem_i1 + 1);
-                a[((int)(__gpu_elem_i1) - (1))] = v[((int)((1 + (__gpu_elem_i1 - 1))) - (1))];
+                a[((int)(__gpu_elem_i1) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap_v_base + 1) + ((__gpu_heap_v_lb1 + (__gpu_elem_i1 - 1)) - __gpu_heap_v_lb1))) - (1))];
             }
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
