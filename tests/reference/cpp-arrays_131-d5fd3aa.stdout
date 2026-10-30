@@ -42,11 +42,12 @@ void automatic_array(int32_t n);
 namespace {
 void automatic_array(int32_t n)
 {
-    Kokkos::View<int32_t*> a_data("a_data", 1 * (n));
+    int32_t __libasr_extent_a_1=((0) > (n) ? (0) : (n));
+    Kokkos::View<int32_t*> a_data("a_data", 1 * (__libasr_extent_a_1));
     i32__1 a_value(&a_data);
     i32__1* a = &a_value;
     a->dims[0].lower_bound = 1;
-    a->dims[0].length = n;
+    a->dims[0].length = __libasr_extent_a_1;
     a->is_allocated = true;
     int32_t i;
     int32_t s;
