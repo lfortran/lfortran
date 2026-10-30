@@ -1417,8 +1417,18 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(x.m_value);
         if( ASR::is_a<ASR::ArraySection_t>(*value) ) {
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(value);
-            section->m_v = contiguous_array_storage(section->m_v,
+            ASR::expr_t* storage = contiguous_array_storage(section->m_v,
                 section->base.base.loc);
+            if( storage != section->m_v ) {
+                // A vector subscript can also reference this section through
+                // an ArrayItem that still expects its descriptor.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::Associate_t& associate = const_cast<ASR::Associate_t&>(x);
+                associate.m_value = duplicator.duplicate_expr(x.m_value);
+                section = ASR::down_cast<ASR::ArraySection_t>(
+                    ASRUtils::get_past_array_physical_cast(associate.m_value));
+                section->m_v = storage;
+            }
         }
     }
 
