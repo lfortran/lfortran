@@ -27,7 +27,7 @@ struct i32_3_1
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[1];
-    bool is_allocated;
+    bool is_allocated = false;
 
     i32_3_1(Kokkos::View<int32_t*>* data_): data{data_} {};
 };
@@ -37,7 +37,7 @@ struct i32_4_1
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[1];
-    bool is_allocated;
+    bool is_allocated = false;
 
     i32_4_1(Kokkos::View<int32_t*>* data_): data{data_} {};
 };

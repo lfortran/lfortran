@@ -3555,6 +3555,10 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "../integration_tests/allocatable_07.f90"
+c = true
+
+[[test]]
 filename = "errors/wasm_external_procedure.f90"
 wat = true
 

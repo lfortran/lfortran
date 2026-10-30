@@ -1,0 +1,13 @@
+{
+    "basename": "c-allocatable_07-f06f61d",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/../integration_tests/allocatable_07.f90",
+    "infile_hash": "7be42a302956f60d3cddf7935ed3e06a57317dccde83fbb6c16e1963",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "c-allocatable_07-f06f61d.stderr",
+    "stderr_hash": "eef8cd42dbf3cde17aaa451ecc05956d9101490a7cbddfd4927547d8",
+    "returncode": 1
+}

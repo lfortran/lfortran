@@ -1,0 +1,5 @@
+code generation error: scalar allocatables are not supported by the C backend yet
+ --> tests/../integration_tests/allocatable_07.f90:5:14
+  |
+5 |     allocate(n)
+  |              ^ 

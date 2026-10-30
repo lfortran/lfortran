@@ -9,6 +9,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/string_length_arguments.h>
 
 
 namespace LCompilers {
@@ -134,7 +135,7 @@ public:
         std::string array_data = format_type("*", type_name, "data", false, false, true, "*");
         new_array_type = struct_name + "\n{\n    " + array_data +
                             ";\n    dimension_descriptor dims[" +
-                            std::to_string(n_dims) + "];\n    bool is_allocated;\n\n";
+                            std::to_string(n_dims) + "];\n    bool is_allocated = false;\n\n";
         std::string constructor = "    " + name + "(" + array_data + "_): data{data_} {};\n};\n";
         new_array_type += constructor;
         type_name = name + "*";
@@ -256,7 +257,8 @@ public:
                         v.m_intent == ASRUtils::intent_inout ||
                         v.m_intent == ASRUtils::intent_unspecified
                         );
-        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(v.m_type);
+        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(v.m_type));
         if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
             ASR::Function_t* iface = nullptr;
             if (v.m_type_declaration) {
@@ -392,6 +394,22 @@ public:
                 std::string init = src;
                 sub += "=" + init;
             }
+        }
+        if (is_scalar_allocatable(&v)) {
+            headers.insert("optional");
+            std::string value_type = ASRUtils::is_character(*v.m_type)
+                ? "std::string" : CUtils::get_c_type_from_ttype_t(
+                    ASRUtils::type_get_past_allocatable(v.m_type), false);
+            sub = "std::optional<" + value_type + "> ";
+            if (dummy) {
+                if (v.m_intent == ASRUtils::intent_in) {
+                    sub = "const " + sub;
+                }
+                sub += "&";
+            } else if (v.m_storage == ASR::storage_typeType::Save && use_static) {
+                sub = "static " + sub;
+            }
+            sub += v.m_name;
         }
         return sub;
     }
@@ -805,6 +823,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    pass_scalar_allocatable_string_lengths(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);

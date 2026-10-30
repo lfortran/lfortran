@@ -27,7 +27,7 @@ struct f32_5_1
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[1];
-    bool is_allocated;
+    bool is_allocated = false;
 
     f32_5_1(Kokkos::View<float*>* data_): data{data_} {};
 };
@@ -37,7 +37,7 @@ struct i32_3_1
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[1];
-    bool is_allocated;
+    bool is_allocated = false;
 
     i32_3_1(Kokkos::View<int32_t*>* data_): data{data_} {};
 };
@@ -47,7 +47,7 @@ struct f32_2_3_2
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[2];
-    bool is_allocated;
+    bool is_allocated = false;
 
     f32_2_3_2(Kokkos::View<float*>* data_): data{data_} {};
 };
@@ -57,7 +57,7 @@ struct i32_3_4_2
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[2];
-    bool is_allocated;
+    bool is_allocated = false;
 
     i32_3_4_2(Kokkos::View<int32_t*>* data_): data{data_} {};
 };
@@ -67,7 +67,7 @@ struct f32_2_3_4_3
 {
     Kokkos::View<float*>* data;
     dimension_descriptor dims[3];
-    bool is_allocated;
+    bool is_allocated = false;
 
     f32_2_3_4_3(Kokkos::View<float*>* data_): data{data_} {};
 };
@@ -77,7 +77,7 @@ struct i32_3_4_3_3
 {
     Kokkos::View<int32_t*>* data;
     dimension_descriptor dims[3];
-    bool is_allocated;
+    bool is_allocated = false;
 
     i32_3_4_3_3(Kokkos::View<int32_t*>* data_): data{data_} {};
 };

@@ -70,6 +70,12 @@ to have its hidden length and every call to pass it.
 
 The LLVM and C code generators pass character dummies as this pass lays them
 out, so it is required for them, like the other lowering passes.
+
+The scalar_allocatable_string_lengths entry point reuses this lowering for
+assumed-length scalar allocatable dummies in backends whose allocation storage
+does not independently retain their declared length. It passes the declared
+actual length, also while unallocated, and replaces LEN(dummy) with that
+argument. It does not change the LLVM/C character-dummy ABI above.
 */
 namespace LCompilers {
 
@@ -78,17 +84,20 @@ using ASR::is_a;
 
 namespace {
 
-// The procedures this pass gave hidden arguments, with their number of
-// arguments before it did.
-typedef std::map<ASR::symbol_t*, size_t> TransformedProcedures;
+// The original arguments and the dummies selected for hidden lengths.
+struct LengthArguments {
+    size_t original_count;
+    std::vector<size_t> strings;
+};
+typedef std::map<ASR::symbol_t*, LengthArguments> TransformedProcedures;
 
 ASR::ttype_t* hidden_length_type(Allocator &al, const Location &loc) {
     return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
 }
 
-// The String inside a scalar or array character type.
+// The String inside a scalar or array character type, possibly allocatable.
 ASR::String_t* string_of(ASR::ttype_t *t) {
-    return down_cast<ASR::String_t>(ASRUtils::type_get_past_array(t));
+    return ASRUtils::get_string_type(t);
 }
 
 // A copy of the type `t` of a dummy, with the same array physical type.
@@ -104,7 +113,7 @@ ASR::ttype_t* duplicate_dummy_type(Allocator &al, ASR::ttype_t *t) {
 // hidden `integer(8), value, intent(in)` dummy, appended after all the other
 // dummies, and makes it the length of an assumed-length dummy.
 void add_hidden_length_dummies(Allocator &al, ASR::Function_t *fn,
-        TransformedProcedures &transformed) {
+        TransformedProcedures &transformed, bool scalar_allocatable) {
     ASR::symbol_t *fn_sym = &fn->base;
     if (transformed.find(fn_sym) != transformed.end()) return;
     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
@@ -112,7 +121,22 @@ void add_hidden_length_dummies(Allocator &al, ASR::Function_t *fn,
     LCOMPILERS_ASSERT(ft->n_arg_types == fn->n_args);
     std::vector<size_t> strings;
     for (size_t i = 0; i < fn->n_args; i++) {
-        if (ASRUtils::is_string_dummy_with_hidden_length(*fn, fn->m_args[i])) {
+        bool needs_length = false;
+        if (scalar_allocatable) {
+            if (!is_a<ASR::Var_t>(*fn->m_args[i])) continue;
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t *v = down_cast<ASR::Variable_t>(sym);
+            needs_length = ASRUtils::is_allocatable(v->m_type)
+                && !ASRUtils::is_array(v->m_type)
+                && ASRUtils::is_character(*v->m_type)
+                && string_of(v->m_type)->m_len_kind == ASR::AssumedLength;
+        } else {
+            needs_length = ASRUtils::is_string_dummy_with_hidden_length(
+                *fn, fn->m_args[i]);
+        }
+        if (needs_length) {
             strings.push_back(i);
         }
     }
@@ -176,7 +200,7 @@ void add_hidden_length_dummies(Allocator &al, ASR::Function_t *fn,
     // pointer component share it rather than holding a copy.
     ft->m_arg_types = arg_types.p;
     ft->n_arg_types = arg_types.size();
-    transformed[fn_sym] = n;
+    transformed[fn_sym] = {n, strings};
 }
 
 // Every procedure that is not a template.
@@ -415,13 +439,15 @@ class AddHiddenLengthActuals: public ASR::ASRPassBaseWalkVisitor<AddHiddenLength
 public:
     Allocator &al;
     const TransformedProcedures &transformed;
+    bool scalar_allocatable;
     // The statements to insert before the statement being visited, or null
     // where an expression cannot be moved before it (a loop condition).
     Vec<ASR::stmt_t*> *before = nullptr;
 
     AddHiddenLengthActuals(Allocator &al_,
-        const TransformedProcedures &transformed_):
-        al{al_}, transformed{transformed_} {}
+        const TransformedProcedures &transformed_, bool scalar_allocatable_):
+        al{al_}, transformed{transformed_},
+        scalar_allocatable{scalar_allocatable_} {}
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> *before_copy = before;
@@ -529,8 +555,27 @@ public:
         if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
                 str->m_len && ASRUtils::extract_value(
                     ASRUtils::expr_value(str->m_len), len)) {
+            if (scalar_allocatable && len < 0) len = 0;
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, len,
                 int8, ASR::integerbozType::Decimal));
+        }
+        if (scalar_allocatable) {
+            // A nondeferred allocatable has a declared length even while
+            // unallocated. Never obtain that length from its payload.
+            LCOMPILERS_ASSERT(str->m_len_kind == ASR::ExpressionLength
+                && str->m_len);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            duplicator.allow_procedure_calls = true;
+            ASR::expr_t *length = duplicator.duplicate_expr(str->m_len);
+            length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, loc,
+                length, ASR::cast_kindType::IntegerToInteger, int8));
+            ASR::expr_t *zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 0, int8, ASR::integerbozType::Decimal));
+            ASR::expr_t *positive = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, length, ASR::cmpopType::Gt, zero,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, positive,
+                length, zero, int8, nullptr));
         }
         // The length is taken from the actual itself, which is then
         // evaluated twice: a call with a side effect in it is evaluated
@@ -551,7 +596,8 @@ public:
     void add_actuals(T &x) {
         ASR::Function_t *fn = callee(x.m_name);
         if (fn == nullptr) return;
-        size_t n = transformed.at(&fn->base);
+        const LengthArguments &lengths = transformed.at(&fn->base);
+        size_t n = lengths.original_count;
         if (x.n_args > n) return;  // Already has them.
         Vec<ASR::call_arg_t> args;
         args.reserve(al, fn->n_args);
@@ -562,11 +608,7 @@ public:
             if (i < x.n_args) arg = x.m_args[i];
             args.push_back(al, arg);
         }
-        for (size_t i = 0; i < n; i++) {
-            if (!ASRUtils::is_string_dummy_with_hidden_length(*fn,
-                    fn->m_args[i])) {
-                continue;
-            }
+        for (size_t i : lengths.strings) {
             ASR::call_arg_t arg;
             arg.loc = args[i].loc;
             arg.m_value = actual_length(args.p[i].m_value, arg.loc);
@@ -588,10 +630,52 @@ public:
     }
 };
 
-} // namespace
+class ReplaceAllocatableLength: public ASR::BaseExprReplacer<ReplaceAllocatableLength> {
+public:
+    Allocator &al;
+    std::set<ASR::symbol_t*> dummies;
 
-void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
+    ReplaceAllocatableLength(Allocator &al_, const TransformedProcedures &transformed)
+        : al{al_} {
+        call_replacer_on_value = false;
+        for (const auto &item : transformed) {
+            ASR::Function_t *fn = down_cast<ASR::Function_t>(item.first);
+            for (size_t i : item.second.strings) {
+                dummies.insert(&ASRUtils::EXPR2VAR(fn->m_args[i])->base);
+            }
+        }
+    }
+
+    void replace_StringLen(ASR::StringLen_t *x) {
+        if (!is_a<ASR::Var_t>(*x->m_arg)) return;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            down_cast<ASR::Var_t>(x->m_arg)->m_v);
+        if (dummies.count(sym) == 0) return;
+        *current_expr = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
+            x->base.base.loc,
+            string_of(down_cast<ASR::Variable_t>(sym)->m_type)->m_len,
+            ASR::cast_kindType::IntegerToInteger, x->m_type));
+    }
+};
+
+class ReplaceAllocatableLengths:
+        public ASR::CallReplacerOnExpressionsVisitor<ReplaceAllocatableLengths> {
+public:
+    ReplaceAllocatableLength replacer;
+
+    ReplaceAllocatableLengths(Allocator &al, const TransformedProcedures &transformed)
+        : replacer(al, transformed) {
+        call_replacer_on_value = false;
+    }
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+};
+
+void lower_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
+        const LCompilers::PassOptions &pass_options, bool scalar_allocatable) {
     // In interactive mode each cell is a TranslationUnit chained to copies of
     // the earlier cells (see FortranEvaluator::snapshot_cell_scope), which no
     // pass has seen. Their procedures were compiled with hidden lengths, so
@@ -620,7 +704,7 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     TransformedProcedures transformed;
     for (ASR::Function_t *fn : procedures) {
-        add_hidden_length_dummies(al, fn, transformed);
+        add_hidden_length_dummies(al, fn, transformed, scalar_allocatable);
     }
     if (transformed.empty()) return;
 
@@ -630,15 +714,32 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
             u.visit_symbol(*item.second);
         }
     }
-    AddHiddenLengthActuals a(al, transformed);
+    AddHiddenLengthActuals a(al, transformed, scalar_allocatable);
     a.visit_TranslationUnit(unit);
+    if (scalar_allocatable) {
+        ReplaceAllocatableLengths r(al, transformed);
+        r.visit_TranslationUnit(unit);
+    }
     PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     ASRVerifyOptions verify_options;
-    verify_options.string_length_arguments = true;
+    verify_options.string_length_arguments = !scalar_allocatable;
     PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
-        "string_length_arguments");
+        scalar_allocatable ? "scalar_allocatable_string_lengths"
+                           : "string_length_arguments");
+}
+
+} // namespace
+
+void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
+        const LCompilers::PassOptions &pass_options) {
+    lower_string_length_arguments(al, unit, pass_options, false);
+}
+
+void pass_scalar_allocatable_string_lengths(Allocator &al,
+        ASR::TranslationUnit_t &unit, const LCompilers::PassOptions &pass_options) {
+    lower_string_length_arguments(al, unit, pass_options, true);
 }
 
 } // namespace LCompilers
