@@ -193,21 +193,26 @@ def check_transport_progress(client, directory):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
+    parser.add_argument("--plain-lib",
+                        help="shared library holding plain(), for the JIT checks")
     parser.add_argument("--streaming-only", action="store_true")
     parser.add_argument("--mode", choices=("normal", "fast", "f23"), default="normal")
     args = parser.parse_args()
     assert args.streaming_only or args.mode == "normal", "modes apply to the focused streaming checks"
     adapters = [False, True] if builtin_stop_kernel(args.lfortran) else [False]
     for managed in adapters:
-        run_kernel(args.lfortran, managed, args.streaming_only, args.mode)
+        run_kernel(args.lfortran, managed, args.streaming_only, args.mode,
+                  args.plain_lib)
         if args.streaming_only:
             continue
         for code, status, shown in [("if (.true.) stop", 0, ""), ("stop 3", 3, "STOP 3"),
                 ("error stop", 1, "ERROR STOP")]:
             check_stop_flushes(args.lfortran, code, status, shown, managed)
+    if args.plain_lib and not args.streaming_only:
+        check_kernel_flags(args.lfortran, args.plain_lib)
 
 
-def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
+def run_kernel(lfortran, managed, streaming_only=False, mode="normal", plain_lib=None):
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -277,6 +282,18 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
                     "display_data") for m in messages), messages
             reply, _ = execute(client, "integer :: broken(")
             assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            # An unknown line magic fails the cell and names itself.
+            reply, _ = execute(client, "%frobnicate x")
+            assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+            assert "unknown magic" in reply["evalue"], reply
+            if plain_lib:
+                # %load_library is a magic-only cell: ok, no value; the
+                # library's symbol is callable from the cells that follow.
+                check(client, "%load_library " + plain_lib, [])
+                check(client, "integer function callplain()\n"
+                      "interface\ninteger function plain() bind(c)\nend function\nend interface\n"
+                      "callplain = plain()\nend function", [])
+                check(client, "callplain()", ["7"])
             # An inspection cell does not add its declarations to the session.
             check(client, "%%showasr\ninteger :: inspected", [])
             reply, _ = execute(client, "inspected")
@@ -337,6 +354,57 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
         (directory / "release").unlink(missing_ok=True)
         waiter.unlink(missing_ok=True)
         log.unlink(missing_ok=True)
+        directory.rmdir()
+
+
+def check_kernel_flags(lfortran, plain_lib):
+    """A kernel started with --load-library and -I can call the library's
+    symbol and use a module from that directory without any magic."""
+    directory = Path.cwd() / ("kernel-flags-" + uuid.uuid4().hex)
+    directory.mkdir(mode=0o700)
+    (directory / "kmodflag.f90").write_text(
+        "module kmodflag\ncontains\ninteger function modval()\n"
+        "modval = 42\nend function\nend module\n")
+    subprocess.run([lfortran, "-c", "kmodflag.f90"], cwd=str(directory),
+                   check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    connection = directory / "connection.json"
+    log = directory / "kernel.log"
+    write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode())
+    client = None
+    process = None
+    try:
+        with log.open("wb") as output:
+            process = subprocess.Popen(
+                [lfortran, "kernel", "-f", str(connection),
+                 "--load-library", plain_lib, "-I", str(directory)],
+                stdin=subprocess.DEVNULL, stdout=output, stderr=output)
+            client = BlockingKernelClient(connection_file=str(connection))
+            client.load_connection_file()
+            client.start_channels()
+            client.wait_for_ready(timeout=30)
+            check(client, "integer function callplain()\n"
+                  "interface\ninteger function plain() bind(c)\nend function\nend interface\n"
+                  "callplain = plain()\nend function", [])
+            check(client, "callplain()", ["7"])
+            check(client, "use kmodflag, only: modval\nmodval()", ["42"])
+            client.shutdown()
+            process.wait(timeout=15)
+            assert process.returncode == 0, process.returncode
+        print("kernel flags --load-library and -I: passed")
+    finally:
+        if client:
+            client.stop_channels()
+        if process and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+        connection.unlink(missing_ok=True)
+        log.unlink(missing_ok=True)
+        for name in ("kmodflag.f90", "kmodflag.mod", "kmodflag.o"):
+            (directory / name).unlink(missing_ok=True)
         directory.rmdir()
 
 

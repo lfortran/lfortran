@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -3808,6 +3809,97 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     CHECK(cell.diagnostics.find("warning: Different kinds of args in max0")
         != std::string::npos);
 }
+
+TEST_CASE("FortranEvaluator execute: %include_dir and unknown magic") {
+    // A module whose modfile no session searches until a cell names the
+    // directory.
+    const char *modsrc = R"(module mdirmod
+implicit none
+contains
+integer function modval()
+modval = 42
+end function
+end module
+)";
+    namespace fs = std::filesystem;
+    fs::create_directories("magicmoddir");
+    {
+        Allocator al(1024*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = "mdirmod.f90";
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(std::strlen(modsrc)));
+        LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
+            LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics, nullptr,
+                false, co, lm));
+        std::ofstream out("magicmoddir/mdirmod.mod", std::ios::binary);
+        out << LCompilers::save_modfile(*asr, lm);
+    }
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    // Without the magic the module is not found.
+    CHECK(!e.execute("integer function withoutdir()\nuse mdirmod, only: modval\nwithoutdir = modval()\nend function").ok);
+    // The magic and the cell that needs it may share one cell.
+    auto cell = e.execute("%include_dir magicmoddir\ninteger function withdir()\nuse mdirmod, only: modval\nwithdir = modval()\nend function");
+    INFO(cell.error_text());
+    REQUIRE(cell.ok);
+    CHECK(!cell.inspection);
+    cell = e.execute("withdir()");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.i32 == 42);
+    // A magic-only cell is ok and has no value.
+    cell = e.execute("%include_dir otherdir");
+    REQUIRE(cell.ok);
+    CHECK(!cell.value.has_value());
+    // An unknown magic fails the cell and does not stop the session.
+    cell = e.execute("%frobnicate x");
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "CompilerError");
+    CHECK(cell.error_value.find("unknown magic") != std::string::npos);
+    cell = e.execute("%load_library");
+    CHECK(!cell.ok);
+    CHECK(cell.error_value.find("missing argument") != std::string::npos);
+    CHECK(e.execute("withdir()").value.i32 == 42);
+    // A %% inspection cell after a magic still inspects.
+    REQUIRE(e.execute("%include_dir magicmoddir\n%%showasr\ninteger :: inspected").ok);
+    fs::remove_all("magicmoddir");
+}
+
+#ifdef LFORTRAN_TEST_SHARED_PLAIN2
+TEST_CASE("FortranEvaluator execute: %load_library") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    // plain2 lives only in a library the process has not loaded. Defining a
+    // caller passes because the JIT materialises on the first call; that
+    // call fails, and a failed materialisation stays failed for the name,
+    // so after the load the session reaches plain2 through a fresh caller.
+    const std::string iface = "interface\ninteger function plain2() bind(c)\nend function\nend interface\n";
+    REQUIRE(e.execute("integer function earlyplain()\n" + iface + "earlyplain = plain2()\nend function").ok);
+    auto cell = e.execute("earlyplain()");
+    CHECK(!cell.ok);
+    cell = e.execute(std::string("%load_library ") + LFORTRAN_TEST_SHARED_PLAIN2);
+    INFO(cell.error_text());
+    REQUIRE(cell.ok);
+    CHECK(!cell.value.has_value());
+    CHECK(cu.jit_libraries.size() == 1);
+    REQUIRE(e.execute("integer function lateplain()\n" + iface + "lateplain = plain2()\nend function").ok);
+    cell = e.execute("lateplain()");
+    INFO(cell.error_text());
+    REQUIRE(cell.ok);
+    CHECK(cell.value.i32 == 11);
+    // A missing file is an error the cell reports, not a crash.
+    cell = e.execute("%load_library nowhere-nothere.so");
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "CompilerError");
+    CHECK(cell.error_value.find("nowhere-nothere.so") != std::string::npos);
+    CHECK(e.execute("lateplain()").value.i32 == 11);
+}
+#endif
 
 TEST_CASE("FortranEvaluator execute: persistent implicit none") {
     for (int mode = 0; mode < 3; mode++) {

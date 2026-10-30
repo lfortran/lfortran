@@ -39,6 +39,34 @@ module is built with or without Xeus. `execute()` does not capture
 stdout/stderr; that is up to the frontend. Jupyter messages must be UTF-8, so
 the kernel shows any other bytes of a cell's output as U+FFFD.
 
+## Line magics and external libraries
+
+Before the inspection cell, the first line of a cell may be a line magic that
+starts with a single `%` and acts on the session: `%include_dir DIR` adds
+`DIR` to the directories searched for `.mod` files, and `%load_library PATH`
+loads a shared library or static archive into the JIT so that later cells can
+call its symbols. Magics stack, a cell that holds nothing but magics is
+reported as a successful statement with no value, and the rest of the cell is
+compiled as usual — so `%include_dir DIR` and the first `use` of a module in
+`DIR` may share one cell. Any other `%word`, and either magic without its
+argument, fails the cell with a `CompilerError` naming the magic; the session
+continues.
+
+The kernel takes the same settings as flags, repeatable like the magics:
+`lfortran kernel -f conn.json --load-library PATH -I DIR`. The directories
+join the `.mod` search of every cell, and the libraries are loaded when the
+JIT is created, before the first cell that needs one.
+
+A shared library is resolved by the OS and its symbols answer lookups from the
+whole process from then on. A static archive is instead materialised into the
+JIT piece by piece, and its objects are bound by the JIT linker; the test
+fixture is built position-independent (`-fPIC`), which is the form to use.
+A missing or unreadable file fails the cell or the kernel start with an error
+naming it.
+Load a library before the first cell that calls into it: a call whose symbol
+the JIT could not resolve stays unresolved for that name in the session, even
+after the library is loaded.
+
 ## Runtime input
 
 `CellIO::input`, when set, supplies the records that READ from stdin consumes

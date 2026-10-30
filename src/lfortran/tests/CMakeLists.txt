@@ -118,10 +118,17 @@ if (WITH_LLVM AND NOT EMSCRIPTEN)
         WINDOWS_EXPORT_ALL_SYMBOLS ON)
     add_library(jit_load_plain_archive_fixture STATIC plain.c)
     set_target_properties(jit_load_plain_archive_fixture PROPERTIES OUTPUT_NAME plain-jit-static)
+    # A second shared fixture: a dlopen is permanent, so a test that must see
+    # a symbol unresolvable before the load cannot reuse plain-jit.
+    add_library(jit_load_plain2_fixture SHARED plain2.c)
+    set_target_properties(jit_load_plain2_fixture PROPERTIES OUTPUT_NAME plain2-jit
+        WINDOWS_EXPORT_ALL_SYMBOLS ON)
     target_compile_definitions(test_lfortran PRIVATE
         LFORTRAN_TEST_SHARED_PLAIN="$<TARGET_FILE:jit_load_plain_fixture>"
-        LFORTRAN_TEST_STATIC_PLAIN="$<TARGET_FILE:jit_load_plain_archive_fixture>")
-    add_dependencies(test_lfortran jit_load_plain_fixture jit_load_plain_archive_fixture)
+        LFORTRAN_TEST_STATIC_PLAIN="$<TARGET_FILE:jit_load_plain_archive_fixture>"
+        LFORTRAN_TEST_SHARED_PLAIN2="$<TARGET_FILE:jit_load_plain2_fixture>")
+    add_dependencies(test_lfortran jit_load_plain_fixture jit_load_plain_archive_fixture
+        jit_load_plain2_fixture)
 endif()
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
@@ -400,6 +407,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
                     --lfortran $<TARGET_FILE:lfortran>
+                    --plain-lib $<TARGET_FILE:jit_load_plain_fixture>
             )
             set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)
