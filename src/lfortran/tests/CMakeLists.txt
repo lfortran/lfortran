@@ -348,18 +348,32 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         target_include_directories(prompt_events_fixture PRIVATE
             ${CMAKE_SOURCE_DIR}/src/bin/tpl)
         target_link_libraries(prompt_events_fixture lfortran_lib)
+        # Each case of a script is a test of its own, and one more test checks
+        # that the cases listed here are all the cases of the script.
+        function(add_case_tests script prefix cases)
+            foreach(case ${cases})
+                add_test(NAME ${prefix}_${case}
+                    COMMAND ${LFORTRAN_TEST_PYTHON} ${script} ${ARGN} --case ${case})
+                set_tests_properties(${prefix}_${case} PROPERTIES TIMEOUT 60
+                    SKIP_RETURN_CODE 77)
+            endforeach()
+        endfunction()
+        function(add_all_cases_test script prefix cases)
+            add_test(NAME ${prefix}_cases
+                COMMAND ${LFORTRAN_TEST_PYTHON} ${script} ${ARGN} --all-cases ${cases})
+            set_tests_properties(${prefix}_cases PROPERTIES SKIP_RETURN_CODE 77)
+        endfunction()
+        set(SESSION_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test_session.py)
         # The prompt starts the kernel that is built: the built-in one here.
         # These cases assume that kernel: a READ whose client leaves fails,
         # and a failed cell is aborted with an idle status.
         if (NOT WITH_XEUS)
-            add_test(
-                NAME test_session
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-            )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
+            set(SESSION_CASES shared_state shared_clients hand_started_kernel
+                prompt_session missing_kernel)
+            add_case_tests(${SESSION_TEST} test_session "${SESSION_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin)
+            add_all_cases_test(${SESSION_TEST} test_session "${SESSION_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin)
             add_test(
                 NAME test_session_regressions
                 COMMAND ${LFORTRAN_TEST_PYTHON}
@@ -372,14 +386,9 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         else()
             # The Xeus kernel, on Xeus's own channels, which the prompt starts
             # here. The cases that assume the built-in kernel stay out.
-            add_test(
-                NAME test_session
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran>
-            )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
+            add_case_tests(${SESSION_TEST} test_session
+                "shared_state;shared_clients;prompt_session;missing_kernel"
+                --lfortran $<TARGET_FILE:lfortran>)
             add_test(
                 NAME test_session_regressions
                 COMMAND ${LFORTRAN_TEST_PYTHON}
