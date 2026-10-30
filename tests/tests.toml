@@ -3575,6 +3575,22 @@ filename = "errors/wasm_pow_nonconst_real4.f90"
 wat = true
 
 [[test]]
+filename = "errors/wasm_pow_const_int4.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_const_int8.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_const_real4.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_const_real8.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 
