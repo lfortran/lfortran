@@ -317,7 +317,9 @@ public:
             size_t n_body, const GpuVaries &host_sizable,
             const GpuExtentScope &scope);
 
-    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body);
+    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body,
+            const GpuVaries &host_sizable,
+            const std::set<ASR::symbol_t*> &written_roots);
 
     void materialize_runtime_alias_blocks(ParallelLoopNest &nest,
             const std::vector<std::string> &arg_names);

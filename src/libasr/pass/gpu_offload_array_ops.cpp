@@ -453,7 +453,9 @@ bool GpuOffloadVisitor::body_needs_unsupported_alias_temp_in(
 // So write it into the type here, while the assignment it can be read
 // from is still whole-array.
 void GpuOffloadVisitor::size_scope_array_temporaries(
-        ASR::stmt_t **body, size_t n_body) {
+        ASR::stmt_t **body, size_t n_body,
+        const GpuVaries &host_sizable,
+        const std::set<ASR::symbol_t*> &written_roots) {
     for (size_t si = 0; si < n_body; si++) {
         SymbolTable *symtab = nullptr;
         ASR::stmt_t **inner_body = nullptr;
@@ -478,7 +480,8 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             inner_n_body = ab->n_body;
         } else if (ASR::is_a<ASR::DoLoop_t>(*body[si])) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(body[si]);
-            size_scope_array_temporaries(dl->m_body, dl->n_body);
+            size_scope_array_temporaries(dl->m_body, dl->n_body,
+                host_sizable, written_roots);
             continue;
         } else {
             continue;
@@ -495,10 +498,32 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
                 ASRUtils::expr_type(shape_src), source_dims);
             if (!GpuLocalArrayChecker::dims_have_lengths(source_dims,
                     source_rank)) {
-                // A deferred owner acquires its shape at assignment, not at
-                // scope entry. Keep it for allocation-on-assignment and heap
-                // normalization rather than inventing an automatic array.
-                continue;
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*body[si])
+                        || !is_single_assignment_binding(item.second,
+                            inner_body, inner_n_body)
+                        || !ASR::is_a<ASR::Var_t>(*shape_src)) continue;
+                ASR::symbol_t *source_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(shape_src)->m_v);
+                if (!source_sym || !ASR::is_a<ASR::Variable_t>(*source_sym)
+                        || written_roots.count(source_sym)) continue;
+                ASR::Variable_t *source =
+                    ASR::down_cast<ASR::Variable_t>(source_sym);
+                if (ASRUtils::is_pointer(source->m_type)
+                        || source->m_target_attr
+                        || source->m_presence == ASR::presenceType::Optional) {
+                    continue;
+                }
+                bool sizable = true;
+                for (size_t d = 0; d < source_rank; d++) {
+                    if (!host_sizable(ASRUtils::get_size(shape_src,
+                            (int)d + 1, al))) {
+                        sizable = false;
+                        break;
+                    }
+                }
+                // Only a single selector binding may borrow the incoming
+                // shape for its per-launch workspace, not a reallocatable owner.
+                if (!sizable) continue;
             }
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable(var->m_type));
@@ -521,7 +546,8 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
                 ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         }
-        size_scope_array_temporaries(inner_body, inner_n_body);
+        size_scope_array_temporaries(inner_body, inner_n_body,
+            host_sizable, written_roots);
     }
 }
 

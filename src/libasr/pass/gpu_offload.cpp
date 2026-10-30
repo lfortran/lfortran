@@ -322,13 +322,18 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         // Run-time sized alias temporaries become BLOCK locals here,
         // ahead of the workspace pre-flight below, so that the
         // pre-flight sizes them too.
+        std::vector<std::string> alias_arg_names;
         {
-            std::vector<std::string> alias_arg_names;
             collect_kernel_arg_names(work, enclosing_block_scopes,
                 alias_arg_names);
             materialize_runtime_alias_blocks(work, alias_arg_names);
         }
-        size_scope_array_temporaries(work.body, work.n_body);
+        GpuWrittenRootCollector written;
+        for (size_t i = 0; i < work.n_body; i++) {
+            written.visit_stmt(*work.body[i]);
+        }
+        size_scope_array_temporaries(work.body, work.n_body,
+            alias_extent_host_sizable(work, alias_arg_names), written.roots);
     }
 
     // A spliced callee can bring a section into a place no gather can
