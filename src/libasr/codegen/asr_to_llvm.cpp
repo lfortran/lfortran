@@ -12208,44 +12208,24 @@ public:
 
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
         ASR::expr_t *cptr = x.m_cptr, *fptr = x.m_ptr, *shape = x.m_shape;
+        int reduce_loads = 0;
+        if (ASR::is_a<ASR::Var_t>(*cptr)) {
+            reduce_loads = LLVM::is_cptr_dummy_held_by_value(*ASRUtils::EXPR2VAR(cptr));
+        }
+        visit_expr_load_wrapper(cptr, 1 - reduce_loads, true);
+        llvm::Value *llvm_cptr = tmp;
         if (ASRUtils::is_closure_type(ASRUtils::expr_type(fptr))) {
-            int64_t saved = ptr_loads;
-            ptr_loads = 1;
-            visit_expr(*cptr);
-            llvm::Value *code = tmp;
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
-                code = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, code);
-            }
-            ptr_loads = 0;
-            visit_expr(*fptr);
+            visit_expr_load_wrapper(fptr, 0);
             llvm::Value *value = llvm::Constant::getNullValue(
                 llvm_utils->get_closure_type());
             value = builder->CreateInsertValue(value,
-                builder->CreateBitCast(code, llvm_utils->i8_ptr), {0});
+                builder->CreateBitCast(llvm_cptr, llvm_utils->i8_ptr), {0});
             builder->CreateStore(value, tmp);
-            ptr_loads = saved;
             return;
         }
-        int reduce_loads = 0;
-        if( ASR::is_a<ASR::Var_t>(*cptr) ) {
-            ASR::Variable_t* cptr_var = ASRUtils::EXPR2VAR(cptr);
-            reduce_loads = LLVM::is_cptr_dummy_held_by_value(*cptr_var);
-        }
         if( ASRUtils::is_array(ASRUtils::expr_type(fptr)) ) {
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1 - reduce_loads;
-            this->visit_expr(*cptr);
-            llvm::Value* llvm_cptr = tmp;
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
-                // `type(c_ptr)` requires an extra load here
-                // TODO: be more explicit about ptr_loads: https://github.com/lfortran/lfortran/issues/4245
-                llvm::Type* llvm_cptr_type = llvm_utils->get_type_from_ttype_t_util(cptr, ASRUtils::expr_type(cptr), module.get());
-                llvm_cptr = llvm_utils->CreateLoad2(llvm_cptr_type, llvm_cptr);
-            }
-            ptr_loads = 0;
-            this->visit_expr(*fptr);
+            visit_expr_load_wrapper(fptr, 0);
             llvm::Value* llvm_fptr = tmp;
-            ptr_loads = ptr_loads_copy;
             llvm::Value* llvm_shape = nullptr;
             ASR::ttype_t* asr_shape_type = nullptr;
             if( shape ) {
@@ -12355,18 +12335,6 @@ public:
                 prod = builder->CreateMul(prod, new_size);
             }
         } else {
-            int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1 - reduce_loads;
-            this->visit_expr(*cptr);
-            llvm::Value* llvm_cptr = tmp;
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
-                // Load the actual pointer value for type(c_ptr) members
-                llvm::Type* cptr_llvm_type = llvm::Type::getInt8Ty(context)->getPointerTo(); // void*
-                llvm_cptr = llvm_utils->CreateLoad2(cptr_llvm_type, llvm_cptr);
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*cptr)) {
-                llvm::Type* cptr_llvm_type = llvm_utils->get_type_from_ttype_t_util(cptr, ASRUtils::expr_type(cptr), module.get());
-                llvm_cptr = llvm_utils->CreateLoad2(cptr_llvm_type, llvm_cptr);
-            }
             this->visit_expr_load_wrapper(fptr, 0);
             llvm::Value*  const llvm_fptr = tmp;
             ASR::ttype_t* const fptr_type = ASRUtils::expr_type(fptr);
@@ -12390,7 +12358,6 @@ public:
                     builder->CreateStore(llvm_cptr, llvm_fptr);
                 }
             }
-            ptr_loads = ptr_loads_copy;
             tmp = nullptr;
         }
     }

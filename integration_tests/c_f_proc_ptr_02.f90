@@ -33,15 +33,21 @@ contains
         result = f(x)
     end subroutine
 end subroutine
+subroutine import_value(address, p)
+    type(c_funptr), value :: address
+    procedure(callback), pointer, intent(out) :: p
+    call c_f_procpointer(address, p)
+end subroutine
 end module
 program c_f_proc_ptr_02
 use c_f_proc_ptr_02_module
 implicit none
 type :: holder
     type(c_funptr) :: address
+    type(c_funptr) :: addresses(2)
 end type
 procedure(callback), pointer :: p, copied
-type(c_funptr) :: address
+type(c_funptr) :: address, addresses(2)
 type(holder) :: box
 integer(c_int) :: result
 address = export(twice)
@@ -60,4 +66,20 @@ if (result /= 16) error stop 7
 call c_f_procpointer(c_null_funptr, p)
 if (associated(p)) error stop 8
 if (copied(9_c_int) /= 18) error stop 9
+addresses(1) = address
+addresses(2) = c_null_funptr
+call c_f_procpointer(addresses(1), p)
+if (.not. c_associated(c_funloc(p), address)) error stop 10
+if (p(11_c_int) /= 22) error stop 11
+call c_f_procpointer(addresses(2), p)
+if (associated(p)) error stop 12
+box%addresses = addresses
+call c_f_procpointer(box%addresses(1), p)
+if (.not. c_associated(c_funloc(p), address)) error stop 13
+if (p(12_c_int) /= 24) error stop 14
+call import_value(box%addresses(2), p)
+if (associated(p)) error stop 15
+call import_value(address, p)
+if (.not. c_associated(c_funloc(p), address)) error stop 16
+if (p(13_c_int) /= 26) error stop 17
 end program
