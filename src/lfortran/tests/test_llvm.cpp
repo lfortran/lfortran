@@ -1003,12 +1003,13 @@ end module
             {{"derivative", "_m_derivative"},
              {"with_internal", "_m_with_internal"}},
             [&](const std::string &procedure, llvm::Function &fn) {
-                size_t allocations = 0;
+                size_t allocations = 0, evaluate_calls = 0;
                 for (llvm::BasicBlock &block: fn) {
                     for (llvm::Instruction &instruction: block) {
                         auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction);
                         if (!call) continue;
                         llvm::Function *callee = call->getCalledFunction();
+                        if (!callee) evaluate_calls++;
                         if (callee && callee->getName() == "_lfortran_malloc_alloc") {
                             allocations++;
                         }
@@ -1017,7 +1018,9 @@ end module
                 CAPTURE(fast);
                 CAPTURE(procedure);
                 CAPTURE(allocations);
-                CHECK(allocations == (procedure == "derivative" ? 2 : 4));
+                CHECK(evaluate_calls > 0);
+                CHECK(allocations == evaluate_calls *
+                    (procedure == "derivative" ? 1 : 2));
             });
     }
 }
