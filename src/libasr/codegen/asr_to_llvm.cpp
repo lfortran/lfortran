@@ -10152,6 +10152,7 @@ public:
 #if LLVM_VERSION_MAJOR >= 15
                         bool is_llvm_ptr = false;
                         if ( LLVM::is_llvm_pointer(*v->m_type) &&
+                                !ASRUtils::is_closure_type(v->m_type) &&
                                 !ASRUtils::is_class_type(ASRUtils::type_get_past_pointer(
                                 ASRUtils::type_get_past_allocatable(v->m_type))) &&
                                 !ASRUtils::is_descriptorString(v->m_type) ) {

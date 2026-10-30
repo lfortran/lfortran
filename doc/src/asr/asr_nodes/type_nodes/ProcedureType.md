@@ -24,6 +24,8 @@ environment. Null environment selects the native ABI; otherwise code names
 an environment-first entry. Both words are null for disassociated values.
 Copies preserve both words, and association compares both. Raw interoperable
 C pointers retain their one-word representation.
+Local Fortran procedure pointers store the complete pair; pointer association
+does not add an extra indirection to that storage.
 
 Procedure-valued arguments and results nested in `signature` are represented
 recursively. Their convention follows that signature's ABI: `BIND(C)` uses raw

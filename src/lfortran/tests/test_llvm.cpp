@@ -751,6 +751,43 @@ std::string tbaa_accesses(const std::string &source, bool fast,
 
 }
 
+TEST_CASE("LLVM procedure pointer storage holds the complete closure") {
+    std::string source = R"(subroutine closure_storage()
+implicit none
+abstract interface
+    subroutine callback()
+    end subroutine
+end interface
+procedure(callback), pointer :: p
+p => target
+call p()
+contains
+subroutine target()
+end subroutine
+end subroutine
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"closure_storage", "closure_storage"}},
+            [&](const std::string &, llvm::Function &fn) {
+                unsigned stores = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                        if (!store) continue;
+                        auto *storage = llvm::dyn_cast<llvm::AllocaInst>(
+                            store->getPointerOperand()->stripPointerCasts());
+                        if (!storage || storage->getName() != "p") continue;
+                        CHECK(store->getValueOperand()->getType()->isStructTy());
+                        CHECK(storage->getAllocatedType() ==
+                            store->getValueOperand()->getType());
+                        stores++;
+                    }
+                }
+                CHECK(stores > 0);
+            });
+    }
+}
+
 TEST_CASE("LLVM noalias dummy arguments under --fast") {
     std::string source = R"(module noalias_ir_m
 use iso_c_binding, only: c_ptr, c_f_pointer
