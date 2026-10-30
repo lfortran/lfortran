@@ -10,6 +10,11 @@
 
 namespace LCompilers {
 
+    static bool lazy_allocator_enabled(const CompilerOptions &options) {
+        return options.po.fast && !options.openmp && !options.po.coarray &&
+            !options.po.gpu_offload_metal && !options.po.gpu_offload_cuda;
+    }
+
     namespace LLVM {
 
         static bool memory_debug_enabled = false;
@@ -260,8 +265,8 @@ namespace LCompilers {
                     i8_ptr,
                     i8_ptr
                 });
-        // Get allocator BEFORE the branch so the SSA value dominates all uses
-        llvm::Value* allocator = get_allocator(module);
+        const bool lazy = lazy_allocator_enabled(compiler_options);
+        llvm::Value* allocator = lazy ? nullptr : get_allocator(module);
         // Null check prevents freeing null pointers and ensures dominance
         // when allocations happen conditionally but frees happen at cleanup.
         // The bitcast must be inside the non-null branch to preserve dominance.
@@ -271,6 +276,7 @@ namespace LCompilers {
         llvm::BasicBlock* cont_bb = llvm::BasicBlock::Create(context, "free_done", current_fn);
         builder->CreateCondBr(is_null, cont_bb, free_bb);
         builder->SetInsertPoint(free_bb);
+        if (lazy) allocator = get_allocator(module);
         llvm::Value* ptr_i8 = builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
         builder->CreateCall(fn, {allocator, ptr_i8});
         builder->CreateBr(cont_bb);
@@ -312,6 +318,9 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::get_allocator(llvm::Module* mod) {
+        if (lazy_allocator_enabled(compiler_options)) {
+            return LLVM::get_allocator(context, *mod, *builder);
+        }
         // Check if the cached instance is valid for the current function.
         // Each LLVM function needs its own call to the allocator getter
         // because SSA values can't cross function boundaries.

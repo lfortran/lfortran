@@ -427,7 +427,7 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
             llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
 
-            // Get or create the cached global allocator pointer
+            // Emit a local getter under native --fast; otherwise cache in entry.
             llvm::Value* get_allocator(llvm::Module* mod);
 
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false,
