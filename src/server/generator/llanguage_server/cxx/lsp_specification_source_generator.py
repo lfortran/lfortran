@@ -1232,19 +1232,23 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
         ):
             with self.gen_if('this != &other'):
                 if has_pointer:
+                    # The source may be recursively owned by this union.
+                    self.write(f'{union_name} copy(other);')
                     self.gen_call('reset')
-                self.write('_type = other._type;')
-                with self.type_declaration_options(
-                        wrap_ptr=True,
-                        wrap_nested_ptr=False,
-                        string_ptr=True,
-                        nested_string_ptr=False,
-                ):
-                    self.generate_union_copy_body(
-                        union_symbol,
-                        enum_name,
-                        item_specs
-                    )
+                    self.write('*this = std::move(copy);')
+                else:
+                    self.write('_type = other._type;')
+                    with self.type_declaration_options(
+                            wrap_ptr=True,
+                            wrap_nested_ptr=False,
+                            string_ptr=True,
+                            nested_string_ptr=False,
+                    ):
+                        self.generate_union_copy_body(
+                            union_symbol,
+                            enum_name,
+                            item_specs
+                        )
             self.write('return *this;')
         self.newline()
 

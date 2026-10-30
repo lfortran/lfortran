@@ -77,5 +77,28 @@ int main()
     ParameterInformation_label empty;
     if (!releases_previous_value(destination, empty, destination.string())) return 8;
     if (destination.type() != ParameterInformation_labelType::Uninitialized) return 9;
+
+    LSPAny recursive;
+    LSPArray inner, outer;
+    auto leaf = std::make_unique<LSPAny>();
+    *leaf = integer_t(42);
+    inner.push_back(std::move(leaf));
+    auto child = std::make_unique<LSPAny>();
+    *child = std::move(inner);
+    outer.push_back(std::move(child));
+    recursive = std::move(outer);
+    const auto &recursive_self = recursive;
+    const auto *owned_child = recursive.array()[0].get();
+    recursive = recursive_self;
+    if (recursive.array()[0].get() != owned_child
+            || recursive.array()[0]->array()[0]->integer() != 42) return 10;
+
+    recursive = *recursive.array()[0];
+    if (recursive.type() != LSPAnyType::Array
+            || recursive.array().size() != 1
+            || recursive.array()[0]->integer() != 42) return 11;
+    recursive = *recursive.array()[0];
+    if (recursive.type() != LSPAnyType::Integer
+            || recursive.integer() != 42) return 12;
     return 0;
 }
