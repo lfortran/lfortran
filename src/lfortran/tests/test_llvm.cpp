@@ -788,6 +788,35 @@ end subroutine
     }
 }
 
+TEST_CASE("LLVM global procedure pointer initializers round trip") {
+    std::string source = R"(module global_procedure_storage
+implicit none
+abstract interface
+    subroutine callback()
+    end subroutine
+end interface
+procedure(callback), pointer :: uninitialized
+procedure(callback), pointer :: disassociated => null()
+procedure(callback), pointer :: initialized => target
+contains
+subroutine assign_pointer()
+    uninitialized => target
+end subroutine
+subroutine target()
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"assign_pointer", "assign_pointer"}},
+            [&](const std::string &, llvm::Function &fn) {
+                LCompilers::LLVMEvaluator evaluator;
+                CHECK_NOTHROW(evaluator.parse_module(
+                    LCompilers::LLVMEvaluator::module_to_string(*fn.getParent()),
+                    ""));
+            });
+    }
+}
+
 TEST_CASE("LLVM noalias dummy arguments under --fast") {
     std::string source = R"(module noalias_ir_m
 use iso_c_binding, only: c_ptr, c_f_pointer

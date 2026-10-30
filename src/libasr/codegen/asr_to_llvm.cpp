@@ -8043,9 +8043,7 @@ public:
                     allocatable_array_details.back().descriptor = descriptor;
                 } else {
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            llvm::ConstantPointerNull::get(
-                                static_cast<llvm::PointerType*>(x_ptr))
-                            );
+                            llvm::Constant::getNullValue(x_ptr));
                     set_global_variable_linkage_as_common(ptr, x);
                 }
             }
