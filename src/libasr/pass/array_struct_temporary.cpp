@@ -4841,12 +4841,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             if( underlying_target != target &&
                 ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
                 target_Type == targetType::OriginalTarget &&
-                realloc_lhs ) {
+                (realloc_lhs || assignment_realloc) ) {
                 insert_allocate_stmt_for_array(al, underlying_target, *current_expr,
                                                current_body, target, true);
             } else if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
                 target_Type == targetType::OriginalTarget &&
-                realloc_lhs ) {
+                (realloc_lhs || assignment_realloc) ) {
                 insert_allocate_stmt_for_array(al, target, *current_expr,
                                                current_body, nullptr, true);
             }
