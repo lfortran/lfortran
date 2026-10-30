@@ -633,6 +633,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         ASR::dimension_t dim;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
+                        dim.loc = dummy_variable_type->base.loc;
                         dim.m_start = one;
                         dim.m_length = one;
                         dims.push_back(al, dim);
