@@ -46,6 +46,8 @@ def check_installed_kokkos(lfortran, prefix, workdir):
         flags.append("--openmp")
     env = dict(os.environ, LFORTRAN_KOKKOS_DIR=str(prefix), TMPDIR=str(workdir))
     env.setdefault("OMP_NUM_THREADS", "3")
+    # Kokkos warns on stdout when OpenMP binding is unspecified.
+    env.setdefault("OMP_PROC_BIND", "false")
     runtime = Path(lfortran).parent.parent / "libasr/runtime"
     if (runtime / "lfortran_intrinsics.h").is_file():
         env.setdefault("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR", str(runtime))
@@ -65,14 +67,16 @@ def check_installed_kokkos(lfortran, prefix, workdir):
         output = run(f"{mode}-compile", [lfortran, *flags, *options, str(source),
                                        "-o", str(exe)])
         assert f"-std={standard} " in output, output
-        assert run(f"{mode}-run", [str(exe)]).split() == ["42"]
+        output = run(f"{mode}-run", [str(exe)])
+        assert output.split() == ["42"], f"{workdir / f'{mode}-run.log'}:\n{output}"
         obj = workdir / f"{mode}.o"
         output = run(f"{mode}-object", [lfortran, *flags, *options, "-c", str(source),
                                       "-o", str(obj)])
         assert f"-std={standard} " in output, output
         linked = workdir / f"{mode}-linked"
         run(f"{mode}-link", [lfortran, *flags, str(obj), "-o", str(linked)])
-        assert run(f"{mode}-linked-run", [str(linked)]).split() == ["42"]
+        output = run(f"{mode}-linked-run", [str(linked)])
+        assert output.split() == ["42"], f"{workdir / f'{mode}-linked-run.log'}:\n{output}"
     print("Installed-Kokkos executable and object/link/run passed in normal/fast/f23")
 
 
