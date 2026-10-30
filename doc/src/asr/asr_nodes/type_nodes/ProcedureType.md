@@ -37,5 +37,10 @@ A module procedure used as a value retains the same callable array ABI in its
 interface and its implementation, including implementations in descendant
 submodules.
 
+An interface copied into an outlined OpenMP scope must also import the type
+declarations of its procedure-valued dummy variables. Those declarations
+must remain visible from the copied interface, just as from a copied
+implementation.
+
 Definitions retain `FunctionType`. The inspection printer adds the internal
 attribute `closure` or `raw_pointer` to the procedure declaration.

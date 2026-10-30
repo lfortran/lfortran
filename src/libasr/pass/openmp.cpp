@@ -364,6 +364,9 @@ using ProgramProcedureCopies = std::map<ASR::Function_t*, ASR::symbol_t*>;
 static ASR::symbol_t* import_procedure_implementation(Allocator &al,
         ProgramProcedureCopies &copies, SymbolTable* scope, ASR::symbol_t* proc);
 
+static void import_procedure_type_declarations(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope);
+
 // True if `proc` is a procedure (not a procedure variable) that is a dummy
 // argument of the procedure that declares it.
 static bool is_dummy_procedure(ASR::symbol_t* proc) {
@@ -431,6 +434,7 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al,
     // (a call-site interface names a procedure actual itself), which is
     // imported as well.
     ASR::Function_t* declaration_fn = ASR::down_cast<ASR::Function_t>(declaration);
+    import_procedure_type_declarations(al, copies, declaration_fn->m_symtab);
     for (size_t i = 0; i < declaration_fn->n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*declaration_fn->m_args[i])) {
             continue;
@@ -446,6 +450,27 @@ static ASR::symbol_t* import_procedure_declaration(Allocator &al,
         }
     }
     return declaration;
+}
+
+// Procedure-valued variables in a copied interface or implementation must
+// name declarations visible from the copy, not from its original scope.
+static void import_procedure_type_declarations(Allocator &al,
+        ProgramProcedureCopies &copies, SymbolTable* scope) {
+    for (auto &item : scope->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+            continue;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (v->m_type_declaration == nullptr || scope->resolve_symbol(
+                ASRUtils::symbol_name(v->m_type_declaration)) == v->m_type_declaration) {
+            continue;
+        }
+        ASR::symbol_t* decl = import_procedure_declaration(al, copies,
+            scope, v->m_type_declaration);
+        if (decl != nullptr) {
+            v->m_type_declaration = decl;
+        }
+    }
 }
 
 // The symbol named `name` in `scope` or in a scope enclosing it, up to and
@@ -634,21 +659,7 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al,
             // the procedure again.
             copy = moved;
             ASR::Function_t* moved_fn = ASR::down_cast<ASR::Function_t>(moved);
-            for (auto &item : moved_fn->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    continue;
-                }
-                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
-                if (v->m_type_declaration == nullptr || moved_fn->m_symtab->resolve_symbol(
-                        ASRUtils::symbol_name(v->m_type_declaration)) == v->m_type_declaration) {
-                    continue;
-                }
-                ASR::symbol_t* decl = import_procedure_declaration(al, copies,
-                    moved_fn->m_symtab, v->m_type_declaration);
-                if (decl != nullptr) {
-                    v->m_type_declaration = decl;
-                }
-            }
+            import_procedure_type_declarations(al, copies, moved_fn->m_symtab);
             DoConcurrentStatementVisitor moved_visitor(al, moved_fn->m_symtab, copies);
             moved_visitor.visit_Function(*moved_fn);
         }
