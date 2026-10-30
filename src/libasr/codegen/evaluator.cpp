@@ -897,6 +897,19 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
     add_module(std::move(m->m_m));
 }
 
+void LLVMEvaluator::load_library(const std::string &path) {
+    llvm::Error err = jit->addLibrary(path);
+    if (err) {
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(err), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (!msg.empty() && msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
+        throw LCompilersException("load_library() failed for '" + path
+                                  + "': " + msg);
+    }
+}
+
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
 #if LLVM_VERSION_MAJOR < 8
     // LLVM 7: Use findSymbol which returns JITSymbol
@@ -1233,6 +1246,11 @@ intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
     if (!sym)
         throw LCompilersException("WasmLFortranExecutor: symbol not found: " + name);
     return reinterpret_cast<intptr_t>(sym);
+}
+
+void WasmLFortranExecutor::load_library(const std::string &path)
+{
+    throw LCompilersException("load_library is not supported in the browser: " + path);
 }
 
 #endif // __EMSCRIPTEN__

@@ -260,6 +260,75 @@ define i64 @f1()
 }
 
 
+TEST_CASE("LLVMEvaluator load_library") {
+    const std::string ir = R"""(
+declare i32 @plain()
+declare i32 @plain_reloc()
+define i32 @call_plain()
+{
+    %r = call i32 @plain()
+    ret i32 %r
+}
+define i32 @call_plain_reloc()
+{
+    %r = call i32 @plain_reloc()
+    ret i32 %r
+}
+    )""";
+
+    // Control: the fixture symbol is not part of this test binary, so the
+    // call cannot be resolved before the library is loaded. The check is made
+    // through a separate evaluator because a loaded library stays visible to
+    // the whole process.
+    bool resolvable = true;
+    try {
+        LCompilers::LLVMEvaluator unloaded;
+        unloaded.add_module(ir);
+        unloaded.execfn<int>("call_plain");
+    } catch (const LCompilers::LCompilersException &) {
+        resolvable = false;
+    }
+    CHECK_FALSE(resolvable);
+
+    // An archive is materialised into the JIT as definitions of its own, so
+    // this is checked before the shared library: dlopen is permanent and would
+    // let the process search generator answer for the archive as well.
+#if LLVM_VERSION_MAJOR >= 10
+    LCompilers::LLVMEvaluator archived;
+    archived.load_library(LFORTRAN_TEST_STATIC_PLAIN);
+    archived.add_module(ir);
+    CHECK(archived.execfn<int>("call_plain") == 7);
+    // The global read and the libc call resolve through relocations.
+    CHECK(archived.execfn<int>("call_plain_reloc") == 9);
+#else
+    // LLVM 7-9 have no route for archives.
+    bool archive_reported = false;
+    try {
+        LCompilers::LLVMEvaluator archived;
+        archived.load_library(LFORTRAN_TEST_STATIC_PLAIN);
+    } catch (const LCompilers::LCompilersException &) {
+        archive_reported = true;
+    }
+    CHECK(archive_reported);
+#endif
+
+    LCompilers::LLVMEvaluator e;
+    const std::string missing = std::string(LFORTRAN_TEST_SHARED_PLAIN) + ".missing";
+    bool reported = false;
+    try {
+        e.load_library(missing);
+    } catch (const LCompilers::LCompilersException &ex) {
+        reported = true;
+        CHECK(std::string(ex.what()).find(missing) != std::string::npos);
+    }
+    CHECK(reported);
+
+    e.load_library(LFORTRAN_TEST_SHARED_PLAIN);
+    e.add_module(ir);
+    CHECK(e.execfn<int>("call_plain") == 7);
+    CHECK(e.execfn<int>("call_plain_reloc") == 9);
+}
+
 TEST_CASE("llvm 2") {
     LCompilers::LLVMEvaluator e;
     e.add_module(R"""(
