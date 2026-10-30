@@ -1,0 +1,13 @@
+{
+    "basename": "asr-function_procedure_signature_mismatch-b034afb",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/function_procedure_signature_mismatch.asr",
+    "infile_hash": "cb433db53ee5cbc4b91c843c3cfd3b4bd358493fe867acc09cec85c8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-function_procedure_signature_mismatch-b034afb.stderr",
+    "stderr_hash": "d996bb363b643318b1c6a39e430325ed40dc970ad508b200674f678c",
+    "returncode": 2
+}

@@ -72,6 +72,10 @@ filename = "asr/verify/procedure_closure_argument_type.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/function_procedure_signature_mismatch.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/procedure_closure_array_representation.asr"
 asr = true
 

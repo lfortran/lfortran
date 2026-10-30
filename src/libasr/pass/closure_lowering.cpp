@@ -21,9 +21,28 @@ ASR::ttype_t *represented_type(Allocator &al, ASR::ttype_t *type,
             represented_type(al, ASR::down_cast<ASR::Reference_t>(type)->m_type,
                 representation)));
     }
+    if (ASR::is_a<ASR::ProcedureType_t>(*type)) {
+        auto *procedure = ASR::down_cast<ASR::ProcedureType_t>(type);
+        return represented_type(al, procedure->m_signature,
+            procedure->m_representation);
+    }
     if (ASR::is_a<ASR::FunctionType_t>(*type)) {
         ASRUtils::ExprStmtDuplicator duplicate(al);
         type = duplicate.duplicate_ttype(type);
+        auto *signature = ASR::down_cast<ASR::FunctionType_t>(type);
+        // The called procedure's ABI determines its nested callback convention,
+        // independently of how the outer procedure value is stored.
+        auto nested_representation = signature->m_abi == ASR::abiType::BindC
+            ? ASR::procedure_representationType::RawPointer
+            : ASR::procedure_representationType::Closure;
+        for (size_t i = 0; i < signature->n_arg_types; i++) {
+            signature->m_arg_types[i] = represented_type(al,
+                signature->m_arg_types[i], nested_representation);
+        }
+        if (signature->m_return_var_type) {
+            signature->m_return_var_type = represented_type(al,
+                signature->m_return_var_type, nested_representation);
+        }
         class CallableBounds: public ASR::BaseExprReplacer<CallableBounds> {
         public:
             void replace_Array(ASR::Array_t *array) {
@@ -41,7 +60,6 @@ ASR::ttype_t *represented_type(Allocator &al, ASR::ttype_t *type,
         // passes. Callable values carry rank and representation, not a
         // callee's private snapshot temporaries.
         bounds.replace_ttype(type);
-        auto *signature = ASR::down_cast<ASR::FunctionType_t>(type);
         if (signature->m_deftype == ASR::deftypeType::ImplicitInterface &&
                 signature->m_return_var_type &&
                 ASR::is_a<ASR::String_t>(*signature->m_return_var_type) &&

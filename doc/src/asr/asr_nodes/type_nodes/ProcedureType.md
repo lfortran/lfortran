@@ -25,5 +25,11 @@ an environment-first entry. Both words are null for disassociated values.
 Copies preserve both words, and association compares both. Raw interoperable
 C pointers retain their one-word representation.
 
+Procedure-valued arguments and results nested in `signature` are represented
+recursively. Their convention follows that signature's ABI: `BIND(C)` uses raw
+pointers, while Fortran uses closures, even when the outer value is stored with
+a different representation. A definition's signature and its owned dummy and
+result declarations must agree on these represented callable types.
+
 Definitions retain `FunctionType`. The inspection printer adds the internal
 attribute `closure` or `raw_pointer` to the procedure declaration.

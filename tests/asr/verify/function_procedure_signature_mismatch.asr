@@ -1,0 +1,14 @@
+(TranslationUnit (SymbolTable 0 {
+  "invoke" (Function (SymbolTable 1 {
+    "f" (Variable 1 "f" [] :In nil nil :Default
+      (ProcedureType (FunctionType [
+        (ProcedureType (FunctionType [(Integer 4)] (Integer 4) :Source :Interface nil false false false false false [] false :Host) :Closure)
+      ] nil :Source :Interface nil false false false false false [] false :Host) :Closure)
+      nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+  }) "invoke" (FunctionType [
+    (ProcedureType (FunctionType [
+      (FunctionType [(Integer 4)] (Integer 4) :Source :Interface nil false false false false false [] false :Host)
+    ] nil :Source :Interface nil false false false false false [] false :Host) :Closure)
+  ] nil :Source :Implementation nil false false false false false [] false :Host)
+    [] [(Var (SymbolRef 1 "f"))] [] nil :Public true true nil)
+}) [] nil)

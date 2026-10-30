@@ -1349,6 +1349,17 @@ public:
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::ttype_t *argument_type =
                     typed_expr_type(x.m_args[i]);
+                if (argument_type &&
+                        (ASRUtils::procedure_value_type(argument_type) ||
+                         ASRUtils::procedure_value_type(
+                            function_type->m_arg_types[i]))) {
+                    require_with_loc_id(same_variable_type(argument_type,
+                            function_type->m_arg_types[i], nullptr, nullptr),
+                        "asr.verify.function.procedure_argument_representation",
+                        "a procedure argument and its signature must have "
+                        "the same represented callable type",
+                        x.m_args[i]->base.loc);
+                }
                 if (argument_type == nullptr
                         || is_procedure_type(argument_type)
                         || is_procedure_type(
@@ -1389,6 +1400,17 @@ public:
             ASR::ttype_t *return_type =
                 signature_has_return
                     ? typed_expr_type(x.m_return_var) : nullptr;
+            if (return_type &&
+                    (ASRUtils::procedure_value_type(return_type) ||
+                     ASRUtils::procedure_value_type(
+                        function_type->m_return_var_type))) {
+                require_with_loc_id(same_variable_type(return_type,
+                        function_type->m_return_var_type, nullptr, nullptr),
+                    "asr.verify.function.procedure_result_representation",
+                    "a procedure result and its signature must have "
+                    "the same represented callable type",
+                    x.m_return_var->base.loc);
+            }
             if (return_type && !is_procedure_type(return_type)
                     && !is_procedure_type(
                         function_type->m_return_var_type)

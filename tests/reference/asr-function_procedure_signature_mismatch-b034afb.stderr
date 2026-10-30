@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.function.procedure_argument_representation]: a procedure argument and its signature must have the same represented callable type
+  --> tests/asr/verify/function_procedure_signature_mismatch.asr:13:10
+   |
+13 |     [] [(Var (SymbolRef 1 "f"))] [] nil :Public true true nil)
+   |          ^^^ failed here
