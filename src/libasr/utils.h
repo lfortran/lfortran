@@ -104,6 +104,8 @@ struct PassOptions {
     int64_t gpu_split_min_iterations = 131072;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
+    // Whether the target can lower descriptor-to-data views in retained entries.
+    bool supports_descriptor_entry_wrappers = true;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
     // Short-circuit evaluation of logical .and./.or. (the standard permits

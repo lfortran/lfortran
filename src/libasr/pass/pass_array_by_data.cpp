@@ -2325,7 +2325,9 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     // Keep exported descriptor signatures and vtable identities unchanged.
     // The usual call conversion and later temporary pass provide the same
     // runtime contiguity checks/copy-in as at an ordinary data-ABI call site.
-    u.wrap_descriptor_entries();
+    if (pass_options.supports_descriptor_entry_wrappers) {
+        u.wrap_descriptor_entries();
+    }
     PassUtils::UpdateDependenciesVisitor y(al);
     y.visit_TranslationUnit(unit);
 }

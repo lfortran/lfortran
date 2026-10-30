@@ -1548,7 +1548,13 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     compiler_options.po.always_run = false;
     compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    // Keep this target capability local: the evaluator can also emit LLVM.
+    PassOptions pass_options = compiler_options.po;
+    pass_options.supports_descriptor_entry_wrappers = false;
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
+    pass_options.supports_descriptor_entry_wrappers =
+        compiler_options.po.supports_descriptor_entry_wrappers;
+    compiler_options.po = std::move(pass_options);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }

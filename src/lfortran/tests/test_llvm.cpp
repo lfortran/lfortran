@@ -638,6 +638,78 @@ end function)";
     CHECK(e.execfn<int32_t>("f") == 4);
 }
 
+TEST_CASE("ASR descriptor entry capability preserves direct specialization") {
+    std::string source = R"(module entry_capability_m
+implicit none
+contains
+subroutine consume(a, r)
+    real, intent(in) :: a(:)
+    real, intent(out) :: r
+    r = a(1) + a(size(a))
+end subroutine
+end module
+program caller
+use entry_capability_m
+implicit none
+real :: a(2), r
+call consume(a, r)
+end program)";
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    for (bool supported: {false, true}) {
+        CAPTURE(supported);
+        Allocator al(256*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        co.po.supports_descriptor_entry_wrappers = supported;
+        co.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+        co.po.verify_all_passes = true;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations file;
+        file.in_filename = "entry_capability.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+        auto *ast = TRY(LCompilers::LFortran::parse(al, source, diagnostics, co));
+        auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+            nullptr, false, co, lm));
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            asr->m_symtab->get_symbol("entry_capability_m"));
+        auto *entry = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("consume"));
+        REQUIRE(entry->n_body == 1);
+        auto *original_body = entry->m_body[0];
+        LCompilers::PassManager passes;
+        std::string pass = "pass_array_by_data", skip;
+        passes.parse_pass_arg(pass, skip);
+        co.po.pass_cumulative = true;
+        passes.apply_passes(al, asr, co.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(LCompilers::asr_verify(*asr, true, diagnostics));
+        CHECK(module->m_symtab->get_symbol("consume") == &entry->base);
+        CHECK(entry->n_args == 2);
+        auto *caller = ASR::down_cast<ASR::Program_t>(
+            asr->m_symtab->get_symbol("caller"));
+        REQUIRE(caller->n_body == 1);
+        auto *call = ASR::down_cast<ASR::SubroutineCall_t>(caller->m_body[0]);
+        auto *clone = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(call->m_name));
+        REQUIRE(clone != entry);
+        CHECK(clone->n_args > entry->n_args);
+        REQUIRE(entry->n_body == 1);
+        if (supported) {
+            auto *delegation = ASR::down_cast<ASR::SubroutineCall_t>(
+                entry->m_body[0]);
+            CHECK(ASRUtils::symbol_get_past_external(delegation->m_name)
+                == &clone->base);
+        } else {
+            CHECK(entry->m_body[0] == original_body);
+            CHECK(ASR::is_a<ASR::Assignment_t>(*entry->m_body[0]));
+        }
+    }
+}
+
 namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
