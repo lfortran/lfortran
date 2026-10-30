@@ -506,7 +506,35 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             al(al_), copies(copies_), replacer(al_, copies_),
             outermost_scope(current_scope_) {
             current_scope = current_scope_;
+            while (outermost_scope->asr_owner != nullptr &&
+                    ASR::is_a<ASR::symbol_t>(*outermost_scope->asr_owner) &&
+                    ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                        outermost_scope->asr_owner))) {
+                outermost_scope = outermost_scope->parent;
+            }
         }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        if (block->m_symtab->parent != current_scope) {
+            ASRUtils::SymbolDuplicator duplicator(al);
+            ASR::Block_t* copy = ASR::down_cast<ASR::Block_t>(
+                duplicator.duplicate_Block(block, current_scope));
+            duplicator.fixup_local_type_declarations(copy->m_symtab, block->m_symtab);
+            duplicator.fixup_nested_block_bodies(copy->m_symtab, block->m_symtab);
+            Vec<ASR::stmt_t*> body;
+            bool success = duplicator.reduplicate_body_in_scope(copy->m_symtab,
+                block->m_body, block->n_body, body);
+            LCOMPILERS_ASSERT(success);
+            copy->m_body = body.p;
+            copy->n_body = body.n;
+            copy->m_name = s2c(al, current_scope->get_unique_name(block->m_name, false));
+            current_scope->add_symbol(copy->m_name, &copy->base);
+            const_cast<ASR::BlockCall_t&>(x).m_m = &copy->base;
+            block = copy;
+        }
+        visit_Block(*block);
+    }
 
     void call_replacer() {
         replacer.current_expr = current_expr;
@@ -689,10 +717,16 @@ static std::vector<ASR::DoLoop_t*> collapsed_loop_nest(ASR::stmt_t* stmt,
 }
 
 class InvolvedSymbolsCollector:
-    public ASR::BaseWalkVisitor<InvolvedSymbolsCollector>
+    public ASRUtils::BlockBodyWalkVisitor<InvolvedSymbolsCollector>
 {
     private:
         Allocator &al;
+        std::set<SymbolTable*> block_scopes;
+
+        bool is_block_local(ASR::symbol_t* sym) {
+            return block_scopes.count(ASRUtils::symbol_parent_symtab(sym)) != 0;
+        }
+
     public:
         std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols;
         std::map<std::string, ASR::omp_clauseType> variable_accessibility;
@@ -707,6 +741,13 @@ class InvolvedSymbolsCollector:
         std::map<std::string, ASR::symbol_t*> named_constants;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
+
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+            block_scopes.insert(block->m_symtab);
+            ASRUtils::BlockBodyWalkVisitor<InvolvedSymbolsCollector>::visit_BlockCall(x);
+            block_scopes.erase(block->m_symtab);
+        }
 
         // Records `sym` if it is a named constant, see `named_constants`.
         bool add_named_constant(ASR::symbol_t* sym) {
@@ -724,6 +765,9 @@ class InvolvedSymbolsCollector:
         }
 
         void visit_Var(const ASR::Var_t &x) {
+            if (is_block_local(x.m_v)) {
+                return;
+            }
             if(symbols.find(to_lower(ASRUtils::symbol_name(x.m_v))) != symbols.end()) {
                 return; // Already added
             }
@@ -774,7 +818,8 @@ class InvolvedSymbolsCollector:
 
         void visit_do_loop_head(const ASR::do_loop_head_t &x) {
             ASR::Var_t* var;
-            if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_v) &&
+                    !is_block_local(ASR::down_cast<ASR::Var_t>(x.m_v)->m_v)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_v);
                 if(symbols.find(to_lower(ASRUtils::symbol_name(var->m_v))) != symbols.end()) {
                     // Make the bool false in that pair
@@ -790,6 +835,7 @@ class InvolvedSymbolsCollector:
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
             if (ASR::is_a<ASR::Var_t>(*x.m_end)
+                    && !is_block_local(ASR::down_cast<ASR::Var_t>(x.m_end)->m_v)
                     && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_end)->m_v)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_end);
                 if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
@@ -807,6 +853,7 @@ class InvolvedSymbolsCollector:
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
             if (ASR::is_a<ASR::Var_t>(*x.m_start)
+                    && !is_block_local(ASR::down_cast<ASR::Var_t>(x.m_start)->m_v)
                     && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_start)->m_v)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_start);
                 if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
@@ -1514,6 +1561,25 @@ class ParallelRegionVisitor :
             current_scope = current_scope_copy;
         }
 
+        // A construct executes at its call, not while walking declarations.
+        void visit_Block(const ASR::Block_t & /*x*/) {}
+
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
+            SymbolTable* saved_scope = current_scope;
+            current_scope = block->m_symtab;
+            if (nesting_lvl == 0) {
+                transform_stmts(block->m_body, block->n_body);
+            } else {
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, block->n_body);
+                visit_region_body(block->m_body, block->n_body, body);
+                block->m_body = body.p;
+                block->n_body = body.n;
+            }
+            current_scope = saved_scope;
+        }
+
         void visit_FunctionCall(const ASR::FunctionCall_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
@@ -1575,29 +1641,34 @@ class ParallelRegionVisitor :
             current_scope = current_scope_copy;
         }
 
-        void visit_OMPBody(const ASR::OMPRegion_t* omp_region, Vec<ASR::stmt_t*>& dest_body) {
+        void visit_region_body(ASR::stmt_t** body, size_t n_body,
+                Vec<ASR::stmt_t*>& dest_body) {
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
             stmt_visitor.current_expr = nullptr;
 
-            for (size_t j = 0; j < omp_region->n_body; j++) {
-                if (!ASR::is_a<ASR::OMPRegion_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::DoLoop_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
-                    stmt_visitor.visit_stmt(*omp_region->m_body[j]);
-                } else if (ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
-                    ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(omp_region->m_body[j]);
+            for (size_t j = 0; j < n_body; j++) {
+                if (!ASR::is_a<ASR::OMPRegion_t>(*body[j]) && !ASR::is_a<ASR::DoLoop_t>(*body[j]) && !ASR::is_a<ASR::If_t>(*body[j])) {
+                    stmt_visitor.visit_stmt(*body[j]);
+                } else if (ASR::is_a<ASR::If_t>(*body[j])) {
+                    ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(body[j]);
                     stmt_visitor.visit_expr(*if_stmt->m_test);
                 }
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
                 nested_lowered_body = {};
-                this->visit_stmt(*omp_region->m_body[j]);
+                this->visit_stmt(*body[j]);
                 if(nested_lowered_body.size()>0) {
                     for (size_t k = 0; k < nested_lowered_body.size(); k++) {
                         dest_body.push_back(al, nested_lowered_body[k]);
                     }
                 } else {
-                    dest_body.push_back(al, omp_region->m_body[j]);
+                    dest_body.push_back(al, body[j]);
                 }
                 nested_lowered_body = body_copy;
             }
+        }
+
+        void visit_OMPBody(const ASR::OMPRegion_t* omp_region, Vec<ASR::stmt_t*>& dest_body) {
+            visit_region_body(omp_region->m_body, omp_region->n_body, dest_body);
         }
 
         

@@ -1,7 +1,7 @@
 program inquire_size_regions
     use iso_fortran_env, only: int64
     implicit none
-    integer :: n, i
+    integer :: n, i, tid
     integer(int64) :: wide_n
     logical :: opened
 
@@ -38,4 +38,31 @@ program inquire_size_regions
         end if
     end do
     close(20)
+
+    open(20, status="scratch", access="stream", form="unformatted")
+    open(21, status="scratch", access="stream", form="unformatted")
+    write(20) "abc"
+    write(21) "abcde"
+    flush(20)
+    flush(21)
+    n = 71
+    !$omp parallel do num_threads(2) private(n, i) schedule(static)
+    do tid = 0, 1
+        do i = 1, 8192
+            inquire(20 + tid, size=n)
+            if (n /= 3 + 2 * tid) error stop 7
+            if (mod(i, 2) == 0) then
+                block
+                    integer :: local_n
+                    inquire(20 + tid, size=local_n)
+                    if (local_n /= n) error stop 8
+                end block
+            end if
+        end do
+    end do
+    !$omp end parallel do
+    ! Without OpenMP the last iteration assigns the enclosing n.
+    if (n /= 71 .and. n /= 5) error stop 9
+    close(20)
+    close(21)
 end program

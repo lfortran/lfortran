@@ -3983,13 +3983,14 @@ public:
         }
 
         ASR::expr_t *size_target = nullptr;
+        SymbolTable *size_scope = nullptr;
         if (size && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(size)) != 8) {
             size_target = size;
+            size_scope = al.make_new<SymbolTable>(current_scope);
             ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
-            std::string size_name = current_scope->get_unique_name("__lfortran_inquire_size");
-            ASR::symbol_t *size_sym = declare_implicit_variable2(
-                x.base.base.loc, size_name, ASRUtils::intent_local, size_type);
-            size = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, size_sym));
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            size = b.Variable(size_scope, "__lfortran_inquire_size",
+                size_type, ASRUtils::intent_local);
         }
 
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
@@ -4005,16 +4006,23 @@ public:
                                   sign, encoding, stream, iomsg, round,
                                   pending, asynchronous);
         if (size_target) {
-            // Return the query and conversion together to the enclosing region.
-            tmp_vec.push_back(tmp);
+            // The query and conversion share statement-local storage, including
+            // when the containing region executes concurrently.
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 2);
+            body.push_back(al, ASRUtils::STMT(tmp));
             ASR::expr_t *value = size;
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                 ASRUtils::expr_type(value),
                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(size_target)), diag);
-            tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                size_target, value, nullptr, false, false);
-            tmp_vec.push_back(tmp);
-            tmp = nullptr;
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, x.base.base.loc, size_target, value, nullptr, false, false)));
+            std::string name = current_scope->get_unique_name("__lfortran_inquire");
+            ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Block_t(al, x.base.base.loc, size_scope,
+                    s2c(al, name), body.p, body.n));
+            current_scope->add_symbol(name, block);
+            tmp = ASR::make_BlockCall_t(al, x.base.base.loc, -1, block);
         }
     }
 
