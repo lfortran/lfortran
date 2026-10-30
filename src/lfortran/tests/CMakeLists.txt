@@ -140,7 +140,25 @@ if (XEUS_LFORTRAN_WASM_BUILD)
         set_property(TARGET test_lfortran APPEND PROPERTY LINK_DEPENDS ${LFORTRAN_TEST_MOD_FILES})
     endif()
 endif()
-add_test(test_lfortran ${PROJECT_BINARY_DIR}/test_lfortran)
+# test_lfortran runs as several tests, which run in parallel and are each
+# short: the test cases of each slow `file` in shards of `size`, and those of
+# the other files. The last shard of a file also takes the cases after it.
+function(add_test_lfortran_shards name file shards size)
+    foreach(shard RANGE 1 ${shards})
+        math(EXPR first "(${shard} - 1) * ${size} + 1")
+        math(EXPR last "${shard} * ${size}")
+        set(range --first=${first})
+        if (shard LESS shards)
+            list(APPEND range --last=${last})
+        endif()
+        add_test(NAME test_lfortran_${name}_${shard}
+            COMMAND ${PROJECT_BINARY_DIR}/test_lfortran --source-file=*${file} ${range})
+    endforeach()
+endfunction()
+add_test_lfortran_shards(gpu test_gpu.cpp 14 1)
+add_test_lfortran_shards(llvm test_llvm.cpp 10 10)
+add_test(NAME test_lfortran COMMAND ${PROJECT_BINARY_DIR}/test_lfortran
+    --source-file-exclude=*test_gpu.cpp,*test_llvm.cpp)
 
 # These tests drive the lfortran executable. This directory is configured
 # before src/bin, so `if (TARGET lfortran)` is not usable yet; mirror the
@@ -330,64 +348,83 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         target_include_directories(prompt_events_fixture PRIVATE
             ${CMAKE_SOURCE_DIR}/src/bin/tpl)
         target_link_libraries(prompt_events_fixture lfortran_lib)
+        # Each case of a script is a test of its own, and one more test checks
+        # that the cases listed here are all the cases of the script.
+        function(add_case_tests script prefix cases)
+            foreach(case ${cases})
+                add_test(NAME ${prefix}_${case}
+                    COMMAND ${LFORTRAN_TEST_PYTHON} ${script} ${ARGN} --case ${case})
+                set_tests_properties(${prefix}_${case} PROPERTIES TIMEOUT 60
+                    SKIP_RETURN_CODE 77)
+            endforeach()
+        endfunction()
+        function(add_all_cases_test script prefix cases)
+            add_test(NAME ${prefix}_cases
+                COMMAND ${LFORTRAN_TEST_PYTHON} ${script} ${ARGN} --all-cases ${cases})
+            set_tests_properties(${prefix}_cases PROPERTIES SKIP_RETURN_CODE 77)
+        endfunction()
+        set(SESSION_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test_session.py)
+        set(SESSION_REGRESSIONS_TEST
+            ${CMAKE_CURRENT_SOURCE_DIR}/test_session_regressions.py)
         # The prompt starts the kernel that is built: the built-in one here.
         # These cases assume that kernel: a READ whose client leaves fails,
         # and a failed cell is aborted with an idle status.
         if (NOT WITH_XEUS)
-            add_test(
-                NAME test_session
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-            )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
-            add_test(
-                NAME test_session_regressions
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
-            )
-            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
-                SKIP_RETURN_CODE 77)
+            set(SESSION_CASES shared_state shared_clients hand_started_kernel
+                prompt_session missing_kernel)
+            add_case_tests(${SESSION_TEST} test_session "${SESSION_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin)
+            add_all_cases_test(${SESSION_TEST} test_session "${SESSION_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin)
+            set(SESSION_REGRESSIONS_CASES test_idle_updates test_edited_updates
+                test_fragmented_updates test_wide_updates test_combining_updates
+                test_idle_disconnect test_output_error_cleanup large_output
+                stalled_connections read_disconnect late_stdin prompt_departure
+                prompt_killed prompt_killed_in_read prompt_hung_up
+                prompt_terminated_with_kernel prompt_killed_ignoring_sigterm
+                prompt_killed_blocking_sigterm prompt_interrupted_in_cell
+                prompt_killed_in_cell kernel_parent stop_ends_session stop_on_error
+                implicit_typing verbose test_utf8_event_fragments)
+            add_case_tests(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
+            add_all_cases_test(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
         else()
             # The Xeus kernel, on Xeus's own channels, which the prompt starts
             # here. The cases that assume the built-in kernel stay out.
-            add_test(
-                NAME test_session
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
-                    --lfortran $<TARGET_FILE:lfortran>
-            )
-            set_tests_properties(test_session PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
-            add_test(
-                NAME test_session_regressions
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                    --lfortran $<TARGET_FILE:lfortran>
-                    --case xeus_connection_files --case implicit_typing
-                    --case prompt_departure --case prompt_killed_in_cell
-                    --case kernel_parent --case stop_ends_session --case verbose
-                    --case test_idle_updates --case test_edited_updates
-                    --case test_fragmented_updates --case test_idle_disconnect
-                    --case test_unicode_updates --case test_output_error_cleanup
-                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
-            )
-            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
+            add_case_tests(${SESSION_TEST} test_session
+                "shared_state;shared_clients;prompt_session;missing_kernel"
+                --lfortran $<TARGET_FILE:lfortran>)
+            set(SESSION_REGRESSIONS_CASES xeus_connection_files implicit_typing
+                prompt_departure prompt_killed prompt_killed_in_read prompt_hung_up
+                prompt_terminated_with_kernel prompt_killed_ignoring_sigterm
+                prompt_killed_blocking_sigterm prompt_interrupted_in_cell
+                prompt_killed_in_cell kernel_parent stop_ends_session verbose
+                test_idle_updates test_edited_updates test_fragmented_updates
+                test_idle_disconnect test_wide_updates test_combining_updates
+                test_output_error_cleanup test_utf8_event_fragments)
+            add_case_tests(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran>
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
         endif()
-        # The Xeus kernel, or else the built-in one
+        # The Xeus kernel, or else the built-in one, also as run by the prompt
+        # (`--managed`). Only that runs the transport case.
         if (NOT EMSCRIPTEN)
-            add_test(
-                NAME test_kernel_evaluation
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
-                    --lfortran $<TARGET_FILE:lfortran>
-            )
-            set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
+            set(KERNEL_EVALUATION_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py)
+            set(KERNEL_EVALUATION_CASES streaming values errors output descriptors
+                stop stop_code error_stop)
+            add_case_tests(${KERNEL_EVALUATION_TEST} test_kernel_evaluation
+                "${KERNEL_EVALUATION_CASES}" --lfortran $<TARGET_FILE:lfortran>)
+            add_case_tests(${KERNEL_EVALUATION_TEST} test_kernel_evaluation_managed
+                "${KERNEL_EVALUATION_CASES};transport"
+                --lfortran $<TARGET_FILE:lfortran> --managed)
+            add_all_cases_test(${KERNEL_EVALUATION_TEST} test_kernel_evaluation
+                "${KERNEL_EVALUATION_CASES};transport" --lfortran $<TARGET_FILE:lfortran>)
         endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"

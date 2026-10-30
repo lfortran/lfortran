@@ -776,11 +776,11 @@ end program
 }
 
 #ifndef HAVE_BUILD_TO_WASM
-TEST_CASE("GPU tiled launch tests run tiled nests") {
-    // gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
-    // computation only if their nests do tile; pin which ones do, so that a
-    // change of the padding threshold cannot silently move them to flat
-    // numbering.
+// gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
+// computation only if their nests do tile; pin which ones do, so that a
+// change of the padding threshold cannot silently move them to flat
+// numbering.
+TEST_CASE("GPU tiled launch tests run tiled nests: gpu_metal_485") {
     std::vector<std::pair<int64_t, int64_t>> expected = {
         {1, 64 * 64},           // stencil 62 x 62
         {0, 3 * 1000},          // b(3, 1000)
@@ -799,13 +799,19 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_485.f90"),
         "gpu_metal_485.f90", "gpu_metal_485"), expected);
-    expected = {
+}
+
+TEST_CASE("GPU tiled launch tests run tiled nests: gpu_metal_491") {
+    std::vector<std::pair<int64_t, int64_t>> expected = {
         {1, 256 * 32},          // integer(8) indices, -5:250 x 1:31
     };
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_491.f90"),
         "gpu_metal_491.f90", "gpu_metal_491"), expected);
-    expected = {
+}
+
+TEST_CASE("GPU tiled launch tests run tiled nests: gpu_metal_490") {
+    std::vector<std::pair<int64_t, int64_t>> expected = {
         {1, 64 * 64},           // workspace, 62 x 62
         {1, 64 * 32 * 3},       // workspace, 60 x 30 x 3
         {0, 37 * 11},           // workspace, 37 x 11
@@ -813,11 +819,14 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
-    // Index-set splitting splits the first two nests, whose bodies test
-    // a loop index against its lower bound: each becomes the split nest
-    // and the original nest, which runs when the domain has no interior.
-    // Both must tile.
-    expected = {
+}
+
+// Index-set splitting splits the first two nests, whose bodies test a loop
+// index against its lower bound: each becomes the split nest and the
+// original nest, which runs when the domain has no interior. Both must tile.
+namespace {
+void check_high_bounds_tile(const std::string &kind) {
+    std::vector<std::pair<int64_t, int64_t>> expected = {
         {1, 64 * 64},           // high lower bound along the tile width
         {1, 64 * 64},           // the same nest, unsplit
         {1, 64 * 64},           // high lower bound along the tile height
@@ -825,12 +834,19 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
         {1, 64 * 32},           // negative lower bounds, partial tiles
         {0, 33 * 31},           // high lower bound, flat fallback
     };
-    for (const std::string kind : {"i4", "i8"}) {
-        std::string name = "gpu_tile_high_bounds_" + kind;
-        check_launch_geometry(cuda_launch_geometry(
-            read_project_file("integration_tests/" + name + ".f90"),
-            name + ".f90", name), expected);
-    }
+    std::string name = "gpu_tile_high_bounds_" + kind;
+    check_launch_geometry(cuda_launch_geometry(
+        read_project_file("integration_tests/" + name + ".f90"),
+        name + ".f90", name), expected);
+}
+} // namespace
+
+TEST_CASE("GPU tiled launch tests run tiled nests: gpu_tile_high_bounds_i4") {
+    check_high_bounds_tile("i4");
+}
+
+TEST_CASE("GPU tiled launch tests run tiled nests: gpu_tile_high_bounds_i8") {
+    check_high_bounds_tile("i8");
 }
 
 TEST_CASE("Time skewing leaves the procedures parallel loops call") {
