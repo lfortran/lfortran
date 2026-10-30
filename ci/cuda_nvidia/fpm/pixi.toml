@@ -1,0 +1,8 @@
+[workspace]
+name = "formal-fpm-linux"
+description = "Linux counterpart of formal/benchmarks/pixi.toml (which only lists osx-arm64): the same pinned FPM"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+fpm = "==0.13.0"
