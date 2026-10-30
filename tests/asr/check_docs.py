@@ -17,6 +17,7 @@ failure. It checks three things:
 """
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import os
 import pathlib
 import re
@@ -46,23 +47,26 @@ def check_examples(lfortran, failures):
     if not documents:
         failures.append("no ASR examples found in %s" % EXAMPLES)
         return documents
-    for path in documents:
+    def check(path):
         code, out, err = run([str(lfortran), "--verify-asr", str(path),
                               "--no-color"])
         if code != 0:
-            failures.append("%s: the ASR verifier rejects it:\n%s"
-                            % (path.name, (out + err).strip()))
-            continue
+            return ("%s: the ASR verifier rejects it:\n%s"
+                    % (path.name, (out + err).strip()))
         code, out, err = run([str(lfortran), "--from-asr", str(path),
                               "--show-asr", "--clojure", "--no-color"])
         if code != 0:
-            failures.append("%s: cannot be printed back:\n%s"
-                            % (path.name, (out + err).strip()))
-            continue
+            return ("%s: cannot be printed back:\n%s"
+                    % (path.name, (out + err).strip()))
         if out != path.read_text(encoding="utf-8"):
-            failures.append("%s: does not round-trip. Regenerate it with "
-                            "`lfortran --from-asr %s --show-asr --clojure "
-                            "--no-color`." % (path.name, path.name))
+            return ("%s: does not round-trip. Regenerate it with "
+                    "`lfortran --from-asr %s --show-asr --clojure "
+                    "--no-color`." % (path.name, path.name))
+        return None
+
+    # The examples are independent: check them concurrently.
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as pool:
+        failures.extend(f for f in pool.map(check, documents) if f)
     return documents
 
 
