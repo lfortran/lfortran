@@ -31,5 +31,9 @@ pointers, while Fortran uses closures, even when the outer value is stored with
 a different representation. A definition's signature and its owned dummy and
 result declarations must agree on these represented callable types.
 
+A module procedure used as a value retains the same callable array ABI in its
+interface and its implementation, including implementations in descendant
+submodules.
+
 Definitions retain `FunctionType`. The inspection printer adds the internal
 attribute `closure` or `raw_pointer` to the procedure declaration.

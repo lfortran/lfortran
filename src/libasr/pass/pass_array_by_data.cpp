@@ -2184,9 +2184,46 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
             add(x.m_to);
             ASR::BaseWalkVisitor<ProcedureValueInterfaces>::visit_FunctionPointerCast(x);
         }
+        void preserve_module_implementations(const ASR::TranslationUnit_t &unit) {
+            for (auto &item: unit.m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Module_t>(*item.second)) continue;
+                auto *module = ASR::down_cast<ASR::Module_t>(item.second);
+                if (!module->m_parent_module) continue;
+                for (auto &member: module->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Function_t>(*member.second)) continue;
+                    auto *function = ASR::down_cast<ASR::Function_t>(member.second);
+                    auto *type = ASRUtils::get_FunctionType(function);
+                    if (!type->m_module ||
+                            type->m_deftype != ASR::deftypeType::Implementation) continue;
+                    std::vector<ASR::symbol_t*> declarations;
+                    bool preserve = interfaces.count(member.second) != 0;
+                    auto *ancestor = module;
+                    while (ancestor->m_parent_module) {
+                        auto *parent = ancestor->m_symtab->parent->resolve_symbol(
+                            ancestor->m_parent_module);
+                        LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Module_t>(*parent));
+                        ancestor = ASR::down_cast<ASR::Module_t>(parent);
+                        auto *declaration = ASRUtils::symbol_get_past_external(
+                            ancestor->m_symtab->get_symbol(function->m_name));
+                        if (declaration && ASR::is_a<ASR::Function_t>(*declaration) &&
+                                ASRUtils::get_FunctionType(declaration)->m_module) {
+                            declarations.push_back(declaration);
+                            preserve |= interfaces.count(declaration) != 0;
+                        }
+                    }
+                    // A module interface and its submodule implementation
+                    // must keep the same callable ABI.
+                    if (preserve) {
+                        interfaces.insert(member.second);
+                        interfaces.insert(declarations.begin(), declarations.end());
+                    }
+                }
+            }
+        }
     } value_interfaces;
     value_interfaces.visit_TranslationUnit(unit);
     if (pass_options.procedure_closures) {
+        value_interfaces.preserve_module_implementations(unit);
         v.procedure_value_interfaces = std::move(value_interfaces.interfaces);
     }
     {

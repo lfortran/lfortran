@@ -12,6 +12,10 @@ module submodule_53_mod
       real, intent(in)  :: a(:)
       real, intent(out) :: b(:)
     end subroutine
+    module subroutine impl_child(a, b)
+      real, intent(in)  :: a(:)
+      real, intent(out) :: b(:)
+    end subroutine
   end interface
 end module
 
@@ -21,5 +25,14 @@ contains
     real, intent(in)  :: a(:)
     real, intent(out) :: b(:)
     b = a
+  end subroutine
+end submodule
+
+submodule(submodule_53_mod:submodule_53_impl) submodule_53_child
+contains
+  module subroutine impl_child(a, b)
+    real, intent(in)  :: a(:)
+    real, intent(out) :: b(:)
+    b = 2*a
   end subroutine
 end submodule
