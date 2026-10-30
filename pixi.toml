@@ -60,6 +60,8 @@ platforms = ["win-64", "linux-64"]
 llvmdev = "==10.0.1"
 [feature.llvm11.dependencies]
 llvmdev = "==11.1.0"
+# CMake 3.31 adds native LFortran support for application validation.
+cmake = ">=3.31,<4"
 kokkos = "==4.4.01"
 [feature.llvm11.activation.env]
 LFORTRAN_KOKKOS_DIR = "$CONDA_PREFIX"
@@ -135,7 +137,7 @@ rapidjson = "==1.1.0"
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
 python = "==3.12"
-cmake = "==3.29.1"
+cmake = ">=3.29.1,<4"
 ninja = "==1.11.1"
 re2c = "==3.1"
 # Cross-platform Bash-like shell (https://github.com/prefix-dev/shell) that
@@ -190,7 +192,7 @@ kokkos = "==4.4.01"
 toml = "==0.10.2"
 tomli = ">=2,<3"
 edn_format = "==0.8.0"
-cmake = "==3.29.1"
+cmake = ">=3.29.1,<4"
 ninja = "==1.11.1"
 
 [feature.test.target.unix.dependencies]
