@@ -3559,6 +3559,22 @@ filename = "errors/wasm_external_procedure.f90"
 wat = true
 
 [[test]]
+filename = "errors/wasm_pow_nonconst.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_nonconst_int4.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_nonconst_int8.f90"
+wat = true
+
+[[test]]
+filename = "errors/wasm_pow_nonconst_real4.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 

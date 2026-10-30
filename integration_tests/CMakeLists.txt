@@ -5082,7 +5082,7 @@ RUN(NAME save_24 LABELS gfortran llvm)
 RUN(NAME save_25 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME save_26 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME save_27 LABELS gfortran llvm EXTRAFILES save_27_sub.f90)
-RUN(NAME save_28 LABELS gfortran llvm)
+RUN(NAME save_28 LABELS llvm) # not gfortran: GFortran 15.2 at CI loses the length of a SAVE deferred-length character array between calls
 RUN(NAME save_29 LABELS gfortran llvm)
 
 
