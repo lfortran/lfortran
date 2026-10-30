@@ -50,20 +50,9 @@ jobs:
 
       - name: Build platform compiler
         uses: ./.github/actions/build-platform
-        env:
-          LFORTRAN_LLVM11_DIAGNOSTICS: ${{ matrix.os == 'ubuntu-latest' && matrix.llvm-version == '11' && 'yes' || 'no' }}
         with:
           os: ${{ matrix.os }}
           llvm-version: ${{ matrix.llvm-version }}
-
-      - name: Save LLVM 11 first-fault evidence
-        if: always() && matrix.os == 'ubuntu-latest' && matrix.llvm-version == '11'
-        uses: actions/upload-artifact@v4
-        with:
-          name: llvm11-platform-first-fault-${{ github.run_attempt }}
-          path: .fix-issue/pr-16329/ci-llvm11-unit
-          include-hidden-files: true
-          retention-days: 7
 
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
