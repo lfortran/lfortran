@@ -341,8 +341,27 @@ FortranEvaluator::~FortranEvaluator() = default;
 LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
     if (!e) {
         e = std::make_unique<LLVMEvaluator>(compiler_options);
+        // Libraries chosen before the first cell, with --load-library.
+        for (const auto &lib : compiler_options.jit_libraries) {
+            e->load_library(lib);
+        }
     }
     return *e;
+}
+
+void FortranEvaluator::load_library(const std::string &path) {
+#ifdef __EMSCRIPTEN__
+    get_wasm_executor().load_library(path);
+#elif defined(HAVE_LFORTRAN_LLVM)
+    // get_llvm_evaluator() loads the libraries recorded so far when it has
+    // to create the JIT, so this one is loaded and recorded only after the
+    // session exists and the load succeeded.
+    LLVMEvaluator &ev = get_llvm_evaluator();
+    ev.load_library(path);
+    compiler_options.jit_libraries.push_back(path);
+#else
+    throw LCompilersException("load_library is not supported without the LLVM backend: " + path);
+#endif
 }
 
 #ifdef __EMSCRIPTEN__
@@ -813,11 +832,55 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     passes.use_default_passes();
     auto execute_cell = [&]() {
         try {
-            const auto newline = code.find('\n');
-            auto magic = code.substr(0, newline);
+            // Leading single-% lines are line magics: they act on the
+            // session and are stripped before the rest is compiled. A %%
+            // line is an inspection cell, not a magic, and stays.
+            std::string body = code;
+            for (;;) {
+                const auto nl = body.find('\n');
+                std::string line = body.substr(0, nl);
+                line.erase(line.find_last_not_of(" \t\r") + 1);
+                if (line.size() < 2 || line[0] != '%' || line[1] == '%') break;
+                const auto sep = line.find_first_of(" \t");
+                const std::string name = sep == std::string::npos
+                    ? line : line.substr(0, sep);
+                std::string arg;
+                if (sep != std::string::npos) {
+                    arg = line.substr(sep + 1);
+                    arg.erase(0, arg.find_first_not_of(" \t"));
+                    arg.erase(arg.find_last_not_of(" \t\r") + 1);
+                }
+                if (name != "%include_dir" && name != "%load_library") {
+                    out.ok = false;
+                    out.error_name = "CompilerError";
+                    out.error_value = "unknown magic '" + name + "'";
+                    return;
+                }
+                if (arg.empty()) {
+                    out.ok = false;
+                    out.error_name = "CompilerError";
+                    out.error_value = "missing argument for '" + name + "'";
+                    return;
+                }
+                if (name == "%include_dir") {
+                    compiler_options.po.include_dirs.push_back(arg);
+                } else {
+                    try {
+                        load_library(arg);
+                    } catch (const LCompilersException &error) {
+                        out.ok = false;
+                        out.error_name = "CompilerError";
+                        out.error_value = error.msg();
+                        return;
+                    }
+                }
+                body = nl == std::string::npos ? "" : body.substr(nl + 1);
+            }
+            const auto newline = body.find('\n');
+            auto magic = body.substr(0, newline);
             // Trailing blanks and the \r of a CRLF line ending are not part of it.
             magic.erase(magic.find_last_not_of(" \t\r") + 1);
-            const auto source = newline == std::string::npos ? "" : code.substr(newline + 1);
+            const auto source = newline == std::string::npos ? "" : body.substr(newline + 1);
             Result<std::string> shown{Error{}};
             // An inspection cell shows how its code compiles in the session, but
             // it does not run, so its declarations must not join the session.
@@ -841,7 +904,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             else if (magic == "%%showfmt") shown = get_fmt(source, lm, diagnostics);
             else {
                 out.inspection = false;
-                auto result = evaluate(code, verbose, lm, passes, diagnostics);
+                auto result = evaluate(body, verbose, lm, passes, diagnostics);
                 out.ok = result.ok;
                 if (out.ok) out.value = std::move(result.result);
             }

@@ -118,6 +118,9 @@ struct PassOptions {
 
 struct CompilerOptions {
     std::vector<std::string> runtime_linker_paths;
+    // Libraries the JIT loads as it is created (--load-library on the
+    // kernel subcommand, %load_library in a cell).
+    std::vector<std::string> jit_libraries;
 
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())
     PassOptions po;

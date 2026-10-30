@@ -108,6 +108,28 @@ else()
 endif()
 target_compile_definitions(test_lfortran PRIVATE
     LFORTRAN_BUILD_RUNTIME_DIR="${LFORTRAN_TEST_RUNTIME_DIR}")
+# The JIT load_library test needs a shared library whose symbol the test binary
+# itself does not define, so that only the load can resolve the call. The
+# archive covers the second path, where members become JIT definitions.
+if (WITH_LLVM AND NOT EMSCRIPTEN)
+    add_library(jit_load_plain_fixture SHARED plain.c)
+    # MSVC exports nothing by default; the JIT looks the symbol up by name.
+    set_target_properties(jit_load_plain_fixture PROPERTIES OUTPUT_NAME plain-jit
+        WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    add_library(jit_load_plain_archive_fixture STATIC plain.c)
+    set_target_properties(jit_load_plain_archive_fixture PROPERTIES OUTPUT_NAME plain-jit-static)
+    # A second shared fixture: a dlopen is permanent, so a test that must see
+    # a symbol unresolvable before the load cannot reuse plain-jit.
+    add_library(jit_load_plain2_fixture SHARED plain2.c)
+    set_target_properties(jit_load_plain2_fixture PROPERTIES OUTPUT_NAME plain2-jit
+        WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    target_compile_definitions(test_lfortran PRIVATE
+        LFORTRAN_TEST_SHARED_PLAIN="$<TARGET_FILE:jit_load_plain_fixture>"
+        LFORTRAN_TEST_STATIC_PLAIN="$<TARGET_FILE:jit_load_plain_archive_fixture>"
+        LFORTRAN_TEST_SHARED_PLAIN2="$<TARGET_FILE:jit_load_plain2_fixture>")
+    add_dependencies(test_lfortran jit_load_plain_fixture jit_load_plain_archive_fixture
+        jit_load_plain2_fixture)
+endif()
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
     # The default Emscripten stack is 64kb, which is far too small for the
@@ -385,6 +407,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
                     --lfortran $<TARGET_FILE:lfortran>
+                    --plain-lib $<TARGET_FILE:jit_load_plain_fixture>
             )
             set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180
                 SKIP_RETURN_CODE 77)

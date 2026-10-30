@@ -2880,8 +2880,13 @@ int main_app(int argc, char *argv[]) {
                 << " is not the parent of this kernel" << std::endl;
             return 1;
         }
-        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
-            opts.arg_kernel_managed);
+        // The session starts with these .mod directories, and the JIT loads
+        // these libraries as it is created.
+        compiler_options.po.include_dirs.insert(compiler_options.po.include_dirs.end(),
+            opts.arg_kernel_include_dirs.begin(), opts.arg_kernel_include_dirs.end());
+        compiler_options.jit_libraries = opts.arg_kernel_load_library;
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f,
+            compiler_options, opts.arg_kernel_managed);
 #else
         std::cerr << "The kernel subcommand requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
