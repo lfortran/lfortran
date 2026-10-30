@@ -4569,6 +4569,9 @@ RUN(NAME pass_array_by_data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llv
 RUN(NAME pass_array_by_data_13 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_14 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_15 LABELS gfortran llvm)
+RUN(NAME pass_array_by_data_17 LABELS gfortran llvm
+    EXTRAFILES pass_array_by_data_17_module.f90
+    EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fcheck=bounds)
 RUN(NAME pass_array_by_data_extname_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

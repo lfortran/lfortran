@@ -816,8 +816,11 @@ public:
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
-                        allocate_dim.m_start = index_one;
-                        allocate_dim.m_length = b.ArrayUBound(value, i+1);
+                        // The copy loop uses the same indices in both arrays.
+                        // Keep the source bounds, not a 1:ubound allocation.
+                        allocate_dim.m_start = b.ArrayLBound(value, i+1, get_index_kind());
+                        allocate_dim.m_length = b.ArraySize(value,
+                            get_index_constant(loc, i + 1), index_type);
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
