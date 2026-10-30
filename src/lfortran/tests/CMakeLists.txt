@@ -79,6 +79,9 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LSP)
+    add_executable(test_lsp_union_copy test_lsp_union_copy.cpp)
+    target_link_libraries(test_lsp_union_copy llanguage_server)
+    add_test(NAME test_lsp_union_copy COMMAND test_lsp_union_copy)
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )
