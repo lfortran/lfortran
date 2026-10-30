@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -55,11 +56,13 @@ void main2() {
     i32_3_1* a = &a_value;
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 3;
+    a->is_allocated = true;
     Kokkos::View<int32_t*> b_data("b_data", 4);
     i32_4_1 b_value(&b_data);
     i32_4_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 4;
+    b->is_allocated = true;
     int32_t i;
     for (i=1; i<=3; i++) {
         a->data->operator[](((i) - a->dims[0].lower_bound)) = i + 10;

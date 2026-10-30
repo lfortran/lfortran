@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -41,11 +42,12 @@ void automatic_array(int32_t n);
 namespace {
 void automatic_array(int32_t n)
 {
-    Kokkos::View<int32_t*> a_data("a_data");
+    Kokkos::View<int32_t*> a_data("a_data", 1 * (n));
     i32__1 a_value(&a_data);
     i32__1* a = &a_value;
     a->dims[0].lower_bound = 1;
     a->dims[0].length = n;
+    a->is_allocated = true;
     int32_t i;
     int32_t s;
     for (i=1; i<=n; i++) {

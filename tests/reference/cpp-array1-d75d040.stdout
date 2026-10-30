@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -22,6 +23,36 @@ struct dimension_descriptor
 {
     int32_t lower_bound, length, stride;
 };
+
+struct b_2_1
+{
+    Kokkos::View<bool*>* data;
+    dimension_descriptor dims[1];
+    bool is_allocated;
+
+    b_2_1(Kokkos::View<bool*>* data_): data{data_} {};
+};
+
+
+struct b_3_2_2
+{
+    Kokkos::View<bool*>* data;
+    dimension_descriptor dims[2];
+    bool is_allocated;
+
+    b_3_2_2(Kokkos::View<bool*>* data_): data{data_} {};
+};
+
+
+struct b_2_1_2_3
+{
+    Kokkos::View<bool*>* data;
+    dimension_descriptor dims[3];
+    bool is_allocated;
+
+    b_2_1_2_3(Kokkos::View<bool*>* data_): data{data_} {};
+};
+
 
 struct f32_5_1
 {
@@ -91,15 +122,37 @@ namespace {
 
 void main2() {
     bool a;
-    Kokkos::View<bool[2]>& b;
-    Kokkos::View<bool[3][2]>& b2;
-    Kokkos::View<bool[2][1][2]>& b3;
+    Kokkos::View<bool*> b_data("b_data", 2);
+    b_2_1 b_value(&b_data);
+    b_2_1* b = &b_value;
+    b->dims[0].lower_bound = 1;
+    b->dims[0].length = 2;
+    b->is_allocated = true;
+    Kokkos::View<bool*> b2_data("b2_data", 6);
+    b_3_2_2 b2_value(&b2_data);
+    b_3_2_2* b2 = &b2_value;
+    b2->dims[0].lower_bound = 1;
+    b2->dims[0].length = 3;
+    b2->dims[1].lower_bound = 1;
+    b2->dims[1].length = 2;
+    b2->is_allocated = true;
+    Kokkos::View<bool*> b3_data("b3_data", 4);
+    b_2_1_2_3 b3_value(&b3_data);
+    b_2_1_2_3* b3 = &b3_value;
+    b3->dims[0].lower_bound = 1;
+    b3->dims[0].length = 2;
+    b3->dims[1].lower_bound = 1;
+    b3->dims[1].length = 1;
+    b3->dims[2].lower_bound = 1;
+    b3->dims[2].length = 2;
+    b3->is_allocated = true;
     float d;
     Kokkos::View<float*> e_data("e_data", 5);
     f32_5_1 e_value(&e_data);
     f32_5_1* e = &e_value;
     e->dims[0].lower_bound = 1;
     e->dims[0].length = 5;
+    e->is_allocated = true;
     Kokkos::View<float*> e2_data("e2_data", 6);
     f32_2_3_2 e2_value(&e2_data);
     f32_2_3_2* e2 = &e2_value;
@@ -107,6 +160,7 @@ void main2() {
     e2->dims[0].length = 2;
     e2->dims[1].lower_bound = 1;
     e2->dims[1].length = 3;
+    e2->is_allocated = true;
     Kokkos::View<float*> e3_data("e3_data", 6);
     f32_1_2_3_3 e3_value(&e3_data);
     f32_1_2_3_3* e3 = &e3_value;
@@ -116,12 +170,14 @@ void main2() {
     e3->dims[1].length = 2;
     e3->dims[2].lower_bound = 1;
     e3->dims[2].length = 3;
+    e3->is_allocated = true;
     int32_t f;
     Kokkos::View<int32_t*> g_data("g_data", 3);
     i32_3_1 g_value(&g_data);
     i32_3_1* g = &g_value;
     g->dims[0].lower_bound = 1;
     g->dims[0].length = 3;
+    g->is_allocated = true;
     Kokkos::View<int32_t*> g2_data("g2_data", 18);
     i32_6_3_2 g2_value(&g2_data);
     i32_6_3_2* g2 = &g2_value;
@@ -129,6 +185,7 @@ void main2() {
     g2->dims[0].length = 6;
     g2->dims[1].lower_bound = 1;
     g2->dims[1].length = 3;
+    g2->is_allocated = true;
     Kokkos::View<int32_t*> g3_data("g3_data", 24);
     i32_4_3_2_3 g3_value(&g3_data);
     i32_4_3_2_3* g3 = &g3_value;
@@ -138,6 +195,7 @@ void main2() {
     g3->dims[1].length = 3;
     g3->dims[2].lower_bound = 1;
     g3->dims[2].length = 2;
+    g3->is_allocated = true;
 }
 
 }

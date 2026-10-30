@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -26,7 +27,7 @@ namespace {
 
 void main2() {
     static std::string my_name="Dominic";
-    std::cout << "My name is " << " " << my_name << std::endl;
+    std::cout << ("My name is ") << " " << (my_name) << std::endl;
 }
 
 }
