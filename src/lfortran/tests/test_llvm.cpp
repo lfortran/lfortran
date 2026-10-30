@@ -739,7 +739,7 @@ end module
                  {"user_allocation", "_user_allocation"}},
                 [&](const std::string &name, llvm::Function &fn) {
                     unsigned allocations = 0, saves = 0, restores = 0;
-                    unsigned dynamic_arrays = 0;
+                    unsigned dynamic_arrays = 0, array_calls = 0;
                     for (llvm::BasicBlock &block: fn) {
                         for (llvm::Instruction &inst: block) {
                             if (auto *allocation = llvm::dyn_cast<llvm::AllocaInst>(&inst)) {
@@ -750,7 +750,11 @@ end module
                                 }
                             }
                             auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
-                            if (!call || !call->getCalledFunction()) continue;
+                            if (!call) continue;
+                            if (!call->getCalledFunction()) {
+                                array_calls++;
+                                continue;
+                            }
                             llvm::StringRef callee = call->getCalledFunction()->getName();
                             if (callee == "_lfortran_malloc_alloc") allocations++;
                             auto intrinsic = call->getCalledFunction()->getIntrinsicID();
@@ -765,9 +769,13 @@ end module
                             name == "argument_expression" ? 1 : 2;
                         heap_calls[index][stack] = allocations;
                         if (stack) {
-                            CHECK(allocations == (name == "derivative" ? 2 : 0));
-                            CHECK(dynamic_arrays > 0);
-                            CHECK(saves > 0);
+                            if (name != "derivative") {
+                                CHECK(array_calls == 1);
+                                CHECK(allocations == 0);
+                            }
+                            CHECK(array_calls > 0);
+                            CHECK(dynamic_arrays == array_calls);
+                            CHECK(saves == array_calls);
                             CHECK(restores == saves);
                         }
                     }
