@@ -265,8 +265,10 @@ other compiler and linker requirements (such as OpenMP) still apply.
 
 The C++ driver invokes `g++` from `PATH`; the build's `CXX` setting does not
 override it. A working C++ backend requires this compiler and its C++ standard
-library to be ABI-compatible with Kokkos and each other. Kokkos is an optional
-prerequisite, not provisioned by the default Pixi `llvm11` environment.
+library to be ABI-compatible with Kokkos and each other. The Pixi `llvm11`
+environment provisions Kokkos 4.4.01 and sets `LFORTRAN_KOKKOS_DIR` to its
+prefix; this does not by itself provide a compatible C++ compiler on every
+platform.
 
 With a compatible `g++` and an OpenMP-enabled Kokkos installation, a
 development build can compile and run using:
@@ -293,15 +295,18 @@ C++20. An integer-only Kokkos smoke test passing with it does not demonstrate
 ABI compatibility. A compatible toolchain is still required; no general
 macOS recipe is established here.
 
-The registered `test_kokkos_standard` CTest checks version-selection fixtures.
-When `LFORTRAN_KOKKOS_DIR` (or a Conda/Pixi prefix containing Kokkos) is
-available, it also requires a compatible `g++` and compiles and executes the
-integration regression using the actual C++ driver, both directly and via a
-separate object/link step, in normal, `--fast`, and `--std=f23` modes.
-It checks the selected standard against the real package version and enables
-OpenMP if its headers require it.
-Without a package, it explicitly reports that real-package execution was not
-tested. The `kokkos_cpp_standard` integration test also has a `cpp` label,
+The unit CTest `test_kokkos_standard` checks all 37 version-selection fixtures
+through actual driver command arguments, independently of native Kokkos support.
+The C++ integration suite separately registers `kokkos_cpp_standard_driver`,
+which requires a real Kokkos installation and a compatible `g++`. It compiles
+and executes the regression both directly and via a separate object/link step,
+in normal, `--fast`, and `--std=f23` modes. It checks the selected standard
+against the real package version and enables OpenMP if its headers require it.
+Missing packages or native compilation failures fail this integration test.
+Quick's existing Linux LLVM 11 C/C++ backend step runs this probe with its
+configured source-built Kokkos and, when present, the distinct Kokkos package
+in `CONDA_PREFIX`.
+The `kokkos_cpp_standard` integration test also has a `cpp` label,
 alongside `gfortran` and `llvm`.
 
 ### Compiler text outputs

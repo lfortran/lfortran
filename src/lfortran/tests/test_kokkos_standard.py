@@ -1,10 +1,8 @@
-"""Check standard selection and compile/run against Kokkos when installed."""
+"""Check C++ standard selection through actual driver command arguments."""
 
 import argparse
 import os
 from pathlib import Path
-import re
-import shlex
 import subprocess
 
 
@@ -55,59 +53,6 @@ def main():
         check(args.lfortran, source, case, expected, failures)
     assert not failures, "\n".join(failures)
     print("37 real-driver standard-selection cases passed")
-    check_installed_kokkos(args.lfortran, workdir / "installed")
-
-
-def check_installed_kokkos(lfortran, workdir):
-    prefix = os.environ.get("LFORTRAN_KOKKOS_DIR") or os.environ.get("CONDA_PREFIX")
-    if not prefix or not (Path(prefix) / "include/Kokkos_Core.hpp").is_file():
-        assert not os.environ.get("LFORTRAN_KOKKOS_DIR"), "invalid Kokkos prefix"
-        print("Installed-Kokkos execution not tested: no package found")
-        return
-    prefix = Path(prefix).resolve()
-    headers = "\n".join(
-        header.read_text()
-        for header in (prefix / "include/KokkosCore_config.h",
-                       prefix / "include/Kokkos_Macros.hpp")
-        if header.is_file()
-    )
-    version = re.search(r"^\s*#\s*define\s+KOKKOS_VERSION\s+(\d+)\b", headers, re.M)
-    assert version, "installed Kokkos has no numeric version"
-    standard = "c++20" if int(version[1]) >= 50000 else "c++17"
-    flags = ["--backend=cpp", "-v"]
-    if re.search(r"^\s*#\s*define\s+KOKKOS_ENABLE_OPENMP\b", headers, re.M):
-        flags.append("--openmp")
-    workdir.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, LFORTRAN_KOKKOS_DIR=str(prefix), TMPDIR=str(workdir))
-    env.setdefault("OMP_NUM_THREADS", "3")
-    runtime = Path(lfortran).resolve().parent.parent / "libasr/runtime"
-    if (runtime / "lfortran_intrinsics.h").is_file():
-        env.setdefault("LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR", str(runtime))
-    source = Path(__file__).resolve().parents[3] / "integration_tests/kokkos_cpp_standard.f90"
-
-    def run(name, command):
-        result = subprocess.run(command, cwd=workdir, env=env, text=True,
-                                capture_output=True, check=False)
-        log = workdir / f"{name}.log"
-        log.write_text(shlex.join(command) + "\n" + result.stdout + result.stderr)
-        assert result.returncode == 0, f"{log}:\n{result.stdout}{result.stderr}"
-        return result.stdout
-
-    print(f"Installed Kokkos {version[1]} at {prefix}: expecting {standard}")
-    for mode, options in (("normal", []), ("fast", ["--fast"]), ("f23", ["--std=f23"])):
-        exe = workdir / mode
-        output = run(f"{mode}-compile", [lfortran, *flags, *options, str(source),
-                                       "-o", str(exe)])
-        assert f"-std={standard} " in output, output
-        assert run(f"{mode}-run", [str(exe)]).split() == ["42"]
-        obj = workdir / f"{mode}.o"
-        output = run(f"{mode}-object", [lfortran, *flags, *options, "-c", str(source),
-                                      "-o", str(obj)])
-        assert f"-std={standard} " in output, output
-        linked = workdir / f"{mode}-linked"
-        run(f"{mode}-link", [lfortran, *flags, str(obj), "-o", str(linked)])
-        assert run(f"{mode}-linked-run", [str(linked)]).split() == ["42"]
-    print("Installed-Kokkos executable and object/link/run passed in normal/fast/f23")
 
 
 def check(lfortran, source, case, expected, failures):

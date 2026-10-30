@@ -313,7 +313,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --workdir ${PROJECT_BINARY_DIR}/continue-compilation-output
                 ${CONTINUE_COMPILATION_OUTPUT_ARGS}
         )
-        if (NOT WIN32 AND NOT EMSCRIPTEN)
+        if (NOT EMSCRIPTEN)
             add_test(
                 NAME test_kokkos_standard
                 COMMAND ${LFORTRAN_TEST_PYTHON}
