@@ -79,6 +79,9 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LSP)
+    set(SRC ${SRC}
+        test_lsp_union_lifetime.cpp
+    )
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )
@@ -94,6 +97,9 @@ endif()
 # Add one main test suite for LFortran, composed of many individual cpp files:
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
+if (WITH_LSP)
+    target_link_libraries(test_lfortran llanguage_server)
+endif()
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_include_directories(test_lfortran PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 add_dependencies(test_lfortran cuda_link_helper_plain_fixture)

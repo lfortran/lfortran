@@ -365,7 +365,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             this_tuple: str,
             that_tuple: str,
             this_is_pointer: bool = False,
-            that_is_pointer: bool = False
+            that_is_pointer: bool = False,
+            init_tuple: Optional[Callable[[str], None]] = None
     ) -> None:
         item_specs = tuple_spec["items"]
         for item_spec in item_specs:
@@ -380,7 +381,10 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.type_declaration_options(wrap_ptr=False):
                 tuple_type = self.get_type_declaration(tuple_spec)
                 this_expr = f'std::make_unique<{tuple_type}>({this_expr})'
-        self.gen_assign(this_tuple, this_expr)
+        if init_tuple is None:
+            self.gen_assign(this_tuple, this_expr)
+        else:
+            init_tuple(this_expr)
 
     def gen_struct_copy_tuple_1(
             self,
@@ -1079,13 +1083,18 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                         )
                     )
                 case LspSymbolKind.TUPLE:
+                    with self.type_declaration_options(wrap_ptr=False):
+                        tuple_type = self.get_type_declaration(symbol.spec)
                     that_tuple = f'{qualifier}{field_name}'
                     self.gen_copy_tuple_1(
                         symbol.spec,
                         f'_{field_name}',
                         that_tuple,
                         this_is_pointer=True,
-                        that_is_pointer=self._type_declaration_wrap_ptr
+                        that_is_pointer=self._type_declaration_wrap_ptr,
+                        init_tuple=lambda value: self.update_union_field(
+                            f'_{field_name}', tuple_type, value
+                        )
                     )
                 case _:
                     raise ValueError(
