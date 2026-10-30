@@ -8,6 +8,6 @@
     "stdout": null,
     "stdout_hash": null,
     "stderr": "wat-wasm_pow_nonconst_int4-1527d75.stderr",
-    "stderr_hash": "5fc6cf19fbb288fa3de3378407ce8397fa762f18202ac57cf59fb630",
+    "stderr_hash": "507484c9bafecba71ab3a49d836128cb53bd7fc2415def0b26dab867",
     "returncode": 1
 }

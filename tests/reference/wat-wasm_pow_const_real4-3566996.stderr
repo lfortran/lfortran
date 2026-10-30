@@ -1,0 +1,5 @@
+code generation error: powers other than x**2 are not supported for real(4) in the wasm backend
+ --> tests/errors/wasm_pow_const_real4.f90:4:14
+  |
+4 |     print *, x**3
+  |              ^^^^ 

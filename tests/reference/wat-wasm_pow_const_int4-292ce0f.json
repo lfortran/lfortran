@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_pow_const_int4-292ce0f",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/errors/wasm_pow_const_int4.f90",
+    "infile_hash": "06d28929807130d30b1ac81c5b47846b1debad0649783bfa4780f1d8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "wat-wasm_pow_const_int4-292ce0f.stderr",
+    "stderr_hash": "998fe6bfb1952bf8232a528bb4d9d44988305d5a03dbd027fe9f6f9f",
+    "returncode": 1
+}

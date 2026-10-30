@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_pow_const_real8-af53cb4",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/errors/wasm_pow_const_real8.f90",
+    "infile_hash": "61349ce5fb0e18cc07f95e3f8b3a999c4aa171b0261408e20031f9d7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "wat-wasm_pow_const_real8-af53cb4.stderr",
+    "stderr_hash": "43eedbcfc71ae596be0e11d92de10d88fa27314139adc13ef3f0020e",
+    "returncode": 1
+}

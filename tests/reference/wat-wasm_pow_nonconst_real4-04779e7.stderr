@@ -1,4 +1,4 @@
-code generation error: RealBinop: only x**2 implemented so far for powers
+code generation error: powers other than x**2 are not supported for real(4) in the wasm backend
  --> tests/errors/wasm_pow_nonconst_real4.f90:5:14
   |
 5 |     print *, x**y
