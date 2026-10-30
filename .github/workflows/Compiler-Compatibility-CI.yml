@@ -334,6 +334,15 @@ jobs:
                 bash ci/test_llvm_integration.sh
             fi
 
+      # Provision only when the harness selects reference validation; do not
+      # activate Pixi over the LFortran/Caffeine compiler environment.
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
+        with:
+          pixi-version: v0.76.1
+          run-install: false
+          cache: false
+
       - name: Test coarray runtime with Caffeine
         if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
         shell: bash -e -l {0}
