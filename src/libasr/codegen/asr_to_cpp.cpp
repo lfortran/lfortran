@@ -488,10 +488,11 @@ public:
     std::string allocate_array_owner(const ASR::alloc_arg_t& arg) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out;
+        ASR::dimension_t* dims = nullptr;
         if (!is_array_owner_storage(arg.m_a) || arg.n_codims ||
                 arg.m_len_expr || arg.m_type || arg.m_sym_subclass ||
-                arg.n_dims != ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(arg.m_a))) {
+                arg.n_dims != ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(arg.m_a), dims)) {
             throw CodeGenError("allocation requires local or caller-owned result typed array storage "
                 "in the C++ backend", arg.loc);
         }
@@ -561,14 +562,15 @@ public:
         std::string out = indent + "*" + array +
             "->data = std::decay_t<decltype(*" + array + "->data)>();\n";
         out += indent + array + "->is_allocated = false;\n";
-        for (size_t i = 0; i < ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(expr)); i++) {
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(expr), dims);
+        for (size_t i = 0; i < n_dims; i++) {
             std::string dim = array + "->dims[" + std::to_string(i) + "]";
             out += indent + dim + ".lower_bound = 0;\n";
             out += indent + dim + ".length = 0;\n";
             out += indent + dim + ".stride = " +
-                (i + 1 == ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(expr)) ? "1" : "0") + ";\n";
+                (i + 1 == n_dims ? "1" : "0") + ";\n";
         }
         return out;
     }
@@ -847,8 +849,10 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string result;
         if (x.m_dim == nullptr) {
             result = "1";
-            for (size_t i = 0; i < ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(x.m_v)); i++) {
+            ASR::dimension_t* dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(x.m_v), dims);
+            for (size_t i = 0; i < n_dims; i++) {
                 result += " * " + var_name + "->dims[" + std::to_string(i) + "].length";
             }
         } else {
@@ -863,7 +867,6 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             visit_expr(*x.m_value);
             return;
         }
-        ASR::ttype_t* array_type = ASRUtils::expr_type(x.m_v);
         if (!x.m_dim) {
             throw CodeGenError("array bounds without dim must be lowered "
                 "before C++ code generation", x.base.base.loc);
