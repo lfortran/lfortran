@@ -17,7 +17,7 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
     ASR::Function_t &function, SymbolTable *scope,
     std::map<ASR::symbol_t*, ASR::expr_t*> substitutions,
     ASR::expr_t *target, const std::vector<ASR::stmt_t*> &before,
-    const std::vector<ASR::stmt_t*> &after);
+    const std::vector<ASR::stmt_t*> &after, bool realloc_lhs = false);
 
 } // namespace LCompilers::PassUtils
 

@@ -490,6 +490,16 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             ASR::expr_t *shape_src = gpu_scope_array_shape_source(
                 var, inner_body, inner_n_body);
             if (!shape_src) continue;
+            ASR::dimension_t *source_dims = nullptr;
+            size_t source_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(shape_src), source_dims);
+            if (!GpuLocalArrayChecker::dims_have_lengths(source_dims,
+                    source_rank)) {
+                // A deferred owner acquires its shape at assignment, not at
+                // scope entry. Keep it for allocation-on-assignment and heap
+                // normalization rather than inventing an automatic array.
+                continue;
+            }
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable(var->m_type));
             const Location &vloc = var->base.base.loc;
@@ -2896,6 +2906,14 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
             continue;
         }
         ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+
+        if (asgn->m_realloc_lhs &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(asgn->m_target))) {
+            // Shared array lowering must establish the owner's shape before
+            // replacing this assignment by element stores.
+            new_body.push_back(al, stmt);
+            continue;
+        }
 
         // An array constructor is not an elementwise expression: its
         // i-th element does not come from the i-th element of each

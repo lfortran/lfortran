@@ -600,6 +600,14 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             continue;
         }
 
+        if (asgn->m_realloc_lhs &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(asgn->m_target))) {
+            // Intrinsic lowering must allocate an owning result before its
+            // element stores; leave that contract to the shared passes.
+            new_body.push_back(al, stmt);
+            continue;
+        }
+
         // A matmul is not elementwise: it reads the whole of an
         // operand for every element it writes. Lowering `v = matmul(w,
         // v)` into loops over `v` would read elements it has already

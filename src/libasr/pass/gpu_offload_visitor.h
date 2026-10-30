@@ -200,7 +200,7 @@ public:
 
     ASR::stmt_t* splice_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc, ASR::expr_t *target,
-            const Location &loc);
+            const Location &loc, bool realloc_lhs);
 
     bool inline_device_function_calls(ASR::stmt_t **&stmts,
             size_t &n_stmts);

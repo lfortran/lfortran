@@ -121,7 +121,7 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
         ASR::Function_t &function, SymbolTable *scope,
         std::map<ASR::symbol_t*, ASR::expr_t*> substitutions,
         ASR::expr_t *target, const std::vector<ASR::stmt_t*> &before,
-        const std::vector<ASR::stmt_t*> &after) {
+        const std::vector<ASR::stmt_t*> &after, bool realloc_lhs) {
     std::vector<InlineScope> scopes;
     if (!collect_scopes({function.m_symtab, function.m_body, function.n_body},
             scopes)) return nullptr;
@@ -187,7 +187,9 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
     if (function.m_return_var) {
         LCOMPILERS_ASSERT(target);
         auto *result = ASR::down_cast<ASR::Var_t>(function.m_return_var)->m_v;
-        body.push_back(al, b.Assignment(target, substitutions.at(result)));
+        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, target, substitutions.at(result), nullptr,
+            realloc_lhs, false)));
     }
     std::string name = scope->parent->get_unique_name(
         "__inlined_" + std::string(function.m_name));

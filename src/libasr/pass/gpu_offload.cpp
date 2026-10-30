@@ -296,6 +296,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     gpu_hoist_present_tests(al, current_scope, work.body, work.n_body,
         gather_stmts);
 
+    // Give array-valued calls their owning temporaries before planning
+    // inlining: a deferred result nested in arithmetic has no caller-side
+    // shape until its allocation-producing body is spliced into that owner.
+    hoist_array_function_results(work);
+
     // What can be asked of the loop as it was written is asked before the
     // inline_* helpers below rewrite the body, so that an error names what
     // the source wrote rather than the shape a rewrite left.
