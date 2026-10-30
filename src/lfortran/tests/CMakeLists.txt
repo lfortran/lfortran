@@ -364,6 +364,8 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             set_tests_properties(${prefix}_cases PROPERTIES SKIP_RETURN_CODE 77)
         endfunction()
         set(SESSION_TEST ${CMAKE_CURRENT_SOURCE_DIR}/test_session.py)
+        set(SESSION_REGRESSIONS_TEST
+            ${CMAKE_CURRENT_SOURCE_DIR}/test_session_regressions.py)
         # The prompt starts the kernel that is built: the built-in one here.
         # These cases assume that kernel: a READ whose client leaves fails,
         # and a failed cell is aborted with an idle status.
@@ -374,36 +376,41 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --lfortran $<TARGET_FILE:lfortran> --builtin)
             add_all_cases_test(${SESSION_TEST} test_session "${SESSION_CASES}"
                 --lfortran $<TARGET_FILE:lfortran> --builtin)
-            add_test(
-                NAME test_session_regressions
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                    --lfortran $<TARGET_FILE:lfortran> --builtin
-                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
-            )
-            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
-                SKIP_RETURN_CODE 77)
+            set(SESSION_REGRESSIONS_CASES test_idle_updates test_edited_updates
+                test_fragmented_updates test_wide_updates test_combining_updates
+                test_idle_disconnect test_output_error_cleanup large_output
+                stalled_connections read_disconnect late_stdin prompt_departure
+                prompt_killed prompt_killed_in_read prompt_hung_up
+                prompt_terminated_with_kernel prompt_killed_ignoring_sigterm
+                prompt_killed_blocking_sigterm prompt_interrupted_in_cell
+                prompt_killed_in_cell kernel_parent stop_ends_session stop_on_error
+                implicit_typing verbose test_utf8_event_fragments)
+            add_case_tests(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
+            add_all_cases_test(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran> --builtin
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
         else()
             # The Xeus kernel, on Xeus's own channels, which the prompt starts
             # here. The cases that assume the built-in kernel stay out.
             add_case_tests(${SESSION_TEST} test_session
                 "shared_state;shared_clients;prompt_session;missing_kernel"
                 --lfortran $<TARGET_FILE:lfortran>)
-            add_test(
-                NAME test_session_regressions
-                COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
-                    --lfortran $<TARGET_FILE:lfortran>
-                    --case xeus_connection_files --case implicit_typing
-                    --case prompt_departure --case prompt_killed_in_cell
-                    --case kernel_parent --case stop_ends_session --case verbose
-                    --case test_idle_updates --case test_edited_updates
-                    --case test_fragmented_updates --case test_idle_disconnect
-                    --case test_unicode_updates --case test_output_error_cleanup
-                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
-            )
-            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
-                SKIP_RETURN_CODE 77)
+            set(SESSION_REGRESSIONS_CASES xeus_connection_files implicit_typing
+                prompt_departure prompt_killed prompt_killed_in_read prompt_hung_up
+                prompt_terminated_with_kernel prompt_killed_ignoring_sigterm
+                prompt_killed_blocking_sigterm prompt_interrupted_in_cell
+                prompt_killed_in_cell kernel_parent stop_ends_session verbose
+                test_idle_updates test_edited_updates test_fragmented_updates
+                test_idle_disconnect test_wide_updates test_combining_updates
+                test_output_error_cleanup test_utf8_event_fragments)
+            add_case_tests(${SESSION_REGRESSIONS_TEST} test_session_regressions
+                "${SESSION_REGRESSIONS_CASES}"
+                --lfortran $<TARGET_FILE:lfortran>
+                --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>)
         endif()
         # The Xeus kernel, or else the built-in one, also as run by the prompt
         # (`--managed`). Only that runs the transport case.

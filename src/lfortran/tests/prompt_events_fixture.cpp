@@ -5,9 +5,10 @@
 
 int main()
 {
+    // For a terminal of 10 columns
     std::string text = "\x1b[0m";
-    for (int i = 0; i < 40; i++) text += "\xe7\x95\x8c";
-    text += std::string(40, 'a') + "Z\n" + std::string(79, 'x')
+    for (int i = 0; i < 5; i++) text += "\xe7\x95\x8c";
+    text += std::string(5, 'a') + "Z\n" + std::string(9, 'x')
         + "e\xcc\x81\n";
     size_t next = 0;
     int ticks = 0;
