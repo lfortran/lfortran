@@ -1181,17 +1181,22 @@ namespace LCompilers {
             replacer->result_var = nullptr;
         }
 
+        using ConstructorLeaf = std::function<void(ASR::expr_t*,
+            Vec<ASR::stmt_t*>&, bool, ASR::cast_kindType, ASR::ttype_t*)>;
+
         void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind,
-            ASR::ttype_t* casted_type, bool skip_save_restore);
+            ASR::ttype_t* casted_type, bool skip_save_restore,
+            const ConstructorLeaf* append);
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
         ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
         ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-        ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
+        ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false,
+        const ConstructorLeaf* append=nullptr) {
             // According to Fortran standard, the loop variable in an implied-DO
             // within an array constructor is local to the implied-DO and should
             // not affect any outer variable with the same name. To implement this,
@@ -1221,6 +1226,23 @@ namespace LCompilers {
             head.m_end = idoloop->m_end;
             head.m_increment = idoloop->m_increment;
             head.loc = head.m_v->base.loc;
+            if (append) {
+                // These assignments belong to the parent activation, not to
+                // sizing metadata or to the generated loop condition.
+                ASR::expr_t** controls[] = {
+                    &head.m_start, &head.m_end, &head.m_increment};
+                for (ASR::expr_t** control: controls) {
+                    if (!*control) continue;
+                    LCOMPILERS_ASSERT(ASRUtils::types_equal(
+                        ASRUtils::expr_type(*control), loop_var_type,
+                        nullptr, nullptr));
+                    std::string name = current_scope->get_unique_name("_idl_control");
+                    ASR::stmt_t* assignment;
+                    *control = PassUtils::create_auxiliary_variable_for_expr(
+                        *control, name, al, current_scope, assignment);
+                    result_vec->push_back(al, assignment);
+                }
+            }
             Vec<ASR::stmt_t*> doloop_body;
             doloop_body.reserve(al, 1);
             ASR::ttype_t *_type = ASRUtils::expr_type(idoloop->m_start);
@@ -1236,7 +1258,17 @@ namespace LCompilers {
                 grp_start = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.loc, num_grps,
                                 ASR::binopType::Add, const_1, _type, nullptr));
             }
-            for( size_t i = 0; i < idoloop->n_values; i++ ) {
+            if (append) {
+                ASR::ArrayConstructor_t* values = ASR::down_cast<ASR::ArrayConstructor_t>(
+                    ASRUtils::EXPR(ASR::make_ArrayConstructor_t(al, loc,
+                        idoloop->m_values, idoloop->n_values,
+                        ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(arr_var)),
+                        nullptr, ASR::arraystorageType::ColMajor, nullptr)));
+                visit_ArrayConstructor(values, al, arr_var, &doloop_body,
+                    arr_idx, current_scope, perform_cast, cast_kind,
+                    casted_type, skip_save_restore, append);
+            } else for( size_t i = 0; i < idoloop->n_values; i++ ) {
                 Vec<ASR::array_index_t> args;
                 ASR::array_index_t ai;
                 ai.loc = arr_var->base.loc;
@@ -1267,7 +1299,7 @@ namespace LCompilers {
                 } else if( ASR::is_a<ASR::ArrayConstructor_t>(*idoloop->m_values[i]) ) {
                     ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(idoloop->m_values[i]);
                     visit_ArrayConstructor(array_constructor, al, arr_var, &doloop_body,
-                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
+                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore, nullptr);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
                     ASR::ttype_t* curr_init_type = ASRUtils::expr_type(curr_init);
@@ -1646,7 +1678,8 @@ namespace LCompilers {
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false);
+            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false,
+            const ConstructorLeaf* append=nullptr);
 
         template <typename T>
         static inline void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,

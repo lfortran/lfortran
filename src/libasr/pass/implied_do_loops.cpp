@@ -11,6 +11,7 @@
 #include <libasr/diagnostics.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -38,6 +39,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     const LCompilers::PassOptions& pass_options;
     bool skip_idl_save_restore;
     bool materialize_constants = false;
+    SymbolTable* constructor_scope = nullptr;
+    std::vector<ASR::expr_t*> constructor_results;
     // Index variables of the enclosing FORALL statements
     std::vector<ASR::symbol_t*> forall_indices;
 
@@ -611,12 +614,188 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return false;
     }
 
+    void materialize_dynamic_constructor(ASR::ArrayConstructor_t* x) {
+        const Location& loc = x->base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(x->m_type));
+        LCOMPILERS_ASSERT(array_type->m_memory_space == ASR::memory_spaceType::Global);
+        if (!constructor_scope) {
+            constructor_scope = al.make_new<SymbolTable>(current_scope);
+        }
+        current_scope = constructor_scope;
+        ASR::ttype_t* element = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(x->m_type));
+        ASR::ttype_t* index_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, get_index_kind()));
+        auto integer = [&](int64_t n) {
+            return ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, n, index_type));
+        };
+        auto variable = [&](const std::string& name, ASR::ttype_t* type) {
+            return PassUtils::create_var(result_counter++, name,
+                loc, type, al, current_scope);
+        };
+        auto owner_type = [&]() {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            dims.push_back(al, dim);
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, element), dims.p, dims.n,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global))));
+        };
+        struct AppendContext {
+            ASR::expr_t *buffer, *scratch, *used, *capacity;
+        } context {
+            variable("_constructor_buffer", owner_type()),
+            variable("_constructor_scratch", owner_type()),
+            variable("_constructor_used", index_type),
+            variable("_constructor_capacity", index_type)
+        };
+        ASR::expr_t* result = variable("_constructor_result", owner_type());
+        ASR::expr_t* copy_index = variable("_constructor_copy", index_type);
+        auto allocate = [&](ASR::expr_t* array, ASR::expr_t* size) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = integer(1);
+            dim.m_length = size;
+            dims.push_back(al, dim);
+            return b.Allocate(array, dims);
+        };
+        auto copy_prefix = [&](ASR::expr_t* target, ASR::expr_t* source) {
+            return b.DoLoop(copy_index, integer(1), context.used, {b.Assignment(
+                PassUtils::create_array_ref(target, copy_index, al, current_scope),
+                PassUtils::create_array_ref(source, copy_index, al, current_scope))});
+        };
+        ASR::stmt_t* overflow = ASRUtils::STMT(
+            ASR::make_ErrorStop_t(al, loc, integer(1)));
+        int64_t max_count = get_index_kind() == 8 ?
+            std::numeric_limits<int64_t>::max() :
+            std::numeric_limits<int32_t>::max();
+        pass_result.push_back(al, b.Assignment(context.used, integer(0)));
+        pass_result.push_back(al, b.Assignment(context.capacity, integer(0)));
+        pass_result.push_back(al, b.Deallocate(context.buffer));
+        pass_result.push_back(al, allocate(context.buffer, integer(0)));
+
+        auto append_scalar = [&](ASR::expr_t* value, Vec<ASR::stmt_t*>& body) {
+            body.push_back(al, b.If(b.Eq(context.used, integer(max_count)),
+                {overflow}, {}));
+            std::vector<ASR::stmt_t*> growth;
+            growth.push_back(b.If(b.Gt(context.capacity, integer(max_count / 2)),
+                {overflow}, {}));
+            growth.push_back(b.If(b.Gt(context.used, integer(0)),
+                {allocate(context.scratch, context.used),
+                 copy_prefix(context.scratch, context.buffer)}, {}));
+            growth.push_back(b.Deallocate(context.buffer));
+            growth.push_back(b.If(b.Eq(context.capacity, integer(0)),
+                {b.Assignment(context.capacity, integer(1))},
+                {b.Assignment(context.capacity,
+                    b.Mul(context.capacity, integer(2)))}));
+            growth.push_back(allocate(context.buffer, context.capacity));
+            growth.push_back(b.If(b.Gt(context.used, integer(0)),
+                {copy_prefix(context.buffer, context.scratch),
+                 b.Deallocate(context.scratch)}, {}));
+            body.push_back(al, b.If(b.Eq(context.used, context.capacity), growth, {}));
+            body.push_back(al, b.Assignment(context.used,
+                b.Add(context.used, integer(1))));
+            body.push_back(al, b.Assignment(
+                PassUtils::create_array_ref(context.buffer, context.used,
+                    al, current_scope), value));
+        };
+        PassUtils::ReplacerUtils::ConstructorLeaf append =
+            [&](ASR::expr_t* value, Vec<ASR::stmt_t*>& body,
+                    bool perform_cast, ASR::cast_kindType cast_kind,
+                    ASR::ttype_t* casted_type) {
+                // A leaf expression can itself contain a constructor, for
+                // example as an operand or a function actual. Its preparation
+                // must run here, in this leaf's parent activation.
+                bool redirect = &body != &pass_result;
+                if (redirect) std::swap(pass_result, body);
+                ASR::expr_t** saved_expr = current_expr;
+                ASR::expr_t* saved_result = result_var;
+                bool saved_remove = remove_original_statement;
+                current_expr = &value;
+                result_var = nullptr;
+                replace_expr(value);
+                current_expr = saved_expr;
+                result_var = saved_result;
+                remove_original_statement = saved_remove;
+                if (redirect) std::swap(pass_result, body);
+                if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                    ASR::ttype_t* type = ASRUtils::duplicate_type_with_empty_dims(
+                        al, ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(value)),
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    ASR::expr_t* leaf = variable("_constructor_leaf",
+                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, type)));
+                    // This is an internal owning snapshot, independent of the
+                    // user's allocation-on-assignment option.
+                    body.push_back(al, ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(al, loc, leaf, value,
+                            nullptr, true, false)));
+                    Vec<ASR::expr_t*> indices;
+                    Vec<ASR::stmt_t*> inner;
+                    PassUtils::ReplacerUtils::create_do_loop(al, loc,
+                        ASRUtils::extract_n_dims_from_ttype(type), leaf,
+                        indices, inner, [&]() {
+                            append_scalar(PassUtils::create_array_ref(
+                                leaf, indices, al, current_scope, perform_cast,
+                                cast_kind, casted_type), inner);
+                        }, current_scope, &body);
+                    body.push_back(al, b.Deallocate(leaf));
+                } else {
+                    if (perform_cast && !ASRUtils::types_equal(
+                            ASRUtils::expr_type(value), casted_type, nullptr, nullptr)) {
+                        value = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+                            cast_kind, casted_type, nullptr, nullptr));
+                    }
+                    std::string name = current_scope->get_unique_name("_constructor_leaf");
+                    ASR::stmt_t* assignment;
+                    ASR::expr_t* leaf = PassUtils::create_auxiliary_variable_for_expr(
+                        value, name, al, current_scope, assignment);
+                    body.push_back(al, assignment);
+                    append_scalar(leaf, body);
+                }
+            };
+        PassUtils::ReplacerUtils::visit_ArrayConstructor(x, al, context.buffer,
+            &pass_result, context.used, current_scope, false,
+            ASR::cast_kindType::IntegerToInteger, nullptr,
+            skip_idl_save_restore, &append);
+        pass_result.push_back(al, b.Deallocate(result));
+        pass_result.push_back(al, allocate(result, context.used));
+        pass_result.push_back(al, copy_prefix(result, context.buffer));
+        pass_result.push_back(al, b.Deallocate(context.buffer));
+        constructor_results.push_back(result);
+        *current_expr = result;
+        remove_original_statement = false;
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // The statements that evaluate a constructor are put in front of
         // the FORALL, where its indices are not defined. A constructor that
         // depends on them is left to array_struct_temporary, which runs
         // after the FORALL is lowered to loops.
         if (depends_on_forall_index(&x->base)) {
+            return;
+        }
+        ASR::ttype_t* scalar_type = ASRUtils::extract_type(x->m_type);
+        bool numeric = ASR::is_a<ASR::Integer_t>(*scalar_type) ||
+            ASR::is_a<ASR::Real_t>(*scalar_type) ||
+            ASR::is_a<ASR::Complex_t>(*scalar_type) ||
+            ASR::is_a<ASR::Logical_t>(*scalar_type);
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(x->m_type));
+        if (numeric && array_type->m_memory_space == ASR::memory_spaceType::Global &&
+                ASRUtils::constructor_has_runtime_extent(&x->base)) {
+            materialize_dynamic_constructor(x);
             return;
         }
         // Skip ArrayConstructor replacement when any argument is a function
@@ -1041,6 +1220,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.current_expr = current_expr;
             replacer.current_scope = current_scope;
             replacer.replace_expr(*current_expr);
+            if (replacer.constructor_scope) {
+                current_scope = replacer.constructor_scope;
+            }
         }
 
         // Helper to check if an expression contains StringTrim
@@ -1123,13 +1305,24 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
-            if( parent_body ) {
+            Vec<ASR::stmt_t*> enclosing_preparation;
+            enclosing_preparation.reserve(al, pass_result.size());
+            if (replacer.constructor_scope) {
+                for (ASR::stmt_t* stmt: pass_result) {
+                    enclosing_preparation.push_back(al, stmt);
+                }
+            } else if( parent_body ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
                     parent_body->push_back(al, pass_result[j]);
                 }
             }
 
             for (size_t i = 0; i < n_body; i++) {
+                SymbolTable* scope_before = current_scope;
+                SymbolTable* outer_constructor_scope = replacer.constructor_scope;
+                auto outer_results = std::move(replacer.constructor_results);
+                replacer.constructor_scope = nullptr;
+                replacer.constructor_results.clear();
                 pass_result.n = 0;
                 pass_result.reserve(al, 1);
                 remove_original_statement = false;
@@ -1138,19 +1331,81 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 parent_body = &body;
                 visit_stmt(*m_body[i]);
                 parent_body = parent_body_copy;
-                for (size_t j = 0; j < pass_result.size(); j++) {
-                    body.push_back(al, pass_result[j]);
+                if (replacer.constructor_scope) {
+                    Vec<ASR::stmt_t*> prepared;
+                    prepared.reserve(al, pass_result.size() + 1);
+                    for (size_t j = 0; j < pass_result.size(); j++) {
+                        prepared.push_back(al, pass_result[j]);
+                    }
+                    if (!remove_original_statement) {
+                        prepared.push_back(al, m_body[i]);
+                    }
+                    ASRUtils::ASRBuilder b(al, m_body[i]->base.loc);
+                    for (ASR::expr_t* result: replacer.constructor_results) {
+                        prepared.push_back(al, b.Deallocate(result));
+                    }
+                    std::string name = scope_before->get_unique_name("_constructor_activation");
+                    ASR::symbol_t* block = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Block_t(al, m_body[i]->base.loc,
+                            replacer.constructor_scope, s2c(al, name),
+                            prepared.p, prepared.n));
+                    scope_before->add_symbol(name, block);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+                        al, m_body[i]->base.loc, -1, block)));
+                } else {
+                    for (size_t j = 0; j < pass_result.size(); j++) {
+                        body.push_back(al, pass_result[j]);
+                    }
+                    if (!remove_original_statement) {
+                        body.push_back(al, m_body[i]);
+                    }
                 }
-                if( !remove_original_statement ) {
-                    body.push_back(al, m_body[i]);
-                }
+                current_scope = scope_before;
+                replacer.constructor_scope = outer_constructor_scope;
+                replacer.constructor_results = std::move(outer_results);
                 remove_original_statement = false;
             }
             m_body = body.p;
             n_body = body.size();
             replacer.result_var = nullptr;
+            pass_result = enclosing_preparation;
+        }
+
+        void visit_WhileLoop(const ASR::WhileLoop_t& x) {
+            ASR::WhileLoop_t& loop = const_cast<ASR::WhileLoop_t&>(x);
+            ASR::expr_t** saved_expr = current_expr;
+            current_expr = &loop.m_test;
+            call_replacer();
+            current_expr = saved_expr;
+            bool constructor_in_test = replacer.constructor_scope != nullptr;
+            transform_stmts(loop.m_body, loop.n_body);
+            transform_stmts(loop.m_orelse, loop.n_orelse);
+            if (!constructor_in_test) return;
+
+            const Location& loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t* test = PassUtils::create_var(replacer.result_counter++,
+                "_constructor_test", loc, ASRUtils::expr_type(loop.m_test),
+                al, current_scope);
+            Vec<ASR::stmt_t*> iteration;
+            iteration.reserve(al, pass_result.size() + loop.n_body + 2);
+            for (ASR::stmt_t* stmt: pass_result) {
+                iteration.push_back(al, stmt);
+            }
+            iteration.push_back(al, b.Assignment(test, loop.m_test));
+            for (ASR::expr_t* result: replacer.constructor_results) {
+                iteration.push_back(al, b.Deallocate(result));
+            }
+            replacer.constructor_results.clear();
+            iteration.push_back(al, b.If(b.Not(test),
+                {ASRUtils::STMT(ASR::make_Exit_t(al, loc, loop.m_name))}, {}));
+            for (size_t i = 0; i < loop.n_body; i++) {
+                iteration.push_back(al, loop.m_body[i]);
+            }
+            loop.m_test = b.logical_true();
+            loop.m_body = iteration.p;
+            loop.n_body = iteration.n;
             pass_result.n = 0;
-            pass_result.reserve(al, 0);
         }
 
         void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {

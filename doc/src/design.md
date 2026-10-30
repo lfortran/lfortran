@@ -53,7 +53,18 @@ remain explicit ASR casts rather than backend type inference. The constructor
 pass's `materialize_array_constants` policy creates typed RHS storage instead of
 named array constants; other backends retain their default policy.
 Fixed-cardinality constructor values are filled before the destination is
-written, including self-referential assignments. Remaining executable
+written, including self-referential assignments. Runtime numeric constructors
+use the same recursive fill traversal with an append buffer. Converted DO
+controls are saved immediately before each loop in its parent activation;
+array-valued leaves are independently snapshotted before element-order
+traversal, including preparation of constructors nested inside leaf expressions.
+Buffer growth doubles capacity, explicitly preserving only the live
+prefix through scratch storage (reallocation itself does not preserve values).
+An exact-size independent result is allocated before the destination is
+changed. Builder state and the consuming statement share an activation-local
+BLOCK with runtime descriptor dimensions, not unevaluated control expressions
+in types. Internal snapshots allocate regardless of the user LHS-reallocation
+option; the user's destination retains that option's semantics. Remaining executable
 constructors are rejected at the C++ boundary rather than filled by a second,
 backend-specific constructor implementation. This normalization does not imply
 support for all dynamic allocations, sections, or array function results.

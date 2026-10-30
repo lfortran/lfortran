@@ -1372,6 +1372,7 @@ bool set_allocation_size(
             allocate_dim.m_start = int32_one;
             allocate_dim.m_length = ASRUtils::get_ArrayConstructor_size(al,
                 ASR::down_cast<ASR::ArrayConstructor_t>(value));
+            if (!allocate_dim.m_length) return false;
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
@@ -1474,6 +1475,7 @@ bool set_allocation_size(
             allocate_dim.loc = loc;
             allocate_dim.m_start = int32_one;
             allocate_dim.m_length = ASRUtils::get_ImpliedDoLoop_size(al, implied_do_loop);
+            if (!allocate_dim.m_length) return false;
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
@@ -4716,6 +4718,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // Sections that ArgSimplifier left in place (see get_sections_read_in_place)
     const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
     bool snapshot_sections = false;
+    bool assignment_realloc = false;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -5307,7 +5310,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
-            if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
+            if( (target_Type == targetType::OriginalTarget && (realloc_lhs || assignment_realloc ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
@@ -6146,7 +6149,10 @@ class ReplaceExprWithTemporaryVisitor:
         bool evaluate_once_copy = replacer.evaluate_function_references_once;
         replacer.evaluate_function_references_once =
             evaluate_once_copy && x.m_overloaded == nullptr;
+        bool assignment_realloc_copy = replacer.assignment_realloc;
+        replacer.assignment_realloc = x.m_realloc_lhs;
         call_replacer();
+        replacer.assignment_realloc = assignment_realloc_copy;
         replacer.evaluate_function_references_once = evaluate_once_copy;
         replacer.in_array_context = false;
         replacer.lhs_var = nullptr;
