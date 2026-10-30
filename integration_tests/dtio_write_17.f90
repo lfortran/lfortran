@@ -9,18 +9,18 @@ recursive subroutine host(depth)
     interface write(formatted)
         procedure write_item
     end interface
-    type(item) :: object
     integer :: captured, calls
     character(32) :: text, expected
     captured = depth * 10
     calls = 0
-    object%value = depth
-    write(text, '(dt)') object
+    ! GFortran 15 incorrectly saves local DTIO objects (GCC PR125059).
+    ! Fresh operands leave captured and calls as the state tested across recursion.
+    write(text, '(dt)') item(depth)
     write(expected, '(i0)') depth * 11
     if (text /= expected .or. calls /= 1) error stop 1
     if (depth > 1) call host(depth - 1)
     captured = captured + 1
-    write(text, '(dt)') object
+    write(text, '(dt)') item(depth)
     write(expected, '(i0)') depth * 11 + 1
     if (text /= expected .or. calls /= 2) error stop 2
 contains
