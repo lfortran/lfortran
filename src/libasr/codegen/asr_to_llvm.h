@@ -4,8 +4,16 @@
 #include <libasr/asr.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
+#include <functional>
 
 namespace LCompilers {
+
+    // Same-process native JIT only; never serialized into file compilation.
+    struct JITCancellation {
+        int (*poll)(bool propagate_only);
+        void (*protect)(bool begin);
+        std::function<bool(const std::string &)> cooperative_call;
+    };
 
     Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
             diag::Diagnostics &diagnostics,
@@ -16,7 +24,7 @@ namespace LCompilers {
             const std::string &run_fn,
             const std::string &/*global_underscore*/,
             const std::string &infile,
-            LocationManager &lm);
+            LocationManager &lm, const JITCancellation *cancellation = nullptr);
 
 } // namespace LCompilers
 

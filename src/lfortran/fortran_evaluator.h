@@ -22,6 +22,7 @@ namespace LCompilers {
 class LLVMModule;
 class MLIRModule;
 class LLVMEvaluator;
+struct JITCancellation;
 #ifdef __EMSCRIPTEN__
 class WasmLFortranExecutor;
 #endif
@@ -79,7 +80,9 @@ public:
         // Supplies the records a READ from stdin consumes: returns 0 with
         // `record` set (without a newline), -1 at end of file, or > 0 if no
         // input is available. Unset, the cell reads the process's stdin.
-        std::function<int(std::string &record)> input;
+        // `interruptible` is false during protected initialization/cleanup:
+        // service control there too, but do not abandon the input wait.
+        std::function<int(std::string &record, bool interruptible)> input;
         // Receives what the cell writes to stdout (stream 1) and stderr
         // (stream 2). Set, both are captured while the cell runs and passed
         // here incrementally on native builds, before each display,
@@ -90,6 +93,10 @@ public:
         // Make bounded, nonblocking transport progress on the caller after
         // each capture pump, even when no new output was captured.
         std::function<void()> progress_output;
+        // Native execution only: queried on the caller, including for silent
+        // cells. Return true to request cooperative cancellation. Must not block
+        // or throw. Requests belong to this cell, not to subsequent cells.
+        std::function<bool()> cancel_requested;
         // Flush the frontend's transport before STOP terminates the process.
         // Called on the execute() caller, after the last output.
         std::function<void()> flush_on_exit;
@@ -160,7 +167,7 @@ public:
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics, LocationManager &lm, const std::string &infile,
-        int64_t* time_opt);
+        int64_t* time_opt, const JITCancellation *cancellation = nullptr);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
         LCompilers::PassManager& pass_manager,

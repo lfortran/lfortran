@@ -710,8 +710,11 @@ public:
     std::string infile;
     Allocator &al;
 
-    llvm::Value *tmp;
+    llvm::Value *tmp = nullptr;
     llvm::BasicBlock *proc_return;
+    const JITCancellation *jit_cancellation = nullptr;
+    SymbolTable *cancellation_scope = nullptr;
+    bool emitting_cancellation_cleanup = false;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8;
@@ -2545,8 +2548,10 @@ public:
             compiler_options.po.run_fun + "_setup", module.get());
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
         builder->SetCurrentDebugLocation(nullptr);
+        protect_cancellation(true);
         emit_global_struct_members_setup();
         emit_allocatable_global_array_setup();
+        protect_cancellation(false);
         builder->CreateRetVoid();
         builder->ClearInsertionPoint();
     }
@@ -8379,6 +8384,7 @@ public:
 
         builder->SetInsertPoint(BB);
         // Clear alloca pool after nested functions are processed, before main body
+        protect_cancellation(true);
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -8458,11 +8464,15 @@ public:
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
         predeclare_goto_targets(F, x.m_body, x.n_body);
+        protect_cancellation(false);
+        cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        cancellation_scope = nullptr;
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
+        protect_cancellation(true);
         // The variables of the main program, and those of modules, are not
         // finalized when the program terminates (F2018 7.5.6.4): their
         // memory is freed without calling final subroutines.
@@ -8512,6 +8522,7 @@ public:
                 llvm_utils->void_type, {});
             builder->CreateCall(fn, {});
         }
+        protect_cancellation(false);
         if (interactive_program) {
             builder->CreateRetVoid();
         } else {
@@ -10378,6 +10389,9 @@ public:
 
     template<typename T>
     void declare_vars(const T &x) {
+        auto *saved_scope = cancellation_scope;
+        cancellation_scope = nullptr;
+        protect_cancellation(true);
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
@@ -10390,6 +10404,8 @@ public:
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
+        protect_cancellation(false);
+        cancellation_scope = saved_scope;
     }
 
     bool is_function_variable(const ASR::Variable_t &v) {
@@ -11368,6 +11384,7 @@ public:
                 ".entry", F);
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        protect_cancellation(true);
         declare_args(x, *F);
         if (dummies_may_be_noalias(x)) {
             tbaa_functions.insert(F);
@@ -11661,6 +11678,7 @@ public:
         }
         finalize_intent_out_array_args(x);
         declare_local_vars(x);
+        protect_cancellation(false);
     }
 
     /**
@@ -11751,14 +11769,28 @@ public:
         }
     }
 
+    void emit_procedure_cleanup(SymbolTable *scope, bool abandon_result = false,
+            bool call_final_subroutines = true) {
+        CancellationProtection protection(*this);
+        llvm_symtab_finalizer.finalize_symtab(scope, call_final_subroutines, abandon_result);
+        auto saved_list_args = list_call_arg_to_finalize;
+        finalize_list_call_arg_allocas();
+        if (abandon_result) list_call_arg_to_finalize = std::move(saved_list_args);
+        // A cancelled nested construct has already freed its own arrays.
+        const size_t heap_end = abandon_result && !block_cleanups.empty()
+            ? block_cleanups.front().heap_arrays_before : heap_fixed_size_arrays.n;
+        for (size_t i = 0; i < heap_end; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        if (!abandon_result) heap_fixed_size_arrays.n = 0;
+        convert_bindc_strides_to_byte();
+    }
+
     inline void define_function_exit(const ASR::Function_t& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if (x.m_return_var) {
             start_new_block(proc_return);
-            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-            finalize_list_call_arg_allocas();
-            free_heap_fixed_size_arrays();
-            convert_bindc_strides_to_byte();
+            emit_procedure_cleanup(x.m_symtab);
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
             if (fn->getReturnType()->isVoidTy()) {
                 // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI:
@@ -11832,10 +11864,7 @@ public:
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
-            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-            finalize_list_call_arg_allocas();
-            free_heap_fixed_size_arrays();
-            convert_bindc_strides_to_byte();
+            emit_procedure_cleanup(x.m_symtab);
             builder->CreateRetVoid();
         }
     }
@@ -11860,9 +11889,11 @@ public:
                 define_function_entry(x);
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
+                cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
+                cancellation_scope = nullptr;
                 
                 define_function_exit(x);
             }
@@ -16738,6 +16769,7 @@ public:
     // stack pointer saved on entry.
     void emit_block_cleanup(const BlockCleanup &b, size_t heap_end,
             size_t wb_end) {
+        CancellationProtection protection(*this);
         for (size_t i = b.char_writebacks_before;
                 b.writes_back_chars && i < wb_end; i++) {
             auto& wb = pending_char_writebacks[i];
@@ -17632,6 +17664,7 @@ public:
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
+            emit_cancellation_check();
             this->visit_expr_wrapper(x.m_test, true);
             // Free the test's string temporaries on every evaluation.
             free_strings_to_be_deallocated(0);
@@ -17683,6 +17716,110 @@ public:
                 wb_end = b.char_writebacks_before;
             }
         }
+    }
+
+    llvm::Value *jit_callback_address(uintptr_t address, llvm::FunctionType *type) {
+        return llvm::ConstantExpr::getIntToPtr(
+            llvm::ConstantInt::get(llvm::Type::getIntNTy(context, sizeof(uintptr_t)*8),
+                address), type->getPointerTo());
+    }
+
+    void protect_cancellation(bool begin) {
+        if (!jit_cancellation) return;
+        auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm::Type::getInt1Ty(context)}, false);
+        builder->CreateCall(type, jit_callback_address(
+            reinterpret_cast<uintptr_t>(jit_cancellation->protect), type),
+            {llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), begin)});
+    }
+
+    struct CancellationProtection {
+        ASRToLLVMVisitor &visitor;
+        const bool saved;
+        CancellationProtection(ASRToLLVMVisitor &visitor)
+            : visitor(visitor), saved(visitor.emitting_cancellation_cleanup) {
+            visitor.emitting_cancellation_cleanup = true;
+            visitor.protect_cancellation(true);
+        }
+        ~CancellationProtection() {
+            visitor.protect_cancellation(false);
+            visitor.emitting_cancellation_cleanup = saved;
+        }
+    };
+
+    // Only fully initialized scopes may be left. Reuse normal scope cleanup,
+    // but abandon the result rather than loading an incomplete return value.
+    void emit_cancellation_check(bool propagate_only = false,
+            const std::function<void()> &before_cleanup = {}) {
+        if (!cancellation_scope || emitting_cancellation_cleanup) return;
+        auto *saved_tmp = tmp;
+        auto *fn = builder->GetInsertBlock()->getParent();
+        auto *type = llvm::FunctionType::get(llvm::Type::getInt32Ty(context),
+            {llvm::Type::getInt1Ty(context)}, false);
+        auto *pending = builder->CreateCall(type, jit_callback_address(
+            reinterpret_cast<uintptr_t>(jit_cancellation->poll), type),
+            {llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), propagate_only)});
+        auto *cleanup = llvm::BasicBlock::Create(context, "cancel.cleanup", fn);
+        auto *resume = llvm::BasicBlock::Create(context, "cancel.resume", fn);
+        builder->CreateCondBr(builder->CreateICmpNE(pending,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)), cleanup, resume);
+        builder->SetInsertPoint(cleanup);
+        emitting_cancellation_cleanup = true;
+        protect_cancellation(true);
+        if (before_cleanup) before_cleanup();
+        auto strings_n = strings_to_be_deallocated.n;
+        free_strings_to_be_deallocated(0);
+        strings_to_be_deallocated.n = strings_n;
+        leave_blocks(0, true);
+        const bool finalize = !ASR::is_a<ASR::Program_t>(
+            *ASR::down_cast<ASR::symbol_t>(cancellation_scope->asr_owner));
+        emit_procedure_cleanup(cancellation_scope, true, finalize);
+        protect_cancellation(false);
+        if (fn->getReturnType()->isVoidTy()) builder->CreateRetVoid();
+        else builder->CreateRet(llvm::Constant::getNullValue(fn->getReturnType()));
+        emitting_cancellation_cleanup = false;
+        builder->SetInsertPoint(resume);
+        tmp = saved_tmp;
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        emit_cancellation_check();
+        ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
+    }
+
+    bool foreign_cancellation_boundary(const ASR::Function_t &fn,
+            bool indirect = false, llvm::Function *target = nullptr) {
+        const auto *type = ASRUtils::get_FunctionType(fn);
+        if (target && jit_cancellation &&
+                jit_cancellation->cooperative_call(target->getName().str())) {
+            return false;
+        }
+        // A known JIT implementation participates even with BIND(C). A C
+        // procedure pointer, however, may target an uninstrumented caller.
+        return indirect ? type->m_abi == ASR::abiType::BindC
+            || type->m_abi == ASR::abiType::ExternalUndefined
+            : type->m_deftype != ASR::deftypeType::Implementation
+                && type->m_abi != ASR::abiType::Intrinsic;
+    }
+
+    llvm::CallInst *create_jit_call(llvm::Function *fn,
+            llvm::ArrayRef<llvm::Value *> args = {}, bool foreign = false) {
+        if (foreign) protect_cancellation(true);
+        auto *result = builder->CreateCall(fn, args);
+        if (foreign) protect_cancellation(false);
+        // A successful result must first acquire its normal temporary owner.
+        // Here propagate only cancellation already completed in the callee.
+        emit_cancellation_check(true);
+        return result;
+    }
+
+    llvm::CallInst *create_jit_call(llvm::FunctionType *type, llvm::Value *fn,
+            llvm::ArrayRef<llvm::Value *> args, bool foreign = false) {
+        if (foreign) protect_cancellation(true);
+        auto *result = builder->CreateCall(type, fn, args);
+        if (foreign) protect_cancellation(false);
+        emit_cancellation_check(true);
+        return result;
     }
 
     // Branch to `loop_or_block_end[target]`, first ending every construct
@@ -21428,7 +21565,8 @@ public:
             bool is_string = false,
             llvm::Value* str_src_data = nullptr,
             llvm::Value* str_src_len = nullptr,
-            llvm::Value* str_offset = nullptr) {
+            llvm::Value* str_offset = nullptr,
+            const std::function<void()> &check_read = {}) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -21472,7 +21610,7 @@ public:
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[vi])) {
                 ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[vi]);
                 generate_read_implied_do_loop(inner_idl, unit_val, iostat,
-                    is_string, str_src_data, str_src_len, str_offset);
+                    is_string, str_src_data, str_src_len, str_offset, check_read);
             } else {
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -21510,6 +21648,7 @@ public:
                         llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
                             llvm::Type::getInt1Ty(context));
                         builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                        if (check_read) check_read();
                         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                         llvm::Value* loaded = llvm_utils->CreateLoad2(
                             llvm::Type::getInt1Ty(context), tmp_bool);
@@ -21525,6 +21664,7 @@ public:
                         builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
                     }
                 }
+                if (check_read) check_read();
             }
         }
 
@@ -21567,6 +21707,29 @@ public:
             return ;
         }
 
+        // A cancelled stdin wait must return through the normal READ frame
+        // before taking the JIT cleanup path, not exit from a runtime reader
+        // receiving a null IOSTAT. File compilation keeps its original path.
+        const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup;
+        auto finish_read = [&](llvm::Value *status) {
+            if (!cancellable) return;
+            emit_cancellation_check(false, [&]() {
+                if (x.m_decimal) emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
+                    llvm_utils->i32, llvm::APInt(32, -1, true)));
+            });
+            if (!x.m_iostat) {
+                llvm::Value *value = llvm_utils->CreateLoad2(llvm_utils->i32, status);
+                llvm_utils->create_if_else(builder->CreateICmpNE(value,
+                        llvm::ConstantInt::get(llvm_utils->i32, 0)), [&]() {
+                    print_error(context, *module, *builder, {
+                        LCompilers::create_global_string_ptr(context, *module, *builder,
+                            "Error: Failed to read input.\n")});
+                    exit(context, *module, *builder,
+                        llvm::ConstantInt::get(llvm_utils->i32, 1));
+                }, [](){});
+            }
+        };
+
         // Handle namelist read
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
@@ -21604,6 +21767,9 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                     iostat);
+            } else if (cancellable) {
+                iostat = llvm_utils->CreateAlloca(*builder, llvm_utils->i32);
+                builder->CreateStore(llvm::ConstantInt::get(llvm_utils->i32, 0), iostat);
             } else {
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
@@ -21716,6 +21882,7 @@ public:
             } else {
                 builder->CreateCall(fn, {unit_val, iostat, nml_group});
             }
+            finish_read(iostat);
             return;
         }
 
@@ -21786,10 +21953,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+            if (cancellable) iostat = iostat_for_empty_read;
         }
 
         if (x.m_unit && !is_string && !x.m_rec && !x.m_pos) {
             emit_connect_unit_for_read(unit_val, !x.m_is_formatted, iostat);
+            finish_read(iostat);
         }
 
         if (x.m_decimal) {
@@ -21894,6 +22063,7 @@ public:
                 }
             }
             for (size_t i=0; i<x.n_values; i++) {
+                if (i) finish_read(iostat);
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -22081,7 +22251,8 @@ public:
                         }
                         if (can_handle) {
                             generate_read_implied_do_loop(idl, unit_val, iostat,
-                                is_string, str_src_data, str_src_len, str_offset);
+                                is_string, str_src_data, str_src_len, str_offset,
+                                [&]() { finish_read(iostat); });
                             continue;
                         }
                     }
@@ -22287,6 +22458,7 @@ public:
                                 llvm::Type::getInt1Ty(context));
                             builder->CreateStore(cur_bool, tmp_bool);
                             builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
+                            finish_read(iostat);
                             llvm::Value* loaded = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt1Ty(context), tmp_bool);
                             llvm::Value* widened = builder->CreateZExt(loaded,
@@ -22299,6 +22471,7 @@ public:
                 }
             }
 
+            finish_read(iostat);
             // In Fortran, read(u, *) is used to read the entire line. The
             // next read(u, *) function is intended to read the next entire
             // line. Let's take an example: `read(u, *) n`, where n is an
@@ -22385,6 +22558,7 @@ public:
             emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
         }
+        finish_read(iostat);
     }
 
     // One scalar target of a formatted READ in the runtime protocol (see
@@ -28332,7 +28506,9 @@ public:
                     fntype->getReturnType(), arg_types, false);
                 callee = builder->CreateBitCast(callee, fntype->getPointerTo());
             }
-            tmp = builder->CreateCall(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
+            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -28454,7 +28630,9 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
+            if (foreign) emit_cancellation_check();
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -28468,7 +28646,9 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
+            if (foreign) emit_cancellation_check();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -28504,7 +28684,10 @@ public:
                     }
                 }
             }
+            const bool foreign = foreign_cancellation_boundary(*s, false, fn);
+            if (foreign) protect_cancellation(true);
             builder->CreateCall(fn, args);
+            if (foreign) protect_cancellation(false);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
             for (auto& fc : pending_flat_copybacks) {
@@ -28513,6 +28696,7 @@ public:
             }
             pending_flat_copybacks.clear();
             apply_cfi_array_writebacks();
+            emit_cancellation_check(!foreign);
         }
     }
 
@@ -28717,7 +28901,7 @@ public:
 
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
+                                ASR::ttype_t* asr_return_type, bool foreign) {
         if (fnty->getReturnType()->isVoidTy()) {
             // Windows complex(kind=8) uses a hidden first argument (sret-style):
             // the function returns `void` and writes the result into the first
@@ -28728,18 +28912,18 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                builder->CreateCall(fn, args);
+                create_jit_call(fn, args, foreign);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = builder->CreateCall(fn, args);
+        llvm::Value* return_value = create_jit_call(fn, args, foreign);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
 
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
-        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+                                ASR::ttype_t* asr_return_type, bool foreign) {
+        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type, foreign);
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
@@ -28810,7 +28994,7 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, checked_integer_cast<int>(struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name])));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        builder->CreateCall(fnTy, fn, args);
+        create_jit_call(fnTy, fn, args);
         return;
     }
 
@@ -28893,7 +29077,7 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, checked_integer_cast<int>(struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name])));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        tmp = builder->CreateCall(fnTy, fn, args);
+        tmp = create_jit_call(fnTy, fn, args);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -28957,8 +29141,10 @@ public:
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            tmp = builder->CreateCall(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             wrap_string_function_result(x.m_type);
+            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -29047,6 +29233,7 @@ public:
         } else {
             throw CodeGenError("ABI type not implemented yet.");
         }
+        bool foreign = foreign_cancellation_boundary(*s);
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
@@ -29060,7 +29247,8 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -29070,7 +29258,8 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -29078,29 +29267,42 @@ public:
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, false);
+            foreign = foreign_cancellation_boundary(*s, false, fn);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                auto call_bindc = [&]() {
+                    if (foreign) protect_cancellation(true);
+                    auto *result = builder->CreateCall(fn, args);
+                    if (foreign) protect_cancellation(false);
+                    // Copy descriptor ownership back even when the callee
+                    // cancelled, before abandoning this frame.
+                    if (cancellation_scope && !emitting_cancellation_cleanup) {
+                        apply_cfi_array_writebacks();
+                        emit_cancellation_check(true);
+                    }
+                    return result;
+                };
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = checked_integer_cast<int>(down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     if (a_kind == 8) {
                         if (compiler_options.platform == Platform::Windows) {
                             tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
-                            builder->CreateCall(fn, args);
+                            call_bindc();
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
-                            tmp = builder->CreateCall(fn, args);
+                            tmp = call_bindc();
                         }
                     } else {
-                        tmp = builder->CreateCall(fn, args);
+                        tmp = call_bindc();
                     }
                 } else {
-                    tmp = builder->CreateCall(fn, args);
+                    tmp = call_bindc();
                 }
                 apply_cfi_array_writebacks();
             } else {
-                tmp = CreateCallUtil(fn, args, return_var_type0);
+                tmp = CreateCallUtil(fn, args, return_var_type0, foreign);
             }
         }
         wrap_string_function_result(x.m_type);
@@ -29112,6 +29314,7 @@ public:
                     return_var_type0);
             }
         }
+        if (foreign) emit_cancellation_check();
     }
 
     // SIZE of `array` needs the extent of its dimension `i`, which ASR may
@@ -29887,6 +30090,11 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
 }
 
 /// Defined here to use the array descriptor API.
+void LLVMFinalize::call_final(llvm::Function *fn, llvm::Value *arg) {
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_);
+    builder_->CreateCall(fn, {arg});
+}
+
 llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
         ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx) {
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
@@ -29918,6 +30126,7 @@ llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_
 void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
         llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
         ASR::Struct_t* const final_struct) {
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_);
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
     ASR::ttype_t* const dummy_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(final_proc->m_args[0]));
@@ -29933,7 +30142,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
     switch (arr_t->m_physical_type) {
         case ASR::array_physical_typeType::DescriptorArray:
             if (dummy_is_descriptor && !parent_component) {
-                builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr, param_type)});
+                call_final(final_fn, builder_->CreateBitCast(ptr, param_type));
                 return;
             }
             data = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
@@ -30004,7 +30213,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         copy_elements(true);
     }
     if (!dummy_is_descriptor) {
-        builder_->CreateCall(final_fn, {builder_->CreateBitCast(final_data, param_type)});
+        call_final(final_fn, builder_->CreateBitCast(final_data, param_type));
     } else {
         // Describe the contiguous array with a descriptor of the dummy's type.
         llvm::Type* const desc_type = get_llvm_type(dummy_type, final_struct);
@@ -30017,7 +30226,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
             llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
         llvm_utils_->arr_api->fill_array_details(desc_type, desc, final_elem_llvm_type,
             checked_integer_cast<int>(arr_t->n_dims), llvm_dims, llvm_utils_->module, false);
-        builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
+        call_final(final_fn, builder_->CreateBitCast(desc, param_type));
     }
     if (copy) {
         copy_elements(false);
@@ -30035,9 +30244,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         const LLVMTargetConfig &target_config, Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
-        const std::string &infile, LocationManager &lm)
+        const std::string &infile, LocationManager &lm,
+        const JITCancellation *cancellation)
 {
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm, target_config);
+    v.jit_cancellation = cancellation;
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(

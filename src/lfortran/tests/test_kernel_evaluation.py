@@ -2,6 +2,7 @@
 over FortranEvaluator::execute()."""
 
 import argparse
+import json
 import os
 from pathlib import Path
 import queue
@@ -60,6 +61,202 @@ def check(client, code, expected):
     return messages
 
 
+def check_interruption(client, directory):
+    check(client, "integer :: saved_interrupt = 41", [])
+    check(client, "integer function interrupt_plus(i)\ninteger, intent(in) :: i\n"
+          "interrupt_plus=i+1\nend function", [])
+    check_command_interruption(client, directory)
+    for _ in range(2 if os.name == "posix" else 0):
+        started = time.monotonic()
+        messages = interrupt_cell(client,
+            "call execute_command_line('sleep 4')\nprint *, 'command-done'")
+        assert time.monotonic() - started < 2.5, "command cancellation waited for sleep"
+        assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
+                       for m in messages), messages
+        check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    # Interruption is an error: only the interrupted request's False allows
+    # already queued cells to run, regardless of the next request's default.
+    msg_id = client.execute("do\nend do", stop_on_error=False)
+    deadline = time.monotonic() + 10
+    while True:
+        msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+        if (msg["parent_header"].get("msg_id") == msg_id and
+                msg["msg_type"] == "execute_input"):
+            break
+        assert time.monotonic() < deadline, "loop did not start"
+    queued = client.execute("interrupt_plus(saved_interrupt)")
+    time.sleep(0.2)
+    request = client.session.msg("interrupt_request")
+    client.control_channel.send(request)
+    replies = {}
+    deadline = time.monotonic() + 4
+    while len(replies) != 2 and time.monotonic() < deadline:
+        try:
+            msg = client.get_shell_msg(timeout=0.1)
+        except queue.Empty:
+            continue
+        parent = msg["parent_header"].get("msg_id")
+        if parent in (msg_id, queued):
+            replies[parent] = msg["content"]
+    assert msg_id in replies, "running silent loop ignored interrupt_request"
+    assert replies[msg_id]["status"] == "error", replies
+    assert replies[msg_id]["ename"] == "KeyboardInterrupt", replies
+    assert queued in replies and replies[queued]["status"] == "ok", replies
+    idle = set()
+    values = []
+    deadline = time.monotonic() + 4
+    while len(idle) != 2 and time.monotonic() < deadline:
+        try:
+            msg = client.get_iopub_msg(timeout=0.1)
+        except queue.Empty:
+            continue
+        parent = msg["parent_header"].get("msg_id")
+        if parent not in (msg_id, queued):
+            continue
+        if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+            idle.add(parent)
+        if parent == queued and msg["msg_type"] == "execute_result":
+            values.append(msg["content"]["data"]["text/plain"])
+    assert idle == {msg_id, queued}, idle
+    assert values == ["42"], values
+    reply = client.get_control_msg(timeout=4)
+    assert reply["parent_header"].get("msg_id") == request["header"]["msg_id"], reply
+    assert reply["msg_type"] == "interrupt_reply", reply
+    check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    for silent in (False, True):
+        interrupt_cell(client, "saved_interrupt=43\ndo\nend do", silent=silent)
+        check(client, "saved_interrupt", ["43"])
+    check(client, "subroutine interrupt_spin()\ndo\nend do\nend subroutine", [])
+    interrupt_cell(client, "call interrupt_spin()")
+    messages = interrupt_cell(client, "print '(a)', 'before-interrupt'\ndo\nend do",
+                              started_text="before-interrupt\n")
+    assert "".join(m["content"]["text"] for m in messages if m["msg_type"] == "stream"
+                   and m["content"]["name"] == "stdout") == "before-interrupt\n", messages
+    # Idle and repeated requests must not poison the next cell.
+    for _ in range(2):
+        request = client.session.msg("interrupt_request")
+        client.control_channel.send(request)
+        reply = client.get_control_msg(timeout=4)
+        assert reply["parent_header"]["msg_id"] == request["header"]["msg_id"], reply
+    check(client, "interrupt_plus(saved_interrupt)", ["44"])
+    check(client, "integer :: interrupt_read = 17, interrupt_ios", [])
+    for code in ("read(*,*,iostat=interrupt_ios) interrupt_read",
+                 "read *, interrupt_read",
+                 "block\ncharacter(20) :: text\nread(*,'(a)') text\nend block",
+                 "block\nreal :: r\nread(*,*,decimal='comma') r\nend block",
+                 "read(*,*)"):
+        old_prompt = interrupt_cell(client, code, reading=True)
+        check(client, "interrupt_read", ["17"])
+        printed = check(client, "print '(f3.1)', 1.5", [])
+        assert "".join(m["content"]["text"] for m in printed
+                       if m["msg_type"] == "stream") == "1.5\n", printed
+    # A fresh READ accepts input after cancellation and runtime stdin reset.
+    msg_id = client.execute("read *, interrupt_read", allow_stdin=True)
+    prompt = client.get_stdin_msg(timeout=5)
+    assert prompt["parent_header"]["msg_id"] == msg_id, prompt
+    stale = client.session.msg("input_reply", content={"value": "99"}, parent=old_prompt)
+    client.stdin_channel.send(stale)
+    client.input("29")
+    reply, _ = finish_cell(client, msg_id)
+    assert reply["status"] == "ok", reply
+    check(client, "interrupt_read", ["29"])
+    check(client, """module interrupt_final_input
+integer :: final_read = 0
+type :: final_reader
+contains
+final :: finish_reader
+end type
+contains
+subroutine finish_reader(x)
+type(final_reader), intent(inout) :: x
+read *, final_read
+end subroutine
+end module
+use interrupt_final_input""", [])
+    msg_id = client.execute("block\ntype(final_reader) :: x\nend block\ndo\nend do",
+                            allow_stdin=True, stop_on_error=False)
+    prompt = client.get_stdin_msg(timeout=6)
+    assert prompt["content"]["lfortran_interruptible"] is False, prompt
+    request = client.session.msg("interrupt_request")
+    client.control_channel.send(request)
+    response = client.get_control_msg(timeout=4)
+    assert response["parent_header"]["msg_id"] == request["header"]["msg_id"], response
+    try:
+        premature = client.get_shell_msg(timeout=0.2)
+    except queue.Empty:
+        pass
+    else:
+        raise AssertionError(("protected READ was abandoned", premature))
+    client.input("7")
+    reply, _ = finish_cell(client, msg_id)
+    assert reply["status"] == "error" and reply["ename"] == "KeyboardInterrupt", reply
+    check(client, "final_read", ["7"])
+
+
+def finish_cell(client, msg_id):
+    messages = []
+    deadline = time.monotonic() + 6
+    while time.monotonic() < deadline:
+        msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+        if msg["parent_header"].get("msg_id") != msg_id:
+            continue
+        messages.append(msg)
+        if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+            break
+    else:
+        raise AssertionError("interrupted cell did not become idle")
+    reply = client.get_shell_msg(timeout=4)
+    assert reply["parent_header"]["msg_id"] == msg_id, reply
+    return reply["content"], messages
+
+
+def interrupt_cell(client, code, *, silent=False, reading=False, started_text=None):
+    msg_id = client.execute(code, silent=silent, allow_stdin=reading, stop_on_error=False)
+    preceding = []
+    if reading:
+        try:
+            prompt = client.get_stdin_msg(timeout=6)
+        except queue.Empty:
+            reply = client.get_shell_msg(timeout=1)
+            seen = []
+            while client.iopub_channel.msg_ready():
+                seen.append(client.get_iopub_msg(timeout=1))
+            raise AssertionError((code, "READ did not ask for input", reply, seen))
+        assert prompt["parent_header"]["msg_id"] == msg_id, prompt
+    elif started_text:
+        deadline = time.monotonic() + 6
+        while time.monotonic() < deadline:
+            msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+            if msg["parent_header"].get("msg_id") != msg_id:
+                continue
+            preceding.append(msg)
+            if (msg["msg_type"] == "stream"
+                    and started_text in msg["content"]["text"].replace("\r\n", "\n")):
+                break
+        else:
+            raise AssertionError("cell did not stream before interruption")
+    else:
+        # A silent cell has no execute_input notification.
+        time.sleep(0.2)
+    deferred = client.session.msg("kernel_info_request")
+    client.control_channel.send(deferred)
+    with_control = client.control_channel.socket.poll(100)
+    assert not with_control, "non-interrupt control request ran during execution"
+    interrupts = [client.session.msg("interrupt_request") for _ in range(2)]
+    for request in interrupts:
+        client.control_channel.send(request)
+    reply, messages = finish_cell(client, msg_id)
+    messages = preceding + messages
+    assert reply["status"] == "error" and reply["ename"] == "KeyboardInterrupt", reply
+    assert not any(m["msg_type"] == "execute_result" for m in messages), messages
+    if not silent:
+        assert [m["msg_type"] for m in messages][-2:] == ["error", "status"], messages
+    replies = [client.get_control_msg(timeout=4) for _ in range(3)]
+    assert {m["parent_header"]["msg_id"] for m in replies} == {
+        deferred["header"]["msg_id"], *(m["header"]["msg_id"] for m in interrupts)}, replies
+    return prompt if reading else messages
+
+
 def waiter_command(waiter, *paths):
     command = " ".join('"%s"' % path.as_posix()
                        for path in (Path(sys.executable), waiter, *paths))
@@ -67,6 +264,102 @@ def waiter_command(waiter, *paths):
         # cmd /c removes the outer quotes before parsing the quoted paths.
         command = '"' + command + '"'
     return command
+
+
+def process_running(pid):
+    if os.name == "nt":
+        import ctypes
+        api = ctypes.WinDLL("kernel32", use_last_error=True)
+        api.OpenProcess.restype = ctypes.c_void_p
+        api.OpenProcess.argtypes = [ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
+        api.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        api.CloseHandle.argtypes = [ctypes.c_void_p]
+        handle = api.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE
+        if not handle:
+            return ctypes.get_last_error() != 87  # ERROR_INVALID_PARAMETER
+        try:
+            return api.WaitForSingleObject(handle, 0) == 258  # WAIT_TIMEOUT
+        finally:
+            api.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    # Orphaned grandchildren are reaped by the OS, not by the kernel process.
+    stat = Path("/proc") / str(pid) / "stat"
+    if sys.platform.startswith("linux") and stat.exists():
+        try:
+            return stat.read_text().split(") ", 1)[1][0] != "Z"
+        except FileNotFoundError:
+            return False
+    return True
+
+
+def check_command_interruption(client, directory):
+    # Quoted paths and a shell -> Python -> Python tree, not just shell exec
+    # replacing itself with a single sleep process.
+    command_dir = directory / "owned command"
+    command_dir.mkdir()
+    helper = command_dir / "owned child.py"
+    pids = command_dir / "pids.json"
+    helper.write_text(
+        "import json, os, subprocess, sys, time\n"
+        "from pathlib import Path\n"
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])\n"
+        "Path(sys.argv[1]).write_text(json.dumps([os.getpid(), child.pid]))\n"
+        "sys.stdout.buffer.write(b'owned-command-started\\r\\n')\n"
+        "sys.stdout.buffer.flush()\n"
+        "child.wait()\n")
+    command = waiter_command(helper, pids).replace("'", "''")
+    owned = []
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        for _ in range(2):
+            started = time.monotonic()
+            messages = interrupt_cell(client,
+                "call execute_command_line('" + command + "')\nprint *, 'command-done'",
+                started_text="owned-command-started\n")
+            assert time.monotonic() - started < 2.5, "owned command ignored interrupt"
+            owned = json.loads(pids.read_text())
+            deadline = time.monotonic() + 2
+            while any(process_running(pid) for pid in owned) and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert not any(process_running(pid) for pid in owned), ("surviving children", owned)
+            assert unrelated.poll() is None, "command cancellation stopped an unrelated process"
+            assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
+                           for m in messages), messages
+            check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=10)
+        if pids.exists():
+            owned = json.loads(pids.read_text())
+        for pid in reversed(owned):
+            if process_running(pid):
+                import signal
+                os.kill(pid, signal.SIGTERM)
+        pids.unlink(missing_ok=True)
+        helper.unlink()
+        command_dir.rmdir()
+    messages = check(client,
+        "integer :: command_exit, command_status\n"
+        "call execute_command_line('echo command-stdout', exitstat=command_exit, cmdstat=command_status)\n"
+        "if (command_exit /= 0 .or. command_status /= 0) error stop\n"
+        "call execute_command_line('echo command-stderr >&2')\n"
+        "call execute_command_line('exit 7', exitstat=command_exit, cmdstat=command_status)\n"
+        "if (command_exit /= 7 .or. command_status /= 0) error stop\n"
+        "call execute_command_line('exit 0', wait=.false., cmdstat=command_status)\n"
+        "if (command_status /= 0) error stop", [])
+    for name in ("stdout", "stderr"):
+        assert any(m["msg_type"] == "stream" and m["content"]["name"] == name
+                   and "command-" + name in m["content"]["text"] for m in messages), messages
+    if os.name == "posix":
+        check(client,
+            "block\ninteger :: es, cs\ncharacter(40) :: msg\n"
+            "call execute_command_line('LFORTRAN_NO_SUCH_COMMAND_16183 2>/dev/null', &\n"
+            "exitstat=es, cmdstat=cs, cmdmsg=msg)\n"
+            "if (es /= 127 .or. cs /= 3) error stop\n"
+            "if (trim(msg) /= 'Invalid command line') error stop\nend block", [])
 
 
 def streaming_code(gate, partial=False):
@@ -194,20 +487,24 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--interrupt-only", action="store_true")
+    parser.add_argument("--adapter", choices=("both", "default", "builtin"), default="both")
     parser.add_argument("--mode", choices=("normal", "fast", "f23"), default="normal")
     args = parser.parse_args()
-    assert args.streaming_only or args.mode == "normal", "modes apply to the focused streaming checks"
+    assert args.streaming_only or args.interrupt_only or args.mode == "normal"
     adapters = [False, True] if builtin_stop_kernel(args.lfortran) else [False]
+    if args.adapter != "both":
+        adapters = [args.adapter == "builtin"]
     for managed in adapters:
-        run_kernel(args.lfortran, managed, args.streaming_only, args.mode)
-        if args.streaming_only:
+        run_kernel(args.lfortran, managed, args.streaming_only, args.mode, args.interrupt_only)
+        if args.streaming_only or args.interrupt_only:
             continue
         for code, status, shown in [("if (.true.) stop", 0, ""), ("stop 3", 3, "STOP 3"),
                 ("error stop", 1, "ERROR STOP")]:
             check_stop_flushes(args.lfortran, code, status, shown, managed)
 
 
-def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
+def run_kernel(lfortran, managed, streaming_only=False, mode="normal", interrupt_only=False):
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -231,6 +528,14 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
             client.load_connection_file()
             client.start_channels()
             client.wait_for_ready(timeout=30)
+            if not streaming_only:
+                check_interruption(client, directory)
+            if interrupt_only:
+                client.shutdown()
+                process.wait(timeout=15)
+                assert process.returncode == 0, process.returncode
+                print(("built-in" if managed else "default") + " interruption " + mode + ": passed")
+                return
             check_streaming(client, directory)
             check_streaming(client, directory, partial=True)
             if managed:

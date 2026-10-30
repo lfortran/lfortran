@@ -40,6 +40,8 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <spawn.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -59,7 +61,23 @@ static int lfortran_fileno(FILE *fp) {
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_cancellation.h>
 #include <libasr/config.h>
+
+#ifdef _MSC_VER
+static __declspec(thread) lfortran_cancel_poll cancel_poll;
+#elif defined(COMPILE_TO_WASM)
+static lfortran_cancel_poll cancel_poll;
+#else
+static _Thread_local lfortran_cancel_poll cancel_poll;
+#endif
+
+LFORTRAN_API lfortran_cancel_poll _lfortran_set_cancel_poll(lfortran_cancel_poll poll)
+{
+    lfortran_cancel_poll previous = cancel_poll;
+    cancel_poll = poll;
+    return previous;
+}
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
@@ -16772,13 +16790,139 @@ static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
     dest[len] = '\0';
 }
 
+#if defined(_WIN32)
+static int execute_cancellable_command(char *command)
+{
+    if (cancel_poll()) return -1;
+    const char *shell = getenv("COMSPEC");
+    if (!shell || !*shell) shell = "cmd.exe";
+    size_t size = strlen(shell) + strlen(command) + 8;
+    char *line = (char *)malloc(size);
+    if (!line) return -1;
+    // Match system()'s cmd /c parsing, including already-quoted commands.
+    snprintf(line, size, "\"%s\" /c %s", shell, command);
+    HANDLE job = CreateJobObjectA(NULL, NULL);
+    if (!job) {
+        free(line);
+        return -1;
+    }
+    STARTUPINFOA startup = {0};
+    PROCESS_INFORMATION process = {0};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    HANDLE streams[3] = {NULL, NULL, NULL};
+    BOOL inherited = TRUE;
+    for (int i = 0; i < 3; i++) {
+        intptr_t handle = _get_osfhandle(i);
+        if (handle == -1 || handle == -2) continue;
+        if (!DuplicateHandle(GetCurrentProcess(), (HANDLE)handle,
+                GetCurrentProcess(), &streams[i], 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+            inherited = FALSE;
+            break;
+        }
+    }
+    startup.hStdInput = streams[0];
+    startup.hStdOutput = streams[1];
+    startup.hStdError = streams[2];
+    BOOL created = inherited && CreateProcessA(NULL, line, NULL, NULL, TRUE,
+        CREATE_SUSPENDED, NULL, NULL, &startup, &process);
+    for (int i = 0; i < 3; i++) {
+        if (streams[i]) CloseHandle(streams[i]);
+    }
+    free(line);
+    if (!created) {
+        CloseHandle(job);
+        return -1;
+    }
+    // Assign before the shell can spawn anything. Never terminate the kernel's
+    // job or a process discovered by name.
+    int result = -1;
+    if (!AssignProcessToJobObject(job, process.hProcess) ||
+            ResumeThread(process.hThread) == (DWORD)-1) {
+        TerminateProcess(process.hProcess, 1);
+    } else {
+        for (;;) {
+            if (cancel_poll()) {
+                TerminateJobObject(job, 1);
+                JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
+                while (QueryInformationJobObject(job, JobObjectBasicAccountingInformation,
+                        &accounting, sizeof(accounting), NULL) && accounting.ActiveProcesses) {
+                    Sleep(1);
+                }
+                break;
+            }
+            DWORD status = WaitForSingleObject(process.hProcess, 10);
+            if (status == WAIT_OBJECT_0) {
+                DWORD code;
+                if (GetExitCodeProcess(process.hProcess, &code)) result = (int)code;
+                break;
+            }
+            if (status != WAIT_TIMEOUT) {
+                TerminateJobObject(job, 1);
+                break;
+            }
+        }
+    }
+    WaitForSingleObject(process.hProcess, INFINITE);
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    // No kill-on-close limit: normally completed commands retain system()'s
+    // behavior for explicitly backgrounded processes.
+    CloseHandle(job);
+    return result;
+}
+#elif !defined(COMPILE_TO_WASM)
+extern char **environ;
+
+static int execute_cancellable_command(char *command)
+{
+    if (cancel_poll()) return -1;
+    posix_spawnattr_t attributes;
+    if (posix_spawnattr_init(&attributes)) return -1;
+    int error = posix_spawnattr_setpgroup(&attributes, 0);
+    if (!error) error = posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    pid_t child;
+    char *argv[] = {"sh", "-c", command, NULL};
+    // posix_spawn performs the fork/exec setup without running malloc, stdio,
+    // or other non-async-signal-safe child code in this multithreaded process.
+    if (!error) error = posix_spawn(&child, "/bin/sh", NULL, &attributes, argv, environ);
+    posix_spawnattr_destroy(&attributes);
+    if (error) {
+        errno = error;
+        return -1;
+    }
+    int status;
+    for (;;) {
+        if (cancel_poll()) {
+            // The unreaped group leader pins this exact owned process group.
+            // Kill descendants too, even if they ignore SIGTERM.
+            kill(-child, SIGKILL);
+            while (waitpid(child, &status, 0) < 0) {
+                if (errno != EINTR) return -1;
+            }
+            return status;
+        }
+        pid_t waited = waitpid(child, &status, WNOHANG);
+        if (waited == child) return status;
+        if (waited < 0 && errno != EINTR) return -1;
+        const struct timespec delay = {0, 10000000};
+        nanosleep(&delay, NULL);
+    }
+}
+#endif
+
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if !defined(COMPILE_TO_WASM)
+    result = cancel_poll ? execute_cancellable_command(c_cmd) : system(c_cmd);
+#else
+    result = system(c_cmd);
+#endif
     internal_free(c_cmd);
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.

@@ -443,6 +443,7 @@ int prompt(bool verbose, const std::string &connect,
 
     // Before the line editor changes the terminal, which Ctrl-C restores
     LCompilers::LFortran::jupyter::handle_interrupt();
+    std::setvbuf(stdin, nullptr, _IONBF, 0);
     std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
     std::string connection_file = connect;
     try {
@@ -464,7 +465,8 @@ int prompt(bool verbose, const std::string &connect,
     std::vector<std::string> history;
     std::deque<char> pending_input;
     const LCompilers::LFortran::jupyter::Client::InputSource read_character = [&]() {
-        if (pending_input.empty()) return getchar();
+        if (pending_input.empty())
+            return LCompilers::LFortran::jupyter::Client::stdin_character();
         const int c = static_cast<unsigned char>(pending_input.front());
         pending_input.pop_front();
         return c;

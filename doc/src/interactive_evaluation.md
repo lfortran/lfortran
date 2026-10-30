@@ -50,6 +50,9 @@ input. `execute()` installs the hook through the runtime's C API
 (`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
 it, so a later cell can read again after end of file and unread bytes are
 discarded.
+The hook also receives `interruptible`, a worker-snapshotted boolean passed
+through the caller mailbox. When false (protected initialization or cleanup),
+it must keep servicing control without abandoning the input wait.
 
 The runtime keeps the record's bytes, its cursor and delimiters, so one record
 can satisfy several list items and one READ can consume several records.
@@ -71,3 +74,84 @@ exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
 relying on the C++ `std::complex` return convention.
+
+## Cooperative cancellation in the native evaluator
+
+Native callers can set `CellIO::cancel_requested` to a bounded, nonblocking
+callback returning whether to cancel the current cell. Like the output and
+display hooks, it runs on the `execute()` caller, not on the execution worker.
+It is pumped even without output capture or output from the cell. The worker
+reads only an atomic request; transport and socket ownership stay with the
+caller. Only one cell may execute at a time.
+
+Native JIT lowering receives an explicit `JITCancellation` callback contract
+from `evaluate()`, never from file compilation or inspection. Checkpoints
+follow structured ASR statements and loop tests after local descriptors have
+been initialized. Calls propagate an already observed cancellation before
+consuming a function result. Initialization and user finalizers defer
+cancellation; a cancelled frame leaves enclosing BLOCK/ASSOCIATE constructs,
+reuses procedure cleanup, and copies CFI descriptors back before returning.
+It abandons its result instead of loading an incomplete return variable.
+The callbacks refer to the current cell's thread-local execution context, so
+procedures defined by earlier cells can cancel too.
+
+An uninstrumented foreign call protects its entire dynamic extent, including
+Fortran callbacks it invokes: a callback must return its normal, initialized
+result to C, not a cancellation placeholder. The pending request is observed
+after the foreign call returns and descriptor copyback/result ownership are
+complete. Known JIT-defined procedures (including `BIND(C)` procedures from
+earlier cells) and the cooperative owned-command runtime still participate in
+cancellation. Unknown C procedure pointers are conservatively protected.
+An infinite foreign call or callback therefore still needs to return before
+its cell can be interrupted.
+
+After the worker returns normally and is joined, a completed cancellation
+becomes a failed `CellResult` named `KeyboardInterrupt`, with no result value.
+The session, procedure definitions and completed side effects survive; there
+is no transactional rollback. A request is not carried into the next cell.
+Interruption remains an execution error and honors Jupyter `stop_on_error`:
+the interrupted request's default `true` may abort already queued cells;
+`false` lets them continue. A newly submitted cell can run with either setting.
+An idle request, or one arriving after the last checkpoint, need not turn a
+completed cell into a failure.
+
+The built-in kernel and the native Xeus TCP/IPv4 server (including hostnames)
+connect control-channel `interrupt_request` to this pump, including silent
+loops. Other requests are deferred until execution returns. Interrupt replies
+have the interrupt as parent; the execution error/reply and final idle retain
+the cell's parent. Idle interrupts do not latch into subsequent cells.
+
+Both adapters use `InputChannel` for cancellable stdin waits, pumping control
+and output on the caller. A native JIT READ without user IOSTAT uses an internal
+status and checks cancellation before reporting an ordinary input error.
+This lets READ return through its runtime frame and normal JIT cleanup, even
+as the last statement of a cell. Ordinary EOF/error without IOSTAT remains
+fatal. Cancellation discards the pending input request; correlated replies
+to an older request are ignored. Unparented input replies, as sent by some
+Jupyter clients, cannot distinguish an old answer from a new one.
+
+While executing, prompt Ctrl-C sets only a signal marker. Its client loop
+sends the interrupt on the control channel; it continues servicing messages
+while waiting for terminal input. Owning and attached prompts retain the
+session. At an idle prompt, Ctrl-C retains its existing exit behavior.
+Protected READs advertise `lfortran_interruptible: false` in input_request;
+the prompt keeps accepting their input after Ctrl-C so cleanup can finish.
+
+During native execution with a cancellation callback, EXECUTE_COMMAND_LINE
+waits poll that same cell state. POSIX commands run in their own process group;
+Windows commands run in an owned job. Cancellation terminates the owned shell
+and descendants and waits for the shell before returning through normal JIT
+cleanup. Captured stdout/stderr and the process stdin are inherited as before.
+Protected initialization/finalization commands must finish. Ordinary compiled
+files and executions without a cancellation callback still use `system()`.
+WAIT=.false. retains its existing synchronous behavior; this is not an
+implementation of asynchronous commands. Ownership lasts for the synchronous
+command wait, not for background jobs after its shell has returned. POSIX
+descendants that deliberately leave the process group are not tracked.
+
+Compilation, arbitrary foreign calls without safepoints, and WASM execution
+are not interrupted. Foreign calls may defer cancellation until they return.
+Initialization and cleanup, including their input waits, must finish before
+cancellation can proceed. Xeus registration configurations, IPv6 and non-TCP
+transports retain their legacy server and blocking input behavior.
+No exception, signal unwind, or nonlocal jump crosses a generated/C frame.
