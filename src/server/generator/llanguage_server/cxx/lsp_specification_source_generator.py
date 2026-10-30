@@ -1220,7 +1220,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             union_symbol: LspSymbol,
             union_name: str,
             enum_name: str,
-            item_specs: List[LspSpec]
+            item_specs: List[LspSpec],
+            has_pointer: bool
     ) -> None:
         with self.gen_fn(
                 f'{union_name}::operator=',
@@ -1230,6 +1231,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                 ],
         ):
             with self.gen_if('this != &other'):
+                if has_pointer:
+                    self.gen_call('reset')
                 self.write('_type = other._type;')
                 with self.type_declaration_options(
                         wrap_ptr=True,
@@ -1462,7 +1465,7 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
         self.gen_union_move_constructor(union_name, enum_name, item_specs)
         self.gen_union_copy_constructor(union_symbol, union_name, enum_name, item_specs)
         self.gen_union_move_assign(union_name, enum_name, item_specs)
-        self.gen_union_copy_assign(union_symbol, union_name, enum_name, item_specs)
+        self.gen_union_copy_assign(union_symbol, union_name, enum_name, item_specs, has_pointer)
         if has_pointer:
             self.gen_union_reset(union_symbol, enum_name)
         self.generate_union_tag_getter(union_name)

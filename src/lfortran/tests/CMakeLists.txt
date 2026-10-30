@@ -79,6 +79,9 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LSP)
+    add_executable(test_lsp_union_ownership test_lsp_union_ownership.cpp)
+    target_link_libraries(test_lsp_union_ownership llanguage_server)
+    add_test(NAME test_lsp_union_ownership COMMAND test_lsp_union_ownership)
     set(SRC ${SRC}
         test_lsp_union_lifetime.cpp
     )
