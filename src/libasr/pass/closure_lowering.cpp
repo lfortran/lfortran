@@ -9,24 +9,26 @@ namespace LCompilers {
 namespace {
 
 ASR::ttype_t *represented_type(Allocator &al, ASR::ttype_t *type,
-        ASR::procedure_representationType representation) {
+        ASR::procedure_representationType representation,
+        ASR::FunctionType_t *current_signature = nullptr) {
     const Location &loc = type->base.loc;
     if (ASR::is_a<ASR::Pointer_t>(*type)) {
         return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
             represented_type(al, ASR::down_cast<ASR::Pointer_t>(type)->m_type,
-                representation)));
+                representation, current_signature)));
     }
     if (ASR::is_a<ASR::Reference_t>(*type)) {
         return ASRUtils::TYPE(ASR::make_Reference_t(al, loc,
             represented_type(al, ASR::down_cast<ASR::Reference_t>(type)->m_type,
-                representation)));
+                representation, current_signature)));
     }
     if (ASR::is_a<ASR::ProcedureType_t>(*type)) {
         auto *procedure = ASR::down_cast<ASR::ProcedureType_t>(type);
         return represented_type(al, procedure->m_signature,
-            procedure->m_representation);
+            procedure->m_representation, current_signature);
     }
     if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+        if (current_signature) type = &current_signature->base;
         ASRUtils::ExprStmtDuplicator duplicate(al);
         type = duplicate.duplicate_ttype(type);
         auto *signature = ASR::down_cast<ASR::FunctionType_t>(type);
@@ -83,7 +85,6 @@ class ProcedureStorage: public ASR::BaseWalkVisitor<ProcedureStorage> {
     Allocator &al;
 public:
     std::map<ASR::symbol_t*, ASR::symbol_t*> dummy_variables;
-    std::set<ASR::symbol_t*> legacy_pointers;
     std::set<const ASR::symbol_t*> visited;
     ProcedureStorage(Allocator &al_): al(al_) {}
 
@@ -114,7 +115,6 @@ public:
                 ASR::presenceType::Required, false));
         scope->add_symbol(name, variable);
         dummy_variables[&function->base] = variable;
-        legacy_pointers.insert(variable);
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -133,6 +133,7 @@ public:
             }
             if (!ASR::is_a<ASR::Function_t>(*symbol)) continue;
             auto *interface = ASR::down_cast<ASR::Function_t>(symbol);
+            visit_Function(*interface);
             std::string name = ASRUtils::symbol_name(arg->m_v);
             function.m_symtab->erase_symbol(name);
             interface->m_name = s2c(al, function.m_symtab->get_unique_name(
@@ -154,23 +155,22 @@ public:
         }
         ASR::BaseWalkVisitor<ProcedureStorage>::visit_Function(x);
         auto *signature = ASRUtils::get_FunctionType(function);
+        bool procedure_signature = false;
         for (size_t i = 0; i < function.n_args; i++) {
-            if (legacy_pointers.count(ASR::down_cast<ASR::Var_t>(
-                    function.m_args[i])->m_v)) {
-                signature->m_arg_types[i] = ASRUtils::expr_type(function.m_args[i]);
-                continue;
-            }
-            auto *type = ASRUtils::procedure_value_type(
-                ASRUtils::expr_type(function.m_args[i]));
-            if (type) signature->m_arg_types[i] = represented_type(al,
-                signature->m_arg_types[i], type->m_representation);
+            procedure_signature |= ASRUtils::procedure_value_type(
+                ASRUtils::expr_type(function.m_args[i])) != nullptr;
         }
         if (function.m_return_var) {
-            if (auto *type = ASRUtils::procedure_value_type(
-                    ASRUtils::expr_type(function.m_return_var))) {
-                signature->m_return_var_type = represented_type(al,
-                    signature->m_return_var_type, type->m_representation);
-            }
+            procedure_signature |= ASRUtils::procedure_value_type(
+                ASRUtils::expr_type(function.m_return_var)) != nullptr;
+        }
+        if (procedure_signature) {
+            // Earlier ABI passes may have changed a dummy procedure's result
+            // into an argument. Its owned declaration is the current interface.
+            function.m_function_signature = ASRUtils::TYPE(
+                ASRUtils::make_FunctionType_t_util(al, signature->base.base.loc,
+                    function.m_args, function.n_args, function.m_return_var,
+                    signature, function.m_symtab));
         }
     }
 
@@ -194,6 +194,22 @@ public:
 
     void visit_Variable(const ASR::Variable_t &x) {
         if (!visited.insert(&x.base).second) return;
+        auto *type = x.m_type;
+        if (ASRUtils::is_reference(type)) {
+            type = ASR::down_cast<ASR::Reference_t>(type)->m_type;
+        }
+        ASR::FunctionType_t *signature = nullptr;
+        auto *declaration = ASRUtils::symbol_get_past_external(
+            x.m_type_declaration);
+        if (ASRUtils::is_procedure_type(type) && declaration &&
+                ASR::is_a<ASR::Function_t>(*declaration) &&
+                !ASRUtils::is_bare_implicit_interface(declaration)) {
+            auto *interface = ASR::down_cast<ASR::Function_t>(declaration);
+            visit_Function(*interface);
+            signature = ASR::down_cast<ASR::FunctionType_t>(
+                ASRUtils::import_procedure_type(al,
+                    interface->m_function_signature, x.m_parent_symtab));
+        }
         bool raw = false;
         auto *owner = x.m_parent_symtab->asr_owner;
         if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
@@ -204,7 +220,7 @@ public:
         }
         const_cast<ASR::Variable_t&>(x).m_type = represented_type(al, x.m_type,
             raw ? ASR::procedure_representationType::RawPointer :
-                ASR::procedure_representationType::Closure);
+                ASR::procedure_representationType::Closure, signature);
         ASR::BaseWalkVisitor<ProcedureStorage>::visit_Variable(x);
     }
 };
