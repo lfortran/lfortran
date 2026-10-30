@@ -146,6 +146,13 @@ lower bounds. The same rule applies to ordinary explicit-shape dummies.
 No descriptor capture or rebasing is needed, and allocatable result
 allocation, bounds and ownership remain with the caller's descriptor.
 
+Before C++ array and result preparation, `function_call_in_declaration`
+captures nonconstant explicit bounds and extents in procedure-entry locals.
+Body addressing, shape inquiries and array-expression preparation use these
+stable ASR dimensions even if the specification variables change later.
+Declared procedure and callback signatures retain their specification
+expressions; the entry locals do not become caller-visible bounds.
+
 ### Runtime character result metadata
 
 Call preparation in `array_struct_temporary` saves result specification values

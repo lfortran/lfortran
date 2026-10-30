@@ -10,6 +10,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/array_struct_temporary.h>
@@ -1096,6 +1097,8 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    pass_replace_function_call_in_declaration(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
     PassOptions array_options = co.po;
     array_options.materialize_array_constants = true;
     pass_replace_implied_do_loops(al, asr, array_options);
