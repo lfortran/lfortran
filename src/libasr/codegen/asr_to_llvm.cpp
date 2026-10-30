@@ -15279,7 +15279,6 @@ public:
         }
 
         llvm::Value *target, *value;
-        uint64_t h;
         ASR::expr_t* target_expr_for_type = x.m_target;
         if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
             ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
@@ -15370,7 +15369,6 @@ public:
                 throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
             }
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-            h = get_hash((ASR::asr_t*)asr_target);
             target = get_var_target_address(x.m_target);
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
             if ( ASRUtils::is_array(cont_type) ) {
