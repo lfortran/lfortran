@@ -644,9 +644,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     void materialize_dynamic_constructor(ASR::ArrayConstructor_t* x) {
         const Location& loc = x->base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
-            ASRUtils::type_get_past_allocatable_pointer(x->m_type));
-        LCOMPILERS_ASSERT(array_type->m_memory_space == ASR::memory_spaceType::Global);
+        LCOMPILERS_ASSERT(is_runtime_constructor(x));
         if (!constructor_scope) {
             constructor_scope = al.make_new<SymbolTable>(current_scope);
         }
