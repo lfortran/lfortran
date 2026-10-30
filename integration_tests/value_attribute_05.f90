@@ -1,6 +1,7 @@
 ! VALUE dummy arguments of non-bind(c) procedures are passed by value,
 ! compatible with GFortran's calling convention (checked from C).
 module value_attribute_05_mod
+use iso_c_binding, only: c_funptr, c_funloc
 implicit none
 
 abstract interface
@@ -25,13 +26,19 @@ interface
     logical(4), value :: l4
     end function
 
-    integer(4) function value_c_call(f)
-    import :: value_f_iface
-    procedure(value_f_iface) :: f
+    integer(4) function value_c_call_raw(f) bind(c, name="value_c_call_")
+    import :: c_funptr
+    type(c_funptr), value :: f
     end function
 end interface
 
 contains
+
+    integer(4) function value_c_call(f) result(r)
+    procedure(value_f_iface) :: f
+    ! Preserve the Fortran VALUE interface, with an explicit raw C export.
+    r = value_c_call_raw(c_funloc(f))
+    end function
 
     integer(4) function value_f_check(a4, a8, r4, r8, l4) result(r)
     integer(4), value :: a4

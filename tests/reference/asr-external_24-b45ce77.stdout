@@ -572,6 +572,46 @@
                                     (SymbolTable
                                         13
                                         {
+                                            apply_fun~arg_0:
+                                                (Variable
+                                                    13
+                                                    apply_fun~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Integer 4)]
+                                                        (Integer 4)
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    5 twice
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             apply_fun~arg_1:
                                                 (Variable
                                                     13
@@ -631,7 +671,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 twice)
+                                    [(Var 13 apply_fun~arg_0)
                                     (Var 13 apply_fun~arg_1)]
                                     []
                                     ()
@@ -734,6 +774,46 @@
                                     (SymbolTable
                                         12
                                         {
+                                            apply_sub~arg_0:
+                                                (Variable
+                                                    12
+                                                    apply_sub~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Integer 4)]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    5 incr
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             apply_sub~arg_1:
                                                 (Variable
                                                     12
@@ -793,7 +873,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 5 incr)
+                                    [(Var 12 apply_sub~arg_0)
                                     (Var 12 apply_sub~arg_1)]
                                     []
                                     ()

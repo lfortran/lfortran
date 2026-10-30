@@ -2,9 +2,13 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-define void @cobyla(double ()* %calcfc) {
+define void @cobyla({ i8*, i8* }* %calcfc) {
 .entry:
-  call void @cobylb(double ()* %calcfc)
+  %call_arg_value = alloca { i8*, i8* }, align 8
+  store { i8*, i8* } zeroinitializer, { i8*, i8* }* %call_arg_value, align 8
+  %0 = load { i8*, i8* }, { i8*, i8* }* %calcfc, align 1
+  store { i8*, i8* } %0, { i8*, i8* }* %call_arg_value, align 8
+  call void @cobylb({ i8*, i8* }* %call_arg_value)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
@@ -17,21 +21,38 @@ FINALIZE_SYMTABLE_cobyla:                         ; preds = %return
   ret void
 }
 
-define void @cobylb(double ()* %calcfc) {
+declare double @calcfc_interface()
+
+define void @cobylb({ i8*, i8* }* %calcfc) {
 .entry:
-  %"calcfc~fpcast_ptr" = alloca void (double*)*, align 8
-  store void (double*)* null, void (double*)** %"calcfc~fpcast_ptr", align 8
+  %"calcfc~fpcast_ptr" = alloca { i8*, i8* }, align 8
+  store { i8*, i8* } zeroinitializer, { i8*, i8* }* %"calcfc~fpcast_ptr", align 8
   %con = alloca double, align 8
-  %0 = bitcast double ()* %calcfc to void (double*)*
-  store void (double*)* %0, void (double*)** %"calcfc~fpcast_ptr", align 8
-  %1 = load void (double*)*, void (double*)** %"calcfc~fpcast_ptr", align 8
-  call void %1(double* %con)
+  %0 = load { i8*, i8* }, { i8*, i8* }* %calcfc, align 1
+  store { i8*, i8* } %0, { i8*, i8* }* %"calcfc~fpcast_ptr", align 8
+  %1 = load { i8*, i8* }, { i8*, i8* }* %"calcfc~fpcast_ptr", align 8
+  %2 = extractvalue { i8*, i8* } %1, 0
+  %3 = extractvalue { i8*, i8* } %1, 1
+  %4 = icmp eq i8* %3, null
+  br i1 %4, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %5 = bitcast i8* %2 to void (double*)*
+  call void %5(double* %con)
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %6 = bitcast i8* %2 to void (i8*, double*)*
+  call void %6(i8* %3, double* %con)
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
   br label %return
 
-return:                                           ; preds = %unreachable_after_return, %.entry
+return:                                           ; preds = %unreachable_after_return, %ifcont
   br label %FINALIZE_SYMTABLE_cobylb
 
 FINALIZE_SYMTABLE_cobylb:                         ; preds = %return

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.procedure_closure.argument_type]: a closure entry argument must have its logical representation
+  --> tests/asr/verify/procedure_closure_array_representation.asr:23:8
+   |
+23 |       (ProcedureClosure (Var (SymbolRef 1 "entry")) nil (SymbolRef 3 "env")
+   |        ^^^^^^^^^^^^^^^^ failed here

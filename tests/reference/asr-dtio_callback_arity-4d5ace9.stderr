@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.dtio.callback_abi]: defined output callback must have seven explicit dummy arguments
+ --> tests/asr/verify/dtio_callback_arity.asr:1:1
+  |
+1 | (TranslationUnit (SymbolTable 0 {
+  | ^ failed here

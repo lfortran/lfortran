@@ -46,6 +46,24 @@ Dis-advantages:
 
 namespace LCompilers {
 
+static void rebind_closure_environment(ASR::ProcedureClosure_t &closure) {
+    if (!closure.m_environment_parameter ||
+            !ASR::is_a<ASR::Variable_t>(*closure.m_environment_parameter) ||
+            !ASR::is_a<ASR::Var_t>(*closure.m_procedure)) return;
+    auto role = ASR::down_cast<ASR::Variable_t>(
+        closure.m_environment_parameter)->m_storage;
+    auto *target = ASRUtils::get_function(
+        ASR::down_cast<ASR::Var_t>(closure.m_procedure)->m_v);
+    for (size_t i = 0; target && i < target->n_args; i++) {
+        auto *arg = ASR::down_cast<ASR::Var_t>(target->m_args[i])->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*arg) &&
+                ASR::down_cast<ASR::Variable_t>(arg)->m_storage == role) {
+            closure.m_environment_parameter = arg;
+            return;
+        }
+    }
+}
+
 // After duplicating a function body and its symbol table, BlockCall statements
 // still reference the original Block symbols. This visitor remaps them to the
 // corresponding duplicated Blocks in the new symbol table.
@@ -219,6 +237,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         // The array dummies of device procedures that keep their
         // descriptor (see DeviceDescriptorDummies).
         std::set<std::pair<ASR::symbol_t*, size_t>> device_descriptor_dummies;
+        std::set<ASR::symbol_t*> procedure_value_interfaces;
 
         PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
@@ -226,6 +245,22 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
 
         int get_index_kind() const {
             return pass_options.descriptor_index_64 ? 8 : 4;
+        }
+
+        void preserve_copied_interfaces(SymbolTable *source, SymbolTable *copy) {
+            for (auto &item: source->get_scope()) {
+                auto *replacement = copy->get_symbol(item.first);
+                if (!replacement) continue;
+                if (procedure_value_interfaces.count(item.second)) {
+                    procedure_value_interfaces.insert(replacement);
+                }
+                if (ASR::is_a<ASR::Function_t>(*item.second) &&
+                        ASR::is_a<ASR::Function_t>(*replacement)) {
+                    preserve_copied_interfaces(
+                        ASR::down_cast<ASR::Function_t>(item.second)->m_symtab,
+                        ASR::down_cast<ASR::Function_t>(replacement)->m_symtab);
+                }
+            }
         }
 
         ASR::symbol_t* insert_new_procedure(ASR::Function_t* x, std::vector<size_t>& indices) {
@@ -261,6 +296,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             symbol_duplicator.fixup_local_type_declarations(new_symtab, x->m_symtab);
+            preserve_copied_interfaces(x->m_symtab, new_symtab);
             // The duplicated body's BlockCall statements still reference
             // Block symbols in the original symtab. Remap them to the
             // corresponding duplicated Blocks in new_symtab.
@@ -450,6 +486,23 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         return;
                     }
                     pass_array_by_data_functions.push_back(subrout);
+                    if (procedure_value_interfaces.count(sym)) return;
+                    // Copied dummy interfaces and frame entries retain their
+                    // callable ABI, just like the original address-taken code.
+                    auto *owner = subrout->m_symtab->parent->asr_owner;
+                    if (pass_options.procedure_closures &&
+                            owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                            ASR::is_a<ASR::Function_t>(
+                                *ASR::down_cast<ASR::symbol_t>(owner)) &&
+                            ASRUtils::is_dummy_argument(*ASR::down_cast<ASR::Function_t>(
+                                ASR::down_cast<ASR::symbol_t>(owner)), sym)) return;
+                    for (size_t i = 0; i < subrout->n_args; i++) {
+                        auto *arg = ASR::down_cast<ASR::Var_t>(subrout->m_args[i])->m_v;
+                        if (pass_options.procedure_closures &&
+                                ASR::is_a<ASR::Variable_t>(*arg) &&
+                                ASR::down_cast<ASR::Variable_t>(arg)->m_storage ==
+                                    ASR::storage_typeType::HostFrameArgument) return;
+                    }
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* new_sym = insert_new_procedure(subrout, arg_indices);
                         if( new_sym != nullptr ) {
@@ -754,6 +807,16 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         ASR::BaseExprReplacer<EditProcedureReplacer>::replace_FunctionPointerCast(x);
     }
 
+    void replace_ProcedureClosure(ASR::ProcedureClosure_t* x) {
+        if (x->m_interface) {
+            edit_symbol_pointer(interface)
+        }
+        ASR::BaseExprReplacer<EditProcedureReplacer>::replace_ProcedureClosure(x);
+        rebind_closure_environment(*x);
+        if (x->m_interface) x->m_type = ASRUtils::get_function(
+            x->m_interface)->m_function_signature;
+    }
+
 };
 
 class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor> {
@@ -819,7 +882,7 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
         for (size_t i = 0; i < xx.n_dtio_bindings; i++) {
             ASR::dtio_binding_t &b = xx.m_dtio_bindings[i];
             needs_copy = needs_copy || outside(b.m_type_declaration) ||
-                outside(b.m_procedure) || outside(b.m_callback);
+                outside(b.m_procedure);
         }
         if (needs_copy) {
             ASR::dtio_binding_t* bindings = v.al.allocate<ASR::dtio_binding_t>(
@@ -828,7 +891,6 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 bindings[i] = xx.m_dtio_bindings[i];
                 bindings[i].m_type_declaration = in_scope(bindings[i].m_type_declaration);
                 bindings[i].m_procedure = in_scope(bindings[i].m_procedure);
-                bindings[i].m_callback = in_scope(bindings[i].m_callback);
             }
             xx.m_dtio_bindings = bindings;
         }
@@ -933,6 +995,11 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             std::set<ASR::symbol_t*>& not_to_be_erased_,
             const LCompilers::PassOptions& pass_options_):
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_), pass_options(pass_options_) {}
+
+        void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_ProcedureClosure(x);
+            rebind_closure_environment(const_cast<ASR::ProcedureClosure_t&>(x));
+        }
 
         // this is exactly the same as the one in EditProcedureReplacer
         ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
@@ -1946,10 +2013,14 @@ public:
 
         for (size_t i = 0; i < n_args && i < callee->n_args; i++) {
             if (!args[i].m_value) continue;
-            if (!ASR::is_a<ASR::Var_t>(*args[i].m_value)) continue;
+            ASR::expr_t *value = args[i].m_value;
+            if (ASR::is_a<ASR::ProcedureClosure_t>(*value)) {
+                value = ASR::down_cast<ASR::ProcedureClosure_t>(value)->m_procedure;
+            }
+            if (!ASR::is_a<ASR::Var_t>(*value)) continue;
 
             ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
-                args[i].m_value)->m_v;
+                value)->m_v;
             ASR::symbol_t* arg_resolved = ASRUtils::symbol_get_past_external(
                 arg_sym);
 
@@ -1995,6 +2066,9 @@ public:
     }
 
     static ASR::symbol_t* get_rhs_function(ASR::expr_t* value) {
+        if (value && ASR::is_a<ASR::ProcedureClosure_t>(*value)) {
+            value = ASR::down_cast<ASR::ProcedureClosure_t>(value)->m_procedure;
+        }
         if (!value || !ASR::is_a<ASR::Var_t>(*value)) return nullptr;
         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
         ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(sym);
@@ -2013,6 +2087,16 @@ public:
     void visit_Associate(const ASR::Associate_t& x) {
         record_assignment(x.m_target, x.m_value);
         BaseWalkVisitor::visit_Associate(x);
+    }
+
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        if (x.m_interface) {
+            if (auto *target = get_rhs_function(x.m_procedure)) {
+                iface_to_assigned[ASRUtils::symbol_get_past_external(
+                    x.m_interface)].insert(target);
+            }
+        }
+        BaseWalkVisitor::visit_ProcedureClosure(x);
     }
 
     void visit_Variable(const ASR::Variable_t& x) {
@@ -2078,6 +2162,33 @@ public:
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
     PassArrayByDataProcedureVisitor v(al, pass_options);
+    class ProcedureValueInterfaces:
+        public ASR::BaseWalkVisitor<ProcedureValueInterfaces> {
+    public:
+        std::set<ASR::symbol_t*> interfaces;
+        void add(ASR::symbol_t *symbol) {
+            if (!symbol) return;
+            symbol = ASRUtils::symbol_get_past_external(symbol);
+            if (ASR::is_a<ASR::Function_t>(*symbol)) interfaces.insert(symbol);
+        }
+        void visit_Var(const ASR::Var_t &x) { add(x.m_v); }
+        void visit_Variable(const ASR::Variable_t &x) {
+            add(x.m_type_declaration);
+            ASR::BaseWalkVisitor<ProcedureValueInterfaces>::visit_Variable(x);
+        }
+        void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+            add(x.m_interface);
+            ASR::BaseWalkVisitor<ProcedureValueInterfaces>::visit_ProcedureClosure(x);
+        }
+        void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+            add(x.m_to);
+            ASR::BaseWalkVisitor<ProcedureValueInterfaces>::visit_FunctionPointerCast(x);
+        }
+    } value_interfaces;
+    value_interfaces.visit_TranslationUnit(unit);
+    if (pass_options.procedure_closures) {
+        v.procedure_value_interfaces = std::move(value_interfaces.interfaces);
+    }
     {
         DeviceDescriptorDummies d;
         d.collect(unit);

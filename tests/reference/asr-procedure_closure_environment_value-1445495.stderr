@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.procedure_closure.environment_designator]: a closure environment must designate addressable frame storage
+  --> tests/asr/verify/procedure_closure_environment_value.asr:20:8
+   |
+20 |       (ProcedureClosure (Var (SymbolRef 1 "entry")) nil (SymbolRef 4 "env")
+   |        ^^^^^^^^^^^^^^^^ failed here

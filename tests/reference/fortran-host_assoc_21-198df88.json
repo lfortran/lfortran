@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-host_assoc_21-198df88",
+    "cmd": "lfortran --pass=closure_lowering --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --cumulative",
+    "infile": "tests/../integration_tests/host_assoc_21.f90",
+    "infile_hash": "b6232b46d93b4692037db75db04bec665c61d68835ddab4f5299f091",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-host_assoc_21-198df88.f90",
+    "stdout_hash": "843fee739306844761317438f0995086c61079e934026550c2856313",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

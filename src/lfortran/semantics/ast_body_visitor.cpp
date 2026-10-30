@@ -4256,42 +4256,16 @@ public:
             // Detect implicit interface procedure pointers before the
             // sub/function mismatch check, because procedure() pointers
             // can point to either a function or a subroutine.
-            bool implicit_iface = false;
-            bool fully_implicit = false;
-            if (target_func_type->n_arg_types == 0
-                    && compiler_options.implicit_interface) {
-                ASR::symbol_t* target_sym = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*target)) {
-                    target_sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(target)->m_v);
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
-                    target_sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
-                }
-                if (target_sym && ASR::is_a<ASR::Variable_t>(*target_sym)) {
-                    ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym);
-                    if (target_var->m_type_declaration) {
-                        ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
-                            target_var->m_type_declaration);
-                        if (ASR::is_a<ASR::Function_t>(*type_decl)) {
-                            std::string decl_name = ASR::down_cast<ASR::Function_t>(
-                                type_decl)->m_name;
-                            if (decl_name.find("__") == 0
-                                    && decl_name.find("_iface_") != std::string::npos) {
-                                implicit_iface = true;
-                                if (decl_name.find("_iface_implicit") != std::string::npos) {
-                                    fully_implicit = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            bool implicit_iface = ASRUtils::is_opaque_procedure_type(target_type);
+            bool fully_implicit = implicit_iface &&
+                target_func_type->m_return_var_type == nullptr;
+            bool value_kind_unknown = ASRUtils::is_opaque_procedure_type(value_type) &&
+                value_func_type->m_return_var_type == nullptr;
 
             bool target_is_sub = (target_func_type->m_return_var_type == nullptr);
             bool value_is_sub = (value_func_type->m_return_var_type == nullptr);
             
-            if (target_is_sub != value_is_sub && !fully_implicit) {
+            if (target_is_sub != value_is_sub && !fully_implicit && !value_kind_unknown) {
                 std::string value_name = "";
                 if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) || 
                     ASR::is_a<ASR::IntrinsicImpureFunction_t>(*value)) {
@@ -4328,52 +4302,15 @@ public:
                         && value_func_type->m_return_var_type == nullptr) {
                     return_types_match = true;
                 }
-                if (return_types_match || fully_implicit) {
-                    ASR::symbol_t* target_sym = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*target)) {
-                        target_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(target)->m_v);
-                    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
-                        target_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
-                    }
-                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(target_sym);
-                    var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
-                        al, x.base.base.loc, value_type_underlying));
-                    if (var->m_symbolic_value &&
-                            ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value)) {
-                        ASR::PointerNullConstant_t *pnc = ASR::down_cast<ASR::PointerNullConstant_t>(
-                            var->m_symbolic_value);
-                        pnc->m_type = var->m_type;
-                    }
-                    if (var->m_value &&
-                            ASR::is_a<ASR::PointerNullConstant_t>(*var->m_value)) {
-                        ASR::PointerNullConstant_t *pnc = ASR::down_cast<ASR::PointerNullConstant_t>(
-                            var->m_value);
-                        pnc->m_type = var->m_type;
-                    }
-                    if (ASR::is_a<ASR::Var_t>(*value)) {
-                        ASR::symbol_t *val_sym_raw = ASR::down_cast<ASR::Var_t>(value)->m_v;
-                        ASR::symbol_t *val_sym = ASRUtils::symbol_get_past_external(val_sym_raw);
-                        if (ASR::is_a<ASR::Function_t>(*val_sym)) {
-                            // Use the original symbol (which may be an
-                            // ExternalSymbol) so that m_type_declaration
-                            // stays within the current module boundary.
-                            var->m_type_declaration = val_sym_raw;
-                        } else if (ASR::is_a<ASR::Variable_t>(*val_sym)) {
-                            ASR::Variable_t *val_var = ASR::down_cast<ASR::Variable_t>(val_sym);
-                            if (val_var->m_type_declaration) {
-                                ASR::symbol_t *val_type_decl = ASRUtils::symbol_get_past_external(
-                                    val_var->m_type_declaration);
-                                if (val_type_decl && ASR::is_a<ASR::Function_t>(*val_type_decl)) {
-                                    // Preserve the ExternalSymbol wrapper if present.
-                                    var->m_type_declaration = val_var->m_type_declaration;
-                                }
-                            }
-                        }
-                    }
-                    tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+                if (!return_types_match && !fully_implicit && !value_kind_unknown) {
+                    diag.semantic_error_label(
+                        "interface mismatch in procedure pointer assignment",
+                        {target->base.loc, value->base.loc},
+                        "incompatible procedure result types");
+                    throw SemanticAbort();
                 }
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target,
+                    cast_procedure(value, target_func_type, nullptr));
             } else if (ASRUtils::is_opaque_procedure_type(value_type)) {
                 // A procedure with an implicit interface associated with a
                 // pointer of an explicit interface is cast to that interface.
@@ -9957,8 +9894,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-                if (compiler_options.implicit_interface &&
-                        ASRUtils::is_opaque_procedure_type(
+                if (ASRUtils::is_opaque_procedure_type(
                             ASRUtils::symbol_type(original_sym))) {
                     // A procedure variable with an implicit interface
                     // (`procedure()`, an external pointer) is called through
@@ -10094,6 +10030,24 @@ public:
             throw SemanticAbort();
         }
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
+        ASR::symbol_t *called = ASRUtils::symbol_get_past_external(final_sym);
+        if (v_expr && ASR::is_a<ASR::Variable_t>(*called) &&
+                ASRUtils::is_opaque_procedure_type(ASRUtils::symbol_type(called))) {
+            ASR::expr_t *source = v_expr;
+            if (!ASRUtils::is_procedure_type(ASRUtils::expr_type(source))) {
+                source = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                    x.base.base.loc, source, final_sym,
+                    ASRUtils::symbol_type(called), nullptr));
+            }
+            Vec<ASR::call_arg_t> actuals;
+            actuals.from_pointer_n(call_args, n_call_args);
+            ASR::symbol_t *interface = get_callsite_interface(
+                x.base.base.loc, sub_name, actuals, nullptr);
+            final_sym = make_fpcast_call_target(x.base.base.loc, final_sym,
+                interface, source);
+            original_sym = nullptr;
+            v_expr = nullptr;
+        }
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
 
@@ -12095,13 +12049,18 @@ public:
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Critical, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
             } else if (to_lower(x.m_construct_name) == "barrier") {
-                // pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
                 clauses = get_clauses(x);
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
-                omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Barrier, clauses.p, clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto)));
+                ASR::stmt_t *barrier = ASRUtils::STMT(ASR::make_OMPRegion_t(
+                    al, loc, ASR::omp_region_typeType::Barrier, clauses.p,
+                    clauses.n, body.p, body.n, ASR::exec_targetType::ExecAuto));
+                if (pragma_nesting_level_2 == 0) {
+                    tmp = (ASR::asr_t*)barrier;
+                } else {
+                    omp_region_body.push_back(barrier);
+                }
             } else if (to_lower(x.m_construct_name) == "taskwait") {
                 // pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;

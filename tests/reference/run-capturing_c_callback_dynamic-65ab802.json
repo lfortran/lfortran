@@ -1,0 +1,13 @@
+{
+    "basename": "run-capturing_c_callback_dynamic-65ab802",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/capturing_c_callback_dynamic.f90",
+    "infile_hash": "48a93810297aee99c552c4589467f84ccdee1f8adf2d38c24c03896d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-capturing_c_callback_dynamic-65ab802.stderr",
+    "stderr_hash": "85b9716ec48624c694d8d1bdbdd9c09bcf146e2e712f65c2202437ec",
+    "returncode": 1
+}

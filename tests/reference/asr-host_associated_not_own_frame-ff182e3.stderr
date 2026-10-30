@@ -1,4 +1,4 @@
-ASR verify pass error [asr.verify.host_associated.designator]: the host associated variable 'n' must be bound to a reference member of a dummy argument of its own procedure, or of the frame slot of its host
+ASR verify pass error [asr.verify.host_associated.designator]: the host associated variable 'n' must be bound to a reference member of a dummy argument of its own procedure
    --> tests/asr/verify/host_associated_not_own_frame.asr:119:26
     |
 119 |                     "n" (Variable

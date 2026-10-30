@@ -843,6 +843,9 @@ class ASRToLLVMVisitor;
             void createStructTypeContext(ASR::Struct_t* der_type);
 
             llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
+            llvm::StructType* get_closure_type() {
+                return llvm::StructType::get(context, {i8_ptr, i8_ptr});
+            }
 
             llvm::Type* getUnion(ASR::Union_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
@@ -2783,6 +2786,7 @@ class ASRToLLVMVisitor;
                 case ASR::String:
                 return true;
                 case ASR::FunctionType:
+                case ASR::ProcedureType:
                 case ASR::CPtr:
                 // A reference refers to a variable that something else owns.
                 case ASR::Reference:
@@ -2816,6 +2820,7 @@ class ASRToLLVMVisitor;
                 case ASR::Set:
                 case ASR::String:
                 case ASR::FunctionType:
+                case ASR::ProcedureType:
                 case ASR::CPtr:
                     return false;
                 default:

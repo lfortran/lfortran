@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_closure_array_representation-25a9996",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/procedure_closure_array_representation.asr",
+    "infile_hash": "d603e9ee4b79bfa9d04c4b3e0d12401a5513db5a00486b7ba3f31c17",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_closure_array_representation-25a9996.stderr",
+    "stderr_hash": "ae4538d0fe9d15a46cedd87afb21f2081a647b68bfc32d1d42ff300f",
+    "returncode": 2
+}

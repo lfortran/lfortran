@@ -140,7 +140,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "pass_array_by_data", "init_expr", "global_init",
                         "global_init_wire",
                         "where", "forall",
-                        "nested_vars", "intent_out_deallocate", "openmp",
+                        "nested_vars", "closure_lowering", "intent_out_deallocate", "openmp",
                         "array_struct_temporary", "coarray",
                         "parallel_canonicalize", "parallel_dispatch",
                         "function_call_in_declaration",

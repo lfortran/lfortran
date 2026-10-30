@@ -29,6 +29,7 @@ memory_space
 pass_attr
 pointer_bounds_form
 presence
+procedure_representation
 reduction_op
 storage_type
 string_format_kind

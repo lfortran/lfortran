@@ -45,7 +45,7 @@ define void @b.__module_nested_03_a_c(%nested_03_a.__lcompilers_frame_b.6* %__lc
   %3 = alloca i64, align 8
   %4 = alloca i32, align 4
   store i32 5, i32* %4, align 4
-  %5 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, i32* %4)
+  %5 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, { i8*, i8* }* null, i32* %4)
   %6 = load i64, i64* %3, align 8
   %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %5, i8** %7, align 8
@@ -66,7 +66,7 @@ free_nonnull:                                     ; preds = %.entry
 
 free_done:                                        ; preds = %free_nonnull, %.entry
   %15 = alloca i64, align 8
-  %16 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %15, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, float* %2)
+  %16 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i64* %15, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, { i8*, i8* }* null, float* %2)
   %17 = load i64, i64* %15, align 8
   %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc1, i32 0, i32 0
   store i8* %16, i8** %18, align 8
@@ -95,7 +95,7 @@ FINALIZE_SYMTABLE_c:                              ; preds = %return
   ret void
 }
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 

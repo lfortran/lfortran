@@ -237,6 +237,18 @@ expr
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | FunctionPointerCast(expr arg, symbol? to, ttype type, expr? value)
+    -- A procedure value binds the frame designator `environment` by address.
+    -- environment_parameter identifies the target's frame dummy by symbol.
+    -- Before closure_lowering, type is the logical FunctionType; afterwards
+    -- it is ProcedureType(Closure), and procedure names a canonical entry.
+    | ProcedureClosure(expr procedure, symbol? interface, symbol? environment_parameter, expr? environment, ttype type)
+    -- Export a procedure value to a native function pointer. A nonnull
+    -- environment is an error, checked dynamically for unknown values.
+    | ProcedureRawPointer(expr procedure, ttype type)
+    -- The explicit lexical binding of an interface specification expression
+    -- to its host frame. Unlike a callback environment, this belongs to the
+    -- interface's declaration, not to the procedure selected as its target.
+    | LexicalEnvironment(expr frame)
     | StructInstanceMember(expr v, symbol m, ttype type, expr? value)
     | StructStaticMember(expr v, symbol m, ttype type, expr? value)
     | EnumStaticMember(expr v, symbol m, ttype type, expr? value)
@@ -300,6 +312,10 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    -- Physical representation of a procedure VALUE, not of its definition.
+    -- Closure stores code and environment; a null environment selects the
+    -- native calling convention, otherwise the entry takes environment first.
+    | ProcedureType(ttype signature, procedure_representation representation)
     -- The address of a variable of type `type`, held by a member of a frame
     -- created by the nested_vars pass. A StructInstanceMember of such a member
     -- designates the variable itself and has type `type`. It is never
@@ -318,11 +334,11 @@ cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 -- Caller-provided storage for a function result lowered to a dummy argument.
 -- A Variable of HostAssociated storage has no storage of its own: it denotes
 -- the variable designated by its symbolic_value, a StructInstanceMember of a
--- member of the frame dummy argument of its procedure (or of the frame slot
--- of its host in a thunk, see nested_vars), bound on entry before
+-- member of the frame dummy argument of its procedure, bound on entry before
 -- any other declaration of the procedure is evaluated, like a dummy argument
 -- associated by reference. Its type is that of the designated variable.
-storage_type = Default | Save | Parameter | Threadprivate | ResultArgument | HostAssociated
+storage_type = Default | Save | Parameter | Threadprivate | ResultArgument | HostAssociated | HostFrameArgument | ClosureEnvironment
+procedure_representation = RawPointer | Closure
 -- How a CommonBlock view provides the block's storage: a Tentative view
 -- gives no initial value, an Initialized one gives initial values (even all
 -- zero ones) through its variables, and an External one (in a module read
@@ -351,7 +367,7 @@ call_arg = (expr? value)
 -- The defined output procedure `procedure` formats the items of declared type
 -- `type_declaration` (class(T) if `polymorphic`) of a StringFormat; the
 -- runtime formatter calls it through `callback`.
-dtio_binding = (symbol type_declaration, bool polymorphic, symbol procedure, symbol? callback)
+dtio_binding = (symbol type_declaration, bool polymorphic, symbol procedure, expr? callback)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
 -- `noalias`: no other buffer of any launch of the kernel shares storage with
 -- this buffer where either of them is written (gpu_kernel_abi.cpp).

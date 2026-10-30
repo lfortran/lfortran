@@ -3863,7 +3863,7 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
 
 static char* dtio_call(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
-        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_callback* dtio_procs,
         int32_t k, void* dtv, const char* iotype, int64_t iotype_len,
         int32_t n_v, int32_t* v_list, bool* failed);
 
@@ -3875,7 +3875,7 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
 // is the record so far, and the error is recorded for the statement that
 // writes it (see `dtio_take_error`).
 void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result_size_ptr, struct serialization_info* s_info, int decimal_mode, bool leading_blank,
-        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs){
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_callback *dtio_procs){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
     int64_t items_start = 0;
@@ -4216,10 +4216,13 @@ static bool dtio_capture_formatted(int32_t unit_num, int32_t* iostat,
 // of an error of the call itself, to be freed by the caller.
 static char* dtio_call(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
-        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_callback* dtio_procs,
         int32_t k, void* dtv, const char* iotype, int64_t iotype_len,
         int32_t n_v, int32_t* v_list, bool* failed) {
-    if (k < 0 || k >= n_dtio || dtio_procs == NULL || dtio_procs[k] == NULL) {
+    if (k < 0 || k >= n_dtio || dtio_procs == NULL ||
+            (dtio_procs[k].environment == NULL
+                ? dtio_procs[k].code.raw == NULL
+                : dtio_procs[k].code.closure == NULL)) {
         char* msg = (char*)internal_malloc(80);
         snprintf(msg, 80, "no defined output procedure for a derived-type item");
         return msg;
@@ -4236,8 +4239,14 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
     int32_t iostat = 0;
     char iomsg[256];
     memset(iomsg, ' ', sizeof(iomsg));
-    dtio_procs[k](dtv, &unit, iotype, &n_v, v_list, &iostat, iomsg,
-        iotype_len, (int64_t)sizeof(iomsg));
+    if (dtio_procs[k].environment == NULL) {
+        dtio_procs[k].code.raw(dtv, &unit, iotype, &n_v, v_list, &iostat, iomsg,
+            iotype_len, (int64_t)sizeof(iomsg));
+    } else {
+        dtio_procs[k].code.closure(
+            dtio_procs[k].environment, dtv, &unit, iotype, &n_v, v_list,
+            &iostat, iomsg, iotype_len, (int64_t)sizeof(iomsg));
+    }
 
     dtio_capture_depth--;
     if (dtio_capture_depth == 0) {
@@ -4258,7 +4267,7 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
 // record. Returns as `dtio_call`.
 static char* dtio_invoke(lfortran_allocator_t* al, char** result,
         int64_t* cursor, int64_t* extent, int64_t* content_end,
-        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn* dtio_procs,
+        int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_callback* dtio_procs,
         int32_t k, void* dtv, const char* descriptor, bool* failed) {
     // iotype: "DT" followed by the character literal, if any.
     int64_t descriptor_len = (int64_t)strlen(descriptor);
@@ -4332,7 +4341,7 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string,
     int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank,
-    int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs, ...)
+    int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_callback *dtio_procs, ...)
 {
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
     if (dtio_capture_depth == 0) {

@@ -1,0 +1,28 @@
+(TranslationUnit (SymbolTable 0 {
+  "test" (Program (SymbolTable 1 {
+    "frame" (Struct (SymbolTable 2 {
+      "n" (Variable 2 "n" [] :Unspecified nil nil :Default (Reference (Integer 4)) nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+    }) "frame" (StructType [(Reference (Integer 4))] [] true false)
+      [] ["n"] [] :Source :Public false false false [] nil nil [])
+    "f" (Variable 1 "f" [] :Local nil nil :Default (StructType [(Reference (Integer 4))] [] true false) (SymbolRef 1 "frame") :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+    "entry" (Function (SymbolTable 3 {
+      "env" (Variable 3 "env" [] :In nil nil :HostFrameArgument (StructType [(Reference (Integer 4))] [] true false) (SymbolRef 1 "frame") :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+      "x" (Variable 3 "x" [] :In nil nil :Default
+        (Array (Integer 4) [(dimension (IntegerConstant 1 (Integer 4) :Decimal) (IntegerConstant 3 (Integer 4) :Decimal))] :FixedSizeArray :Global)
+        nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+    }) "entry" (FunctionType [
+        (StructType [(Reference (Integer 4))] [] true false)
+        (Array (Integer 4) [(dimension (IntegerConstant 1 (Integer 4) :Decimal) (IntegerConstant 3 (Integer 4) :Decimal))] :FixedSizeArray :Global)
+      ] nil :Source :Implementation nil false false false false false [] false :Host)
+      [] [(Var (SymbolRef 3 "env")) (Var (SymbolRef 3 "x"))] [] nil :Public true true nil)
+    "p" (Variable 1 "p" [] :Local nil nil :Default
+      (Pointer (FunctionType [(Array (Integer 4) [(dimension nil nil)] :DescriptorArray :Global)] nil :Source :Interface nil false false false false false [] false :Host))
+      nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+  }) "test" [] [
+    (Associate (Var (SymbolRef 1 "p"))
+      (ProcedureClosure (Var (SymbolRef 1 "entry")) nil (SymbolRef 3 "env")
+        (Var (SymbolRef 1 "f"))
+        (FunctionType [(Array (Integer 4) [(dimension nil nil)] :DescriptorArray :Global)] nil :Source :Interface nil false false false false false [] false :Host))
+      :NoPointerBounds)
+  ] nil)
+}) [] nil)

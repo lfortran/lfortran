@@ -68,6 +68,36 @@ filename = "asr/verify/variable_assumed_size_descriptor.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/procedure_closure_argument_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_closure_array_representation.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_closure_return_type.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_closure_environment_value.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/procedure_raw_pointer_source.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/dtio_callback_arity.asr"
+asr = true
+
+[[test]]
+filename = "../integration_tests/host_assoc_21.f90"
+fortran = true
+pass = "closure_lowering"
+options = "--cumulative"
+
+[[test]]
 filename = "subroutine1.f90"
 tokens = true
 ast_indent = true
@@ -7385,3 +7415,11 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/save_before_declaration_01.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "errors/capturing_c_callback.f90"
+llvm = true
+
+[[test]]
+filename = "errors/capturing_c_callback_dynamic.f90"
+run = true

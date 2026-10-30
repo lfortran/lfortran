@@ -734,6 +734,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        throw CodeGenError("capturing procedures are not supported by the wasm backend yet",
+            x.base.base.loc);
+    }
+
     void declare_symbols(const ASR::TranslationUnit_t &x) {
         {
             // Process intrinsic modules in the right order

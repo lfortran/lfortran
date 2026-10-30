@@ -1,0 +1,5 @@
+ASR pass error: a capturing procedure cannot be passed as a C function pointer
+ --> tests/errors/capturing_c_callback.f90:7:20
+  |
+7 | address = c_funloc(callback)
+  |                    ^^^^^^^^ this procedure requires its host environment

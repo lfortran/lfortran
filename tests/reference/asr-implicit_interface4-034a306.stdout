@@ -44,7 +44,46 @@
                                     (SymbolTable
                                         6
                                         {
-                                            
+                                            driver2~arg_0:
+                                                (Variable
+                                                    6
+                                                    driver2~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        []
+                                                        ()
+                                                        Source
+                                                        ImplicitInterface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    2 f
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
                                         })
                                     driver2~fpcast
                                     (FunctionType
@@ -77,7 +116,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 2 f)]
+                                    [(Var 6 driver2~arg_0)]
                                     []
                                     ()
                                     Public

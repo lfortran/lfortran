@@ -91,6 +91,56 @@ dummy has its own template parameter: equal element kind and rank do not imply
 equal descriptor types or extents. This is a C++ representation choice; the
 Fortran interface and argument conversion remain determined by ASR.
 
+## Procedure values and host environments
+
+Procedure definitions retain `FunctionType` signatures. On the native LLVM
+path, `closure_lowering`, after hidden string-length arguments have been
+added, gives procedure values an explicit `ProcedureType` representation.
+An ordinary Fortran procedure value stores two words: code and environment.
+A null environment selects the original procedure ABI; a nonnull environment
+selects a canonical entry with the environment first. Disassociated values
+have both words null. Association compares both words, not descriptor addresses.
+Ordinary dummy procedures receive a call-entry snapshot of the descriptor by
+reference; procedure-pointer dummies reference the actual descriptor storage,
+so `intent(out)` and `intent(inout)` can change its association. Reassigning an
+actual pointer does not retarget an ordinary dummy already associated with it.
+
+`nested_vars` creates `ProcedureClosure` expressions that bind the address of
+an activation-local host frame, identifying the target frame dummy by symbol.
+The late pass creates ASR entry procedures. Their environment dummy has
+`ClosureEnvironment` storage; it is passed as an opaque pointer and retyped
+on entry. Such entries must not receive dummy `noalias` promises. Captured
+variables and their descriptors remain referenced, not copied. The host must
+remain active whenever its closure is invoked.
+
+Late callable signatures keep kinds, ranks and physical forms but erase
+non-layout array bounds: their evaluation and result storage are already
+explicit in the declarations and calls. Forwarded frame metadata likewise
+must not retain private specification temporaries from the original entry.
+Address-taken interfaces and their copies keep one descriptor convention
+through array-by-data specialization.
+
+An interface specification expression can have its own lexical host binding,
+distinct from the environment of the callback selected as a target.
+`LexicalEnvironment` makes that frame dependency explicit rather than hiding
+it in a helper procedure with access to shared state.
+
+Raw interoperable C function pointers remain separate from Fortran values.
+The result length of an implicit-interface external character function is
+caller-side metadata, not a positional dummy or a captured binding in its
+scope-free procedure-value signature.
+Exporting a known capturing procedure is diagnosed; dynamic exports check
+that the environment is null. The compiler-owned DTIO formatter instead
+accepts explicit code/environment callback records. Neither path uses a
+shared current-frame slot or executable trampoline.
+
+An implicit-interface external call still uses the Fortran procedure ABI.
+A C API expecting a raw callback must expose that boundary explicitly, for
+example with a `bind(c)` dummy of `type(c_funptr), value` and `c_funloc`.
+This changes LFortran's procedure-value ABI: objects and modules that exchange
+Fortran procedure values must be rebuilt together. The raw C function-pointer
+ABI is unchanged.
+
 ## Compilation Modes
 
 We support two compilation modes:
@@ -204,27 +254,22 @@ the outer host through the aliases of the procedure it is nested in, whose
 own frame refers to them; the pass processes the hosts from the outside in.
 Calls between the internal procedures of a host pass on the frame dummy.
 
-A procedure value of an internal procedure that needs the frame (an actual
-argument, a pointer target, the interface of a procedure variable, the
-callback of a defined output procedure) cannot pass it. It names instead a
-*thunk*: a procedure of the host with the interface of the internal
-procedure, which calls it with the frame that the host's *frame slot*, a
-`Save` pointer of the host, points to. A statement that makes a procedure
-value points the slot at the frame of its instance first, and every instance
-of the host saves the slot when it starts and restores it before it returns.
-So a procedure value reaches the instance that made it, unless a newer
-instance of the same host has made a procedure value since and is still
-active; values that carry their frame would be exact in that case too. A
-call in an interface body to a procedure of the host that reads one of its
-variables for a bound or a length (`import :: n`) uses a thunk the same way.
-The thunks and the procedures that make procedure values read the slot
-directly, so a backend must resolve a saved variable of the host there
-(`ASRUtils::is_frame_slot`).
+A procedure value binds its own activation-local frame with
+`ProcedureClosure`. The native `closure_lowering` pass creates a canonical
+environment-first entry after signature-changing passes; direct calls still
+use the original `HostFrameArgument` dummy. Interface specification
+expressions use `LexicalEnvironment` for their declaration's frame, not
+shared saved state. See "Procedure values and host environments" above.
 
 The ASR after this pass is not valid Fortran: a member of Reference type and
 a HostAssociated variable have no Fortran syntax, and
-`--show-fortran` prints them as `reference`, `host_associated` and
-`bind_reference(...)`.
+`--show-fortran` uses internal pseudo-Fortran attributes and expressions:
+`reference`, `host_associated`, `host_frame_argument`, `closure_environment`,
+`closure`, `raw_pointer`, `bind_reference(...)`, `procedure_closure(...)`,
+`procedure_raw_pointer(...)` and `lexical_environment(...)`.
+Explicit `--pass=closure_lowering` enables native procedure-value inspection
+independently of backend selection; use the usual cumulative-pass option or
+list its prerequisites to inspect canonical capturing entries.
 
 ## Notes:
 

@@ -51,6 +51,7 @@
 #include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
+#include <libasr/pass/closure_lowering.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
@@ -140,6 +141,7 @@ namespace LCompilers {
             {"global_init", &pass_global_init},
             {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
+            {"closure_lowering", &pass_closure_lowering},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"dtio_callbacks", &pass_dtio_callbacks},
@@ -203,13 +205,8 @@ namespace LCompilers {
                     _optimization_passes.begin(),
                     _optimization_passes.end()
                 );
-                int _pass_max_idx = -1, _opt_max_idx = -1;
+                int _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {
-                    auto it1 = std::find(_passes.begin(), _passes.end(), current_pass);
-                    if (it1 != _passes.end()) {
-                        _pass_max_idx = std::max(_pass_max_idx,
-                                            (int)(it1 - _passes.begin()));
-                    }
                     auto it2 = std::find(_with_optimization_passes.begin(),
                                     _with_optimization_passes.end(), current_pass);
                     if (it2 != _with_optimization_passes.end()) {
@@ -218,10 +215,6 @@ namespace LCompilers {
                     }
                 }
                 passes.clear();
-                if (_pass_max_idx != -1) {
-                    for (int i=0; i<=_pass_max_idx; i++)
-                        passes.push_back(_passes[i]);
-                }
                 if (_opt_max_idx != -1) {
                     for (int i=0; i<=_opt_max_idx; i++)
                         passes.push_back(_with_optimization_passes[i]);
@@ -443,6 +436,7 @@ namespace LCompilers {
                 // character dummy gets its hidden length argument here, and
                 // each call the length of its actual.
                 "string_length_arguments",
+                "closure_lowering",
                 "unused_functions",
                 "unique_symbols",
                 "intent_out_deallocate",
@@ -499,8 +493,16 @@ namespace LCompilers {
             double cummulative_time_taken_by_passes_in_microseconds = 0.0;
             auto t1 = std::chrono::high_resolution_clock::now();
             if( !_user_defined_passes.empty() ) {
+                bool saved_closures = pass_options.procedure_closures;
+                if (std::find(_user_defined_passes.begin(),
+                        _user_defined_passes.end(), "closure_lowering") !=
+                        _user_defined_passes.end()) {
+                    // Explicit pass inspection requests the native value ABI.
+                    pass_options.procedure_closures = true;
+                }
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics, cummulative_time_taken_by_passes_in_microseconds);
+                pass_options.procedure_closures = saved_closures;
             } else if( apply_default_passes ) {
                 apply_passes(al, asr, _passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
                 if (pass_options.fast ){

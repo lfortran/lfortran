@@ -63,6 +63,8 @@ private:
     bool _processing_dims = false;
     bool _inside_call = false;
     bool _inside_array_physical_cast_type = false;
+    bool inside_function_type = false;
+    bool lexical_environment_reference = false;
     bool _processing_assumed_rank_array = false;
     bool _processing_unbounded_pointer_array = false;
     // True while the symbols of a template are visited. A named constant of a
@@ -1683,6 +1685,26 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        if (x.m_storage == storage_typeType::HostFrameArgument ||
+                x.m_storage == storage_typeType::ClosureEnvironment) {
+            auto *owner = x.m_parent_symtab->asr_owner;
+            require_id(owner && is_a<symbol_t>(*owner) &&
+                    is_a<Function_t>(*down_cast<symbol_t>(owner)),
+                "asr.verify.environment_parameter.owner",
+                "an environment parameter must belong to a procedure");
+            auto *function = down_cast<Function_t>(down_cast<symbol_t>(owner));
+            require_id(x.m_intent == intentType::In &&
+                    ASRUtils::is_dummy_argument(*function, &x.base) &&
+                    ASRUtils::is_frame_type(x.m_type_declaration),
+                "asr.verify.environment_parameter.dummy",
+                "an environment parameter must be an input host-frame dummy");
+            if (x.m_storage == storage_typeType::ClosureEnvironment) {
+                require_id(function->n_args > 0 &&
+                        down_cast<Var_t>(function->m_args[0])->m_v == &x.base,
+                    "asr.verify.closure_entry.environment_first",
+                    "a closure entry must take its environment first");
+            }
+        }
         if (x.m_storage == storage_typeType::ResultArgument) {
             asr_t *owner = x.m_parent_symtab->asr_owner;
             require(is_a<symbol_t>(*owner) &&
@@ -2058,8 +2080,7 @@ public:
     }
 
     // A HostAssociated variable denotes the variable that its symbolic_value
-    // designates through the frame dummy argument of its own procedure, or in
-    // a thunk of a procedure value the frame slot of its host, and it is bound
+    // designates through the frame dummy argument of its own procedure, bound
     // when the procedure is entered. The messages are built only when a check
     // fails: there is one such variable per host entity that each internal
     // procedure uses.
@@ -2111,15 +2132,10 @@ public:
                 (ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) &&
                  ASR::down_cast<ASR::Var_t>(procedure->m_args[i])->m_v == frame);
         }
-        bool frame_is_host_slot = frame != nullptr &&
-            ASR::is_a<ASR::Variable_t>(*frame) &&
-            ASRUtils::is_frame_slot(*ASR::down_cast<ASR::Variable_t>(frame)) &&
-            ASRUtils::symbol_parent_symtab(frame) == procedure->m_symtab->parent;
-        if (!frame_is_dummy && !frame_is_host_slot) {
+        if (!frame_is_dummy) {
             require_id(false, "asr.verify.host_associated.designator",
                 var() + " must be bound to a reference member of a dummy "
-                "argument of its own procedure, or of the frame slot of its "
-                "host");
+                "argument of its own procedure");
         }
     }
 
@@ -2470,16 +2486,14 @@ public:
     // its host: an expression in it is only ever evaluated in the scope
     // that calls through it.
     void verify_not_host_variable(const Var_t &x) {
+        if (lexical_environment_reference && inside_function_type) return;
         if (!ASR::is_a<ASR::Variable_t>(*x.m_v)) {
             return;
         }
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
-        // Constants, variables that nested_vars leaves out of the frame and
-        // the frame slot of a host, which is static storage that its thunks
-        // and the procedures that make procedure values read directly
+        // Constants and variables that nested_vars leaves out of the frame.
         if (v->m_storage == ASR::storage_typeType::Parameter ||
-                !ASRUtils::is_reached_through_host_frame(*v) ||
-                ASRUtils::is_frame_slot(*v)) {
+                !ASRUtils::is_reached_through_host_frame(*v)) {
             return;
         }
         ASR::symbol_t *owner = enclosing_procedure(v->m_parent_symtab);
@@ -2542,6 +2556,10 @@ public:
         ASR::symbol_t *found = nullptr;
 
         FrameCallInDeclaration(SymbolTable *host_): host(host_) {}
+
+        // A procedure interface describes a later invocation; its bounds
+        // are not evaluated when the procedure variable is declared.
+        void visit_FunctionType(const FunctionType_t &/*x*/) {}
 
         void visit_FunctionCall(const FunctionCall_t &x) {
             ASR::symbol_t *f = ASRUtils::symbol_get_past_external(x.m_name);
@@ -3045,6 +3063,9 @@ public:
         if (t == nullptr) return nullptr;
         ASR::ttype_t *t2 = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable_pointer(t));
+        if (ASR::is_a<ASR::ProcedureType_t>(*t2)) {
+            t2 = ASR::down_cast<ASR::ProcedureType_t>(t2)->m_signature;
+        }
         if (!ASR::is_a<ASR::FunctionType_t>(*t2)) return nullptr;
         return ASR::down_cast<ASR::FunctionType_t>(t2);
     }
@@ -4005,7 +4026,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
-                require(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type)),
+                require(as_procedure_type(v->m_type) != nullptr,
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
@@ -4076,6 +4097,8 @@ public:
     }
 
     void visit_FunctionType(const FunctionType_t& x) {
+        bool saved_function_type = inside_function_type;
+        inside_function_type = true;
 
         #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
@@ -4099,6 +4122,7 @@ public:
             "asr.verify.function_type.implicit_interface_has_no_arg_types",
             "a procedure type with an implicit interface must not list "
             "argument types");
+        inside_function_type = saved_function_type;
     }
 
     // A FunctionPointerCast views a procedure through another procedure type:
@@ -4106,7 +4130,7 @@ public:
     // without `to`, the opaque procedure type.
     void visit_FunctionPointerCast(const FunctionPointerCast_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_FunctionPointerCast(x);
-        require_id(ASR::is_a<ASR::FunctionType_t>(*x.m_type),
+        require_id(as_procedure_type(x.m_type) != nullptr,
             "asr.verify.function_pointer_cast.type_is_procedure",
             "FunctionPointerCast type must be a procedure type");
         // The argument's type can only be taken once ExternalSymbols are
@@ -4133,7 +4157,7 @@ public:
             "asr.verify.function_pointer_cast.interface_is_function",
             "FunctionPointerCast interface must be a procedure");
         if (!ASR::is_a<ASR::Function_t>(*to) ||
-                !ASR::is_a<ASR::FunctionType_t>(*x.m_type)) {
+                as_procedure_type(x.m_type) == nullptr) {
             return;
         }
         ASR::Function_t *to_fn = ASR::down_cast<ASR::Function_t>(to);
@@ -4141,11 +4165,192 @@ public:
             "asr.verify.function_pointer_cast.interface_is_explicit",
             "FunctionPointerCast interface '" + std::string(to_fn->m_name) +
             "' must be explicit");
-        require_id(ASR::down_cast<ASR::FunctionType_t>(x.m_type)->n_arg_types
+        require_id(as_procedure_type(x.m_type)->n_arg_types
                 == to_fn->n_args,
             "asr.verify.function_pointer_cast.type_matches_interface",
             "FunctionPointerCast type must have the arguments of interface '" +
             std::string(to_fn->m_name) + "'");
+    }
+
+    void visit_ProcedureType(const ProcedureType_t &x) {
+        require_id(ASR::is_a<ASR::FunctionType_t>(*x.m_signature),
+            "asr.verify.procedure_type.signature",
+            "a procedure value must have a procedure signature");
+        visit_ttype(*x.m_signature);
+    }
+
+    void verify_closure_signature(const FunctionType_t &actual,
+            const FunctionType_t &signature, size_t environment_index,
+            const Location &loc) {
+        bool captured = environment_index < actual.n_arg_types;
+        require_with_loc_id(actual.n_arg_types == signature.n_arg_types + captured,
+            "asr.verify.procedure_closure.logical_signature",
+            "a closure entry must take its logical arguments and any bound environment", loc);
+        size_t j = 0;
+        for (size_t i = 0; i < actual.n_arg_types; i++) {
+            if (captured && i == environment_index) continue;
+            require_with_loc_id(same_variable_type(actual.m_arg_types[i],
+                    signature.m_arg_types[j++], nullptr, nullptr),
+                "asr.verify.procedure_closure.argument_type",
+                "a closure entry argument must have its logical representation", loc);
+        }
+        require_with_loc_id((actual.m_return_var_type == nullptr) ==
+                (signature.m_return_var_type == nullptr),
+            "asr.verify.procedure_closure.return_type",
+            "a closure entry result must have its logical representation", loc);
+        if (actual.m_return_var_type && signature.m_return_var_type) {
+            require_with_loc_id(same_variable_type(actual.m_return_var_type,
+                    signature.m_return_var_type, nullptr, nullptr),
+                "asr.verify.procedure_closure.return_type",
+                "a closure entry result must have its logical representation", loc);
+        }
+    }
+
+    static bool environment_designator(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::LexicalEnvironment_t>(*expr)) {
+            return environment_designator(
+                ASR::down_cast<ASR::LexicalEnvironment_t>(expr)->m_frame);
+        }
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            auto *symbol = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(expr)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*symbol) &&
+                ASR::down_cast<ASR::Variable_t>(symbol)->m_storage !=
+                    storage_typeType::Parameter;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return environment_designator(
+                ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v);
+        }
+        return false;
+    }
+
+    void visit_ProcedureClosure(const ProcedureClosure_t &x) {
+        visit_expr(*x.m_procedure);
+        visit_ttype(*x.m_type);
+        auto *signature = as_procedure_type(x.m_type);
+        auto *representation = ASRUtils::procedure_value_type(x.m_type);
+        require_id(signature != nullptr && (!representation ||
+                representation->m_representation ==
+                    ASR::procedure_representationType::Closure),
+            "asr.verify.procedure_closure.type",
+            "a procedure closure must have a procedure type");
+        require_id((x.m_environment == nullptr) ==
+                (x.m_environment_parameter == nullptr),
+            "asr.verify.procedure_closure.environment",
+            "a procedure closure must identify both its environment and its parameter");
+        if (!x.m_environment) {
+            auto *source_type = ASRUtils::expr_type(x.m_procedure);
+            auto *source = as_procedure_type(source_type);
+            auto *source_representation = ASRUtils::procedure_value_type(source_type);
+            require_id(source && (!source_representation ||
+                    source_representation->m_representation ==
+                        ASR::procedure_representationType::RawPointer),
+                "asr.verify.procedure_closure.raw_source",
+                "a noncapturing closure must wrap a raw procedure value");
+            verify_closure_signature(*source, *signature, source->n_arg_types,
+                x.base.base.loc);
+            if (ASR::is_a<ASR::Var_t>(*x.m_procedure)) {
+                auto *symbol = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_procedure)->m_v);
+                if (ASR::is_a<ASR::Function_t>(*symbol)) {
+                    auto *function = ASR::down_cast<ASR::Function_t>(symbol);
+                    for (size_t i = 0; i < function->n_args; i++) {
+                        auto *dummy = ASR::down_cast<ASR::Var_t>(
+                            function->m_args[i])->m_v;
+                        if (!ASR::is_a<ASR::Variable_t>(*dummy)) continue;
+                        auto *argument = ASR::down_cast<ASR::Variable_t>(dummy);
+                        require_id(argument->m_storage != storage_typeType::HostFrameArgument &&
+                                argument->m_storage != storage_typeType::ClosureEnvironment,
+                            "asr.verify.procedure_closure.requires_environment",
+                            "a procedure taking a host frame must bind an environment");
+                    }
+                }
+            }
+            return;
+        }
+        visit_expr(*x.m_environment);
+        require_id(environment_designator(x.m_environment),
+            "asr.verify.procedure_closure.environment_designator",
+            "a closure environment must designate addressable frame storage");
+        require_id(ASR::is_a<ASR::Var_t>(*x.m_procedure),
+            "asr.verify.procedure_closure.entry",
+            "a capturing procedure closure must name its entry");
+        auto *symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_procedure)->m_v);
+        require_id(ASR::is_a<ASR::Function_t>(*symbol),
+            "asr.verify.procedure_closure.entry_function",
+            "a capturing procedure closure must name a procedure");
+        auto *function = ASR::down_cast<ASR::Function_t>(symbol);
+        require_id(x.m_environment_parameter &&
+                ASR::is_a<ASR::Variable_t>(*x.m_environment_parameter),
+            "asr.verify.procedure_closure.parameter_kind",
+            "a closure environment parameter must be a variable");
+        size_t parameter = function->n_args;
+        for (size_t i = 0; i < function->n_args; i++) {
+            if (ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v ==
+                    x.m_environment_parameter) parameter = i;
+        }
+        require_id(parameter < function->n_args, "asr.verify.procedure_closure.parameter",
+            "the environment parameter must belong to the closure entry");
+        auto *environment = ASR::down_cast<ASR::Variable_t>(x.m_environment_parameter);
+        require_id(environment->m_storage == storage_typeType::HostFrameArgument ||
+                environment->m_storage == storage_typeType::ClosureEnvironment,
+            "asr.verify.procedure_closure.parameter_role",
+            "a closure must identify an environment parameter");
+        require_id(same_variable_type(environment->m_type,
+                ASRUtils::expr_type(x.m_environment), nullptr, nullptr),
+            "asr.verify.procedure_closure.environment_type",
+            "a closure environment must have the type of its environment parameter");
+        // The stored logical interface excludes the environment parameter.
+        verify_closure_signature(*ASRUtils::get_FunctionType(function),
+            *signature, parameter, x.base.base.loc);
+        if (ASRUtils::is_closure_type(x.m_type)) {
+            require_id(environment->m_storage == storage_typeType::ClosureEnvironment,
+                "asr.verify.procedure_closure.canonical_entry",
+                "a lowered closure must name a canonical closure entry");
+        }
+    }
+
+    void visit_ProcedureRawPointer(const ProcedureRawPointer_t &x) {
+        visit_expr(*x.m_procedure);
+        visit_ttype(*x.m_type);
+        auto *type = ASRUtils::procedure_value_type(x.m_type);
+        require_id(type && type->m_representation ==
+                ASR::procedure_representationType::RawPointer,
+            "asr.verify.procedure_raw_pointer.type",
+            "a native procedure export must have raw representation");
+        auto *source = ASRUtils::procedure_value_type(
+            ASRUtils::expr_type(x.m_procedure));
+        require_id(source && source->m_representation ==
+                ASR::procedure_representationType::Closure,
+            "asr.verify.procedure_raw_pointer.source",
+            "a native procedure export must consume a closure value");
+        auto *source_signature = as_procedure_type(
+            ASRUtils::expr_type(x.m_procedure));
+        verify_closure_signature(*source_signature,
+            *as_procedure_type(x.m_type), source_signature->n_arg_types,
+            x.base.base.loc);
+    }
+
+    void visit_LexicalEnvironment(const LexicalEnvironment_t &x) {
+        bool saved = non_global_symbol_visited;
+        bool saved_reference = lexical_environment_reference;
+        lexical_environment_reference = true;
+        visit_expr(*x.m_frame);
+        lexical_environment_reference = saved_reference;
+        non_global_symbol_visited = saved;
+        require_id(ASR::is_a<ASR::Var_t>(*x.m_frame) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(x.m_frame)),
+            "asr.verify.lexical_environment.frame",
+            "an interface environment must designate its lexical host frame");
+        auto *symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_frame)->m_v);
+        require_id(ASR::is_a<ASR::Variable_t>(*symbol) &&
+                ASRUtils::is_frame_type(
+                    ASR::down_cast<ASR::Variable_t>(symbol)->m_type_declaration),
+            "asr.verify.lexical_environment.frame_type",
+            "an interface environment must designate a host frame");
     }
 
     // A `storage_size` with a compile-time value is a TypeInquiry. Only that
@@ -4271,7 +4476,7 @@ public:
         if (check_external) {
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(fn)))) ||
+                    as_procedure_type(ASRUtils::symbol_type(fn)) != nullptr) ||
                     ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }
@@ -4352,13 +4557,22 @@ public:
     // The number of dummies of `fn`, without the hidden lengths that the
     // string_length_arguments pass adds after them.
     static size_t explicit_dummy_count(const Function_t &fn) {
+        size_t n_frames = 0;
+        for (size_t i = 0; i < fn.n_args; i++) {
+            auto *symbol = ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*symbol)) {
+                auto storage = ASR::down_cast<ASR::Variable_t>(symbol)->m_storage;
+                n_frames += storage == ASR::storage_typeType::HostFrameArgument ||
+                    storage == ASR::storage_typeType::ClosureEnvironment;
+            }
+        }
         size_t n_hidden = count_hidden_string_lengths(fn);
         if (n_hidden == 0 || fn.n_args < n_hidden) {
-            return fn.n_args;
+            return fn.n_args - n_frames;
         }
         for (size_t i = fn.n_args - n_hidden; i < fn.n_args; i++) {
             if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) {
-                return fn.n_args;
+                return fn.n_args - n_frames;
             }
             ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v);
@@ -4366,10 +4580,10 @@ public:
                     !ASR::down_cast<ASR::Variable_t>(sym)->m_value_attr ||
                     !is_hidden_string_length_type(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type)) {
-                return fn.n_args;
+                return fn.n_args - n_frames;
             }
         }
-        return fn.n_args - n_hidden;
+        return fn.n_args - n_hidden - n_frames;
     }
 
     // The Function a defined output procedure or its callback resolves to:
@@ -4422,11 +4636,7 @@ public:
                     "' cannot point outside of its symbol table",
                 b.loc);
             if (b.m_callback) {
-                require_with_loc(symtab_in_scope(current_symtab, b.m_callback),
-                    "StringFormat::m_dtio_bindings callback '" +
-                        std::string(symbol_name(b.m_callback)) +
-                        "' cannot point outside of its symbol table",
-                    b.loc);
+                visit_expr(*b.m_callback);
             }
             if (check_external) {
                 ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
@@ -4450,13 +4660,14 @@ public:
                         "' must be a subroutine with six dummy arguments",
                     b.loc);
                 if (b.m_callback) {
-                    ASR::symbol_t *cb = ASRUtils::symbol_get_past_external(b.m_callback);
-                    require_with_loc(cb != nullptr && ASR::is_a<ASR::Function_t>(*cb)
-                            && explicit_dummy_count(*ASR::down_cast<ASR::Function_t>(cb)) == 7
-                            && ASR::down_cast<ASR::Function_t>(cb)->m_return_var == nullptr,
-                        "StringFormat::m_dtio_bindings callback '" +
-                            std::string(symbol_name(b.m_callback)) +
-                            "' must be a subroutine with seven dummy arguments",
+                    auto *type = as_procedure_type(ASRUtils::expr_type(b.m_callback));
+                    require_with_loc(type && type->m_return_var_type == nullptr,
+                        "defined output callback must be a subroutine", b.loc);
+                    auto *callback = ASRUtils::get_function_from_expr(b.m_callback);
+                    require_with_loc_id(callback && !callback->m_return_var &&
+                            explicit_dummy_count(*callback) == 7,
+                        "asr.verify.dtio.callback_abi",
+                        "defined output callback must have seven explicit dummy arguments",
                         b.loc);
                 }
                 for (size_t j = 0; j < i; j++) {

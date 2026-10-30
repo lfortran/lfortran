@@ -124,6 +124,11 @@ public:
             x.base.base.loc);
     }
 
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        throw CodeGenError("capturing procedures are not supported by the MLIR backend",
+            x.base.base.loc);
+    }
+
     void visit_IfExp(const ASR::IfExp_t &x) {
         throw CodeGenError("conditional expressions are not supported by the MLIR backend",
             x.base.base.loc);

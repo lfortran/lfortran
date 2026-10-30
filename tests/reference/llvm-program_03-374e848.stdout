@@ -2,10 +2,9 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%__lcompilers_frame_closuretest.7 = type { i32* }
 %string_descriptor = type { i8*, i64 }
+%__lcompilers_frame_closuretest.7 = type { i32* }
 
-@closuretest.__lcompilers_current_frame = internal global %__lcompilers_frame_closuretest.7* null
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -14,7 +13,9 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
-  %call_arg_value = alloca i32, align 4
+  %call_arg_value1 = alloca i32, align 4
+  %call_arg_value = alloca { i8*, i8* }, align 8
+  store { i8*, i8* } zeroinitializer, { i8*, i8* }* %call_arg_value, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %__lcompilers_frame = alloca %__lcompilers_frame_closuretest.7, align 8
   %z = alloca i32, align 4
@@ -33,29 +34,31 @@ loop.body:                                        ; preds = %loop.head
   %7 = load i32, i32* %z, align 4
   %8 = add i32 %7, 1
   store i32 %8, i32* %z, align 4
-  store %__lcompilers_frame_closuretest.7* %__lcompilers_frame, %__lcompilers_frame_closuretest.7** @closuretest.__lcompilers_current_frame, align 8
   %9 = alloca i64, align 8
-  store i32 1, i32* %call_arg_value, align 4
-  %10 = call i32 @closuretest.apply(i32 (i32*)* @closuretest.add_z__lcompilers_value, i32* %call_arg_value)
-  %11 = alloca i32, align 4
-  store i32 %10, i32* %11, align 4
-  %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %9, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, i32* %11)
-  %13 = load i64, i64* %9, align 8
-  %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  store i8* %12, i8** %14, align 8
-  %15 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  store i64 %13, i64* %15, align 8
+  %10 = bitcast %__lcompilers_frame_closuretest.7* %__lcompilers_frame to i8*
+  %11 = insertvalue { i8*, i8* } { i8* bitcast (i32 (i8*, i32*)* @closuretest.add_z_closure_entry to i8*), i8* undef }, i8* %10, 1
+  store { i8*, i8* } %11, { i8*, i8* }* %call_arg_value, align 8
+  store i32 1, i32* %call_arg_value1, align 4
+  %12 = call i32 @closuretest.apply({ i8*, i8* }* %call_arg_value, i32* %call_arg_value1)
+  %13 = alloca i32, align 4
+  store i32 %12, i32* %13, align 4
+  %14 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %9, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, { i8*, i8* }* null, i32* %13)
+  %15 = load i64, i64* %9, align 8
   %16 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
-  %17 = load i8*, i8** %16, align 8
-  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
-  %19 = load i64, i64* %18, align 8
-  %20 = trunc i64 %19 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %17, i32 %20, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
-  %21 = icmp eq i8* %12, null
-  br i1 %21, label %free_done, label %free_nonnull
+  store i8* %14, i8** %16, align 8
+  %17 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %15, i64* %17, align 8
+  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %19 = load i8*, i8** %18, align 8
+  %20 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %21 = load i64, i64* %20, align 8
+  %22 = trunc i64 %21 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %19, i32 %22, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %23 = icmp eq i8* %14, null
+  br i1 %23, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %loop.body
-  call void @_lfortran_free_alloc(i8* %2, i8* %12)
+  call void @_lfortran_free_alloc(i8* %2, i8* %14)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %loop.body
@@ -91,40 +94,62 @@ FINALIZE_SYMTABLE_add_z:                          ; preds = %return
   ret i32 %5
 }
 
-define i32 @closuretest.add_z__lcompilers_value(i32* %x) {
+define i32 @closuretest.add_z_closure_entry(i8* %__lcompilers_frame, i32* %x) {
 .entry:
-  %add_z__lcompilers_value = alloca i32, align 4
-  %0 = load %__lcompilers_frame_closuretest.7*, %__lcompilers_frame_closuretest.7** @closuretest.__lcompilers_current_frame, align 8
+  %0 = bitcast i8* %__lcompilers_frame to %__lcompilers_frame_closuretest.7*
+  %y = alloca i32, align 4
   %1 = call i32 @closuretest.add_z(i32* %x, %__lcompilers_frame_closuretest.7* %0)
-  store i32 %1, i32* %add_z__lcompilers_value, align 4
+  store i32 %1, i32* %y, align 4
   br label %return
 
 return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_add_z__lcompilers_value
+  br label %FINALIZE_SYMTABLE_add_z_closure_entry
 
-FINALIZE_SYMTABLE_add_z__lcompilers_value:        ; preds = %return
-  %2 = load i32, i32* %add_z__lcompilers_value, align 4
+FINALIZE_SYMTABLE_add_z_closure_entry:            ; preds = %return
+  %2 = load i32, i32* %y, align 4
   ret i32 %2
 }
 
-define i32 @closuretest.apply(i32 (i32*)* %fun, i32* %x) {
+define i32 @closuretest.apply({ i8*, i8* }* %fun, i32* %x) {
 .entry:
+  %0 = alloca i32, align 4
   %y = alloca i32, align 4
-  %0 = call i32 %fun(i32* %x)
-  store i32 %0, i32* %y, align 4
+  %1 = load { i8*, i8* }, { i8*, i8* }* %fun, align 1
+  %2 = extractvalue { i8*, i8* } %1, 0
+  %3 = extractvalue { i8*, i8* } %1, 1
+  %4 = icmp eq i8* %3, null
+  br i1 %4, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %5 = bitcast i8* %2 to i32 (i32*)*
+  %6 = call i32 %5(i32* %x)
+  store i32 %6, i32* %0, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %7 = bitcast i8* %2 to i32 (i8*, i32*)*
+  %8 = call i32 %7(i8* %3, i32* %x)
+  store i32 %8, i32* %0, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %9 = load i32, i32* %0, align 4
+  store i32 %9, i32* %y, align 4
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %ifcont
   br label %FINALIZE_SYMTABLE_apply
 
 FINALIZE_SYMTABLE_apply:                          ; preds = %return
-  %1 = load i32, i32* %y, align 4
-  ret i32 %1
+  %10 = load i32, i32* %y, align 4
+  ret i32 %10
 }
+
+declare i32 @fun_interface(i32*)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...)
 
 declare i8* @_lfortran_get_default_allocator()
 

@@ -1,11 +1,19 @@
 program external_string_arg_03
+    use iso_c_binding, only: c_funptr, c_funloc, c_int
     ! Character arguments of procedures without bind(c) are passed like
     ! gfortran does: a pointer to the data in the argument's position, and
     ! the lengths by value after all the arguments, in the order of the
     ! character arguments (#14161). The C procedures in
     ! external_string_arg_03_c.c abort if they receive anything else.
     implicit none
-    external show, show_arr, c_call_show, show_f
+    external show, show_arr, show_f
+    interface
+        subroutine c_call_show(f, status) bind(c)
+            import c_funptr, c_int
+            type(c_funptr), value :: f
+            integer(c_int) :: status
+        end subroutine
+    end interface
     character(len=5) :: s
     character :: x(2)
     character(len=4) :: names(3)
@@ -27,7 +35,9 @@ program external_string_arg_03
     call show_arr(names, size(names))
 
     ! C calls the Fortran procedure show_f the same way show is called.
-    call c_call_show(show_f, n)
+    ! Explicitly export native code: ordinary Fortran procedure actuals carry
+    ! environments, whereas this C API accepts a raw function pointer.
+    call c_call_show(c_funloc(show_f), n)
     if (n /= 1) error stop 4
     print *, "ok"
 end program

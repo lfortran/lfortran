@@ -12,7 +12,7 @@ subroutine h(a, n)
     call inner(__lcompilers_frame)
     contains
     subroutine inner(__lcompilers_frame)
-        type(__lcompilers_frame_h), intent(in) :: __lcompilers_frame
+        type(__lcompilers_frame_h), intent(in), host_frame_argument :: __lcompilers_frame
         real(4), dimension(:), pointer, host_associated :: a => __lcompilers_frame%a
         a(1) = real(5, kind=4)
     end subroutine inner

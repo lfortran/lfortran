@@ -168,44 +168,11 @@
                                                     []
                                                     ()
                                                 ),
-                                            __libasr_extent_head_1:
-                                                (Variable
-                                                    6
-                                                    __libasr_extent_head_1
-                                                    [n]
-                                                    Local
-                                                    (IntrinsicElementalFunction
-                                                        Max
-                                                        [(IntegerConstant 0 (Integer 4) Decimal)
-                                                        (Var 19 n)]
-                                                        0
-                                                        (Integer 4)
-                                                        ()
-                                                    )
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                ),
                                             head:
                                                 (Variable
                                                     6
                                                     head
-                                                    [__libasr_extent_head_1]
+                                                    [n]
                                                     Local
                                                     ()
                                                     ()
@@ -213,7 +180,14 @@
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 6 __libasr_extent_head_1))]
+                                                        (IntrinsicElementalFunction
+                                                            Max
+                                                            [(IntegerConstant 0 (Integer 4) Decimal)
+                                                            (Var 19 n)]
+                                                            0
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
                                                         PointerArray
                                                         Global
                                                     )

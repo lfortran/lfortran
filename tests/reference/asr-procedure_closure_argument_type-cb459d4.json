@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_closure_argument_type-cb459d4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/procedure_closure_argument_type.asr",
+    "infile_hash": "8f7ae5f6fa6584ccdc6503295d4b63288191a84b5787fb506290cd8e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_closure_argument_type-cb459d4.stderr",
+    "stderr_hash": "f8e55b8ada1736c8970c8c8b9eb554273f02377851be8cda6c31a8ee",
+    "returncode": 2
+}

@@ -35,7 +35,7 @@ static int32_t seen_v_list[4][4];
 static void write_point(void *dtv, int32_t *unit, const char *iotype,
     int32_t *n_v, int32_t *v_list, int32_t *iostat, char *iomsg,
     int64_t iotype_len, int64_t iomsg_len);
-static lfortran_dtio_write_fn procs[] = {write_point};
+static lfortran_dtio_callback procs[] = {{{write_point}, NULL}};
 
 // Formats up to two items as a formatted output statement does.
 static char *format(const char *fmt, const char *serialization,
@@ -60,6 +60,15 @@ static void check_true(bool condition, const char *what) {
         fprintf(stderr, "%s\n", what);
         failures++;
     }
+}
+
+static void write_point_closure(void *environment, void *dtv, int32_t *unit,
+        const char *iotype, int32_t *n_v, int32_t *v_list, int32_t *iostat,
+        char *iomsg, int64_t iotype_len, int64_t iomsg_len) {
+    point value = *(point *)dtv;
+    value.x += *(int32_t *)environment;
+    write_point(&value, unit, iotype, n_v, v_list, iostat, iomsg,
+        iotype_len, iomsg_len);
 }
 
 // `write(unit, '(i0)') dtv%x`, then, if `dtv%inner` is associated,
@@ -121,6 +130,21 @@ int main(void) {
     snprintf(dt_i4, sizeof(dt_i4), "%s,I4", dt_item);
     snprintf(dt_a, sizeof(dt_a), "%s,S-DESC-K1-1", dt_item);
     snprintf(dt_dt, sizeof(dt_dt), "%s,%s", dt_item, dt_item);
+
+    int32_t first_environment = 10, second_environment = 20;
+    lfortran_dtio_callback closures[2];
+    closures[0].code.closure = write_point_closure;
+    closures[0].environment = &first_environment;
+    closures[1].code.closure = write_point_closure;
+    closures[1].environment = &second_environment;
+    char closure_items[64];
+    snprintf(closure_items, sizeof(closure_items), "D0-%zu,D1-%zu",
+        sizeof(point), sizeof(point));
+    int64_t closure_length;
+    char *closure_result = _lcompilers_string_format_fortran(al,
+        "(dt,',',dt)", 11, closure_items, &closure_length,
+        0, 0, 0, 0, 0, 0, 6, 2, closures, &p, &p);
+    check(closure_length, closure_result, "17,27", "distinct callback environments");
 
     // The child's output is at the parent's position, and the parent's
     // edit descriptors follow it. The child gets the parent's unit, iotype

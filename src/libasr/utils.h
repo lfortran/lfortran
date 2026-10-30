@@ -55,6 +55,7 @@ struct PassOptions {
     // read back from a `.mod` file is defined elsewhere and this translation
     // unit only refers to it.
     bool separate_compilation = false;
+    bool procedure_closures = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
     bool intrinsic_module_name_mangling = false;

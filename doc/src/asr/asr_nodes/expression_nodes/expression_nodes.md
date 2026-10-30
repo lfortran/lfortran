@@ -49,6 +49,9 @@ EnumValue
 FunctionCall
 FunctionParam
 FunctionPointerCast
+ProcedureClosure
+ProcedureRawPointer
+LexicalEnvironment
 GetPointer
 GpuAtomicFetchAdd
 GpuBlockIndex

@@ -313,7 +313,8 @@ public:
                     binding.m_polymorphic);
                 found = callbacks.insert({key, callback}).first;
             }
-            binding.m_callback = found->second;
+            binding.m_callback = ASRUtils::EXPR(ASR::make_Var_t(al,
+                binding.loc, found->second));
         }
     }
 };

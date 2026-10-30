@@ -1,0 +1,5 @@
+runtime error: a capturing procedure cannot be passed as a C function pointer
+  --> tests/errors/capturing_c_callback_dynamic.f90:14:24
+   |
+14 |     address = c_funloc(f)
+   |                        ^ procedure requires its host environment

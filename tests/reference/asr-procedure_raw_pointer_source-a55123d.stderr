@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.procedure_raw_pointer.source]: a native procedure export must consume a closure value
+  --> tests/asr/verify/procedure_raw_pointer_source.asr:11:8
+   |
+11 |       (ProcedureRawPointer (Var (SymbolRef 1 "f"))
+   |        ^^^^^^^^^^^^^^^^^^^ failed here

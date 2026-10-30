@@ -222,7 +222,7 @@
                                                                     In
                                                                     ()
                                                                     ()
-                                                                    Default
+                                                                    HostFrameArgument
                                                                     (StructType
                                                                         [(Reference
                                                                             (Integer 4)

@@ -3724,6 +3724,9 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
         elif name == "OverloadedBinOp":
             self.emit("case ASR::exprType::%s: { return expr_type0(((ASR::%s_t*)f)->m_overloaded); }"\
                     % (name, name), 2, new_line=False)
+        elif name == "LexicalEnvironment":
+            self.emit("case ASR::exprType::LexicalEnvironment: { return expr_type0(((ASR::LexicalEnvironment_t*)f)->m_frame); }",
+                    2, new_line=False)
         else:
             self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_type; }"\
                     % (name, name), 2, new_line=False)
@@ -3796,9 +3799,24 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
             return ASR::down_cast<ASR::Variable_t>(s)->m_value;
         }""" \
                     % (name, name), 2, new_line=False)
+        elif name == "ProcedureClosure":
+            self.emit("""case ASR::exprType::ProcedureClosure: {
+            auto *closure = (ASR::ProcedureClosure_t*)f;
+            if (closure->m_environment || !ASR::is_a<ASR::Var_t>(*closure->m_procedure)) {
+                return nullptr;
+            }
+            ASR::symbol_t *symbol = ASR::down_cast<ASR::Var_t>(closure->m_procedure)->m_v;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*symbol)) {
+                symbol = ASR::down_cast<ASR::ExternalSymbol_t>(symbol)->m_external;
+            }
+            return symbol && ASR::is_a<ASR::Function_t>(*symbol) ? f : nullptr;
+        }""", 2, new_line=False)
         elif name.endswith("Constant") or name == "CompilerOptions":
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
+        elif not any(field.name == "value" for field in fields):
+            self.emit("case ASR::exprType::%s: { return nullptr; }" %
+                    name, 2, new_line=False)
         else:
             self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_value; }"\
                     % (name, name), 2, new_line=False)

@@ -46,6 +46,7 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/closure_lowering.cpp
     pass/array_struct_temporary.cpp
     pass/function_result_scope.cpp
     pass/where.cpp

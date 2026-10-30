@@ -354,7 +354,7 @@ namespace LCompilers {
             i32,
             i32, // dtio_unit
             i32, // n_dtio
-            i8_ptr->getPointerTo()}, true); // dtio_procs
+            get_closure_type()->getPointerTo()}, true); // dtio_procs
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
@@ -383,7 +383,7 @@ namespace LCompilers {
         full_args.push_back(n_dtio ? n_dtio :
             llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
         full_args.push_back(dtio_procs ? dtio_procs : llvm::ConstantPointerNull::get(
-            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo()));
+            get_closure_type()->getPointerTo()));
         for (size_t i = 6; i < args.size(); i++) {
             full_args.push_back(args[i]);
         }
@@ -1096,7 +1096,8 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(asr_type);
-                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                if (ASR::is_a<ASR::FunctionType_t>(*t2) ||
+                        ASR::is_a<ASR::ProcedureType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType (fntype*)
                     // The extra indirection for by-reference passing is handled in convert_args
                     type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi,
@@ -1292,6 +1293,17 @@ namespace LCompilers {
                 type = set_api->get_set_type(el_type_code, el_type_size, el_llvm_type)->getPointerTo();
                 break;
             }
+            case ASR::ttypeType::ProcedureType: {
+                auto *procedure = ASR::down_cast<ASR::ProcedureType_t>(asr_type);
+                type = procedure->m_representation ==
+                    ASR::procedure_representationType::Closure
+                    ? get_closure_type()->getPointerTo()
+                    : get_arg_type_from_ttype_t(arg_expr,
+                        procedure->m_signature, type_declaration, m_abi,
+                        arg_m_abi, m_storage, arg_m_value_attr, n_dims, a_kind,
+                        is_array_type, arg_intent, module, get_pointer);
+                break;
+            }
             case ASR::ttypeType::FunctionType: {
                 if (type_declaration != nullptr) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
@@ -1354,6 +1366,10 @@ namespace LCompilers {
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v))) {
                 ASR::Variable_t *arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+                if (arg->m_storage == ASR::storage_typeType::ClosureEnvironment) {
+                    args.push_back(i8_ptr);
+                    continue;
+                }
                 LCOMPILERS_ASSERT(ASRUtils::is_arg_dummy(arg->m_intent) || arg->m_intent == ASR::intentType::Local);
                 // We pass all arguments as pointers for now, except
                 // bind(C) value arguments and the VALUE dummies selected
@@ -1401,7 +1417,8 @@ namespace LCompilers {
                 } else {
                     type = type_original;
                 }
-                if ( arg->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(arg->m_type_declaration)) &&
+                if (!ASRUtils::is_closure_type(arg->m_type) &&
+                    arg->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(arg->m_type_declaration)) &&
                     (arg->m_intent == ASRUtils::intent_out || arg->m_intent == ASRUtils::intent_inout ||
                      ASRUtils::is_pointer(arg->m_type)) ) {
                     type = type->getPointerTo();
@@ -1518,7 +1535,8 @@ namespace LCompilers {
                 case (ASR::ttypeType::Pointer) : {
                     ASR::ttype_t* contained_type = ASRUtils::get_contained_type(return_var_type0);
                     return_type = get_type_from_ttype_t_util(x.m_return_var, contained_type, module);
-                    if (!ASR::is_a<ASR::FunctionType_t>(*contained_type)) {
+                    if (!ASR::is_a<ASR::FunctionType_t>(*contained_type) &&
+                            !ASR::is_a<ASR::ProcedureType_t>(*contained_type)) {
                         return_type = return_type->getPointerTo();
                     }
                     break;
@@ -1860,7 +1878,8 @@ namespace LCompilers {
             case (ASR::ttypeType::Pointer) : {
                 ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(asr_type)->m_type;
                 bool is_pointer_;
-                if (ASR::is_a<ASR::FunctionType_t>(*t2)) {
+                if (ASR::is_a<ASR::FunctionType_t>(*t2) ||
+                        ASR::is_a<ASR::ProcedureType_t>(*t2)) {
                     // Pointer(FunctionType) returns the same LLVM type as FunctionType
                     is_pointer_ = true;
                 } else {
@@ -1949,6 +1968,17 @@ namespace LCompilers {
             case (ASR::ttypeType::EnumType) : {
                 llvm_type = llvm::Type::getInt32Ty(context);
                 break ;
+            }
+            case ASR::ttypeType::ProcedureType: {
+                auto *procedure = ASR::down_cast<ASR::ProcedureType_t>(asr_type);
+                llvm_type = procedure->m_representation ==
+                    ASR::procedure_representationType::Closure
+                    ? get_closure_type()
+                    : get_type_from_ttype_t(arg_expr, procedure->m_signature,
+                        type_declaration, m_storage, is_array_type,
+                        is_malloc_array_type, is_list, m_dims, n_dims, a_kind,
+                        module, m_abi);
+                break;
             }
             case (ASR::ttypeType::FunctionType) : {
                 if( type_declaration ) {
@@ -4232,7 +4262,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             ASRUtils::get_string_type(asr_dest_type), src_str_type,
                             ASRUtils::is_allocatable(asr_dest_type));
                     }
-                } else if (ASR::is_a<ASR::FunctionType_t>(*pointer_type->m_type)) {
+                } else if (ASR::is_a<ASR::FunctionType_t>(*pointer_type->m_type) ||
+                        ASR::is_a<ASR::ProcedureType_t>(*pointer_type->m_type)) {
                     // Pointer(FunctionType) has the same LLVM layout as FunctionType (fntype*),
                     // so use fntype* as load type (no extra getPointerTo()).
                     llvm::Type* fn_ptr_type = get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module);

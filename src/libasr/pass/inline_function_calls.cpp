@@ -176,6 +176,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
 
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(sym.second);
+            if (ASRUtils::is_procedure_type(variable->m_type)) return false;
             // Inlining would give each call its own copy of persistent local state.
             if( variable->m_storage == ASR::storage_typeType::Save ) {
                 return false;

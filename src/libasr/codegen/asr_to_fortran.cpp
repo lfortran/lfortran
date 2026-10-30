@@ -376,6 +376,15 @@ public:
                 r += ASRUtils::symbol_name(type_decl);
                 r += ")";
                 break;
+            } case ASR::ttypeType::ProcedureType: {
+                auto *procedure = down_cast<ASR::ProcedureType_t>(t);
+                r = type_decl ? get_type(procedure->m_signature, type_decl)
+                              : "procedure()";
+                // Internal representation attributes have no Fortran syntax.
+                r += procedure->m_representation ==
+                    ASR::procedure_representationType::Closure
+                    ? ", closure" : ", raw_pointer";
+                break;
             }
             default:
                 throw LCompilersException("The type `"
@@ -1307,6 +1316,10 @@ public:
             // Not Fortran: an alias of a host variable, bound on entry to
             // the variable its symbolic value designates
             r += ", host_associated";
+        } else if (x.m_storage == ASR::storage_typeType::HostFrameArgument) {
+            r += ", host_frame_argument";
+        } else if (x.m_storage == ASR::storage_typeType::ClosureEnvironment) {
+            r += ", closure_environment";
         }
         if (x.m_value_attr) {
             r += ", value";
@@ -3610,6 +3623,44 @@ public:
         } else {
             src = "null()";
         }
+    }
+
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        visit_expr(*x.m_procedure);
+        std::string r = "procedure_closure(" + src;
+        if (x.m_interface) {
+            r += ", interface=" + std::string(ASRUtils::symbol_name(x.m_interface));
+        }
+        if (x.m_environment_parameter) {
+            r += ", environment_parameter=" +
+                std::string(ASRUtils::symbol_name(x.m_environment_parameter));
+        }
+        if (x.m_environment) {
+            visit_expr(*x.m_environment);
+            r += ", environment=" + src;
+        }
+        src = r + ")";
+        last_expr_precedence = Precedence::Ext;
+    }
+
+    void visit_ProcedureRawPointer(const ASR::ProcedureRawPointer_t &x) {
+        visit_expr(*x.m_procedure);
+        src = "procedure_raw_pointer(" + src + ")";
+        last_expr_precedence = Precedence::Ext;
+    }
+
+    void visit_LexicalEnvironment(const ASR::LexicalEnvironment_t &x) {
+        visit_expr(*x.m_frame);
+        src = "lexical_environment(" + src + ")";
+        last_expr_precedence = Precedence::Ext;
+    }
+
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        visit_expr(*x.m_arg);
+        src = "function_pointer_cast(" + src +
+            (x.m_to ? ", interface=" +
+                std::string(ASRUtils::symbol_name(x.m_to)) : "") + ")";
+        last_expr_precedence = Precedence::Ext;
     }
 
     void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {

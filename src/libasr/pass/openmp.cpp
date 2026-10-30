@@ -25,6 +25,10 @@ class ReplaceArrayPhysicalCast: public ASR::BaseExprReplacer<ReplaceArrayPhysica
             al(al_) {}
 
         void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+            if (!ASR::is_a<ASR::Var_t>(*x->m_arg)) {
+                ASR::BaseExprReplacer<ReplaceArrayPhysicalCast>::replace_ArrayPhysicalCast(x);
+                return;
+            }
             ASRUtils::ASRBuilder b(al, x->base.base.loc);
             ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x->m_arg)->m_v;
             std::string sym_name = ASRUtils::symbol_name(sym);
@@ -559,6 +563,10 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             if (func_sym == nullptr &&
                     ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
                 func_sym = current_scope->resolve_symbol(fn->m_name);
+                if (func_sym == nullptr) {
+                    func_sym = import_procedure_implementation(al, copies,
+                       current_scope, x.m_name);
+                }
             }
         }
         LCOMPILERS_ASSERT(func_sym != nullptr);
@@ -3678,9 +3686,16 @@ class ParallelRegionVisitor :
             // Generate gomp_barrier call
             Vec<ASR::call_arg_t> barrier_args;
             barrier_args.reserve(al, 0);
+            ASR::symbol_t *barrier = current_scope->resolve_symbol("gomp_barrier");
+            if (barrier == nullptr) {
+                auto *module = ASR::down_cast<ASR::Module_t>(
+                    create_module(loc, "omp_lib"));
+                barrier = ASRUtils::import_symbol(al,
+                    module->m_symtab->get_symbol("gomp_barrier"), current_scope);
+            }
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr, false)));
-
+                barrier, nullptr, barrier_args.p, barrier_args.n, nullptr, false)));
+            remove_original_statement = true;
             clauses_heirarchial[nesting_lvl].clear();
         }
 

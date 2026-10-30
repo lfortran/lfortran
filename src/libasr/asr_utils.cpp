@@ -353,6 +353,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
     // The idea behind this utility function is that every struct expression
     // must eventually resolve to either `Var` or `StructInstanceMember`.
     switch (expression->type) {
+        case ASR::exprType::LexicalEnvironment: {
+            return get_struct_sym_from_struct_expr(
+                ASR::down_cast<ASR::LexicalEnvironment_t>(expression)->m_frame);
+        }
         case ASR::exprType::Var: {
             // The symbol m_v has to be `Variable` or 'Function' for a Struct expression.
             if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
@@ -1293,11 +1297,20 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
     if (!expr) {
         throw LCompilersException("Passed `ASR::expr_t expr` is nullptr.");
     }
-    if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(expr)))) {
+    if (!is_procedure_type(ASRUtils::expr_type(expr))) {
         throw LCompilersException("`ttype_t` of passed `ASR::expr_t expr` is not `ASR::exprType::FunctionType`.");
     }
 
     switch (expr->type) {
+        case ASR::exprType::ProcedureClosure: {
+            auto *closure = ASR::down_cast<ASR::ProcedureClosure_t>(expr);
+            return closure->m_interface ? get_function(closure->m_interface)
+                : get_function_from_expr(closure->m_procedure);
+        }
+        case ASR::exprType::ProcedureRawPointer: {
+            return get_function_from_expr(
+                ASR::down_cast<ASR::ProcedureRawPointer_t>(expr)->m_procedure);
+        }
         case ASR::exprType::Var: {
             ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
             ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(var->m_v);
@@ -1351,9 +1364,8 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 ASR::Function_t* called_func = ASR::down_cast<ASR::Function_t>(sym);
                 if (called_func->m_return_var != nullptr) {
-                    ASR::ttype_t* ret_type = ASRUtils::extract_type(
-                        ASRUtils::expr_type(called_func->m_return_var));
-                    if (ASR::is_a<ASR::FunctionType_t>(*ret_type)
+                    ASR::ttype_t* ret_type = ASRUtils::expr_type(called_func->m_return_var);
+                    if (ASRUtils::is_procedure_type(ret_type)
                             && ASR::is_a<ASR::Var_t>(*called_func->m_return_var)) {
                         // The call returns a procedure pointer. Resolve it
                         // directly (without recursing into get_function_from_expr)
@@ -2145,6 +2157,11 @@ bool struct_constant_names_procedure(ASR::expr_t* value) {
         if (arg == nullptr) {
             continue;
         }
+        if (ASR::is_a<ASR::ProcedureClosure_t>(*arg) ||
+                ASR::is_a<ASR::ProcedureRawPointer_t>(*arg) ||
+                ASR::is_a<ASR::FunctionPointerCast_t>(*arg)) {
+            return true;
+        }
         if (ASR::is_a<ASR::Var_t>(*arg) && ASR::is_a<ASR::Function_t>(
                 *ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(arg)->m_v))) {
@@ -2163,6 +2180,15 @@ bool constant_names_procedure_outside(ASR::expr_t* value,
         return false;
     }
     switch (value->type) {
+        case ASR::exprType::ProcedureClosure:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::ProcedureClosure_t>(value)->m_procedure, scope);
+        case ASR::exprType::ProcedureRawPointer:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::ProcedureRawPointer_t>(value)->m_procedure, scope);
+        case ASR::exprType::FunctionPointerCast:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::FunctionPointerCast_t>(value)->m_arg, scope);
         case ASR::exprType::Var: {
             ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
             return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v))
@@ -6105,9 +6131,9 @@ ASR::ttype_t* typed_expr_type(const ASR::expr_t *e)
 
 bool is_procedure_type(ASR::ttype_t *t)
 {
-    return t != nullptr
+    return procedure_value_type(t) != nullptr || (t != nullptr
         && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable_pointer(t)));
+            ASRUtils::type_get_past_allocatable_pointer(t))));
 }
 
 bool is_struct_like_type(ASR::ttype_t *t)
@@ -6577,6 +6603,9 @@ ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
         ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(a_name_)->m_type;
         if (ASR::is_a<ASR::Pointer_t>(*var_type)) {
             var_type = ASR::down_cast<ASR::Pointer_t>(var_type)->m_type;
+        }
+        if (ASR::is_a<ASR::ProcedureType_t>(*var_type)) {
+            var_type = ASR::down_cast<ASR::ProcedureType_t>(var_type)->m_signature;
         }
         func_type = ASR::down_cast<ASR::FunctionType_t>(var_type);
     } else if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_) ) {
@@ -7360,6 +7389,9 @@ std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
                 ASR::down_cast<ASR::Reference_t>(t)->m_type, struct_sym,
                 show_kind) + " reference";
         }
+        case ASR::ttypeType::ProcedureType: {
+            return "procedure";
+        }
         case ASR::ttypeType::Allocatable: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_allocatable(
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " allocatable";
@@ -8038,6 +8070,11 @@ bool is_value_constant(ASR::expr_t *a_value) {
         return false;
     }
     switch ( a_value->type ) {
+        case ASR::exprType::ProcedureClosure: {
+            auto *closure = ASR::down_cast<ASR::ProcedureClosure_t>(a_value);
+            return closure->m_environment == nullptr &&
+                is_value_constant(closure->m_procedure);
+        }
         case ASR::exprType::IntegerConstant:
         case ASR::exprType::UnsignedIntegerConstant:
         case ASR::exprType::RealConstant:
@@ -8566,6 +8603,24 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
             return "Reference[" + get_type_code(p->m_type, use_underscore_sep,
                                               encode_dimensions_, set_dimensional_hint) + "]";
         }
+        case ASR::ttypeType::ProcedureType: {
+            auto *p = ASR::down_cast<ASR::ProcedureType_t>(t);
+            return std::string(p->m_representation ==
+                ASR::procedure_representationType::Closure ? "Closure_" : "RawProcedure_") +
+                get_type_code(p->m_signature, use_underscore_sep,
+                    encode_dimensions_, set_dimensional_hint);
+        }
+        case ASR::ttypeType::FunctionType: {
+            auto *function = ASR::down_cast<ASR::FunctionType_t>(t);
+            std::string code = "Function";
+            for (size_t i = 0; i < function->n_arg_types; i++) {
+                code += "_" + get_type_code(function->m_arg_types[i],
+                    use_underscore_sep, encode_dimensions_, set_dimensional_hint);
+            }
+            return code + "_returns_" + (function->m_return_var_type
+                ? get_type_code(function->m_return_var_type, use_underscore_sep,
+                    encode_dimensions_, set_dimensional_hint) : "void");
+        }
         case ASR::ttypeType::SymbolicExpression: {
             return "S";
         }
@@ -8708,6 +8763,10 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
         case ASR::ttypeType::Reference: {
             ASR::Reference_t* p = ASR::down_cast<ASR::Reference_t>(t);
             return "Reference[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
+        }
+        case ASR::ttypeType::ProcedureType: {
+            return "Procedure[" + type_to_str_python_symbol(
+                ASR::down_cast<ASR::ProcedureType_t>(t)->m_signature, struct_sym) + "]";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -9115,6 +9174,7 @@ size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::CPtr:
         case ASR::ttypeType::TypeParameter:
         case ASR::ttypeType::FunctionType:
+        case ASR::ttypeType::ProcedureType:
         // A reference is an address, not the array it may refer to.
         case ASR::ttypeType::Reference: {
             n_dims = 0;
@@ -9507,10 +9567,12 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
 
 ASR::ttype_t* import_procedure_type(Allocator &al,
         ASR::ttype_t* type, SymbolTable* scope) {
-    if (type == nullptr || scope == nullptr ||
-            !ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(type))) {
+    if (type == nullptr || scope == nullptr) {
         return type;
     }
+    ASR::ttype_t *procedure = type_get_past_pointer(type);
+    if (!ASR::is_a<ASR::FunctionType_t>(*procedure) &&
+           !ASR::is_a<ASR::ProcedureType_t>(*procedure)) return type;
     ProcedureTypeImporter checker(al, scope, false);
     checker.replace_ttype(type);
     if (!checker.needed) return type;
@@ -9876,6 +9938,11 @@ ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             return ASRUtils::TYPE(ASR::make_Reference_t(al, ref->base.base.loc,
                 duplicate_type(al, ref->m_type, dims, physical_type,
                     override_physical_type)));
+        }
+        case ASR::ttypeType::ProcedureType: {
+            auto *p = ASR::down_cast<ASR::ProcedureType_t>(t);
+            return ASRUtils::TYPE(ASR::make_ProcedureType_t(al, t->base.loc,
+                duplicate_type(al, p->m_signature), p->m_representation));
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* alloc_ = ASR::down_cast<ASR::Allocatable_t>(t);
@@ -10415,6 +10482,13 @@ bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::exp
                 return types_equal(ASR::down_cast<ASR::Reference_t>(a)->m_type,
                     ASR::down_cast<ASR::Reference_t>(b)->m_type, a_expr, b_expr,
                     check_for_dimensions);
+            }
+            case (ASR::ttypeType::ProcedureType) : {
+                auto *left = ASR::down_cast<ASR::ProcedureType_t>(a);
+                auto *right = ASR::down_cast<ASR::ProcedureType_t>(b);
+                return left->m_representation == right->m_representation &&
+                    types_equal(left->m_signature, right->m_signature,
+                        a_expr, b_expr, check_for_dimensions);
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);

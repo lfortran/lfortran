@@ -3685,6 +3685,13 @@ RUN(NAME host_assoc_12 LABELS gfortran llvm)
 RUN(NAME host_assoc_13 LABELS gfortran llvm)
 RUN(NAME host_assoc_14 LABELS gfortran llvm)
 RUN(NAME host_assoc_15 LABELS gfortran llvm)
+RUN(NAME host_assoc_16 LABELS gfortran llvm)
+RUN(NAME host_assoc_17 LABELS gfortran llvm)
+RUN(NAME host_assoc_18 LABELS gfortran llvm llvm_single_invocation
+    EXTRAFILES host_assoc_18_module.f90 EXTRA_ARGS --separate-compilation --implicit-interface)
+RUN(NAME host_assoc_19 LABELS gfortran llvm)
+RUN(NAME host_assoc_20 LABELS gfortran llvm)
+RUN(NAME host_assoc_21 LABELS gfortran llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -4845,6 +4852,7 @@ RUN(NAME dtio_write_12 LABELS gfortran llvm)
 RUN(NAME dtio_write_13 LABELS gfortran llvm)
 RUN(NAME dtio_write_14 LABELS gfortran llvm)
 RUN(NAME dtio_write_15 LABELS gfortran llvm)
+RUN(NAME dtio_write_17 LABELS gfortran llvm)
 RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
     EXTRA_ARGS --separate-compilation)
@@ -5226,6 +5234,7 @@ RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_02 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
+RUN(NAME c_f_proc_ptr_02 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrayitem_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -5656,6 +5665,7 @@ RUN(NAME openmp_bindc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)

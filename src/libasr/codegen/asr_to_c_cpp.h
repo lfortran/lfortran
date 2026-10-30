@@ -2187,6 +2187,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             (is_c ? "c" : "cpp") + " backend yet", x.base.base.loc);
     }
 
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        throw CodeGenError(std::string("capturing procedures are not supported by the ") +
+            (is_c ? "c" : "cpp") + " backend yet", x.base.base.loc);
+    }
+
     void visit_Associate(const ASR::Associate_t &x) {
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
             handle_array_section_association_to_pointer(x);

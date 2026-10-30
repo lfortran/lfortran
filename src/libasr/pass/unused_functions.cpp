@@ -256,7 +256,7 @@ public:
     // that procedure and its callback, although nothing calls them there.
     void visit_dtio_binding(const ASR::dtio_binding_t &x) {
         mark_procedure_used(x.m_procedure);
-        mark_procedure_used(x.m_callback);
+        if (x.m_callback) visit_expr(*x.m_callback);
     }
 
     void visit_Struct(const ASR::Struct_t &x) {

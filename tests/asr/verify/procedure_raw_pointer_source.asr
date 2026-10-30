@@ -1,0 +1,15 @@
+(TranslationUnit (SymbolTable 0 {
+  "test" (Program (SymbolTable 1 {
+    "f" (Function (SymbolTable 2 {}) "f"
+      (FunctionType [] nil :Source :Implementation nil false false false false false [] false :Host)
+      [] [] [] nil :Public true true nil)
+    "p" (Variable 1 "p" [] :Local nil nil :Default
+      (Pointer (ProcedureType (FunctionType [] nil :Source :Interface nil false false false false false [] false :Host) :RawPointer))
+      nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
+  }) "test" [] [
+    (Associate (Var (SymbolRef 1 "p"))
+      (ProcedureRawPointer (Var (SymbolRef 1 "f"))
+        (ProcedureType (FunctionType [] nil :Source :Interface nil false false false false false [] false :Host) :RawPointer))
+      :NoPointerBounds)
+  ] nil)
+}) [] nil)

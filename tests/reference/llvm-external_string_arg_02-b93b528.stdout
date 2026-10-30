@@ -197,8 +197,8 @@ define i32 @main(i32 %0, i8** %1) {
   %arr_element = alloca %string_descriptor, align 8
   %x = alloca %string_descriptor, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %"check~fpcast_ptr" = alloca void (i8*, i8*, i64, i64)*, align 8
-  store void (i8*, i8*, i64, i64)* null, void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
+  %"check~fpcast_ptr" = alloca { i8*, i8* }, align 8
+  store { i8*, i8* } zeroinitializer, { i8*, i8* }* %"check~fpcast_ptr", align 8
   %3 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   store i8* null, i8** %3, align 8
   %4 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 1
@@ -260,7 +260,7 @@ define i32 @main(i32 %0, i8** %1) {
   %44 = call i32 @_lcompilers_iachar_1_str1(i8* %42, i64 %43)
   %45 = alloca i32, align 4
   store i32 %44, i32* %45, align 4
-  %46 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i64* %25, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, i32* %35, i32* %45)
+  %46 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i64* %25, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, { i8*, i8* }* null, i32* %35, i32* %45)
   %47 = load i64, i64* %25, align 8
   %48 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %46, i8** %48, align 8
@@ -330,8 +330,8 @@ else7:                                            ; preds = %ifcont
   br label %ifcont8
 
 ifcont8:                                          ; preds = %else7, %then6
-  store void (i8*, i8*, i64, i64)* bitcast (void ()* @check to void (i8*, i8*, i64, i64)*), void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
-  %76 = load void (i8*, i8*, i64, i64)*, void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
+  store { i8*, i8* } { i8* bitcast (void ()* @check to i8*), i8* null }, { i8*, i8* }* %"check~fpcast_ptr", align 8
+  %76 = load { i8*, i8* }, { i8*, i8* }* %"check~fpcast_ptr", align 8
   %77 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   %78 = load i8*, i8** %77, align 8
   %79 = getelementptr i8, i8* %78, i64 0
@@ -354,30 +354,45 @@ ifcont8:                                          ; preds = %else7, %then6
   %91 = load i64, i64* %call_arg_value, align 8
   store i64 1, i64* %call_arg_value11, align 8
   %92 = load i64, i64* %call_arg_value11, align 8
-  call void %76(i8* %83, i8* %90, i64 %91, i64 %92)
+  %93 = extractvalue { i8*, i8* } %76, 0
+  %94 = extractvalue { i8*, i8* } %76, 1
+  %95 = icmp eq i8* %94, null
+  br i1 %95, label %then12, label %else13
+
+then12:                                           ; preds = %ifcont8
+  %96 = bitcast i8* %93 to void (i8*, i8*, i64, i64)*
+  call void %96(i8* %83, i8* %90, i64 %91, i64 %92)
+  br label %ifcont14
+
+else13:                                           ; preds = %ifcont8
+  %97 = bitcast i8* %93 to void (i8*, i8*, i8*, i64, i64)*
+  call void %97(i8* %94, i8* %83, i8* %90, i64 %91, i64 %92)
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %else13, %then12
   br label %return
 
-return:                                           ; preds = %ifcont8
+return:                                           ; preds = %ifcont14
   br label %FINALIZE_SYMTABLE_external_string_arg_02
 
 FINALIZE_SYMTABLE_external_string_arg_02:         ; preds = %return
   br label %Finalize_Variable_x
 
 Finalize_Variable_x:                              ; preds = %FINALIZE_SYMTABLE_external_string_arg_02
-  %93 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
-  %94 = load i8*, i8** %93, align 8
-  call void @_lfortran_free_alloc(i8* %2, i8* %94)
-  %95 = ptrtoint %string_descriptor* %x to i64
-  %96 = icmp ne i64 %95, 0
-  br i1 %96, label %then12, label %else13
+  %98 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %99 = load i8*, i8** %98, align 8
+  call void @_lfortran_free_alloc(i8* %2, i8* %99)
+  %100 = ptrtoint %string_descriptor* %x to i64
+  %101 = icmp ne i64 %100, 0
+  br i1 %101, label %then15, label %else16
 
-then12:                                           ; preds = %Finalize_Variable_x
-  br label %ifcont14
+then15:                                           ; preds = %Finalize_Variable_x
+  br label %ifcont17
 
-else13:                                           ; preds = %Finalize_Variable_x
-  br label %ifcont14
+else16:                                           ; preds = %Finalize_Variable_x
+  br label %ifcont17
 
-ifcont14:                                         ; preds = %else13, %then12
+ifcont17:                                         ; preds = %else16, %then15
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
@@ -394,7 +409,7 @@ declare i8* @_lfortran_get_default_allocator()
 
 declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, { i8*, i8* }*, ...)
 
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 

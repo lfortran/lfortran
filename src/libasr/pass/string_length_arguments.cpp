@@ -287,6 +287,13 @@ public:
             down_cast<ASR::Function_t>(to)->m_function_signature;
     }
 
+    void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_ProcedureClosure(x);
+        ASR::symbol_t *interface = transformed_procedure(x.m_interface, transformed);
+        if (interface) const_cast<ASR::ProcedureClosure_t&>(x).m_type =
+            down_cast<ASR::Function_t>(interface)->m_function_signature;
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);

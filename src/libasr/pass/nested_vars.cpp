@@ -66,43 +66,11 @@ host variables of their own internal procedures in turn. A call to an
 internal procedure of a more distant host passes the frame dummy of the
 procedure nested in that host, which is reached the same way.
 
-A procedure value of an internal procedure P that needs the frame (an
-actual argument, a pointer target, an interface of a procedure variable, the
-callback of a defined output procedure) has no frame to pass when it is
-invoked. Every such use names instead a thunk `P__lcompilers_value` of the
-host, with P's own interface, which calls P with the host's current frame
-slot, a saved pointer of the host:
-
-    subroutine h(n)                             ! after the pass
-        ...
-        type(__lcompilers_frame_h), pointer, save :: __lcompilers_current_frame
-        type(__lcompilers_frame_h), pointer :: __lcompilers_previous_frame
-        bind_reference(__lcompilers_frame%k, k)
-        __lcompilers_previous_frame => __lcompilers_current_frame
-        __lcompilers_current_frame => __lcompilers_frame
-        call solve(inner__lcompilers_value)
-        __lcompilers_current_frame => __lcompilers_previous_frame
-    contains
-        subroutine inner__lcompilers_value(x)
-            real, intent(inout) :: x
-            call inner(x, __lcompilers_current_frame)
-        end subroutine
-        ...
-
-A statement that makes a procedure value of the host's instance, which may be
-invoked later, first points the slot at the frame of that instance. Every
-instance saves the slot when it starts and restores it before it returns. So
-a value invoked while its host is active, or after the host made it in an
-instance that then called the host again, reaches the frame of the instance
-that made it, unless a newer instance of the host made a procedure value
-since and is still active (Fortran 2018 15.6.2.4 asks for the instance that
-made the invoked value; values that carry their frame would give it in every
-case). The calls in an interface body, or in the interface of a procedure
-variable, to a procedure of the host that reads one of its variables for a
-bound or a length (`import :: n`) use the thunk too: they are evaluated at a
-call through that interface, which points the slot at its own frame first.
-If the interface of P depends on host variables, the thunk reaches them, like
-an internal procedure, through aliases bound from the frame in the slot.
+A procedure value that requires a frame becomes a ProcedureClosure: the
+procedure, its logical interface, the target's frame dummy, and this
+activation's frame designator. No mutable shared state participates in
+binding or invoking it. closure_lowering builds the canonical entry after
+the passes that change procedure signatures have finished.
 */
 
 namespace HostFrames {
@@ -165,8 +133,7 @@ public:
             const std::map<ASR::symbol_t*, ASR::symbol_t*> &thunks_):
         host(host_), host_sym(scope_owner(host_)), thunks(thunks_) {}
 
-    // A thunk runs the internal procedure with the frame that the procedure
-    // referring to it puts in the frame slot
+    // A logical value interface denotes the original internal procedure.
     bool note_thunk(ASR::symbol_t *sym) {
         auto it = thunks.find(sym);
         if (it == thunks.end()) {
@@ -229,7 +196,6 @@ public:
     }
 
     void visit_dtio_binding(const ASR::dtio_binding_t &x) {
-        note(x.m_callback);
         ASR::BaseWalkVisitor<HostReferenceCollector>::visit_dtio_binding(x);
     }
 
@@ -362,8 +328,7 @@ struct Frame {
 struct Child {
     ASR::Function_t *proc = nullptr;
     ASR::symbol_t *frame_dummy = nullptr;
-    // The variable that holds the frame: the frame dummy, or for a thunk the
-    // frame slot of the host
+    // The variable that holds the activation's frame.
     ASR::symbol_t *frame = nullptr;
     // host variable, named constant or dummy procedure -> its alias or copy
     std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
@@ -735,7 +700,6 @@ public:
     }
 
     void visit_dtio_binding(const ASR::dtio_binding_t &x) {
-        use(const_cast<ASR::dtio_binding_t&>(x).m_callback);
         ASR::BaseWalkVisitor<ProcedureValueFinder>::visit_dtio_binding(x);
     }
 
@@ -758,170 +722,166 @@ public:
     }
 };
 
-// Whether a node calls one of the thunks of a host
-class ThunkCallFinder: public ASR::BaseWalkVisitor<ThunkCallFinder> {
-public:
-    const std::set<ASR::symbol_t*> &thunks;
-    bool found = false;
-
-    ThunkCallFinder(const std::set<ASR::symbol_t*> &thunks_): thunks(thunks_) {}
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        found = found || thunks.count(x.m_name);
-        ASR::BaseWalkVisitor<ThunkCallFinder>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        found = found || thunks.count(x.m_name);
-        ASR::BaseWalkVisitor<ThunkCallFinder>::visit_SubroutineCall(x);
-    }
-};
-
-// Whether a statement makes a procedure value of one of the thunks of a
-// host, or calls through an interface that calls one of them. The statements
-// nested in it (the body of an IF or a loop) are not part of it: they point
-// the slot at the frame themselves, when they run.
-class ProcedureValueSite: public ASR::BaseWalkVisitor<ProcedureValueSite> {
-public:
-    const std::set<ASR::symbol_t*> &thunks;
-    bool found = false;
-    bool in_statement = false;
-
-    ProcedureValueSite(const std::set<ASR::symbol_t*> &thunks_): thunks(thunks_) {}
-
-    void visit_stmt(const ASR::stmt_t &x) {
-        if (in_statement) {
-            return;
-        }
-        in_statement = true;
-        ASR::BaseWalkVisitor<ProcedureValueSite>::visit_stmt(x);
-        in_statement = false;
-    }
-
-    void visit_Function(const ASR::Function_t &/*x*/) {}
-
-    void visit_Var(const ASR::Var_t &x) {
-        found = found || thunks.count(x.m_v);
-    }
-
-    void visit_dtio_binding(const ASR::dtio_binding_t &x) {
-        found = found || (x.m_callback != nullptr && thunks.count(x.m_callback));
-        ASR::BaseWalkVisitor<ProcedureValueSite>::visit_dtio_binding(x);
-    }
-
-    void visit_callee(ASR::symbol_t *name) {
-        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
-        ThunkCallFinder calls(thunks);
-        if (ASR::is_a<ASR::Variable_t>(*callee)) {
-            calls.visit_ttype(*ASR::down_cast<ASR::Variable_t>(callee)->m_type);
-        } else if (ASR::is_a<ASR::Function_t>(*callee) && ASRUtils::get_FunctionType(
-                ASR::down_cast<ASR::Function_t>(callee))->m_deftype !=
-                    ASR::deftypeType::Implementation) {
-            calls.visit_ttype(*ASR::down_cast<ASR::Function_t>(
-                callee)->m_function_signature);
-        }
-        found = found || calls.found;
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        visit_callee(x.m_name);
-        ASR::BaseWalkVisitor<ProcedureValueSite>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        visit_callee(x.m_name);
-        ASR::BaseWalkVisitor<ProcedureValueSite>::visit_SubroutineCall(x);
-    }
-};
-
-// Points the frame slot of a host at the frame of the instance before every
-// statement that makes a procedure value of one of its thunks (see above)
-class ProcedureValueSites: public PassUtils::PassVisitor<ProcedureValueSites> {
-public:
-    const std::set<ASR::symbol_t*> &thunks;
-    ASR::symbol_t *slot;
+class MakeProcedureClosures:
+    public ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures> {
+    Allocator &al;
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &targets;
+    const std::map<ASR::Function_t*, Child> &children;
     ASR::symbol_t *frame;
-    // Whether the procedures nested in the one being visited are visited
-    bool nested = false;
-    size_t sites = 0;
+    bool interface_scope = false;
 
-    ProcedureValueSites(Allocator &al_, const std::set<ASR::symbol_t*> &thunks_,
-            ASR::symbol_t *slot_, ASR::symbol_t *frame_):
-            PassVisitor(al_, nullptr), thunks(thunks_), slot(slot_), frame(frame_) {
-        pass_result.reserve(al, 1);
-    }
+public:
+    MakeProcedureClosures(Allocator &al_,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &targets_,
+            const std::map<ASR::Function_t*, Child> &children_,
+            ASR::symbol_t *frame_):
+        al(al_), targets(targets_), children(children_), frame(frame_) {}
 
-    void visit_stmt(const ASR::stmt_t &x) {
-        PassUtils::PassVisitor<ProcedureValueSites>::visit_stmt(x);
-        ProcedureValueSite site(thunks);
-        site.visit_stmt(x);
-        if (site.found) {
-            const Location &loc = x.base.loc;
-            pass_result.n = 0;
-            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
-                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, slot)),
-                ASRUtils::EXPR(ASR::make_Var_t(al, loc, frame)))));
-            retain_original_stmt = true;
-            sites++;
-        }
+    bool contains_capture(ASR::expr_t *expression) {
+        class Finder: public ASR::BaseWalkVisitor<Finder> {
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &targets;
+        public:
+            bool found = false;
+            Finder(const std::map<ASR::symbol_t*, ASR::symbol_t*> &targets_):
+                targets(targets_) {}
+            void visit_expr(const ASR::expr_t &x) {
+                if (!found) ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                found = targets.count(x.m_v) != 0;
+            }
+            void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+                found = x.m_environment != nullptr;
+            }
+        } finder(targets);
+        if (expression) finder.visit_expr(*expression);
+        return finder.found;
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (nested && thunks.count((ASR::symbol_t*) &x) == 0) {
-            PassUtils::PassVisitor<ProcedureValueSites>::visit_Function(x);
+        ASR::symbol_t *saved = frame;
+        bool saved_interface = interface_scope;
+        interface_scope = ASRUtils::get_FunctionType(x)->m_deftype !=
+            ASR::deftypeType::Implementation;
+        auto it = children.find(const_cast<ASR::Function_t*>(&x));
+        if (it != children.end() && it->second.frame != nullptr) {
+            frame = it->second.frame;
         }
+        ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_Function(x);
+        frame = saved;
+        interface_scope = saved_interface;
     }
 
-    // The statements of a host itself, and of its BLOCK and ASSOCIATE
-    // constructs
-    void visit_host(ASR::stmt_t **&body, size_t &n_body, SymbolTable *scope) {
-        current_scope = scope;
-        transform_stmts(body, n_body);
-        visit_constructs(scope);
+    void visit_FunctionType(const ASR::FunctionType_t &x) {
+        bool saved = interface_scope;
+        interface_scope = true;
+        ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_FunctionType(x);
+        interface_scope = saved;
     }
 
-    void visit_constructs(SymbolTable *scope) {
-        for (auto &item: scope->get_scope()) {
-            if (ASR::is_a<ASR::Block_t>(*item.second)) {
-                visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
-            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-                visit_AssociateBlock(*ASR::down_cast<ASR::AssociateBlock_t>(item.second));
+    template <typename T> void bind_specification_call(T &x) {
+        auto found = targets.find(x.m_name);
+        if (found != targets.end()) x.m_name = found->second;
+        auto *symbol = ASRUtils::symbol_get_past_external(x.m_name);
+        if (!ASR::is_a<ASR::Function_t>(*symbol)) return;
+        auto *function = ASR::down_cast<ASR::Function_t>(symbol);
+        auto child = children.find(function);
+        if (child == children.end() || child->second.frame_dummy == nullptr ||
+                x.n_args == function->n_args) return;
+        LCOMPILERS_ASSERT(frame != nullptr);
+        const Location &loc = x.base.base.loc;
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, x.n_args + 1);
+        for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
+        ASR::expr_t *environment = ASRUtils::EXPR(
+            ASR::make_Var_t(al, loc, frame));
+        if (interface_scope) {
+            environment = ASRUtils::EXPR(ASR::make_LexicalEnvironment_t(
+                al, loc, environment));
+        }
+        args.push_back(al, {loc, environment});
+        x.m_args = args.p;
+        x.n_args = args.size();
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        bind_specification_call(const_cast<ASR::FunctionCall_t&>(x));
+        ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        bind_specification_call(const_cast<ASR::SubroutineCall_t&>(x));
+        ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_SubroutineCall(x);
+    }
+
+    void call_replacer() {
+        if (*current_expr == nullptr) return;
+        if (ASR::is_a<ASR::StructConstant_t>(**current_expr)) {
+            auto *constant = ASR::down_cast<ASR::StructConstant_t>(*current_expr);
+            if (!contains_capture(*current_expr)) return;
+            ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_StructConstant(*constant);
+            bool is_constant = true;
+            for (size_t i = 0; i < constant->n_args; i++) {
+                if (constant->m_args[i].m_value && !ASRUtils::is_value_constant(
+                        constant->m_args[i].m_value)) is_constant = false;
             }
-        }
-    }
-};
-
-// Puts the statements made by `make_restores` before every return of a
-// procedure, including the returns in its BLOCK and ASSOCIATE constructs, but
-// not those of the procedures nested in it.
-class ReturnRestorer: public PassUtils::PassVisitor<ReturnRestorer> {
-public:
-    std::function<std::vector<ASR::stmt_t*>()> make_restores;
-
-    ReturnRestorer(Allocator &al_, std::function<std::vector<ASR::stmt_t*>()> make_restores_):
-            PassVisitor(al_, nullptr), make_restores(make_restores_) {
-        pass_result.reserve(al, 1);
-    }
-
-    void visit_Return(const ASR::Return_t &/*x*/) {
-        for (ASR::stmt_t *stmt: make_restores()) {
-            pass_result.push_back(al, stmt);
-        }
-        retain_original_stmt = true;
-    }
-
-    void visit_Function(const ASR::Function_t &/*x*/) {}
-
-    void restore_before_returns(ASR::Function_t &x) {
-        current_scope = x.m_symtab;
-        transform_stmts(x.m_body, x.n_body);
-        for (auto &item: x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Block_t>(*item.second)) {
-                visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
-            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-                visit_AssociateBlock(*ASR::down_cast<ASR::AssociateBlock_t>(item.second));
+            if (!is_constant) {
+                *current_expr = ASRUtils::EXPR(ASR::make_StructConstructor_t(al,
+                    constant->base.base.loc, constant->m_dt_sym,
+                    constant->m_args, constant->n_args, constant->m_type, nullptr));
             }
+            return;
         }
+        if (ASR::is_a<ASR::StructConstructor_t>(**current_expr)) {
+            auto *constructor = ASR::down_cast<ASR::StructConstructor_t>(*current_expr);
+            if (!constructor->m_value || !contains_capture(*current_expr)) return;
+            ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_StructConstructor(*constructor);
+            if (constructor->m_value && !ASRUtils::is_value_constant(
+                    constructor->m_value)) constructor->m_value = nullptr;
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(**current_expr)) {
+            auto *constructor = ASR::down_cast<ASR::ArrayConstructor_t>(*current_expr);
+            if (!constructor->m_value || !contains_capture(*current_expr)) return;
+            ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_ArrayConstructor(*constructor);
+            for (size_t i = 0; i < constructor->n_args; i++) {
+                if (!ASRUtils::is_value_constant(constructor->m_args[i])) {
+                    constructor->m_value = nullptr;
+                    break;
+                }
+            }
+            return;
+        }
+        if (ASR::is_a<ASR::FunctionPointerCast_t>(**current_expr)) {
+            auto *cast = ASR::down_cast<ASR::FunctionPointerCast_t>(*current_expr);
+            if (!cast->m_value || !contains_capture(cast->m_value)) return;
+            ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_FunctionPointerCast(*cast);
+            if (cast->m_value && !ASRUtils::is_value_constant(
+                    cast->m_value)) cast->m_value = nullptr;
+            return;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(**current_expr)) {
+            auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(*current_expr);
+            if (!member->m_value || !contains_capture(member->m_value)) return;
+            ASR::CallReplacerOnExpressionsVisitor<MakeProcedureClosures>::visit_StructInstanceMember(*member);
+            if (member->m_value && !ASRUtils::is_value_constant(
+                    member->m_value)) member->m_value = nullptr;
+            return;
+        }
+        if (!ASR::is_a<ASR::Var_t>(**current_expr)) return;
+        ASR::symbol_t *interface = ASR::down_cast<ASR::Var_t>(*current_expr)->m_v;
+        auto it = targets.find(interface);
+        if (it == targets.end()) return;
+        ASR::Function_t *target = ASR::down_cast<ASR::Function_t>(it->second);
+        auto child = children.find(target);
+        if (child == children.end() || child->second.frame_dummy == nullptr) return;
+        const Location &loc = (*current_expr)->base.loc;
+        LCOMPILERS_ASSERT(frame != nullptr);
+        *current_expr = ASRUtils::EXPR(ASR::make_ProcedureClosure_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, it->second)),
+            interface, child->second.frame_dummy,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, frame)),
+            ASR::down_cast<ASR::Function_t>(interface)->m_function_signature));
     }
 };
 
@@ -1146,7 +1106,7 @@ public:
         const Location &loc = proc->base.base.loc;
         ASR::Variable_t *dummy = add_variable(proc->m_symtab, "__lcompilers_frame",
             loc, ASR::intentType::In, nullptr, nullptr,
-            ASR::storage_typeType::Default, frame_type(loc, frame), frame.type);
+            ASR::storage_typeType::HostFrameArgument, frame_type(loc, frame), frame.type);
         Vec<ASR::expr_t*> args;
         args.reserve(al, proc->n_args + 1);
         for (size_t i = 0; i < proc->n_args; i++) {
@@ -1215,12 +1175,12 @@ public:
         return (ASR::symbol_t*) copy;
     }
 
-    // A thunk of the internal procedure `p` of the host `host` (see above): a
-    // procedure of the host with the interface of `p`, which calls `p`. Its
+    // The logical interface of the internal procedure `p`, without its frame.
+    // Its
     // dummy arguments are copies of those of `p`, with the declarations they
     // need: entry-evaluated bounds, named constants, interfaces and
     // use-associated entities.
-    ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p) {
+    ASR::symbol_t *make_value_interface(SymbolTable *host, ASR::Function_t *p) {
         const Location &loc = p->base.base.loc;
         SymbolTable *scope = al.make_new<SymbolTable>(host);
         std::set<ASR::symbol_t*> dummies;
@@ -1281,10 +1241,9 @@ public:
         duplicator.fixup_local_type_declarations(scope, p->m_symtab);
 
         std::string name = host->get_unique_name(std::string(p->m_name) +
-            "__lcompilers_value", false);
+            "_closure_interface", false);
         if (p->m_return_var != nullptr) {
-            // The result is named after the thunk, so that the name of `p`
-            // does not denote it in the thunk
+            // Keep the result distinct from the original procedure's name.
             ASR::Variable_t *result = ASR::down_cast<ASR::Variable_t>(
                 scope->get_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
                     p->m_return_var)->m_v)));
@@ -1295,40 +1254,21 @@ public:
 
         Vec<ASR::expr_t*> args;
         args.reserve(al, p->n_args);
-        Vec<ASR::call_arg_t> actuals;
-        actuals.reserve(al, p->n_args);
         for (size_t i = 0; i < p->n_args; i++) {
             ASR::symbol_t *dummy = scope->get_symbol(ASRUtils::symbol_name(
                 ASR::down_cast<ASR::Var_t>(p->m_args[i])->m_v));
             args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, dummy)));
-            ASR::call_arg_t actual;
-            actual.loc = loc;
-            actual.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, dummy));
-            actuals.push_back(al, actual);
         }
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, 1);
         ASR::expr_t *return_var = nullptr;
         if (p->m_return_var != nullptr) {
             return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                 scope->get_symbol(name)));
-            ASRUtils::ExprStmtDuplicator type_duplicator(al);
-            ASR::ttype_t *type = ASRUtils::expr_type(return_var);
-            ASR::expr_t *call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
-                loc, (ASR::symbol_t*) p, (ASR::symbol_t*) p, actuals.p, actuals.size(),
-                type_duplicator.duplicate_ttype(type), nullptr, nullptr));
-            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                loc, return_var, call, nullptr, ASRUtils::is_allocatable(type), false)));
-        } else {
-            body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
-                loc, (ASR::symbol_t*) p, (ASR::symbol_t*) p, actuals.p, actuals.size(),
-                nullptr, nullptr, false)));
         }
         ASR::FunctionType_t *type = ASRUtils::get_FunctionType(p);
         ASR::symbol_t *thunk = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Function_t_util(al, loc, scope, s2c(al, name), nullptr, 0,
-                args.p, args.size(), body.p, body.size(), return_var, type->m_abi,
-                ASR::accessType::Private, ASR::deftypeType::Implementation,
+                args.p, args.size(), nullptr, 0, return_var, type->m_abi,
+                ASR::accessType::Private, ASR::deftypeType::Interface,
                 type->m_abi == ASR::abiType::BindC ? s2c(al, name) : nullptr,
                 type->m_elemental, type->m_pure, false, false, false, nullptr, 0,
                 false, false, false));
@@ -1346,7 +1286,7 @@ public:
         }
         const Location &loc = host_sym->base.loc;
 
-        // Every procedure value of an internal procedure names its thunk
+        // Keep the logical interface separate from the framed implementation.
         std::set<ASR::symbol_t*> proc_set;
         for (ASR::Function_t *proc: procs) {
             proc_set.insert((ASR::symbol_t*) proc);
@@ -1359,8 +1299,9 @@ public:
             if (it == values.uses.end()) {
                 continue;
             }
-            ASR::symbol_t *thunk = make_thunk(host, proc);
-            thunk_procs.push_back(ASR::down_cast<ASR::Function_t>(thunk));
+            ASR::symbol_t *thunk = make_value_interface(host, proc);
+            ASR::Function_t *logical_interface = ASR::down_cast<ASR::Function_t>(thunk);
+            thunk_procs.push_back(logical_interface);
             for (ASR::symbol_t **use: it->second) {
                 *use = thunk;
             }
@@ -1373,11 +1314,6 @@ public:
             collectors.emplace_back(host, thunk_targets);
             collectors.back().visit_Function(*proc);
             uses[proc] = &collectors.back();
-        }
-        for (ASR::Function_t *thunk: thunk_procs) {
-            collectors.emplace_back(host, thunk_targets);
-            collectors.back().visit_Function(*thunk);
-            uses[thunk] = &collectors.back();
         }
 
         // The internal procedures that need the frame: those that refer to a
@@ -1432,8 +1368,6 @@ public:
         std::set<ASR::symbol_t*> captured_set;
         std::vector<ASR::symbol_t*> worklist;
         std::vector<ASR::Function_t*> children_procs(procs);
-        children_procs.insert(children_procs.end(), kept_thunks.begin(),
-            kept_thunks.end());
         for (ASR::Function_t *proc: children_procs) {
             for (ASR::symbol_t *e: uses[proc]->entities) {
                 if (!is_constant(e) && captured_set.insert(e).second) {
@@ -1473,15 +1407,6 @@ public:
         if (!captured.empty()) {
             frame = make_frame(host_sym, captured, prologue);
         }
-        // The frame slot that the thunks read
-        ASR::symbol_t *slot = nullptr;
-        if (!thunks.empty()) {
-            slot = (ASR::symbol_t*) add_variable(host, "__lcompilers_current_frame",
-                loc, ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Save, ASRUtils::TYPE(ASR::make_Pointer_t(al,
-                    loc, frame_type(loc, frame))), frame.type);
-        }
-
         // Frame dummies first, so that every call can pass the frame
         std::map<ASR::Function_t*, Child> children;
         for (ASR::Function_t *proc: children_procs) {
@@ -1490,8 +1415,6 @@ public:
             if (needs_frame.count((ASR::symbol_t*) proc)) {
                 child.frame_dummy = add_frame_dummy(proc, frame);
                 child.frame = child.frame_dummy;
-            } else if (thunks.count((ASR::symbol_t*) proc)) {
-                child.frame = slot;
             }
         }
         FrameActuals actuals(al, needs_frame);
@@ -1548,10 +1471,6 @@ public:
                     calls.visit_symbol(*item.second);
                 }
             }
-            if (!thunks.empty()) {
-                mark_procedure_value_sites(host_sym, body, n_body, frame, slot,
-                    thunks, procs, children, prologue);
-            }
             for (size_t i = 0; i < n_body; i++) {
                 prologue.push_back(al, body[i]);
             }
@@ -1559,65 +1478,16 @@ public:
             n_body = prologue.size();
         }
 
+        if (!thunks.empty()) {
+            MakeProcedureClosures closures(al, thunk_targets, children, frame.object);
+            closures.visit_symbol(*host_sym);
+        }
+
         for (ASR::Function_t *proc: procs) {
             process((ASR::symbol_t*) proc);
         }
     }
 
-    // Points the frame slot at the frame of the instance before every
-    // statement that makes a procedure value (see above), and if there is
-    // one, saves the slot when the host starts and restores it before it
-    // returns. A main program is not entered again, so it does not restore.
-    void mark_procedure_value_sites(ASR::symbol_t *host_sym, ASR::stmt_t **&body,
-            size_t &n_body, const Frame &frame, ASR::symbol_t *slot,
-            const std::set<ASR::symbol_t*> &thunks,
-            const std::vector<ASR::Function_t*> &procs,
-            std::map<ASR::Function_t*, Child> &children,
-            Vec<ASR::stmt_t*> &prologue) {
-        SymbolTable *host = procedure_scope(host_sym);
-        const Location &loc = host_sym->base.loc;
-        ProcedureValueSites host_sites(al, thunks, slot, frame.object);
-        host_sites.visit_host(body, n_body, host);
-        size_t sites = host_sites.sites;
-        for (ASR::Function_t *proc: procs) {
-            ASR::symbol_t *frame_dummy = children[proc].frame_dummy;
-            if (frame_dummy == nullptr) {
-                continue;
-            }
-            ProcedureValueSites proc_sites(al, thunks, slot, frame_dummy);
-            proc_sites.nested = true;
-            proc_sites.visit_Function(*proc);
-            sites += proc_sites.sites;
-        }
-        if (sites == 0 || !ASR::is_a<ASR::Function_t>(*host_sym)) {
-            return;
-        }
-        ASR::symbol_t *previous = (ASR::symbol_t*) add_variable(host,
-            "__lcompilers_previous_frame", loc, ASR::intentType::Local, nullptr,
-            nullptr, ASR::storage_typeType::Default, ASRUtils::TYPE(
-                ASR::make_Pointer_t(al, loc, frame_type(loc, frame))), frame.type);
-        auto associate = [&](ASR::symbol_t *target, ASR::symbol_t *value) {
-            return ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
-                ASRUtils::EXPR(ASR::make_Var_t(al, loc, target)),
-                ASRUtils::EXPR(ASR::make_Var_t(al, loc, value))));
-        };
-        prologue.push_back(al, associate(previous, slot));
-        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(host_sym);
-        ReturnRestorer restorer(al, [&]() {
-            return std::vector<ASR::stmt_t*>{associate(slot, previous)};
-        });
-        restorer.restore_before_returns(*f);
-        if (f->n_body == 0 || !ASR::is_a<ASR::Return_t>(*f->m_body[f->n_body - 1])) {
-            Vec<ASR::stmt_t*> restored;
-            restored.reserve(al, f->n_body + 1);
-            for (size_t i = 0; i < f->n_body; i++) {
-                restored.push_back(al, f->m_body[i]);
-            }
-            restored.push_back(al, associate(slot, previous));
-            f->m_body = restored.p;
-            f->n_body = restored.size();
-        }
-    }
 };
 
 // The procedures and main programs that are not nested in a procedure

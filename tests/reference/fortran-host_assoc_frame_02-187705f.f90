@@ -16,7 +16,7 @@ subroutine h(x)
     call inner(__lcompilers_frame)
     contains
     subroutine inner(__lcompilers_frame)
-        type(__lcompilers_frame_h), intent(in) :: __lcompilers_frame
+        type(__lcompilers_frame_h), intent(in), host_frame_argument :: __lcompilers_frame
         type(node), host_associated :: x => __lcompilers_frame%x
         x%v = 1
     end subroutine inner

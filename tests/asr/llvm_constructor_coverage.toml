@@ -68,6 +68,7 @@
 "ttype.TypeParameter" = "helper:LLVM type lowering"
 "ttype.Array" = "helper:LLVM type lowering"
 "ttype.FunctionType" = "helper:LLVM type lowering"
+"ttype.ProcedureType" = "helper:LLVM type lowering"
 "ttype.Reference" = "helper:LLVM type lowering"
 
 "attribute.Attribute" = "metadata"

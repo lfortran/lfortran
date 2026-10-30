@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_raw_pointer_source-a55123d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/procedure_raw_pointer_source.asr",
+    "infile_hash": "e98d90f15e66314407f55e381615bfc27ca77ddaae269ff79e3277ba",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_raw_pointer_source-a55123d.stderr",
+    "stderr_hash": "acd25387bc56a288ea08579706f6907057bfa64146f920226b0a1802",
+    "returncode": 2
+}

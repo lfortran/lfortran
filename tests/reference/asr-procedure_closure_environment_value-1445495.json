@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_closure_environment_value-1445495",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/procedure_closure_environment_value.asr",
+    "infile_hash": "2ee092532644da8fd89f3984b76786d3a0146f469e9c2eade0fea86f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_closure_environment_value-1445495.stderr",
+    "stderr_hash": "cac754afc155d16ffdcb589fec5e35912cda4ee41e702b36aab1fc52",
+    "returncode": 2
+}

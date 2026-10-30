@@ -460,7 +460,8 @@ static inline bool is_symbol_procedure_variable(ASR::symbol_t* f) {
         if (ASR::is_a<ASR::Pointer_t>(*t)) {
             t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
         }
-        return ASR::is_a<ASR::FunctionType_t>(*t);
+        return ASR::is_a<ASR::FunctionType_t>(*t) ||
+            ASR::is_a<ASR::ProcedureType_t>(*t);
     }
     return false;
 }
@@ -472,7 +473,8 @@ static inline bool is_symbol_procedure_variable(const ASR::symbol_t* f) {
         if (ASR::is_a<ASR::Pointer_t>(*t)) {
             t = ASR::down_cast<ASR::Pointer_t>(t)->m_type;
         }
-        return ASR::is_a<ASR::FunctionType_t>(*t);
+        return ASR::is_a<ASR::FunctionType_t>(*t) ||
+            ASR::is_a<ASR::ProcedureType_t>(*t);
     }
     return false;
 }
@@ -1020,13 +1022,6 @@ static inline bool is_frame_type(ASR::symbol_t *decl) {
     return false;
 }
 
-// Whether `v` is the frame slot of a host (see nested_vars): a saved pointer
-// to a frame, which the procedures nested in the host read directly.
-static inline bool is_frame_slot(const ASR::Variable_t &v) {
-    return v.m_storage == ASR::storage_typeType::Save && v.m_type != nullptr &&
-        ASR::is_a<ASR::Pointer_t>(*v.m_type) && is_frame_type(v.m_type_declaration);
-}
-
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {
@@ -1452,8 +1447,24 @@ static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
         return false;
     }
     t = type_get_past_allocatable(type_get_past_pointer(t));
+    if (ASR::is_a<ASR::ProcedureType_t>(*t)) {
+        t = ASR::down_cast<ASR::ProcedureType_t>(t)->m_signature;
+    }
     return ASR::is_a<ASR::FunctionType_t>(*t) && is_bare_implicit_interface(
         *ASR::down_cast<ASR::FunctionType_t>(t));
+}
+
+static inline ASR::ProcedureType_t* procedure_value_type(ASR::ttype_t *type) {
+    if (type == nullptr) return nullptr;
+    type = type_get_past_allocatable(type_get_past_pointer(type));
+    return ASR::is_a<ASR::ProcedureType_t>(*type)
+        ? ASR::down_cast<ASR::ProcedureType_t>(type) : nullptr;
+}
+
+static inline bool is_closure_type(ASR::ttype_t *type) {
+    auto *procedure = procedure_value_type(type);
+    return procedure != nullptr && procedure->m_representation ==
+        ASR::procedure_representationType::Closure;
 }
 
 // The opaque procedure type, returning `return_type` (null for a procedure
@@ -3119,6 +3130,9 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
         al(al_), m_args(m_args_), n_args(n_args_), current_scope(nullptr) {}
 
     void replace_Var(ASR::Var_t* x);
+
+    // A lexical binding is a declaration reference, not a positional argument.
+    void replace_LexicalEnvironment(ASR::LexicalEnvironment_t* /*x*/) {}
 
     ASR::ttype_t* replace_args_with_FunctionParam(ASR::ttype_t* t, SymbolTable* current_scope);
 

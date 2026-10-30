@@ -247,6 +247,14 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
         }
 
+        void visit_ProcedureClosure(const ASR::ProcedureClosure_t &x) {
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_ProcedureClosure(x);
+            if (auto *interface = transformed_interface(x.m_interface)) {
+                const_cast<ASR::ProcedureClosure_t&>(x).m_type =
+                    interface->m_function_signature;
+            }
+        }
+
         void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
             ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_PointerNullConstant(x);
             if (x.m_var_expr == nullptr) {
@@ -847,6 +855,9 @@ class CallbackAccess : public ASR::BaseWalkVisitor<CallbackAccess> {
     }
 
     ASR::symbol_t *procedure_symbol(ASR::expr_t *arg) {
+        if (ASR::is_a<ASR::ProcedureClosure_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ProcedureClosure_t>(arg)->m_procedure;
+        }
         while (ASR::is_a<ASR::FunctionPointerCast_t>(*arg)) {
             arg = ASR::down_cast<ASR::FunctionPointerCast_t>(arg)->m_arg;
         }

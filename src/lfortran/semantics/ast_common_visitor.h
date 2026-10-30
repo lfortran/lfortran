@@ -7060,7 +7060,9 @@ public:
                 } else {
                     type = implicit_dictionary[std::string(1,sym[0])];
                     if (!type) {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
+                        type = sym[0] >= 'i' && sym[0] <= 'n'
+                            ? ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
+                            : ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
                     }
                 }
                 ASR::ttype_t *func_type = ASRUtils::make_opaque_procedure_type(
@@ -18568,10 +18570,30 @@ public:
             ASR::call_arg_t* call_args = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
+            if (ASRUtils::is_opaque_procedure_type(proc_type)) {
+                Vec<ASR::call_arg_t> actuals;
+                actuals.from_pointer_n(call_args, n_call_args);
+                ASR::symbol_t *interface = get_callsite_interface(
+                    loc, source_name, actuals, return_type);
+                ASR::symbol_t *target = make_fpcast_call_target(
+                    loc, v, interface, dt);
+                return ASRUtils::make_FunctionCall_t_util(al, loc,
+                    target, nullptr, call_args, n_call_args, return_type,
+                    nullptr, nullptr, current_scope, current_function_dependencies,
+                    compiler_options.implicit_argument_casting);
+            }
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
                 call_args, n_call_args, return_type, nullptr, dt, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
         } else {
+            if (ASRUtils::is_opaque_procedure_type(proc_type)) {
+                ASR::symbol_t *target = implicit_call_target(
+                    loc, source_name, v, args, return_type);
+                return ASRUtils::make_FunctionCall_t_util(al, loc,
+                    target, nullptr, args.p, args.size(), return_type,
+                    nullptr, nullptr, current_scope, current_function_dependencies,
+                    compiler_options.implicit_argument_casting);
+            }
             ASR::Function_t* interface_func = ASRUtils::get_function(v);
             if (interface_func != nullptr) {
                 validate_function_call_argument_count(loc, args, interface_func);
@@ -22410,10 +22432,15 @@ public:
     ASR::symbol_t* make_fpcast_call_target(
         const Location& loc,
         ASR::symbol_t* source,
-        ASR::symbol_t* to_iface)
+        ASR::symbol_t* to_iface,
+        ASR::expr_t* source_expression = nullptr)
     {
         LCOMPILERS_ASSERT(current_body != nullptr);
         LCOMPILERS_ASSERT(current_body_scope != nullptr);
+        if (source_expression) {
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+        }
         ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(to_iface);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
         ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
@@ -22451,7 +22478,8 @@ public:
             implicit_call_procedures[tmp_var] = source;
         }
 
-        ASR::expr_t* src = ASRUtils::EXPR(ASR::make_Var_t(al, loc, source));
+        ASR::expr_t* src = source_expression ? source_expression :
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, source));
         ASR::expr_t* cast = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
             al, loc, src, to_sym, fn_type, nullptr));
         ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_var));
@@ -22846,15 +22874,11 @@ public:
         for (size_t i = 0; i < args.size(); i++) {
             std::string arg_name = generated_symbol_name(sym_name,
                 "arg_" + std::to_string(i));
-            ASR::expr_t* actual = args[i].m_value;
-            if (ASR::is_a<ASR::Var_t>(*actual) &&
-                    ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(actual)->m_v))) {
-                dummies.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                    ASR::down_cast<ASR::Var_t>(actual)->m_v)));
-                continue;
-            }
             ASR::ttype_t* var_type = arg_types[i];
+            if (ASRUtils::is_procedure_type(var_type)) {
+                ASRUtils::ExprStmtDuplicator duplicate(al);
+                var_type = duplicate.duplicate_ttype(var_type);
+            }
             ASR::symbol_t* type_decl = arg_decls[i];
             if (type_decl == nullptr && ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_array(var_type))) {
