@@ -65,14 +65,20 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
-        if (x->m_value) {
-            *current_expr = x->m_value;
+        // A backend that lowers only a subset of the intrinsics translates
+        // the original code: the others stay as written (their arguments are
+        // still lowered), and compile-time values replace a call only in a
+        // type, where a constant is required.
+        bool lower_subset = !elemental_intrinsics_to_lower.empty();
+        if (lower_subset && std::find(elemental_intrinsics_to_lower.begin(),
+                elemental_intrinsics_to_lower.end(), x->m_intrinsic_id)
+                == elemental_intrinsics_to_lower.end()) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>
+                ::replace_IntrinsicElementalFunction(x);
             return;
         }
-        if (!elemental_intrinsics_to_lower.empty()
-                && std::find(elemental_intrinsics_to_lower.begin(),
-                    elemental_intrinsics_to_lower.end(), x->m_intrinsic_id)
-                    == elemental_intrinsics_to_lower.end()) {
+        if (x->m_value && (!lower_subset || in_ttype)) {
+            *current_expr = x->m_value;
             return;
         }
         // If inside DebugCheckArrayBounds and not inside a type
