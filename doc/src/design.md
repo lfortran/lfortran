@@ -34,6 +34,15 @@ The LFortran compiler is then composed of the following independent stages:
   is loaded and executed using JIT as part of the interactive LFortran session
   or in a Jupyter kernel).
 
+The `function_result_scope` ASR pass also gives a statement scope to scalar
+constructor temporaries assigned to allocatable targets when the type has
+only numeric/logical components, owns allocatable array storage, and has no
+final subroutines (including inherited ones). The existing BLOCK lifetime
+initializes their component descriptors only when the constructor executes
+and releases their private storage after the assignment. Descriptor layout
+and ownership are unchanged. Types with pointers, nested derived components
+or user finalization keep their existing lifetime.
+
 LFortran is structured as a library, and so one can for example use the parser
 to obtain an AST and do something with it, or one can then use the semantic
 analyzer to obtain ASR and do something with it. One can generate the ASR
