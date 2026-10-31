@@ -389,6 +389,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             toml_get_value_type:
@@ -678,6 +679,7 @@
                                     )]
                                     (Var 6 vtype)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

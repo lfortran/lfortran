@@ -11,7 +11,10 @@ unit
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
-    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
+    -- `recursive`: an instance can be active while another instance of the
+    -- same procedure is (F2018 15.6.2.1), which the procedure allows by its
+    -- RECURSIVE or NON_RECURSIVE prefix or by default
+    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, bool recursive, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
@@ -147,6 +150,12 @@ stmt
     | GpuSync()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)
+    -- Makes the Reference member `reference` (a StructInstanceMember of a
+    -- frame object) refer to `variable`, a designator whose type is the
+    -- referenced type: a Var, or a StructInstanceMember of a Reference member
+    -- (to pass a reference on to the frame of a nested host). Only the
+    -- address is stored: nothing is copied.
+    | BindReference(expr reference, expr variable)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -294,6 +303,12 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    -- The address of a variable of type `type`, held by a member of a frame
+    -- created by the nested_vars pass. A StructInstanceMember of such a member
+    -- designates the variable itself and has type `type`. It is never
+    -- allocated, deallocated, finalized, copied or default-initialized with
+    -- the object that contains it.
+    | Reference(ttype type)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
@@ -304,7 +319,13 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 -- Caller-provided storage for a function result lowered to a dummy argument.
-storage_type = Default | Save | Parameter | Threadprivate | ResultArgument
+-- A Variable of HostAssociated storage has no storage of its own: it denotes
+-- the variable designated by its symbolic_value, a StructInstanceMember of a
+-- member of the frame dummy argument of its procedure (or of the frame slot
+-- of its host in a thunk, see nested_vars), bound on entry before
+-- any other declaration of the procedure is evaluated, like a dummy argument
+-- associated by reference. Its type is that of the designated variable.
+storage_type = Default | Save | Parameter | Threadprivate | ResultArgument | HostAssociated
 -- How a CommonBlock view provides the block's storage: a Tentative view
 -- gives no initial value, an Initialized one gives initial values (even all
 -- zero ones) through its variables, and an External one (in a module read

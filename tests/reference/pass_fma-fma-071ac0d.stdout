@@ -159,6 +159,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             _lcompilers_optimization_fma_f321:
@@ -318,6 +319,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             _lcompilers_optimization_fma_f322:
@@ -477,6 +479,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             _lcompilers_optimization_fma_f323:
@@ -636,6 +639,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             _lcompilers_optimization_fma_f64:
@@ -795,6 +799,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             fma:

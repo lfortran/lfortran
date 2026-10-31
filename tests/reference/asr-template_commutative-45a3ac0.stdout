@@ -121,6 +121,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             commutative_p:
@@ -295,6 +296,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -404,6 +406,7 @@
                                                     []
                                                     (Var 12 equal)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -581,6 +584,7 @@
                                                     []
                                                     (Var 7 bin)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -789,6 +793,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -914,6 +919,7 @@
                                                     []
                                                     (Var 8 equal)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1098,6 +1104,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             equal:
@@ -1225,6 +1232,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:
@@ -1463,6 +1471,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             int_plus_comm:
@@ -1628,6 +1637,7 @@
                                     )]
                                     (Var 20 prop)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1807,6 +1817,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             plus_comm:
@@ -1974,6 +1985,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~add_intrinsic:
@@ -2097,6 +2109,7 @@
                                     )]
                                     (Var 15 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2224,6 +2237,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~eq_intrinsic:
@@ -2347,6 +2361,7 @@
                                     )]
                                     (Var 16 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2474,6 +2489,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~eq_intrinsic2:
@@ -2597,6 +2613,7 @@
                                     )]
                                     (Var 22 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2724,6 +2741,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~sub_intrinsic:
@@ -2849,6 +2867,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~sub_intrinsic1:
@@ -2972,6 +2991,7 @@
                                     )]
                                     (Var 24 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

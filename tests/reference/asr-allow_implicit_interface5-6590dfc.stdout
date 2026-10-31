@@ -63,6 +63,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             klvna~fpcast:
@@ -120,6 +121,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             klvna~fpcast_ptr:
@@ -337,6 +339,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             main:

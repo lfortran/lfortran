@@ -7077,7 +7077,7 @@ public:
                             func_type,
                             nullptr, 0, nullptr, 0, nullptr, 0,
                             nullptr, ASR::accessType::Private,
-                            false, false, nullptr, nullptr, nullptr));
+                            false, false, true, nullptr, nullptr, nullptr));
                     parent_scope->add_symbol(iface_name, iface_sym);
                 }
                 ASR::ttype_t *ptr_type = ASRUtils::TYPE(
@@ -14337,7 +14337,7 @@ public:
                                 nullptr,
                                 ASR::accessType::Private,
                                 false,
-                                false,
+                                false, true,
                                 nullptr,
                                 nullptr, nullptr
                             )
@@ -14428,7 +14428,7 @@ public:
                             nullptr,
                             ASR::accessType::Public,
                             false,
-                            false,
+                            false, true,
                             nullptr,
                             nullptr, nullptr
                         )
@@ -14511,7 +14511,7 @@ public:
                             nullptr,                 
                             ASR::accessType::Public, 
                             false,                   
-                            false,                   
+                            false, true,
                             nullptr,                 
                             nullptr, nullptr         
                         )
@@ -15120,7 +15120,7 @@ public:
         ASR::symbol_t* placeholder = ASR::down_cast<ASR::symbol_t>(
             ASR::make_Function_t(al, value->base.loc, fn_scope, s2c(al, name),
                 &placeholder_type->base, nullptr, 0, nullptr, 0, nullptr, 0,
-                nullptr, ASR::accessType::Public, false, false, nullptr,
+                nullptr, ASR::accessType::Public, false, false, true, nullptr,
                 nullptr, nullptr));
         current_scope->add_symbol(name, placeholder);
         pending_proc_placeholders.push_back({name, placeholder, current_scope});
@@ -22598,7 +22598,7 @@ public:
             + "_" + iface_scope->get_counter();
         ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(ASR::make_Function_t(al, loc,
             iface_scope, s2c(al, iface_name), v->m_type, nullptr, 0, nullptr, 0,
-            nullptr, 0, nullptr, ASR::accessType::Private, false, false, nullptr,
+            nullptr, 0, nullptr, ASR::accessType::Private, false, false, true, nullptr,
             nullptr, nullptr));
         owner_scope->add_symbol(iface_name, iface);
         v->m_type_declaration = iface;

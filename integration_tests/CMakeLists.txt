@@ -1600,6 +1600,7 @@ RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure
 # function `os(1)%m(6)` of a named constant array element ("Operands of
 # comparison operator '/=' ... are TYPE(pc)/INTEGER(4)")
 RUN(NAME procedure_pointer_41 LABELS llvm)
+RUN(NAME procedure_pointer_42 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -3637,8 +3638,10 @@ RUN(NAME nested_27 LABELS gfortran llvm)
 RUN(NAME nested_28 LABELS llvm llvm_wasm llvm_wasm_emcc)
 COMPILE(NAME character_len_of_function_12614 COMPILERS lfortran gfortran)
 
-RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
-RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+# The wasm backend does not support host association yet (frames of
+# internal procedures, see nested_vars)
+RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_vars_allocatable_call LABELS gfortran llvm)
 RUN(NAME nested_vars_20 LABELS gfortran llvm)
@@ -3666,6 +3669,40 @@ RUN(NAME callback_06 LABELS gfortran llvm)
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME recursion_04 LABELS gfortran llvm)
+RUN(NAME recursion_05 LABELS gfortran llvm)
+RUN(NAME recursion_06 LABELS gfortran llvm EXTRAFILES recursion_06_module.f90)
+RUN(NAME recursion_07 LABELS gfortran llvm)
+# GFortran 15 has an internal compiler error on recursion_08 (`reduce` with a
+# procedure that enters the host of the internal procedure calling `reduce`)
+RUN(NAME recursion_08 LABELS llvm)
+
+RUN(NAME host_assoc_01 LABELS gfortran llvm)
+RUN(NAME host_assoc_02 LABELS gfortran llvm)
+RUN(NAME host_assoc_03 LABELS gfortran llvm)
+RUN(NAME host_assoc_04 LABELS gfortran llvm)
+RUN(NAME host_assoc_05 LABELS gfortran llvm)
+# Internal procedures of an internal procedure are an LFortran extension
+RUN(NAME host_assoc_06 LABELS llvm)
+RUN(NAME host_assoc_07 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME host_assoc_08 LABELS gfortran llvm)
+RUN(NAME host_assoc_09 LABELS gfortran llvm)
+RUN(NAME host_assoc_10 LABELS gfortran llvm)
+RUN(NAME host_assoc_11 LABELS gfortran llvm)
+RUN(NAME host_assoc_12 LABELS gfortran llvm)
+RUN(NAME host_assoc_13 LABELS gfortran llvm)
+RUN(NAME host_assoc_14 LABELS gfortran llvm)
+RUN(NAME host_assoc_15 LABELS gfortran llvm)
+RUN(NAME host_assoc_16 LABELS gfortran llvm)
+RUN(NAME host_assoc_17 LABELS gfortran llvm)
+RUN(NAME host_assoc_19 LABELS gfortran llvm)
+RUN(NAME host_assoc_20 LABELS gfortran llvm)
+RUN(NAME host_assoc_21 LABELS gfortran llvm)
+RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thunks=512)
+RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
+# GFortran 15 does not support the NON_RECURSIVE prefix
+RUN(NAME host_assoc_24 LABELS llvm)
+RUN(NAME host_assoc_25 FAIL LABELS llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -4565,7 +4602,8 @@ RUN(NAME nested_vars_27 LABELS gfortran llvm)
 RUN(NAME nested_vars_28 LABELS gfortran llvm)
 RUN(NAME nested_vars_31 LABELS gfortran llvm)
 
-RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
+# No `wasm` label: the wasm backend does not support host association yet
+RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME pass_array_by_data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME pass_array_by_data_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -4839,6 +4877,7 @@ RUN(NAME dtio_write_15 LABELS gfortran llvm)
 RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
     EXTRA_ARGS --separate-compilation)
+RUN(NAME dtio_write_17 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4963,6 +5002,8 @@ RUN(NAME procedure_60 LABELS llvm)
 RUN(NAME procedure_61 LABELS gfortran llvm EXTRAFILES procedure_61_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME procedure_62 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_63 LABELS gfortran llvm c cpp)
+RUN(NAME procedure_64 LABELS gfortran llvm)
+RUN(NAME procedure_65 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
@@ -5219,6 +5260,7 @@ RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_02 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
+RUN(NAME c_f_proc_ptr_02 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrayitem_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
@@ -5649,6 +5691,9 @@ RUN(NAME openmp_bindc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
@@ -5759,6 +5804,7 @@ RUN(NAME openmp_107 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 # LOCAL locality spec (F2018).
 RUN(NAME openmp_108 LABELS llvm_omp)
 RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_110 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)

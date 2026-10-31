@@ -452,6 +452,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             _lcompilers_matmul1:
@@ -924,6 +925,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             matmul_11:

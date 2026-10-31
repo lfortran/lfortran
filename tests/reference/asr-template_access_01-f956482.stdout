@@ -360,6 +360,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             rbox:
@@ -528,6 +529,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             t_tmpl:
@@ -641,6 +643,7 @@
                                     )]
                                     (Var 12 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -839,6 +842,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             mk:
@@ -974,6 +978,7 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()

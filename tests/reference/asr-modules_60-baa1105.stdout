@@ -89,6 +89,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -193,6 +194,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             is_finite_1@is_finite:

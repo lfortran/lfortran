@@ -105,6 +105,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub1~fpcast:
@@ -202,6 +203,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub1~fpcast_ptr:
@@ -283,6 +285,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub2~fpcast:
@@ -380,6 +383,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub2~fpcast_ptr:
@@ -556,6 +560,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

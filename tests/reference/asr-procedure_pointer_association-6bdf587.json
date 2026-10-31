@@ -2,12 +2,12 @@
     "basename": "asr-procedure_pointer_association-6bdf587",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/procedure_pointer_association.asr",
-    "infile_hash": "9bb3e240969917f60cb6e6a8969485956428b35a67a6ecb93198e8d4",
+    "infile_hash": "ef8339c9b9a3684f65cb79bf7632a14e11628be3d7e9d0d3908ba4c0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-procedure_pointer_association-6bdf587.stderr",
-    "stderr_hash": "721b9bb8a8bdede6a5e1e6f29788559da5e64752cbb1fdfe79a8bb29",
+    "stderr_hash": "69f204f45058c7ae22d05934d44f191253fdb53e6a1f0ca8cfad9ff6",
     "returncode": 2
 }

@@ -2572,8 +2572,9 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             // The storage of a common block outlives every scope that
-            // declares the block.
-            if (v->m_common_block != nullptr) {
+            // declares the block, and a HostAssociated variable denotes a
+            // variable of the host, which the host owns.
+            if (!ASRUtils::has_own_storage(*v)) {
                 return true;
             }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
@@ -2795,6 +2796,8 @@ class ASRToLLVMVisitor;
                 return true;
                 case ASR::FunctionType:
                 case ASR::CPtr:
+                // A reference refers to a variable that something else owns.
+                case ASR::Reference:
                     return false;
                 default:
                     throw LCompilersException("Handle this case");

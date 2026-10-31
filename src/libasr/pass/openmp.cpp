@@ -68,6 +68,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
     public:
         SymbolTable* current_scope;
         std::vector<std::string> array_variables;
+        bool replaced = false;
 
         ReplaceArrayVariable(Allocator& al_) :
             al(al_) {}
@@ -81,6 +82,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
                 ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(x->m_v)));
                 LCOMPILERS_ASSERT(sym != nullptr);
                 *current_expr = b.Var(sym);
+                replaced = true;
             }
         }
 
@@ -93,6 +95,7 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
                     ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(var->m_v)));
                     LCOMPILERS_ASSERT(sym != nullptr);
                     *current_expr = b.Var(sym);
+                    replaced = true;
                 }
             }
         }
@@ -100,13 +103,14 @@ class ReplaceArrayVariable: public ASR::BaseExprReplacer<ReplaceArrayVariable> {
 
 class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
     private:
+        Allocator &al;
         SymbolTable* current_scope;
         ReplaceArrayVariable replacer;
         std::vector<std::string> array_variables;
 
     public:
         ArrayVisitor(Allocator &al_, SymbolTable* current_scope_, std::vector<std::string> array_variables_) :
-            current_scope(current_scope_), replacer(al_) , array_variables(array_variables_) {}
+            al(al_), current_scope(current_scope_), replacer(al_) , array_variables(array_variables_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
@@ -118,6 +122,32 @@ class ArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor> {
         // A BLOCK's statements live in the Block symbol, not in the body.
         void visit_BlockCall(const ASR::BlockCall_t &x) {
             visit_symbol(*x.m_m);
+        }
+
+        // An array replaced by its pointer descriptor has another physical
+        // type than the actual it replaces, such as a fixed-size array passed
+        // to an explicit-shape dummy: the arguments are matched with the
+        // dummy arguments again.
+        template <typename T>
+        void rematch_call_args(const T &x, bool replaced_before) {
+            if (replacer.replaced) {
+                ASRUtils::rematch_call_args(al, const_cast<T&>(x));
+            }
+            replacer.replaced = replaced_before || replacer.replaced;
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            bool replaced_before = replacer.replaced;
+            replacer.replaced = false;
+            ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor>::visit_SubroutineCall(x);
+            rematch_call_args(x, replaced_before);
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            bool replaced_before = replacer.replaced;
+            replacer.replaced = false;
+            ASR::CallReplacerOnExpressionsVisitor<ArrayVisitor>::visit_FunctionCall(x);
+            rematch_call_args(x, replaced_before);
         }
 };
 
@@ -3525,32 +3555,6 @@ class ParallelRegionVisitor :
             nested_lowered_body.push_back(b.If(condition, single_body_s, {}));
         }
 
-        // The lock of the critical constructs named `name`. Every critical
-        // construct of that name in the program must use the same lock, so
-        // it is a global variable under the name other compilers give it,
-        // with common linkage, which the linker merges across object files.
-        ASR::expr_t* get_critical_name_lock(const Location &loc, const std::string &name) {
-            SymbolTable* global_scope = current_scope;
-            while (global_scope->parent != nullptr) {
-                global_scope = global_scope->parent;
-            }
-            // The leading underscores keep the name apart from any Fortran
-            // name in the global scope
-            std::string lock_name = "__lcompilers_omp_critical_" + name;
-            ASR::symbol_t* lock_sym = global_scope->get_symbol(lock_name);
-            if (lock_sym == nullptr) {
-                lock_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-                    al, loc, global_scope, s2c(al, lock_name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                    ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPointer)),
-                    nullptr, ASR::abiType::BindC, ASR::accessType::Public,
-                    ASR::presenceType::Required, false, false, false,
-                    s2c(al, ".gomp_critical_user_" + name)));
-                global_scope->add_symbol(lock_name, lock_sym);
-            }
-            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, lock_sym));
-        }
-
         void visit_OMPCritical(const ASR::OMPRegion_t &x) {
             nested_lowered_body = {};
             Location loc = x.base.base.loc;
@@ -3569,8 +3573,10 @@ class ParallelRegionVisitor :
             ASR::expr_t* lock = nullptr;
             for (size_t i = 0; i < x.n_clauses; i++) {
                 if (ASR::is_a<ASR::OMPCriticalName_t>(*x.m_clauses[i])) {
-                    lock = get_critical_name_lock(loc, ASR::down_cast<
-                        ASR::OMPCriticalName_t>(x.m_clauses[i])->m_name);
+                    lock = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                        PassUtils::omp_critical_name_lock(al, loc, current_scope,
+                            ASR::down_cast<ASR::OMPCriticalName_t>(
+                                x.m_clauses[i])->m_name)));
                 }
             }
             Vec<ASR::call_arg_t> lock_args;

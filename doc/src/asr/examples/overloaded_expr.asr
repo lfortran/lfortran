@@ -235,6 +235,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
             "vec_and" (Function
@@ -407,6 +408,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
             "vec_eq" (Function
@@ -565,6 +567,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
             "vec_neg" (Function
@@ -690,6 +693,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
             "vec_str" (Function
@@ -870,6 +874,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
             "~add" (CustomOperator

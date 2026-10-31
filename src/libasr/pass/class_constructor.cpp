@@ -142,6 +142,17 @@ class PointerAssociations : public ASR::BaseWalkVisitor<PointerAssociations> {
         ASR::BaseWalkVisitor<PointerAssociations>::visit_Associate(x);
     }
 
+    // A frame member bound to a variable gives the internal procedures of
+    // its host access to the variable, like a pointer associated with it.
+    void visit_BindReference(const ASR::BindReference_t& x) {
+        bool through_pointer;
+        ASR::symbol_t* root = designator_root(x.m_variable, through_pointer);
+        if( root != nullptr ) {
+            associated_roots.insert(root);
+        }
+        ASR::BaseWalkVisitor<PointerAssociations>::visit_BindReference(x);
+    }
+
     void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
         pointer_defined_unknown(x.m_ptr);
         ASR::BaseWalkVisitor<PointerAssociations>::visit_CPtrToPointer(x);

@@ -10,8 +10,8 @@ A function or a subroutine, with or without a body.
 Function(symbol_table symtab, identifier name,
     ttype function_signature, identifier* dependencies, expr* args,
     stmt* body, expr? return_var, access access, bool deterministic,
-    bool side_effect_free, string? module_file, gpu_kernel_layout? gpu,
-    location start_name, location end_name)
+    bool side_effect_free, bool recursive, string? module_file,
+    gpu_kernel_layout? gpu, location start_name, location end_name)
 ```
 
 ### Arguments
@@ -28,6 +28,7 @@ Function(symbol_table symtab, identifier name,
 | `access` | `Public` or `Private`, from the module's access specification. |
 | `deterministic` | `true` when the procedure returns the same result for the same arguments. Reserved for optimizations that need to duplicate or eliminate calls. |
 | `side_effect_free` | `true` when a call has no effect other than its result. Reserved for the same optimizations. |
+| `recursive` | `true` when an instance of the procedure can be active while another instance of it is (F2018 15.6.2.1). |
 | `module_file` | the module file the procedure was loaded from, when it was; `nil` otherwise. |
 | `gpu` | the finalized GPU kernel layout, or `nil`. Records buffer and scalar bindings, workspace extents and parameters, and the device call graph. |
 | `start_name` | the source span of the name in the `function` or `subroutine` statement. |
@@ -65,6 +66,14 @@ a code generator passes them as their data pointer alone.
 `deterministic` and `side_effect_free` are declarations about the procedure,
 not consequences of its body. A frontend that cannot prove them must leave
 them `false`.
+
+`recursive` comes from the RECURSIVE or NON_RECURSIVE prefix of the
+procedure. Without either, LFortran follows Fortran 2018: a procedure is
+recursive unless it is elemental. A pass that proves that a procedure cannot
+be entered again while it is active may clear the flag; a procedure built by
+a pass without knowing is recursive. The nested_vars pass gives a host that
+is not recursive a single thunk for each internal procedure whose procedure
+value it makes; such a host that is entered again anyway stops with an error.
 
 Only a kernel may own `gpu` metadata. It is produced after shared array and
 procedure lowering, before host launch expansion. Runtime workspace extents

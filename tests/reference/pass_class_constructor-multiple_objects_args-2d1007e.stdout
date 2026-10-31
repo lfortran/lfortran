@@ -223,6 +223,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             temp_struct_var__:

@@ -37,6 +37,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             driver2~fpcast:
@@ -83,6 +84,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             driver2~fpcast_ptr:
@@ -171,6 +173,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f~fpcast:
@@ -284,6 +287,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f~fpcast_ptr:
@@ -527,6 +531,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

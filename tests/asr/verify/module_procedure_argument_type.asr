@@ -70,6 +70,7 @@
               :Public
               true
               true
+              true
               nil
             )
           }
@@ -148,6 +149,7 @@
               []
               nil
               :Public
+              true
               true
               true
               nil

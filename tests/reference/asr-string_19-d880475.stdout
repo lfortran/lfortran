@@ -309,6 +309,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             len:
@@ -413,6 +414,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             string_type:
@@ -617,6 +619,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             compute_lps_use:
@@ -729,6 +732,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             compute_lps_use1:
@@ -852,6 +856,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             len:
@@ -1039,6 +1044,7 @@
                                     )]
                                     (Var 12 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1235,6 +1241,7 @@
                                     []
                                     (Var 13 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1455,6 +1462,7 @@
                                     )]
                                     (Var 10 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1700,6 +1708,7 @@
                                     )]
                                     (Var 11 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

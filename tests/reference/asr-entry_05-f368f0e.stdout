@@ -215,6 +215,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             dzror:
@@ -428,6 +429,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             dzror_main__lcompilers:
@@ -603,6 +605,7 @@
                                     (Var 6 ftol_return_var_name)
                                     Public
                                     .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -833,6 +836,7 @@
                     (Return)]
                     ()
                     Public
+                    .true.
                     .true.
                     .true.
                     ()

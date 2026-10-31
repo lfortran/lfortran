@@ -335,6 +335,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             mysum_t_n:
@@ -584,6 +585,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -719,6 +721,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -846,6 +849,7 @@
                                                     []
                                                     (Var 13 rs)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1000,6 +1004,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1127,6 +1132,7 @@
                                                     []
                                                     (Var 10 rs)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1415,6 +1421,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             mysum_integer_n:
@@ -1631,6 +1638,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             sa:
@@ -1845,6 +1853,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -2005,6 +2014,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             add_real:
@@ -2130,6 +2140,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -2219,6 +2230,7 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2319,6 +2331,7 @@
                                     )]
                                     (Var 6 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -108,6 +108,7 @@
               :Public
               false
               false
+              true
               nil
             )
           }

@@ -159,6 +159,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             log_io_error:
@@ -308,6 +309,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.bind_reference.variable]: a reference must refer to a variable or to the variable a reference member refers to
+   --> tests/asr/verify/bind_reference_not_variable.asr:120:12
+    |
+120 |           (BindReference
+    |            ^^^^^^^^^^^^^ failed here

@@ -57,6 +57,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             b:
@@ -112,6 +113,7 @@
                     []
                     (Var 3 b)
                     Public
+                    .true.
                     .true.
                     .true.
                     ()
@@ -171,6 +173,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             d:
@@ -226,6 +229,7 @@
                     []
                     (Var 5 r)
                     Public
+                    .true.
                     .true.
                     .true.
                     ()
@@ -285,6 +289,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             f:
@@ -340,6 +345,7 @@
                     []
                     (Var 7 r)
                     Public
+                    .true.
                     .true.
                     .true.
                     ()

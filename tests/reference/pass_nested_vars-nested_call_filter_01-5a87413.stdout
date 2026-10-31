@@ -2,46 +2,6 @@
     (SymbolTable
         1
         {
-            __lcompilers_created__nested_context__nested_call_filter_01__outer_:
-                (Module
-                    (SymbolTable
-                        7
-                        {
-                            a:
-                                (Variable
-                                    7
-                                    a
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                )
-                        })
-                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
-                    ()
-                    []
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                ),
             nested_call_filter_01:
                 (Program
                     (SymbolTable
@@ -62,6 +22,105 @@
                                     (SymbolTable
                                         5
                                         {
+                                            1___lcompilers_frame_outer_a:
+                                                (ExternalSymbol
+                                                    5
+                                                    1___lcompilers_frame_outer_a
+                                                    7 a
+                                                    __lcompilers_frame_outer
+                                                    []
+                                                    a
+                                                    Public
+                                                ),
+                                            __lcompilers_frame:
+                                                (Variable
+                                                    5
+                                                    __lcompilers_frame
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Reference
+                                                            (Integer 4)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    5 __lcompilers_frame_outer
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __lcompilers_frame_outer:
+                                                (Struct
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            a:
+                                                                (Variable
+                                                                    7
+                                                                    a
+                                                                    []
+                                                                    Local
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Reference
+                                                                        (Integer 4)
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    __lcompilers_frame_outer
+                                                    (StructType
+                                                        [(Reference
+                                                            (Integer 4)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    []
+                                                    [a]
+                                                    []
+                                                    Source
+                                                    Public
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    ()
+                                                    ()
+                                                    []
+                                                ),
                                             a:
                                                 (Variable
                                                     5
@@ -88,55 +147,86 @@
                                                     []
                                                     ()
                                                 ),
-                                            a1:
-                                                (ExternalSymbol
-                                                    5
-                                                    a1
-                                                    7 a
-                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
-                                                    []
-                                                    a
-                                                    Public
-                                                ),
-                                            a2:
-                                                (ExternalSymbol
-                                                    5
-                                                    a2
-                                                    7 a
-                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
-                                                    []
-                                                    a
-                                                    Public
-                                                ),
-                                            a_nested_ctx:
-                                                (ExternalSymbol
-                                                    5
-                                                    a_nested_ctx
-                                                    7 a
-                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
-                                                    []
-                                                    a
-                                                    Public
-                                                ),
                                             inner:
                                                 (Function
                                                     (SymbolTable
                                                         6
                                                         {
+                                                            __lcompilers_frame:
+                                                                (Variable
+                                                                    6
+                                                                    __lcompilers_frame
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        [(Reference
+                                                                            (Integer 4)
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    5 __lcompilers_frame_outer
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             a:
-                                                                (ExternalSymbol
+                                                                (Variable
                                                                     6
                                                                     a
-                                                                    7 a
-                                                                    __lcompilers_created__nested_context__nested_call_filter_01__outer_
-                                                                    []
-                                                                    a
+                                                                    [__lcompilers_frame]
+                                                                    Local
+                                                                    (StructInstanceMember
+                                                                        (Var 6 __lcompilers_frame)
+                                                                        5 1___lcompilers_frame_outer_a
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    ()
+                                                                    HostAssociated
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
                                                                     Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     inner
                                                     (FunctionType
-                                                        []
+                                                        [(StructType
+                                                            [(Reference
+                                                                (Integer 4)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
                                                         ()
                                                         Source
                                                         Implementation
@@ -151,7 +241,7 @@
                                                         Host
                                                     )
                                                     []
-                                                    []
+                                                    [(Var 6 __lcompilers_frame)]
                                                     [(Assignment
                                                         (Var 6 a)
                                                         (IntegerBinOp
@@ -169,6 +259,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -192,18 +283,18 @@
                                     )
                                     []
                                     []
-                                    [(Assignment
-                                        (Var 5 a1)
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
+                                    [(BindReference
+                                        (StructInstanceMember
+                                            (Var 5 __lcompilers_frame)
+                                            5 1___lcompilers_frame_outer_a
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Var 5 a)
                                     )
                                     (Assignment
-                                        (Var 5 a_nested_ctx)
                                         (Var 5 a)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
                                         .false.
                                         .false.
@@ -213,28 +304,20 @@
                                     (SubroutineCall
                                         5 inner
                                         ()
-                                        []
+                                        [((Var 5 __lcompilers_frame))]
                                         ()
-                                        .false.
-                                    )
-                                    (Assignment
-                                        (Var 5 a)
-                                        (Var 5 a_nested_ctx)
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
                                         .false.
                                     )
                                     (SubroutineCall
                                         4 modproc
                                         ()
-                                        [((Var 5 a2))]
+                                        [((Var 5 a))]
                                         ()
                                         .false.
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -323,6 +406,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

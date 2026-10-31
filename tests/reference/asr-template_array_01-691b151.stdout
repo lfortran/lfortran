@@ -247,6 +247,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             insert_t_n:
@@ -467,6 +468,7 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -768,6 +770,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             insert_int_n:
@@ -956,6 +959,7 @@
                                                     )]
                                                     (Var 9 r)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1206,6 +1210,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })

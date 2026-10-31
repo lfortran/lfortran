@@ -2949,7 +2949,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         nullptr, 0,
         kernel_args.p, kernel_args.n,
         kernel_body.p, kernel_body.n,
-        nullptr, ASR::accessType::Public, false, false,
+        nullptr, ASR::accessType::Public, false, false, true,
         nullptr, nullptr, nullptr, nullptr);
     {
         std::string unresolved = gpu_specialize_dummy_procedures(al,
