@@ -112,6 +112,17 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## Repeated Pure Array Calls
+
+With `--fast`, the array-temporary ASR pass can reuse a pure real-array
+function result within one ordinary arithmetic assignment. Calls must have
+the same procedure, receiver, and variable actuals; aliased, volatile,
+asynchronous, coarray, and unsafe dummy arguments are excluded. The pass
+uses the normal temporary allocation and call preparation paths, and does
+not reuse results across statements or hoist conditional evaluations.
+OpenMP, coarray, Metal, and CUDA modes disable this optimization because a
+pure procedure can still read nonlocal state.
+
 ## LLVM Alias Information
 
 With `--fast`, the LLVM backend uses Fortran dummy-argument restrictions to
@@ -119,6 +130,18 @@ mark eligible parameters `noalias`. It also distinguishes array data from
 compiler-managed descriptors and struct pointer fields using TBAA. Numeric
 and logical elements share one data class, so this metadata does not claim
 that two data arrays cannot overlap.
+
+For direct component accesses through nonpointer, non-TARGET CLASS variables,
+ASR storage facts distinguish inline numeric/logical components from elements
+of numeric/logical allocatable array components. These are sibling subclasses
+of data: allocated payload cannot overlap inline object storage, but generic
+pointer-array data remains their parent and may alias either. Scalar
+allocatable payloads, pointer members, nested component receivers, ordinary
+TYPE receivers, and byte/character accesses receive no new classification.
+VOLATILE, ASYNCHRONOUS (including scoped declarations), and coarray receivers
+or members are excluded. The backend records the component provenance while
+lowering ASR, before LLVM addresses lose it; it does not infer ownership from
+LLVM types.
 
 Lowered function results retain the explicit `ResultArgument` storage role;
 the backend does not infer that role from dummy position or type. A C_PTR
