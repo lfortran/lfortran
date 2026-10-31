@@ -185,13 +185,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_buffer_base + 1) + (__libasr__created__var__5__constructor_used - __gpu_heap___libasr__created__var__3__constructor_buffer_lb1))) - (1))] = _constructor_leaf;
             __libasr__created__var__0__idl_save_ = row;
             _idl_control = end_point;
-            _idl_control1 = (((1 * ((int)6)) - (1 * ((int)2))) + 1);
+            _idl_control1 = ((6 - 2) + 1);
             __do_loop_end2 = _idl_control1;
             row = (_idl_control - 1);
             while (((row + 1) <= __do_loop_end2)) {
                 row = (row + 1);
                 __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(row) - (1));
-                _constructor_leaf1 = _lcompilers_dot_product_gpu_194(w, 2, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + (1 * ((int)2))) - 1)) - (row)) / (1)) + 1), 1);
+                _constructor_leaf1 = _lcompilers_dot_product_gpu_194(w, 2, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + 2) - 1)) - (row)) / (1)) + 1), 1);
                 if ((__libasr__created__var__5__constructor_used == 2147483647)) {
                     if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
                         __gpu_stop_status[((int)((6 + 1)) - (1))] = 1;
@@ -253,7 +253,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
                 __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_buffer_base + 1) + (__libasr__created__var__5__constructor_used - __gpu_heap___libasr__created__var__3__constructor_buffer_lb1))) - (1))] = _constructor_leaf1;
             }
             row = __libasr__created__var__0__idl_save_;
-            _constructor_leaf2 = (c[((int)((1 * ((int)6))) - (1))] * w[((int)(end_point) - (1))]);
+            _constructor_leaf2 = (c[((int)(6) - (1))] * w[((int)(end_point) - (1))]);
             if ((__libasr__created__var__5__constructor_used == 2147483647)) {
                 if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
                     __gpu_stop_status[((int)((10 + 1)) - (1))] = 1;
@@ -580,13 +580,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
             __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_buffer_base + 1) + (__libasr__created__var__5__constructor_used - __gpu_heap___libasr__created__var__3__constructor_buffer_lb1))) - (1))] = _constructor_leaf;
             __libasr__created__var__0__idl_save_ = row;
             _idl_control = end_point;
-            _idl_control1 = (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1);
+            _idl_control1 = (((1 * ((int)__dim_c_0)) - 2) + 1);
             __do_loop_end2 = _idl_control1;
             row = (_idl_control - 1);
             while (((row + 1) <= __do_loop_end2)) {
                 row = (row + 1);
                 __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(row) - (1));
-                _constructor_leaf1 = _lcompilers_dot_product1_gpu_197(w, 2, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + (1 * ((int)2))) - 1)) - (row)) / (1)) + 1), 1);
+                _constructor_leaf1 = _lcompilers_dot_product1_gpu_197(w, 2, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + 2) - 1)) - (row)) / (1)) + 1), 1);
                 if ((__libasr__created__var__5__constructor_used == 2147483647)) {
                     if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
                         __gpu_stop_status[((int)((6 + 1)) - (1))] = 1;
