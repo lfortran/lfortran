@@ -16996,6 +16996,9 @@ public:
                            ASRUtils::expr_type(idl->m_values[i]))) {
                 elements_per_iter += ASRUtils::get_fixed_size_of_array(
                     ASRUtils::expr_type(idl->m_values[i]));
+            } else if (ASRUtils::is_array(
+                           ASRUtils::expr_type(idl->m_values[i]))) {
+                return -1;
             } else {
                 elements_per_iter += 1;
             }
@@ -24130,6 +24133,16 @@ public:
                                         a_var, a_start, a_end, a_increment,
                                         type, nullptr);
         ASR::ImpliedDoLoop_t* idl = (ASR::ImpliedDoLoop_t*) tmp;
+
+        ASR::ttype_t* loop_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(a_var));
+        ASR::expr_t** controls[] = {
+            &idl->m_start, &idl->m_end, &idl->m_increment};
+        for (ASR::expr_t** control: controls) {
+            if (!*control) continue;
+            ImplicitCastRules::set_converted_value(al, (*control)->base.loc,
+                control, ASRUtils::expr_type(*control), loop_type, diag);
+        }
 
         // fetch loop variables
         std::vector<ASR::symbol_t*> loop_vars; fetch_implied_do_loop_variables(idl, loop_vars);

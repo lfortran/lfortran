@@ -52,6 +52,7 @@ struct PassOptions {
     bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
     bool stack_arrays = false;
+    bool materialize_array_constants = false;
     // Each module is compiled into an object file of its own, so a module
     // read back from a `.mod` file is defined elsewhere and this translation
     // unit only refers to it.

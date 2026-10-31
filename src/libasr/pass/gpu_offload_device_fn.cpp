@@ -623,7 +623,7 @@ ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
 // final kernel planning assigns their workspace storage.
 ASR::stmt_t* GpuOffloadVisitor::splice_device_function(ASR::Function_t *fn,
         const ASR::FunctionCall_t *fc, ASR::expr_t *target,
-        const Location &loc) {
+        const Location &loc, bool realloc_lhs) {
     SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
 
     std::map<ASR::symbol_t*, ASR::expr_t*> subst;
@@ -647,7 +647,8 @@ ASR::stmt_t* GpuOffloadVisitor::splice_device_function(ASR::Function_t *fn,
     // declared bounds (see inline_entry_initialized_locals).
     substitute_entry_initialized_locals(al, *fn, subst);
     ASR::stmt_t *call = PassUtils::inline_in_block(al, loc, *fn,
-        block_scope, std::move(subst), target, arg_gathers, arg_scatters);
+        block_scope, std::move(subst), target, arg_gathers, arg_scatters,
+        realloc_lhs);
     if (!call) return nullptr;
     kernel_blocks.push_back(ASR::down_cast<ASR::BlockCall_t>(call)->m_m);
     return call;
@@ -692,7 +693,7 @@ bool GpuOffloadVisitor::inline_device_function_calls(ASR::stmt_t **&stmts,
             ASR::Assignment_t *asgn =
                 ASR::down_cast<ASR::Assignment_t>(stmt);
             ASR::stmt_t *spliced = splice_device_function(callee,
-                call, asgn->m_target, stmt->base.loc);
+                call, asgn->m_target, stmt->base.loc, asgn->m_realloc_lhs);
             if (!spliced) return false;
             new_body.push_back(al, spliced);
             changed = true;

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -41,19 +42,21 @@ void automatic_array(int32_t n);
 namespace {
 void automatic_array(int32_t n)
 {
-    Kokkos::View<int32_t*> a_data("a_data");
+    int32_t __libasr_extent_a_1=((0) > (n) ? (0) : (n));
+    Kokkos::View<int32_t*> a_data("a_data", 1 * (__libasr_extent_a_1));
     i32__1 a_value(&a_data);
     i32__1* a = &a_value;
     a->dims[0].lower_bound = 1;
-    a->dims[0].length = n;
+    a->dims[0].length = __libasr_extent_a_1;
+    a->is_allocated = true;
     int32_t i;
     int32_t s;
     for (i=1; i<=n; i++) {
-        a->data->operator[](i - a->dims[0].lower_bound) = i;
+        a->data->operator[](((i) - a->dims[0].lower_bound)) = i;
     }
     s = 0;
     for (i=1; i<=n; i++) {
-        s = s + a->data->operator[](i - a->dims[0].lower_bound);
+        s = s + a->data->operator[](((i) - a->dims[0].lower_bound));
     }
     if (s != 10) {
         std::cerr << "ERROR STOP" << std::endl;

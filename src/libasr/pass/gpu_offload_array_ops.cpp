@@ -453,7 +453,9 @@ bool GpuOffloadVisitor::body_needs_unsupported_alias_temp_in(
 // So write it into the type here, while the assignment it can be read
 // from is still whole-array.
 void GpuOffloadVisitor::size_scope_array_temporaries(
-        ASR::stmt_t **body, size_t n_body) {
+        ASR::stmt_t **body, size_t n_body,
+        const GpuVaries &host_sizable,
+        const std::set<ASR::symbol_t*> &written_roots) {
     for (size_t si = 0; si < n_body; si++) {
         SymbolTable *symtab = nullptr;
         ASR::stmt_t **inner_body = nullptr;
@@ -478,7 +480,8 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             inner_n_body = ab->n_body;
         } else if (ASR::is_a<ASR::DoLoop_t>(*body[si])) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(body[si]);
-            size_scope_array_temporaries(dl->m_body, dl->n_body);
+            size_scope_array_temporaries(dl->m_body, dl->n_body,
+                host_sizable, written_roots);
             continue;
         } else {
             continue;
@@ -490,6 +493,38 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
             ASR::expr_t *shape_src = gpu_scope_array_shape_source(
                 var, inner_body, inner_n_body);
             if (!shape_src) continue;
+            ASR::dimension_t *source_dims = nullptr;
+            size_t source_rank = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(shape_src), source_dims);
+            if (!GpuLocalArrayChecker::dims_have_lengths(source_dims,
+                    source_rank)) {
+                if (!ASR::is_a<ASR::AssociateBlockCall_t>(*body[si])
+                        || !is_single_assignment_binding(item.second,
+                            inner_body, inner_n_body)
+                        || !ASR::is_a<ASR::Var_t>(*shape_src)) continue;
+                ASR::symbol_t *source_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(shape_src)->m_v);
+                if (!source_sym || !ASR::is_a<ASR::Variable_t>(*source_sym)
+                        || written_roots.count(source_sym)) continue;
+                ASR::Variable_t *source =
+                    ASR::down_cast<ASR::Variable_t>(source_sym);
+                if (ASRUtils::is_pointer(source->m_type)
+                        || source->m_target_attr
+                        || source->m_presence == ASR::presenceType::Optional) {
+                    continue;
+                }
+                bool sizable = true;
+                for (size_t d = 0; d < source_rank; d++) {
+                    if (!host_sizable(ASRUtils::get_size(shape_src,
+                            (int)d + 1, al))) {
+                        sizable = false;
+                        break;
+                    }
+                }
+                // Only a single selector binding may borrow the incoming
+                // shape for its per-launch workspace, not a reallocatable owner.
+                if (!sizable) continue;
+            }
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable(var->m_type));
             const Location &vloc = var->base.base.loc;
@@ -511,7 +546,8 @@ void GpuOffloadVisitor::size_scope_array_temporaries(
                 ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
         }
-        size_scope_array_temporaries(inner_body, inner_n_body);
+        size_scope_array_temporaries(inner_body, inner_n_body,
+            host_sizable, written_roots);
     }
 }
 
@@ -824,17 +860,21 @@ class GpuArrayFunctionResultHoister :
         public ASR::BaseExprReplacer<GpuArrayFunctionResultHoister> {
 public:
     Allocator &al;
+    GpuOffloadVisitor &visitor;
+    const GpuOffloadVisitor::GpuVaries &host_sizable;
     std::function<SymbolTable*()> scope;
     Vec<ASR::stmt_t*> &assignments;
     bool elementwise = false;
 
-    GpuArrayFunctionResultHoister(Allocator &al_,
+    GpuArrayFunctionResultHoister(Allocator &al_, GpuOffloadVisitor &visitor_,
+            const GpuOffloadVisitor::GpuVaries &host_sizable_,
             std::function<SymbolTable*()> scope_,
             Vec<ASR::stmt_t*> &assignments_)
-        : al(al_), scope(scope_), assignments(assignments_) {}
+        : al(al_), visitor(visitor_), host_sizable(host_sizable_),
+          scope(scope_), assignments(assignments_) {}
 
     // The array the call's result is assigned to: of the call's own
-    // shape when that is a compile-time constant, and allocatable
+    // shape when it is explicit and host-measurable, and allocatable
     // otherwise, given its shape by the assignment.
     ASR::expr_t* result_array(ASR::FunctionCall_t *fc) {
         const Location &loc = fc->base.base.loc;
@@ -843,6 +883,39 @@ public:
         ASR::dimension_t *dims = nullptr;
         int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
         bool fixed = ASRUtils::is_fixed_size_array(dims, rank);
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(fc->m_name);
+        ASR::Function_t *fn = ASR::is_a<ASR::Function_t>(*callee)
+            ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
+        bool explicit_shape = fn && fn->m_return_var
+            && !ASRUtils::is_allocatable(ASRUtils::expr_type(fn->m_return_var))
+            && !ASRUtils::is_pointer(ASRUtils::expr_type(fn->m_return_var));
+        for (int d = 0; explicit_shape && d < rank; d++) {
+            explicit_shape = dims[d].m_length
+                && host_sizable(dims[d].m_length);
+        }
+        // A nonallocatable result has its shape on entry, already rewritten
+        // in terms of actuals. Keep that shape for per-launch workspace sizing
+        // rather than querying a deferred result descriptor before allocation.
+        if (!fixed && explicit_shape) {
+            Vec<ASR::expr_t*> extents;
+            extents.reserve(al, rank);
+            ASRUtils::ExprStmtDuplicator dup(al);
+            for (int d = 0; d < rank; d++) {
+                extents.push_back(al, ASRUtils::Max::create_extent(al,
+                    dup.duplicate_expr(dims[d].m_length)));
+            }
+            ASR::expr_t *tmp = visitor.declare_temp_array(loc, scope(),
+                ASRUtils::duplicate_type(al, ASRUtils::extract_type(type)),
+                extents.p, extents.n, "__gpu_call_result");
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(tmp)->m_v)->m_type_declaration =
+                        ASRUtils::get_struct_sym_from_struct_expr(&fc->base);
+            }
+            assignments.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+                al, loc, tmp, &fc->base, nullptr, false, false, false, false)));
+            return tmp;
+        }
         ASR::ttype_t *tmp_type;
         if (fixed) {
             tmp_type = ASRUtils::duplicate_type(al, type);
@@ -955,7 +1028,9 @@ bool gpu_plain_array_target(ASR::expr_t *target) {
 // sizes it before the launch like the temporaries of the shared passes.
 // A call that is the whole value assigned to a variable is left alone:
 // the variable already is such an array.
-void GpuOffloadVisitor::hoist_array_function_results(ParallelLoopNest &nest) {
+void GpuOffloadVisitor::hoist_array_function_results(ParallelLoopNest &nest,
+        const std::vector<std::string> &arg_names) {
+    GpuVaries host_sizable = alias_extent_host_sizable(nest, arg_names);
     NestBodyWriteBack back(nest);
     Vec<ASR::stmt_t*> new_body;
     new_body.reserve(al, back.n_body);
@@ -969,7 +1044,7 @@ void GpuOffloadVisitor::hoist_array_function_results(ParallelLoopNest &nest) {
         ASR::stmt_t **body = stmts.p;
         size_t n_body = stmts.n;
         hoist_array_function_results_in_body(body, n_body, nullptr,
-            block_scope);
+            block_scope, host_sizable);
         if (block_scope == nullptr) {
             for (size_t i = 0; i < n_body; i++) {
                 new_body.push_back(al, body[i]);
@@ -1000,7 +1075,7 @@ void GpuOffloadVisitor::hoist_array_function_results(ParallelLoopNest &nest) {
 // a scope, whose arrays go into `block_scope`, made when the first one is.
 void GpuOffloadVisitor::hoist_array_function_results_in_body(
         ASR::stmt_t** &body, size_t &n_body, SymbolTable *scope,
-        SymbolTable *&block_scope) {
+        SymbolTable *&block_scope, const GpuVaries &host_sizable) {
     Vec<ASR::stmt_t*> new_body;
     new_body.reserve(al, n_body);
     bool changed = false;
@@ -1010,21 +1085,21 @@ void GpuOffloadVisitor::hoist_array_function_results_in_body(
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 hoist_array_function_results_in_body(x->m_body, x->n_body,
-                    scope, block_scope);
+                    scope, block_scope, host_sizable);
                 break;
             }
             case ASR::stmtType::WhileLoop: {
                 ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(stmt);
                 hoist_array_function_results_in_body(x->m_body, x->n_body,
-                    scope, block_scope);
+                    scope, block_scope, host_sizable);
                 break;
             }
             case ASR::stmtType::If: {
                 ASR::If_t *x = ASR::down_cast<ASR::If_t>(stmt);
                 hoist_array_function_results_in_body(x->m_body, x->n_body,
-                    scope, block_scope);
+                    scope, block_scope, host_sizable);
                 hoist_array_function_results_in_body(x->m_orelse,
-                    x->n_orelse, scope, block_scope);
+                    x->n_orelse, scope, block_scope, host_sizable);
                 break;
             }
             case ASR::stmtType::BlockCall: {
@@ -1033,7 +1108,7 @@ void GpuOffloadVisitor::hoist_array_function_results_in_body(
                 if (b && ASR::is_a<ASR::Block_t>(*b)) {
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                     hoist_array_function_results_in_body(blk->m_body,
-                        blk->n_body, blk->m_symtab, block_scope);
+                        blk->n_body, blk->m_symtab, block_scope, host_sizable);
                 }
                 break;
             }
@@ -1043,7 +1118,7 @@ void GpuOffloadVisitor::hoist_array_function_results_in_body(
                         ASR::down_cast<ASR::AssociateBlockCall_t>(
                             stmt)->m_m);
                 hoist_array_function_results_in_body(ab->m_body,
-                    ab->n_body, ab->m_symtab, block_scope);
+                    ab->n_body, ab->m_symtab, block_scope, host_sizable);
                 break;
             }
             case ASR::stmtType::Assignment: {
@@ -1058,7 +1133,7 @@ void GpuOffloadVisitor::hoist_array_function_results_in_body(
                 }
                 Vec<ASR::stmt_t*> assignments;
                 assignments.reserve(al, 1);
-                GpuArrayFunctionResultHoister hoister(al,
+                GpuArrayFunctionResultHoister hoister(al, *this, host_sizable,
                     [&]() -> SymbolTable* {
                         if (scope) return scope;
                         if (!block_scope) {
@@ -2896,6 +2971,14 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
             continue;
         }
         ASR::Assignment_t *asgn = ASR::down_cast<ASR::Assignment_t>(stmt);
+
+        if (asgn->m_realloc_lhs &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(asgn->m_target))) {
+            // Shared array lowering must establish the owner's shape before
+            // replacing this assignment by element stores.
+            new_body.push_back(al, stmt);
+            continue;
+        }
 
         // An array constructor is not an elementwise expression: its
         // i-th element does not come from the i-th element of each

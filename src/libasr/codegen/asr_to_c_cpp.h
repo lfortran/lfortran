@@ -1180,6 +1180,10 @@ R"(#include <stdio.h>
         }
     }
 
+    std::string capture_array_arguments(const ASR::Function_t&) {
+        return "";
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::is_bare_implicit_interface(x)) {
             return;
@@ -1268,7 +1272,7 @@ R"(#include <stdio.h>
 
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
-            std::string decl;
+            std::string decl = self().capture_array_arguments(x);
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);

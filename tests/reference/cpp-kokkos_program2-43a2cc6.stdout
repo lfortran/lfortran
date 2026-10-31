@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -45,12 +46,21 @@ namespace {
 template <typename T0, typename T1, typename T2>
 void triad(T0* a, T1* b, float scalar, T2* c)
 {
+    auto a_descriptor = *a;
+    a = &a_descriptor;
+    a->dims[0].lower_bound = 1;
+    auto b_descriptor = *b;
+    b = &b_descriptor;
+    b->dims[0].lower_bound = 1;
+    auto c_descriptor = *c;
+    c = &c_descriptor;
+    c->dims[0].lower_bound = 1;
     int32_t i;
     int32_t i__dc1;
     int32_t n;
-    n = a->data->extent(0);
+    n = ((int32_t)(1 * a->dims[0].length));
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i__dc1) {
-        c->data->operator[](i__dc1 - c->dims[0].lower_bound) = a->data->operator[](i__dc1 - a->dims[0].lower_bound) + scalar*b->data->operator[](i__dc1 - b->dims[0].lower_bound);
+        c->data->operator[](((i__dc1) - c->dims[0].lower_bound)) = a->data->operator[](((i__dc1) - a->dims[0].lower_bound)) + scalar*b->data->operator[](((i__dc1) - b->dims[0].lower_bound));
     });
 }
 
@@ -61,28 +71,31 @@ void main2() {
     f32_10000_1* a = &a_value;
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 10000;
+    a->is_allocated = true;
     Kokkos::View<float*> b_data("b_data", 10000);
     f32_10000_1 b_value(&b_data);
     f32_10000_1* b = &b_value;
     b->dims[0].lower_bound = 1;
     b->dims[0].length = 10000;
+    b->is_allocated = true;
     Kokkos::View<float*> c_data("c_data", 10000);
     f32_10000_1 c_value(&c_data);
     f32_10000_1* c = &c_value;
     c->dims[0].lower_bound = 1;
     c->dims[0].length = 10000;
+    c->is_allocated = true;
     int32_t i;
     int32_t i__dc;
     int32_t nsize;
     float scalar;
     scalar = (float)(10);
-    nsize = a->data->extent(0);
+    nsize = ((int32_t)(1 * a->dims[0].length));
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, nsize+1), KOKKOS_LAMBDA(const long i__dc) {
-        a->data->operator[](i__dc - a->dims[0].lower_bound) = (float)(5);
-        b->data->operator[](i__dc - b->dims[0].lower_bound) = (float)(5);
+        a->data->operator[](((i__dc) - a->dims[0].lower_bound)) = (float)(5);
+        b->data->operator[](((i__dc) - b->dims[0].lower_bound)) = (float)(5);
     });
     triad(a, b, scalar, c);
-std::cout<< "End Stream Triad"<<std::endl;
+std::cout<< ("End Stream Triad")<<std::endl;
 }
 
 }

@@ -6,8 +6,19 @@
 
 namespace LCompilers {
 
+    enum class FunctionResultLowering {
+        AllAggregates,
+        ExplicitArraySnapshot
+    };
+
+    bool is_source_allocatable_descriptor_array(const ASR::Variable_t &variable);
+
     void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
+
+    void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
+                                const PassOptions &pass_options,
+                                FunctionResultLowering lowering);
 
 } // namespace LCompilers
 

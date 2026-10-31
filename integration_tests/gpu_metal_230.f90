@@ -2,8 +2,8 @@
 ! DESCRIPTOR array (an allocatable local or an assumed-shape dummy) has no
 ! static shape: the temporary the frontend materialises for the selector
 ! carries a null `dimension_t`. The element loop synthesized for it must
-! therefore take its bounds at run time, and the loop cannot be offloaded
-! because a Metal kernel cannot declare a variable-length local array.
+! therefore take its bounds from the incoming descriptor at run time,
+! and the offload pass must preserve them when sizing its workspace.
 program gpu_metal_230
 implicit none
 real, allocatable :: x(:)
@@ -50,9 +50,30 @@ do j = 1, 3
 end do
 
 print *, g(1), h(1,1), p(1), q(1,1)
+call repeated_capture()
 print *, "ok"
 
 contains
+
+    subroutine repeated_capture()
+    real, allocatable :: a(:,:)
+    real :: res(3)
+    integer :: launch, k, n
+    do launch = 1, 2
+        n = launch + 1
+        allocate(a(n,n+1))
+        a = real(launch)
+        res = 0.0
+        do concurrent (k = 1:n)
+            associate (r => a + 2.0)
+                res(k) = sum(r(:,k))
+            end associate
+        end do
+        if (any(abs(res(:n) - real(n)*(real(launch) + 2.0)) > 1.0e-5)) &
+            error stop "capture shape"
+        deallocate(a)
+    end do
+    end subroutine
 
     ! rank 1, assumed-shape dummy operand
     subroutine rank1_dummy(a, res)

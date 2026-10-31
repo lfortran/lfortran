@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -27,13 +28,16 @@ void sum_reduce(T0* a, float &s);
 template <typename T0>
 void sum_reduce(T0* a, float &s)
 {
+    auto a_descriptor = *a;
+    a = &a_descriptor;
+    a->dims[0].lower_bound = 1;
     int32_t i;
     int32_t i__dc;
     int32_t n;
-    n = a->data->extent(0);
+    n = ((int32_t)(1 * a->dims[0].length));
     s = (float)(0);
     Kokkos::parallel_for(Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(1, n+1), KOKKOS_LAMBDA(const long i__dc) {
-        s = s + a->data->operator[](i__dc - a->dims[0].lower_bound);
+        s = s + a->data->operator[](((i__dc) - a->dims[0].lower_bound));
     });
 }
 

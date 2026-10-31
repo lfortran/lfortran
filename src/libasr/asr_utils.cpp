@@ -5120,7 +5120,49 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
             ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
 }
 
+bool constructor_has_runtime_extent(ASR::expr_t* expr) {
+    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+        auto* loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+        if (!ASRUtils::is_value_constant(loop->m_start) ||
+                !ASRUtils::is_value_constant(loop->m_end) ||
+                (loop->m_increment &&
+                    !ASRUtils::is_value_constant(loop->m_increment))) {
+            return true;
+        }
+        for (size_t i = 0; i < loop->n_values; i++) {
+            if (constructor_has_runtime_extent(loop->m_values[i])) return true;
+        }
+    } else if (ASR::is_a<ASR::ArrayConstructor_t>(*expr)) {
+        auto* constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+        for (size_t i = 0; i < constructor->n_args; i++) {
+            if (constructor_has_runtime_extent(constructor->m_args[i])) return true;
+        }
+    } else if (ASR::is_a<ASR::Cast_t>(*expr)) {
+        return constructor_has_runtime_extent(
+            ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
+    } else if (ASRUtils::is_array(ASRUtils::expr_type(expr))) {
+        // SHAPE has one element per source dimension, independently of
+        // the source's runtime extents. Its values need not be constant.
+        bool shape = ASR::is_a<ASR::IntrinsicArrayFunction_t>(*expr) &&
+            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr)->m_arr_intrinsic_id ==
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape);
+        return !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(expr)) ||
+            !(ASR::is_a<ASR::Var_t>(*expr) ||
+              ASR::is_a<ASR::ArrayConstant_t>(*expr) || shape);
+    }
+    return false;
+}
+
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
+    ASR::ttype_t* element = ASRUtils::extract_type(implied_doloop->m_type);
+    bool numeric = ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+        ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element);
+    if (numeric &&
+            constructor_has_runtime_extent(&implied_doloop->base)) {
+        // A runtime constructor is sized by its single materialization,
+        // never by replaying its controls or guessing a dependent sum.
+        return nullptr;
+    }
     const Location& loc = implied_doloop->base.base.loc;
     ASRUtils::ASRBuilder builder(al, loc);
     ASR::expr_t* start = implied_doloop->m_start;
@@ -5141,24 +5183,31 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     ASR::expr_t* implied_doloop_size_ = nullptr;
     for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
         if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
+            ASR::expr_t* inner_size = get_ImpliedDoLoop_size(al,
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
+            if (!inner_size) return nullptr;
             if( implied_doloop_size_ == nullptr ) {
-                implied_doloop_size_ = get_ImpliedDoLoop_size(al,
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
+                implied_doloop_size_ = inner_size;
             } else {
-                implied_doloop_size_ = builder.Add(get_ImpliedDoLoop_size(al,
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
-                    implied_doloop_size_);
+                implied_doloop_size_ = builder.Add(inner_size, implied_doloop_size_);
             }
         } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
             ASR::expr_t* ac_size = get_ArrayConstructor_size(al,
                 ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]));
+            if (!ac_size) return nullptr;
             if( implied_doloop_size_ == nullptr ) {
                 implied_doloop_size_ = ac_size;
             } else {
                 implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
             }
         } else {
-            const_elements += 1;
+            ASR::ttype_t* type = ASRUtils::expr_type(implied_doloop->m_values[i]);
+            if (numeric && ASRUtils::is_array(type)) {
+                LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(type));
+                const_elements += ASRUtils::get_fixed_size_of_array(type);
+            } else {
+                const_elements += 1;
+            }
         }
     }
 
@@ -5204,6 +5253,12 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
 }
 
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x) {
+    ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+    if ((ASRUtils::is_integer(*element_type) || ASRUtils::is_real(*element_type) ||
+            ASRUtils::is_complex(*element_type) || ASRUtils::is_logical(*element_type)) &&
+            constructor_has_runtime_extent(&x->base)) {
+        return nullptr;
+    }
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
     ASR::expr_t* array_size = nullptr;
     int64_t constant_size = 0;
@@ -5228,6 +5283,7 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
         } else if( ASR::is_a<ASR::ArrayConstructor_t>(*element) ) {
             ASR::expr_t* element_array_size = get_ArrayConstructor_size(al,
                 ASR::down_cast<ASR::ArrayConstructor_t>(element));
+            if (!element_array_size) return nullptr;
             if( array_size == nullptr ) {
                 array_size = element_array_size;
             } else {
@@ -5257,6 +5313,7 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
         } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ) {
             ASR::expr_t* implied_doloop_size = get_ImpliedDoLoop_size(al,
                 ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+            if (!implied_doloop_size) return nullptr;
             if( array_size ) {
                 array_size = builder.Add(implied_doloop_size, array_size);
             } else {
@@ -5804,7 +5861,11 @@ ASR::asr_t* make_ArraySize_t_util(
             ASR::down_cast<ASR::Cast_t>(a_v)->m_arg, a_dim, a_type, a_value, for_type);
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
-        return &(get_ArrayConstructor_size(al, array_constructor)->base);
+        ASR::expr_t* size = get_ArrayConstructor_size(al, array_constructor);
+        if (size) return &size->base;
+        // Keep this inquiry on the value. The constructor pass replaces its
+        // operand by the live, exact-size result descriptor.
+        return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
     } else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = 0;
@@ -12602,7 +12663,8 @@ ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
         size_known = true;
     } else if (can_compute_size) {
         ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
-        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+        if (ctor_size_expr &&
+                ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
             size_known = true;
         }
     }

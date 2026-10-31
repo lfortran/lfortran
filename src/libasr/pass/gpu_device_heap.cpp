@@ -3289,6 +3289,12 @@ private:
     void choose_kernel_arrays(ASR::Function_t &kernel) {
         allocate_results(kernel);
         std::set<ASR::symbol_t*> chosen = unsizable(kernel);
+        // An allocation can change shape during an iteration. A workspace
+        // resolved from just one of its allocations cannot own that storage.
+        ComputedAllocations shapes(kernel);
+        for (size_t i = kernel_prelude_length(kernel); i < kernel.n_body; i++) {
+            shapes.visit_stmt(*kernel.m_body[i]);
+        }
         std::vector<SymbolTable*> scopes;
         gpu_routine_scopes(kernel.m_symtab, scopes);
         for (SymbolTable *scope : scopes) {
@@ -3300,6 +3306,7 @@ private:
                 if (!ASRUtils::is_allocatable(v->m_type)) continue;
                 if (types.by_symbol.count(v->m_type_declaration) ||
                         chosen.count(item.second) ||
+                        shapes.computed.count(item.second) ||
                         reads_heap_shape(kernel, v)) {
                     choose(kernel, v);
                 }

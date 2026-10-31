@@ -7,15 +7,25 @@
 #include <libasr/codegen/c_utils.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_verify.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/replace_function_call_in_declaration.h>
+#include <libasr/pass/update_array_dim_intrinsic_calls.h>
+#include <libasr/pass/replace_implied_do_loops.h>
+#include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/replace_array_op.h>
+#include <libasr/pass/replace_intrinsic_function.h>
+#include <libasr/pass/replace_print_arr.h>
+#include <libasr/pass/create_subroutine_from_function.h>
 
 
 namespace LCompilers {
 
 std::string format_type(const std::string &dims, const std::string &type,
         const std::string &name, bool use_ref, bool dummy, bool use_kokko=true,
-        std::string kokko_ref="&", bool use_name=false, size_t size=0)
+        std::string kokko_ref="&", bool use_name=false, size_t size=0,
+        const std::string &runtime_size="")
 {
     std::string fmt;
     if (dims.size() == 0) {
@@ -36,8 +46,8 @@ std::string format_type(const std::string &dims, const std::string &type,
                 fmt = "Kokkos::View<" + type + dims + ">" + kokko_ref + " " + name;
                 if( use_name ) {
                    fmt += "(\"" + name + "\"";
-                   if( size > 0 ) {
-                    fmt += ", " + std::to_string(size);
+                   if( dims == "*" || size > 0 ) {
+                    fmt += ", " + (runtime_size.empty() ? std::to_string(size) : runtime_size);
                    }
                    fmt += ")";
                 }
@@ -74,6 +84,7 @@ public:
 
     std::map<std::string, std::map<std::string,
              std::map<size_t, std::string>>> eltypedims2arraytype;
+    std::string array_bound_helper;
 
     ASRToCPPVisitor(diag::Diagnostics &diag, CompilerOptions &co,
                     int64_t default_lower_bound)
@@ -118,17 +129,17 @@ public:
     std::string get_array_type(std::string type_name, std::string encoded_type_name,
                                std::string& dims,
                                size_t n_dims, bool make_ptr=true) {
-        if( is_array_type_available(encoded_type_name, dims, n_dims) ) {
+        std::string dims_copy = trim_dims(dims);
+        if( is_array_type_available(encoded_type_name, dims_copy, n_dims) ) {
             if( make_ptr ) {
-                return eltypedims2arraytype[encoded_type_name][dims][n_dims] + "*";
+                return eltypedims2arraytype[encoded_type_name][dims_copy][n_dims] + "*";
             } else {
-                return eltypedims2arraytype[encoded_type_name][dims][n_dims];
+                return eltypedims2arraytype[encoded_type_name][dims_copy][n_dims];
             }
         }
 
         std::string struct_name;
         std::string new_array_type;
-        std::string dims_copy = trim_dims(dims);
         std::string name = encoded_type_name + "_" + dims_copy + "_" + std::to_string(n_dims);
         struct_name = "struct " + name;
         std::string array_data = format_type("*", type_name, "data", false, false, true, "*");
@@ -138,7 +149,7 @@ public:
         std::string constructor = "    " + name + "(" + array_data + "_): data{data_} {};\n};\n";
         new_array_type += constructor;
         type_name = name + "*";
-        eltypedims2arraytype[encoded_type_name][dims][n_dims] = name;
+        eltypedims2arraytype[encoded_type_name][dims_copy][n_dims] = name;
         array_types_decls += "\n" + new_array_type + "\n";
         return type_name;
     }
@@ -149,7 +160,7 @@ public:
                              ASR::dimension_t* m_dims, size_t n_dims, size_t size,
                              bool use_ref, bool dummy,
                              bool declare_value, bool /*is_fixed_size*/,
-                             bool is_pointer=false) {
+                             bool is_pointer=false, bool is_allocatable=false) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string type_name_copy = type_name;
         type_name = get_array_type(type_name, encoded_type_name, dims, n_dims);
@@ -158,8 +169,17 @@ public:
         if( declare_value ) {
             std::string variable_name = std::string(v_m_name) + "_value";
             if( !is_pointer ) {
+                std::string runtime_size;
+                if (!is_allocatable && size == 0) {
+                    runtime_size = "1";
+                    for (size_t i = 0; i < n_dims; i++) {
+                        visit_expr(*m_dims[i].m_length);
+                        runtime_size += " * (" + src + ")";
+                    }
+                }
                 sub = format_type("*", type_name_copy, std::string(v_m_name) + "_data",
-                                  use_ref, dummy, true, "", true, size) + ";\n" + indent;
+                                  use_ref, dummy, true, "", !is_allocatable, size,
+                                  runtime_size) + ";\n" + indent;
             } else {
                 sub = indent;
             }
@@ -173,7 +193,7 @@ public:
             sub += " = &" + variable_name + ";\n";
             if( !is_pointer ) {
                 for (size_t i = 0; i < n_dims; i++) {
-                    if( m_dims[i].m_start ) {
+                    if( !is_allocatable && m_dims[i].m_start ) {
                         this->visit_expr(*m_dims[i].m_start);
                         sub += indent + std::string(v_m_name) +
                             "->dims[" + std::to_string(i) + "].lower_bound = " + src + ";\n";
@@ -181,7 +201,7 @@ public:
                         sub += indent + std::string(v_m_name) +
                             "->dims[" + std::to_string(i) + "].lower_bound = 0" + ";\n";
                     }
-                    if( m_dims[i].m_length ) {
+                    if( !is_allocatable && m_dims[i].m_length ) {
                         this->visit_expr(*m_dims[i].m_length);
                         sub += indent + std::string(v_m_name) +
                             "->dims[" + std::to_string(i) + "].length = " + src + ";\n";
@@ -190,8 +210,15 @@ public:
                             "->dims[" + std::to_string(i) + "].length = 0" + ";\n";
                     }
                 }
-                sub.pop_back();
-                sub.pop_back();
+                if (is_allocatable) {
+                    for (size_t i = 0; i < n_dims; i++) {
+                        sub += indent + v_m_name + "->dims[" +
+                            std::to_string(i) + "].stride = " +
+                            (i == 0 ? "1" : "0") + ";\n";
+                    }
+                }
+                sub += indent + v_m_name + "->is_allocated = " +
+                    (is_allocatable ? "false" : "true");
             }
         } else {
             sub = format_type("", type_name, v_m_name, use_ref, dummy, false);
@@ -233,6 +260,35 @@ public:
         return value;
     }
 
+    std::string capture_array_arguments(const ASR::Function_t& x) {
+        std::string result;
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::Variable_t* formal = ASRUtils::expr_to_variable_or_null(x.m_args[i]);
+            if (!formal || !ASRUtils::is_array(formal->m_type) ||
+                    ASRUtils::is_allocatable_or_pointer(formal->m_type)) {
+                continue;
+            }
+            ASR::dimension_t* dims = nullptr;
+            size_t rank = ASRUtils::extract_dimensions_from_ttype(formal->m_type, dims);
+            std::string bounds;
+            for (size_t j = 0; j < rank; j++) {
+                if (dims[j].m_start && !dims[j].m_length) {
+                    visit_expr(*dims[j].m_start);
+                    bounds += indent + std::string(formal->m_name) + "->dims["
+                        + std::to_string(j) + "].lower_bound = " + src + ";\n";
+                }
+            }
+            if (!bounds.empty()) {
+                std::string capture = current_scope->get_unique_name(
+                    std::string(formal->m_name) + "_descriptor");
+                result += indent + "auto " + capture + " = *" + formal->m_name + ";\n"
+                    + indent + formal->m_name + " = &" + capture + ";\n" + bounds;
+            }
+        }
+        return result;
+    }
+
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
     {
         if (v.m_storage == ASR::storage_typeType::Threadprivate) {
@@ -256,7 +312,9 @@ public:
                         v.m_intent == ASRUtils::intent_inout ||
                         v.m_intent == ASRUtils::intent_unspecified
                         );
-        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(v.m_type);
+        bool is_allocatable = ASRUtils::is_allocatable(v.m_type);
+        ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(v.m_type));
         if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
             ASR::Function_t* iface = nullptr;
             if (v.m_type_declaration) {
@@ -295,6 +353,12 @@ public:
         }
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
+        if (is_allocatable && (!is_array ||
+                (v.m_intent != ASR::intentType::Local &&
+                 !is_array_result_argument(v)))) {
+            throw CodeGenError("only local or caller-owned result allocatable array storage is supported "
+                "by the C++ backend", v.base.base.loc);
+        }
 
         #define extract_dimensions(t_) ASR::dimension_t* m_dims = nullptr; \
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t_, m_dims); \
@@ -311,7 +375,7 @@ public:
                                         use_ref, dummy, \
                                         v.m_intent != ASRUtils::intent_in && \
                                         v.m_intent != ASRUtils::intent_inout && \
-                                        v.m_intent != ASRUtils::intent_out, true, is_pointer_); \
+                                        v.m_intent != ASRUtils::intent_out, true, is_pointer_, is_allocatable); \
                 } \
             } else { \
                 sub = format_type(dims, type_name_, v.m_name, use_ref, dummy); \
@@ -352,10 +416,9 @@ public:
                 std::string encoded_type_name = "c" + std::to_string(t->m_kind * 8);
                 handle_array(v.m_type, type_name, false)
             } else if (ASRUtils::is_logical(*v.m_type)) {
-                size_t size;
-                extract_dimensions(v.m_type)
-                dims = convert_dims(n_dims, m_dims, size);
-                sub = format_type(dims, "bool", v.m_name, use_ref, dummy);
+                std::string type_name = "bool";
+                std::string encoded_type_name = "b";
+                handle_array(v.m_type, type_name, false)
             } else if (ASRUtils::is_character(*v.m_type)) {
                 // std::string is a byte string, so it can only carry kind 1.
                 int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(v.m_type);
@@ -364,10 +427,9 @@ public:
                         ") is not supported by the C++ backend, only kind 1 is",
                         v.base.base.loc);
                 }
-                size_t size;
-                extract_dimensions(v.m_type)
-                dims = convert_dims(n_dims, m_dims, size);
-                sub = format_type(dims, "std::string", v.m_name, use_ref, dummy);
+                std::string type_name = "std::string";
+                std::string encoded_type_name = "s";
+                handle_array(v.m_type, type_name, false)
             } else if (ASR::is_a<ASR::StructType_t>(*v.m_type)) {
                 std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                 std::string encoded_type_name = "x" + der_type_name;
@@ -394,6 +456,170 @@ public:
             }
         }
         return sub;
+    }
+
+    bool is_array_result_argument(const ASR::Variable_t &variable) {
+        if (variable.m_storage != ASR::storage_typeType::ResultArgument ||
+                variable.m_intent != ASR::intentType::Out ||
+                !is_source_allocatable_descriptor_array(variable)) return false;
+        ASR::asr_t *owner = variable.m_parent_symtab->asr_owner;
+        if (!ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return false;
+        }
+        ASR::Function_t *function = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(function);
+        return !function->m_return_var &&
+            ASRUtils::is_dummy_argument(*function, &variable.base) &&
+            signature->m_abi == ASR::abiType::Source &&
+            signature->m_exec_space == ASR::exec_spaceType::Host;
+    }
+
+    bool is_array_owner_storage(ASR::expr_t* expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr)) return false;
+        ASR::Variable_t* variable = ASRUtils::EXPR2VAR(expr);
+        return (variable->m_intent == ASR::intentType::Local &&
+                ASRUtils::is_allocatable(variable->m_type) &&
+                ASRUtils::is_array(variable->m_type)) ||
+            is_array_result_argument(*variable);
+    }
+
+    std::string allocate_array_owner(const ASR::alloc_arg_t& arg) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string out;
+        ASR::dimension_t* dims = nullptr;
+        if (!is_array_owner_storage(arg.m_a) || arg.n_codims ||
+                arg.m_len_expr || arg.m_type || arg.m_sym_subclass ||
+                arg.n_dims != ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(arg.m_a), dims)) {
+            throw CodeGenError("allocation requires local or caller-owned result typed array storage "
+                "in the C++ backend", arg.loc);
+        }
+        visit_expr(*arg.m_a);
+        std::string array = src;
+        std::string size = "1";
+        for (size_t j = 0; j < arg.n_dims; j++) {
+            std::string dim = array + "->dims[" + std::to_string(j) + "]";
+            std::string lower = "1";
+            if (arg.m_dims[j].m_start) {
+                visit_expr(*arg.m_dims[j].m_start);
+                lower = src;
+            }
+            out += indent + dim + ".lower_bound = " + lower + ";\n";
+            if (!arg.m_dims[j].m_length) {
+                throw CodeGenError("allocation requires an explicit extent "
+                    "in the C++ backend", arg.loc);
+            }
+            visit_expr(*arg.m_dims[j].m_length);
+            out += indent + dim + ".length = " + src + ";\n";
+            // A negative extent allocates a zero-size array, as in the
+            // LLVM backend's descriptor setup.
+            out += indent + "if (" + dim + ".length < 0) " + dim + ".length = 0;\n";
+            size += " * " + dim + ".length";
+        }
+        std::string stride = "1";
+        for (size_t j = 0; j < arg.n_dims; j++) {
+            std::string dim = array + "->dims[" + std::to_string(j) + "]";
+            out += indent + dim + ".stride = " + stride + ";\n";
+            stride = "(" + stride + " * " + dim + ".length)";
+        }
+        out += indent + "*" + array + "->data = std::decay_t<decltype(*" +
+            array + "->data)>(\"" + array + "\", " + size + ");\n";
+        out += indent + array + "->is_allocated = true;\n";
+        return out;
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        if (x.m_stat || x.m_errmsg || x.m_source) {
+            throw CodeGenError("allocation options are not supported by the C++ backend",
+                x.base.base.loc);
+        }
+        std::string out;
+        for (size_t i = 0; i < x.n_args; i++) {
+            out += allocate_array_owner(x.m_args[i]);
+        }
+        src = out;
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        if (x.n_args != 1 || !is_array_owner_storage(x.m_args[0].m_a)) {
+            throw CodeGenError("reallocation requires local or caller-owned result typed array storage "
+                "in the C++ backend", x.base.base.loc);
+        }
+        visit_expr(*x.m_args[0].m_a);
+        std::string array = src;
+        visit_expr(*x.m_shape_differs);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string out = indent + "if (!" + array + "->is_allocated || (" + src + ")) {\n";
+        indentation_level++;
+        out += allocate_array_owner(x.m_args[0]);
+        indentation_level--;
+        src = out + indent + "}\n";
+    }
+
+    std::string release_array_owner(ASR::expr_t* expr) {
+        visit_expr(*expr);
+        std::string array = src;
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string out = indent + "*" + array +
+            "->data = std::decay_t<decltype(*" + array + "->data)>();\n";
+        out += indent + array + "->is_allocated = false;\n";
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(expr), dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            std::string dim = array + "->dims[" + std::to_string(i) + "]";
+            out += indent + dim + ".lower_bound = 0;\n";
+            out += indent + dim + ".length = 0;\n";
+            out += indent + dim + ".stride = " +
+                (i == 0 ? "1" : "0") + ";\n";
+        }
+        return out;
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        std::string out;
+        for (size_t i = 0; i < x.n_vars; i++) {
+            if (is_array_owner_storage(x.m_vars[i]) && !x.m_stat && !x.m_errmsg) {
+                out += release_array_owner(x.m_vars[i]);
+            } else {
+                ASR::ExplicitDeallocate_t single = x;
+                single.m_vars = &x.m_vars[i];
+                single.n_vars = 1;
+                BaseCCPPVisitor<ASRToCPPVisitor>::visit_ExplicitDeallocate(single);
+                out += src;
+            }
+        }
+        src = out;
+    }
+
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+        std::string out;
+        for (size_t i = 0; i < x.n_vars; i++) {
+            if (is_array_owner_storage(x.m_vars[i])) {
+                out += release_array_owner(x.m_vars[i]);
+            } else {
+                ASR::ImplicitDeallocate_t single = x;
+                single.m_vars = &x.m_vars[i];
+                single.n_vars = 1;
+                BaseCCPPVisitor<ASRToCPPVisitor>::visit_ImplicitDeallocate(single);
+                out += src;
+            }
+        }
+        src = out;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        if (x.m_impure_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                x.n_args == 1 && is_array_owner_storage(x.m_args[0])) {
+            visit_expr(*x.m_args[0]);
+            src = "(" + src + "->is_allocated)";
+            last_expr_precedence = 2;
+            return;
+        }
+        BaseCCPPVisitor<ASRToCPPVisitor>::visit_IntrinsicImpureFunction(x);
     }
 
 
@@ -428,6 +654,7 @@ R"(#include <iostream>
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -615,35 +842,64 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        std::string indent(indentation_level * indentation_spaces, ' ');
-        from_std_vector_helper = indent + "Kokkos::View<float*> r;\n";
-        std::string out = "from_std_vector<float>({";
-        for (size_t i=0; i<(size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-            out += ASRUtils::fetch_ArrayConstant_value(x, i);
-            if (i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type)-1) out += ", ";
-        }
-        out += "})";
-        from_std_vector_helper += indent + "r = " + out + ";\n";
-        src = "&r";
-        last_expr_precedence = 2;
+        throw CodeGenError("array constant must be materialized before C++ code generation",
+            x.base.base.loc);
     }
 
     void visit_ArraySize(const ASR::ArraySize_t& x) {
         visit_expr(*x.m_v);
         std::string var_name = src;
-        std::string args = "";
+        std::string result;
         if (x.m_dim == nullptr) {
-            // TODO: return the product of all dimensions:
-            args = "0";
-        } else {
-            if( x.m_dim ) {
-                visit_expr(*x.m_dim);
-                args += src + "-1";
-                args += ", ";
+            result = "1";
+            ASR::dimension_t* dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(x.m_v), dims);
+            for (size_t i = 0; i < n_dims; i++) {
+                result += " * " + var_name + "->dims[" + std::to_string(i) + "].length";
             }
-            args += std::to_string(ASRUtils::extract_kind_from_ttype_t(x.m_type)) + "-1";
+        } else {
+            visit_expr(*x.m_dim);
+            result = var_name + "->dims[(" + src + ") - 1].length";
         }
-        src = var_name + "->data->extent(" + args + ")";
+        src = "((" + CUtils::get_c_type_from_ttype_t(x.m_type) + ")(" + result + "))";
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        if (!x.m_dim) {
+            throw CodeGenError("array bounds without dim must be lowered "
+                "before C++ code generation", x.base.base.loc);
+        }
+        ASR::expr_t* array = ASRUtils::get_expr_size_expr(x.m_v);
+        if (array && ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::Variable_t* variable = ASRUtils::EXPR2VAR(array);
+            if (ASRUtils::is_arg_dummy(variable->m_intent) &&
+                    !is_array_result_argument(*variable)) {
+                throw CodeGenError("bounds of this dummy array with this dim "
+                    "expression are not supported by the C++ backend", x.base.base.loc);
+            }
+        }
+        if (array_bound_helper.empty()) {
+            array_bound_helper = global_scope->get_unique_name("array_bound");
+            array_types_decls += "\ntemplate <typename I>\nI " + array_bound_helper
+                + "(const dimension_descriptor &dim, bool upper)\n{\n"
+                  "    if (dim.length == 0) return upper ? I(0) : I(1);\n"
+                  "    return upper ? I(dim.lower_bound) + I(dim.length) - I(1)\n"
+                  "                 : I(dim.lower_bound);\n}\n";
+        }
+        visit_expr(*x.m_v);
+        std::string var_name = src;
+        std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+        visit_expr(*x.m_dim);
+        std::string idx = src;
+        src = "::" + array_bound_helper + "<" + result_type + ">((" + var_name
+            + ")->dims[(" + idx + ")-1], "
+            + (x.m_bound == ASR::arrayboundType::UBound ? "true" : "false") + ")";
+        last_expr_precedence = 2;
     }
 
     void visit_StringConcat(const ASR::StringConcat_t &x) {
@@ -697,21 +953,22 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             n_values = str_fmt->n_args;
         } else if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
             this->visit_expr(*x.m_text);
-            src = "std::cout<< " + src + "<<std::endl;\n";
+            src = "std::cout<< (" + src + ")<<std::endl;\n";
             return;
         } else {
             throw CodeGenError("print statment supported for stringformat and single character argument",
                 x.base.base.loc);
         }
         for (size_t i=0; i<n_values; i++) {
-            this->visit_expr(*(str_fmt->m_args[i]));
-            out += "<< " + src + " ";
+            ASR::expr_t* arg = str_fmt->m_args[i];
+            this->visit_expr(*arg);
+            out += "<< (" + src + ") ";
             if (i+1 != n_values) {
                 out += "<< " + sep + " ";
             }
         }
         out += "<< std::endl;\n";
-        src = out;
+        src = check_tmp_buffer() + out;
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
@@ -730,11 +987,12 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
             n_values = str_fmt->n_args;
         }
         for (size_t i=0; i<n_values; i++) {
-            str_fmt? this->visit_expr(*(str_fmt->m_args[i])): this->visit_expr(*x.m_values[i]);
-            out += "<< " + src + " ";
+            ASR::expr_t* arg = str_fmt ? str_fmt->m_args[i] : x.m_values[i];
+            this->visit_expr(*arg);
+            out += "<< (" + src + ") ";
         }
         out += "<< std::endl;\n";
-        src = out;
+        src = check_tmp_buffer() + out;
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
@@ -776,27 +1034,69 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         std::string array = src;
         std::string out = array;
         ASR::dimension_t* m_dims;
-        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
-        out += "->data->operator[](";
-        std::string index = "";
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_v);
+        ASRUtils::extract_dimensions_from_ttype(type, m_dims);
+        // Explicit-shape dummies index the borrowed storage in their declared
+        // coordinates, including a ResultArgument backed by a unit-bound slot.
+        // Allocatable/pointer bounds instead belong to the owning descriptor.
+        bool declared_shape = !ASRUtils::is_allocatable_or_pointer(type) &&
+            ASR::is_a<ASR::Var_t>(*x.m_v) &&
+            ASRUtils::is_arg_dummy(ASRUtils::EXPR2VAR(x.m_v)->m_intent);
+        std::vector<std::string> terms, lengths;
         for (size_t i=0; i<x.n_args; i++) {
-            std::string current_index = "";
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
             } else {
                 src = "/* FIXME right index */";
             }
-            out += src;
-            out += " - " + array + "->dims[" + std::to_string(i) + "].lower_bound";
-            if (i < x.n_args - 1) {
-                out += ", ";
+            std::string index = src;
+            std::string lower = array + "->dims[" + std::to_string(i) + "].lower_bound";
+            std::string length = array + "->dims[" + std::to_string(i) + "].length";
+            if (declared_shape && m_dims[i].m_length) {
+                if (m_dims[i].m_start) {
+                    visit_expr(*m_dims[i].m_start);
+                    lower = "(" + src + ")";
+                }
+                visit_expr(*m_dims[i].m_length);
+                length = src;
             }
+            terms.push_back("((" + index + ") - " + lower + ")");
+            lengths.push_back(length);
         }
-        out += ")";
+        // Array element order: the first subscript varies fastest, so
+        // storage is sequence associated with dummies of any shape.
+        std::string flat = terms.back();
+        for (size_t i = terms.size() - 1; i-- > 0;) {
+            flat = "(" + terms[i] + " + (" + lengths[i] + ")*(" + flat + "))";
+        }
+        out += "->data->operator[](" + flat + ")";
         last_expr_precedence = 2;
         src = out;
     }
 
+};
+
+class CPPConstructorReadiness : public ASR::BaseWalkVisitor<CPPConstructorReadiness>
+{
+public:
+    void visit_ttype(const ASR::ttype_t&) {}
+    void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t&) {}
+    void visit_ArrayConstructor(const ASR::ArrayConstructor_t& x) {
+        throw CodeGenError("array constructor must be materialized before C++ code generation",
+            x.base.base.loc);
+    }
+    void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t& x) {
+        throw CodeGenError("implied-do must be lowered before C++ code generation",
+            x.base.base.loc);
+    }
+    void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
+        throw CodeGenError("array constant must be materialized before C++ code generation",
+            x.base.base.loc);
+    }
+    void visit_ArraySection(const ASR::ArraySection_t& x) {
+        throw CodeGenError("array section must be lowered before C++ code generation",
+            x.base.base.loc);
+    }
 };
 
 Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
@@ -805,8 +1105,32 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    pass_replace_function_call_in_declaration(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    PassOptions array_options = co.po;
+    array_options.materialize_array_constants = true;
+    pass_replace_implied_do_loops(al, asr, array_options);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_array_struct_temporary(al, asr, co.po, ArraySectionLowering::ValueSnapshot);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_array_op(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_intrinsic_function(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_create_subroutine_from_function(al, asr, co.po,
+        FunctionResultLowering::ExplicitArraySnapshot);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_array_op(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) return Error();
+    pass_replace_print_arr(al, asr, co.po);
+    pass_update_array_dim_intrinsic_calls(al, asr, co.po);
+    if (!asr_verify(asr, true, diagnostics)) {
+        return Error();
+    }
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
+        CPPConstructorReadiness readiness;
+        readiness.visit_TranslationUnit(asr);
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
         diagnostics.diagnostics.push_back(e.d);

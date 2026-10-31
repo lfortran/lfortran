@@ -1,3 +1,42 @@
+### C++ explicit array results
+
+The C++ preparation pipeline uses the shared pass with
+`FunctionResultLowering::ExplicitArraySnapshot`. This policy lowers only
+Source-ABI explicit-shape numeric and logical array results, and host
+allocatable results of those intrinsic types with a global-memory descriptor
+representation (integer/logical kinds 1, 2, 4, 8 and real/complex kinds 4, 8).
+Pointer, character, structure, coarray and foreign-ABI
+allocatable results retain their existing paths. Signatures, callbacks and
+calls use the same converted-function map.
+
+Each call completes in an independent temporary of the call expression's
+result type before the existing array-operation pass copies it to its
+destination. Unlike the default policy, this mode does not forward the
+assignment target as the result argument. Argument-dependent extents use the
+metadata prepared by `array_struct_temporary`, not the destination's shape.
+The C++ emitter retains its typed descriptor/View representation and lowers
+explicit allocation and shape-guarded reallocation of local array owners.
+An allocatable result uses a distinct caller-local allocatable slot per call
+site, reset before each invocation, including repeated calls in loops. The
+lowered `ResultArgument` output dummy allocates, reallocates and releases
+through that caller's descriptor and View; it creates no callee-local owner
+or borrowed-descriptor adapter. This preserves runtime result bounds and
+allocated zero extents without returning pointers to callee storage. Ordinary
+borrowed dummies do not gain allocation or release rights. Caller-local View
+destruction releases the storage on scope exit, including early returns.
+Copies prepared from an allocatable function expression receive an explicit
+shape-guarded `ReAlloc` after the result call, since their extents cannot be
+known before it. This includes an allocatable assignment destination,
+independently of the assignment's LHS-reallocation flag: the default policy
+returns the result directly into that destination, which then takes the
+result's shape, and this policy gives it the same shape.
+Newly allocated copy destinations have unit lower bounds;
+an existing conforming destination retains its bounds. The result descriptor
+itself retains the bounds established by the callee. Allocation metadata uses
+the C++ representation's contiguous, first-subscript-fastest strides.
+The default three-argument pass entry point retains aggregate lowering and
+its existing destination-forwarding optimizations for other backends.
+
 ### Class `AllocateVarBasedOnFuncCall`
 
 ======== What Is It Doing? ========
@@ -100,6 +139,23 @@ Known noncapturing callbacks and data types without callback components
 remain eligible. The destination itself is checked along its entire
 designator: a nonpointer final component reached through an intervening
 pointer can still alias storage accessible to the callee.
+
+### Explicit-shape result coordinates
+
+On the C++ descriptor path, an explicit-shape result dummy retains its
+declared coordinates, while the independent caller slot retains the
+unit-bound function-expression coordinates. Element addressing uses the
+explicit dummy dimensions already recorded in ASR, not the caller slot's
+lower bounds. The same rule applies to ordinary explicit-shape dummies.
+No descriptor capture or rebasing is needed, and allocatable result
+allocation, bounds and ownership remain with the caller's descriptor.
+
+Before C++ array and result preparation, `function_call_in_declaration`
+captures nonconstant explicit bounds and extents in procedure-entry locals.
+Body addressing, shape inquiries and array-expression preparation use these
+stable ASR dimensions even if the specification variables change later.
+Declared procedure and callback signatures retain their specification
+expressions; the entry locals do not become caller-visible bounds.
 
 ### Runtime character result metadata
 

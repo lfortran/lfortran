@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary_array_op-intrinsic_pack_allocatable_03-0982912",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/intrinsic_pack_allocatable_03.f90",
+    "infile_hash": "653ce7eb2f25067683020ecfef736248755ff5d8331207b08943a396",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary_array_op-intrinsic_pack_allocatable_03-0982912.stdout",
+    "stdout_hash": "9e2cf5a14b5cdcb608dd828004eae660048e64f835250fe524785af2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

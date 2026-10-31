@@ -167,6 +167,16 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             arg_types, x->m_type, new_args, x->m_overload_id, index_kind);
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
+        if (ASR::is_a<ASR::FunctionCall_t>(*func_call)) {
+            ASR::symbol_t* function = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
+            if (ASR::is_a<ASR::Function_t>(*function)) {
+                // Make the generated assumed-shape formals' coordinate system
+                // explicit before later passes lower their bound inquiries.
+                PassUtils::normalize_assumed_shape_formal_bounds(al,
+                    *ASR::down_cast<ASR::Function_t>(function));
+            }
+        }
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);
         condition = condition && ASRUtils::is_array(x->m_type);
         if (condition) {

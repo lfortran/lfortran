@@ -48,6 +48,10 @@ public:
 class GpuOffloadVisitor : public ASR::StatementWalkVisitor<GpuOffloadVisitor>
 {
 public:
+    // Whether an expression reads a value that changes from one
+    // iteration of the offloaded loop to the next.
+    using GpuVaries = std::function<bool(ASR::expr_t*)>;
+
     PassOptions pass_options;
     // What the selected device can do. Every question this pass asks about
     // the device goes through here, so that none of it names a dialect.
@@ -200,7 +204,7 @@ public:
 
     ASR::stmt_t* splice_device_function(ASR::Function_t *fn,
             const ASR::FunctionCall_t *fc, ASR::expr_t *target,
-            const Location &loc);
+            const Location &loc, bool realloc_lhs);
 
     bool inline_device_function_calls(ASR::stmt_t **&stmts,
             size_t &n_stmts);
@@ -213,10 +217,12 @@ public:
 
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body);
 
-    void hoist_array_function_results(ParallelLoopNest &nest);
+    void hoist_array_function_results(ParallelLoopNest &nest,
+            const std::vector<std::string> &arg_names);
 
     void hoist_array_function_results_in_body(ASR::stmt_t** &body,
-            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope);
+            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope,
+            const GpuVaries &host_sizable);
 
     void hoist_nested_matmuls(ParallelLoopNest &nest);
 
@@ -292,10 +298,6 @@ public:
 
     bool alias_temp_is_fixed_size(ASR::expr_t *target);
 
-    // Whether an expression reads a value that changes from one
-    // iteration of the offloaded loop to the next.
-    using GpuVaries = std::function<bool(ASR::expr_t*)>;
-
     ASR::expr_t *whole_dim_extent(const Location &loc, ASR::expr_t *base,
             size_t dim);
 
@@ -317,7 +319,9 @@ public:
             size_t n_body, const GpuVaries &host_sizable,
             const GpuExtentScope &scope);
 
-    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body);
+    void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body,
+            const GpuVaries &host_sizable,
+            const std::set<ASR::symbol_t*> &written_roots);
 
     void materialize_runtime_alias_blocks(ParallelLoopNest &nest,
             const std::vector<std::string> &arg_names);

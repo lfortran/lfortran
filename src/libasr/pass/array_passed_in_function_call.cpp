@@ -793,6 +793,7 @@ public:
                 allocate_dim.m_start = index_one;
                 allocate_dim.m_length = ASRUtils::get_ArrayConstructor_size(al,
                     ASR::down_cast<ASR::ArrayConstructor_t>(value));
+                if (!allocate_dim.m_length) return false;
                 allocate_dims.push_back(al, allocate_dim);
                 break;
             }

@@ -33,6 +33,20 @@ because they take the same operands and differ only in which end they report.
 For an array with explicit bounds the frontend folds the result. For an
 allocatable or a pointer the bounds are read from the descriptor at run time.
 
+An empty dimension has lower bound one and upper bound zero, independently of
+its declared lower bound. Consumers must honor `value` when present; otherwise
+the runtime extent determines whether these empty-dimension bounds apply.
+
+The `update_array_dim_intrinsic_calls` pass resolves explicit-shape dummy
+inquiries from the dummy's declared dimensions, not the actual argument's
+descriptor. Runtime DIM selection can be lowered to scalar `IfExp` expressions
+when the selector is safe to reevaluate.
+
+The C++ backend runs this pass before emission. Remaining scalar inquiries use
+numeric array descriptors; unresolved dummy bounds and bounds of raw logical
+or character views are diagnosed rather than treated as numeric descriptors.
+No-DIM inquiries require array-constructor lowering before this scalar path.
+
 ## Examples
 
 ```clojure

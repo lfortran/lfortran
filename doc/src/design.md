@@ -43,6 +43,56 @@ and releases their private storage after the assignment. Descriptor layout
 and ownership are unchanged. Types with pointers, nested derived components
 or user finalization keep their existing lifetime.
 
+The C++ backend normalizes array expressions in ASR before emitting Kokkos
+operations. It uses `implied_do_loops`, `array_struct_temporary`, `array_op`,
+`intrinsic_function`, function-result lowering, another `array_op`,
+`print_arr`, and then `update_array_dim_intrinsic_calls`, verifying the
+transformed ASR between stages. Elemental intrinsics are scalarized before
+their existing typed ASR implementations are instantiated; numeric conversions
+remain explicit ASR casts rather than backend type inference. The constructor
+pass's `materialize_array_constants` policy creates typed RHS storage instead of
+named array constants; other backends retain their default policy.
+Fixed-cardinality constructor values are filled before the destination is
+written, including self-referential assignments. Runtime numeric constructors
+use the same recursive fill traversal. When their element count is known
+before the traversal, each implied-DO control (after preparing any nested
+constructors) and each runtime-extent array leaf outside implied-DOs is
+evaluated once, in element order, into a saved temporary; the count is summed
+from the saved trip counts and leaf sizes, and the values are stored directly
+into an exact-size result. Nested controls qualify only when they reference
+no enclosing implied-DO index and call no procedure, and array leaves inside
+implied-DOs only when their extent is fixed or they are variables. Otherwise
+the traversal appends to a buffer: converted DO controls are saved immediately
+before each loop in its parent activation, and array-valued leaves are
+independently snapshotted before element-order traversal, including
+preparation of constructors nested inside leaf expressions.
+Buffer growth doubles capacity, explicitly preserving only the live
+prefix through scratch storage (reallocation itself does not preserve values),
+and an exact-size result is copied from it.
+The independent result is complete before the destination is
+changed. Builder state and the consuming statement share an activation-local
+BLOCK with runtime descriptor dimensions, not unevaluated control expressions
+in types. Internal snapshots allocate regardless of the user LHS-reallocation
+option; the user's destination retains that option's semantics, except that
+an allocatable variable assigned an allocatable function result takes the
+result's shape, as when other backends return the result directly into it
+(see the `subroutine_from_function` pass documentation). Remaining executable
+constructors are rejected at the C++ boundary rather than filled by a second,
+backend-specific constructor implementation. This normalization does not imply
+support for all dynamic allocations, sections, or array function results.
+
+Generated array-intrinsic inputs carry explicit unit lower bounds in their
+assumed-shape ASR types, leaving extents dynamic. The dimension-inquiry pass
+also makes omitted lower bounds explicit for ordinary host assumed-shape
+formals, synchronizing their variable and function-signature types without
+changing explicit bounds or allocatable, pointer, or result ownership.
+It uses these formal bounds and runtime `ArraySize` expressions, retaining the
+inquiry's integer kind. C++ captures each such descriptor locally and applies
+its declared lower bounds before indexing; data and extents are shared, but
+the caller's descriptor is not changed. This keeps ordinary dummy indexing
+and generated PACK and COUNT loops in the formal coordinate system even
+when actual lower bounds differ.
+
 LFortran is structured as a library, and so one can for example use the parser
 to obtain an AST and do something with it, or one can then use the semantic
 analyzer to obtain ASR and do something with it. One can generate the ASR

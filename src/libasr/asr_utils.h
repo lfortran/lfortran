@@ -2078,9 +2078,13 @@ ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type
 ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop = false);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
+// Unknown numeric extents remain empty metadata until constructor lowering.
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
+
+// Includes array expressions which must be evaluated before their size is read.
+bool constructor_has_runtime_extent(ASR::expr_t* expr);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,

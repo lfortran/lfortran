@@ -71,6 +71,39 @@ public:
             x->base.base.loc, value, x->m_type));
     }
 
+    // Substituting an assumed-shape dummy can expose a fixed component.
+    // Its size is independent of the subscripts selecting its owner.
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        ASR::BaseExprReplacer<AssociateVarResolver>::replace_ArraySize(x);
+        ASR::expr_t *array = x->m_v;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*array)) {
+            array = ASR::down_cast<ASR::ArrayPhysicalCast_t>(array)->m_arg;
+        }
+        ASR::ttype_t *type = ASRUtils::expr_type(array);
+        if (x->m_value || (!ASR::is_a<ASR::Var_t>(*array)
+                && !ASR::is_a<ASR::StructInstanceMember_t>(*array))
+                || ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)
+                || !ASRUtils::is_fixed_size_array(type)) {
+            return;
+        }
+        int64_t size = 0;
+        if (x->m_dim) {
+            ASR::dimension_t *dims = nullptr;
+            size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int64_t dim = 0;
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(x->m_dim), dim)
+                    || dim < 1 || (size_t)dim > rank
+                    || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[dim - 1].m_length), size)) {
+                return;
+            }
+        } else {
+            size = ASRUtils::get_fixed_size_of_array(type);
+        }
+        *current_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            x->base.base.loc, size, x->m_type));
+    }
+
     void replace_IntrinsicElementalFunction(
             ASR::IntrinsicElementalFunction_t *x) {
         ASR::BaseExprReplacer<AssociateVarResolver>

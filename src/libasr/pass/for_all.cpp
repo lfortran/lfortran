@@ -5,6 +5,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/replace_for_all.h>
+#include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/stmt_walk_visitor.h>
 
 #include <algorithm>
@@ -323,7 +324,10 @@ public:
 class ForAllVisitor : public ASR::StatementWalkVisitor<ForAllVisitor>
 {
 public:
-    ForAllVisitor(Allocator &al) : StatementWalkVisitor(al) {
+    const LCompilers::PassOptions& pass_options;
+
+    ForAllVisitor(Allocator &al, const LCompilers::PassOptions& pass_options)
+        : StatementWalkVisitor(al), pass_options(pass_options) {
     }
 
     // The variable whose elements an assignment target designates, and
@@ -881,7 +885,11 @@ public:
     }
 
     void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
-        if (lower_with_temporary(x)) return;
+        if (lower_with_temporary(x)) {
+            replace_implied_do_loops_in_body(al, pass_result.p,
+                pass_result.n, current_scope, pass_options);
+            return;
+        }
         Location loc = x.base.base.loc;
         Vec<ASR::do_loop_head_t> heads;
         heads.reserve(al, 4);
@@ -904,12 +912,16 @@ public:
         result.reserve(al, 1);
         result.push_back(al, stmt);
         pass_result = result;
+        // The indices are now bound inside the generated loops. Finish only
+        // constructors deferred by the earlier pass, not the whole unit again.
+        replace_implied_do_loops_in_body(al, pass_result.p,
+            pass_result.n, current_scope, pass_options);
     }
 };
 
 void pass_replace_for_all(Allocator &al, ASR::TranslationUnit_t &unit,
-                         const LCompilers::PassOptions& /*pass_options*/) {
-    ForAllVisitor v(al);
+                         const LCompilers::PassOptions& pass_options) {
+    ForAllVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

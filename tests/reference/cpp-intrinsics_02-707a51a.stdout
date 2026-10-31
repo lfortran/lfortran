@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <type_traits>
 #include <Kokkos_Core.hpp>
 #include <lfortran_intrinsics.h>
 
@@ -19,22 +20,46 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
 }
 
 // Forward declarations
+float _lfortran_ssin(float x);
+float _lcompilers_sin_f32(float x);
+double _lfortran_dsin(double x);
+double _lcompilers_sin_f64(double x);
 namespace {
 }
 
 // Implementations
+float _lfortran_ssin(float x);
+
+
+float _lcompilers_sin_f32(float x)
+{
+    float _lcompilers_sin_f32;
+    _lcompilers_sin_f32 = _lfortran_ssin(x);
+    return _lcompilers_sin_f32;
+}
+
+double _lfortran_dsin(double x);
+
+
+double _lcompilers_sin_f64(double x)
+{
+    double _lcompilers_sin_f64;
+    _lcompilers_sin_f64 = _lfortran_dsin(x);
+    return _lcompilers_sin_f64;
+}
+
 namespace {
 
 void main2() {
-    static float x=sin(  1.50000000000000000e+00);
+    static float x=  9.97494986604054446e-01;
     double y;
-    y = sin(  1.50000000000000000e+00);
-    std::cout << x << " " << y << std::endl;
+    y =   9.97494986604054446e-01;
+    std::cout << (x) << " " << (y) << std::endl;
     if (fabs(x -   9.97494995594024658e-01) >   9.99999997475242708e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(x) -   8.40114891529083252e-01) >   9.99999997475242708e-07) {
+    if (fabs(_lcompilers_sin_f32(x) -   8.40114891529083252e-01) >   9.99999997475242708e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
@@ -42,11 +67,11 @@ void main2() {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(sin(  1.50000000000000000e+00) + (sin(  5.00000000000000000e-01 + sin(  5.00000000000000000e-01)))) -   9.67188417911529541e-01) >   1.00000001168609742e-07) {
+    if (  0.00000000000000000e+00 >   1.00000001168609742e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
-    if (fabs(sin(sin(y) + (sin(x + sin(x)))) -   9.72761869430541992e-01) >   1.00000001168609742e-07) {
+    if (fabs(_lcompilers_sin_f64(_lcompilers_sin_f64(y) + _lcompilers_sin_f32(x + _lcompilers_sin_f32(x))) -   9.72761869430541992e-01) >   1.00000001168609742e-07) {
         std::cerr << "ERROR STOP" << std::endl;
         exit(1);
     }
