@@ -294,7 +294,7 @@
                             LBound
                             ()
                         )
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(DoLoop
                             ()
                             ((Var 3 i)
@@ -312,7 +312,7 @@
                                 UBound
                                 ()
                             )
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (ArrayItem
                                     (Var 3 result)
@@ -353,7 +353,7 @@
                                 UBound
                                 ()
                             )
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (Var 3 b_elem)
                                 (ArrayItem
@@ -389,7 +389,7 @@
                                     UBound
                                     ()
                                 )
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(Assignment
                                     (ArrayItem
                                         (Var 3 result)
@@ -754,7 +754,7 @@
                             UBound
                             ()
                         )
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(DoLoop
                             ()
                             ((Var 4 i)
@@ -772,7 +772,7 @@
                                 UBound
                                 ()
                             )
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (ArrayItem
                                     (Var 4 result)
@@ -816,7 +816,7 @@
                                 UBound
                                 ()
                             )
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (Var 4 b_elem)
                                 (ArrayItem
@@ -855,7 +855,7 @@
                                     UBound
                                     ()
                                 )
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(Assignment
                                     (ArrayItem
                                         (Var 4 result)
