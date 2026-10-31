@@ -2129,6 +2129,17 @@ public:
                 var() + " must be bound to a reference member of a dummy "
                 "argument of its own procedure, or of the frame slot of its "
                 "host");
+            return;
+        }
+        // It has the type of the variable that the member references
+        ASR::ttype_t *referenced = ASR::down_cast<ASR::Reference_t>(
+            ASRUtils::get_reference_member(*designator)->m_type)->m_type;
+        if (!same_variable_type(x.m_type, referenced, nullptr, nullptr)) {
+            require_id(false, "asr.verify.host_associated.type",
+                var() + " has type " +
+                ASRUtils::type_to_str_python_symbol(x.m_type, nullptr) +
+                ", but the reference member it is bound to references " +
+                ASRUtils::type_to_str_python_symbol(referenced, nullptr));
         }
     }
 

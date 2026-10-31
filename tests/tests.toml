@@ -40,6 +40,10 @@ filename = "asr/verify/host_associated_not_own_frame.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/host_associated_type_mismatch.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
