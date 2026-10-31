@@ -394,11 +394,6 @@ namespace LCompilers {
                                          Allocator& al, ASR::TranslationUnit_t& unit,
                                          Location& loc, PassOptions& pass_options);
 
-        ASR::stmt_t* get_vector_copy(ASR::expr_t* array0, ASR::expr_t* array1, ASR::expr_t* start,
-            ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
-            Allocator& al, ASR::TranslationUnit_t& unit,
-            SymbolTable*& global_scope, Location& loc);
-
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp=-1, bool use_loop_variable_after_loop=false,
                                          SymbolTable* current_scope=nullptr,
