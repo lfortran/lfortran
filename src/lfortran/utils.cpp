@@ -7,11 +7,8 @@
 
 #include <config.h>
 
-#include <charconv>
-#include <fstream>
 #include <iostream>
 #include <filesystem>
-#include <sstream>
 
 #include <bin/tpl/whereami/whereami.h>
 
@@ -188,39 +185,6 @@ std::string get_kokkos_includedir()
     std::cerr << "environment variable to point to the Kokkos installation." << std::endl;
     throw LCompilersException("LFORTRAN_KOKKOS_DIR is not defined");
 #endif
-}
-
-// Kokkos >= 5 requires C++20 (std::type_identity, concepts, ...),
-// while older Kokkos releases build as C++17. Detect the installed
-// Kokkos major version from its headers so that the C++ backend stays
-// compatible with all supported Kokkos versions. Falls back to C++17
-// (the previous behavior) when the version cannot be determined.
-std::string get_kokkos_cxx_standard(const std::string &kokkos_includedir)
-{
-    const std::string files[2] = {
-        kokkos_includedir + "/Kokkos_Macros.hpp",
-        kokkos_includedir + "/KokkosCore_config.h",
-    };
-    for (const std::string &file : files) {
-        std::ifstream f(file);
-        if (!f.is_open()) continue;
-        std::string line;
-        while (std::getline(f, line)) {
-            std::istringstream iss(line);
-            char hash;
-            std::string directive, name, value;
-            if (!(iss >> hash) || hash != '#') continue;
-            if (!(iss >> directive >> name >> value) || directive != "define") continue;
-            if (name != "KOKKOS_VERSION_MAJOR" && name != "KOKKOS_VERSION") continue;
-            unsigned int version;
-            const char *end = value.data() + value.size();
-            auto result = std::from_chars(value.data(), end, version);
-            if (result.ec != std::errc() || result.ptr != end) continue;
-            unsigned int major = name == "KOKKOS_VERSION" ? version / 10000 : version;
-            return major >= 5 ? "c++20" : "c++17";
-        }
-    }
-    return "c++17";
 }
 
 std::string get_kokkos_libdir()

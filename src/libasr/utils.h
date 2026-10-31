@@ -150,6 +150,8 @@ struct CompilerOptions {
     // Empty means the GPUs of the machine that compiles.
     std::string gpu_arch = "";
     std::string openmp_lib_dir = "";
+    // C++ standard used to compile the C++ backend's output.
+    std::string cpp_std = "c++20";
     bool lookup_name = false;
     bool rename_symbol = false;
     std::string line = "";

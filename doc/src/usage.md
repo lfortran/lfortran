@@ -240,6 +240,7 @@ compilation options, output options, link options and so on.
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
+* `--cpp-std <value>`, C++ standard used to compile the C++ backend's output (`c++20` (default), `c++17`)
 * `--print-leading-space`, Print leading white space if format is unspecified
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
@@ -258,10 +259,10 @@ compilation options, output options, link options and so on.
   - `fortran`: For generating Fortran code.
   - `julia`: For generating Julia code.
 
-The C++ backend selects C++20 for installed Kokkos 5 or later and retains
-C++17 for Kokkos 3 and 4. If the installed headers do not expose a recognized
-numeric Kokkos version, it defaults to C++17. The installed Kokkos build's
-other compiler and linker requirements (such as OpenMP) still apply.
+The C++ backend compiles its output as C++20, which Kokkos 5 requires and
+Kokkos 4 supports. `--cpp-std=c++17` selects C++17 instead, for example for an
+older Kokkos or C++ compiler. The installed Kokkos build's other compiler and
+linker requirements (such as OpenMP) still apply.
 
 The C++ driver invokes `g++` from `PATH`; the build's `CXX` setting does not
 override it. A working C++ backend requires this compiler and its C++ standard
@@ -295,13 +296,15 @@ C++20. An integer-only Kokkos smoke test passing with it does not demonstrate
 ABI compatibility. A compatible toolchain is still required; no general
 macOS recipe is established here.
 
-The unit CTest `test_kokkos_standard` checks all 37 version-selection fixtures
-through actual driver command arguments, independently of native Kokkos support.
+The unit CTest `test_kokkos_standard` checks the default and `--cpp-std`
+selections through actual driver command arguments, independently of native
+Kokkos support.
 The C++ integration suite separately registers `kokkos_cpp_standard_driver`,
 which requires a real Kokkos installation and a compatible `g++`. It compiles
 and executes the regression both directly and via a separate object/link step,
-in normal, `--fast`, and `--std=f23` modes. It checks the selected standard
-against the real package version and enables OpenMP if its headers require it.
+in normal, `--fast`, and `--std=f23` modes, with the default C++20 and, for
+Kokkos before 5, with `--cpp-std=c++17`. It enables OpenMP if the Kokkos
+headers require it.
 Missing packages or native compilation failures fail this integration test.
 Quick's existing Linux LLVM 11 C/C++ backend step runs this probe with its
 configured source-built Kokkos and, when present, the distinct Kokkos package

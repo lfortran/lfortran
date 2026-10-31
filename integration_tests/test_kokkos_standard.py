@@ -40,7 +40,10 @@ def check_installed_kokkos(lfortran, prefix, workdir):
     )
     version = re.search(r"^\s*#\s*define\s+KOKKOS_VERSION\s+(\d+)\b", headers, re.M)
     assert version, "installed Kokkos has no numeric version"
-    standard = "c++20" if int(version[1]) >= 50000 else "c++17"
+    # C++20 is the default; Kokkos 5 and later no longer build as C++17.
+    standards = [("c++20", [])]
+    if int(version[1]) < 50000:
+        standards.append(("c++17", ["--cpp-std=c++17"]))
     flags = ["--backend=cpp", "-v"]
     if re.search(r"^\s*#\s*define\s+KOKKOS_ENABLE_OPENMP\b", headers, re.M):
         flags.append("--openmp")
@@ -61,8 +64,12 @@ def check_installed_kokkos(lfortran, prefix, workdir):
         assert result.returncode == 0, f"{log}:\n{result.stdout}{result.stderr}"
         return result.stdout
 
-    print(f"Installed Kokkos {version[1]} at {prefix}: expecting {standard}", flush=True)
-    for mode, options in (("normal", []), ("fast", ["--fast"]), ("f23", ["--std=f23"])):
+    print(f"Installed Kokkos {version[1]} at {prefix}", flush=True)
+    for (standard, std_options), (mode, options) in (
+            (s, m) for s in standards
+            for m in (("normal", []), ("fast", ["--fast"]), ("f23", ["--std=f23"]))):
+        options = [*std_options, *options]
+        mode = f"{standard}-{mode}"
         exe = workdir / mode
         output = run(f"{mode}-compile", [lfortran, *flags, *options, str(source),
                                        "-o", str(exe)])
@@ -77,7 +84,8 @@ def check_installed_kokkos(lfortran, prefix, workdir):
         run(f"{mode}-link", [lfortran, *flags, str(obj), "-o", str(linked)])
         output = run(f"{mode}-linked-run", [str(linked)])
         assert output.split() == ["42"], f"{workdir / f'{mode}-linked-run.log'}:\n{output}"
-    print("Installed-Kokkos executable and object/link/run passed in normal/fast/f23")
+    print("Installed-Kokkos executable and object/link/run passed in normal/fast/f23 for "
+          + ", ".join(standard for standard, _ in standards))
 
 
 if __name__ == "__main__":
