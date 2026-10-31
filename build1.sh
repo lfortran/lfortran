@@ -11,6 +11,8 @@ build_dir="${1:-.}"
 if [ "$#" -gt 0 ]; then
     shift
 fi
+# Build another source tree, such as an unpacked source tarball.
+source_dir="${LFORTRAN_SOURCE_DIR:-.}"
 
 cmake \
     -DCMAKE_BUILD_TYPE=Debug \
@@ -26,6 +28,6 @@ cmake \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DCMAKE_COLOR_DIAGNOSTICS=ON \
     -G Ninja \
-    -S . -B "$build_dir" \
+    -S "$source_dir" -B "$build_dir" \
     "$@"
 cmake --build "$build_dir"
