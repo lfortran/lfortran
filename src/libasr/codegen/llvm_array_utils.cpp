@@ -2028,6 +2028,66 @@ namespace LCompilers {
             return internal;
         }
 
+        void SimpleCMODescriptor::cfi_to_internal_string(
+                llvm::Type* internal_type, llvm::Type* str_desc_type,
+                llvm::Value* cfi_desc, int n_dims,
+                llvm::Value* internal_desc) {
+            llvm::StructType* cfi_type = get_cfi_type(str_desc_type, n_dims);
+            llvm::Value* cfi_ptr = builder->CreateBitCast(
+                cfi_desc, cfi_type->getPointerTo());
+            llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+
+            llvm::Value* data = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_BASE_ADDR));
+            llvm::Value* elem_len = llvm_utils->CreateLoad2(i64,
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_ELEM_LEN));
+
+            // An unallocated array may not have its string_descriptor yet
+            llvm_utils->ensure_string_descriptor_on_heap(
+                internal_type, internal_desc, str_desc_type);
+            llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                str_desc_type->getPointerTo(),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_BASE_ADDR));
+            builder->CreateStore(data,
+                llvm_utils->create_gep2(str_desc_type, str_desc, 0));
+            builder->CreateStore(elem_len,
+                llvm_utils->create_gep2(str_desc_type, str_desc, 1));
+
+            builder->CreateStore(llvm::ConstantInt::get(i64, 0),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_OFFSET));
+
+            // Guard the stride division against a zero-length character
+            llvm::Value* divisor = builder->CreateSelect(
+                builder->CreateICmpEQ(elem_len, llvm::ConstantInt::get(i64, 0)),
+                llvm::ConstantInt::get(i64, 1), elem_len);
+            llvm::Value* src_dim_arr = llvm_utils->create_gep2(
+                cfi_type, cfi_ptr, CFI_FIELD_DIMS);
+            src_dim_arr = llvm_utils->create_gep2(
+                llvm::ArrayType::get(dim_des, n_dims), src_dim_arr, 0);
+            llvm::Value* dst_dim_arr =
+                get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
+            for (int r = 0; r < n_dims; r++) {
+                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, src_dim_arr, r);
+                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, dst_dim_arr, r);
+                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                builder->CreateStore(lb,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                builder->CreateStore(ext,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                stride = builder->CreateSDiv(stride, divisor);
+                builder->CreateStore(stride,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+            }
+        }
+
         int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
                 ASR::expr_t* val_expr) {
             if (ASR::is_a<ASR::Integer_t>(*val_type)){
