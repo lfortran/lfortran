@@ -1,6 +1,7 @@
 ! An internal procedure calls its recursive host again, then reads the host
 ! variables of its own instance, directly and through a dummy argument whose
-! actual argument is a host variable (#15507)
+! actual argument is a host variable (#15507). g in t modifies k through j,
+! so it refers to k only through j (Fortran 2018 15.5.2.13); t checks k.
 module host_assoc_01_m
 implicit none
 integer :: nlines = 0
@@ -41,9 +42,8 @@ contains
         if (n > 1) call t(n - 1, total)
         ! m is n and j is k of this instance of t
         if (m /= m0 .or. m /= n) error stop 4
-        if (j /= 10*m0 .or. j /= k) error stop 5
+        if (j /= 10*m0) error stop 5
         j = j + 1
-        if (k /= 10*n + 1) error stop 6
         total = total + m
     end subroutine g
 end subroutine t
