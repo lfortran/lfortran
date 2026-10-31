@@ -3121,6 +3121,89 @@ bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
     return true;
 }
 
+static ASR::symbol_t* pure_call_actual(ASR::expr_t* expr, SymbolTable* scope) {
+    if (!expr) return nullptr;
+    expr = ASRUtils::get_past_array_physical_cast(expr);
+    if (!ASR::is_a<ASR::Var_t>(*expr) || !is_unaliased_designator(expr)) {
+        return nullptr;
+    }
+    ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(expr)->m_v);
+    auto* variable = ASR::down_cast<ASR::Variable_t>(symbol);
+    if (variable->m_is_volatile || variable->m_is_asynchronous || variable->n_codims ||
+            ASRUtils::has_scoped_variable_attribute(*variable, scope)) return nullptr;
+    return symbol;
+}
+
+// Do not hoist calls out of conditional expressions, implied DOs, or WHERE.
+static bool collect_pure_array_calls(ASR::expr_t** expr,
+        std::vector<ASR::expr_t**>& calls, SymbolTable* scope) {
+    switch ((*expr)->type) {
+        case ASR::exprType::Var:
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::RealConstant:
+        case ASR::exprType::ComplexConstant:
+            return true;
+        case ASR::exprType::RealBinOp: {
+            auto* op = ASR::down_cast<ASR::RealBinOp_t>(*expr);
+            return collect_pure_array_calls(&op->m_left, calls, scope) &&
+                collect_pure_array_calls(&op->m_right, calls, scope);
+        }
+        case ASR::exprType::Cast:
+            if (ASR::down_cast<ASR::Cast_t>(*expr)->m_dest) return false;
+            return collect_pure_array_calls(
+                &ASR::down_cast<ASR::Cast_t>(*expr)->m_arg, calls, scope);
+        case ASR::exprType::ArrayPhysicalCast:
+            return collect_pure_array_calls(
+                &ASR::down_cast<ASR::ArrayPhysicalCast_t>(*expr)->m_arg, calls, scope);
+        case ASR::exprType::FunctionCall: {
+            auto* call = ASR::down_cast<ASR::FunctionCall_t>(*expr);
+            ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(call->m_name);
+            if (!(ASR::is_a<ASR::Function_t>(*symbol) ||
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*symbol)) ||
+                    !ASRUtils::get_FunctionType(symbol)->m_pure ||
+                    !ASRUtils::is_array(call->m_type) ||
+                    ASRUtils::is_allocatable_or_pointer(call->m_type) ||
+                    !ASRUtils::is_real(*ASRUtils::extract_type(call->m_type)) ||
+                    (call->m_dt && !pure_call_actual(call->m_dt, scope))) return false;
+            ASR::Function_t* function = ASRUtils::get_function(symbol);
+            for (size_t i = 0; i < function->n_args; i++) {
+                auto* dummy = ASRUtils::expr_to_variable_or_null(function->m_args[i]);
+                if (!dummy || dummy->m_target_attr ||
+                        ASRUtils::is_pointer(dummy->m_type) ||
+                        dummy->m_is_volatile || dummy->m_is_asynchronous ||
+                        dummy->n_codims ||
+                        (dummy->m_intent != ASRUtils::intent_in && !dummy->m_value_attr)) {
+                    return false;
+                }
+            }
+            for (size_t i = 0; i < call->n_args; i++) {
+                if (call->m_args[i].m_value &&
+                        !pure_call_actual(call->m_args[i].m_value, scope)) return false;
+            }
+            calls.push_back(expr);
+            return true;
+        }
+        default:
+            return false;
+    }
+}
+
+static bool same_pure_array_call(ASR::FunctionCall_t* first,
+        ASR::FunctionCall_t* second, SymbolTable* scope) {
+    if (ASRUtils::symbol_get_past_external(first->m_name) !=
+            ASRUtils::symbol_get_past_external(second->m_name) ||
+            first->n_args != second->n_args ||
+            pure_call_actual(first->m_dt, scope) != pure_call_actual(second->m_dt, scope)) {
+        return false;
+    }
+    for (size_t i = 0; i < first->n_args; i++) {
+        if (pure_call_actual(first->m_args[i].m_value, scope) !=
+                pure_call_actual(second->m_args[i].m_value, scope)) return false;
+    }
+    return true;
+}
+
 class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 {
 
@@ -3152,6 +3235,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     std::vector<ASR::expr_t*> matmul_target_shape_check;
     bool bounds_checking;
     bool stack_arrays;
+    bool reuse_pure_calls;
     // The references to the target of the current assignment in its value
     // that read it in place (see reads_target_only_in_place)
     std::set<ASR::expr_t*> target_operands_read_in_place;
@@ -3167,7 +3251,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             std::set<ASR::expr_t*>& sections_read_in_place_,
             bool bounds_checking_,
             const DummiesSharingActualType& dummies_sharing_actual_,
-            bool stack_arrays_ = false) :
+            bool stack_arrays_, bool reuse_pure_calls_) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
@@ -3177,8 +3261,37 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             matmul_target_operand(nullptr), matmul_target_realloc_lhs(false),
             bounds_checking(bounds_checking_),
             stack_arrays(stack_arrays_),
+            reuse_pure_calls(reuse_pure_calls_),
             dummies_sharing_actual(dummies_sharing_actual_) {}
 
+    void reuse_pure_array_calls(ASR::expr_t*& value) {
+        std::vector<ASR::expr_t**> calls;
+        if (!collect_pure_array_calls(&value, calls, current_scope)) return;
+        std::set<size_t> replaced;
+        for (size_t i = 0; i < calls.size(); i++) {
+            if (replaced.count(i)) continue;
+            auto* first = ASR::down_cast<ASR::FunctionCall_t>(*calls[i]);
+            std::vector<size_t> duplicates;
+            for (size_t j = i + 1; j < calls.size(); j++) {
+                if (!replaced.count(j) && same_pure_array_call(first,
+                        ASR::down_cast<ASR::FunctionCall_t>(*calls[j]), current_scope)) {
+                    duplicates.push_back(j);
+                }
+            }
+            if (duplicates.empty()) continue;
+            prepare_function_actuals(al, first, current_body, current_scope,
+                exprs_with_target, realloc_lhs, call_preparation,
+                dummies_sharing_actual);
+            ASR::expr_t* temporary = create_and_allocate_temporary_variable_for_array(
+                *calls[i], "_pure_array_call_", al, current_body, current_scope,
+                exprs_with_target);
+            *calls[i] = temporary;
+            for (size_t j: duplicates) {
+                *calls[j] = temporary;
+                replaced.insert(j);
+            }
+        }
+    }
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
@@ -3596,6 +3709,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        if (reuse_pure_calls && !inside_where && !x.m_overloaded &&
+                !x.m_move_allocation && ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            reuse_pure_array_calls(xx.m_value);
+        }
         // A reduction assigned to a scalar is lowered in place
         if (x.m_overloaded == nullptr &&
                 !ASRUtils::ElementwiseReduction::is_assigned_by_loop(x.m_target, x.m_value,
@@ -6739,7 +6856,9 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     dummies_collector.visit_TranslationUnit(unit);
     ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
         call_preparation, sections_read_in_place, pass_options.bounds_checking,
-        dummies_sharing_actual, pass_options.stack_arrays);
+        dummies_sharing_actual, pass_options.stack_arrays,
+        pass_options.fast && !pass_options.openmp && !pass_options.coarray &&
+        !pass_options.gpu_offload_metal && !pass_options.gpu_offload_cuda);
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,

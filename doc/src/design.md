@@ -112,6 +112,17 @@ is usually the default mode used by most other Fortran compilers. We create obje
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
+## Repeated Pure Array Calls
+
+With `--fast`, the array-temporary ASR pass can reuse a pure real-array
+function result within one ordinary arithmetic assignment. Calls must have
+the same procedure, receiver, and variable actuals; aliased, volatile,
+asynchronous, coarray, and unsafe dummy arguments are excluded. The pass
+uses the normal temporary allocation and call preparation paths, and does
+not reuse results across statements or hoist conditional evaluations.
+OpenMP, coarray, Metal, and CUDA modes disable this optimization because a
+pure procedure can still read nonlocal state.
+
 ## LLVM Alias Information
 
 With `--fast`, the LLVM backend uses Fortran dummy-argument restrictions to
