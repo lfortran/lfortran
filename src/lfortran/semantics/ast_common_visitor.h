@@ -30192,7 +30192,18 @@ public:
 
         if (struct_sym != nullptr) {
             ASR::Struct_t* op_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-            sym = op_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+            
+            while (op_struct != nullptr && sym == nullptr) {
+                sym = op_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+                
+                if (sym == nullptr && op_struct->m_parent != nullptr) {
+                    op_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(op_struct->m_parent)
+                    );
+                } else if (sym == nullptr) {
+                    op_struct = nullptr;
+                }
+            }
         }
 
         if (sym == nullptr) {
