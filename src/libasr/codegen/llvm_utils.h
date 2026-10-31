@@ -1161,6 +1161,18 @@ class ASRToLLVMVisitor;
 
         void finalize_variable(ASR::Variable_t* const v){
             if(not_finalizable_variable(v)) return;
+            if (llvm_utils_->compiler_options.po.stack_arrays &&
+                    ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                ASR::ttype_t* element = ASRUtils::extract_type(v->m_type);
+                // declare_vars allocates ordinary numeric arrays on the
+                // stack in this mode. They have no element resources to
+                // finalize; their scope reclaims storage, not the allocator.
+                // Allocatable and pointer arrays do not enter this branch.
+                if (ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                        ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element)) {
+                    return;
+                }
+            }
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
