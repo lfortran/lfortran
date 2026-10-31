@@ -1176,6 +1176,26 @@ public:
         latch->setMetadata(llvm::LLVMContext::MD_loop, loop_id);
     }
 
+    // Make `cycle_target` the block a CYCLE of the loop being generated
+    // branches to and `exit_target` the one its EXIT branches to.
+    void push_loop_targets(llvm::BasicBlock *cycle_target,
+            const std::string &cycle_name, llvm::BasicBlock *exit_target,
+            const std::string &exit_name) {
+        loop_head.push_back(cycle_target);
+        loop_head_names.push_back(cycle_name);
+        loop_end_index.push_back(loop_or_block_end.size());
+        loop_or_block_end.push_back(exit_target);
+        loop_or_block_end_names.push_back(exit_name);
+    }
+
+    void pop_loop_targets() {
+        loop_head.pop_back();
+        loop_head_names.pop_back();
+        loop_end_index.pop_back();
+        loop_or_block_end.pop_back();
+        loop_or_block_end_names.pop_back();
+    }
+
     template <typename Cond, typename Body>
     void create_loop(char *name, Cond condition, Body loop_body) {
 
@@ -1194,11 +1214,7 @@ public:
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, loopbody_name);
         llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, loopend_name);
 
-        loop_head.push_back(loophead);
-        loop_head_names.push_back(loophead_name);
-        loop_end_index.push_back(loop_or_block_end.size());
-        loop_or_block_end.push_back(loopend);
-        loop_or_block_end_names.push_back(loopend_name);
+        push_loop_targets(loophead, loophead_name, loopend, loopend_name);
 
         // head
         start_new_block(loophead); {
@@ -1214,11 +1230,7 @@ public:
         }
 
         // end
-        loop_head.pop_back();
-        loop_head_names.pop_back();
-        loop_end_index.pop_back();
-        loop_or_block_end.pop_back();
-        loop_or_block_end_names.pop_back();
+        pop_loop_targets();
         start_new_block(loopend);
     }
 
@@ -14157,6 +14169,21 @@ public:
         return llvm_utils->CreateLoad2(t, ptr, is_volatile);
     }
 
+    // The address the scalar variable `target_expr` is stored at: the
+    // variable itself, or what it points to if it is a pointer.
+    llvm::Value* get_var_target_address(ASR::expr_t *target_expr) {
+        ASR::Variable_t *asr_target = EXPR2VAR(target_expr);
+        uint64_t h = get_hash((ASR::asr_t*)asr_target);
+        llvm::Value *target = llvm_symtab[h];
+        if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
+            !ASRUtils::is_character(*asr_target->m_type) &&
+            !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
+            llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_target->m_type, module.get());
+            target = llvm_utils->CreateLoad2(target_load_type, target);
+        }
+        return target;
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -15309,7 +15336,6 @@ public:
         }
 
         llvm::Value *target, *value;
-        uint64_t h;
         ASR::expr_t* target_expr_for_type = x.m_target;
         if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
             ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
@@ -15400,14 +15426,7 @@ public:
                 throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
             }
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-            h = get_hash((ASR::asr_t*)asr_target);
-            target = llvm_symtab[h];
-            if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASRUtils::is_character(*asr_target->m_type) &&
-                !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
-                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
-                target = llvm_utils->CreateLoad2(target_load_type, target);
-            }
+            target = get_var_target_address(x.m_target);
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
             if ( ASRUtils::is_array(cont_type) ) {
                 if( is_value_list_to_array ) {
