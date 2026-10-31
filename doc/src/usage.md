@@ -242,6 +242,9 @@ compilation options, output options, link options and so on.
   on signed wraparound must not use `--fast`. Without `--fast`, signed arithmetic
   is unchanged; the unsigned integer extension retains modular arithmetic in both
   modes, and bitwise operations are unchanged.
+  LLVM 11 skips its legacy induction-variable simplification pass because it can
+  infer invalid unsigned no-wrap facts for signed loops. The compiler's declared
+  signed no-wrap facts and the arithmetic policy above are retained.
 * `--implicit-argument-casting`, Allow implicit argument casting
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing

@@ -1034,6 +1034,29 @@ static void disable_upper_bound_unrolling() {
 }
 #endif
 
+#if LLVM_VERSION_MAJOR == 11
+// IndVarSimplify can copy an inner loop's guarded `nuw` fact onto an outer
+// signed increment starting at -1. The false flag then turns a small inner
+// trip count into 2**32 iterations. Keep the declared `nsw` facts, but do not
+// run this faulty legacy optimization on LLVM 11.
+class LLVM11ModulePassManager : public llvm::legacy::PassManager {
+    const void *indvars_id;
+public:
+    LLVM11ModulePassManager() {
+        std::unique_ptr<llvm::Pass> indvars(llvm::createIndVarSimplifyPass());
+        indvars_id = indvars->getPassID();
+    }
+
+    void add(llvm::Pass *pass) override {
+        if (pass->getPassID() == indvars_id) {
+            delete pass;
+        } else {
+            llvm::legacy::PassManager::add(pass);
+        }
+    }
+};
+#endif
+
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
 
@@ -1061,7 +1084,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 #if LLVM_VERSION_MAJOR < 9
     disable_upper_bound_unrolling();
 #endif
+#if LLVM_VERSION_MAJOR == 11
+    LLVM11ModulePassManager mpm;
+#else
     llvm::legacy::PassManager mpm;
+#endif
     mpm.add(new llvm::TargetLibraryInfoWrapperPass(TM->getTargetTriple()));
     mpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));
     llvm::legacy::FunctionPassManager fpm(&m);
