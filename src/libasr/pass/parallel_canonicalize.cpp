@@ -579,7 +579,7 @@ public:
             body.push_back(al, x.m_body[i]);
         }
         for (size_t i = x.n_head; i > 1; i--) {
-            ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+            ASR::stmt_t *inner = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
                 x.base.base.loc, s2c(al, ""), x.m_head[i - 1],
                 body.p, body.n, nullptr, 0));
             Vec<ASR::stmt_t*> outer;
@@ -587,7 +587,7 @@ public:
             outer.push_back(al, inner);
             body = outer;
         }
-        return ASRUtils::STMT(ASR::make_DoLoop_t(al, x.base.base.loc,
+        return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x.base.base.loc,
             s2c(al, ""), x.m_head[0], body.p, body.n, nullptr, 0));
     }
 

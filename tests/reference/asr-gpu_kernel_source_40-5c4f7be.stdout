@@ -427,7 +427,7 @@
                                         ((Var 23 __gpu_bc_i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 head)
@@ -488,7 +488,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 tail)
@@ -545,7 +545,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 bounds)
@@ -580,7 +580,7 @@
                                         ((Var 8 __gpu_sum_k)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (Var 8 __gpu_sum_res)
                                             (IntegerBinOp

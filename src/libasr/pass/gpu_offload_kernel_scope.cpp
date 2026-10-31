@@ -419,7 +419,7 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
             if (c == nullptr) return nullptr;
             body.push_back(al, c);
         }
-        return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
+        return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, dl->base.base.loc,
             dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
             dl->n_orelse));
     }
