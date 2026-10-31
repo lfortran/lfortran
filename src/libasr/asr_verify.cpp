@@ -5099,7 +5099,35 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_FormTeam(x);
     }
 
+    // Every counted DO-loop head is normalized when it is created (see
+    // ASRUtils::normalize_do_loop_head), so that passes and backends can
+    // lower it without inventing variables, increments or casts.
+    void verify_do_loop_head(const ASR::do_loop_head_t &head,
+            const std::string &node, bool allow_do_forever) {
+        if (!allow_do_forever) {
+            require_with_loc(head.m_v != nullptr,
+                node + "::m_head must have a DO variable", head.loc);
+        }
+        std::string reason;
+        bool normalized = ASRUtils::is_normalized_do_loop_head(head, reason);
+        require_with_loc(normalized,
+            node + "::m_head is not normalized: " + reason, head.loc);
+    }
+
+    void visit_DoLoop(const DoLoop_t &x) {
+        verify_do_loop_head(x.m_head, "DoLoop", true);
+        BaseWalkVisitor<VerifyVisitor>::visit_DoLoop(x);
+    }
+
+    void visit_ForAllSingle(const ForAllSingle_t &x) {
+        verify_do_loop_head(x.m_head, "ForAllSingle", false);
+        BaseWalkVisitor<VerifyVisitor>::visit_ForAllSingle(x);
+    }
+
     void visit_DoConcurrentLoop(const DoConcurrentLoop_t &x) {
+        for ( size_t i = 0; i < x.n_head; i++ ) {
+            verify_do_loop_head(x.m_head[i], "DoConcurrentLoop", false);
+        }
         for ( size_t i = 0; i < x.n_local; i++ ) {
             require(ASR::is_a<ASR::Var_t>(*x.m_local[i]),
                 "DoConcurrentLoop::m_local must be a Var");
