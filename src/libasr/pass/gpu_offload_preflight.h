@@ -611,6 +611,11 @@ inline bool gpu_reduction_op_supported(ASR::reduction_opType op) {
         case ASR::reduction_opType::ReduceIOR:
         case ASR::reduction_opType::ReduceIEOR:
             return true;
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceEQV:
+        case ASR::reduction_opType::ReduceNEQV:
+            return false;
     }
     return false;
 }
@@ -636,6 +641,11 @@ inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
         case ASR::reduction_opType::ReduceIOR:
         case ASR::reduction_opType::ReduceIEOR:
             return is_int;
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceEQV:
+        case ASR::reduction_opType::ReduceNEQV:
+            return false;
     }
     return false;
 }
@@ -712,6 +722,11 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
                                           : -3.40282347e38);
             }
             return whole(kind == 8 ? INT64_MIN : INT32_MIN);
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceEQV:
+        case ASR::reduction_opType::ReduceNEQV:
+            break;
     }
     LCOMPILERS_ASSERT(false);
     return nullptr;

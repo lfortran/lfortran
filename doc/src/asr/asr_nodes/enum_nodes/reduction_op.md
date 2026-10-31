@@ -16,6 +16,10 @@ reduction_op
     | ReduceIAND
     | ReduceIOR
     | ReduceIEOR
+    | ReduceAND
+    | ReduceOR
+    | ReduceEQV
+    | ReduceNEQV
 ```
 
 ### Values
@@ -30,6 +34,10 @@ reduction_op
 | `ReduceIAND` | bitwise and. |
 | `ReduceIOR` | bitwise or. |
 | `ReduceIEOR` | bitwise exclusive or. |
+| `ReduceAND` | logical and (`.and.`). |
+| `ReduceOR` | logical or (`.or.`). |
+| `ReduceEQV` | logical equivalence (`.eqv.`). |
+| `ReduceNEQV` | logical non-equivalence (`.neqv.`). |
 
 ### Return values
 

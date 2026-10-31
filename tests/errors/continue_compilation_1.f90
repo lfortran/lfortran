@@ -3991,3 +3991,27 @@ contains
         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
     end subroutine
 end module
+
+module cc1_logical_reduce
+contains
+    subroutine cc1_logical_reduce_sub()
+        integer :: i, k
+        real :: r
+        logical :: l
+        k = 7
+        r = 1.0
+        l = .true.
+        do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+            k = iand(k, 7)
+        end do
+        do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+            r = r + 1.0
+        end do
+        do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+            l = l .eqv. .true.
+        end do
+        do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+            k = k + 1
+        end do
+    end subroutine
+end module
