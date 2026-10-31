@@ -5596,6 +5596,7 @@ RUN(NAME pointer_to_cptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_intent_in_01 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
 
+RUN(NAME sequence_assoc_02 LABELS gfortran llvm cpp) # rank-changing association in array element order
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME binop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

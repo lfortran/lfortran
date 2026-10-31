@@ -29,7 +29,7 @@ shape-guarded `ReAlloc` after the result call, since their extents cannot be
 known before it. Newly allocated copy destinations have unit lower bounds;
 an existing conforming destination retains its bounds. The result descriptor
 itself retains the bounds established by the callee. Allocation metadata uses
-the C++ representation's contiguous, last-subscript-fastest strides.
+the C++ representation's contiguous, first-subscript-fastest strides.
 The default three-argument pass entry point retains aggregate lowering and
 its existing destination-forwarding optimizations for other backends.
 

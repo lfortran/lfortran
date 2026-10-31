@@ -214,7 +214,7 @@ public:
                     for (size_t i = 0; i < n_dims; i++) {
                         sub += indent + v_m_name + "->dims[" +
                             std::to_string(i) + "].stride = " +
-                            (i + 1 == n_dims ? "1" : "0") + ";\n";
+                            (i == 0 ? "1" : "0") + ";\n";
                     }
                 }
                 sub += indent + v_m_name + "->is_allocated = " +
@@ -516,7 +516,7 @@ public:
             size += " * " + dim + ".length";
         }
         std::string stride = "1";
-        for (size_t j = arg.n_dims; j-- > 0;) {
+        for (size_t j = 0; j < arg.n_dims; j++) {
             std::string dim = array + "->dims[" + std::to_string(j) + "]";
             out += indent + dim + ".stride = " + stride + ";\n";
             stride = "(" + stride + " * " + dim + ".length)";
@@ -570,7 +570,7 @@ public:
             out += indent + dim + ".lower_bound = 0;\n";
             out += indent + dim + ".length = 0;\n";
             out += indent + dim + ".stride = " +
-                (i + 1 == n_dims ? "1" : "0") + ";\n";
+                (i == 0 ? "1" : "0") + ";\n";
         }
         return out;
     }
@@ -1039,7 +1039,7 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         bool declared_shape = !ASRUtils::is_allocatable_or_pointer(type) &&
             ASR::is_a<ASR::Var_t>(*x.m_v) &&
             ASRUtils::is_arg_dummy(ASRUtils::EXPR2VAR(x.m_v)->m_intent);
-        std::string flat;
+        std::vector<std::string> terms, lengths;
         for (size_t i=0; i<x.n_args; i++) {
             if (x.m_args[i].m_right) {
                 this->visit_expr(*x.m_args[i].m_right);
@@ -1057,12 +1057,14 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
                 visit_expr(*m_dims[i].m_length);
                 length = src;
             }
-            std::string term = "((" + index + ") - " + lower + ")";
-            if (i == 0) {
-                flat = term;
-            } else {
-                flat = "(((" + flat + ")*(" + length + ")) + " + term + ")";
-            }
+            terms.push_back("((" + index + ") - " + lower + ")");
+            lengths.push_back(length);
+        }
+        // Array element order: the first subscript varies fastest, so
+        // storage is sequence associated with dummies of any shape.
+        std::string flat = terms.back();
+        for (size_t i = terms.size() - 1; i-- > 0;) {
+            flat = "(" + terms[i] + " + (" + lengths[i] + ")*(" + flat + "))";
         }
         out += "->data->operator[](" + flat + ")";
         last_expr_precedence = 2;
