@@ -410,7 +410,10 @@ Each instance of the host that makes such a value holds one of its K thunks
 until it returns. If more than K recursive instances of one host hold a
 thunk at the same time, the program stops with an error that names the
 option. Recompile with a larger `--internal-procedure-thunks=<K>` in that
-case; Knuth's "man or boy" test with k = 10, for example, needs 384.
+case; Knuth's "man or boy" test with k = 10, for example, needs 384. A host
+that is not recursive (declared `NON_RECURSIVE`, or `ELEMENTAL` without
+`RECURSIVE`) has one instance at a time and gets a single thunk, unless
+`--openmp` is given, since threads can then run several instances of it.
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.
