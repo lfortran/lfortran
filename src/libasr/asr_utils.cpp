@@ -1896,6 +1896,111 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
         a_overloaded, a_realloc_lhs, a_move, a_new_target, a_new_allocation);
 }
 
+static ASR::ttype_t* do_loop_control_type(ASR::expr_t* e) {
+    return ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(e));
+}
+
+static bool same_do_loop_control_type(ASR::ttype_t* a, ASR::ttype_t* b) {
+    return a->type == b->type
+        && ASRUtils::extract_kind_from_ttype_t(a)
+            == ASRUtils::extract_kind_from_ttype_t(b);
+}
+
+ASR::do_loop_head_t normalize_do_loop_head(Allocator &al,
+        const Location &loc, const ASR::do_loop_head_t &head) {
+    ASR::do_loop_head_t result = head;
+    if (!result.m_v) {
+        LCOMPILERS_ASSERT(!result.m_start && !result.m_end
+            && !result.m_increment);
+        return result;
+    }
+    ASR::ttype_t* v_type = do_loop_control_type(result.m_v);
+    for (ASR::expr_t** e : {&result.m_start, &result.m_end,
+            &result.m_increment}) {
+        if (*e && !same_do_loop_control_type(do_loop_control_type(*e),
+                v_type)) {
+            *e = CastingUtil::perform_casting(*e, v_type, al, (*e)->base.loc);
+        }
+    }
+    if (!result.m_increment) {
+        if (ASRUtils::is_integer(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, v_type));
+        } else if (ASRUtils::is_unsigned_integer(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(
+                ASR::make_UnsignedIntegerConstant_t(al, loc, 1, v_type));
+        } else if (ASRUtils::is_real(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                al, loc, 1.0, v_type));
+        }
+    }
+    return result;
+}
+
+bool is_normalized_do_loop_head(const ASR::do_loop_head_t &head,
+        std::string &reason) {
+    if (!head.m_v) {
+        if (head.m_start || head.m_end || head.m_increment) {
+            reason = "a counted DO loop head must have a DO variable";
+            return false;
+        }
+        return true;
+    }
+    ASR::ttype_t* v_type = do_loop_control_type(head.m_v);
+    if (ASRUtils::is_array(v_type)) {
+        reason = "the DO variable must be a scalar";
+        return false;
+    }
+    std::pair<ASR::expr_t*, const char*> controls[] = {
+        {head.m_start, "start"}, {head.m_end, "end"},
+        {head.m_increment, "increment"}};
+    for (auto &control : controls) {
+        if (!control.first) {
+            reason = std::string("the ") + control.second
+                + " expression of a counted DO loop head is missing";
+            return false;
+        }
+        ASR::ttype_t* type = do_loop_control_type(control.first);
+        if (ASRUtils::is_array(type)
+                || !same_do_loop_control_type(type, v_type)) {
+            reason = std::string("the ") + control.second
+                + " expression of a DO loop head must have the type of the"
+                " DO variable (" + ASRUtils::type_to_str_with_kind(v_type, head.m_v)
+                + "), not " + ASRUtils::type_to_str_with_kind(type, control.first);
+            return false;
+        }
+    }
+    return true;
+}
+
+ASR::asr_t* make_DoLoop_t_util(Allocator &al, const Location &a_loc,
+        char* a_name, const ASR::do_loop_head_t &a_head,
+        ASR::stmt_t** a_body, size_t n_body,
+        ASR::stmt_t** a_orelse, size_t n_orelse) {
+    return ASR::make_DoLoop_t(al, a_loc, a_name,
+        normalize_do_loop_head(al, a_loc, a_head), a_body, n_body, a_orelse, n_orelse);
+}
+
+ASR::asr_t* make_DoConcurrentLoop_t_util(Allocator &al, const Location &a_loc,
+        ASR::do_loop_head_t* a_head, size_t n_head,
+        ASR::expr_t** a_shared, size_t n_shared,
+        ASR::expr_t** a_local, size_t n_local,
+        ASR::reduction_expr_t* a_reduction, size_t n_reduction,
+        ASR::stmt_t** a_body, size_t n_body) {
+    for (size_t i = 0; i < n_head; i++) {
+        a_head[i] = normalize_do_loop_head(al, a_loc, a_head[i]);
+    }
+    return ASR::make_DoConcurrentLoop_t(al, a_loc, a_head, n_head,
+        a_shared, n_shared, a_local, n_local, a_reduction, n_reduction,
+        a_body, n_body);
+}
+
+ASR::asr_t* make_ForAllSingle_t_util(Allocator &al, const Location &a_loc,
+        const ASR::do_loop_head_t &a_head, ASR::stmt_t* a_assign_stmt) {
+    return ASR::make_ForAllSingle_t(al, a_loc,
+        normalize_do_loop_head(al, a_loc, a_head), a_assign_stmt);
+}
+
 void set_intrinsic(ASR::symbol_t* sym) {
     switch( sym->type ) {
         case ASR::symbolType::Module: {
