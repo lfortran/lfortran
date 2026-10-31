@@ -303,8 +303,8 @@ caches when it closes.
 
 Keep compiler inputs identical between commits. The version comes from
 `git describe` and changes with every commit, so it must not appear in build
-paths: `ci/build.sh` unpacks the versioned source tarball into the fixed
-`lfortran-src/` directory before building.
+paths: `ci/source_tarball.sh` unpacks the versioned source tarball into the
+fixed `lfortran-src/` directory, which `ci/build.sh` then builds.
 
 The action appends a timestamp to every saved key, so each save on `main` adds
 a new copy. After every Quick or Exhaustive run on `main`,
