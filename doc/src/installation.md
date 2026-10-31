@@ -227,7 +227,13 @@ another dependent job/queue.
 
 The Linux/LLVM 11 platform build retains full reference coverage, platform smoke tests,
 and the full GFortran, C/C++, Fortran, direct-WASM, OpenMP and CUDA-on-CPU
-backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
+backend suites. Its GFortran reference step installs conda-forge GFortran
+15.3 or newer within the 15.x series in the active environment and selects it
+explicitly through `FC`. This avoids the saved deferred-length character
+regression in GCC 15.2 ([GCC PR120713](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=120713))
+without skipping tests or changing other jobs, including Caffeine's separate
+OpenCoarrays reference toolchain.
+Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
 Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
 the full Metal and CUDA-on-CPU suites. Windows keeps its native Release

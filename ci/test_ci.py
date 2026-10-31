@@ -512,6 +512,21 @@ class MPITransportTests(unittest.TestCase):
 
 
 class WorkflowPolicyTests(unittest.TestCase):
+    def test_gfortran_reference_compiler_is_selected_only_for_its_suite(self):
+        source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        step = next(step for step in source.split("      - name: ")
+                    if " - Test integration_tests with GFortran\n" in step)
+        self.assertIn(
+            "if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')",
+            step,
+        )
+        self.assertIn("micromamba install -y 'gfortran>=15.3,<16'", step)
+        self.assertIn('export FC="$CONDA_PREFIX/bin/gfortran"', step)
+        self.assertIn("./run_tests.py -b gfortran\n", step)
+        self.assertNotIn("--smoke", step)
+        self.assertNotIn("--exclude", step)
+        self.assertEqual(source.count("gfortran>=15.3,<16"), 1)
+
     def test_application_catalog_runs_in_every_exhaustive_run_except_tags(self):
         workflows = ROOT / ".github/workflows"
         callers = [path.name for path in workflows.glob("*.yml")
@@ -1000,6 +1015,49 @@ class QuickScriptTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         return result
+
+    def run_gfortran_reference_step(self, failing_tool=None):
+        source = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        step = next(step for step in source.split("      - name: ")
+                    if " - Test integration_tests with GFortran\n" in step)
+        script = "\n".join(line[12:] for line in step.split("        run: |\n", 1)[1].splitlines())
+        prefix = self.directory / "reference"
+        (prefix / "bin").mkdir(parents=True)
+        for target in (self.bin / "micromamba", prefix / "bin/gfortran"):
+            shutil.copyfile(self.bin / "gcc", target)
+            target.chmod(0o755)
+        selection = self.directory / "selection.json"
+        (self.directory / "integration_tests/run_tests.py").write_text(
+            f"#!{sys.executable}\n"
+            "import json, os, sys\n"
+            "from pathlib import Path\n"
+            f"Path({str(selection)!r}).write_text(json.dumps("
+            "{'FC': os.environ.get('FC'), 'args': sys.argv[1:]}))\n"
+        )
+        env = dict(self.env, CONDA_PREFIX=str(prefix), FC="/unwanted/system/gfortran")
+        if failing_tool:
+            env["CI_FAIL_TOOL"] = failing_tool
+        result = subprocess.run(
+            ["bash", "-e", "-c", script], cwd=self.directory, env=env,
+            capture_output=True, text=True,
+        )
+        return result, selection, prefix
+
+    def test_gfortran_reference_step_overrides_host_compiler(self):
+        result, selection, prefix = self.run_gfortran_reference_step()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads(selection.read_text()),
+                         {"FC": str(prefix / "bin/gfortran"), "args": ["-b", "gfortran"]})
+        calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+        self.assertEqual(calls, [
+            [str(self.bin / "micromamba"), ["install", "-y", "gfortran>=15.3,<16"]],
+            [str(prefix / "bin/gfortran"), ["--version"]],
+        ])
+
+    def test_gfortran_reference_setup_failure_stops_the_suite(self):
+        result, selection, _ = self.run_gfortran_reference_step(failing_tool="micromamba")
+        self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
+        self.assertFalse(selection.exists())
 
     def test_platform_profiles(self):
         cases = (
