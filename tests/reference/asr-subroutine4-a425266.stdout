@@ -268,7 +268,7 @@
                         [((Var 2 i__dc)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())]
+                        (IntegerConstant 1 (Integer 4) Decimal))]
                         []
                         []
                         []

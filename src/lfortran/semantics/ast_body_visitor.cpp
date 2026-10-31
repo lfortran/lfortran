@@ -2641,7 +2641,7 @@ public:
                 Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                 body.push_back(al, body_assign);
 
-                ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(
+                ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(
                     al, a_fmt->base.loc, nullptr, head, body.p, body.n, nullptr, 0));
                 
                 tmp_vec.push_back((ASR::asr_t*)do_loop);
@@ -8199,7 +8199,7 @@ public:
                     head.m_end = idl->m_end;
                     head.m_increment = idl->m_increment;
 
-                    tmp = ASR::make_DoLoop_t(al, x.base.base.loc, nullptr,
+                    tmp = ASRUtils::make_DoLoop_t_util(al, x.base.base.loc, nullptr,
                         head, body.p, body.size(), nullptr, 0);
                     return;
                 }
@@ -10796,7 +10796,7 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
+            tmp = ASRUtils::make_DoLoop_t_util(al, x.base.base.loc, x.m_stmt_name,
                 head, body.p, body.size(), nullptr, 0);
             if (do_loop_variables.size() > 0) {
                 do_loop_variables.pop_back();
@@ -11011,7 +11011,7 @@ public:
                 }
             }
         }
-        tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
+        tmp = ASRUtils::make_DoConcurrentLoop_t_util(al, x.base.base.loc, heads.p, heads.n, shared_expr.p, shared_expr.n, local_expr.p, local_expr.n, reductions.p, reductions.n, body.p,
                 body.size());
         all_loops_blocks_nesting -= 1;
     }
@@ -11079,7 +11079,7 @@ public:
             head.m_end = end;
             head.m_increment = increment;
             head.loc = head.m_v->base.loc;
-            tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, head, inner_stmt);
+            tmp = ASRUtils::make_ForAllSingle_t_util(al, x.base.base.loc, head, inner_stmt);
             inner_stmt = ASRUtils::STMT(tmp);
         }
         all_loops_blocks_nesting -= 1;
@@ -11147,7 +11147,7 @@ public:
                 stmt = mask_to_if(*x.m_mask, stmt);
             }
             for (size_t i = heads.size(); i-- > 0;) {
-                tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
+                tmp = ASRUtils::make_ForAllSingle_t_util(al, x.base.base.loc, heads.p[i], stmt);
                 stmt = ASRUtils::STMT(tmp);
             }
         } else {
@@ -11157,7 +11157,7 @@ public:
             if (x.m_mask) {
                 apply_mask(*x.m_mask, body);
             }
-            tmp = ASR::make_DoConcurrentLoop_t(al, x.base.base.loc, heads.p, heads.n,
+            tmp = ASRUtils::make_DoConcurrentLoop_t_util(al, x.base.base.loc, heads.p, heads.n,
                 nullptr, 0, nullptr, 0, nullptr, 0, body.p, body.size());
         }
         all_loops_blocks_nesting -= 1;
