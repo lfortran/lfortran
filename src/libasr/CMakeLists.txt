@@ -126,6 +126,7 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_launch_sync.cpp
+    pass/gpu_sequential_unroll.cpp
     pass/gpu_affine.cpp
     pass/gpu_loop_utils.cpp
     pass/gpu_loop_fusion.cpp
