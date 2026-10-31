@@ -77,15 +77,17 @@ saved pointer of the host, a frame slot, points at.
 
 A value that can be invoked after the statement that makes it (a Var naming
 P: an actual argument, a pointer target, a component, c_funloc) is one of a
-pool of K thunks `P__lcompilers_value_<i>` (K is
-PassOptions::internal_procedure_thunks), thunk i reading frame slot i of a
-saved array of the host. An instance of the host that makes a value takes a
-free slot, once, points it at its frame and names the thunk of that slot; it
-gives the slot back before it returns. The index of the slot it holds (0 for
-none) is a variable of the host in the frame, so that taking the slot again
-and returning without one cost a comparison. So every live instance has its own
-thunks, and a value reaches the instance that made it (Fortran 2018
-15.6.2.4), also while a newer instance of the host is active:
+pool of K thunks `P__lcompilers_value_<i>`, thunk i reading frame slot i of
+a saved array of the host. K is PassOptions::internal_procedure_thunks for a
+recursive host (Function::m_recursive) and 1 for a host that is not, which
+has one instance at a time; if it is entered again anyway, taking a second
+slot stops with an error that says so. An instance of the host that makes a
+value takes a free slot, once, points it at its frame and names the thunk of
+that slot; it gives the slot back before it returns. The index of the slot
+it holds (0 for none) is a variable of the host in the frame, so that taking
+the slot again and returning without one cost a comparison. So every live
+instance has its own thunks, and a value reaches the instance that made it
+(Fortran 2018 15.6.2.4), also while a newer instance of the host is active:
 
     subroutine h(n)                             ! after the pass
         ...
@@ -1114,8 +1116,12 @@ public:
     std::map<ASR::symbol_t*, ASR::symbol_t*> thunk_targets;
 
     diag::Diagnostics *diagnostics;
-    // The number of thunks of each pool (see above)
-    int64_t pool_size;
+    // The number of thunks of each pool of a recursive host (see above)
+    int64_t max_pool_size;
+    // The number of thunks of each pool of the host being processed: one for
+    // a host that is not recursive, which has one instance at a time
+    int64_t pool_size = 0;
+    bool recursive_host = true;
     // Whether the instances of a host can run on several threads, which
     // then take and give back frame slots under a lock
     bool openmp;
@@ -1123,7 +1129,7 @@ public:
 
     HostFrameBuilder(Allocator &al_, diag::Diagnostics *diagnostics_,
             int64_t pool_size_, bool openmp_):
-        al(al_), diagnostics(diagnostics_), pool_size(pool_size_),
+        al(al_), diagnostics(diagnostics_), max_pool_size(pool_size_),
         openmp(openmp_) {}
 
     // A value dummy argument of a bind(c) procedure is held by the procedure
@@ -1644,6 +1650,9 @@ public:
         std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> pools;
         std::map<ASR::symbol_t*, size_t> pool_index;
         std::vector<ASR::Function_t*> pool_procs;
+        recursive_host = ASR::is_a<ASR::Function_t>(*host_sym) &&
+            ASR::down_cast<ASR::Function_t>(host_sym)->m_recursive;
+        pool_size = recursive_host ? max_pool_size : 1;
         if (ASR::is_a<ASR::Function_t>(*host_sym)) {
             for (ASR::Function_t *thunk: kept_thunks) {
                 ASR::symbol_t *target = thunk_targets.at((ASR::symbol_t*) thunk);
@@ -2032,10 +2041,15 @@ public:
                 std::vector<ASR::stmt_t*> take = locked(scope,
                     {b.Assignment(b.Var(i), b.i32(1)), search});
                 take.push_back(b.If(b.Eq(held(), b.i32(0)), {error_stop(
-                    "more than " + std::to_string(pool_size) + " instances of '" +
-                    host_name + "' that made procedure values of its internal "
-                    "procedures are active at the same time; recompile with "
-                    "--internal-procedure-thunks=<larger value>")}, {}));
+                    recursive_host
+                    ? "more than " + std::to_string(pool_size) + " instances of '" +
+                      host_name + "' that made procedure values of its internal "
+                      "procedures are active at the same time; recompile with "
+                      "--internal-procedure-thunks=<larger value>"
+                    : "'" + host_name + "' is not recursive, but it was "
+                      "entered again while an instance that made a procedure "
+                      "value of one of its internal procedures was active; "
+                      "declare it RECURSIVE")}, {}));
                 stmts.push_back(al, b.If(b.Eq(held(), b.i32(0)), take, {}));
                 stmts.push_back(al, b.Assignment(b.Var(scope->get_symbol("index")),
                     held()));
