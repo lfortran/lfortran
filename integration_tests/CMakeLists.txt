@@ -3325,6 +3325,7 @@ RUN(NAME allocate_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_75 LABELS gfortran llvm fortran)
 RUN(NAME allocate_76 LABELS gfortran llvm)
 RUN(NAME allocate_77 LABELS gfortran llvm c) # allocation on assignment of a derived-type scalar with the C backend (#15949)
+RUN(NAME allocate_78 LABELS gfortran llvm cpp) # negative ALLOCATE extent gives a zero-size array
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm

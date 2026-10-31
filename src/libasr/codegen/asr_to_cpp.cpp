@@ -513,6 +513,9 @@ public:
             }
             visit_expr(*arg.m_dims[j].m_length);
             out += indent + dim + ".length = " + src + ";\n";
+            // A negative extent allocates a zero-size array, as in the
+            // LLVM backend's descriptor setup.
+            out += indent + "if (" + dim + ".length < 0) " + dim + ".length = 0;\n";
             size += " * " + dim + ".length";
         }
         std::string stride = "1";
