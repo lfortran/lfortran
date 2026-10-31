@@ -1248,7 +1248,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                 body.push_back(al, inner_body[0]);
             }
             loop_stmt = ASRUtils::STMT(
-                ASR::make_DoLoop_t(al, loc, nullptr,
+                ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                     head, body.p, body.n, nullptr, 0));
         }
         new_body.push_back(al, loop_stmt);
@@ -1519,7 +1519,7 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         body.push_back(al, inner);
-        inner = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        inner = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             head, body.p, body.n, nullptr, 0));
     }
     return inner;
@@ -2253,7 +2253,7 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
             Vec<ASR::stmt_t*> body;
             body.reserve(al, inner.size());
             for (ASR::stmt_t *s : inner) body.push_back(al, s);
-            return {ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            return {ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0))};
         };
         for (size_t i = 0; i < call.n_args; i++) {
@@ -2993,7 +2993,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
             head.m_increment = nullptr;
             if (loop_nest == nullptr) {
                 loop_nest = ASRUtils::STMT(
-                    ASR::make_DoLoop_t(al, loc, nullptr,
+                    ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, innermost_body.p,
                         innermost_body.n, nullptr, 0));
             } else {
@@ -3001,7 +3001,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                 outer_body.reserve(al, 1);
                 outer_body.push_back(al, loop_nest);
                 loop_nest = ASRUtils::STMT(
-                    ASR::make_DoLoop_t(al, loc, nullptr,
+                    ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, outer_body.p, outer_body.n,
                         nullptr, 0));
             }

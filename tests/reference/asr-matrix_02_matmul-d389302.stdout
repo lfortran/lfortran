@@ -415,13 +415,13 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(DoLoop
                             ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (IntegerConstant 3 (Integer 4) Decimal)
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (Var 2 centry)
                                 (Cast
@@ -445,7 +445,7 @@
                                 ((Var 2 k)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 4 (Integer 4) Decimal)
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(Assignment
                                     (Var 2 centry)
                                     (RealBinOp

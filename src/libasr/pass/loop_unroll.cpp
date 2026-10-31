@@ -36,13 +36,7 @@ public:
         ASR::do_loop_head_t x_head = x.m_head;
         ASR::expr_t* x_start = ASRUtils::expr_value(x_head.m_start);
         ASR::expr_t* x_end = ASRUtils::expr_value(x_head.m_end);
-        ASR::expr_t* x_inc = nullptr;
-        if( x_head.m_increment ) {
-            x_inc = ASRUtils::expr_value(x_head.m_increment);
-        } else {
-            ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-            x_inc = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x_head.m_end->base.loc, 1, int32_type));
-        }
+        ASR::expr_t* x_inc = ASRUtils::expr_value(x_head.m_increment);
 
         int64_t _start, _end, _inc;
         if( !ASRUtils::is_value_constant(x_start, _start) ||
@@ -60,8 +54,9 @@ public:
         int64_t groups = loop_size / unroll_factor_;
         int64_t new_end = _start + (groups - 1) * _inc * unroll_factor_ + (unroll_factor_ - 1) * _inc;
         int64_t remaining_part = loop_size % unroll_factor_;
-        ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-        xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x_end->base.loc, new_end, int32_type));
+        xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            x_end->base.loc, new_end, ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(x_head.m_v))));
 
         Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x);
         ASR::stmt_t* whileloop_stmt = init_and_whileloop[1];

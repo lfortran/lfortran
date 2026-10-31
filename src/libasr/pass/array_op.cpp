@@ -1001,7 +1001,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::do_loop_head_t head;
         head.m_v = offset; head.m_start = zero; head.m_end = loop_end;
         head.m_increment = nullptr; head.loc = loc;
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(
             al, loc, nullptr, head, loop_body.p, 1, nullptr, 0)));
         remove_original_stmt = true;
     }
@@ -1680,7 +1680,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
-        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         do_loop_depth += 1;
         array_indices_args_i += 1;
@@ -1713,7 +1713,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     index2var[do_loop_head.m_v].first, bound_dim, "ubound", al, get_index_kind());
                 do_loop_head.m_increment = nullptr;
             }
-            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             do_loop_depth++;
             array_indices_args_i += 1;
@@ -1872,7 +1872,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
-        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         parent_do_loop_body.push_back(al, do_loop);
         do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
@@ -1888,7 +1888,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
             get_loop_bounds(vars_expr[var_with_maxrank], i, do_loop_head.m_start,
                 do_loop_head.m_end, do_loop_head.m_increment);
-            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             parent_do_loop_body.push_back(al, do_loop);
             do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
@@ -2598,7 +2598,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             Vec<ASR::stmt_t*> body;
             body.reserve(al, 1);
             body.push_back(al, curr_stmt);
-            curr_stmt = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            curr_stmt = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 loop_head, body.p, body.size(), nullptr, 0));
         }
         pass_result.push_back(al, curr_stmt);
@@ -2945,7 +2945,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         head.m_end = PassUtils::get_bound(
             duplicator.duplicate_expr(target), 1, "ubound", al, index_kind);
         head.m_increment = nullptr;
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(
             al, loc, nullptr, head, body.p, body.size(), nullptr, 0)));
         return true;
     }
