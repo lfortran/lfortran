@@ -3536,6 +3536,76 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         x_m_args_vec.push_back(al, call_arg);
     }
 
+    // A polymorphic array passed to a non-polymorphic array dummy of its
+    // declared type, as in `call sub(cw)` with `class(t) :: cw(:)` and
+    // `type(t) :: x(:)`. Its dynamic type may be an extension of `t`, whose
+    // elements are farther apart than those of `t`, so only the `t` part of
+    // each element is copied into a temporary of the dummy's type.
+    bool is_class_array_for_type_array_dummy(ASR::expr_t* value,
+        ASR::Variable_t* dummy) {
+        if( value == nullptr || dummy == nullptr ) {
+            return false;
+        }
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        ASR::ttype_t* dummy_type = dummy->m_type;
+        if( !ASRUtils::is_array(value_type) || !ASRUtils::is_array(dummy_type) ||
+            ASRUtils::is_allocatable(dummy_type) || ASRUtils::is_pointer(dummy_type) ) {
+            return false;
+        }
+        ASR::ttype_t* value_element_type = ASRUtils::extract_type(value_type);
+        ASR::ttype_t* dummy_element_type = ASRUtils::extract_type(dummy_type);
+        return ASR::is_a<ASR::StructType_t>(*value_element_type) &&
+            ASR::is_a<ASR::StructType_t>(*dummy_element_type) &&
+            ASRUtils::is_class_type(value_element_type) &&
+            !ASRUtils::is_unlimited_polymorphic_type(value) &&
+            !ASRUtils::is_class_type(dummy_element_type);
+    }
+
+    void copy_in_copy_out_class_array_argument(Vec<ASR::call_arg_t>& x_m_args_vec,
+        ASR::call_arg_t& arg, ASR::Variable_t* dummy, const std::string& name_hint) {
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(arg.m_value);
+        const Location& loc = value->base.loc;
+        ASR::ttype_t* temporary_type = ASRUtils::create_array_type_with_empty_dims(al,
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)), dummy->m_type);
+        temporary_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, temporary_type));
+        ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint, temporary_type, nullptr,
+            dummy->m_type_declaration);
+        insert_allocate_stmt_for_array(al, array_var_temporary, value, current_body);
+        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+            al, loc, array_var_temporary, value, nullptr, exprs_with_target)));
+        if( dummy->m_intent != ASRUtils::intent_in && !dummy->m_value_attr ) {
+            // Copying back into the whole allocatable actual would, with
+            // reallocation on assignment, give it the dynamic type of the
+            // temporary. Its full section keeps the allocation and the
+            // dynamic type, and only the `t` part of each element is stored.
+            ASR::expr_t* copy_out_target = value;
+            if( ASRUtils::is_allocatable(ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value));
+                Vec<ASR::array_index_t> section_indices; section_indices.reserve(al, n_dims);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::array_index_t index;
+                    index.loc = loc;
+                    index.m_left = b.ArrayLBound(value, i + 1);
+                    index.m_right = b.ArrayUBound(value, i + 1);
+                    index.m_step = b.i32(1);
+                    section_indices.push_back(al, index);
+                }
+                ASR::ttype_t* section_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, n_dims, ASRUtils::expr_type(value));
+                copy_out_target = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, value,
+                    section_indices.p, section_indices.size(), section_type, nullptr));
+            }
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, loc, copy_out_target, array_var_temporary, nullptr, exprs_with_target)));
+        }
+        ASR::call_arg_t call_arg;
+        call_arg.loc = loc;
+        call_arg.m_value = array_var_temporary;
+        x_m_args_vec.push_back(al, call_arg);
+    }
+
     // `is_call` tells whether the arguments are those of a procedure call,
     // whose callee may define them, rather than of a constructor.
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
@@ -3560,6 +3630,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 !(dummy && ASRUtils::is_pointer(dummy->m_type));
             if( copy_in_copy_out ) {
                 copy_in_copy_out_argument(x_m_args_vec, x_m_args[i], dummy, name_hint);
+                continue;
+            }
+            if( is_call && body_after_curr_stmt != nullptr && !inside_where &&
+                is_class_array_for_type_array_dummy(x_m_args[i].m_value, dummy) ) {
+                copy_in_copy_out_class_array_argument(x_m_args_vec, x_m_args[i], dummy, name_hint);
                 continue;
             }
             if (orig_args &&
