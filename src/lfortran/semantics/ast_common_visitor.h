@@ -10805,7 +10805,12 @@ public:
                 // OR character(len=4)     !> set char length to 4
                 // OR character :: x(2)*3  !> set char length to 3
                 // OR character(1) x*(d+1) !> set char length to d+1 expression
-                if (is_char_type && s.m_length) {
+                // `character :: x*(g(n))` with `g` a generic of the host module:
+                // determine_type postponed this length, so it is resolved
+                // later and must not be visited (and rejected) here.
+                bool length_postponed = s.m_length && is_char_type
+                    && is_funcCall_to_unresolved_genereicProcedure(s.m_length);
+                if (is_char_type && s.m_length && !length_postponed) {
                     this->visit_expr(*s.m_length);
                     ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                         ASRUtils::type_get_past_array(type));
@@ -10822,7 +10827,7 @@ public:
                     } else {
                         lhs_type->m_len = char_length;
                     }
-                } else if (s.m_length) {
+                } else if (s.m_length && !length_postponed) {
                     diag.add(Diagnostic(
                         "length specifier is only valid for character type",
                         Level::Error, Stage::Semantic, {
