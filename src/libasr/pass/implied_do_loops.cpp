@@ -641,6 +641,281 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             ASRUtils::constructor_has_runtime_extent(&x->base);
     }
 
+    // Whether a nested implied-DO control has the same value in every
+    // iteration of the enclosing implied-DOs, so that saving it once is
+    // equivalent to evaluating it at each nested loop entry.
+    static bool is_invariant_control(ASR::expr_t* control,
+            const std::vector<ASR::symbol_t*>& indices) {
+        class InvariantControl: public ASR::BaseWalkVisitor<InvariantControl> {
+        public:
+            const std::vector<ASR::symbol_t*>& indices;
+            bool invariant = true;
+            InvariantControl(const std::vector<ASR::symbol_t*>& indices):
+                indices(indices) {}
+            void visit_ttype(const ASR::ttype_t&) {}
+            void visit_Var(const ASR::Var_t& x) {
+                if (std::find(indices.begin(), indices.end(), x.m_v) !=
+                        indices.end()) {
+                    invariant = false;
+                }
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t&) {
+                invariant = false;
+            }
+            void visit_ArrayConstructor(const ASR::ArrayConstructor_t&) {
+                invariant = false;
+            }
+            void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t&) {
+                invariant = false;
+            }
+        } v(indices);
+        v.visit_compile_time_value = false;
+        v.visit_expr(*control);
+        return v.invariant;
+    }
+
+    // Whether the element count of a constructor item is known before its
+    // traversal without evaluating anything twice. It is not when a nested
+    // implied-DO control depends on an enclosing index or calls a procedure,
+    // or when an array leaf inside an implied-DO has a runtime extent that
+    // is only known once the leaf is evaluated.
+    static bool has_closed_form_cardinality(ASR::expr_t* item,
+            std::vector<ASR::symbol_t*>& indices) {
+        if (ASR::is_a<ASR::Cast_t>(*item)) {
+            return has_closed_form_cardinality(
+                ASR::down_cast<ASR::Cast_t>(item)->m_arg, indices);
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*item)) {
+            ASR::ArrayConstructor_t* c = ASR::down_cast<ASR::ArrayConstructor_t>(item);
+            for (size_t i = 0; i < c->n_args; i++) {
+                if (!has_closed_form_cardinality(c->m_args[i], indices)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            ASR::ImpliedDoLoop_t* loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+            if (!ASR::is_a<ASR::Var_t>(*loop->m_var)) return false;
+            for (ASR::expr_t* control: {loop->m_start, loop->m_end,
+                    loop->m_increment}) {
+                if (control && !indices.empty() &&
+                        !is_invariant_control(control, indices)) {
+                    return false;
+                }
+            }
+            indices.push_back(ASR::down_cast<ASR::Var_t>(loop->m_var)->m_v);
+            bool known = true;
+            for (size_t i = 0; i < loop->n_values && known; i++) {
+                known = has_closed_form_cardinality(loop->m_values[i], indices);
+            }
+            indices.pop_back();
+            return known;
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(item);
+        if (!ASRUtils::is_array(type) || ASRUtils::is_fixed_size_array(type)) {
+            return true;
+        }
+        return indices.empty() || ASR::is_a<ASR::Var_t>(*item);
+    }
+
+    // Rebuilds a constructor item whose cardinality has a closed form with
+    // each implied-DO control saved once in the parent activation and each
+    // runtime-extent array leaf outside implied-DOs snapshotted, in element
+    // order, and sets `count` to its element count.
+    ASR::expr_t* capture_cardinality(ASR::expr_t* item, ASR::expr_t*& count,
+            std::vector<ASR::expr_t*>& snapshots, ASR::ttype_t* index_type,
+            bool nested) {
+        const Location& loc = item->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        auto integer = [&](int64_t n) {
+            return ASRUtils::EXPR(
+                ASR::make_IntegerConstant_t(al, loc, n, index_type));
+        };
+        auto add = [&](ASR::expr_t* sum, ASR::expr_t* term) {
+            return sum ? b.Add(sum, term) : term;
+        };
+        if (ASR::is_a<ASR::Cast_t>(*item)) {
+            ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(item);
+            ASR::expr_t* arg = capture_cardinality(cast->m_arg, count,
+                snapshots, index_type, nested);
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, cast->m_kind,
+                cast->m_type, nullptr, cast->m_dest));
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*item)) {
+            ASR::ArrayConstructor_t* c = ASR::down_cast<ASR::ArrayConstructor_t>(item);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, c->n_args);
+            count = nullptr;
+            for (size_t i = 0; i < c->n_args; i++) {
+                ASR::expr_t* arg_count = nullptr;
+                args.push_back(al, capture_cardinality(c->m_args[i], arg_count,
+                    snapshots, index_type, nested));
+                count = add(count, arg_count);
+            }
+            if (!count) count = integer(0);
+            return ASRUtils::EXPR(ASR::make_ArrayConstructor_t(al, loc,
+                args.p, args.n, c->m_type, nullptr, c->m_storage_format,
+                c->m_struct_var));
+        }
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+            ASR::ImpliedDoLoop_t* loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(item);
+            ASR::expr_t* controls[] = {
+                loop->m_start, loop->m_end, loop->m_increment};
+            for (ASR::expr_t*& control: controls) {
+                if (!control) continue;
+                prepare_constructor_leaf(control, pass_result);
+                LCOMPILERS_ASSERT(ASRUtils::types_equal(
+                    ASRUtils::expr_type(control),
+                    ASRUtils::expr_type(loop->m_var), nullptr, nullptr));
+                std::string name = current_scope->get_unique_name("_idl_control");
+                ASR::stmt_t* assignment;
+                control = PassUtils::create_auxiliary_variable_for_expr(
+                    control, name, al, current_scope, assignment);
+                pass_result.push_back(al, assignment);
+            }
+            auto index = [&](ASR::expr_t* control) {
+                return CastingUtil::perform_casting(control, index_type, al, loc);
+            };
+            ASR::expr_t* step = controls[2] ? index(controls[2]) : integer(1);
+            ASR::expr_t* trip = PassUtils::create_var(result_counter++,
+                "_constructor_trip", loc, index_type, al, current_scope);
+            pass_result.push_back(al, b.Assignment(trip, b.Div(b.Add(b.Sub(
+                index(controls[1]), index(controls[0])), step), step)));
+            pass_result.push_back(al, b.If(b.Lt(trip, integer(0)),
+                {b.Assignment(trip, integer(0))}, {}));
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, loop->n_values);
+            ASR::expr_t* per_iteration = nullptr;
+            for (size_t i = 0; i < loop->n_values; i++) {
+                ASR::expr_t* value_count = nullptr;
+                values.push_back(al, capture_cardinality(loop->m_values[i],
+                    value_count, snapshots, index_type, true));
+                per_iteration = add(per_iteration, value_count);
+            }
+            count = per_iteration ? b.Mul(trip, per_iteration) : integer(0);
+            return ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(al, loc,
+                values.p, values.n, loop->m_var, controls[0], controls[1],
+                controls[2], loop->m_type, nullptr));
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(item);
+        if (!ASRUtils::is_array(type)) {
+            count = integer(1);
+            return item;
+        }
+        if (ASRUtils::is_fixed_size_array(type)) {
+            count = integer(ASRUtils::get_fixed_size_of_array(type));
+            return item;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*item)) {
+            LCOMPILERS_ASSERT(!nested);
+            prepare_constructor_leaf(item, pass_result);
+            ASR::ttype_t* snapshot_type = ASRUtils::duplicate_type_with_empty_dims(
+                al, ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(item)),
+                ASR::array_physical_typeType::DescriptorArray, true);
+            ASR::expr_t* snapshot = PassUtils::create_var(result_counter++,
+                "_constructor_leaf", loc, ASRUtils::TYPE(
+                    ASR::make_Allocatable_t(al, loc, snapshot_type)),
+                al, current_scope);
+            // An internal owning snapshot, independent of the user's
+            // allocation-on-assignment option.
+            pass_result.push_back(al, ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(al, loc, snapshot, item,
+                    nullptr, true, false)));
+            snapshots.push_back(snapshot);
+            item = snapshot;
+        }
+        count = b.ArraySize(item, nullptr, index_type);
+        return item;
+    }
+
+    // Fills a constructor whose element count is known before its traversal
+    // directly into an exact-size result.
+    void materialize_counted_constructor(ASR::ArrayConstructor_t* x,
+            ASR::ttype_t* result_type, ASR::ttype_t* index_type) {
+        const Location& loc = x->base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t* count = nullptr;
+        std::vector<ASR::expr_t*> snapshots;
+        ASR::expr_t* items = capture_cardinality(&x->base, count, snapshots,
+            index_type, false);
+        ASR::expr_t* result = PassUtils::create_var(result_counter++,
+            "_constructor_result", loc, result_type, al, current_scope);
+        ASR::expr_t* index = PassUtils::create_var(result_counter++,
+            "_constructor_index", loc, index_type, al, current_scope);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(
+            ASR::make_IntegerConstant_t(al, loc, 1, index_type));
+        dim.m_length = count;
+        dims.push_back(al, dim);
+        pass_result.push_back(al, b.Deallocate(result));
+        pass_result.push_back(al, b.Allocate(result, dims));
+        pass_result.push_back(al, b.Assignment(index, dim.m_start));
+        auto store = [&](ASR::expr_t* value, Vec<ASR::stmt_t*>& body) {
+            body.push_back(al, b.Assignment(PassUtils::create_array_ref(
+                result, index, al, current_scope), value));
+            body.push_back(al, b.Assignment(index, b.Add(index, dim.m_start)));
+        };
+        PassUtils::ReplacerUtils::ConstructorLeaf fill =
+            [&](ASR::expr_t* value, Vec<ASR::stmt_t*>& body,
+                    bool perform_cast, ASR::cast_kindType cast_kind,
+                    ASR::ttype_t* casted_type) {
+                prepare_constructor_leaf(value, body);
+                ASR::ttype_t* type = ASRUtils::expr_type(value);
+                if (!ASRUtils::is_array(type)) {
+                    if (perform_cast && !ASRUtils::types_equal(
+                            type, casted_type, nullptr, nullptr)) {
+                        value = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+                            cast_kind, casted_type, nullptr, nullptr));
+                    }
+                    store(value, body);
+                    return;
+                }
+                ASR::expr_t* leaf = value;
+                if (!ASR::is_a<ASR::Var_t>(*value)) {
+                    ASR::ttype_t* leaf_type = ASRUtils::duplicate_type_with_empty_dims(
+                        al, ASRUtils::type_get_past_allocatable_pointer(type),
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                    leaf = PassUtils::create_var(result_counter++,
+                        "_constructor_leaf", loc, ASRUtils::TYPE(
+                            ASR::make_Allocatable_t(al, loc, leaf_type)),
+                        al, current_scope);
+                    body.push_back(al, ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(al, loc, leaf, value,
+                            nullptr, true, false)));
+                }
+                Vec<ASR::expr_t*> indices;
+                Vec<ASR::stmt_t*> inner;
+                PassUtils::ReplacerUtils::create_do_loop(al, loc,
+                    ASRUtils::extract_n_dims_from_ttype(type), leaf,
+                    indices, inner, [&]() {
+                        store(PassUtils::create_array_ref(leaf, indices, al,
+                            current_scope, perform_cast, cast_kind,
+                            casted_type), inner);
+                    }, current_scope, &body);
+                if (leaf != value) body.push_back(al, b.Deallocate(leaf));
+            };
+        PassUtils::ReplacerUtils::ConstructorPrepare prepare_control =
+            [&](ASR::expr_t*& value, Vec<ASR::stmt_t*>& body) {
+                prepare_constructor_leaf(value, body);
+            };
+        PassUtils::ReplacerUtils::visit_ArrayConstructor(
+            ASR::down_cast<ASR::ArrayConstructor_t>(items), al, result,
+            &pass_result, index, current_scope, false,
+            ASR::cast_kindType::IntegerToInteger, nullptr,
+            skip_idl_save_restore, &fill, &prepare_control);
+        for (ASR::expr_t* snapshot: snapshots) {
+            pass_result.push_back(al, b.Deallocate(snapshot));
+        }
+        constructor_results.push_back(result);
+        *current_expr = result;
+        remove_original_statement = false;
+    }
+
     void materialize_dynamic_constructor(ASR::ArrayConstructor_t* x) {
         const Location& loc = x->base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -675,6 +950,13 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     ASR::array_physical_typeType::DescriptorArray,
                     ASR::memory_spaceType::Global))));
         };
+        std::vector<ASR::symbol_t*> enclosing_indices;
+        if (has_closed_form_cardinality(&x->base, enclosing_indices)) {
+            materialize_counted_constructor(x, owner_type(), index_type);
+            return;
+        }
+        // The cardinality is only known once the constructor has been
+        // traversed, so its elements are appended to a growing buffer.
         struct AppendContext {
             ASR::expr_t *buffer, *scratch, *used, *capacity;
         } context {
