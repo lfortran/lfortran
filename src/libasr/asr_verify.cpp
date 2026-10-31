@@ -1584,6 +1584,15 @@ public:
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);
+        // The signature is the type of an instance of this type, which is not
+        // polymorphic: a backend lays an instance out from it, and a
+        // `class(t)` is a separate StructType of the same members.
+        require_id(x.m_struct_signature != nullptr &&
+                ASR::is_a<ASR::StructType_t>(*x.m_struct_signature) &&
+                ASR::down_cast<ASR::StructType_t>(x.m_struct_signature)->m_is_cstruct,
+            "asr.verify.struct.signature_is_instance_type",
+            "Struct::m_struct_signature of '" + std::string(x.m_name) +
+            "' must be the StructType of an instance of the type, which is not polymorphic");
         if( !x.m_alignment ) {
             return ;
         }

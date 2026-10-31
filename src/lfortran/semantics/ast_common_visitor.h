@@ -13877,7 +13877,7 @@ public:
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                         nullptr, 0, nullptr, nullptr, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
                         struct_->m_struct_signature = struct_type;
                         v = ASR::down_cast<ASR::symbol_t>(dtype);
@@ -14250,7 +14250,7 @@ public:
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
                                                         nullptr, 0, nullptr, nullptr, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
-                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
+                        ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
                         struct_->m_struct_signature = struct_type;
                         v = ASR::down_cast<ASR::symbol_t>(dtype);

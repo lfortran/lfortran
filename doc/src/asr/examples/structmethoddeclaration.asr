@@ -57,7 +57,7 @@
                   )
                 ]
                 :member_function_types []
-                :is_cstruct false
+                :is_cstruct true
                 :is_unlimited_polymorphic false
               )
               :dependencies []

@@ -2201,6 +2201,13 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
 
+// The type of an instance of the derived type `struct_sym`, which is not
+// polymorphic (`asr.verify.struct.signature_is_instance_type`).
+static inline ASR::ttype_t* get_struct_signature(ASR::symbol_t* struct_sym) {
+    return ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(struct_sym))->m_struct_signature;
+}
+
 // A `class(t)` declaration of a deferred type argument (C706 of the Fortran 2028
 // working draft J3/26-007r1) is recorded as an ASR::TypeParameter_t whose
 // `is_class` is set. Substituting such a type parameter with a derived type has

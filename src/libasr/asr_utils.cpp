@@ -11058,7 +11058,7 @@ ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* struct_sym,
             nullptr, nullptr, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
-            al, struct_sym->base.loc, new_sym, false);
+            al, struct_sym->base.loc, new_sym, true);
         ASR::down_cast<ASR::Struct_t>(new_sym)->m_struct_signature = sig;
         scope->add_symbol(struct_name, new_sym);
         return new_sym;
