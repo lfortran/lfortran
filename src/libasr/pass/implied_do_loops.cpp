@@ -774,16 +774,20 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     control, name, al, current_scope, assignment);
                 pass_result.push_back(al, assignment);
             }
-            auto index = [&](ASR::expr_t* control) {
-                return CastingUtil::perform_casting(control, index_type, al, loc);
-            };
-            ASR::expr_t* step = controls[2] ? index(controls[2]) : integer(1);
-            ASR::expr_t* trip = PassUtils::create_var(result_counter++,
-                "_constructor_trip", loc, index_type, al, current_scope);
-            pass_result.push_back(al, b.Assignment(trip, b.Div(b.Add(b.Sub(
-                index(controls[1]), index(controls[0])), step), step)));
-            pass_result.push_back(al, b.If(b.Lt(trip, integer(0)),
-                {b.Assignment(trip, integer(0))}, {}));
+            // The trip count is computed in the kind of the controls, so
+            // wide controls are not truncated before the division.
+            ASR::ttype_t* control_type = ASRUtils::expr_type(loop->m_var);
+            ASR::expr_t* step = controls[2] ? controls[2]
+                : b.i_t(1, control_type);
+            ASR::expr_t* control_trip = PassUtils::create_var(result_counter++,
+                "_constructor_trip", loc, control_type, al, current_scope);
+            pass_result.push_back(al, b.Assignment(control_trip, b.Div(b.Add(
+                b.Sub(controls[1], controls[0]), step), step)));
+            pass_result.push_back(al, b.If(b.Lt(control_trip,
+                b.i_t(0, control_type)),
+                {b.Assignment(control_trip, b.i_t(0, control_type))}, {}));
+            ASR::expr_t* trip = CastingUtil::perform_casting(control_trip,
+                index_type, al, loc);
             Vec<ASR::expr_t*> values;
             values.reserve(al, loop->n_values);
             ASR::expr_t* per_iteration = nullptr;

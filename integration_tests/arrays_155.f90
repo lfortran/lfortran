@@ -20,6 +20,7 @@ program arrays_155
     use constructor_controls_once
     implicit none
     integer :: i, a(5), k, n
+    integer(8) :: j8, s8, b8(3)
     real(8) :: r(5)
     complex(8) :: z(5)
     logical :: flags(5)
@@ -42,4 +43,9 @@ program arrays_155
     if (r(1) /= 1.0_8 .or. r(5) /= 5.0_8) error stop 5
     if (z(1) /= (1.0_8,-1.0_8) .or. z(5) /= (5.0_8,-5.0_8)) error stop 6
     if (any(flags .neqv. [.false.,.true.,.false.,.true.,.false.])) error stop 7
+    s8 = 4294967296_8
+    b8 = [(j8, j8=0_8, 2*s8, s8)]
+    if (any(b8 /= [0_8, s8, 2*s8])) error stop 8
+    b8 = [(j8, j8=0_8, 4294967298_8, s8/2)]
+    if (any(b8 /= [0_8, s8/2, s8])) error stop 9
 end program
