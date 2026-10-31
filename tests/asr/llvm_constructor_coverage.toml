@@ -12,7 +12,6 @@
 "symbol.Namelist" = "helper:formatted I/O"
 
 "stmt.Assign" = "helper:legacy assigned goto"
-"stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"
 "stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
 "stmt.GpuDiscard" = "lowered:device_launch_expand"

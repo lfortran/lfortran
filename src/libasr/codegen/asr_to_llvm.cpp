@@ -17889,6 +17889,29 @@ public:
             x.m_orelse, x.n_orelse);
     }
 
+    // A DO CONCURRENT runs its iterations in no particular order. It is
+    // generated as counted loops nested in the order of its heads, the
+    // innermost of which a CYCLE continues.
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        generate_do_concurrent_heads(x, 0);
+    }
+
+    void generate_do_concurrent_heads(const ASR::DoConcurrentLoop_t &x,
+            size_t i) {
+        generate_counted_do_loop(x.m_head[i], nullptr, [&]() {
+            if (i + 1 < x.n_head) {
+                generate_do_concurrent_heads(x, i + 1);
+                return;
+            }
+            enclosing_constructs.push_back(&x.base);
+            for (size_t j = 0; j < x.n_body; j++) {
+                this->visit_stmt(*x.m_body[j]);
+            }
+            enclosing_constructs.pop_back();
+        }, nullptr, 0);
+    }
+
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
         size_t n = strings_to_be_deallocated.n;
