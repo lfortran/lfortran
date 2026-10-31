@@ -11316,7 +11316,7 @@ public:
 
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
-                        if (is_pointer && ASR::is_a<ASR::Var_t>(*init_expr)) {
+                        if (is_pointer && !is_allocatable && ASRUtils::is_pointer_association_initializer(init_expr)) {
                             value = init_expr;
                         } else if( ASRUtils::is_value_constant(value) ) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
@@ -11524,6 +11524,12 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
+                    if (value == nullptr && is_pointer && !is_allocatable &&
+                            ASRUtils::is_pointer_association_initializer(init_expr)) {
+                        // `p => tgt`: an association is not a value, the
+                        // target is kept as the value (as for numeric types)
+                        value = init_expr;
+                    }
 
                     if (is_null_intrinsic_reference(s.m_initializer)
                             && !is_pointer && !is_allocatable) {
