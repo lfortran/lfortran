@@ -1267,6 +1267,11 @@ filename = "array_op_section_parameter.f90"
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "array_op_in_place_sections.f90"
+fortran = true
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "array16.f90"
 run = true
 
