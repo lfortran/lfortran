@@ -637,6 +637,12 @@ inline ASR::Allocate_t* find_allocate_for_var(
             auto *r = find_allocate_for_var(dl->m_body, dl->n_body,
                 var_name);
             if (r) return r;
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+            auto *r = find_allocate_for_var(dc->m_body, dc->n_body,
+                var_name);
+            if (r) return r;
         } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
             ASR::If_t *if_s =
                 ASR::down_cast<ASR::If_t>(stmts[i]);
@@ -2118,6 +2124,10 @@ inline ASR::expr_t* gpu_find_assigned_value(ASR::stmt_t **body,
         } else if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
             found = in(dl->m_body, dl->n_body);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+            found = in(dc->m_body, dc->n_body);
         } else if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
             ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
             found = in(wl->m_body, wl->n_body);
