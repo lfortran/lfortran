@@ -1,0 +1,13 @@
+{
+    "basename": "asr-host_associated_type_mismatch-32e3bc2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/host_associated_type_mismatch.asr",
+    "infile_hash": "ee136bccf61b107c576e08ea41d58d6f5fee6027d12e27ee767c6ff8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-host_associated_type_mismatch-32e3bc2.stderr",
+    "stderr_hash": "38584cb1a873402c68add8f1444d83e1e0b43b3115d43e034456aaeb",
+    "returncode": 2
+}
