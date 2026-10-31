@@ -10985,6 +10985,14 @@ public:
                         red.m_op = ASR::reduction_opType::ReduceIOR;
                     } else if ( op == AST::reduce_opType::ReduceIEOR ) {
                         red.m_op = ASR::reduction_opType::ReduceIEOR;
+                    } else if ( op == AST::reduce_opType::ReduceAND ) {
+                        red.m_op = ASR::reduction_opType::ReduceAND;
+                    } else if ( op == AST::reduce_opType::ReduceOR ) {
+                        red.m_op = ASR::reduction_opType::ReduceOR;
+                    } else if ( op == AST::reduce_opType::ReduceEQV ) {
+                        red.m_op = ASR::reduction_opType::ReduceEQV;
+                    } else if ( op == AST::reduce_opType::ReduceNEQV ) {
+                        red.m_op = ASR::reduction_opType::ReduceNEQV;
                     } else {
                         diag.add(Diagnostic(
                             "Unknown reduction operation",
