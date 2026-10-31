@@ -434,6 +434,17 @@ endmacro(COMPILE)
 # GFortran + LFortran LLVM + LFortran C++
 
 RUN(NAME program_cmake_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
+RUN(NAME kokkos_cpp_standard LABELS gfortran llvm cpp)
+if (LFORTRAN_BACKEND STREQUAL "cpp")
+    find_package(PythonInterp REQUIRED)
+    # The focused runner builds a target for every selected CTest.
+    add_custom_target(kokkos_cpp_standard_driver)
+    add_test(NAME kokkos_cpp_standard_driver
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_kokkos_standard.py
+            --lfortran ${CMAKE_Fortran_COMPILER}
+            --workdir ${CMAKE_CURRENT_BINARY_DIR}/kokkos-standard-driver)
+    set_tests_properties(kokkos_cpp_standard_driver PROPERTIES LABELS cpp)
+endif()
 RUN(NAME program_cmake_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 
 RUN(NAME internal_subr_host_vars_01 LABELS gfortran llvm)

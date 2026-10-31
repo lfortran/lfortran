@@ -240,6 +240,7 @@ compilation options, output options, link options and so on.
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
+* `--cpp-std <value>`, C++ standard used to compile the C++ backend's output (`c++20` (default), `c++17`)
 * `--print-leading-space`, Print leading white space if format is unspecified
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
@@ -257,6 +258,59 @@ compilation options, output options, link options and so on.
   - `x86`: For generating x86 machine code directly (without LLVM).
   - `fortran`: For generating Fortran code.
   - `julia`: For generating Julia code.
+
+The C++ backend compiles its output as C++20, which Kokkos 5 requires and
+Kokkos 4 supports. `--cpp-std=c++17` selects C++17 instead, for example for an
+older Kokkos or C++ compiler. The installed Kokkos build's other compiler and
+linker requirements (such as OpenMP) still apply.
+
+The C++ driver invokes `g++` from `PATH`; the build's `CXX` setting does not
+override it. A working C++ backend requires this compiler and its C++ standard
+library to be ABI-compatible with Kokkos and each other. The Pixi `llvm11`
+environment provisions Kokkos 4.4.01 and sets `LFORTRAN_KOKKOS_DIR` to its
+prefix; this does not by itself provide a compatible C++ compiler on every
+platform.
+
+With a compatible `g++` and an OpenMP-enabled Kokkos installation, a
+development build can compile and run using:
+
+```bash
+LFORTRAN_KOKKOS_DIR=/path/to/kokkos \
+pixi run -e llvm11 bash -c '
+    export LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR="$LFORTRAN_BUILD_DIR/src/libasr/runtime"
+    lfortran --backend=cpp --openmp example.f90 -o example
+    ./example'
+```
+
+The header override selects the development runtime headers; it is not needed
+for an installed compiler with its headers in the installation prefix.
+These settings do not make an unaugmented `--backend=cpp` invocation work with
+an OpenMP-enabled package: `--openmp` and a compatible `g++` remain required.
+Other Kokkos installations can have different requirements.
+
+On macOS ARM64, the default Pixi environment does not supply a validated C++
+backend toolchain. Apple's `g++` rejects `-fopenmp`; installing conda-forge
+`gxx` 16.2.0 with libc++ 23.1.4 is **not** a supported workaround: that
+combination misexecutes ordinary `std::string` operations in both C++17 and
+C++20. An integer-only Kokkos smoke test passing with it does not demonstrate
+ABI compatibility. A compatible toolchain is still required; no general
+macOS recipe is established here.
+
+The unit CTest `test_kokkos_standard` checks the default and `--cpp-std`
+selections through actual driver command arguments, independently of native
+Kokkos support.
+The C++ integration suite separately registers `kokkos_cpp_standard_driver`,
+which requires a real Kokkos installation and a compatible `g++`. It compiles
+and executes the regression both directly and via a separate object/link step,
+in normal, `--fast`, and `--std=f23` modes, with the default C++20 and, for
+Kokkos before 5, with `--cpp-std=c++17`. It enables OpenMP if the Kokkos
+headers require it.
+Missing packages or native compilation failures fail this integration test.
+Quick's existing Linux LLVM 11 C/C++ backend step runs this probe with its
+configured source-built Kokkos and, when present, the distinct Kokkos package
+in `CONDA_PREFIX`.
+The `kokkos_cpp_standard` integration test also has a `cpp` label,
+alongside `gfortran` and `llvm`.
 
 ### Compiler text outputs
 

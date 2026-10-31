@@ -1804,9 +1804,10 @@ int compile_to_object_file_cpp(const std::string &infile,
         if (compiler_options.openmp) {
             options += "-fopenmp ";
         }
+        options += "-std=" + compiler_options.cpp_std;
         if (kokkos) {
             std::string kokkos_includedir = LCompilers::LFortran::get_kokkos_includedir();
-            options += "-std=c++17 -I" + kokkos_includedir;
+            options += " -I" + kokkos_includedir;
         }
         options += " -I" + rtlib_header_dir;
         std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
