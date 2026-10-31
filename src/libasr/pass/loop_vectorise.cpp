@@ -54,6 +54,13 @@ public:
         pass_result.reserve(al, 1);
     }
 
+    // Device code keeps its counted loops for the device code generators,
+    // which cannot call the helper this pass creates.
+    void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::is_device_only_function(x)) return;
+        SkipOptimizationFunctionVisitor::visit_Function(x);
+    }
+
     bool is_loop(const ASR::stmt_t& x) {
         return (ASR::is_a<ASR::DoLoop_t>(x) ||
                 ASR::is_a<ASR::WhileLoop_t>(x));

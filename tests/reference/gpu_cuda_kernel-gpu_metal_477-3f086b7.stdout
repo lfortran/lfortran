@@ -1,25 +1,17 @@
 #include <stdint.h>
 
 __device__ inline void work_device_gt_gpu_28(float* a, int n, float& r, float* w) {
-    int __do_loop_end;
-    int __do_loop_end1;
     int __gpu_sum_k;
     float __gpu_sum_res;
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
-    __do_loop_end = (1 + max(0, n) - 1);
-    __libasr_index_0_ = (1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, n) - 1); __libasr_index_0_++) {
         w[((int)(__libasr_index_0_) - (1))] = (a[((int)(__libasr_index_0_1) - (1))] + ((float)1));
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = max(0, n);
-    __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-        __gpu_sum_k = (__gpu_sum_k + 1);
+    for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + w[((int)(__gpu_sum_k) - (1))]);
     }
     r = __gpu_sum_res;
@@ -55,25 +47,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 }
 
 __device__ inline void work_device_gt_gpu_29(float* a, int n, float& r, float* w) {
-    int __do_loop_end;
-    int __do_loop_end1;
     int __gpu_sum_k;
     float __gpu_sum_res;
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
-    __do_loop_end = (1 + max(0, n) - 1);
-    __libasr_index_0_ = (1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, n) - 1); __libasr_index_0_++) {
         w[((int)(__libasr_index_0_) - (1))] = (a[((int)(__libasr_index_0_1) - (1))] + ((float)1));
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = max(0, n);
-    __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-        __gpu_sum_k = (__gpu_sum_k + 1);
+    for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + w[((int)(__gpu_sum_k) - (1))]);
     }
     r = __gpu_sum_res;
