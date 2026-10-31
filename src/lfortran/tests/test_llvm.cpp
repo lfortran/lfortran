@@ -1777,7 +1777,12 @@ end module
                 update_loops++;
                 CHECK(found.descriptor_loads == 0);
                 REQUIRE(loop->getParentLoop() != nullptr);
+#if LLVM_VERSION_MAJOR >= 18
+                // LLVM 17's non-trivial unswitching leaves these descriptor
+                // loads guarded inside the parent loop, so LICM cannot hoist
+                // them.
                 CHECK(accesses(loop->getParentLoop()).descriptor_loads == 0);
+#endif
             }
             CHECK(update_loops > 0);
         }, false, true);
