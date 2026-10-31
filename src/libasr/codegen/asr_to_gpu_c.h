@@ -145,6 +145,12 @@ public:
         BlockBodyWalkVisitor::visit_WhileLoop(x);
         depth--;
     }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        depth++;
+        BlockBodyWalkVisitor::visit_DoConcurrentLoop(x);
+        depth--;
+    }
 };
 
 // Whether the bound or step `e` of a counted loop has the same value on
@@ -1316,6 +1322,14 @@ public:
                         func_struct_deps, struct_origin_array);
                     break;
                 }
+                case ASR::stmtType::DoConcurrentLoop: {
+                    ASR::DoConcurrentLoop_t *dc =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+                    scan_stmts_recursive(dc->m_body, dc->n_body,
+                        func_allocs, func_param_copies,
+                        func_struct_deps, struct_origin_array);
+                    break;
+                }
                 case ASR::stmtType::If: {
                     ASR::If_t *if_s =
                         ASR::down_cast<ASR::If_t>(stmts[i]);
@@ -1372,6 +1386,13 @@ public:
                     ASR::DoLoop_t *dl =
                         ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
                     propagate_stmts_recursive(dl->m_body, dl->n_body,
+                        changed);
+                    break;
+                }
+                case ASR::stmtType::DoConcurrentLoop: {
+                    ASR::DoConcurrentLoop_t *dc =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+                    propagate_stmts_recursive(dc->m_body, dc->n_body,
                         changed);
                     break;
                 }
@@ -1670,6 +1691,10 @@ public:
                     ASR::DoLoop_t *dl =
                         ASR::down_cast<ASR::DoLoop_t>(s);
                     scan_struct_origins(dl->m_body, dl->n_body);
+                } else if (s->type == ASR::stmtType::DoConcurrentLoop) {
+                    ASR::DoConcurrentLoop_t *dc =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                    scan_struct_origins(dc->m_body, dc->n_body);
                 } else if (s->type == ASR::stmtType::If) {
                     ASR::If_t *ifs =
                         ASR::down_cast<ASR::If_t>(s);
@@ -4055,11 +4080,18 @@ public:
     // on to that loop.
     void emit_loop_body(const GpuLoopFrame &frame, ASR::stmt_t **body,
             size_t n_body) {
+        emit_loop_body(frame, [&]() {
+            for (size_t i = 0; i < n_body; i++) {
+                visit_stmt(body[i]);
+            }
+        });
+    }
+
+    template <typename F>
+    void emit_loop_body(const GpuLoopFrame &frame, F emit_body) {
         indent_level++;
         loop_frames.push_back(frame);
-        for (size_t i = 0; i < n_body; i++) {
-            visit_stmt(body[i]);
-        }
+        emit_body();
         loop_frames.pop_back();
         indent_level--;
         src << get_indent() << "}\n";
@@ -4103,6 +4135,22 @@ public:
         std::set<ASR::symbol_t*> written = collector.roots;
         written.insert(concurrent.indices.begin(), concurrent.indices.end());
         return written;
+    }
+
+    // Opens the nested `for` loops of the indices of a DO CONCURRENT from
+    // the `h`-th on, the first index outermost, and writes its body in the
+    // innermost. Device code runs its iterations in order.
+    void emit_concurrent_loops(const ASR::DoConcurrentLoop_t &x, size_t h,
+            const std::set<ASR::symbol_t*> &written, const Location &loc) {
+        GpuLoopFrame frame{nullptr, ""};
+        emit_counted_for(x.m_head[h], written, loc);
+        if (h + 1 == x.n_head) {
+            emit_loop_body(frame, x.m_body, x.n_body);
+        } else {
+            emit_loop_body(frame, [&]() {
+                emit_concurrent_loops(x, h + 1, written, loc);
+            });
+        }
     }
 
     size_t loop_control_count = 0;
@@ -4915,6 +4963,19 @@ public:
                 }
                 emit_counted_for(dl->m_head, written, stmt->base.loc);
                 emit_loop_body(frame, dl->m_body, dl->n_body);
+                break;
+            }
+            case ASR::stmtType::DoConcurrentLoop: {
+                ASR::DoConcurrentLoop_t *dc =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+                LCOMPILERS_ASSERT(dc->n_head > 0);
+                std::set<ASR::symbol_t*> written = loop_written(
+                    dc->m_body, dc->n_body);
+                for (size_t h = 0; h < dc->n_head; h++) {
+                    written.insert(
+                        gpu_designator_base(dc->m_head[h].m_v).root);
+                }
+                emit_concurrent_loops(*dc, 0, written, stmt->base.loc);
                 break;
             }
             case ASR::stmtType::Exit:
