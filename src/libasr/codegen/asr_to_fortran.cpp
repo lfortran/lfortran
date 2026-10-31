@@ -1639,8 +1639,8 @@ public:
 
     // A unit step is the default and is not written.
     static bool is_unit_step(ASR::expr_t *increment) {
-        return !increment || (ASR::is_a<ASR::IntegerConstant_t>(*increment)
-            && ASR::down_cast<ASR::IntegerConstant_t>(increment)->m_n == 1);
+        return ASR::is_a<ASR::IntegerConstant_t>(*increment)
+            && ASR::down_cast<ASR::IntegerConstant_t>(increment)->m_n == 1;
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
