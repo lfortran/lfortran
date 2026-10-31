@@ -9181,6 +9181,120 @@ public:
         );
     }
 
+    // The parenthesized actual arguments of the call statement being
+    // lowered, each mapped to the temporary that holds its value once the
+    // copy has been emitted. An argument is visited once per candidate when
+    // keywords select a specific procedure of a generic, so the copy is
+    // emitted only the first time.
+    std::map<const AST::Parenthesis_t*, ASR::symbol_t*> parenthesized_actuals;
+
+    // A parenthesized actual argument `(x)` is a primary (R1001), not a
+    // designator, so the dummy argument is associated with the value of `x`
+    // (F2018 15.5.2.4), not with `x` itself, and a redefinition of `x`
+    // through another dummy must not be seen through it. The common
+    // visit_Parenthesis returns its operand, so the call would otherwise
+    // pass `x` itself.
+    void visit_Parenthesis(const AST::Parenthesis_t &x) {
+        CommonVisitor<BodyVisitor>::visit_Parenthesis(x);
+        auto it = parenthesized_actuals.find(&x);
+        if (it == parenthesized_actuals.end() || current_body == nullptr) {
+            return;
+        }
+        ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        if (it->second == nullptr) {
+            if (!is_variable_designator(value)) {
+                return;
+            }
+            it->second = copy_into_temporary(value);
+        }
+        tmp = ASR::make_Var_t(al, x.base.base.loc, it->second);
+    }
+
+    static bool is_variable_designator(ASR::expr_t* e) {
+        if (ASRUtils::expr_value(e) != nullptr ||
+                ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(e))) {
+            return false;
+        }
+        switch (e->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                return ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_storage !=
+                        ASR::storage_typeType::Parameter &&
+                    !ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(sym)));
+            }
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::ArraySection:
+            case ASR::exprType::StructInstanceMember:
+            case ASR::exprType::UnionInstanceMember:
+            case ASR::exprType::StringItem:
+            case ASR::exprType::StringSection:
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // A local holding the value of `value`, assigned just before the call.
+    // It is never a pointer. It is allocatable only when it must take its
+    // shape, character length or dynamic type from the assignment, since an
+    // assumed-shape, assumed-length or non-allocatable polymorphic local
+    // cannot be declared.
+    ASR::symbol_t* copy_into_temporary(ASR::expr_t* value) {
+        const Location& loc = value->base.loc;
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(value));
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(type);
+        bool reallocate = ASRUtils::is_array(type) ||
+            ASRUtils::is_class_type(elem_type);
+        if (ASR::is_a<ASR::String_t>(*elem_type) &&
+                !ASRUtils::is_value_constant(
+                    ASR::down_cast<ASR::String_t>(elem_type)->m_len)) {
+            elem_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                ASR::down_cast<ASR::String_t>(elem_type)->m_kind, nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString));
+            if (ASRUtils::is_array(type)) {
+                ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(type);
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, elem_type,
+                    array_type->m_dims, array_type->n_dims,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    array_type->m_memory_space));
+            } else {
+                type = elem_type;
+            }
+            reallocate = true;
+        }
+        if (reallocate) {
+            type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, type));
+        }
+        ASR::symbol_t* type_declaration = ASRUtils::import_struct_sym_as_external(
+            al, loc, value, current_scope);
+        std::string tmp_name = current_scope->get_unique_name(
+            "__lfortran_paren_actual");
+        SetChar tmp_deps;
+        tmp_deps.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, tmp_deps, type, nullptr,
+            nullptr, tmp_name);
+        ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                s2c(al, tmp_name), tmp_deps.p, tmp_deps.n,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, type, type_declaration,
+                current_procedure_abi_type, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(tmp_name, tmp_sym);
+        ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
+        current_body->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al, loc, tmp_var, value, nullptr,
+                reallocate, false)));
+        return tmp_sym;
+    }
+
     /*
         visit passed args, and visit kwargs and sets "nopass" only for GenericProcedure
     */
@@ -9562,6 +9676,21 @@ public:
             }
         }
 
+        parenthesized_actuals.clear();
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_end &&
+                    AST::is_a<AST::Parenthesis_t>(*x.m_args[i].m_end)) {
+                parenthesized_actuals[AST::down_cast<AST::Parenthesis_t>(
+                    x.m_args[i].m_end)] = nullptr;
+            }
+        }
+        for (size_t i = 0; i < x.n_keywords; i++) {
+            if (AST::is_a<AST::Parenthesis_t>(*x.m_keywords[i].m_value)) {
+                parenthesized_actuals[AST::down_cast<AST::Parenthesis_t>(
+                    x.m_keywords[i].m_value)] = nullptr;
+            }
+        }
+
         Vec<ASR::call_arg_t> args;
         bool nopass = false;
 
@@ -9624,6 +9753,7 @@ public:
         } else {
             process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
         }
+        parenthesized_actuals.clear();
 
         // checking for intent mismatch   
         if (f) { 
