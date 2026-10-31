@@ -4648,6 +4648,15 @@ public:
             }
         }
 
+    // Evaluates the kind of an intrinsic type-spec. It is any constant
+    // expression: a literal, a named constant or a constant intrinsic call
+    // such as kind(1.d0).
+    int64_t evaluate_type_spec_kind(AST::expr_t* kind_expr) {
+        visit_expr(*kind_expr);
+        return ASRUtils::extract_kind<SemanticAbort>(
+            ASRUtils::EXPR(tmp), kind_expr->base.loc, diag);
+    }
+
     // Lowers the type-spec of a typed allocation into the type fields of
     // `alloc_arg`.
     void lower_allocate_type_spec(AST::expr_t* type_spec, ASR::alloc_arg_t& alloc_arg,
@@ -4681,17 +4690,11 @@ public:
                     kind = compiler_options.po.default_integer_kind;
                 }
                 if (func_call_t->n_args == 1 && func_call_t->m_args[0].m_end) {
-                    AST::expr_t* kind_expr = func_call_t->m_args[0].m_end;
-                    if( AST::is_a<AST::Num_t>(*kind_expr) ) {
-                        kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
-                    }
+                    kind = evaluate_type_spec_kind(func_call_t->m_args[0].m_end);
                 } else {
                     for( size_t j = 0; j < func_call_t->n_keywords; j++ ) {
                         if( to_lower(std::string(func_call_t->m_keywords[j].m_arg)) == "kind" ) {
-                            AST::expr_t* kind_expr = func_call_t->m_keywords[j].m_value;
-                            if( AST::is_a<AST::Num_t>(*kind_expr) ) {
-                                kind = AST::down_cast<AST::Num_t>(kind_expr)->m_n;
-                            }
+                            kind = evaluate_type_spec_kind(func_call_t->m_keywords[j].m_value);
                         }
                     }
                 }
