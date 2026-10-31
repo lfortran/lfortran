@@ -237,6 +237,7 @@ compilation options, output options, link options and so on.
 
 * `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
 * `--implicit-argument-casting`, Allow implicit argument casting
+* `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 64); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
@@ -393,6 +394,23 @@ before printing.  This is obsolete and LFortran omits this unless
 
 LFortran does not currently expose arbitrary Clang options such as `-flto`.
 Use `--fast` and the target-selection options above for native optimization.
+
+### Procedure values of internal procedures
+
+An internal procedure that refers to variables of its host can be passed as
+an actual argument, made the target of a procedure pointer, or passed to
+`c_funloc`. GNU Fortran builds such a value on the stack at run time (a
+trampoline), so its executables need an executable stack. LFortran instead
+compiles a fixed number K of small procedures (thunks) for each such internal
+procedure. A procedure value stays a plain code address, so it can be passed
+to C and to code compiled by other compilers, and the stack stays
+non-executable.
+
+Each instance of the host that makes such a value holds one of its K thunks
+until it returns. If more than K recursive instances of one host hold a
+thunk at the same time, the program stops with an error that names the
+option. Recompile with a larger `--internal-procedure-thunks=<K>` in that
+case; Knuth's "man or boy" test with k = 10, for example, needs 384.
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.

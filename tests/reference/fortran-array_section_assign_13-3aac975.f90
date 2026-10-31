@@ -16,9 +16,9 @@ subroutine shift(self, m)
     type(sgd_t), intent(inout) :: self
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((m - 1 - self%start_index)/1 + 1))
-__libasr_created__array_section_pointer_ => self%velocity(self%start_index:m - 1)
+    __libasr_created__array_section_pointer_ => self%velocity(self%start_index:m - 1)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created__array_section_ => self%velocity(self%a:m)
+    __libasr_created__array_section_ => self%velocity(self%a:m)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + 1.00000000e+00
 end subroutine shift
 
@@ -29,8 +29,8 @@ subroutine upd(self, g)
     real(4), dimension(:), intent(in) :: g
     type(sgd_t), intent(inout) :: self
     end_index = self%start_index + size(g) - 1
-__libasr_created_real_binop_right_ => self%velocity(self%start_index:end_index)
-__libasr_created__array_section_ => self%velocity(self%start_index:end_index)
+    __libasr_created_real_binop_right_ => self%velocity(self%start_index:end_index)
+    __libasr_created__array_section_ => self%velocity(self%start_index:end_index)
     __libasr_created__array_section_ = 5.00000000e-01*__libasr_created_real_binop_right_ - g
 end subroutine upd
 

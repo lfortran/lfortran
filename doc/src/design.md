@@ -168,6 +168,9 @@ host/use-associated variable without changing its declaration. Such regions
 also exclude the variable from whole-procedure alias promises and dead
 whole-array store elimination.
 
+Procedures with `HostAssociated` views are excluded from these alias promises:
+an ordinary dummy can share storage with a variable reached through the frame.
+
 The data class includes owned local automatic and fixed-size arrays, but not
 raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
 storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,
@@ -212,6 +215,64 @@ those values, in both compilation modes. A view without initial values is
 object file of a module read from its module file, or by an earlier
 interactive cell, after which the block cannot grow or be given initial
 values. See [CommonBlock](asr/asr_nodes/symbol_nodes/CommonBlock.md).
+
+## Host Association
+
+An internal procedure reaches the variables of its host by host association:
+it uses the same storage as the instance of the host that invoked it, not a
+copy (F2018 19.5.1.4). A recursive host has one instance per active call, so
+that storage cannot be a global variable. The ASR that the frontend produces
+keeps the internal procedure nested in its host, and its `Var`s refer directly
+to the variables of the host.
+
+The `nested_vars` pass lowers this into ASR that every backend can emit
+without knowing about nesting. Every instance of a host gets a *frame*: a
+local variable of a derived type declared in the host, with one member per
+host variable that its internal procedures use. A member of
+[Reference](asr/asr_nodes/type_nodes/Reference.md) type holds the address of
+the host variable, which the host stores with
+[BindReference](asr/asr_nodes/statement_nodes/BindReference.md) at the start
+of its body. Nothing is copied, so allocation status, bounds, dynamic type,
+`target` identity and storage association are those of the host variable. An
+internal procedure gets the frame as its last dummy argument, and in it every
+host variable is replaced by a variable of `HostAssociated`
+[storage](asr/asr_nodes/enum_nodes/storage_type.md): an alias with the type of
+the host variable, bound on entry to the variable that its `symbolic_value`
+designates through the frame. Such a variable has no storage of its own
+(`ASRUtils::has_own_storage`), so it is never allocated, initialized,
+finalized or deallocated by the internal procedure.
+
+A non-allocatable, non-pointer array or character variable, whose
+representation the host fixes at run time, and a dummy procedure are reached
+through a pointer *view*: a local pointer of the host, associated with the
+variable at the start of its body, which the member then refers to. Named
+constants of the host are copied into the internal procedure. An internal
+procedure of an internal procedure (an extension) reaches the variables of
+the outer host through the aliases of the procedure it is nested in, whose
+own frame refers to them; the pass processes the hosts from the outside in.
+Calls between the internal procedures of a host pass on the frame dummy.
+
+A procedure value of an internal procedure that needs the frame (an actual
+argument, a pointer target, the interface of a procedure variable, the
+callback of a defined output procedure) cannot pass it. It names instead a
+*thunk*: a procedure of the host with the interface of the internal
+procedure, which calls it with the frame that the host's *frame slot*, a
+`Save` pointer of the host, points to. A statement that makes a procedure
+value points the slot at the frame of its instance first, and every instance
+of the host saves the slot when it starts and restores it before it returns.
+So a procedure value reaches the instance that made it, unless a newer
+instance of the same host has made a procedure value since and is still
+active; values that carry their frame would be exact in that case too. A
+call in an interface body to a procedure of the host that reads one of its
+variables for a bound or a length (`import :: n`) uses a thunk the same way.
+The thunks and the procedures that make procedure values read the slot
+directly, so a backend must resolve a saved variable of the host there
+(`ASRUtils::is_frame_slot`).
+
+The ASR after this pass is not valid Fortran: a member of Reference type and
+a HostAssociated variable have no Fortran syntax, and
+`--show-fortran` prints them as `reference`, `host_associated` and
+`bind_reference(...)`.
 
 ## Notes:
 

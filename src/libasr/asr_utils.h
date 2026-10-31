@@ -964,6 +964,96 @@ const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* 
 // Whether `f` is a reference to the intrinsic MAX.
 bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f);
 
+// A Variable of HostAssociated storage denotes a variable of the host of its
+// procedure, which its symbolic_value designates through the frame dummy
+// argument of the procedure.
+static inline bool is_host_associated(const ASR::Variable_t &v) {
+    return v.m_storage == ASR::storage_typeType::HostAssociated;
+}
+
+// Whether `v` has storage of its own, which its scope allocates, initializes,
+// finalizes and deallocates. A variable in a common block lives in the
+// storage of the block, and a HostAssociated variable denotes the storage of
+// a host variable.
+static inline bool has_own_storage(const ASR::Variable_t &v) {
+    return v.m_common_block == nullptr && !is_host_associated(v);
+}
+
+// Whether an internal procedure reaches the host variable `v` through the
+// frame of its host (see nested_vars). A variable in a common block lives in
+// the static storage of the block, and each thread has its own threadprivate
+// variable: internal procedures reference them directly.
+static inline bool is_reached_through_host_frame(const ASR::Variable_t &v) {
+    return v.m_common_block == nullptr &&
+        v.m_storage != ASR::storage_typeType::Threadprivate;
+}
+
+static inline bool is_reference(const ASR::ttype_t *t) {
+    return t != nullptr && ASR::is_a<ASR::Reference_t>(*t);
+}
+
+// The member of `x` when it is a member of Reference type, which `x` then
+// designates the referenced variable of; nullptr otherwise.
+static inline ASR::Variable_t* get_reference_member(
+        const ASR::StructInstanceMember_t &x) {
+    ASR::symbol_t *member = symbol_get_past_external(x.m_m);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return nullptr;
+    }
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(member);
+    return is_reference(v->m_type) ? v : nullptr;
+}
+
+// Whether `decl` declares the type of a frame (see nested_vars): a derived
+// type with a member of Reference type.
+static inline bool is_frame_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    for (auto &item: ASR::down_cast<ASR::Struct_t>(decl)->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*item.second) && is_reference(
+                ASR::down_cast<ASR::Variable_t>(item.second)->m_type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether `decl` is the type of the frame slots of a thunk pool (see
+// nested_vars): a derived type whose one member is a pointer to a frame.
+static inline bool is_frame_slot_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(decl);
+    if (s->n_members != 1) {
+        return false;
+    }
+    ASR::symbol_t *member = s->m_symtab->get_symbol(s->m_members[0]);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return false;
+    }
+    ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(member);
+    return m->m_type != nullptr && ASR::is_a<ASR::Pointer_t>(*m->m_type) &&
+        is_frame_type(m->m_type_declaration);
+}
+
+// Whether `v` holds frame slots of a host (see nested_vars), which the
+// procedures nested in the host read directly: a saved pointer to a frame,
+// or the saved array of the frame slots of the thunk pools.
+static inline bool is_frame_slot(const ASR::Variable_t &v) {
+    if (v.m_storage != ASR::storage_typeType::Save || v.m_type == nullptr) {
+        return false;
+    }
+    if (ASR::is_a<ASR::Pointer_t>(*v.m_type)) {
+        return is_frame_type(v.m_type_declaration);
+    }
+    return ASR::is_a<ASR::Array_t>(*v.m_type) &&
+        is_frame_slot_type(v.m_type_declaration);
+}
+
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {
@@ -2359,6 +2449,16 @@ static inline bool is_string_only(ASR::ttype_t* type){
 static inline bool is_array_of_strings(ASR::ttype_t* type){
     return is_array(type) &&
            ASR::is_a<ASR::String_t>(*extract_type(type));
+}
+
+// Whether `t` is an assumed-size array of strings, represented by the
+// descriptor of its data and its length (which has an address like a
+// variable, see nested_vars)
+static inline bool is_assumed_size_string_array(ASR::ttype_t *t) {
+    return is_array(t) && extract_physical_type(t) ==
+            ASR::array_physical_typeType::UnboundedPointerArray &&
+        is_character(*extract_type(t)) &&
+        get_string_type(t)->m_physical_type == ASR::DescriptorString;
 }
 
 /*
@@ -3936,6 +4036,14 @@ ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr,
 void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt);
+
+// Matches the arguments of the call `x` with the dummy arguments of its
+// procedure again, without cast statements or implicit casting, after a pass
+// replaced some of them with expressions of another physical type.
+template <typename T>
+static inline void rematch_call_args(Allocator &al, T &x) {
+    Call_t_body(al, x.m_name, x.m_args, x.n_args, x.m_dt, nullptr, false);
+}
 
 // Insert self (a_dt) into args at the PASS position for method calls.
 // Callers must invoke this BEFORE make_*Call_t_util so that m_args

@@ -28,6 +28,7 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    | Reference(ttype type)
 ```
 
 ### Arguments
@@ -55,6 +56,8 @@ The types divide into a few groups:
   [Allocatable](Allocatable.md), which wrap another type;
 - [CPtr](CPtr.md) and [FunctionType](FunctionType.md), which describe a C
   address and a procedure signature;
+- [Reference](Reference.md), the type of a member of a frame that holds the
+  address of a variable of the host of an internal procedure;
 - [TypeParameter](TypeParameter.md), a placeholder inside a generic
   [Template](../symbol_nodes/Template.md);
 - the LPython container types [List](List.md), [Set](Set.md), [Dict](Dict.md)
@@ -92,6 +95,7 @@ List
 Logical
 Pointer
 Real
+Reference
 Set
 String
 StringPhysicalType

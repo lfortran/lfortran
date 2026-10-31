@@ -119,6 +119,11 @@ public:
         return builder->create<mlir::LLVM::AddressOfOp>(loc, globalStr);
     }
 
+    void visit_BindReference(const ASR::BindReference_t &x) {
+        throw CodeGenError("host association is not supported by the MLIR backend",
+            x.base.base.loc);
+    }
+
     void visit_IfExp(const ASR::IfExp_t &x) {
         throw CodeGenError("conditional expressions are not supported by the MLIR backend",
             x.base.base.loc);
@@ -288,6 +293,10 @@ public:
         if (ASR::CommonBlock_t *block = ASRUtils::get_common_block(&x)) {
             throw CodeGenError("COMMON blocks are not supported by the MLIR backend",
                 block->base.base.loc);
+        }
+        if (ASRUtils::is_host_associated(x)) {
+            throw CodeGenError("host association is not supported by the MLIR backend",
+                x.base.base.loc);
         }
         uint32_t h = get_hash((ASR::asr_t*) &x);
         if (ASRUtils::is_character(*x.m_type)) {
