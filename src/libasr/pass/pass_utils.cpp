@@ -1587,24 +1587,6 @@ namespace LCompilers {
                 unit.m_symtab, arg_types, type, args, 0, index_kind);
         }
 
-        void cast_util(ASR::expr_t*& left, ASR::expr_t*& right, Allocator& al, bool is_assign=false) {
-            ASR::ttype_t *src_type = nullptr, *dest_type = nullptr;
-            ASR::expr_t *src_expr = nullptr, *dest_expr = nullptr;
-            int casted_expression_signal = LCompilers::CastingUtil::get_src_dest(
-                left, right, src_expr, dest_expr, src_type, dest_type, is_assign);
-            if( casted_expression_signal != 2 ) {
-                src_expr = CastingUtil::perform_casting(
-                src_expr, dest_type, al, src_expr->base.loc);
-                if( casted_expression_signal == 0 ) {
-                    left = src_expr;
-                    right = dest_expr;
-                } else if( casted_expression_signal == 1 ) {
-                    left = dest_expr;
-                    right = src_expr;
-                }
-            }
-        }
-
         Vec<ASR::stmt_t*> insert_if_stmts_in_loop_body(Allocator& al,
                                                        ASR::If_t* if_stmt,
                                                        ASR::stmt_t* decrement_stmt)
@@ -1716,27 +1698,12 @@ namespace LCompilers {
             ASR::expr_t *zero_trip_guard = nullptr;
             Vec<ASR::stmt_t*> pre_loop_stmts;
             pre_loop_stmts.reserve(al, 2);
-            if( !loop_var && a && current_scope ) {
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-                std::string tmp_name = current_scope->get_unique_name("__do_loop_var");
-                ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASRUtils::make_Variable_t_util(al, loc, current_scope,
-                        s2c(al, tmp_name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr,
-                        ASR::storage_typeType::Default, type, nullptr,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::presenceType::Required, false));
-                current_scope->add_symbol(tmp_name, tmp_sym);
-                loop_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_sym));
-            }
-            if( loop_var ) {
-                cast_util(loop_var, a, al, true);
-                cast_util(loop_var, b, al, true);
-                if( c ) {
-                    cast_util(loop_var, c, al, true);
-                }
-            }
+            // The head is normalized when the loop is created (checked by
+            // asr_verify): a counted loop has a DO variable, and its start,
+            // end and increment have the DO variable's type.
+            std::string not_normalized;
+            LCOMPILERS_ASSERT(ASRUtils::is_normalized_do_loop_head(
+                loop.m_head, not_normalized));
             if( !a && !b && !c ) {
                 int a_kind = 4;
                 if( loop_var ) {
@@ -1745,13 +1712,9 @@ namespace LCompilers {
                 ASR::ttype_t *cond_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
                 cond = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true, cond_type));
             } else {
+                LCOMPILERS_ASSERT(loop_var);
                 LCOMPILERS_ASSERT(a);
                 LCOMPILERS_ASSERT(b);
-                if (!c) {
-                    int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop_var));
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-                    c = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, type));
-                }
                 LCOMPILERS_ASSERT(c);
 
                 // Per the Fortran standard, do loop bounds are evaluated once
