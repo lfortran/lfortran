@@ -11970,6 +11970,15 @@ public:
                 return;
             }
 
+            if (to_lower(x.m_construct_name) == "target" && x.n_clauses > 0) {
+                std::string first_clause = to_lower(
+                    AST::down_cast<AST::String_t>(x.m_clauses[0])->m_s);
+                if (first_clause == "enter" || first_clause == "exit"
+                        || first_clause == "update") {
+                    return;
+                }
+            }
+
             if(all_blocks_nesting>0) pragma_in_block=true;
             if (to_lower(x.m_construct_name) == "parallel") {
                 pragma_nesting_level_2++;
