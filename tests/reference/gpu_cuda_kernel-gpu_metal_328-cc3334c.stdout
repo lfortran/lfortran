@@ -2,18 +2,12 @@
 
 __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
     int __1__libasr_index_;
-    int __do_loop_end;
-    int __do_loop_end1;
-    int __do_loop_end2;
     float __libasr__created__var__0__array_constructor_[2];
     int __libasr_index_0_;
     int __libasr_index_0_1;
     int __libasr_index_0_2;
     int __libasr_index_0_3;
-    __do_loop_end = ((((int)2) + ((int)1)) - 1);
-    __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_++) {
         r[((int)(__libasr_index_0_) - (1))] = ((float)n);
     }
     if ((((n) % (2)) == 0)) {
@@ -23,18 +17,12 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((float)n);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
         __libasr_index_0_2 = 1;
-        __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
-        __libasr_index_0_1 = (((int)1) - 1);
-        while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
-            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        for (__libasr_index_0_1 = ((int)1); __libasr_index_0_1 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_1++) {
             r[((int)(__libasr_index_0_1) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__libasr_index_0_2) - (1))];
             __libasr_index_0_2 = (__libasr_index_0_2 + 1);
         }
     } else {
-        __do_loop_end2 = ((((int)2) + ((int)1)) - 1);
-        __libasr_index_0_3 = (((int)1) - 1);
-        while (((__libasr_index_0_3 + 1) <= __do_loop_end2)) {
-            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        for (__libasr_index_0_3 = ((int)1); __libasr_index_0_3 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_3++) {
             r[((int)(__libasr_index_0_3) - (1))] = (-(((float)n)));
         }
     }
@@ -51,8 +39,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
-        int __do_loop_end;
-        int __do_loop_end1;
         float __gpu_call_result[2];
         int __gpu_sum_k;
         float __gpu_sum_res;
@@ -61,18 +47,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __libasr_index_0_1;
         fixed_result_device_t_gpu_52(i__dc, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
-        __do_loop_end = (1 + 2 - 1);
-        __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-            __libasr_index_0_ = (__libasr_index_0_ + 1);
+        for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = (2);
-        __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-            __gpu_sum_k = (__gpu_sum_k + 1);
+        const int __lfortran_end_0 = (2);
+        for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_end_0; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         results[((int)(i__dc) - (1))] = __gpu_sum_res;
@@ -80,20 +61,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 }
 
 __device__ inline void reallocated_result_device_t_gpu_53(int n, float* r) {
-    int __do_loop_end;
-    int __do_loop_end1;
     int __libasr_index_0_;
     int __libasr_index_0_1;
-    __do_loop_end = ((((int)2) + ((int)1)) - 1);
-    __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_++) {
         r[((int)(__libasr_index_0_) - (1))] = (-(((float)n)));
     }
-    __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
-    __libasr_index_0_1 = (((int)1) - 1);
-    while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
-        __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+    for (__libasr_index_0_1 = ((int)1); __libasr_index_0_1 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_1++) {
         r[((int)(__libasr_index_0_1) - (1))] = ((float)n);
     }
 }
@@ -109,8 +82,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + 1);
     {
-        int __do_loop_end;
-        int __do_loop_end1;
         float __gpu_call_result[2];
         int __gpu_sum_k;
         float __gpu_sum_res;
@@ -119,18 +90,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int __libasr_index_0_1;
         reallocated_result_device_t_gpu_53(i__dc1, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
-        __do_loop_end = (1 + 2 - 1);
-        __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-            __libasr_index_0_ = (__libasr_index_0_ + 1);
+        for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = (2);
-        __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-            __gpu_sum_k = (__gpu_sum_k + 1);
+        const int __lfortran_end_1 = (2);
+        for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_end_1; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         reallocated[((int)(i__dc1) - (1))] = __gpu_sum_res;

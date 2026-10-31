@@ -22,22 +22,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i__dc = (__flat_idx + 1);
     {
         {
-            int __do_loop_end;
-            int __do_loop_end1;
             int __gpu_sum_k;
             int __gpu_sum_res;
             int* work = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-            __do_loop_end = max(0, n);
-            __gpu_bc_i = (1 - 1);
-            while (((__gpu_bc_i + 1) <= __do_loop_end)) {
-                __gpu_bc_i = (__gpu_bc_i + 1);
+            for (__gpu_bc_i = 1; __gpu_bc_i <= max(0, n); __gpu_bc_i++) {
                 work[((int)(__gpu_bc_i) - (1))] = 2;
             }
             __gpu_sum_res = 0;
-            __do_loop_end1 = max(0, n);
-            __gpu_sum_k = (1 - 1);
-            while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-                __gpu_sum_k = (__gpu_sum_k + 1);
+            for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
                 __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
             }
             out[((int)(i__dc) - (1))] = __gpu_sum_res;

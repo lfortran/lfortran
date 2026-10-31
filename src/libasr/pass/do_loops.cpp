@@ -19,7 +19,9 @@ using ASR::is_a;
 /*
 
 This ASR pass replaces do loops with while loops. The function
-`pass_replace_do_loops` transforms the ASR tree in-place.
+`pass_replace_do_loops` transforms the ASR tree in-place. Loops of device
+code (see ASRUtils::is_device_only_function) are kept: the device code
+generators write them as C `for` loops.
 
 Converts:
 
@@ -129,11 +131,24 @@ public:
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         if (unroll_device_loop(x)) return;
+        if (device_code) {
+            // The device code generators write a counted loop as a C
+            // `for` loop themselves.
+            StatementWalkVisitor::visit_DoLoop(x);
+            return;
+        }
         pass_result = PassUtils::replace_doloop(al, x, -1,
             use_loop_variable_after_loop, this->current_scope, pass_options.fast);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (device_code) {
+            // The device code generators write it as nested `for` loops.
+            ASR::DoConcurrentLoop_t &xx =
+                const_cast<ASR::DoConcurrentLoop_t&>(x);
+            transform_stmts(xx.m_body, xx.n_body);
+            return;
+        }
         Vec<ASR::stmt_t*> body;body.reserve(al,1);
         for (int i = 0; i < static_cast<int>(x.n_body); i++) {
             body.push_back(al,x.m_body[i]);
