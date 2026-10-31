@@ -1472,7 +1472,7 @@ end module
 }
 
 TEST_CASE("LLVM signed integer arithmetic is no-wrap only under --fast") {
-    for (const std::string &type: {"integer(1)", "integer(2)", "integer",
+    for (const std::string type: {"integer(1)", "integer(2)", "integer",
             "integer(8)", "type(unsigned)"}) {
         bool signed_int = type != "type(unsigned)";
         unsigned bits = type == "integer(1)" ? 8 :
@@ -1507,6 +1507,46 @@ TEST_CASE("LLVM signed integer arithmetic is no-wrap only under --fast") {
                     CHECK(adds == 1);
                     CHECK(subs == 1);
                     CHECK(muls == 1);
+                });
+        }
+    }
+}
+
+TEST_CASE("LLVM intrinsic bit masks do not use overflowing signed subtraction") {
+    for (unsigned bits: {32, 64}) {
+        std::string kind = bits == 32 ? "4" : "8";
+        std::string source = "module masks\ncontains\n"
+            "subroutine masks_for_kind(i, j, n, d, b, l, r)\n"
+            "integer(" + kind + "), intent(in) :: i, j\n"
+            "integer, intent(in) :: n\n"
+            "integer(" + kind + "), intent(out) :: d, b, l, r\n"
+            "d = dshiftr(i, j, n)\nb = ibits(i, 0, n)\n"
+            "l = maskl(n, " + kind + ")\nr = maskr(n, " + kind + ")\n"
+            "end subroutine\nend module\n";
+        for (bool fast: {false, true}) {
+            std::vector<std::pair<std::string, std::string>> procedures;
+            for (const std::string intrinsic: {"dshiftr", "ibits", "maskl", "maskr"}) {
+                procedures.emplace_back(intrinsic, "_lcompilers_" + intrinsic + "_i" +
+                    std::to_string(intrinsic == "maskl" || intrinsic == "maskr" ? 32 : bits));
+            }
+            inspect_definitions(source, fast, procedures,
+                [&](const std::string &name, llvm::Function &fn) {
+                    unsigned subs = 0;
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &inst: block) {
+                            auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                            if (!op || op->getOpcode() != llvm::Instruction::Sub) continue;
+                            INFO(name, ", bits=", bits, ", fast=", fast);
+                            // Only width - length is representable over the valid
+                            // intrinsic domain; (1 << length) - 1 is not.
+                            auto *width = llvm::dyn_cast<llvm::ConstantInt>(op->getOperand(0));
+                            CHECK(width != nullptr);
+                            if (width) CHECK(width->getZExtValue() == bits);
+                            CHECK(op->hasNoSignedWrap() == fast);
+                            subs++;
+                        }
+                    }
+                    CHECK(subs > 0);
                 });
         }
     }

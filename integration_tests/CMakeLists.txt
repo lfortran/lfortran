@@ -2141,6 +2141,7 @@ RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK co
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME integer_star_01 LABELS gfortran llvm)
 RUN(NAME integer_arithmetic_nsw LABELS gfortran llvm)
+RUN(NAME intrinsic_bit_masks LABELS gfortran llvm)
 RUN(NAME real_star_01 LABELS gfortran llvm)
 RUN(NAME logical_star_01 LABELS gfortran llvm)
 

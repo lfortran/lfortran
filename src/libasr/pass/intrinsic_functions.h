@@ -2419,23 +2419,20 @@ namespace Dshiftr {
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
-        auto final_result = declare("x", int64, Local);
         auto result = declare(fn_name , return_type, ReturnVar);
-
-        body.push_back(al, b.Assignment(final_result, b.BitLshift(b.And(b.i2i_t(args[0], int64),
-            b.Sub(b.BitLshift(b.i64(1), b.i2i_t(args[2], int64), int64), b.i64(1))),
-            b.Sub(b.Mul(b.i64(extract_kind_from_ttype_t(arg_types[0])), b.i64(8)), b.i2i_t(args[2], int64)), int64)));
-
-        body.push_back(al, b.If(b.Lt(b.i2i_t(args[1], int64), b.i64(0)), {
-            b.Assignment(final_result, b.Or(final_result, b.And(b.BitRshift(b.i2i_t(args[1], int64),
-            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64),
-            b.Sub(b.BitLshift(b.i64(1), b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)),
-            b.i2i_t(args[2], int64)), int64), b.i64(1)))))
+        auto shift = b.i2i_t(args[2], return_type);
+        auto width = b.i_t(8 * extract_kind_from_ttype_t(return_type), return_type);
+        body.push_back(al, b.If(b.Eq(shift, b.i_t(0, return_type)), {
+            b.Assignment(result, args[1])
         }, {
-            b.Assignment(final_result, b.Or(final_result, b.BitRshift(b.i2i_t(args[1], int64),
-            b.Sub(b.Mul((b.i64(extract_kind_from_ttype_t(arg_types[0]))), b.i64(8)), b.i2i_t(args[2], int64)), int64)))
+            b.If(b.Eq(shift, width), {
+                b.Assignment(result, args[0])
+            }, {
+                b.Assignment(result, b.Or(
+                    b.BitLshift(args[0], b.Sub(width, shift), return_type),
+                    b.LBitRshift(args[1], shift, return_type)))
+            })
         }));
-        body.push_back(al, b.Assignment(result, b.i2i_t(final_result, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -3232,11 +3229,15 @@ namespace Ibits {
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = ibits(x, y, z)
-        * r = ( x >> y ) & ( ( 1 << z ) - 1 )
-        */
-        body.push_back(al, b.Assignment(result, b.And(b.BitRshift(args[0], b.i2i_t(args[1], arg_types[0]), return_type), b.Sub(b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[2], arg_types[0]), return_type), b.i_t(1, arg_types[0])))));
+        auto length = b.i2i_t(args[2], return_type);
+        auto width = b.i_t(8 * extract_kind_from_ttype_t(return_type), return_type);
+        body.push_back(al, b.If(b.Eq(length, b.i_t(0, return_type)), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.And(
+                b.LBitRshift(args[0], b.i2i_t(args[1], return_type), return_type),
+                b.LBitRshift(b.i_t(-1, return_type), b.Sub(width, length), return_type)))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4485,42 +4486,14 @@ namespace Maskl {
         declare_basic_variables("_lcompilers_maskl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = Maskl(x)
-        * r = (x == 64) ? -1 : ((1 << x) - 1) << (64 - x)
-        */
-        // For return_type is 8 result is always 64 bit
-        /*if (x == 32 .or. x == 64) then
-        *    res = -1
-        * else
-        *    if (x <= 32) then             ! 32 bit result
-        *        res = ishft(1, x) - 1 
-        *        res = ishft(res, 32 - x)
-        *    else                            ! 64 bit result     
-        *        res = ishft(1, x) - 1 
-        *        res = ishft(res, 64 - x)
-        *    end if
-        *end if
-        */
-       if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
-            body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
-                b.Assignment(result, b.i_t(-1, return_type))
-            }, {
-                b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
-                    b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type))
-            }));
-        } else {
-            body.push_back(al,b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
-                b.Assignment(result, b.i_t(-1, return_type))
-            }, {
-                b.If(b.LtE(b.i2i_t(args[0], return_type), b.i_t(32, return_type)), 
-                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
-                        b.Sub(b.i_t(32, return_type), b.i2i_t(args[0], return_type)), return_type)) },
-                    { b.Assignment(result, b.BitLshift(b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)),
-                        b.Sub(b.i_t(64, return_type), b.i2i_t(args[0], return_type)), return_type)) } )
-            }));
-                
-        }
+        auto length = b.i2i_t(args[0], return_type);
+        auto width = b.i_t(8 * extract_kind_from_ttype_t(return_type), return_type);
+        body.push_back(al, b.If(b.Eq(length, b.i_t(0, return_type)), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.BitLshift(b.i_t(-1, return_type),
+                b.Sub(width, length), return_type))
+        }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
@@ -4555,14 +4528,13 @@ namespace Maskr {
         declare_basic_variables("_lcompilers_maskr_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = Maskr(x)
-        * r = (1 << x) - 1
-        */
-        body.push_back(al, b.If((b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type))), {
-            b.Assignment(result, b.i_t(-1, return_type))
+        auto length = b.i2i_t(args[0], return_type);
+        auto width = b.i_t(8 * extract_kind_from_ttype_t(return_type), return_type);
+        body.push_back(al, b.If(b.Eq(length, b.i_t(0, return_type)), {
+            b.Assignment(result, b.i_t(0, return_type))
         }, {
-            b.Assignment(result, b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)))
+            b.Assignment(result, b.LBitRshift(b.i_t(-1, return_type),
+                b.Sub(width, length), return_type))
         }));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
