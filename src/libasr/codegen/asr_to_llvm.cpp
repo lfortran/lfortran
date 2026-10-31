@@ -10657,6 +10657,24 @@ public:
         }
     }
 
+    void mark_allocator_accessors_pure() {
+        if (!alias_info_enabled()) {
+            return;
+        }
+        // These accessors only return addresses of static allocator objects.
+        // The objects themselves remain shared and mutable.
+        for (const char *name: {"_lfortran_get_default_allocator",
+                "_lfortran_get_compiler_mem_dbg_allocator"}) {
+            if (llvm::Function *f = module->getFunction(name)) {
+                f->setDoesNotAccessMemory();
+                f->setDoesNotThrow();
+#if LLVM_VERSION_MAJOR >= 9
+                f->addFnAttr(llvm::Attribute::WillReturn);
+#endif
+            }
+        }
+    }
+
     void add_tbaa_metadata() {
         if (tbaa_functions.empty()) {
             return;
@@ -30120,6 +30138,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         v.visit_asr((ASR::asr_t&)asr);
         v.add_tbaa_metadata();
         v.mark_fresh_allocations_noalias();
+        v.mark_allocator_accessors_pure();
     } catch (const CodeGenError &e) {
         Error error;
         diagnostics.diagnostics.push_back(e.d);
