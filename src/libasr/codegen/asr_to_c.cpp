@@ -1546,6 +1546,33 @@ R"(    // Initialise Numpy
         src = check_tmp_buffer() + out;
     }
 
+    // True for a list-directed print whose items are all scalars the runtime
+    // formatter supports and at least one is real or complex.
+    bool print_needs_runtime_format(const ASR::StringFormat_t &f) {
+        if ((f.m_kind != ASR::string_format_kindType::FormatFortran
+                    && f.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank)
+                || f.m_fmt != nullptr || f.n_args == 0 || f.n_dtio_bindings > 0) {
+            return false;
+        }
+        bool has_real = false;
+        for (size_t i = 0; i < f.n_args; i++) {
+            ASR::ttype_t* t = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(f.m_args[i]));
+            if (ASRUtils::is_array(t)) return false;
+            if (ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Complex_t>(*t)) {
+                has_real = true;
+            } else if (ASR::is_a<ASR::String_t>(*t)) {
+                if (ASR::down_cast<ASR::String_t>(t)->m_physical_type
+                        != ASR::DescriptorString
+                        || ASRUtils::extract_kind_from_ttype_t(t) != 1) return false;
+            } else if (!ASR::is_a<ASR::Integer_t>(*t)
+                    && !ASR::is_a<ASR::Logical_t>(*t)) {
+                return false;
+            }
+        }
+        return has_real;
+    }
+
     void visit_Print(const ASR::Print_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string tmp_gen = indent + "printf(\"", out = "";
@@ -1560,6 +1587,23 @@ R"(    // Initialise Numpy
         if(ASR::is_a<ASR::StringFormat_t>(*x.m_text)){
             str_fmt = ASR::down_cast<ASR::StringFormat_t>(x.m_text);
             n_values = str_fmt->n_args;
+            // A plain printf specifier cannot reproduce Fortran list-directed
+            // output of reals/complex (shortest round-trip digits, E editing),
+            // so format those through the runtime, as write does.
+            if (print_needs_runtime_format(*str_fmt)) {
+                std::string inner = indent + std::string(indentation_spaces, ' ');
+                out += indent + "{\n";
+                out += emit_string_format(*str_fmt, inner, "__lfortran_print",
+                    "__lfortran_print_len", "0", "0", "0");
+                out += inner + "printf(\"%.*s\\n\", (int) __lfortran_print_len, "
+                    "__lfortran_print);\n";
+                out += inner + "ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), "
+                    "__lfortran_print);\n";
+                out += indent + "}\n";
+                bracket_open--;
+                src = check_tmp_buffer() + out;
+                return;
+            }
             if (str_fmt->m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank
                     && n_values > 0) {
                 tmp_gen += " ";
