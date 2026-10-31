@@ -3986,7 +3986,33 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
     }
 
+    // A strided designator, such as `w%y` or `a%u(1)`, has its elements one
+    // struct apart, not one element apart, so the runtime cannot read it as
+    // contiguous data. The READ fills a contiguous copy of it instead, and
+    // the copy is scattered back into the designator after the statement.
+    // Inside a WHERE the per-statement list belongs to the enclosing
+    // construct, so the copy-out would land after the whole WHERE.
+    void read_into_contiguous_copy(ASR::expr_t*& item, const std::string& name_hint) {
+        if( body_after_curr_stmt == nullptr || inside_where ||
+                !is_strided_struct_designator(item) ) {
+            return;
+        }
+        item = copy_in_copy_out_expr(item, true, name_hint);
+    }
+
     void visit_FileRead(const ASR::FileRead_t& x) {
+        ASR::FileRead_t& xx = const_cast<ASR::FileRead_t&>(x);
+        for (size_t i = 0; i < xx.n_values; i++) {
+            read_into_contiguous_copy(xx.m_values[i], "file_read");
+            if( ASR::is_a<ASR::StringFormat_t>(*xx.m_values[i]) ) {
+                // The items of a READ with a format label are the arguments
+                // of a StringFormat.
+                ASR::StringFormat_t* fmt = ASR::down_cast<ASR::StringFormat_t>(xx.m_values[i]);
+                for (size_t j = 0; j < fmt->n_args; j++) {
+                    read_into_contiguous_copy(fmt->m_args[j], "file_read");
+                }
+            }
+        }
         // For FileRead, skip ImpliedDoLoop (handled directly in codegen)
         // Process only non-ImpliedDoLoop values through visit_IO
         Vec<ASR::expr_t*> non_idl_values;
