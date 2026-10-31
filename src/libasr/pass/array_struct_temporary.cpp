@@ -5367,14 +5367,16 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             original_args, x->m_args);
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
         auto target = exprs_with_target.find(*current_expr);
-        if (!inside_where && x->m_arr_intrinsic_id ==
+        if (snapshot_sections && !inside_where && x->m_arr_intrinsic_id ==
                 static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack) &&
                 target != exprs_with_target.end() &&
                 target->second.second == targetType::OriginalTarget &&
                 ASRUtils::is_allocatable(target->second.first)) {
-            // PACK's output dummy does not allocate. Finish its value in
-            // independent storage before the ordinary assignment applies
-            // user-LHS reallocation policy to a possibly aliased target.
+            // Under the value-snapshot policy PACK's output dummy does not
+            // allocate. Finish its value in independent storage before the
+            // ordinary assignment applies user-LHS reallocation policy to
+            // the target. Other backends write an unaliased target in place;
+            // an aliased one gets a temporary below.
             force_replace_current_expr_for_array(current_expr, name_hint, al,
                 current_body, current_scope, exprs_with_target, false);
             return;
