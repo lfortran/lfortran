@@ -1,0 +1,13 @@
+{
+    "basename": "asr-doloop_shared_term_branch_02-198718c",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/warnings/doloop_shared_term_branch_02.f",
+    "infile_hash": "cc73901518045d287256bedbaf65f7deb7e34a99eb1448d8d7c431b7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-doloop_shared_term_branch_02-198718c.stderr",
+    "stderr_hash": "866ca9b04c93988d67d9630b2d15eba2a5918c924ae466d715d371b2",
+    "returncode": 0
+}

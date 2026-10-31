@@ -1,0 +1,11 @@
+warning: Branch to the shared DO termination label 10 from outside the innermost DO loop that it terminates
+ --> tests/warnings/doloop_shared_term_branch_02.f:9:21
+  |
+9 |       IF (I .EQ. 2) GO TO 10
+  |                     ^^^^^^^^ help: terminate each loop with its own statement
+
+warning: Branch to the shared DO termination label 20 from outside the innermost DO loop that it terminates
+  --> tests/warnings/doloop_shared_term_branch_02.f:15:21
+   |
+15 |       IF (J .EQ. 2) GOTO 20
+   |                     ^^^^^^^ help: terminate each loop with its own statement
