@@ -150,6 +150,9 @@ xeus = "==6.0.6"
 xeus-zmq = "==4.0.2"
 nlohmann_json = "==3.12.0"
 jupyter_kernel_test = "==0.7.0"
+# The CI platform builds generate the man page and run the demo notebooks.
+nbconvert = "==7.17.2"
+pandoc = "==3.12.1"
 numpy = "==1.26.4"
 rapidjson = "==1.1.0"
 # Different LLVM versions require different zlib and zstd versions.
@@ -215,6 +218,17 @@ tomli = "==2.5.0"
 edn_format = "==0.8.0"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
+# The LSP tests install their test packages with pip.
+pip = "==26.2.2"
+
+# The direct WASM backend runs its integration tests with Node. No Node build
+# works with the older zlib that LLVM <= 10 and 12 require, so only the LLVM 11
+# environments, which run these tests in CI, include it.
+[feature.node]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
+[feature.node.dependencies]
+nodejs = "==18.20.4"
 
 [feature.test.target.linux.dependencies]
 gfortran = "==15.3.0"
@@ -362,7 +376,7 @@ llvm7 = {features = ["llvm7", "build", "test"]}
 llvm8 = {features = ["llvm8", "build", "test"]}
 llvm9 = {features = ["llvm9", "build", "test"]}
 llvm10 = {features = ["llvm10", "build", "test"]}
-llvm11 = {features = ["llvm11", "build", "test"]}
+llvm11 = {features = ["llvm11", "build", "test", "node"]}
 llvm12 = {features = ["llvm12", "build", "test"]}
 llvm13 = {features = ["llvm13", "build", "test"]}
 llvm14 = {features = ["llvm14", "build", "test"]}
@@ -375,7 +389,7 @@ llvm20 = {features = ["llvm20", "build", "test"]}
 llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}
 llvm23 = {features = ["llvm23", "build", "test"]}
-test = {features = ["llvm11", "build", "test"]}
+test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
 lite = {features = ["lite"], no-default-feature = true}
