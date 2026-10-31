@@ -4625,11 +4625,14 @@ public:
                 visit_expr(dl->m_head.m_end);
                 src << "; ";
                 visit_expr(dl->m_head.m_v);
-                if (dl->m_head.m_increment) {
+                int64_t step = 0;
+                if (!dl->m_head.m_increment || (ASRUtils::extract_value(
+                        ASRUtils::expr_value(dl->m_head.m_increment), step)
+                        && step == 1)) {
+                    src << "++";
+                } else {
                     src << " += ";
                     visit_expr(dl->m_head.m_increment);
-                } else {
-                    src << "++";
                 }
                 src << ") {\n";
                 emit_loop_body(frame, dl->m_body, dl->n_body);
