@@ -2108,12 +2108,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 runtime_lib = "lfortran_runtime_wasm_wasi.o";
                 compile_cmd = CC + options + " -o " + outfile + " ";
             } else if (LCompilers::endswith(t, "emscripten")) {
-                char* emsdk_path = std::getenv("EMSDK_PATH");
-                if (emsdk_path == nullptr) {
-                    std::cerr << "EMSDK_PATH must be defined to use llvm->wasm\n";
-                    return 11;
-                }
-                CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
+                CC = lcli::emcc_driver(std::getenv("LFORTRAN_EMCC"),
+                    std::getenv("EMSDK_PATH"));
                 options = lcli::emscripten_link_options(emscripten_settings);
                 if (!compiler_options.emcc_embed.empty()) {
                     options += " --embed-file " + compiler_options.emcc_embed;
@@ -2389,6 +2385,11 @@ int link_executable(const std::vector<std::string> &infiles,
             std::cerr << "Also, if required use --linker-path=<PATH>, "
                 "where PATH has location to look for the linker "
                 "executable" << std::endl;
+            if (LCompilers::endswith(t, "emscripten")) {
+                std::cerr << "Tip: linking for Emscripten needs an emcc "
+                    "driver; set `LFORTRAN_EMCC` or `EMSDK_PATH`, or "
+                    "install `emcc` on `PATH`." << std::endl;
+            }
             return 10;
         }
 
