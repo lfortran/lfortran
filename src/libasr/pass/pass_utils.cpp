@@ -778,7 +778,9 @@ namespace LCompilers {
                     ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx, int dim) {
             ASRUtils::ASRBuilder b(al, loc);
 
-            if (curr_idx == (int) do_loop_variables.size() - 1) {
+            if (curr_idx == (int) do_loop_variables.size() - 1 ||
+                (curr_idx == (int) do_loop_variables.size() - 2 &&
+                    dim == (int) do_loop_variables.size())) {
                 return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))),
                     inner_most_do_loop,
@@ -816,7 +818,9 @@ namespace LCompilers {
                     ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res, int curr_idx, int dim) {
             ASRUtils::ASRBuilder b(al, loc);
 
-            if (curr_idx == (int) do_loop_variables.size() - 1) {
+            if (curr_idx == (int) do_loop_variables.size() - 1 ||
+                (curr_idx == (int) do_loop_variables.size() - 2 &&
+                    dim == (int) do_loop_variables.size())) {
                 return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(mask, curr_idx + 1), b.GetUBound(mask, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, 0, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))))),
                     inner_most_do_loop,
@@ -854,7 +858,9 @@ namespace LCompilers {
                     ASR::expr_t* c, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, int dim, bool apply_sqrt) {
             ASRUtils::ASRBuilder b(al, loc);
 
-            if (curr_idx == (int) do_loop_variables.size() - 1) {
+            if (curr_idx == (int) do_loop_variables.size() - 1 ||
+                (curr_idx == (int) do_loop_variables.size() - 2 &&
+                    dim == (int) do_loop_variables.size())) {
                 ASR::expr_t* assign_val = c;
                 if (apply_sqrt) {
                     ASR::ttype_t* c_type = ASRUtils::expr_type(c);
