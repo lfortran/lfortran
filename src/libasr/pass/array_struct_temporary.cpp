@@ -4731,13 +4731,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     // Whether a scalar operand of such an expression that references a
     // function is evaluated once, before the statement (see replace_expr).
-    // Not in a WHERE construct, whose temporaries all precede the construct
-    // while only its first mask expression is evaluated there, nor in the
-    // value of a defined assignment, which only its subroutine call
-    // evaluates.
+    // In a WHERE construct, whose temporaries all precede the construct,
+    // only in its first mask expression and its first statement, which run
+    // first. Not in the value of a defined assignment, which only its
+    // subroutine call evaluates.
     bool evaluate_function_references_once = true;
 
-    // A WHERE assignment never reallocates its variable (F2018 10.2.3.1)
+    // In the body of a WHERE, whose assignments never reallocate their
+    // variable (F2018 10.2.3.1) and do operations only where the mask is true
     bool inside_where = false;
 
     // Whether the scalar operand `x` of an array expression is evaluated
@@ -4789,7 +4790,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 exprs_with_target);
             return;
         }
+        // In a WHERE body, an operation on the result stays in the masked loop
         if (in_array_context && type != nullptr && !is_array_expr &&
+                (!inside_where || ASR::is_a<ASR::FunctionCall_t>(*x)) &&
                 is_evaluated_once(x)) {
             // The assignment that saves this value is not visited again.
             // Prepare its children, including dependent function results,
@@ -5846,7 +5849,6 @@ class ReplaceExprWithTemporaryVisitor:
             inside_where = true;
             parent_body_for_where = current_body;
         }
-        replacer.inside_where = true;
         // Only the first mask expression of the construct is evaluated
         // before it, where the temporaries of the construct are.
         bool evaluate_once_copy = replacer.evaluate_function_references_once;
@@ -5862,9 +5864,15 @@ class ReplaceExprWithTemporaryVisitor:
         visit_expr(*x.m_test);
         current_body = current_body_copy_;
 
-        replacer.evaluate_function_references_once = false;
+        replacer.inside_where = true;
         ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
-        transform_stmts(xx.m_body, xx.n_body);
+        // The first statement runs right after the mask, before the others
+        for (size_t i = 0; i < xx.n_body; i++) {
+            replacer.evaluate_function_references_once = i == 0 &&
+                evaluate_once_copy && !inside_where_copy;
+            visit_stmt(*xx.m_body[i]);
+        }
+        replacer.evaluate_function_references_once = false;
         transform_stmts(xx.m_orelse, xx.n_orelse);
         replacer.evaluate_function_references_once = evaluate_once_copy;
 
