@@ -7444,6 +7444,46 @@ public:
         return true;
     }
 
+    ASR::expr_t* make_return_var(SymbolTable *scope, const std::string &name,
+            ASR::ttype_t *type, const Location &loc) {
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, loc,
+            scope, s2c(al, name), variable_dependencies_vec.p,
+            variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+            false);
+        ASR::symbol_t *return_var_sym = ASR::down_cast<ASR::symbol_t>(return_var);
+        scope->add_symbol(name, return_var_sym);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_sym));
+    }
+
+    ASR::Function_t* get_procedure_function(ASR::symbol_t *sym) {
+        if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::down_cast<ASR::Variable_t>(sym)->m_presence ==
+                    ASR::presenceType::Optional) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            LCOMPILERS_ASSERT(v->m_type == f->m_function_signature);
+            return f;
+        }
+        return ASR::down_cast<ASR::Function_t>(sym);
+    }
+
+    bool try_make_optional_procedure_dummy(const std::string &sym,
+            const Location &loc) {
+        ASR::symbol_t *proc_sym = current_scope->get_symbol(sym);
+        if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
+            make_optional_procedure_dummy(sym,
+                ASR::down_cast<ASR::Function_t>(proc_sym), loc);
+            return true;
+        }
+        return false;
+    }
+
     ASR::ttype_t* specific_intrinsic_arg_type(const std::string &type_name,
             const Location &loc) {
         if (type_name == "int4") {
@@ -10728,35 +10768,14 @@ public:
                         external :: x
                         integer :: x -> we are handling this case
                     */
-                    ASR::Function_t *f = nullptr;
-                    if (ASR::is_a<ASR::Variable_t>(*ext_sym) &&
-                            ASR::down_cast<ASR::Variable_t>(ext_sym)->m_presence ==
-                                ASR::presenceType::Optional) {
-                        // Optional dummy procedure: update its interface.
-                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ext_sym);
-                        f = ASR::down_cast<ASR::Function_t>(
-                            ASRUtils::symbol_get_past_external(v->m_type_declaration));
-                        LCOMPILERS_ASSERT(v->m_type == f->m_function_signature);
-                    } else {
-                        f = ASR::down_cast<ASR::Function_t>(ext_sym);
-                    }
+                    ASR::Function_t *f = get_procedure_function(ext_sym);
                     // set function return type as `type`
                     if (f->m_return_var == nullptr) {
                         std::string return_var_name = sym + "_return_var_name";
-                        SetChar variable_dependencies_vec;
-                        variable_dependencies_vec.reserve(al, 1);
-                        ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
                         // The result belongs to the interface's own scope, not
                         // to the scope that declares `external :: x`.
-                        ASR::asr_t *return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
-                            f->m_symtab, s2c(al, return_var_name), variable_dependencies_vec.p,
-                            variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                            ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
-                            false);
-                        f->m_symtab->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-                        f->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
-                            ASR::down_cast<ASR::symbol_t>(return_var)));
+                        f->m_return_var = make_return_var(f->m_symtab,
+                            return_var_name, type, x.base.base.loc);
                         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                         ft->m_return_var_type = type;
                     } else {
@@ -10770,12 +10789,7 @@ public:
                 // variable, e.g. `integer, external, optional :: p`.
                 if (is_external && is_argument &&
                         s_presence == ASR::presenceType::Optional) {
-                    ASR::symbol_t *proc_sym = current_scope->get_symbol(sym);
-                    if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
-                        make_optional_procedure_dummy(sym,
-                            ASR::down_cast<ASR::Function_t>(proc_sym),
-                            x.m_syms[i].loc);
-                    }
+                    try_make_optional_procedure_dummy(sym, x.m_syms[i].loc);
                 }
                 current_variable_type_ = type;
                 if (is_argument && current_scope->asr_owner
