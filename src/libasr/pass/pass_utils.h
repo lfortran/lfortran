@@ -493,6 +493,12 @@ namespace LCompilers {
                        || ASR::is_a<ASR::Tuple_t>(*x)));
         }
 
+        // Gives each ordinary assumed-shape dummy of a host procedure
+        // implementation an explicit lower bound of 1 in every dimension
+        // without one, so it uses formal, not actual, coordinates.
+        void normalize_assumed_shape_formal_bounds(Allocator& al,
+            ASR::Function_t& x);
+
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
             return (ASR::is_a<ASR::StructType_t>(
                         *ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type((var))))

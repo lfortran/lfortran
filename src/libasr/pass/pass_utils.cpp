@@ -2076,6 +2076,53 @@ namespace LCompilers {
             return result;
         }
 
+        void normalize_assumed_shape_formal_bounds(Allocator& al,
+                ASR::Function_t& x) {
+            ASR::FunctionType_t* signature = ASRUtils::get_FunctionType(x);
+            if (signature->m_abi != ASR::abiType::Source ||
+                    signature->m_deftype != ASR::deftypeType::Implementation ||
+                    ASRUtils::get_exec_space(x) != ASR::exec_spaceType::Host) {
+                return;
+            }
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+                ASR::symbol_t* symbol = ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v;
+                if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
+                ASR::Variable_t* formal = ASR::down_cast<ASR::Variable_t>(symbol);
+                if (!ASRUtils::is_arg_dummy(formal->m_intent) ||
+                        formal->m_abi != ASR::abiType::Source || formal->n_codims ||
+                        formal->m_storage == ASR::storage_typeType::ResultArgument ||
+                        !ASR::is_a<ASR::Array_t>(*formal->m_type)) {
+                    continue;
+                }
+                ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(formal->m_type);
+                if (array->m_physical_type !=
+                        ASR::array_physical_typeType::DescriptorArray ||
+                        array->m_memory_space != ASR::memory_spaceType::Global) {
+                    continue;
+                }
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, array->n_dims);
+                ASRUtils::ASRBuilder b(al, formal->base.base.loc);
+                bool changed = false;
+                for (size_t j = 0; j < array->n_dims; j++) {
+                    ASR::dimension_t dim = array->m_dims[j];
+                    // Retain explicit starts and dynamic extents.
+                    if (!dim.m_start && !dim.m_length) {
+                        dim.m_start = b.i32(1);
+                        changed = true;
+                    }
+                    dims.push_back(al, dim);
+                }
+                if (changed) {
+                    formal->m_type = ASRUtils::duplicate_type(al, formal->m_type, &dims);
+                    ASRUtils::ReplaceWithFunctionParamVisitor params(al, x.m_args, x.n_args);
+                    signature->m_arg_types[i] = params.replace_args_with_FunctionParam(
+                        formal->m_type, x.m_symtab);
+                }
+            }
+        }
+
     #define increment_by_one(var, body) ASR::expr_t* inc_by_one = builder.Add(var, \
         make_ConstantWithType(make_IntegerConstant_t, 1, \
             ASRUtils::expr_type(var), loc)); \

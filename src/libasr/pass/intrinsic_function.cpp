@@ -168,32 +168,13 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         if (ASR::is_a<ASR::FunctionCall_t>(*func_call)) {
-            ASR::Function_t* function = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name));
-            for (size_t i = 0; i < x->n_args && i < function->n_args; i++) {
-                ASR::Variable_t* formal = ASRUtils::EXPR2VAR(function->m_args[i]);
-                if (!ASRUtils::is_array(formal->m_type) ||
-                        ASRUtils::is_allocatable_or_pointer(formal->m_type)) {
-                    continue;
-                }
-                ASR::dimension_t* dims = nullptr;
-                size_t rank = ASRUtils::extract_dimensions_from_ttype(formal->m_type, dims);
-                Vec<ASR::dimension_t> formal_dims;
-                formal_dims.reserve(al, rank);
-                ASRUtils::ASRBuilder b(al, x->base.base.loc);
-                for (size_t j = 0; j < rank; j++) {
-                    ASR::dimension_t dim = dims[j];
-                    // Preserve runtime extents, but make the generated
-                    // assumed-shape formal's coordinate system explicit.
-                    if (!dim.m_start && !dim.m_length) {
-                        dim.m_start = b.i32(1);
-                    }
-                    formal_dims.push_back(al, dim);
-                }
-                formal->m_type = ASRUtils::duplicate_type(al, formal->m_type,
-                    &formal_dims);
-                ASRUtils::get_FunctionType(*function)->m_arg_types[i] = formal->m_type;
+            ASR::symbol_t* function = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionCall_t>(func_call)->m_name);
+            if (ASR::is_a<ASR::Function_t>(*function)) {
+                // Make the generated assumed-shape formals' coordinate system
+                // explicit before later passes lower their bound inquiries.
+                PassUtils::normalize_assumed_shape_formal_bounds(al,
+                    *ASR::down_cast<ASR::Function_t>(function));
             }
         }
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);
