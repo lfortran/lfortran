@@ -956,6 +956,60 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
 
 };
 
+// Collects the variables named in the targets of the assignments it visits
+class AssignmentTargetCollector : public ASR::BaseWalkVisitor<AssignmentTargetCollector> {
+
+    public:
+
+    std::set<ASR::symbol_t*>& targets;
+    bool in_target = false;
+
+    AssignmentTargetCollector(std::set<ASR::symbol_t*>& targets_) : targets(targets_) {}
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        in_target = true;
+        visit_expr(*x.m_target);
+        in_target = false;
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        if( in_target ) {
+            targets.insert(x.m_v);
+        }
+    }
+
+};
+
+// Finds a reference that can see what a WHERE construct assigns: to a target, a pointer or a function
+class AssignedValueReferenceFinder : public ASR::BaseWalkVisitor<AssignedValueReferenceFinder> {
+
+    public:
+
+    const std::set<ASR::symbol_t*>& targets;
+    bool found = false;
+
+    AssignedValueReferenceFinder(const std::set<ASR::symbol_t*>& targets_) : targets(targets_) {}
+
+    void visit_Var(const ASR::Var_t& x) {
+        if( targets.find(x.m_v) != targets.end() ) {
+            found = true;
+            return;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+            return;
+        }
+        if( ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(sym)->m_type) ) {
+            found = true;
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+        found = true;
+    }
+
+};
+
 class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayConstantVisitor>
 {
     private:
@@ -973,6 +1027,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
+        // The body that holds the outermost WHERE construct being visited
+        Vec<ASR::stmt_t*>* where_parent_body = nullptr;
+        std::set<ASR::symbol_t*> where_targets;
         std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
         const LCompilers::PassOptions& pass_options;
 
@@ -1098,12 +1155,25 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return has_runtime_len;
         }
 
+        // A WHERE construct fills its array constants before it, unless they can see its assignments
+        Vec<ASR::stmt_t*>* body_for_pass_result(Vec<ASR::stmt_t*>* body) {
+            if( where_parent_body == nullptr ) {
+                return body;
+            }
+            AssignedValueReferenceFinder finder(where_targets);
+            for( size_t i = 0; i < pass_result.size() && !finder.found; i++ ) {
+                finder.visit_stmt(*pass_result[i]);
+            }
+            return finder.found ? body : where_parent_body;
+        }
+
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
             Vec<ASR::stmt_t*> body;
             body.reserve(al, n_body);
             if( parent_body ) {
+                Vec<ASR::stmt_t*>* result_body = body_for_pass_result(parent_body);
                 for (size_t j=0; j < pass_result.size(); j++) {
-                    parent_body->push_back(al, pass_result[j]);
+                    result_body->push_back(al, pass_result[j]);
                 }
             }
 
@@ -1116,8 +1186,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 parent_body = &body;
                 visit_stmt(*m_body[i]);
                 parent_body = parent_body_copy;
+                Vec<ASR::stmt_t*>* result_body = body_for_pass_result(&body);
                 for (size_t j = 0; j < pass_result.size(); j++) {
-                    body.push_back(al, pass_result[j]);
+                    result_body->push_back(al, pass_result[j]);
                 }
                 if( !remove_original_statement ) {
                     body.push_back(al, m_body[i]);
@@ -1129,6 +1200,19 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.result_var = nullptr;
             pass_result.n = 0;
             pass_result.reserve(al, 0);
+        }
+
+        void visit_Where(const ASR::Where_t &x) {
+            if( where_parent_body != nullptr ) {
+                ASR::CallReplacerOnExpressionsVisitor<ArrayConstantVisitor>::visit_Where(x);
+                return;
+            }
+            where_parent_body = parent_body;
+            AssignmentTargetCollector collector(where_targets);
+            collector.visit_Where(x);
+            ASR::CallReplacerOnExpressionsVisitor<ArrayConstantVisitor>::visit_Where(x);
+            where_parent_body = nullptr;
+            where_targets.clear();
         }
 
         void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
