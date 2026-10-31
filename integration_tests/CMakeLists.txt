@@ -4859,6 +4859,7 @@ RUN(NAME do_loop_09 LABELS gfortran llvm)
 RUN(NAME do_loop_10 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_11 LABELS gfortran c cpp)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
+RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c EXTRA_ARGS --fast)
 
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) #TODO: fix mlir, commented in PR: #6060
