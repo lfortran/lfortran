@@ -3639,6 +3639,15 @@ COMPILE(NAME character_len_of_function_12614 COMPILERS lfortran gfortran)
 
 RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
+# Hand-lowered internal-procedure callbacks through thunk pools (#16400):
+# the shape the closure_thunks pass generates, as plain Fortran. The c, cpp
+# and wasm backends do not support procedure pointers or dummy procedures yet.
+RUN(NAME closure_thunks_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME closure_thunks_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME closure_thunks_03 LABELS gfortran llvm EXTRAFILES closure_thunks_03c.c
+    EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME closure_thunks_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_vars_allocatable_call LABELS gfortran llvm)
 RUN(NAME nested_vars_20 LABELS gfortran llvm)
