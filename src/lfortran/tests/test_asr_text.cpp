@@ -3,6 +3,7 @@
 #include <libasr/asr_text.h>
 #include <libasr/asr_verify.h>
 #include <libasr/codegen/asr_to_fortran.h>
+#include <libasr/pass/replace_intrinsic_function.h>
 #include <algorithm>
 #include <vector>
 #include <lfortran/fortran_evaluator.h>
@@ -15,6 +16,44 @@ using LCompilers::Location;
 using LCompilers::LocationManager;
 using LCompilers::Result;
 using LCompilers::diag::Diagnostics;
+
+TEST_CASE("C++ integer shifts preserve the ASR bitwise opcode and width") {
+    for (int kind: {1, 2, 4, 8}) {
+        for (const std::string intrinsic: {"shiftl", "shiftr", "shifta"}) {
+            CAPTURE(kind);
+            CAPTURE(intrinsic);
+            std::string source = "program shifts\ninteger(" + std::to_string(kind) +
+                ") :: x, y\ninteger :: n\nx = -1\nn = 1\ny = " + intrinsic +
+                "(x, n)\nprint *, y\nend program\n";
+            LCompilers::CompilerOptions options;
+            FortranEvaluator evaluator(options);
+            LocationManager lm;
+            LocationManager::FileLocations file;
+            file.in_filename = "shifts.f90";
+            lm.files.push_back(file);
+            lm.file_ends.push_back(
+                LCompilers::LFortran::source_offset(source.size()));
+            Diagnostics diagnostics;
+            auto asr = evaluator.get_asr2(source, lm, diagnostics);
+            INFO(diagnostics.render2());
+            REQUIRE(asr.ok);
+            Allocator al(256*1024);
+            options.po.always_run = true;
+            LCompilers::pass_replace_intrinsic_function(al, *asr.result, options.po);
+            REQUIRE(LCompilers::asr_verify(*asr.result, true, diagnostics));
+            auto cpp = evaluator.get_cpp2(*asr.result, diagnostics, 1);
+            REQUIRE(cpp.ok);
+            std::string unsigned_type = "uint" + std::to_string(kind * 8) + "_t";
+            CHECK((cpp.result.find(unsigned_type) != std::string::npos)
+                == (intrinsic != "shifta"));
+            std::string operand_type = (intrinsic == "shifta" ? "int" : "uint") +
+                std::to_string(kind * 8) + "_t";
+            CHECK(cpp.result.find("(" + operand_type + ")(") != std::string::npos);
+            CHECK(cpp.result.find(intrinsic == "shiftl" ? "<<" : ">>")
+                != std::string::npos);
+        }
+    }
+}
 
 TEST_CASE("Template instantiation preserves scoped variable identities") {
     const std::string source = R"(

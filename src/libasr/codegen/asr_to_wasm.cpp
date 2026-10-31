@@ -1672,9 +1672,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     m_wa.emit_i32_shl();
                     break;
                 };
-                case ASR::binopType::BitRShift:
-                case ASR::binopType::LBitRShift: {
+                case ASR::binopType::BitRShift: {
                     m_wa.emit_i32_shr_s();
+                    break;
+                };
+                case ASR::binopType::LBitRShift: {
+                    m_wa.emit_i32_shr_u();
                     break;
                 };
                 default: {
@@ -1738,9 +1741,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     m_wa.emit_i64_shl();
                     break;
                 };
-                case ASR::binopType::BitRShift:
-                case ASR::binopType::LBitRShift: {
+                case ASR::binopType::BitRShift: {
                     m_wa.emit_i64_shr_s();
+                    break;
+                };
+                case ASR::binopType::LBitRShift: {
+                    m_wa.emit_i64_shr_u();
                     break;
                 };
                 default: {

@@ -34,6 +34,13 @@ The bitwise operators (`BitAnd`, `BitOr`, `BitXor`, `BitLShift`, `BitRShift`,
 `LBitRShift`) share this node with the arithmetic ones because they take the
 same operands and produce the same type.
 
+Shifts operate on the bit pattern at the result kind's width. `BitLShift`
+discards high bits and inserts zeros; `LBitRShift` inserts zeros even when
+the signed left operand is negative. `BitRShift` instead copies the sign
+bit. These distinctions are explicit in `op`, not inferred from the
+operand's signedness. Backend lowering must preserve them without signed
+left-shift overflow or widening an untyped literal before shifting.
+
 ## Examples
 
 ```clojure

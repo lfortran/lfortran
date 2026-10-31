@@ -3098,6 +3098,20 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         self().visit_expr(*x.m_right);
         std::string right = std::move(src);
         int right_precedence = last_expr_precedence;
+        if (x.m_op == ASR::binopType::LBitRShift ||
+                x.m_op == ASR::binopType::BitLShift ||
+                x.m_op == ASR::binopType::BitRShift) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            std::string operand_type =
+                (x.m_op == ASR::binopType::BitRShift ? "int" : "uint") +
+                std::to_string(kind * 8) + "_t";
+            std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+            headers.insert("stdint.h");
+            src = "((" + result_type + ")((" + operand_type + ")(" + left + ")" +
+                ASRUtils::binop_to_str_python(x.m_op) + "(" + right + ")))";
+            last_expr_precedence = 2;
+            return;
+        }
         switch (x.m_op) {
             case (ASR::binopType::Add) : { last_expr_precedence = 6; break; }
             case (ASR::binopType::Sub) : { last_expr_precedence = 6; break; }
