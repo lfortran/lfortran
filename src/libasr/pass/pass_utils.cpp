@@ -1591,7 +1591,7 @@ namespace LCompilers {
             ASR::stmt_t* copy_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, target->base.loc,
                                         target, value, nullptr, false, false));
             loop_body.push_back(al, copy_stmt);
-            ASR::stmt_t* fallback_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, do_loop_head.loc,
+            ASR::stmt_t* fallback_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, do_loop_head.loc,
                                             nullptr, do_loop_head, loop_body.p, loop_body.size(), nullptr, 0));
             Vec<ASR::stmt_t*> fallback_while_loop = replace_doloop(al, *ASR::down_cast<ASR::DoLoop_t>(fallback_loop),
                                                                   (int) ASR::cmpopType::Lt);

@@ -1450,7 +1450,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 do_loop_body.push_back(al, stmt);
             }
             
-            do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+            do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             return do_loop;
         }
 
@@ -1481,7 +1481,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 do_loop_body.push_back(al, stmt);
             }
 
-            return ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr,
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         }
 
