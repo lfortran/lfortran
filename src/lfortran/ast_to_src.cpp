@@ -3712,7 +3712,7 @@ public:
             s += "(" + left + ")";
         }
         s +=  boolop2str(x.m_op);
-        if (right_precedence >= last_expr_precedence) {
+        if (right_precedence > last_expr_precedence) {
             s += right;
         } else {
             s += "(" + right + ")";
@@ -3749,8 +3749,16 @@ public:
             }
         }
         s = "";
+        // 9 is the precedence of a unary minus (see visit_UnaryOp)
         if (left_precedence == 9) {
             s += "(" + left + ")";
+        } else if (x.m_op == operatorType::Pow) {
+            // `**` is right-associative: `(a**b)**c` needs its parentheses
+            if (left_precedence > last_expr_precedence) {
+                s += left;
+            } else {
+                s += "(" + left + ")";
+            }
         } else {
             if (left_precedence >= last_expr_precedence) {
                 s += left;
@@ -3761,14 +3769,18 @@ public:
         s +=  op2str(x.m_op);
         if (right_precedence == 9) {
             s += "(" + right + ")";
-        } else if (x.m_op == operatorType::Sub || x.m_op == operatorType::Div) {
-            if (right_precedence > last_expr_precedence) {
+        } else if (x.m_op == operatorType::Pow) {
+            // `**` is right-associative: `a**(b**c)` is printed as `a**b**c`
+            if (right_precedence >= last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
             }
         } else {
-            if (right_precedence >= last_expr_precedence) {
+            // `+`, `-`, `*` and `/` are left-associative: `a-b-c` is
+            // `(a-b)-c`, so a right operand of the same precedence keeps
+            // the parentheses it has in the AST, as in `a-(b-c)` or `a*(b*c)`
+            if (right_precedence > last_expr_precedence) {
                 s += right;
             } else {
                 s += "(" + right + ")";
@@ -3793,7 +3805,7 @@ public:
         s += syn(gr::Operator);
         s += "." + std::string(x.m_op) + ".";
         s += syn();
-        if (right_precedence >= last_expr_precedence) {
+        if (right_precedence > last_expr_precedence) {
             s += right;
         } else {
             s += "(" + right + ")";
@@ -3840,7 +3852,7 @@ public:
         int expr_precedence = last_expr_precedence;
         if (x.m_op == AST::unaryopType::USub) {
             last_expr_precedence = 9;
-            if (expr_precedence >= last_expr_precedence) {
+            if (expr_precedence > last_expr_precedence) {
                 s = "-" + s;
             } else {
                 s = "-(" + s + ")";
