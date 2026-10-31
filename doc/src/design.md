@@ -73,7 +73,10 @@ The independent result is complete before the destination is
 changed. Builder state and the consuming statement share an activation-local
 BLOCK with runtime descriptor dimensions, not unevaluated control expressions
 in types. Internal snapshots allocate regardless of the user LHS-reallocation
-option; the user's destination retains that option's semantics. Remaining executable
+option; the user's destination retains that option's semantics, except that
+an allocatable variable assigned an allocatable function result takes the
+result's shape, as when other backends return the result directly into it
+(see the `subroutine_from_function` pass documentation). Remaining executable
 constructors are rejected at the C++ boundary rather than filled by a second,
 backend-specific constructor implementation. This normalization does not imply
 support for all dynamic allocations, sections, or array function results.

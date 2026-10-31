@@ -26,7 +26,11 @@ borrowed dummies do not gain allocation or release rights. Caller-local View
 destruction releases the storage on scope exit, including early returns.
 Copies prepared from an allocatable function expression receive an explicit
 shape-guarded `ReAlloc` after the result call, since their extents cannot be
-known before it. Newly allocated copy destinations have unit lower bounds;
+known before it. This includes an allocatable assignment destination,
+independently of the assignment's LHS-reallocation flag: the default policy
+returns the result directly into that destination, which then takes the
+result's shape, and this policy gives it the same shape.
+Newly allocated copy destinations have unit lower bounds;
 an existing conforming destination retains its bounds. The result descriptor
 itself retains the bounds established by the callee. Allocation metadata uses
 the C++ representation's contiguous, first-subscript-fastest strides.
