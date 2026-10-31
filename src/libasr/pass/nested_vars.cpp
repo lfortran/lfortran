@@ -1184,7 +1184,8 @@ public:
     // procedure of the host with the interface of `p`, which calls `p`. Its
     // dummy arguments are copies of those of `p`, with the declarations they
     // need: entry-evaluated bounds, named constants, interfaces and
-    // use-associated entities.
+    // use-associated entities. A pointer result is associated with the
+    // result of `p`, not assigned its target.
     ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p) {
         const Location &loc = p->base.base.loc;
         SymbolTable *scope = al.make_new<SymbolTable>(host);
@@ -1282,8 +1283,14 @@ public:
             ASR::expr_t *call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                 loc, (ASR::symbol_t*) p, (ASR::symbol_t*) p, actuals.p, actuals.size(),
                 type_duplicator.duplicate_ttype(type), nullptr, nullptr));
-            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
-                loc, return_var, call, nullptr, ASRUtils::is_allocatable(type), false)));
+            if (ASRUtils::is_pointer(type)) {
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al,
+                    loc, return_var, call)));
+            } else {
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                    loc, return_var, call, nullptr, ASRUtils::is_allocatable(type),
+                    false)));
+            }
         } else {
             body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                 loc, (ASR::symbol_t*) p, (ASR::symbol_t*) p, actuals.p, actuals.size(),
