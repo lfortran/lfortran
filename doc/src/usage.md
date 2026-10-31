@@ -236,6 +236,12 @@ compilation options, output options, link options and so on.
 ### Compiler feature selections
 
 * `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
+  With `--fast`, LLVM assumes that dynamic signed integer addition, subtraction,
+  and multiplication do not overflow their result kind (default or nondefault),
+  including arithmetic in subscripts before any widening conversion. Code relying
+  on signed wraparound must not use `--fast`. Without `--fast`, signed arithmetic
+  is unchanged; the unsigned integer extension retains modular arithmetic in both
+  modes, and bitwise operations are unchanged.
 * `--implicit-argument-casting`, Allow implicit argument casting
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing

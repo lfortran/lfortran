@@ -1471,6 +1471,47 @@ end module
     CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM signed integer arithmetic is no-wrap only under --fast") {
+    for (const std::string &type: {"integer(1)", "integer(2)", "integer",
+            "integer(8)", "type(unsigned)"}) {
+        bool signed_int = type != "type(unsigned)";
+        unsigned bits = type == "integer(1)" ? 8 :
+            type == "integer(2)" ? 16 : type == "integer(8)" ? 64 : 32;
+        std::string source = "module integer_nsw\ncontains\n"
+            "subroutine arithmetic(a, b, s, d, p)\n" +
+            type + ", intent(in) :: a, b\n" +
+            type + ", intent(out) :: s, d, p\n"
+            "s = a + b\nd = a - b\np = a * b\n"
+            "end subroutine\nend module\n";
+        for (bool fast: {false, true}) {
+            inspect_definitions(source, fast,
+                {{"arithmetic", "_integer_nsw_arithmetic"}},
+                [&](const std::string &, llvm::Function &fn) {
+                    unsigned adds = 0, subs = 0, muls = 0;
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &inst: block) {
+                            auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                            if (!op) continue;
+                            switch (op->getOpcode()) {
+                                case llvm::Instruction::Add: adds++; break;
+                                case llvm::Instruction::Sub: subs++; break;
+                                case llvm::Instruction::Mul: muls++; break;
+                                default: continue;
+                            }
+                            INFO(type, ", fast=", fast, ", opcode=", op->getOpcodeName());
+                            CHECK(op->getType()->getIntegerBitWidth() == bits);
+                            CHECK(op->hasNoSignedWrap() == (signed_int && fast));
+                            CHECK_FALSE(op->hasNoUnsignedWrap());
+                        }
+                    }
+                    CHECK(adds == 1);
+                    CHECK(subs == 1);
+                    CHECK(muls == 1);
+                });
+        }
+    }
+}
+
 TEST_CASE("LLVM loops are not runtime unrolled under --fast") {
     std::string source = R"(module runtime_unroll_m
 implicit none

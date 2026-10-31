@@ -18603,15 +18603,18 @@ public:
             ASRUtils::is_unsigned_integer(*x.m_type))
         switch (x.m_op) {
             case ASR::binopType::Add: {
-                tmp = builder->CreateAdd(left_val, right_val);
+                tmp = builder->CreateAdd(left_val, right_val, "", false,
+                    signed_int && compiler_options.po.fast);
                 break;
             };
             case ASR::binopType::Sub: {
-                tmp = builder->CreateSub(left_val, right_val);
+                tmp = builder->CreateSub(left_val, right_val, "", false,
+                    signed_int && compiler_options.po.fast);
                 break;
             };
             case ASR::binopType::Mul: {
-                tmp = builder->CreateMul(left_val, right_val);
+                tmp = builder->CreateMul(left_val, right_val, "", false,
+                    signed_int && compiler_options.po.fast);
                 break;
             };
             case ASR::binopType::Div: {
