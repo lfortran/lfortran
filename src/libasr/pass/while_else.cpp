@@ -31,6 +31,17 @@ public:
         loop_stack.pop();
     }
 
+    // A DO loop reaches this pass when the backend lowers it itself. An
+    // EXIT in its body leaves it, not an enclosing while loop; its
+    // loop-else is outside it.
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        loop_stack.push((ASR::stmt_t*)(&x));
+        ASR::DoLoop_t &xx = const_cast<ASR::DoLoop_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        loop_stack.pop();
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+    }
+
     void visit_Exit(const ASR::Exit_t &x) {
         if (loop_stack.empty() ||
             flag_map.find(loop_stack.top()) == flag_map.end())
