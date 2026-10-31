@@ -1160,6 +1160,22 @@ public:
         }
     }
 
+    // Under --fast, LLVM would runtime-unroll loops whose trip count is unknown.
+    // Fortran array-operation loops are often short (e.g. a 3x3 window), and the
+    // unrolled body with its remainder checks then only adds overhead and
+    // register pressure. Like GCC at -O3 (without -funroll-loops), keep them
+    // rolled; vectorization and full unrolling of known trip counts still apply.
+    void disable_runtime_unrolling(llvm::BranchInst* latch) {
+        if (!compiler_options.po.fast) {
+            return;
+        }
+        llvm::Metadata* disable = llvm::MDNode::get(context,
+            llvm::MDString::get(context, "llvm.loop.unroll.runtime.disable"));
+        llvm::MDNode* loop_id = llvm::MDNode::getDistinct(context, {nullptr, disable});
+        loop_id->replaceOperandWith(0, loop_id);
+        latch->setMetadata(llvm::LLVMContext::MD_loop, loop_id);
+    }
+
     template <typename Cond, typename Body>
     void create_loop(char *name, Cond condition, Body loop_body) {
 
@@ -1193,7 +1209,8 @@ public:
         // body
         start_new_block(loopbody); {
             loop_body();
-            builder->CreateBr(loophead);
+            llvm::BranchInst* latch = builder->CreateBr(loophead);
+            disable_runtime_unrolling(latch);
         }
 
         // end

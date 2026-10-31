@@ -1270,6 +1270,49 @@ end module
     CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM loops are not runtime unrolled under --fast") {
+    std::string source = R"(module runtime_unroll_m
+implicit none
+contains
+subroutine window(x, y, i0, i1)
+    real, intent(in) :: x(:,:)
+    real, intent(inout) :: y(:,:)
+    integer, intent(in) :: i0, i1
+    integer :: j
+    do j = 1, size(y, 2)
+        y(:, j) = y(:, j) + x(i0:i1, j)
+    end do
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"window", "_window_real_______0_real_______1"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t latches = 0, rolled = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    llvm::MDNode *loop = block.getTerminator()->getMetadata(
+                        llvm::LLVMContext::MD_loop);
+                    if (!loop) continue;
+                    latches++;
+                    for (const llvm::MDOperand &op: loop->operands()) {
+                        auto *node = llvm::dyn_cast_or_null<llvm::MDNode>(op.get());
+                        if (!node || node->getNumOperands() == 0) continue;
+                        auto *name = llvm::dyn_cast<llvm::MDString>(node->getOperand(0));
+                        if (name && name->getString() ==
+                                "llvm.loop.unroll.runtime.disable") {
+                            rolled++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(rolled == latches);
+                // Both the DO loop and the array-operation loop it contains.
+                CHECK(latches == (fast ? 2u : 0u));
+            });
+    }
+}
+
 TEST_CASE("LLVM TBAA metadata under --fast") {
     std::string source = R"(module tbaa_ir_m
 implicit none
