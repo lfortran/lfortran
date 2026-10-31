@@ -273,9 +273,35 @@ std::vector<std::string> parse_arguments(unsigned char *string_start, unsigned c
         } else {
             args.push_back(parse_argument2(string_start, old_cur, cur));
         }
-        if (*cur == ',') cur++;
+        if (*cur == ',') {
+            cur++;
+            // f(a,) has an empty last argument
+            if (*cur == ')') args.push_back("");
+        }
     }
     return args;
+}
+
+// Check that a call of a function-like macro passes as many arguments as
+// the macro has parameters. f() passes one empty argument, which is valid
+// for a macro with one parameter.
+void check_macro_call_arguments(const std::string &name, const CPPMacro &macro,
+        std::vector<std::string> &args, const Location &loc) {
+    if (args.empty() && macro.args.size() == 1) {
+        args.push_back("");
+    }
+    if (args.size() < macro.args.size()) {
+        throw PreprocessorError("macro '" + name + "' requires "
+            + std::to_string(macro.args.size()) + " argument"
+            + (macro.args.size() == 1 ? "" : "s") + ", but only "
+            + std::to_string(args.size()) + " given", loc);
+    }
+    if (args.size() > macro.args.size()) {
+        throw PreprocessorError("macro '" + name + "' passed "
+            + std::to_string(args.size()) + " argument"
+            + (args.size() == 1 ? "" : "s") + ", but takes just "
+            + std::to_string(macro.args.size()), loc);
+    }
 }
 
 void interval_end(LocationManager &lm, size_t output_len,
@@ -745,6 +771,12 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                             throw PreprocessorError("expected ')'", loc);
                         }
                         cur++;
+                        {
+                            Location loc;
+                            loc.first = tok - string_start;
+                            loc.last = loc.first + t.size() - 1;
+                            check_macro_call_arguments(t, macro_definitions[t], args, loc);
+                        }
                         std::vector<std::string> expanded_args = args;
                         for (size_t i = 0; i < args.size(); i++) {
                             LocationManager lm_tmp = lm;
@@ -1255,6 +1287,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
         if (macro_definitions.find(str) != macro_definitions.end()) {
             std::string v;
             if (macro_definitions.at(str).function_like) {
+                unsigned char *name_end = cur;
                 unsigned char *saved_cur = cur;
                 while (*cur == ' ' || *cur == '\t') cur++;
                 if (*cur != '(') {
@@ -1270,6 +1303,12 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
                     throw PreprocessorError("expected ')'", loc);
                 }
                 cur++;
+                {
+                    Location loc;
+                    loc.first = name_end - str.size() - string_start;
+                    loc.last = loc.first + str.size() - 1;
+                    check_macro_call_arguments(str, macro_definitions.at(str), args, loc);
+                }
                 std::vector<std::string> margs = macro_definitions.at(str).args;
                 std::string mexpansion = macro_definitions.at(str).expansion;
                 v = function_like_macro_expansion(

@@ -1,0 +1,5 @@
+C preprocessor error: macro 'F' requires 2 arguments, but only 1 given
+ --> tests/errors/cpp_err10.f90:2:5
+  |
+2 | #if F(1) == 3
+  |     ^ 
