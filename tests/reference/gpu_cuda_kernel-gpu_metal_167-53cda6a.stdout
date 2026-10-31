@@ -16,16 +16,12 @@ __device__ inline float f_gpu_18(activation_t self, float x) {
 }
 
 __device__ inline void get_vals_gpu_19(float* a, int __1a, int __2a, int i, float* v) {
-    int __do_loop_end;
     float* __libasr_created__array_section_pointer_;
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_created__array_section_pointer_ = a + ((int)(((int)1)) - (1)) + (__1a * ((int)(i) - (1)));
     __libasr_index_0_1 = 1;
-    __do_loop_end = ((((int)__1a) + ((int)1)) - 1);
-    __libasr_index_0_ = (((int)1) - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)__1a) + ((int)1)) - 1); __libasr_index_0_++) {
         v[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
@@ -67,7 +63,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
-        int __do_loop_end;
         int __libasr_created__result_metadata_;
         float* __libasr_created__subroutine_from_function_ = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         int __libasr_index_0_;
@@ -76,10 +71,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __libasr_created__result_metadata_ = __dim_a_0;
         get_vals_gpu_19(a, __dim_a_0, __dim_a_1, i__dc, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
-        __do_loop_end = (1 + __dim_a_0 - 1);
-        __libasr_index_0_ = (1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-            __libasr_index_0_ = (__libasr_index_0_ + 1);
+        for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + __dim_a_0 - 1); __libasr_index_0_++) {
             y[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }

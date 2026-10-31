@@ -2,10 +2,6 @@
 
 __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_heap_cap_r4, int* __gpu_heap_state, int& __gpu_stop_site, int& __gpu_stop_code) {
     float r;
-    int __do_loop_end;
-    int __do_loop_end1;
-    int __do_loop_end2;
-    int __do_loop_end3;
     int __gpu_heap_a_base;
     int __gpu_heap_a_lb1;
     int __gpu_heap_a_n1;
@@ -26,17 +22,11 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
         __gpu_stop_site = 1;
         return r;
     }
-    __do_loop_end = ((__gpu_heap_a_lb1 + __gpu_heap_a_n1) - 1);
-    __libasr_index_0_ = (__gpu_heap_a_lb1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = __gpu_heap_a_lb1; __libasr_index_0_ <= ((__gpu_heap_a_lb1 + __gpu_heap_a_n1) - 1); __libasr_index_0_++) {
         __gpu_heap_r4[((int)(((__gpu_heap_a_base + 1) + (__libasr_index_0_ - __gpu_heap_a_lb1))) - (1))] = x;
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = __gpu_heap_a_n1;
-    __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-        __gpu_sum_k = (__gpu_sum_k + 1);
+    for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_heap_a_n1; __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap_a_base + 1) + ((__gpu_heap_a_lb1 + (__gpu_sum_k - 1)) - __gpu_heap_a_lb1))) - (1))]);
     }
     r = __gpu_sum_res;
@@ -51,17 +41,11 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
         __gpu_stop_site = 2;
         return r;
     }
-    __do_loop_end2 = ((__gpu_heap_a_lb1 + __gpu_heap_a_n1) - 1);
-    __libasr_index_0_1 = (__gpu_heap_a_lb1 - 1);
-    while (((__libasr_index_0_1 + 1) <= __do_loop_end2)) {
-        __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+    for (__libasr_index_0_1 = __gpu_heap_a_lb1; __libasr_index_0_1 <= ((__gpu_heap_a_lb1 + __gpu_heap_a_n1) - 1); __libasr_index_0_1++) {
         __gpu_heap_r4[((int)(((__gpu_heap_a_base + 1) + (__libasr_index_0_1 - __gpu_heap_a_lb1))) - (1))] = x;
     }
     __gpu_sum_res1 =   0.00000000000000000e+00f;
-    __do_loop_end3 = __gpu_heap_a_n1;
-    __gpu_sum_k1 = (1 - 1);
-    while (((__gpu_sum_k1 + 1) <= __do_loop_end3)) {
-        __gpu_sum_k1 = (__gpu_sum_k1 + 1);
+    for (__gpu_sum_k1 = 1; __gpu_sum_k1 <= __gpu_heap_a_n1; __gpu_sum_k1++) {
         __gpu_sum_res1 = (__gpu_sum_res1 + __gpu_heap_r4[((int)(((__gpu_heap_a_base + 1) + ((__gpu_heap_a_lb1 + (__gpu_sum_k1 - 1)) - __gpu_heap_a_lb1))) - (1))]);
     }
     __gpu_sum_tmp = __gpu_sum_res1;
