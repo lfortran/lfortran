@@ -81,7 +81,9 @@ pool of K thunks `P__lcompilers_value_<i>` (K is
 PassOptions::internal_procedure_thunks), thunk i reading frame slot i of a
 saved array of the host. An instance of the host that makes a value takes a
 free slot, once, points it at its frame and names the thunk of that slot; it
-gives the slot back before it returns. So every live instance has its own
+gives the slot back before it returns. The index of the slot it holds (0 for
+none) is a variable of the host in the frame, so that taking the slot again
+and returning without one cost a comparison. So every live instance has its own
 thunks, and a value reaches the instance that made it (Fortran 2018
 15.6.2.4), also while a newer instance of the host is active:
 
@@ -92,12 +94,14 @@ thunks, and a value reaches the instance that made it (Fortran 2018
         end type
         type(__lcompilers_frame_slot_h), save :: __lcompilers_frame_slots(K)
         procedure(inner__lcompilers_value_1), pointer :: inner__lcompilers_value_pointer
-        integer :: __lcompilers_frame_slot
+        integer :: __lcompilers_held_frame_slot, __lcompilers_frame_slot
         bind_reference(__lcompilers_frame%n, n)
+        bind_reference(__lcompilers_frame%__lcompilers_held_frame_slot, __lcompilers_held_frame_slot)
+        __lcompilers_held_frame_slot = 0
         call __lcompilers_acquire_frame_slot(__lcompilers_frame, __lcompilers_frame_slot)
         call inner__lcompilers_value_select(__lcompilers_frame_slot, inner__lcompilers_value_pointer)
         call solve(inner__lcompilers_value_pointer)
-        call __lcompilers_release_frame_slot(__lcompilers_frame)
+        if (__lcompilers_held_frame_slot /= 0) call __lcompilers_release_frame_slot(__lcompilers_frame)
     contains
         subroutine inner__lcompilers_value_1(x)
             real, intent(inout) :: x
@@ -105,9 +109,9 @@ thunks, and a value reaches the instance that made it (Fortran 2018
         end subroutine
         ...                                     ! up to thunk K
 
-The acquire helper finds the slot that already points at the frame, so the
-values one instance makes are the same thunk; if there is none it takes a
-free one, or stops naming the option when all K are taken. With OpenMP, both
+If the instance holds no slot, the acquire helper takes a free one, or stops
+naming the option when all K are taken; so the values one instance makes are
+the same thunk. With OpenMP, both
 helpers run under the lock of a named critical construct, so instances on
 several threads take and give back slots safely. A value invoked after its
 instance returned is undefined (Fortran 2018 19.5.2.5): its slot is null or
@@ -401,6 +405,9 @@ struct Child {
 // a derived type whose one member points at a frame
 struct PoolSlots {
     ASR::symbol_t *slots = nullptr;
+    // The index of the slot that the instance holds, 0 if none: a variable
+    // of the host in its frame, so that its internal procedures reach it
+    ASR::symbol_t *held = nullptr;
     // The member, as named in the host
     ASR::symbol_t *member = nullptr;
     ASR::ttype_t *member_type = nullptr;
@@ -1677,6 +1684,15 @@ public:
                 }
             }
         }
+        // The index of the frame slot that the instance holds
+        ASR::symbol_t *held = nullptr;
+        if (!pools.empty()) {
+            held = (ASR::symbol_t*) add_variable(host, "__lcompilers_held_frame_slot",
+                loc, ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4)), nullptr);
+            captured_set.insert(held);
+        }
         std::vector<ASR::symbol_t*> captured;
         for (auto &item: host->get_scope()) {
             if (captured_set.count(item.second)) {
@@ -1710,6 +1726,9 @@ public:
         ASR::symbol_t *acquire = nullptr, *release = nullptr;
         if (!pools.empty()) {
             pool_slots = make_pool_slots(host_sym, frame);
+            pool_slots.held = held;
+            ASRUtils::ASRBuilder b(al, loc);
+            prologue.push_back(al, b.Assignment(b.Var(held), b.i32(0)));
             make_pool_frame_helpers(host_sym, frame, pool_slots, acquire, release);
             for (ASR::symbol_t *h: {acquire, release}) {
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(h);
@@ -1805,7 +1824,7 @@ public:
             }
             if (!pools.empty()) {
                 use_pools(host_sym, body, n_body, frame, pools, acquire, release,
-                    procs, children);
+                    pool_slots.held, procs, children);
             }
             if (!thunks.empty()) {
                 mark_procedure_value_sites(host_sym, body, n_body, frame, slot,
@@ -1937,8 +1956,8 @@ public:
     }
 
     // The helpers acquire(frame, index), which gives the index of the slot
-    // that points at the frame, taking a free one if there is none, and
-    // release(frame), which gives back the slot that points at the frame
+    // that the instance holds, taking a free one if it holds none, and
+    // release(frame), which gives back the slot that the instance holds
     void make_pool_frame_helpers(ASR::symbol_t *host_sym, const Frame &frame,
             const PoolSlots &ps, ASR::symbol_t *&acquire, ASR::symbol_t *&release) {
         SymbolTable *host = procedure_scope(host_sym);
@@ -1946,22 +1965,9 @@ public:
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         ASR::ttype_t *integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        auto associated = [&](ASR::expr_t *slot, ASR::symbol_t *target) {
-            return ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc, slot,
-                target ? b.Var(target) : nullptr, logical_type, nullptr));
-        };
-        auto slot = [&](ASR::symbol_t *index) {
-            return slot_designator(loc, ps, b.Var(index));
-        };
         auto error_stop = [&](const std::string &msg) {
             return ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, b.StringConstant(msg,
                 b.String(b.i32(msg.size()), ASR::ExpressionLength))));
-        };
-        auto local = [&](SymbolTable *scope, const std::string &name,
-                ASR::intentType intent) {
-            return (ASR::symbol_t*) add_variable(scope, name, loc, intent,
-                nullptr, nullptr, ASR::storage_typeType::Default, integer_type,
-                nullptr);
         };
         auto frame_dummy = [&](SymbolTable *scope) {
             return (ASR::symbol_t*) add_variable(scope, "__lcompilers_frame", loc,
@@ -1969,77 +1975,74 @@ public:
                 ASR::storage_typeType::Default, frame_type(loc, frame), frame.type,
                 true);
         };
-        // i = 1; while (i <= K .and. more) { each; i = i + 1 }
-        auto loop = [&](ASR::symbol_t *i, ASR::expr_t *more,
-                std::vector<ASR::stmt_t*> each, Vec<ASR::stmt_t*> &stmts) {
-            stmts.push_back(al, b.Assignment(b.Var(i), b.i32(1)));
-            each.push_back(b.Assignment(b.Var(i), ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc, b.Var(i), ASR::binopType::Add,
-                    b.i32(1), integer_type, nullptr))));
-            stmts.push_back(al, b.While(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
-                loc, b.LtE(b.Var(i), b.i32(pool_size)), ASR::logicalbinopType::And,
-                more, logical_type, nullptr)), each));
+        auto locked = [&](SymbolTable *scope, std::vector<ASR::stmt_t*> stmts) {
+            if (openmp) {
+                stmts.insert(stmts.begin(), slot_lock(scope, loc, true));
+                stmts.push_back(slot_lock(scope, loc, false));
+            }
+            return stmts;
         };
+        // A new expression for every use
+        auto held = [&]() { return b.Var(ps.held); };
         std::string host_name = ASRUtils::symbol_name(host_sym);
 
-        // acquire(frame, index): the index of the slot that points at the
-        // frame, taking a free one if there is none
+        // acquire(frame, index): the index of the slot that the instance
+        // holds, taking a free one if it holds none
         acquire = make_pool_helper(host, loc,
             "__lcompilers_acquire_frame_slot",
             [&](SymbolTable *scope, Vec<ASR::expr_t*> &args) {
                 args.push_back(al, b.Var(frame_dummy(scope)));
-                args.push_back(al, b.Var(local(scope, "index", ASR::intentType::Out)));
+                args.push_back(al, b.Var((ASR::symbol_t*) add_variable(scope, "index",
+                    loc, ASR::intentType::Out, nullptr, nullptr,
+                    ASR::storage_typeType::Default, integer_type, nullptr)));
             },
             [&](SymbolTable *scope, Vec<ASR::stmt_t*> &stmts) {
                 ASR::symbol_t *f = scope->get_symbol("__lcompilers_frame");
-                ASR::symbol_t *index = scope->get_symbol("index");
-                ASR::symbol_t *i = local(scope, "i", ASR::intentType::Local);
-                if (openmp) {
-                    stmts.push_back(al, slot_lock(scope, loc, true));
-                }
-                stmts.push_back(al, b.Assignment(b.Var(index), b.i32(0)));
-                loop(i, b.Eq(b.Var(index), b.i32(0)), {b.If(associated(slot(i), f),
-                    {b.Assignment(b.Var(index), b.Var(i))}, {})}, stmts);
-                Vec<ASR::stmt_t*> take;
-                take.reserve(al, 1);
-                loop(i, b.Eq(b.Var(index), b.i32(0)), {b.If(ASRUtils::EXPR(
-                    ASR::make_LogicalNot_t(al, loc, associated(slot(i), nullptr),
-                        logical_type, nullptr)),
-                    {ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
-                        slot(i), b.Var(f))),
-                     b.Assignment(b.Var(index), b.Var(i))}, {})}, take);
-                std::vector<ASR::stmt_t*> taken(take.p, take.p + take.size());
-                taken.push_back(b.If(b.Eq(b.Var(index), b.i32(0)), {error_stop(
-                    "too many simultaneously live procedure values of the "
-                    "internal procedures of '" + host_name + "' (limit " +
-                    std::to_string(pool_size) + "); recompile with "
+                ASR::symbol_t *i = (ASR::symbol_t*) add_variable(scope, "i", loc,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, integer_type, nullptr);
+                ASR::expr_t *slot = slot_designator(loc, ps, b.Var(i));
+                // i = 1; while (i <= K .and. held == 0) { take slot i if it
+                // is free; i = i + 1 }
+                ASR::stmt_t *search = b.While(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(
+                    al, loc, b.LtE(b.Var(i), b.i32(pool_size)),
+                    ASR::logicalbinopType::And, b.Eq(held(), b.i32(0)), logical_type,
+                    nullptr)), {
+                    b.If(ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc, slot,
+                            nullptr, logical_type, nullptr)), logical_type, nullptr)),
+                        {ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                            slot, b.Var(f))),
+                         b.Assignment(held(), b.Var(i))}, {}),
+                    b.Assignment(b.Var(i), ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, loc, b.Var(i), ASR::binopType::Add, b.i32(1),
+                        integer_type, nullptr)))});
+                std::vector<ASR::stmt_t*> take = locked(scope,
+                    {b.Assignment(b.Var(i), b.i32(1)), search});
+                take.push_back(b.If(b.Eq(held(), b.i32(0)), {error_stop(
+                    "more than " + std::to_string(pool_size) + " instances of '" +
+                    host_name + "' that made procedure values of its internal "
+                    "procedures are active at the same time; recompile with "
                     "--internal-procedure-thunks=<larger value>")}, {}));
-                stmts.push_back(al, b.If(b.Eq(b.Var(index), b.i32(0)), taken, {}));
-                if (openmp) {
-                    stmts.push_back(al, slot_lock(scope, loc, false));
-                }
+                stmts.push_back(al, b.If(b.Eq(held(), b.i32(0)), take, {}));
+                stmts.push_back(al, b.Assignment(b.Var(scope->get_symbol("index")),
+                    held()));
             });
-        // release(frame): gives back the slot that points at the frame
+        // release(frame): gives back the slot that the instance holds
         release = make_pool_helper(host, loc,
             "__lcompilers_release_frame_slot",
             [&](SymbolTable *scope, Vec<ASR::expr_t*> &args) {
                 args.push_back(al, b.Var(frame_dummy(scope)));
             },
             [&](SymbolTable *scope, Vec<ASR::stmt_t*> &stmts) {
-                ASR::symbol_t *f = scope->get_symbol("__lcompilers_frame");
-                ASR::symbol_t *i = local(scope, "i", ASR::intentType::Local);
                 Vec<ASR::expr_t*> vars;
                 vars.reserve(al, 1);
-                vars.push_back(al, slot(i));
-                if (openmp) {
-                    stmts.push_back(al, slot_lock(scope, loc, true));
+                vars.push_back(al, slot_designator(loc, ps, held()));
+                for (ASR::stmt_t *stmt: locked(scope, {ASRUtils::STMT(
+                        ASR::make_Nullify_t(al, loc, vars.p, vars.size()))})) {
+                    stmts.push_back(al, stmt);
                 }
-                loop(i, b.bool_t(true, logical_type), {b.If(associated(slot(i), f),
-                    {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, vars.p,
-                        vars.size()))}, {})}, stmts);
-                if (openmp) {
-                    stmts.push_back(al, slot_lock(scope, loc, false));
-                }
+                stmts.push_back(al, b.Assignment(held(), b.i32(0)));
             });
     }
 
@@ -2099,7 +2102,7 @@ public:
     void use_pools(ASR::symbol_t *host_sym, ASR::stmt_t **&body, size_t &n_body,
             const Frame &frame,
             const std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> &pools,
-            ASR::symbol_t *acquire, ASR::symbol_t *release,
+            ASR::symbol_t *acquire, ASR::symbol_t *release, ASR::symbol_t *held,
             const std::vector<ASR::Function_t*> &procs,
             std::map<ASR::Function_t*, Child> &children) {
         SymbolTable *host = procedure_scope(host_sym);
@@ -2169,7 +2172,7 @@ public:
             proc_sites.visit_Function(*proc);
         }
 
-        // The host gives back its slot before it returns
+        // The host gives back its slot, if it holds one, before it returns
         auto release_call = [&]() {
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 1);
@@ -2177,8 +2180,10 @@ public:
             a.loc = loc;
             a.m_value = b.Var(frame.object);
             args.push_back(al, a);
-            return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                release, nullptr, args.p, args.size(), nullptr, nullptr, false));
+            return b.If(b.NotEq(b.Var(held), b.i32(0)),
+                {ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+                    release, nullptr, args.p, args.size(), nullptr, nullptr,
+                    false))}, {});
         };
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(host_sym);
         ReturnRestorer restorer(al, [&]() {
