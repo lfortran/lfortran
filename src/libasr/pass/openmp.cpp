@@ -2323,6 +2323,12 @@ class ParallelRegionVisitor :
                         return b.Assignment(target, b.f_t(std::numeric_limits<double>::max(), red_type));
                     }
                     throw LCompilersException("Unsupported type for MIN reduction");
+                case ASR::reduction_opType::ReduceAND:
+                case ASR::reduction_opType::ReduceEQV:
+                    return b.Assignment(target, b.bool_t(true, red_type));
+                case ASR::reduction_opType::ReduceOR:
+                case ASR::reduction_opType::ReduceNEQV:
+                    return b.Assignment(target, b.bool_t(false, red_type));
                 default:
                     throw LCompilersException("Unsupported reduction operation");
             }
@@ -2342,6 +2348,18 @@ class ParallelRegionVisitor :
                     return b.If(b.Lt(target, value), {b.Assignment(target, value)}, {});
                 case ASR::reduction_opType::ReduceMIN:
                     return b.If(b.Gt(target, value), {b.Assignment(target, value)}, {});
+                case ASR::reduction_opType::ReduceAND:
+                    return b.Assignment(target, b.And(target, value));
+                case ASR::reduction_opType::ReduceOR:
+                    return b.Assignment(target, b.Or(target, value));
+                case ASR::reduction_opType::ReduceEQV:
+                    return b.Assignment(target, ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                        loc, target, ASR::logicalbinopType::Eqv, value,
+                        ASRUtils::expr_type(target), nullptr)));
+                case ASR::reduction_opType::ReduceNEQV:
+                    return b.Assignment(target, ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                        loc, target, ASR::logicalbinopType::NEqv, value,
+                        ASRUtils::expr_type(target), nullptr)));
                 default:
                     throw LCompilersException("Unsupported reduction operation");
             }

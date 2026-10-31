@@ -467,7 +467,7 @@ concurrent_locality
     | ConcurrentDefault()
     | ConcurrentReduce(reduce_op op, identifier *vars)
 
-reduce_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR
+reduce_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR | ReduceAND | ReduceOR | ReduceEQV | ReduceNEQV
 
 data_stmt_set
     = DataStmtSet(expr* object, expr* value)
