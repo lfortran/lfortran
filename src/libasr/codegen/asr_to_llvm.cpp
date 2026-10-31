@@ -17795,9 +17795,203 @@ public:
         tmp = res;
     }
 
-    // TODO: Implement visit_DooLoop
-    //void visit_DoLoop(const ASR::DoLoop_t &x) {
-    //}
+    // The value of the integer control expression `e` of a DO loop head.
+    llvm::Value* do_loop_control_value(ASR::expr_t *e) {
+        ASR::ttype_t *type = ASRUtils::expr_type(e);
+        this->visit_expr_load_wrapper(e,
+            LLVM::is_llvm_pointer(*type) ? 2 : 1, true);
+        llvm::Value *value = tmp;
+        load_non_array_non_character_pointers(e, type, value);
+        return value;
+    }
+
+    // Generates the counted DO loop of the normalized head `head`, with
+    // `generate_body()` generating its body, as Fortran defines it (F2023
+    // 11.1.7.4): the start a, end b and step c are evaluated once, in this
+    // order, before a is stored to the DO variable i. The loop runs
+    // max((b - a + c) / c, 0) iterations. On normal completion i is one step
+    // past its last value, a + count*c, and the loop-else `orelse` runs; a
+    // loop that runs no iteration leaves i = a. A CYCLE branches to the
+    // latch, which steps i; an EXIT branches past the loop and the loop-else
+    // and keeps i. i is stored to its own storage whenever it changes, so
+    // that whatever can see it (COMMON, EQUIVALENCE, a pointer, a callee)
+    // sees the right value:
+    //
+    //         i = a
+    //         if c == 0: runtime error          (c not known at compile time)
+    //         if not (c > 0 ? a <= b : a >= b): goto orelse   (no iteration)
+    //     unit step (c = 1 or c = -1 at compile time):
+    //     body:   ...
+    //     latch:  last = i == b; i = i + c; if last goto orelse else body
+    //     any other step:
+    //         remaining = |b - a| / |c|, unsigned
+    //     body:   ...
+    //     latch:  i = i + c
+    //             if remaining == 0 goto orelse
+    //             remaining = remaining - 1; goto body
+    //     orelse: ...
+    //     end:
+    //
+    // The final value of i is representable in a conforming program, so the
+    // update of i does not overflow (nsw). The distance |b - a| is not, and
+    // neither is |c| for the most negative c, so they are computed unsigned,
+    // in the width of i, which holds them and the iteration count minus one.
+    template <typename Body>
+    void generate_counted_do_loop(const ASR::do_loop_head_t &head,
+            const char *name, Body generate_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        [[maybe_unused]] std::string reason;
+        LCOMPILERS_ASSERT(head.m_v != nullptr &&
+            ASRUtils::is_normalized_do_loop_head(head, reason));
+        ASR::ttype_t *v_type = ASRUtils::expr_type(head.m_v);
+        ASR::ttype_t *iv_asr_type =
+            ASRUtils::type_get_past_allocatable_pointer(v_type);
+        if (!ASR::is_a<ASR::Integer_t>(*iv_asr_type)) {
+            throw CodeGenError("a DO loop whose DO variable is not of "
+                "integer type is not supported yet", head.loc);
+        }
+        llvm::Type *iv_type = llvm_utils->get_type_from_ttype_t_util(
+            head.m_v, iv_asr_type, module.get());
+
+        // The temporary strings of the head are freed once it has been
+        // evaluated.
+        llvm::Value **saved_strings = strings_to_be_deallocated.p;
+        size_t saved_strings_n = strings_to_be_deallocated.n;
+        strings_to_be_deallocated.reserve(al, 1);
+        llvm::Value *start = do_loop_control_value(head.m_start);
+        llvm::Value *end = do_loop_control_value(head.m_end);
+        llvm::Value *step = do_loop_control_value(head.m_increment);
+        llvm::Value *v_ptr = get_var_target_address(head.m_v);
+        if (ASRUtils::is_allocatable(v_type)) {
+            check_and_allocate_scalar(head.m_v);
+            v_ptr = llvm_utils->CreateLoad2(
+                llvm_utils->get_type_from_ttype_t_util(head.m_v, v_type,
+                    module.get()), v_ptr);
+        }
+        LCOMPILERS_ASSERT(start->getType() == iv_type &&
+            end->getType() == iv_type && step->getType() == iv_type);
+        LLVM::CreateStore(*builder, start, v_ptr);
+        free_strings_to_be_deallocated(0);
+
+        int64_t step_value = 0;
+        bool step_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(head.m_increment), step_value);
+        LCOMPILERS_ASSERT(!step_known || step_value != 0);
+        bool unit_step = step_known && (step_value == 1 || step_value == -1);
+
+        std::string loop_name = (name && name[0]) ? name : "do_loop";
+        // A CYCLE finds the latch of a named loop as `<name>.head`, and an
+        // EXIT its end as `<name>.end`.
+        std::string latch_name = loop_name + ".head";
+        std::string end_name = loop_name + ".end";
+        llvm::BasicBlock *body_bb = llvm::BasicBlock::Create(context,
+            loop_name + ".body");
+        llvm::BasicBlock *latch = llvm::BasicBlock::Create(context,
+            latch_name);
+        llvm::BasicBlock *end_bb = llvm::BasicBlock::Create(context, end_name);
+        llvm::BasicBlock *orelse_bb = n_orelse > 0
+            ? llvm::BasicBlock::Create(context, loop_name + ".orelse")
+            : end_bb;
+
+        llvm::Value *zero = llvm::ConstantInt::get(iv_type, 0);
+        llvm::Value *step_positive = nullptr;
+        if (!step_known) {
+            llvm_utils->generate_runtime_error(
+                builder->CreateICmpEQ(step, zero),
+                "zero step in a DO loop",
+                {LLVMUtils::RuntimeLabel("this step is zero",
+                    {head.m_increment->base.loc})},
+                infile, location_manager);
+            step_positive = builder->CreateICmpSGT(step, zero);
+        }
+        // `positive()` for a positive step, `negative()` for a negative one.
+        auto by_step_sign = [&](auto positive, auto negative) {
+            if (step_known) {
+                return step_value > 0 ? positive() : negative();
+            }
+            llvm::Value *p = positive();
+            llvm::Value *n = negative();
+            return builder->CreateSelect(step_positive, p, n);
+        };
+        llvm::Value *enter = by_step_sign(
+            [&]() { return builder->CreateICmpSLE(start, end); },
+            [&]() { return builder->CreateICmpSGE(start, end); });
+        llvm::PHINode *remaining = nullptr;
+        if (unit_step) {
+            builder->CreateCondBr(enter, body_bb, orelse_bb);
+            start_new_block(body_bb);
+        } else {
+            llvm::BasicBlock *prep = llvm::BasicBlock::Create(context,
+                loop_name + ".prep");
+            builder->CreateCondBr(enter, prep, orelse_bb);
+            start_new_block(prep);
+            llvm::Value *distance = by_step_sign(
+                [&]() { return builder->CreateSub(end, start); },
+                [&]() { return builder->CreateSub(start, end); });
+            llvm::Value *step_magnitude = by_step_sign(
+                [&]() { return step; },
+                [&]() { return builder->CreateSub(zero, step); });
+            llvm::Value *count_minus_one = builder->CreateUDiv(distance,
+                step_magnitude);
+            builder->CreateBr(body_bb);
+            start_new_block(body_bb);
+            remaining = builder->CreatePHI(iv_type, 2,
+                loop_name + ".remaining");
+            remaining->addIncoming(count_minus_one, prep);
+        }
+
+        push_loop_targets(latch, latch_name, end_bb, end_name);
+        generate_body();
+        pop_loop_targets();
+
+        start_new_block(latch);
+        llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
+        LLVM::CreateStore(*builder,
+            builder->CreateNSWAdd(current, step), v_ptr);
+        llvm::Value *last;
+        if (unit_step) {
+            last = builder->CreateICmpEQ(current, end);
+        } else {
+            last = builder->CreateICmpEQ(remaining, zero);
+            remaining->addIncoming(builder->CreateSub(remaining,
+                llvm::ConstantInt::get(iv_type, 1)), latch);
+        }
+        disable_runtime_unrolling(
+            builder->CreateCondBr(last, orelse_bb, body_bb));
+
+        if (n_orelse > 0) {
+            start_new_block(orelse_bb);
+            for (size_t i = 0; i < n_orelse; i++) {
+                this->visit_stmt(*orelse[i]);
+            }
+        }
+        start_new_block(end_bb);
+
+        strings_to_be_deallocated.reserve(al, saved_strings_n);
+        strings_to_be_deallocated.n = saved_strings_n;
+        strings_to_be_deallocated.p = saved_strings;
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        auto generate_body = [&]() {
+            enclosing_constructs.push_back(&x.base);
+            for (size_t i = 0; i < x.n_body; i++) {
+                this->visit_stmt(*x.m_body[i]);
+            }
+            enclosing_constructs.pop_back();
+        };
+        if (x.m_head.m_v == nullptr) {
+            // DO without loop control: it ends only by a branch out of it,
+            // so it never runs its loop-else.
+            create_loop(x.m_name, [&]() {
+                return llvm::ConstantInt::getTrue(context);
+            }, generate_body);
+            return;
+        }
+        generate_counted_do_loop(x.m_head, x.m_name, generate_body,
+            x.m_orelse, x.n_orelse);
+    }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
