@@ -69,6 +69,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_sequential_unroll.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
@@ -153,6 +154,7 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
+            {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
@@ -435,6 +437,9 @@ namespace LCompilers {
                 // change the physical type of an array, and before its copy
                 // loops are lowered.
                 "string_format_array_args",
+                // The short loops of Metal device code are unrolled before
+                // do_loops, which leaves the loops of device code alone.
+                "gpu_sequential_unroll",
                 "do_loops",
                 "while_else",
                 // Every call the passes above can create is in place, so each
