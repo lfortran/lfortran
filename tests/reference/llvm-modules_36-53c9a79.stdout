@@ -21,7 +21,6 @@ define void @__module_modules_36_fpm_main_01_cmd_run(%modules_36_fpm_main_01.fpm
 .entry:
   %array_bound1 = alloca i32, align 4
   %array_bound = alloca i32, align 4
-  %__do_loop_end = alloca i32, align 4
   %__libasr_created__intrinsic_array_function_Any = alloca i32, align 4
   %__libasr_index_0_ = alloca i32, align 4
   %__libasr_reduction_acc = alloca i32, align 4
@@ -31,7 +30,7 @@ define void @__module_modules_36_fpm_main_01_cmd_run(%modules_36_fpm_main_01.fpm
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %.entry
-  store i32 2, i32* %array_bound, align 4
+  store i32 1, i32* %array_bound, align 4
   br label %ifcont
 
 else:                                             ; preds = %.entry
@@ -39,11 +38,10 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %0 = load i32, i32* %array_bound, align 4
-  store i32 %0, i32* %__do_loop_end, align 4
   br i1 true, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
-  store i32 1, i32* %array_bound1, align 4
+  store i32 2, i32* %array_bound1, align 4
   br label %ifcont4
 
 else3:                                            ; preds = %ifcont
@@ -51,69 +49,66 @@ else3:                                            ; preds = %ifcont
 
 ifcont4:                                          ; preds = %else3, %then2
   %1 = load i32, i32* %array_bound1, align 4
-  %2 = sub i32 %1, 1
-  store i32 %2, i32* %__libasr_index_0_, align 4
-  br label %loop.head
+  store i32 %0, i32* %__libasr_index_0_, align 4
+  %2 = icmp sle i32 %0, %1
+  br i1 %2, label %do_loop.body, label %do_loop.end
 
-loop.head:                                        ; preds = %loop.body, %ifcont4
-  %3 = load i32, i32* %__libasr_index_0_, align 4
-  %4 = add i32 %3, 1
-  %5 = load i32, i32* %__do_loop_end, align 4
-  %6 = icmp sle i32 %4, %5
-  br i1 %6, label %loop.body, label %loop.end
+do_loop.body:                                     ; preds = %do_loop.head, %ifcont4
+  %3 = load i32, i32* %__libasr_reduction_acc, align 4
+  %4 = load i32, i32* %__libasr_index_0_, align 4
+  %5 = sext i32 %4 to i64
+  %6 = sub i64 %5, 1
+  %7 = mul i64 1, %6
+  %8 = add i64 0, %7
+  %9 = getelementptr [2 x i32], [2 x i32]* %found, i32 0, i64 %8
+  %10 = load i32, i32* %9, align 4
+  %11 = xor i32 %10, 1
+  %12 = or i32 %3, %11
+  store i32 %12, i32* %__libasr_reduction_acc, align 4
+  br label %do_loop.head
 
-loop.body:                                        ; preds = %loop.head
-  %7 = load i32, i32* %__libasr_index_0_, align 4
-  %8 = add i32 %7, 1
-  store i32 %8, i32* %__libasr_index_0_, align 4
-  %9 = load i32, i32* %__libasr_reduction_acc, align 4
-  %10 = load i32, i32* %__libasr_index_0_, align 4
-  %11 = sext i32 %10 to i64
-  %12 = sub i64 %11, 1
-  %13 = mul i64 1, %12
-  %14 = add i64 0, %13
-  %15 = getelementptr [2 x i32], [2 x i32]* %found, i32 0, i64 %14
-  %16 = load i32, i32* %15, align 4
-  %17 = xor i32 %16, 1
-  %18 = or i32 %9, %17
-  store i32 %18, i32* %__libasr_reduction_acc, align 4
-  br label %loop.head
+do_loop.head:                                     ; preds = %do_loop.body
+  %13 = load i32, i32* %__libasr_index_0_, align 4
+  %14 = add nsw i32 %13, 1
+  store i32 %14, i32* %__libasr_index_0_, align 4
+  %15 = icmp eq i32 %13, %1
+  br i1 %15, label %do_loop.end, label %do_loop.body
 
-loop.end:                                         ; preds = %loop.head
-  %19 = load i32, i32* %__libasr_reduction_acc, align 4
-  store i32 %19, i32* %__libasr_created__intrinsic_array_function_Any, align 4
-  %20 = load i32, i32* %__libasr_created__intrinsic_array_function_Any, align 4
-  %21 = load i32, i32* %toomany, align 4
-  %22 = load i32, i32* %test, align 1
-  %23 = xor i32 %22, 1
-  %24 = and i32 %21, %23
-  %25 = load i32, i32* %toomany, align 4
-  %26 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %27 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %26, align 1
-  %28 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %27, i32 0, i32 3
-  %29 = getelementptr %string_descriptor, %string_descriptor* %28, i32 0, i32 0
-  %30 = load i8*, i8** %29, align 8
-  %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %32 = call i32 @str_compare(i8* %30, i64 6, i8* %31, i64 0)
-  %33 = icmp ne i32 %32, 0
-  %34 = zext i1 %33 to i32
-  %35 = and i32 %25, %34
-  %36 = or i32 %24, %35
-  %37 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
-  %38 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %37, align 1
-  %39 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %38, i32 0, i32 0
-  %40 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %39, i32 0, i32 0
-  %41 = load i32, i32* %40, align 1
-  %42 = xor i32 %41, 1
-  %43 = and i32 %36, %42
-  %44 = or i32 %20, %43
-  %45 = icmp ne i32 %44, 0
-  br i1 %45, label %then5, label %else6
+do_loop.end:                                      ; preds = %do_loop.head, %ifcont4
+  %16 = load i32, i32* %__libasr_reduction_acc, align 4
+  store i32 %16, i32* %__libasr_created__intrinsic_array_function_Any, align 4
+  %17 = load i32, i32* %__libasr_created__intrinsic_array_function_Any, align 4
+  %18 = load i32, i32* %toomany, align 4
+  %19 = load i32, i32* %test, align 1
+  %20 = xor i32 %19, 1
+  %21 = and i32 %18, %20
+  %22 = load i32, i32* %toomany, align 4
+  %23 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
+  %24 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %23, align 1
+  %25 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %24, i32 0, i32 3
+  %26 = getelementptr %string_descriptor, %string_descriptor* %25, i32 0, i32 0
+  %27 = load i8*, i8** %26, align 8
+  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %29 = call i32 @str_compare(i8* %27, i64 6, i8* %28, i64 0)
+  %30 = icmp ne i32 %29, 0
+  %31 = zext i1 %30 to i32
+  %32 = and i32 %22, %31
+  %33 = or i32 %21, %32
+  %34 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4_class, %modules_36_fpm_main_01.fpm_run_settings.4_class* %settings, i32 0, i32 1
+  %35 = load %modules_36_fpm_main_01.fpm_run_settings.4*, %modules_36_fpm_main_01.fpm_run_settings.4** %34, align 1
+  %36 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %35, i32 0, i32 0
+  %37 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %36, i32 0, i32 0
+  %38 = load i32, i32* %37, align 1
+  %39 = xor i32 %38, 1
+  %40 = and i32 %33, %39
+  %41 = or i32 %17, %40
+  %42 = icmp ne i32 %41, 0
+  br i1 %42, label %then5, label %else6
 
-then5:                                            ; preds = %loop.end
+then5:                                            ; preds = %do_loop.end
   br label %ifcont7
 
-else6:                                            ; preds = %loop.end
+else6:                                            ; preds = %do_loop.end
   br label %ifcont7
 
 ifcont7:                                          ; preds = %else6, %then5
