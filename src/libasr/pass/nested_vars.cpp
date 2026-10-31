@@ -1184,8 +1184,10 @@ public:
     // procedure of the host with the interface of `p`, which calls `p`. Its
     // dummy arguments are copies of those of `p`, with the declarations they
     // need: entry-evaluated bounds, named constants, interfaces and
-    // use-associated entities. A pointer result is associated with the
-    // result of `p`, not assigned its target.
+    // use-associated entities. An intent(out) dummy is intent(inout) in the
+    // thunk, so that only `p` applies the effects of intent(out) on entry
+    // (deallocation, finalization, default initialization), and a pointer
+    // result is associated with the result of `p`, not assigned its target.
     ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p) {
         const Location &loc = p->base.base.loc;
         SymbolTable *scope = al.make_new<SymbolTable>(host);
@@ -1239,8 +1241,11 @@ public:
             ASR::symbol_t *copy = scope->get_symbol(item.first);
             if (ASR::is_a<ASR::Variable_t>(*sym) && copy != nullptr &&
                     ASR::is_a<ASR::Variable_t>(*copy)) {
-                variables.push_back({ASR::down_cast<ASR::Variable_t>(sym),
-                    ASR::down_cast<ASR::Variable_t>(copy)});
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(copy);
+                if (v->m_intent == ASR::intentType::Out) {
+                    v->m_intent = ASR::intentType::InOut;
+                }
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(sym), v});
             }
         }
         duplicator.remap_local_references(variables, scope);

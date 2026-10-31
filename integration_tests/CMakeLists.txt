@@ -3694,6 +3694,7 @@ RUN(NAME host_assoc_10 LABELS gfortran llvm)
 RUN(NAME host_assoc_11 LABELS gfortran llvm)
 RUN(NAME host_assoc_12 LABELS gfortran llvm)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
+RUN(NAME host_assoc_27 LABELS gfortran llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
