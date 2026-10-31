@@ -36,11 +36,13 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #if LLVM_VERSION_MAJOR >= 17
@@ -636,6 +638,78 @@ end function)";
     CHECK(e.execfn<int32_t>("f") == 4);
 }
 
+TEST_CASE("ASR descriptor entry capability preserves direct specialization") {
+    std::string source = R"(module entry_capability_m
+implicit none
+contains
+subroutine consume(a, r)
+    real, intent(in) :: a(:)
+    real, intent(out) :: r
+    r = a(1) + a(size(a))
+end subroutine
+end module
+program caller
+use entry_capability_m
+implicit none
+real :: a(2), r
+call consume(a, r)
+end program)";
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    for (bool supported: {false, true}) {
+        CAPTURE(supported);
+        Allocator al(256*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        co.po.supports_descriptor_entry_wrappers = supported;
+        co.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+        co.po.verify_all_passes = true;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations file;
+        file.in_filename = "entry_capability.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+        auto *ast = TRY(LCompilers::LFortran::parse(al, source, diagnostics, co));
+        auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+            nullptr, false, co, lm));
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            asr->m_symtab->get_symbol("entry_capability_m"));
+        auto *entry = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("consume"));
+        REQUIRE(entry->n_body == 1);
+        auto *original_body = entry->m_body[0];
+        LCompilers::PassManager passes;
+        std::string pass = "pass_array_by_data", skip;
+        passes.parse_pass_arg(pass, skip);
+        co.po.pass_cumulative = true;
+        passes.apply_passes(al, asr, co.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(LCompilers::asr_verify(*asr, true, diagnostics));
+        CHECK(module->m_symtab->get_symbol("consume") == &entry->base);
+        CHECK(entry->n_args == 2);
+        auto *caller = ASR::down_cast<ASR::Program_t>(
+            asr->m_symtab->get_symbol("caller"));
+        REQUIRE(caller->n_body == 1);
+        auto *call = ASR::down_cast<ASR::SubroutineCall_t>(caller->m_body[0]);
+        auto *clone = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(call->m_name));
+        REQUIRE(clone != entry);
+        CHECK(clone->n_args > entry->n_args);
+        REQUIRE(entry->n_body == 1);
+        if (supported) {
+            auto *delegation = ASR::down_cast<ASR::SubroutineCall_t>(
+                entry->m_body[0]);
+            CHECK(ASRUtils::symbol_get_past_external(delegation->m_name)
+                == &clone->base);
+        } else {
+            CHECK(entry->m_body[0] == original_body);
+            CHECK(ASR::is_a<ASR::Assignment_t>(*entry->m_body[0]));
+        }
+    }
+}
+
 namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
@@ -655,7 +729,7 @@ void inspect_definitions(const std::string &source, bool fast,
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
     co.po.stack_arrays = stack_arrays;
-    if (optimize) {
+    if (fast || optimize) {
         co.po.bounds_checking = false;
         co.po.strict_bounds_checking = false;
     }
@@ -1255,6 +1329,136 @@ end module
         "pun:store i32:data; ";
     CHECK(tbaa_accesses(source, true, procedures) == expected);
     CHECK(tbaa_accesses(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM contiguous array-operation indexing under --fast") {
+    std::string source = R"(module contiguous_index_m
+implicit none
+type :: storage_t
+    real, allocatable :: a(:,:)
+    real, pointer :: p(:,:)
+end type
+contains
+subroutine scale_allocatable(self)
+    class(storage_t), intent(inout) :: self
+    self%a = 2*self%a
+end subroutine
+subroutine scale_pointer(self)
+    class(storage_t), intent(inout) :: self
+    self%p = 2*self%p
+end subroutine
+subroutine scale_allocatable_section(self)
+    class(storage_t), intent(inout), target :: self
+    integer :: j
+    do j = 1, size(self%a,2)
+        self%a(:,j) = 2*self%a(:,j)
+    end do
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"allocatable", "_m_scale_allocatable"},
+             {"pointer", "_m_scale_pointer"},
+             {"allocatable_section", "_m_scale_allocatable_section"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                size_t stride_loads = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &instruction: block) {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&instruction);
+                        if (!load) continue;
+                        auto *gep = llvm::dyn_cast<llvm::GEPOperator>(
+                            load->getPointerOperand());
+                        if (!gep) continue;
+                        for (auto it = llvm::gep_type_begin(*gep),
+                                end = llvm::gep_type_end(*gep); it != end; ++it) {
+                            llvm::StructType *type = it.getStructTypeOrNull();
+                            if (!type || type->getName().str().rfind(
+                                    "dimension_descriptor", 0) != 0) continue;
+                            auto *field = llvm::dyn_cast<llvm::ConstantInt>(
+                                it.getOperand());
+                            if (field && field->equalsInt(2)) stride_loads++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CAPTURE(procedure);
+                CAPTURE(stride_loads);
+                CHECK((stride_loads == 0) ==
+                    (fast && procedure != "pointer"));
+            }, false, false);
+    }
+}
+
+TEST_CASE("LLVM descriptor entries with automatic BLOCK locals") {
+    std::string source = R"(module block_entry_m
+implicit none
+type :: accumulator
+    real :: total = 0
+contains
+    procedure :: automatic_block, saved_block, observer_block
+end type
+contains
+subroutine automatic_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        real :: work(size(x))
+        block
+            work = 2*x
+            self%total = sum(work)
+        end block
+    end block
+end subroutine
+subroutine saved_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        integer, save :: count = 0
+        count = count + 1
+        self%total = count + sum(x)
+    end block
+end subroutine
+subroutine observer_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        if (is_contiguous(x)) then
+            self%total = 1
+        else
+            self%total = -1
+        end if
+    end block
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        for (bool stack_arrays: {false, true}) {
+            inspect_definitions(source, fast,
+                {{"automatic", "_m_automatic_block"},
+                 {"saved", "_m_saved_block"},
+                 {"observer", "_m_observer_block"}},
+                [&](const std::string &procedure, llvm::Function &fn) {
+                    size_t delegates = 0;
+                    std::string suffix = "_m_" + procedure + "_block_real____1";
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &instruction: block) {
+                            auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction);
+                            if (!call || !call->getCalledFunction()) continue;
+                            std::string name = call->getCalledFunction()->getName().str();
+                            if (name.size() >= suffix.size() &&
+                                    name.compare(name.size() - suffix.size(),
+                                        suffix.size(), suffix) == 0) delegates++;
+                        }
+                    }
+                    CAPTURE(fast);
+                    CAPTURE(stack_arrays);
+                    CAPTURE(procedure);
+                    CAPTURE(delegates);
+                    CHECK(delegates == (procedure == "automatic" ? 1 : 0));
+                }, stack_arrays);
+        }
+    }
 }
 
 TEST_CASE("LLVM CLASS component storage provenance") {

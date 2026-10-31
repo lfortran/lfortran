@@ -4510,6 +4510,8 @@ RUN(NAME array_section_12 LABELS gfortran llvm)
 RUN(NAME array_section_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_lazy_allocator_01 LABELS gfortran llvm)
+RUN(NAME array_allocatable_layout_01 LABELS gfortran llvm)
+RUN(NAME array_automatic_stack_cleanup_01 LABELS gfortran llvm EXTRA_ARGS --stack-arrays=true)
 RUN(NAME array_section_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4578,9 +4580,13 @@ RUN(NAME pass_array_by_data_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llv
 RUN(NAME pass_array_by_data_13 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_14 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_15 LABELS gfortran llvm)
+RUN(NAME pass_array_by_data_16 LABELS gfortran llvm
+    EXTRAFILES pass_array_by_data_16_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME pass_array_by_data_17 LABELS gfortran llvm
     EXTRAFILES pass_array_by_data_17_module.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fcheck=bounds)
+RUN(NAME pass_array_by_data_18 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
+RUN(NAME pass_array_by_data_value_extents LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_extname_01 LABELS gfortran llvm)
 
 RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
