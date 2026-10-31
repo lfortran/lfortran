@@ -44,7 +44,6 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
-#include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/pass/list_expr.h>
@@ -130,7 +129,6 @@ namespace LCompilers {
             {"dead_code_removal", &pass_dead_code_removal},
             {"forall", &pass_replace_for_all},
             {"select_case", &pass_replace_select_case},
-            {"loop_vectorise", &pass_loop_vectorise},
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
@@ -449,7 +447,6 @@ namespace LCompilers {
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
-                "loop_vectorise",
                 "dead_code_removal",
                 "unused_functions",
                 "sign_from_value",
