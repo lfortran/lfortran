@@ -4005,13 +4005,13 @@
                             ((Var 2 ix)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Var 2 nx)
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(DoLoop
                                 ()
                                 ((Var 2 iy)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 2 ny)
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(Print
                                     (StringFormat
                                         ()
@@ -4039,13 +4039,13 @@
                                     ((Var 2 iz)
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Var 2 nz)
-                                    ())
+                                    (IntegerConstant 1 (Integer 4) Decimal))
                                     [(DoLoop
                                         ()
                                         ((Var 2 ik)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 2 nk)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Print
                                             (StringFormat
                                                 ()

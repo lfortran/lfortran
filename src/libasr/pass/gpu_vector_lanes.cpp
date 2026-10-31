@@ -1346,8 +1346,7 @@ private:
         const Location &loc = d->base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
-        ASR::expr_t *step = d->m_head.m_increment
-            ? d->m_head.m_increment : b.i_t(1, type);
+        ASR::expr_t *step = d->m_head.m_increment;
         ASR::expr_t *lane = b.i2i_t(lane_index(loc), type);
         ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), type);
         d->m_head.m_start = b.Add(d->m_head.m_start, b.Mul(lane, step));

@@ -3835,7 +3835,7 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 array)
@@ -3875,7 +3875,7 @@
                                 ((Var 2 i)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Var 2 n)
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(OMPRegion
                                     Task
                                     [(OMPFirstPrivate
@@ -3982,7 +3982,7 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Print
                             (StringFormat
                                 ()

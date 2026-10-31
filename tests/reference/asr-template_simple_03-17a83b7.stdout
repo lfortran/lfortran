@@ -879,7 +879,7 @@
                                                             ((Var 22 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 22 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 22 res)
                                                                 (FunctionCall
@@ -2070,7 +2070,7 @@
                                                             ((Var 14 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 14 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 14 res)
                                                                 (FunctionCall
@@ -2607,7 +2607,7 @@
                                                             ((Var 27 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 27 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 27 res)
                                                                 (FunctionCall
@@ -2847,7 +2847,7 @@
                                                             ((Var 28 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 28 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 28 res)
                                                                 (FunctionCall
@@ -3753,7 +3753,7 @@
                                             (Integer 4)
                                             (IntegerConstant 10 (Integer 4) Decimal)
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 20 a_i)

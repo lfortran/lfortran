@@ -228,7 +228,39 @@
                                                                     "last_column": 11
                                                                 }
                                                             },
-                                                            "increment": []
+                                                            "increment": {
+                                                                "node": "IntegerConstant",
+                                                                "fields": {
+                                                                    "n": 1,
+                                                                    "type": {
+                                                                        "node": "Integer",
+                                                                        "fields": {
+                                                                            "kind": 4
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 331,
+                                                                            "last": 342,
+                                                                            "first_filename": "tests/json_loc_module_loop.f90",
+                                                                            "first_line": 7,
+                                                                            "first_column": 1,
+                                                                            "last_filename": "tests/json_loc_module_loop.f90",
+                                                                            "last_line": 7,
+                                                                            "last_column": 12
+                                                                        }
+                                                                    },
+                                                                    "intboz_type": "Decimal"
+                                                                },
+                                                                "loc": {
+                                                                    "first": 344,
+                                                                    "last": 361,
+                                                                    "first_filename": "tests/json_loc_module_loop.f90",
+                                                                    "first_line": 8,
+                                                                    "first_column": 1,
+                                                                    "last_filename": "tests/json_loc_module_loop.f90",
+                                                                    "last_line": 9,
+                                                                    "last_column": 6
+                                                                }
+                                                            }
                                                         },
                                                         "loc": {
                                                             "first": 347,
