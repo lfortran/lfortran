@@ -896,16 +896,19 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_platform_build_path_does_not_depend_on_the_version(self):
         # The version comes from git describe and changes with every commit;
         # building under a versioned path makes every compiler cache entry miss.
-        source = (ROOT / "ci/build.sh").read_text()
+        source = (ROOT / "ci/source_tarball.sh").read_text()
         self.assertIn("source_dir=lfortran-src\n", source)
         self.assertIn('mv "lfortran-$lfortran_version" "$source_dir"\n', source)
-        self.assertIn('cd "$source_dir"\n', source)
         uses = [line for line in source.splitlines()
                 if "lfortran-$lfortran_version" in line and not line.lstrip().startswith("#")]
         self.assertEqual(uses, [
             "tar xzf dist/lfortran-$lfortran_version.tar.gz",
             'mv "lfortran-$lfortran_version" "$source_dir"',
         ])
+        # The platform build compiles the unpacked tarball.
+        build = (ROOT / "ci/build.sh").read_text()
+        self.assertIn("source_dir=lfortran-src\n", build)
+        self.assertIn('-S "$source_dir" -B "$build_dir"\n', build)
 
     def test_macos_lfortran_does_not_export_cxx_symbols(self):
         # dyld coalesces every exported weak symbol at launch; exporting the
@@ -1288,7 +1291,7 @@ class QuickScriptTests(unittest.TestCase):
         script = step.split("      run: |\n", 1)[1].split("        shell ci/build.sh", 1)[0]
         build = (ROOT / "ci/build.sh").read_text()
         block = build.split('if [[ $WIN == "1" ]]; then # Windows', 1)[1]
-        block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\ncmake --build", 1)[0]
+        block = 'if [[ $WIN == "1" ]]; then # Windows' + block.split("\nshell ci/check_build.sh", 1)[0]
         expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
                     "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
         for optimize, cflags, cxxflags in (
