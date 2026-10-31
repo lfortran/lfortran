@@ -858,7 +858,22 @@ public:
                     ASR::down_cast<ASR::ArrayConstant_t>(var->m_value);
                 for (int64_t i = 0; i < total; i++) {
                     if (i > 0) src << ", ";
-                    src << ASRUtils::fetch_ArrayConstant_value(ac, i);
+                    std::string value =
+                        ASRUtils::fetch_ArrayConstant_value(ac, i);
+                    // Logical constants use Fortran spelling in ASRUtils,
+                    // but device initializers require C/C++ values.
+                    if (ASR::is_a<ASR::Logical_t>(*arr->m_type)) {
+                        if (value == ".true.") {
+                            src << "1";
+                        } else if (value == ".false.") {
+                            src << "0";
+                        } else {
+                            throw CodeGenError(
+                                "Unexpected logical array constant: " + value);
+                        }
+                    } else {
+                        src << value;
+                    }
                 }
             }
             src << "};\n";

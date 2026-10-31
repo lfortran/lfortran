@@ -6846,6 +6846,7 @@ RUN(NAME gpu_metal_539 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-cache-bytes=40
 RUN(NAME gpu_metal_538 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0) # not checked on metal: a never-run loop over an allocatable component
 RUN(NAME gpu_metal_555 LABELS gfortran llvm cuda) # not checked on metal: a never-run loop over an allocatable component
 RUN(NAME gpu_metal_556 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_logical_array_parameter_01 LABELS gfortran llvm metal cuda)
 # GFortran 13 cannot compile this LOCAL fixture. Both CUDA modes use GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).
