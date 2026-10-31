@@ -106,6 +106,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             toml_ordered:
@@ -405,6 +406,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             new:
@@ -491,6 +493,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -677,6 +680,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             toml_value:

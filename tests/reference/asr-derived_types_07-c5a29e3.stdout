@@ -561,6 +561,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             new_vector:
@@ -790,6 +791,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1160,6 +1162,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             toml_keyval:
@@ -1322,6 +1325,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             match_key:
@@ -1505,6 +1509,7 @@
                                     )]
                                     (Var 5 match)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -215,6 +215,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             f_real:
@@ -321,6 +322,7 @@
                                     )]
                                     (Var 4 b)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -584,6 +586,7 @@
                                     )]
                                     (Var 5 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

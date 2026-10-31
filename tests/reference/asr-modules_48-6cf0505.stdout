@@ -1047,6 +1047,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fnv_1a_string_t:
@@ -1310,6 +1311,7 @@
                                     )]
                                     (Var 5 hash)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1718,6 +1720,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             string_cat:
@@ -2071,6 +2074,7 @@
                                     )]
                                     (Var 7 cat)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -335,6 +335,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             get_elem_value_string:
@@ -520,6 +521,7 @@
                                     )]
                                     ()
                                     Private
+                                    .true.
                                     .true.
                                     .true.
                                     ()

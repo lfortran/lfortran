@@ -228,6 +228,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             lt_my_type:
@@ -363,6 +364,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             my_type:
@@ -513,6 +515,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:
@@ -803,6 +806,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_swap1:
@@ -990,6 +994,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             logical:
@@ -1141,6 +1146,7 @@
                                                     []
                                                     (Var 11 res)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1593,6 +1599,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1826,6 +1833,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -2029,6 +2037,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr___instantiated_swap1:
@@ -2192,6 +2201,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr___instantiated_swap11:
@@ -2353,6 +2363,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2548,6 +2559,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr___instantiated_swap2:
@@ -2709,6 +2721,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2902,6 +2915,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -3310,6 +3324,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __instantiated_quicksort1:
@@ -3714,6 +3729,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -4176,6 +4192,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             i:
@@ -4525,6 +4542,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -4705,6 +4723,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             my_type:

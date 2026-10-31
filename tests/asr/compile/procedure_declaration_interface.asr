@@ -89,6 +89,7 @@
               :Public
               true
               true
+              true
               nil
             )
             "my_wrapper" (ExternalSymbol
@@ -427,6 +428,7 @@
               :Public
               false
               true
+              true
               nil
             )
             "my_wrapper" (Function
@@ -582,6 +584,7 @@
                     :Public
                     true
                     true
+                    true
                     nil
                   )
                 }
@@ -654,6 +657,7 @@
                 (SymbolRef 5 "my_wrapper")
               )
               :Public
+              true
               true
               true
               nil

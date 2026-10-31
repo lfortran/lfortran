@@ -138,6 +138,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             subtract:
@@ -242,6 +243,7 @@
                                     )]
                                     (Var 5 self)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -401,6 +403,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             subtract:

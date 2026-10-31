@@ -2,7 +2,7 @@
     "basename": "asr-function_result_not_declared_locally-9907707",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/function_result_not_declared_locally.asr",
-    "infile_hash": "ae6615f922727871b6558b4cb9f26874203aca94d68012e9186304ee",
+    "infile_hash": "7d40b7b6bff41807605c98a9bc3a81b11f3ff8f856b545571120142c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

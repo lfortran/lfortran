@@ -37,6 +37,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             alnorm~fpcast:
@@ -148,6 +149,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             alnorm~fpcast_ptr:
@@ -249,6 +251,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             dgetrf~fpcast:
@@ -362,6 +365,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             dgetrf~fpcast_ptr:
@@ -814,6 +818,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

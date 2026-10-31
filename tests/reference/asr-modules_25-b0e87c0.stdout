@@ -130,6 +130,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             toml_character_tokenizer:
@@ -330,6 +331,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             parse_select:
@@ -471,6 +473,7 @@
                                     )]
                                     ()
                                     Private
+                                    .true.
                                     .true.
                                     .true.
                                     ()

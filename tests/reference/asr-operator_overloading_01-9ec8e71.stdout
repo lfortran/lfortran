@@ -554,6 +554,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             logical_and:
@@ -677,6 +678,7 @@
                                     )]
                                     (Var 3 logical_and)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -62,6 +62,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             h~fpcast:
@@ -145,6 +146,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             h~fpcast_ptr:
@@ -294,6 +296,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             apply_sub:
@@ -331,6 +334,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             g~fpcast:
@@ -388,6 +392,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             g~fpcast_ptr:
@@ -528,6 +533,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             external_24:
@@ -565,6 +571,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             apply_fun~fpcast:
@@ -638,6 +645,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             apply_fun~fpcast_ptr:
@@ -727,6 +735,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             apply_sub~fpcast:
@@ -800,6 +809,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             apply_sub~fpcast_ptr:
@@ -1189,6 +1199,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             twice:
@@ -1284,6 +1295,7 @@
                                     )]
                                     (Var 4 twice)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

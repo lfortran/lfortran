@@ -88,6 +88,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             lsame~fpcast:
@@ -199,6 +200,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             lsame~fpcast_ptr:
@@ -411,6 +413,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

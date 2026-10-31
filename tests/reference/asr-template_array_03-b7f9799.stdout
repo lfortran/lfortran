@@ -212,6 +212,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             mymatmul_t:
@@ -767,6 +768,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -902,6 +904,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1029,6 +1032,7 @@
                                                     []
                                                     (Var 16 result)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1205,6 +1209,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -1340,6 +1345,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1467,6 +1473,7 @@
                                                     []
                                                     (Var 12 result)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2013,6 +2020,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             r:
@@ -2310,6 +2318,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -2470,6 +2479,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             add_real:
@@ -2593,6 +2603,7 @@
                                     )]
                                     (Var 6 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2720,6 +2731,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             mult_real:
@@ -2845,6 +2857,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -2934,6 +2947,7 @@
                                     )]
                                     (Var 4 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -3034,6 +3048,7 @@
                                     )]
                                     (Var 7 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

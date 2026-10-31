@@ -869,6 +869,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             descriptor_inquiry_entry:
@@ -1118,6 +1119,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             entry_control:
@@ -1590,6 +1592,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -2132,6 +2135,7 @@
                                     )]
                                     (Var 3 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

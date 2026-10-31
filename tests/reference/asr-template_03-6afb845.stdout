@@ -309,6 +309,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus:
@@ -442,6 +443,7 @@
                                                     []
                                                     (Var 6 op)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -607,6 +609,7 @@
                                                     []
                                                     (Var 7 op)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -980,6 +983,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             dp:
@@ -1239,6 +1243,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             ~mul_intrinsic:
@@ -1368,6 +1373,7 @@
                                                     )]
                                                     (Var 11 ret)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1546,6 +1552,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             op:
@@ -1686,6 +1693,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:

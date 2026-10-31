@@ -177,6 +177,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             lt_my_type:
@@ -312,6 +313,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             my_type:
@@ -462,6 +464,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:
@@ -716,6 +719,7 @@
                                                     []
                                                     (Var 9 res)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1167,6 +1171,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             swp:
@@ -1322,6 +1327,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1507,6 +1513,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr_swp1:
@@ -1642,6 +1649,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1804,6 +1812,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2235,6 +2244,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2696,6 +2706,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             qsort_real:
@@ -3101,6 +3112,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             xi:
@@ -3424,6 +3436,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -3604,6 +3617,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             my_type:

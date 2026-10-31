@@ -253,6 +253,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fpm_cmd_settings:
@@ -518,6 +519,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })
