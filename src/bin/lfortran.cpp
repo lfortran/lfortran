@@ -2464,9 +2464,13 @@ int link_executable(const std::vector<std::string> &infiles,
         if (compiler_options.openmp) {
             options += " -fopenmp ";
         }
+        std::string base_path = "\"" + runtime_library_dir + "\"";
+        std::string runtime_lib = "lfortran_runtime";
+        post_options += " -L" + base_path
+            + " -Wl,-rpath," + base_path;
         if (kokkos) {
             std::string kokkos_libdir = LCompilers::LFortran::get_kokkos_libdir();
-            post_options += "-L" + kokkos_libdir + " -lkokkoscontainers "
+            post_options += " -L" + kokkos_libdir + " -lkokkoscontainers "
                 + "-lkokkoscore -ldl" + " -Wl,-rpath," + kokkos_libdir;
         }
         std::string cmd = CXX + options + " -o " + outfile + " ";
@@ -2476,7 +2480,7 @@ int link_executable(const std::vector<std::string> &infiles,
         if(!extra_library_flags.empty()) {
             cmd += extra_library_flags + " ";
         }
-        cmd += " " + post_options + " -lm";
+        cmd += " " + post_options + " -l" + runtime_lib + " -lm";
         if (verbose) {
             std::cout << cmd << std::endl;
         }

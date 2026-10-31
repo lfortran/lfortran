@@ -3441,6 +3441,165 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = goto_c_name + ":\n";
     }
 
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        headers.insert("inttypes.h");
+        if (is_c) headers.insert("string.h");
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string inner = indent + std::string(indentation_spaces, ' ');
+        std::string out = indent + "{\n";
+        std::string copy_back;
+
+        // A string-valued specifier, as data and length expressions for the
+        // `_lfortran_inquire` runtime call. Character temporaries keep
+        // non-trivial expressions evaluated exactly once. The filename
+        // argument is `const fchar *` (fchar is int8_t) in the runtime
+        // signature while every other string argument is `char *`, so it
+        // needs its own cast.
+        auto eval_inquire_string = [&](ASR::expr_t* e, const std::string& base,
+                std::string& data, std::string& len, bool is_fchar=false) {
+            if (!e) {
+                data = "NULL";
+                len = "0";
+                return;
+            }
+            self().visit_expr(*e);
+            std::string val = src;
+            std::string cast = is_fchar ? "(const fchar *)" : "(char *)";
+            if (is_c) {
+                out += inner + "const char *" + base + " = " + val + ";\n";
+                data = is_fchar ? cast + base : base;
+                len = "(int64_t)strlen(" + base + ")";
+            } else if (ASR::is_a<ASR::StringConstant_t>(*e)) {
+                data = cast + val;
+                len = "(int64_t)(sizeof(" + val + ")-1)";
+            } else {
+                out += inner + "std::string " + base + "_s = " + val + ";\n";
+                data = cast + base + "_s.c_str()";
+                len = "(int64_t)" + base + "_s.size()";
+            }
+        };
+
+        // A logical-valued output specifier. The runtime reports through a
+        // `bool *`, so any other kind receives it through a `bool` local.
+        auto eval_inquire_bool_out = [&](ASR::expr_t* e, const std::string& base,
+                std::string& addr) {
+            out += inner + "bool " + base + " = false;\n";
+            addr = "&" + base;
+            if (e) {
+                self().visit_expr(*e);
+                copy_back += inner + src + " = " + base + ";\n";
+            }
+        };
+
+        // An integer-valued output specifier. The runtime reports through an
+        // `int32_t *`, so any other kind receives it through an `int32_t`
+        // local, as for write statement `iostat=` handling.
+        auto eval_inquire_int_out = [&](ASR::expr_t* e, const std::string& base,
+                std::string& addr, bool allow_null) {
+            if (!e && allow_null) {
+                addr = "NULL";
+                return;
+            }
+            out += inner + "int32_t " + base + " = 0;\n";
+            addr = "&" + base;
+            if (e) {
+                self().visit_expr(*e);
+                copy_back += inner + src + " = ("
+                    + CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(e))
+                    + ") " + base + ";\n";
+            }
+        };
+
+        std::string file_data, file_len;
+        eval_inquire_string(x.m_file, "__lfortran_inq_file", file_data, file_len, true);
+        std::string exist_addr, opened_addr, named_addr, pending_addr;
+        eval_inquire_bool_out(x.m_exist, "__lfortran_inq_exist", exist_addr);
+        std::string unit = "-1";
+        if (x.m_unit) {
+            self().visit_expr(*x.m_unit);
+            unit = src;
+        }
+        eval_inquire_bool_out(x.m_opened, "__lfortran_inq_opened", opened_addr);
+        std::string size_addr, pos_addr;
+        eval_inquire_int_out(x.m_size, "__lfortran_inq_size", size_addr, false);
+        eval_inquire_int_out(x.m_pos, "__lfortran_inq_pos", pos_addr, false);
+        std::string write_data, write_len, read_data, read_len;
+        std::string readwrite_data, readwrite_len, access_data, access_len;
+        std::string name_data, name_len, blank_data, blank_len;
+        eval_inquire_string(x.m_write, "__lfortran_inq_write", write_data, write_len);
+        eval_inquire_string(x.m_read, "__lfortran_inq_read", read_data, read_len);
+        eval_inquire_string(x.m_readwrite, "__lfortran_inq_readwrite", readwrite_data, readwrite_len);
+        eval_inquire_string(x.m_access, "__lfortran_inq_access", access_data, access_len);
+        eval_inquire_string(x.m_name, "__lfortran_inq_name", name_data, name_len);
+        eval_inquire_string(x.m_blank, "__lfortran_inq_blank", blank_data, blank_len);
+        std::string recl_addr, number_addr, iostat_addr, nextrec_addr;
+        eval_inquire_int_out(x.m_recl, "__lfortran_inq_recl", recl_addr, true);
+        eval_inquire_int_out(x.m_number, "__lfortran_inq_number", number_addr, true);
+        eval_inquire_bool_out(x.m_named, "__lfortran_inq_named", named_addr);
+        std::string sequential_data, sequential_len, direct_data, direct_len;
+        std::string form_data, form_len, formatted_data, formatted_len;
+        std::string unformatted_data, unformatted_len;
+        eval_inquire_string(x.m_sequential, "__lfortran_inq_sequential", sequential_data, sequential_len);
+        eval_inquire_string(x.m_direct, "__lfortran_inq_direct", direct_data, direct_len);
+        eval_inquire_string(x.m_form, "__lfortran_inq_form", form_data, form_len);
+        eval_inquire_string(x.m_formatted, "__lfortran_inq_formatted", formatted_data, formatted_len);
+        eval_inquire_string(x.m_unformatted, "__lfortran_inq_unformatted", unformatted_data, unformatted_len);
+        eval_inquire_int_out(x.m_iostat, "__lfortran_inq_iostat", iostat_addr, true);
+        eval_inquire_int_out(x.m_nextrec, "__lfortran_inq_nextrec", nextrec_addr, true);
+        std::string decimal_data, decimal_len, sign_data, sign_len;
+        std::string encoding_data, encoding_len, stream_data, stream_len;
+        std::string iomsg_data, iomsg_len, round_data, round_len;
+        std::string pad_data, pad_len;
+        eval_inquire_string(x.m_decimal, "__lfortran_inq_decimal", decimal_data, decimal_len);
+        eval_inquire_string(x.m_sign, "__lfortran_inq_sign", sign_data, sign_len);
+        eval_inquire_string(x.m_encoding, "__lfortran_inq_encoding", encoding_data, encoding_len);
+        eval_inquire_string(x.m_stream, "__lfortran_inq_stream", stream_data, stream_len);
+        eval_inquire_string(x.m_iomsg, "__lfortran_inq_iomsg", iomsg_data, iomsg_len);
+        eval_inquire_string(x.m_round, "__lfortran_inq_round", round_data, round_len);
+        eval_inquire_string(x.m_pad, "__lfortran_inq_pad", pad_data, pad_len);
+        eval_inquire_bool_out(x.m_pending, "__lfortran_inq_pending", pending_addr);
+        std::string asynchronous_data, asynchronous_len;
+        std::string action_data, action_len, position_data, position_len;
+        std::string delim_data, delim_len;
+        eval_inquire_string(x.m_asynchronous, "__lfortran_inq_asynchronous", asynchronous_data, asynchronous_len);
+        eval_inquire_string(x.m_action, "__lfortran_inq_action", action_data, action_len);
+        eval_inquire_string(x.m_position, "__lfortran_inq_position", position_data, position_len);
+        eval_inquire_string(x.m_delim, "__lfortran_inq_delim", delim_data, delim_len);
+
+        out += inner + "_lfortran_inquire(" + file_data + ", " + file_len
+            + ", " + exist_addr + ", " + unit
+            + ", " + opened_addr + ", " + size_addr
+            + ", " + pos_addr
+            + ", " + write_data + ", " + write_len
+            + ", " + read_data + ", " + read_len
+            + ", " + readwrite_data + ", " + readwrite_len
+            + ", " + access_data + ", " + access_len
+            + ", " + name_data + ", " + name_len
+            + ", " + blank_data + ", " + blank_len
+            + ", " + recl_addr + ", " + number_addr + ", " + named_addr
+            + ", " + sequential_data + ", " + sequential_len
+            + ", " + direct_data + ", " + direct_len
+            + ", " + form_data + ", " + form_len
+            + ", " + formatted_data + ", " + formatted_len
+            + ", " + unformatted_data + ", " + unformatted_len
+            + ", " + iostat_addr + ", " + nextrec_addr
+            + ", " + decimal_data + ", " + decimal_len
+            + ", " + sign_data + ", " + sign_len
+            + ", " + encoding_data + ", " + encoding_len
+            + ", " + stream_data + ", " + stream_len
+            + ", " + iomsg_data + ", " + iomsg_len
+            + ", " + round_data + ", " + round_len
+            + ", " + pad_data + ", " + pad_len
+            + ", " + pending_addr
+            + ", " + asynchronous_data + ", " + asynchronous_len
+            + ", " + action_data + ", " + action_len
+            + ", " + position_data + ", " + position_len
+            + ", " + delim_data + ", " + delim_len + ");\n";
+        out += copy_back;
+        out += indent + "}\n";
+        src = check_tmp_buffer() + out;
+    }
+
     void visit_Stop(const ASR::Stop_t &x) {
         if (x.m_code) {
             self().visit_expr(*x.m_code);
