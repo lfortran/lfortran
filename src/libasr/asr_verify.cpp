@@ -2109,11 +2109,21 @@ public:
             designator = ASR::down_cast<ASR::StructInstanceMember_t>(
                 x.m_symbolic_value);
         }
-        bool designates_frame_member = designator != nullptr &&
-            ASRUtils::get_reference_member(*designator) != nullptr &&
-            ASR::is_a<ASR::Var_t>(*designator->m_v);
-        ASR::symbol_t *frame = designates_frame_member
-            ? ASR::down_cast<ASR::Var_t>(designator->m_v)->m_v : nullptr;
+        // The frame is a variable, or an element of the frame slots of the
+        // thunk pools of the host: `slots(i)%p`
+        ASR::expr_t *frame_designator = designator != nullptr &&
+            ASRUtils::get_reference_member(*designator) != nullptr
+            ? designator->m_v : nullptr;
+        if (frame_designator != nullptr &&
+                ASR::is_a<ASR::StructInstanceMember_t>(*frame_designator)) {
+            ASR::expr_t *slot = ASR::down_cast<ASR::StructInstanceMember_t>(
+                frame_designator)->m_v;
+            frame_designator = ASR::is_a<ASR::ArrayItem_t>(*slot)
+                ? ASR::down_cast<ASR::ArrayItem_t>(slot)->m_v : nullptr;
+        }
+        ASR::symbol_t *frame = frame_designator != nullptr &&
+            ASR::is_a<ASR::Var_t>(*frame_designator)
+            ? ASR::down_cast<ASR::Var_t>(frame_designator)->m_v : nullptr;
         bool frame_is_dummy = false;
         for (size_t i = 0; frame != nullptr && i < procedure->n_args; i++) {
             frame_is_dummy = frame_is_dummy ||

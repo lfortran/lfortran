@@ -3,7 +3,8 @@ source_filename = "LFortran"
 target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
-%recursion_03.__lcompilers_frame_sub1.11 = type { i32* }
+%recursion_03.__lcompilers_frame_sub1.75 = type { i32* }
+%recursion_03.__lcompilers_frame_slot_sub1.76 = type { %recursion_03.__lcompilers_frame_sub1.75* }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [15 x i8] c"S-DESC-K1-7,I4\00", align 1
@@ -15,21 +16,35 @@ target datalayout = "..."
 @string_const_data.2 = private constant [6 x i8] c"after:"
 @string_const.3 = private global %string_descriptor { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @string_const_data.2, i32 0, i32 0), i64 6 }
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@__module_recursion_03_sub1.__lcompilers_current_frame = internal global %recursion_03.__lcompilers_frame_sub1.11* null
-@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.4 = private unnamed_addr constant [15 x i8] c"S-DESC-K1-9,I4\00", align 1
-@string_const_data.5 = private constant [9 x i8] c"x in getx"
-@string_const.6 = private global %string_descriptor { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.5, i32 0, i32 0), i64 9 }
-@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@string_const_data.7 = private constant [7 x i8] c"in sub1"
-@string_const.8 = private global %string_descriptor { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.7, i32 0, i32 0), i64 7 }
-@7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.9 = private unnamed_addr constant [15 x i8] c"S-DESC-K1-3,I4\00", align 1
-@string_const_data.10 = private constant [3 x i8] c"r ="
-@string_const.11 = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.10, i32 0, i32 0), i64 3 }
-@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__module_recursion_03_sub1.__lcompilers_current_frame = internal global %recursion_03.__lcompilers_frame_sub1.75* null
+@__module_recursion_03_sub1.__lcompilers_frame_slots = internal global [64 x %recursion_03.__lcompilers_frame_slot_sub1.76] zeroinitializer
+@4 = private unnamed_addr constant [25 x i8] c"__lcompilers_frame_slots\00", align 1
+@5 = private unnamed_addr constant [44 x i8] c"tests/../integration_tests/recursion_03.f90\00", align 1
+@6 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@7 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([44 x i8], [44 x i8]* @5, i32 0, i32 0), i32 32, i32 1, i32 51, i32 12 }]
+@8 = private unnamed_addr constant [118 x i8] c"Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
+@9 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @6, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @7, i32 0, i32 0), i32 1 }]
+@10 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([118 x i8], [118 x i8]* @8, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @9, i32 0, i32 0), i32 1 }
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@string_const_data.4 = private constant [152 x i8] c"too many simultaneously live procedure values of the internal procedures of 'sub1' (limit 64); recompile with --internal-procedure-thunks=<larger value>"
+@string_const.5 = private global %string_descriptor { i8* getelementptr inbounds ([152 x i8], [152 x i8]* @string_const_data.4, i32 0, i32 0), i64 152 }
+@11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@12 = private unnamed_addr constant [10 x i8] c"%s %.*s%s\00", align 1
+@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.6 = private unnamed_addr constant [15 x i8] c"S-DESC-K1-9,I4\00", align 1
+@string_const_data.7 = private constant [9 x i8] c"x in getx"
+@string_const.8 = private global %string_descriptor { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.7, i32 0, i32 0), i64 9 }
+@14 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__module_recursion_03_sub1.__lcompilers_frame_slots.__struct_init = internal global i1 false
+@15 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.9 = private constant [7 x i8] c"in sub1"
+@string_const.10 = private global %string_descriptor { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.9, i32 0, i32 0), i64 7 }
+@16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.11 = private unnamed_addr constant [15 x i8] c"S-DESC-K1-3,I4\00", align 1
+@string_const_data.12 = private constant [3 x i8] c"r ="
+@string_const.13 = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.12, i32 0, i32 0), i64 3 }
+@18 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @__module_recursion_03_solver(i32 ()* %f, i32* %iter) {
 .entry:
@@ -119,63 +134,373 @@ FINALIZE_SYMTABLE_solver_caller:                  ; preds = %return
 
 define i32 @__module_recursion_03_sub1(i32* %y, i32* %iter) {
 .entry:
-  %__lcompilers_frame = alloca %recursion_03.__lcompilers_frame_sub1.11, align 8
-  %__lcompilers_previous_frame = alloca %recursion_03.__lcompilers_frame_sub1.11*, align 8
-  store %recursion_03.__lcompilers_frame_sub1.11* null, %recursion_03.__lcompilers_frame_sub1.11** %__lcompilers_previous_frame, align 8
+  %i = alloca i32, align 4
+  %array_size = alloca i32, align 4
+  %__lcompilers_frame = alloca %recursion_03.__lcompilers_frame_sub1.75, align 8
+  %__lcompilers_frame_slot = alloca i32, align 4
+  %0 = load i1, i1* @__module_recursion_03_sub1.__lcompilers_frame_slots.__struct_init, align 1
+  br i1 %0, label %struct_init_done, label %struct_init
+
+struct_init:                                      ; preds = %.entry
+  store i1 true, i1* @__module_recursion_03_sub1.__lcompilers_frame_slots.__struct_init, align 1
+  store i32 64, i32* %array_size, align 4
+  store i32 0, i32* %i, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.body, %struct_init
+  %1 = load i32, i32* %i, align 4
+  %2 = load i32, i32* %array_size, align 4
+  %3 = icmp slt i32 %1, %2
+  br i1 %3, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %4 = load i32, i32* %i, align 4
+  %5 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i32 %4
+  %6 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %5, i32 0, i32 0
+  store %recursion_03.__lcompilers_frame_sub1.75* null, %recursion_03.__lcompilers_frame_sub1.75** %6, align 8
+  %7 = load i32, i32* %i, align 4
+  %8 = add i32 %7, 1
+  store i32 %8, i32* %i, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  br label %struct_init_done
+
+struct_init_done:                                 ; preds = %loop.end, %.entry
+  %getx__lcompilers_value_pointer = alloca i32 ()*, align 8
+  store i32 ()* null, i32 ()** %getx__lcompilers_value_pointer, align 8
   %sub1 = alloca i32, align 4
   %tmp = alloca i32, align 4
   %x = alloca i32, align 4
-  %0 = getelementptr %recursion_03.__lcompilers_frame_sub1.11, %recursion_03.__lcompilers_frame_sub1.11* %__lcompilers_frame, i32 0, i32 0
-  store i32* %x, i32** %0, align 8
-  %1 = load %recursion_03.__lcompilers_frame_sub1.11*, %recursion_03.__lcompilers_frame_sub1.11** @__module_recursion_03_sub1.__lcompilers_current_frame, align 8
-  store %recursion_03.__lcompilers_frame_sub1.11* %1, %recursion_03.__lcompilers_frame_sub1.11** %__lcompilers_previous_frame, align 8
-  %2 = load i32, i32* %y, align 1
-  store i32 %2, i32* %x, align 4
-  %3 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %3, i32 7, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
-  %4 = load i32, i32* %iter, align 1
-  %5 = icmp eq i32 %4, 1
-  br i1 %5, label %then, label %else
+  %9 = getelementptr %recursion_03.__lcompilers_frame_sub1.75, %recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame, i32 0, i32 0
+  store i32* %x, i32** %9, align 8
+  %10 = load i32, i32* %y, align 1
+  store i32 %10, i32* %x, align 4
+  %11 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i8* %11, i32 7, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i32 1)
+  %12 = load i32, i32* %iter, align 1
+  %13 = icmp eq i32 %12, 1
+  br i1 %13, label %then, label %else
 
-then:                                             ; preds = %.entry
+then:                                             ; preds = %struct_init_done
   store i32 1, i32* %sub1, align 4
-  %6 = load %recursion_03.__lcompilers_frame_sub1.11*, %recursion_03.__lcompilers_frame_sub1.11** %__lcompilers_previous_frame, align 8
-  store %recursion_03.__lcompilers_frame_sub1.11* %6, %recursion_03.__lcompilers_frame_sub1.11** @__module_recursion_03_sub1.__lcompilers_current_frame, align 8
+  call void @sub1.__module_recursion_03___lcompilers_release_frame_slot(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame)
   br label %return
 
 unreachable_after_return:                         ; No predecessors!
   br label %ifcont
 
-else:                                             ; preds = %.entry
+else:                                             ; preds = %struct_init_done
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %unreachable_after_return
-  %7 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.11* %__lcompilers_frame)
-  store i32 %7, i32* %tmp, align 4
-  store %recursion_03.__lcompilers_frame_sub1.11* %__lcompilers_frame, %recursion_03.__lcompilers_frame_sub1.11** @__module_recursion_03_sub1.__lcompilers_current_frame, align 8
-  %8 = call i32 @__module_recursion_03_solver_caller(i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value, i32* %iter)
-  store i32 %8, i32* %sub1, align 4
-  %9 = load %recursion_03.__lcompilers_frame_sub1.11*, %recursion_03.__lcompilers_frame_sub1.11** %__lcompilers_previous_frame, align 8
-  store %recursion_03.__lcompilers_frame_sub1.11* %9, %recursion_03.__lcompilers_frame_sub1.11** @__module_recursion_03_sub1.__lcompilers_current_frame, align 8
+  %14 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame)
+  store i32 %14, i32* %tmp, align 4
+  call void @sub1.__module_recursion_03___lcompilers_acquire_frame_slot(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame, i32* %__lcompilers_frame_slot)
+  call void @sub1.__module_recursion_03_getx__lcompilers_value_select(i32* %__lcompilers_frame_slot, i32 ()** %getx__lcompilers_value_pointer)
+  %15 = load i32 ()*, i32 ()** %getx__lcompilers_value_pointer, align 8
+  %16 = call i32 @__module_recursion_03_solver_caller(i32 ()* %15, i32* %iter)
+  store i32 %16, i32* %sub1, align 4
+  call void @sub1.__module_recursion_03___lcompilers_release_frame_slot(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame)
   br label %return
 
 return:                                           ; preds = %ifcont, %then
   br label %FINALIZE_SYMTABLE_sub1
 
 FINALIZE_SYMTABLE_sub1:                           ; preds = %return
-  %10 = load i32, i32* %sub1, align 4
-  ret i32 %10
+  %17 = load i32, i32* %sub1, align 4
+  ret i32 %17
 }
 
-define i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.11* %__lcompilers_frame) {
+define void @sub1.__module_recursion_03___lcompilers_acquire_frame_slot(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame, i32* %index) {
+.entry:
+  %is_associated9 = alloca i1, align 1
+  %is_associated = alloca i1, align 1
+  %i = alloca i32, align 4
+  store i32 0, i32* %index, align 1
+  store i32 1, i32* %i, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %ifcont5, %.entry
+  %0 = load i32, i32* %i, align 4
+  %1 = icmp sle i32 %0, 64
+  %2 = load i32, i32* %index, align 1
+  %3 = icmp eq i32 %2, 0
+  %4 = and i1 %1, %3
+  br i1 %4, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %5 = load i32, i32* %i, align 4
+  %6 = sext i32 %5 to i64
+  %7 = sub i64 %6, 1
+  %8 = mul i64 1, %7
+  %9 = add i64 0, %8
+  %10 = icmp slt i64 %6, 1
+  %11 = icmp sgt i64 %6, 64
+  %12 = or i1 %10, %11
+  br i1 %12, label %then, label %ifcont
+
+then:                                             ; preds = %loop.body
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 %6, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %loop.body
+  %13 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 %9
+  %14 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %13, i32 0, i32 0
+  %15 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** %14, align 8
+  %16 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %15 to i64
+  %17 = icmp eq i64 %16, 0
+  br i1 %17, label %then1, label %else
+
+then1:                                            ; preds = %ifcont
+  store i1 false, i1* %is_associated, align 1
+  br label %ifcont2
+
+else:                                             ; preds = %ifcont
+  %18 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame to i64
+  %19 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %15 to i64
+  %20 = icmp eq i64 %19, %18
+  store i1 %20, i1* %is_associated, align 1
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %then1
+  %21 = load i1, i1* %is_associated, align 1
+  br i1 %21, label %then3, label %else4
+
+then3:                                            ; preds = %ifcont2
+  %22 = load i32, i32* %i, align 4
+  store i32 %22, i32* %index, align 1
+  br label %ifcont5
+
+else4:                                            ; preds = %ifcont2
+  br label %ifcont5
+
+ifcont5:                                          ; preds = %else4, %then3
+  %23 = load i32, i32* %i, align 4
+  %24 = add i32 %23, 1
+  store i32 %24, i32* %i, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  %25 = load i32, i32* %index, align 1
+  %26 = icmp eq i32 %25, 0
+  br i1 %26, label %then6, label %else24
+
+then6:                                            ; preds = %loop.end
+  store i32 1, i32* %i, align 4
+  br label %loop.head7
+
+loop.head7:                                       ; preds = %ifcont19, %then6
+  %27 = load i32, i32* %i, align 4
+  %28 = icmp sle i32 %27, 64
+  %29 = load i32, i32* %index, align 1
+  %30 = icmp eq i32 %29, 0
+  %31 = and i1 %28, %30
+  br i1 %31, label %loop.body8, label %loop.end20
+
+loop.body8:                                       ; preds = %loop.head7
+  %32 = load i32, i32* %i, align 4
+  %33 = sext i32 %32 to i64
+  %34 = sub i64 %33, 1
+  %35 = mul i64 1, %34
+  %36 = add i64 0, %35
+  %37 = icmp slt i64 %33, 1
+  %38 = icmp sgt i64 %33, 64
+  %39 = or i1 %37, %38
+  br i1 %39, label %then10, label %ifcont11
+
+then10:                                           ; preds = %loop.body8
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 %33, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont11:                                         ; preds = %loop.body8
+  %40 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 %36
+  %41 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %40, i32 0, i32 0
+  %42 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** %41, align 8
+  %43 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %42 to i64
+  %44 = icmp eq i64 %43, 0
+  br i1 %44, label %then12, label %else13
+
+then12:                                           ; preds = %ifcont11
+  store i1 false, i1* %is_associated9, align 1
+  br label %ifcont14
+
+else13:                                           ; preds = %ifcont11
+  %45 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %42 to i64
+  %46 = icmp ne i64 %45, 0
+  store i1 %46, i1* %is_associated9, align 1
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %else13, %then12
+  %47 = load i1, i1* %is_associated9, align 1
+  %48 = xor i1 %47, true
+  br i1 %48, label %then15, label %else18
+
+then15:                                           ; preds = %ifcont14
+  %49 = load i32, i32* %i, align 4
+  %50 = sext i32 %49 to i64
+  %51 = sub i64 %50, 1
+  %52 = mul i64 1, %51
+  %53 = add i64 0, %52
+  %54 = icmp slt i64 %50, 1
+  %55 = icmp sgt i64 %50, 64
+  %56 = or i1 %54, %55
+  br i1 %56, label %then16, label %ifcont17
+
+then16:                                           ; preds = %then15
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 %50, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont17:                                         ; preds = %then15
+  %57 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 %53
+  %58 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %57, i32 0, i32 0
+  store %recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame, %recursion_03.__lcompilers_frame_sub1.75** %58, align 8
+  %59 = load i32, i32* %i, align 4
+  store i32 %59, i32* %index, align 1
+  br label %ifcont19
+
+else18:                                           ; preds = %ifcont14
+  br label %ifcont19
+
+ifcont19:                                         ; preds = %else18, %ifcont17
+  %60 = load i32, i32* %i, align 4
+  %61 = add i32 %60, 1
+  store i32 %61, i32* %i, align 4
+  br label %loop.head7
+
+loop.end20:                                       ; preds = %loop.head7
+  %62 = load i32, i32* %index, align 1
+  %63 = icmp eq i32 %62, 0
+  br i1 %63, label %then21, label %else22
+
+then21:                                           ; preds = %loop.end20
+  %64 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.5, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @12, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i64 152, i8* %64, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont23
+
+else22:                                           ; preds = %loop.end20
+  br label %ifcont23
+
+ifcont23:                                         ; preds = %else22, %then21
+  br label %ifcont25
+
+else24:                                           ; preds = %loop.end
+  br label %ifcont25
+
+ifcont25:                                         ; preds = %else24, %ifcont23
+  br label %return
+
+return:                                           ; preds = %ifcont25
+  br label %FINALIZE_SYMTABLE___lcompilers_acquire_frame_slot
+
+FINALIZE_SYMTABLE___lcompilers_acquire_frame_slot: ; preds = %return
+  ret void
+}
+
+define void @sub1.__module_recursion_03___lcompilers_release_frame_slot(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame) {
+.entry:
+  %is_associated = alloca i1, align 1
+  %i = alloca i32, align 4
+  store i32 1, i32* %i, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %ifcont7, %.entry
+  %0 = load i32, i32* %i, align 4
+  %1 = icmp sle i32 %0, 64
+  %2 = zext i1 %1 to i32
+  %3 = and i32 %2, 1
+  %4 = icmp ne i32 %3, 0
+  br i1 %4, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %5 = load i32, i32* %i, align 4
+  %6 = sext i32 %5 to i64
+  %7 = sub i64 %6, 1
+  %8 = mul i64 1, %7
+  %9 = add i64 0, %8
+  %10 = icmp slt i64 %6, 1
+  %11 = icmp sgt i64 %6, 64
+  %12 = or i1 %10, %11
+  br i1 %12, label %then, label %ifcont
+
+then:                                             ; preds = %loop.body
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 %6, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %loop.body
+  %13 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 %9
+  %14 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %13, i32 0, i32 0
+  %15 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** %14, align 8
+  %16 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %15 to i64
+  %17 = icmp eq i64 %16, 0
+  br i1 %17, label %then1, label %else
+
+then1:                                            ; preds = %ifcont
+  store i1 false, i1* %is_associated, align 1
+  br label %ifcont2
+
+else:                                             ; preds = %ifcont
+  %18 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame to i64
+  %19 = ptrtoint %recursion_03.__lcompilers_frame_sub1.75* %15 to i64
+  %20 = icmp eq i64 %19, %18
+  store i1 %20, i1* %is_associated, align 1
+  br label %ifcont2
+
+ifcont2:                                          ; preds = %else, %then1
+  %21 = load i1, i1* %is_associated, align 1
+  br i1 %21, label %then3, label %else6
+
+then3:                                            ; preds = %ifcont2
+  %22 = load i32, i32* %i, align 4
+  %23 = sext i32 %22 to i64
+  %24 = sub i64 %23, 1
+  %25 = mul i64 1, %24
+  %26 = add i64 0, %25
+  %27 = icmp slt i64 %23, 1
+  %28 = icmp sgt i64 %23, 64
+  %29 = or i1 %27, %28
+  br i1 %29, label %then4, label %ifcont5
+
+then4:                                            ; preds = %then3
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 %23, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont5:                                          ; preds = %then3
+  %30 = getelementptr [64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 %26
+  %31 = getelementptr %recursion_03.__lcompilers_frame_slot_sub1.76, %recursion_03.__lcompilers_frame_slot_sub1.76* %30, i32 0, i32 0
+  store %recursion_03.__lcompilers_frame_sub1.75* null, %recursion_03.__lcompilers_frame_sub1.75** %31, align 8
+  br label %ifcont7
+
+else6:                                            ; preds = %ifcont2
+  br label %ifcont7
+
+ifcont7:                                          ; preds = %else6, %ifcont5
+  %32 = load i32, i32* %i, align 4
+  %33 = add i32 %32, 1
+  store i32 %33, i32* %i, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  br label %return
+
+return:                                           ; preds = %loop.end
+  br label %FINALIZE_SYMTABLE___lcompilers_release_frame_slot
+
+FINALIZE_SYMTABLE___lcompilers_release_frame_slot: ; preds = %return
+  ret void
+}
+
+define i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
-  %1 = getelementptr %recursion_03.__lcompilers_frame_sub1.11, %recursion_03.__lcompilers_frame_sub1.11* %__lcompilers_frame, i32 0, i32 0
+  %1 = getelementptr %recursion_03.__lcompilers_frame_sub1.75, %recursion_03.__lcompilers_frame_sub1.75* %__lcompilers_frame, i32 0, i32 0
   %2 = load i32*, i32** %1, align 1
   %getx = alloca i32, align 4
   %3 = alloca i64, align 8
-  %4 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.4, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.6, i32* %2)
+  %4 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.6, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.8, i32* %2)
   %5 = load i64, i64* %3, align 8
   %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %4, i8** %6, align 8
@@ -186,7 +511,7 @@ define i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub
   %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %11 = load i64, i64* %10, align 8
   %12 = trunc i64 %11 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %9, i32 %12, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* %9, i32 %12, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i32 1)
   %13 = icmp eq i8* %4, null
   br i1 %13, label %free_done, label %free_nonnull
 
@@ -207,20 +532,2257 @@ FINALIZE_SYMTABLE_getx:                           ; preds = %return
   ret i32 %15
 }
 
-define i32 @sub1.__module_recursion_03_getx__lcompilers_value() {
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_1() {
 .entry:
-  %getx__lcompilers_value = alloca i32, align 4
-  %0 = load %recursion_03.__lcompilers_frame_sub1.11*, %recursion_03.__lcompilers_frame_sub1.11** @__module_recursion_03_sub1.__lcompilers_current_frame, align 8
-  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.11* %0)
-  store i32 %1, i32* %getx__lcompilers_value, align 4
+  %getx__lcompilers_value_1 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 1, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 0, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_1, align 4
   br label %return
 
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_getx__lcompilers_value
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_1
 
-FINALIZE_SYMTABLE_getx__lcompilers_value:         ; preds = %return
-  %2 = load i32, i32* %getx__lcompilers_value, align 4
+FINALIZE_SYMTABLE_getx__lcompilers_value_1:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_1, align 4
   ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_10() {
+.entry:
+  %getx__lcompilers_value_10 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 10, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 9, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_10, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_10
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_10:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_10, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_11() {
+.entry:
+  %getx__lcompilers_value_11 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 11, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 10, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_11, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_11
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_11:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_11, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_12() {
+.entry:
+  %getx__lcompilers_value_12 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 12, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 11, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_12, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_12
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_12:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_12, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_13() {
+.entry:
+  %getx__lcompilers_value_13 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 13, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 12, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_13, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_13
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_13:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_13, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_14() {
+.entry:
+  %getx__lcompilers_value_14 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 14, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 13, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_14, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_14
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_14:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_14, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_15() {
+.entry:
+  %getx__lcompilers_value_15 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 15, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 14, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_15, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_15
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_15:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_15, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_16() {
+.entry:
+  %getx__lcompilers_value_16 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 16, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 15, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_16, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_16
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_16:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_16, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_17() {
+.entry:
+  %getx__lcompilers_value_17 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 17, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 16, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_17, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_17
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_17:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_17, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_18() {
+.entry:
+  %getx__lcompilers_value_18 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 18, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 17, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_18, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_18
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_18:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_18, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_19() {
+.entry:
+  %getx__lcompilers_value_19 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 19, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 18, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_19, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_19
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_19:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_19, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_2() {
+.entry:
+  %getx__lcompilers_value_2 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 2, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 1, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_2, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_2
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_2:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_2, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_20() {
+.entry:
+  %getx__lcompilers_value_20 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 20, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 19, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_20, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_20
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_20:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_20, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_21() {
+.entry:
+  %getx__lcompilers_value_21 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 21, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 20, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_21, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_21
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_21:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_21, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_22() {
+.entry:
+  %getx__lcompilers_value_22 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 22, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 21, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_22, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_22
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_22:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_22, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_23() {
+.entry:
+  %getx__lcompilers_value_23 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 23, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 22, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_23, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_23
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_23:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_23, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_24() {
+.entry:
+  %getx__lcompilers_value_24 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 24, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 23, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_24, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_24
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_24:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_24, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_25() {
+.entry:
+  %getx__lcompilers_value_25 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 25, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 24, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_25, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_25
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_25:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_25, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_26() {
+.entry:
+  %getx__lcompilers_value_26 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 26, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 25, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_26, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_26
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_26:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_26, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_27() {
+.entry:
+  %getx__lcompilers_value_27 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 27, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 26, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_27, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_27
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_27:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_27, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_28() {
+.entry:
+  %getx__lcompilers_value_28 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 28, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 27, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_28, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_28
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_28:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_28, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_29() {
+.entry:
+  %getx__lcompilers_value_29 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 29, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 28, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_29, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_29
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_29:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_29, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_3() {
+.entry:
+  %getx__lcompilers_value_3 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 3, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 2, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_3, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_3
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_3:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_3, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_30() {
+.entry:
+  %getx__lcompilers_value_30 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 30, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 29, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_30, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_30
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_30:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_30, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_31() {
+.entry:
+  %getx__lcompilers_value_31 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 31, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 30, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_31, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_31
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_31:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_31, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_32() {
+.entry:
+  %getx__lcompilers_value_32 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 32, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 31, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_32, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_32
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_32:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_32, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_33() {
+.entry:
+  %getx__lcompilers_value_33 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 33, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 32, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_33, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_33
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_33:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_33, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_34() {
+.entry:
+  %getx__lcompilers_value_34 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 34, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 33, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_34, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_34
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_34:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_34, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_35() {
+.entry:
+  %getx__lcompilers_value_35 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 35, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 34, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_35, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_35
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_35:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_35, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_36() {
+.entry:
+  %getx__lcompilers_value_36 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 36, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 35, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_36, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_36
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_36:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_36, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_37() {
+.entry:
+  %getx__lcompilers_value_37 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 37, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 36, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_37, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_37
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_37:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_37, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_38() {
+.entry:
+  %getx__lcompilers_value_38 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 38, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 37, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_38, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_38
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_38:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_38, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_39() {
+.entry:
+  %getx__lcompilers_value_39 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 39, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 38, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_39, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_39
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_39:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_39, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_4() {
+.entry:
+  %getx__lcompilers_value_4 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 4, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 3, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_4, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_4
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_4:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_4, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_40() {
+.entry:
+  %getx__lcompilers_value_40 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 40, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 39, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_40, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_40
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_40:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_40, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_41() {
+.entry:
+  %getx__lcompilers_value_41 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 41, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 40, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_41, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_41
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_41:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_41, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_42() {
+.entry:
+  %getx__lcompilers_value_42 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 42, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 41, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_42, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_42
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_42:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_42, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_43() {
+.entry:
+  %getx__lcompilers_value_43 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 43, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 42, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_43, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_43
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_43:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_43, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_44() {
+.entry:
+  %getx__lcompilers_value_44 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 44, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 43, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_44, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_44
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_44:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_44, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_45() {
+.entry:
+  %getx__lcompilers_value_45 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 45, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 44, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_45, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_45
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_45:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_45, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_46() {
+.entry:
+  %getx__lcompilers_value_46 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 46, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 45, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_46, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_46
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_46:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_46, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_47() {
+.entry:
+  %getx__lcompilers_value_47 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 47, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 46, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_47, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_47
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_47:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_47, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_48() {
+.entry:
+  %getx__lcompilers_value_48 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 48, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 47, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_48, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_48
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_48:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_48, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_49() {
+.entry:
+  %getx__lcompilers_value_49 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 49, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 48, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_49, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_49
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_49:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_49, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_5() {
+.entry:
+  %getx__lcompilers_value_5 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 5, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 4, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_5, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_5
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_5:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_5, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_50() {
+.entry:
+  %getx__lcompilers_value_50 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 50, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 49, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_50, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_50
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_50:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_50, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_51() {
+.entry:
+  %getx__lcompilers_value_51 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 51, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 50, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_51, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_51
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_51:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_51, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_52() {
+.entry:
+  %getx__lcompilers_value_52 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 52, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 51, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_52, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_52
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_52:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_52, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_53() {
+.entry:
+  %getx__lcompilers_value_53 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 53, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 52, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_53, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_53
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_53:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_53, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_54() {
+.entry:
+  %getx__lcompilers_value_54 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 54, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 53, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_54, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_54
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_54:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_54, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_55() {
+.entry:
+  %getx__lcompilers_value_55 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 55, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 54, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_55, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_55
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_55:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_55, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_56() {
+.entry:
+  %getx__lcompilers_value_56 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 56, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 55, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_56, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_56
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_56:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_56, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_57() {
+.entry:
+  %getx__lcompilers_value_57 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 57, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 56, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_57, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_57
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_57:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_57, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_58() {
+.entry:
+  %getx__lcompilers_value_58 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 58, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 57, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_58, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_58
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_58:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_58, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_59() {
+.entry:
+  %getx__lcompilers_value_59 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 59, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 58, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_59, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_59
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_59:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_59, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_6() {
+.entry:
+  %getx__lcompilers_value_6 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 6, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 5, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_6, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_6
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_6:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_6, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_60() {
+.entry:
+  %getx__lcompilers_value_60 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 60, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 59, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_60, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_60
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_60:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_60, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_61() {
+.entry:
+  %getx__lcompilers_value_61 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 61, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 60, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_61, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_61
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_61:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_61, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_62() {
+.entry:
+  %getx__lcompilers_value_62 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 62, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 61, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_62, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_62
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_62:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_62, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_63() {
+.entry:
+  %getx__lcompilers_value_63 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 63, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 62, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_63, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_63
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_63:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_63, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_64() {
+.entry:
+  %getx__lcompilers_value_64 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 64, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 63, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_64, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_64
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_64:      ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_64, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_7() {
+.entry:
+  %getx__lcompilers_value_7 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 7, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 6, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_7, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_7
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_7:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_7, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_8() {
+.entry:
+  %getx__lcompilers_value_8 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 8, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 7, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_8, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_8
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_8:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_8, align 4
+  ret i32 %2
+}
+
+define i32 @sub1.__module_recursion_03_getx__lcompilers_value_9() {
+.entry:
+  %getx__lcompilers_value_9 = alloca i32, align 4
+  br i1 false, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i64 9, i32 1, i64 1, i64 64)
+  unreachable
+
+ifcont:                                           ; preds = %.entry
+  %0 = load %recursion_03.__lcompilers_frame_sub1.75*, %recursion_03.__lcompilers_frame_sub1.75** getelementptr inbounds ([64 x %recursion_03.__lcompilers_frame_slot_sub1.76], [64 x %recursion_03.__lcompilers_frame_slot_sub1.76]* @__module_recursion_03_sub1.__lcompilers_frame_slots, i32 0, i64 8, i32 0), align 8
+  %1 = call i32 @sub1.__module_recursion_03_getx(%recursion_03.__lcompilers_frame_sub1.75* %0)
+  store i32 %1, i32* %getx__lcompilers_value_9, align 4
+  br label %return
+
+return:                                           ; preds = %ifcont
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_9
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_9:       ; preds = %return
+  %2 = load i32, i32* %getx__lcompilers_value_9, align 4
+  ret i32 %2
+}
+
+declare i32 @__module_recursion_03_getx__lcompilers_value_pointer()
+
+define void @sub1.__module_recursion_03_getx__lcompilers_value_select(i32* %index, i32 ()** %pointer) {
+.entry:
+  %0 = load i32, i32* %index, align 1
+  %1 = icmp eq i32 %0, 1
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_1, i32 ()** %pointer, align 8
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %2 = load i32, i32* %index, align 1
+  %3 = icmp eq i32 %2, 2
+  br i1 %3, label %then1, label %else2
+
+then1:                                            ; preds = %ifcont
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_2, i32 ()** %pointer, align 8
+  br label %ifcont3
+
+else2:                                            ; preds = %ifcont
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else2, %then1
+  %4 = load i32, i32* %index, align 1
+  %5 = icmp eq i32 %4, 3
+  br i1 %5, label %then4, label %else5
+
+then4:                                            ; preds = %ifcont3
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_3, i32 ()** %pointer, align 8
+  br label %ifcont6
+
+else5:                                            ; preds = %ifcont3
+  br label %ifcont6
+
+ifcont6:                                          ; preds = %else5, %then4
+  %6 = load i32, i32* %index, align 1
+  %7 = icmp eq i32 %6, 4
+  br i1 %7, label %then7, label %else8
+
+then7:                                            ; preds = %ifcont6
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_4, i32 ()** %pointer, align 8
+  br label %ifcont9
+
+else8:                                            ; preds = %ifcont6
+  br label %ifcont9
+
+ifcont9:                                          ; preds = %else8, %then7
+  %8 = load i32, i32* %index, align 1
+  %9 = icmp eq i32 %8, 5
+  br i1 %9, label %then10, label %else11
+
+then10:                                           ; preds = %ifcont9
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_5, i32 ()** %pointer, align 8
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont9
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %then10
+  %10 = load i32, i32* %index, align 1
+  %11 = icmp eq i32 %10, 6
+  br i1 %11, label %then13, label %else14
+
+then13:                                           ; preds = %ifcont12
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_6, i32 ()** %pointer, align 8
+  br label %ifcont15
+
+else14:                                           ; preds = %ifcont12
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %else14, %then13
+  %12 = load i32, i32* %index, align 1
+  %13 = icmp eq i32 %12, 7
+  br i1 %13, label %then16, label %else17
+
+then16:                                           ; preds = %ifcont15
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_7, i32 ()** %pointer, align 8
+  br label %ifcont18
+
+else17:                                           ; preds = %ifcont15
+  br label %ifcont18
+
+ifcont18:                                         ; preds = %else17, %then16
+  %14 = load i32, i32* %index, align 1
+  %15 = icmp eq i32 %14, 8
+  br i1 %15, label %then19, label %else20
+
+then19:                                           ; preds = %ifcont18
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_8, i32 ()** %pointer, align 8
+  br label %ifcont21
+
+else20:                                           ; preds = %ifcont18
+  br label %ifcont21
+
+ifcont21:                                         ; preds = %else20, %then19
+  %16 = load i32, i32* %index, align 1
+  %17 = icmp eq i32 %16, 9
+  br i1 %17, label %then22, label %else23
+
+then22:                                           ; preds = %ifcont21
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_9, i32 ()** %pointer, align 8
+  br label %ifcont24
+
+else23:                                           ; preds = %ifcont21
+  br label %ifcont24
+
+ifcont24:                                         ; preds = %else23, %then22
+  %18 = load i32, i32* %index, align 1
+  %19 = icmp eq i32 %18, 10
+  br i1 %19, label %then25, label %else26
+
+then25:                                           ; preds = %ifcont24
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_10, i32 ()** %pointer, align 8
+  br label %ifcont27
+
+else26:                                           ; preds = %ifcont24
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %else26, %then25
+  %20 = load i32, i32* %index, align 1
+  %21 = icmp eq i32 %20, 11
+  br i1 %21, label %then28, label %else29
+
+then28:                                           ; preds = %ifcont27
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_11, i32 ()** %pointer, align 8
+  br label %ifcont30
+
+else29:                                           ; preds = %ifcont27
+  br label %ifcont30
+
+ifcont30:                                         ; preds = %else29, %then28
+  %22 = load i32, i32* %index, align 1
+  %23 = icmp eq i32 %22, 12
+  br i1 %23, label %then31, label %else32
+
+then31:                                           ; preds = %ifcont30
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_12, i32 ()** %pointer, align 8
+  br label %ifcont33
+
+else32:                                           ; preds = %ifcont30
+  br label %ifcont33
+
+ifcont33:                                         ; preds = %else32, %then31
+  %24 = load i32, i32* %index, align 1
+  %25 = icmp eq i32 %24, 13
+  br i1 %25, label %then34, label %else35
+
+then34:                                           ; preds = %ifcont33
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_13, i32 ()** %pointer, align 8
+  br label %ifcont36
+
+else35:                                           ; preds = %ifcont33
+  br label %ifcont36
+
+ifcont36:                                         ; preds = %else35, %then34
+  %26 = load i32, i32* %index, align 1
+  %27 = icmp eq i32 %26, 14
+  br i1 %27, label %then37, label %else38
+
+then37:                                           ; preds = %ifcont36
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_14, i32 ()** %pointer, align 8
+  br label %ifcont39
+
+else38:                                           ; preds = %ifcont36
+  br label %ifcont39
+
+ifcont39:                                         ; preds = %else38, %then37
+  %28 = load i32, i32* %index, align 1
+  %29 = icmp eq i32 %28, 15
+  br i1 %29, label %then40, label %else41
+
+then40:                                           ; preds = %ifcont39
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_15, i32 ()** %pointer, align 8
+  br label %ifcont42
+
+else41:                                           ; preds = %ifcont39
+  br label %ifcont42
+
+ifcont42:                                         ; preds = %else41, %then40
+  %30 = load i32, i32* %index, align 1
+  %31 = icmp eq i32 %30, 16
+  br i1 %31, label %then43, label %else44
+
+then43:                                           ; preds = %ifcont42
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_16, i32 ()** %pointer, align 8
+  br label %ifcont45
+
+else44:                                           ; preds = %ifcont42
+  br label %ifcont45
+
+ifcont45:                                         ; preds = %else44, %then43
+  %32 = load i32, i32* %index, align 1
+  %33 = icmp eq i32 %32, 17
+  br i1 %33, label %then46, label %else47
+
+then46:                                           ; preds = %ifcont45
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_17, i32 ()** %pointer, align 8
+  br label %ifcont48
+
+else47:                                           ; preds = %ifcont45
+  br label %ifcont48
+
+ifcont48:                                         ; preds = %else47, %then46
+  %34 = load i32, i32* %index, align 1
+  %35 = icmp eq i32 %34, 18
+  br i1 %35, label %then49, label %else50
+
+then49:                                           ; preds = %ifcont48
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_18, i32 ()** %pointer, align 8
+  br label %ifcont51
+
+else50:                                           ; preds = %ifcont48
+  br label %ifcont51
+
+ifcont51:                                         ; preds = %else50, %then49
+  %36 = load i32, i32* %index, align 1
+  %37 = icmp eq i32 %36, 19
+  br i1 %37, label %then52, label %else53
+
+then52:                                           ; preds = %ifcont51
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_19, i32 ()** %pointer, align 8
+  br label %ifcont54
+
+else53:                                           ; preds = %ifcont51
+  br label %ifcont54
+
+ifcont54:                                         ; preds = %else53, %then52
+  %38 = load i32, i32* %index, align 1
+  %39 = icmp eq i32 %38, 20
+  br i1 %39, label %then55, label %else56
+
+then55:                                           ; preds = %ifcont54
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_20, i32 ()** %pointer, align 8
+  br label %ifcont57
+
+else56:                                           ; preds = %ifcont54
+  br label %ifcont57
+
+ifcont57:                                         ; preds = %else56, %then55
+  %40 = load i32, i32* %index, align 1
+  %41 = icmp eq i32 %40, 21
+  br i1 %41, label %then58, label %else59
+
+then58:                                           ; preds = %ifcont57
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_21, i32 ()** %pointer, align 8
+  br label %ifcont60
+
+else59:                                           ; preds = %ifcont57
+  br label %ifcont60
+
+ifcont60:                                         ; preds = %else59, %then58
+  %42 = load i32, i32* %index, align 1
+  %43 = icmp eq i32 %42, 22
+  br i1 %43, label %then61, label %else62
+
+then61:                                           ; preds = %ifcont60
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_22, i32 ()** %pointer, align 8
+  br label %ifcont63
+
+else62:                                           ; preds = %ifcont60
+  br label %ifcont63
+
+ifcont63:                                         ; preds = %else62, %then61
+  %44 = load i32, i32* %index, align 1
+  %45 = icmp eq i32 %44, 23
+  br i1 %45, label %then64, label %else65
+
+then64:                                           ; preds = %ifcont63
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_23, i32 ()** %pointer, align 8
+  br label %ifcont66
+
+else65:                                           ; preds = %ifcont63
+  br label %ifcont66
+
+ifcont66:                                         ; preds = %else65, %then64
+  %46 = load i32, i32* %index, align 1
+  %47 = icmp eq i32 %46, 24
+  br i1 %47, label %then67, label %else68
+
+then67:                                           ; preds = %ifcont66
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_24, i32 ()** %pointer, align 8
+  br label %ifcont69
+
+else68:                                           ; preds = %ifcont66
+  br label %ifcont69
+
+ifcont69:                                         ; preds = %else68, %then67
+  %48 = load i32, i32* %index, align 1
+  %49 = icmp eq i32 %48, 25
+  br i1 %49, label %then70, label %else71
+
+then70:                                           ; preds = %ifcont69
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_25, i32 ()** %pointer, align 8
+  br label %ifcont72
+
+else71:                                           ; preds = %ifcont69
+  br label %ifcont72
+
+ifcont72:                                         ; preds = %else71, %then70
+  %50 = load i32, i32* %index, align 1
+  %51 = icmp eq i32 %50, 26
+  br i1 %51, label %then73, label %else74
+
+then73:                                           ; preds = %ifcont72
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_26, i32 ()** %pointer, align 8
+  br label %ifcont75
+
+else74:                                           ; preds = %ifcont72
+  br label %ifcont75
+
+ifcont75:                                         ; preds = %else74, %then73
+  %52 = load i32, i32* %index, align 1
+  %53 = icmp eq i32 %52, 27
+  br i1 %53, label %then76, label %else77
+
+then76:                                           ; preds = %ifcont75
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_27, i32 ()** %pointer, align 8
+  br label %ifcont78
+
+else77:                                           ; preds = %ifcont75
+  br label %ifcont78
+
+ifcont78:                                         ; preds = %else77, %then76
+  %54 = load i32, i32* %index, align 1
+  %55 = icmp eq i32 %54, 28
+  br i1 %55, label %then79, label %else80
+
+then79:                                           ; preds = %ifcont78
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_28, i32 ()** %pointer, align 8
+  br label %ifcont81
+
+else80:                                           ; preds = %ifcont78
+  br label %ifcont81
+
+ifcont81:                                         ; preds = %else80, %then79
+  %56 = load i32, i32* %index, align 1
+  %57 = icmp eq i32 %56, 29
+  br i1 %57, label %then82, label %else83
+
+then82:                                           ; preds = %ifcont81
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_29, i32 ()** %pointer, align 8
+  br label %ifcont84
+
+else83:                                           ; preds = %ifcont81
+  br label %ifcont84
+
+ifcont84:                                         ; preds = %else83, %then82
+  %58 = load i32, i32* %index, align 1
+  %59 = icmp eq i32 %58, 30
+  br i1 %59, label %then85, label %else86
+
+then85:                                           ; preds = %ifcont84
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_30, i32 ()** %pointer, align 8
+  br label %ifcont87
+
+else86:                                           ; preds = %ifcont84
+  br label %ifcont87
+
+ifcont87:                                         ; preds = %else86, %then85
+  %60 = load i32, i32* %index, align 1
+  %61 = icmp eq i32 %60, 31
+  br i1 %61, label %then88, label %else89
+
+then88:                                           ; preds = %ifcont87
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_31, i32 ()** %pointer, align 8
+  br label %ifcont90
+
+else89:                                           ; preds = %ifcont87
+  br label %ifcont90
+
+ifcont90:                                         ; preds = %else89, %then88
+  %62 = load i32, i32* %index, align 1
+  %63 = icmp eq i32 %62, 32
+  br i1 %63, label %then91, label %else92
+
+then91:                                           ; preds = %ifcont90
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_32, i32 ()** %pointer, align 8
+  br label %ifcont93
+
+else92:                                           ; preds = %ifcont90
+  br label %ifcont93
+
+ifcont93:                                         ; preds = %else92, %then91
+  %64 = load i32, i32* %index, align 1
+  %65 = icmp eq i32 %64, 33
+  br i1 %65, label %then94, label %else95
+
+then94:                                           ; preds = %ifcont93
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_33, i32 ()** %pointer, align 8
+  br label %ifcont96
+
+else95:                                           ; preds = %ifcont93
+  br label %ifcont96
+
+ifcont96:                                         ; preds = %else95, %then94
+  %66 = load i32, i32* %index, align 1
+  %67 = icmp eq i32 %66, 34
+  br i1 %67, label %then97, label %else98
+
+then97:                                           ; preds = %ifcont96
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_34, i32 ()** %pointer, align 8
+  br label %ifcont99
+
+else98:                                           ; preds = %ifcont96
+  br label %ifcont99
+
+ifcont99:                                         ; preds = %else98, %then97
+  %68 = load i32, i32* %index, align 1
+  %69 = icmp eq i32 %68, 35
+  br i1 %69, label %then100, label %else101
+
+then100:                                          ; preds = %ifcont99
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_35, i32 ()** %pointer, align 8
+  br label %ifcont102
+
+else101:                                          ; preds = %ifcont99
+  br label %ifcont102
+
+ifcont102:                                        ; preds = %else101, %then100
+  %70 = load i32, i32* %index, align 1
+  %71 = icmp eq i32 %70, 36
+  br i1 %71, label %then103, label %else104
+
+then103:                                          ; preds = %ifcont102
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_36, i32 ()** %pointer, align 8
+  br label %ifcont105
+
+else104:                                          ; preds = %ifcont102
+  br label %ifcont105
+
+ifcont105:                                        ; preds = %else104, %then103
+  %72 = load i32, i32* %index, align 1
+  %73 = icmp eq i32 %72, 37
+  br i1 %73, label %then106, label %else107
+
+then106:                                          ; preds = %ifcont105
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_37, i32 ()** %pointer, align 8
+  br label %ifcont108
+
+else107:                                          ; preds = %ifcont105
+  br label %ifcont108
+
+ifcont108:                                        ; preds = %else107, %then106
+  %74 = load i32, i32* %index, align 1
+  %75 = icmp eq i32 %74, 38
+  br i1 %75, label %then109, label %else110
+
+then109:                                          ; preds = %ifcont108
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_38, i32 ()** %pointer, align 8
+  br label %ifcont111
+
+else110:                                          ; preds = %ifcont108
+  br label %ifcont111
+
+ifcont111:                                        ; preds = %else110, %then109
+  %76 = load i32, i32* %index, align 1
+  %77 = icmp eq i32 %76, 39
+  br i1 %77, label %then112, label %else113
+
+then112:                                          ; preds = %ifcont111
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_39, i32 ()** %pointer, align 8
+  br label %ifcont114
+
+else113:                                          ; preds = %ifcont111
+  br label %ifcont114
+
+ifcont114:                                        ; preds = %else113, %then112
+  %78 = load i32, i32* %index, align 1
+  %79 = icmp eq i32 %78, 40
+  br i1 %79, label %then115, label %else116
+
+then115:                                          ; preds = %ifcont114
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_40, i32 ()** %pointer, align 8
+  br label %ifcont117
+
+else116:                                          ; preds = %ifcont114
+  br label %ifcont117
+
+ifcont117:                                        ; preds = %else116, %then115
+  %80 = load i32, i32* %index, align 1
+  %81 = icmp eq i32 %80, 41
+  br i1 %81, label %then118, label %else119
+
+then118:                                          ; preds = %ifcont117
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_41, i32 ()** %pointer, align 8
+  br label %ifcont120
+
+else119:                                          ; preds = %ifcont117
+  br label %ifcont120
+
+ifcont120:                                        ; preds = %else119, %then118
+  %82 = load i32, i32* %index, align 1
+  %83 = icmp eq i32 %82, 42
+  br i1 %83, label %then121, label %else122
+
+then121:                                          ; preds = %ifcont120
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_42, i32 ()** %pointer, align 8
+  br label %ifcont123
+
+else122:                                          ; preds = %ifcont120
+  br label %ifcont123
+
+ifcont123:                                        ; preds = %else122, %then121
+  %84 = load i32, i32* %index, align 1
+  %85 = icmp eq i32 %84, 43
+  br i1 %85, label %then124, label %else125
+
+then124:                                          ; preds = %ifcont123
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_43, i32 ()** %pointer, align 8
+  br label %ifcont126
+
+else125:                                          ; preds = %ifcont123
+  br label %ifcont126
+
+ifcont126:                                        ; preds = %else125, %then124
+  %86 = load i32, i32* %index, align 1
+  %87 = icmp eq i32 %86, 44
+  br i1 %87, label %then127, label %else128
+
+then127:                                          ; preds = %ifcont126
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_44, i32 ()** %pointer, align 8
+  br label %ifcont129
+
+else128:                                          ; preds = %ifcont126
+  br label %ifcont129
+
+ifcont129:                                        ; preds = %else128, %then127
+  %88 = load i32, i32* %index, align 1
+  %89 = icmp eq i32 %88, 45
+  br i1 %89, label %then130, label %else131
+
+then130:                                          ; preds = %ifcont129
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_45, i32 ()** %pointer, align 8
+  br label %ifcont132
+
+else131:                                          ; preds = %ifcont129
+  br label %ifcont132
+
+ifcont132:                                        ; preds = %else131, %then130
+  %90 = load i32, i32* %index, align 1
+  %91 = icmp eq i32 %90, 46
+  br i1 %91, label %then133, label %else134
+
+then133:                                          ; preds = %ifcont132
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_46, i32 ()** %pointer, align 8
+  br label %ifcont135
+
+else134:                                          ; preds = %ifcont132
+  br label %ifcont135
+
+ifcont135:                                        ; preds = %else134, %then133
+  %92 = load i32, i32* %index, align 1
+  %93 = icmp eq i32 %92, 47
+  br i1 %93, label %then136, label %else137
+
+then136:                                          ; preds = %ifcont135
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_47, i32 ()** %pointer, align 8
+  br label %ifcont138
+
+else137:                                          ; preds = %ifcont135
+  br label %ifcont138
+
+ifcont138:                                        ; preds = %else137, %then136
+  %94 = load i32, i32* %index, align 1
+  %95 = icmp eq i32 %94, 48
+  br i1 %95, label %then139, label %else140
+
+then139:                                          ; preds = %ifcont138
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_48, i32 ()** %pointer, align 8
+  br label %ifcont141
+
+else140:                                          ; preds = %ifcont138
+  br label %ifcont141
+
+ifcont141:                                        ; preds = %else140, %then139
+  %96 = load i32, i32* %index, align 1
+  %97 = icmp eq i32 %96, 49
+  br i1 %97, label %then142, label %else143
+
+then142:                                          ; preds = %ifcont141
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_49, i32 ()** %pointer, align 8
+  br label %ifcont144
+
+else143:                                          ; preds = %ifcont141
+  br label %ifcont144
+
+ifcont144:                                        ; preds = %else143, %then142
+  %98 = load i32, i32* %index, align 1
+  %99 = icmp eq i32 %98, 50
+  br i1 %99, label %then145, label %else146
+
+then145:                                          ; preds = %ifcont144
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_50, i32 ()** %pointer, align 8
+  br label %ifcont147
+
+else146:                                          ; preds = %ifcont144
+  br label %ifcont147
+
+ifcont147:                                        ; preds = %else146, %then145
+  %100 = load i32, i32* %index, align 1
+  %101 = icmp eq i32 %100, 51
+  br i1 %101, label %then148, label %else149
+
+then148:                                          ; preds = %ifcont147
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_51, i32 ()** %pointer, align 8
+  br label %ifcont150
+
+else149:                                          ; preds = %ifcont147
+  br label %ifcont150
+
+ifcont150:                                        ; preds = %else149, %then148
+  %102 = load i32, i32* %index, align 1
+  %103 = icmp eq i32 %102, 52
+  br i1 %103, label %then151, label %else152
+
+then151:                                          ; preds = %ifcont150
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_52, i32 ()** %pointer, align 8
+  br label %ifcont153
+
+else152:                                          ; preds = %ifcont150
+  br label %ifcont153
+
+ifcont153:                                        ; preds = %else152, %then151
+  %104 = load i32, i32* %index, align 1
+  %105 = icmp eq i32 %104, 53
+  br i1 %105, label %then154, label %else155
+
+then154:                                          ; preds = %ifcont153
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_53, i32 ()** %pointer, align 8
+  br label %ifcont156
+
+else155:                                          ; preds = %ifcont153
+  br label %ifcont156
+
+ifcont156:                                        ; preds = %else155, %then154
+  %106 = load i32, i32* %index, align 1
+  %107 = icmp eq i32 %106, 54
+  br i1 %107, label %then157, label %else158
+
+then157:                                          ; preds = %ifcont156
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_54, i32 ()** %pointer, align 8
+  br label %ifcont159
+
+else158:                                          ; preds = %ifcont156
+  br label %ifcont159
+
+ifcont159:                                        ; preds = %else158, %then157
+  %108 = load i32, i32* %index, align 1
+  %109 = icmp eq i32 %108, 55
+  br i1 %109, label %then160, label %else161
+
+then160:                                          ; preds = %ifcont159
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_55, i32 ()** %pointer, align 8
+  br label %ifcont162
+
+else161:                                          ; preds = %ifcont159
+  br label %ifcont162
+
+ifcont162:                                        ; preds = %else161, %then160
+  %110 = load i32, i32* %index, align 1
+  %111 = icmp eq i32 %110, 56
+  br i1 %111, label %then163, label %else164
+
+then163:                                          ; preds = %ifcont162
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_56, i32 ()** %pointer, align 8
+  br label %ifcont165
+
+else164:                                          ; preds = %ifcont162
+  br label %ifcont165
+
+ifcont165:                                        ; preds = %else164, %then163
+  %112 = load i32, i32* %index, align 1
+  %113 = icmp eq i32 %112, 57
+  br i1 %113, label %then166, label %else167
+
+then166:                                          ; preds = %ifcont165
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_57, i32 ()** %pointer, align 8
+  br label %ifcont168
+
+else167:                                          ; preds = %ifcont165
+  br label %ifcont168
+
+ifcont168:                                        ; preds = %else167, %then166
+  %114 = load i32, i32* %index, align 1
+  %115 = icmp eq i32 %114, 58
+  br i1 %115, label %then169, label %else170
+
+then169:                                          ; preds = %ifcont168
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_58, i32 ()** %pointer, align 8
+  br label %ifcont171
+
+else170:                                          ; preds = %ifcont168
+  br label %ifcont171
+
+ifcont171:                                        ; preds = %else170, %then169
+  %116 = load i32, i32* %index, align 1
+  %117 = icmp eq i32 %116, 59
+  br i1 %117, label %then172, label %else173
+
+then172:                                          ; preds = %ifcont171
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_59, i32 ()** %pointer, align 8
+  br label %ifcont174
+
+else173:                                          ; preds = %ifcont171
+  br label %ifcont174
+
+ifcont174:                                        ; preds = %else173, %then172
+  %118 = load i32, i32* %index, align 1
+  %119 = icmp eq i32 %118, 60
+  br i1 %119, label %then175, label %else176
+
+then175:                                          ; preds = %ifcont174
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_60, i32 ()** %pointer, align 8
+  br label %ifcont177
+
+else176:                                          ; preds = %ifcont174
+  br label %ifcont177
+
+ifcont177:                                        ; preds = %else176, %then175
+  %120 = load i32, i32* %index, align 1
+  %121 = icmp eq i32 %120, 61
+  br i1 %121, label %then178, label %else179
+
+then178:                                          ; preds = %ifcont177
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_61, i32 ()** %pointer, align 8
+  br label %ifcont180
+
+else179:                                          ; preds = %ifcont177
+  br label %ifcont180
+
+ifcont180:                                        ; preds = %else179, %then178
+  %122 = load i32, i32* %index, align 1
+  %123 = icmp eq i32 %122, 62
+  br i1 %123, label %then181, label %else182
+
+then181:                                          ; preds = %ifcont180
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_62, i32 ()** %pointer, align 8
+  br label %ifcont183
+
+else182:                                          ; preds = %ifcont180
+  br label %ifcont183
+
+ifcont183:                                        ; preds = %else182, %then181
+  %124 = load i32, i32* %index, align 1
+  %125 = icmp eq i32 %124, 63
+  br i1 %125, label %then184, label %else185
+
+then184:                                          ; preds = %ifcont183
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_63, i32 ()** %pointer, align 8
+  br label %ifcont186
+
+else185:                                          ; preds = %ifcont183
+  br label %ifcont186
+
+ifcont186:                                        ; preds = %else185, %then184
+  %126 = load i32, i32* %index, align 1
+  %127 = icmp eq i32 %126, 64
+  br i1 %127, label %then187, label %else188
+
+then187:                                          ; preds = %ifcont186
+  store i32 ()* @sub1.__module_recursion_03_getx__lcompilers_value_64, i32 ()** %pointer, align 8
+  br label %ifcont189
+
+else188:                                          ; preds = %ifcont186
+  br label %ifcont189
+
+ifcont189:                                        ; preds = %else188, %then187
+  br label %return
+
+return:                                           ; preds = %ifcont189
+  br label %FINALIZE_SYMTABLE_getx__lcompilers_value_select
+
+FINALIZE_SYMTABLE_getx__lcompilers_value_select:  ; preds = %return
+  ret void
 }
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
@@ -230,6 +2792,15 @@ declare i8* @_lfortran_get_default_allocator()
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+; Function Attrs: cold noreturn nounwind
+declare void @_lcompilers_runtime_error_exit(i8*, ...) #0
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @exit(i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -244,7 +2815,7 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = call i32 @__module_recursion_03_sub1(i32* %call_arg_value, i32* %call_arg_value1)
   store i32 %3, i32* %r, align 4
   %4 = alloca i64, align 8
-  %5 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.9, i32 0, i32 0), i64* %4, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.11, i32* %r)
+  %5 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.11, i32 0, i32 0), i64* %4, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.13, i32* %r)
   %6 = load i64, i64* %4, align 8
   %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %5, i8** %7, align 8
@@ -255,7 +2826,7 @@ define i32 @main(i32 %0, i8** %1) {
   %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %12 = load i64, i64* %11, align 8
   %13 = trunc i64 %12 to i32
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %10, i32 %13, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* %10, i32 %13, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0), i32 1)
   %14 = icmp eq i8* %5, null
   br i1 %14, label %free_done, label %free_nonnull
 
@@ -276,4 +2847,4 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lfortran_internal_alloc_finalize()
+attributes #0 = { cold noreturn nounwind }

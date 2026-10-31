@@ -3693,6 +3693,13 @@ RUN(NAME host_assoc_12 LABELS gfortran llvm)
 RUN(NAME host_assoc_13 LABELS gfortran llvm)
 RUN(NAME host_assoc_14 LABELS gfortran llvm)
 RUN(NAME host_assoc_15 LABELS gfortran llvm)
+RUN(NAME host_assoc_16 LABELS gfortran llvm)
+RUN(NAME host_assoc_17 LABELS gfortran llvm)
+RUN(NAME host_assoc_19 LABELS gfortran llvm)
+RUN(NAME host_assoc_20 LABELS gfortran llvm)
+RUN(NAME host_assoc_21 LABELS gfortran llvm)
+RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thunks=512)
+RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -4860,6 +4867,7 @@ RUN(NAME dtio_write_15 LABELS gfortran llvm)
 RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
     EXTRA_ARGS --separate-compilation)
+RUN(NAME dtio_write_17 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4982,6 +4990,8 @@ RUN(NAME procedure_60 LABELS llvm)
 RUN(NAME procedure_61 LABELS gfortran llvm EXTRAFILES procedure_61_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME procedure_62 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_63 LABELS gfortran llvm c cpp)
+RUN(NAME procedure_64 LABELS gfortran llvm)
+RUN(NAME procedure_65 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
@@ -5238,6 +5248,7 @@ RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_02 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
+RUN(NAME c_f_proc_ptr_02 LABELS gfortran llvm)
 
 RUN(NAME arrayitem_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrayitem_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
