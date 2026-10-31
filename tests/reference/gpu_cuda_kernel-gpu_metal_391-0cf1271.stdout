@@ -1,12 +1,8 @@
 #include <stdint.h>
 
 __device__ inline void ramp_gpu_17(float x, int n, float* y) {
-    int __do_loop_end;
     int j;
-    __do_loop_end = n;
-    j = (1 - 1);
-    while (((j + 1) <= __do_loop_end)) {
-        j = (j + 1);
+    for (j = 1; j <= n; j++) {
         y[((int)(j) - (1))] = (x + ((float)j));
     }
 }
@@ -35,8 +31,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
-        int __do_loop_end;
-        int __do_loop_end1;
         int __gpu_heap___gpu_call_result_base;
         int __gpu_heap___gpu_call_result_lb1;
         int __gpu_heap___gpu_call_result_n1;
@@ -89,18 +83,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             }
         }
         __libasr_index_0_1 = __gpu_heap___libasr_created__subroutine_from_function__lb1;
-        __do_loop_end = ((__gpu_heap___gpu_call_result_lb1 + __gpu_heap___gpu_call_result_n1) - 1);
-        __libasr_index_0_ = (__gpu_heap___gpu_call_result_lb1 - 1);
-        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-            __libasr_index_0_ = (__libasr_index_0_ + 1);
+        for (__libasr_index_0_ = __gpu_heap___gpu_call_result_lb1; __libasr_index_0_ <= ((__gpu_heap___gpu_call_result_lb1 + __gpu_heap___gpu_call_result_n1) - 1); __libasr_index_0_++) {
             __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + (__libasr_index_0_ - __gpu_heap___gpu_call_result_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__subroutine_from_function__base + 1) + (__libasr_index_0_1 - __gpu_heap___libasr_created__subroutine_from_function__lb1))) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = __gpu_heap___gpu_call_result_n1;
-        __gpu_sum_k = (1 - 1);
-        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-            __gpu_sum_k = (__gpu_sum_k + 1);
+        for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_heap___gpu_call_result_n1; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + ((__gpu_heap___gpu_call_result_lb1 + (__gpu_sum_k - 1)) - __gpu_heap___gpu_call_result_lb1))) - (1))]);
         }
         r[((int)(i__dc) - (1))] = __gpu_sum_res;

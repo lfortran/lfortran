@@ -1114,7 +1114,7 @@
                                                             ((Var 16 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 16 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 16 res)
                                                                 (OverloadedBinOp
@@ -1687,7 +1687,7 @@
                                                             ((Var 10 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 10 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 10 res)
                                                                 (OverloadedBinOp
@@ -2017,7 +2017,7 @@
                                                             ((Var 24 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 24 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 24 res)
                                                                 (OverloadedBinOp
@@ -2273,7 +2273,7 @@
                                                             ((Var 26 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 26 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 26 res)
                                                                 (OverloadedBinOp
@@ -2593,7 +2593,7 @@
                                                             ((Var 19 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 19 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 19 res)
                                                                 (OverloadedBinOp
@@ -2849,7 +2849,7 @@
                                                             ((Var 21 i)
                                                             (IntegerConstant 2 (Integer 4) Decimal)
                                                             (Var 21 n)
-                                                            ())
+                                                            (IntegerConstant 1 (Integer 4) Decimal))
                                                             [(Assignment
                                                                 (Var 21 res)
                                                                 (OverloadedBinOp
@@ -3504,7 +3504,7 @@
                                         ((Var 17 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 10 (Integer 4) Decimal)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 17 ai)

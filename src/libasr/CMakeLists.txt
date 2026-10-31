@@ -81,7 +81,6 @@ set(SRC
     pass/intrinsic_function.cpp
     pass/intrinsic_subroutine.cpp
     pass/fma.cpp
-    pass/loop_vectorise.cpp
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
     pass/scoped_inlining.cpp
@@ -127,6 +126,7 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_launch_sync.cpp
+    pass/gpu_sequential_unroll.cpp
     pass/gpu_affine.cpp
     pass/gpu_loop_utils.cpp
     pass/gpu_loop_fusion.cpp

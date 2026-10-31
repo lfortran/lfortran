@@ -394,11 +394,6 @@ namespace LCompilers {
                                          Allocator& al, ASR::TranslationUnit_t& unit,
                                          Location& loc, PassOptions& pass_options);
 
-        ASR::stmt_t* get_vector_copy(ASR::expr_t* array0, ASR::expr_t* array1, ASR::expr_t* start,
-            ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
-            Allocator& al, ASR::TranslationUnit_t& unit,
-            SymbolTable*& global_scope, Location& loc);
-
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp=-1, bool use_loop_variable_after_loop=false,
                                          SymbolTable* current_scope=nullptr,
@@ -1303,7 +1298,7 @@ namespace LCompilers {
                             } else {
                                 inner_body.push_back(al, inner_doloop);
                             }
-                            inner_doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                            inner_doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                                 inner_body.p, inner_body.size(), nullptr, 0));
                         }
                         doloop_body.push_back(al, inner_doloop);
@@ -1387,7 +1382,7 @@ namespace LCompilers {
                     }
                 }
             }
-            ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, arr_var->base.loc,
+            ASR::stmt_t* doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, arr_var->base.loc,
                 nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
             result_vec->push_back(al, doloop);
 
@@ -1423,7 +1418,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                     doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
@@ -1465,7 +1460,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                     doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             if(doloop != nullptr) result_vec->push_back(al, doloop);
@@ -1514,7 +1509,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                             doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
@@ -1578,7 +1573,7 @@ namespace LCompilers {
                     } else {
                         doloop_body.push_back(al, doloop);
                     }
-                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                         doloop_body.p, doloop_body.size(), nullptr, 0));
                 }
                 result_vec->push_back(al, doloop);
@@ -1623,7 +1618,7 @@ namespace LCompilers {
                     } else {
                         doloop_body.push_back(al, doloop);
                     }
-                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                         doloop_body.p, doloop_body.size(), nullptr, 0));
                 }
                 result_vec->push_back(al, doloop);

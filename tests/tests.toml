@@ -3439,6 +3439,11 @@ asr = true
 pass = "loop_unroll"
 
 [[test]]
+filename = "../integration_tests/loop_unroll_integer8.f90"
+asr = true
+pass = "loop_unroll"
+
+[[test]]
 filename = "../integration_tests/div_to_mul.f90"
 asr = true
 pass = "div_to_mul"
@@ -5100,6 +5105,18 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_480.f90"
+gpu_metal_kernel = true
+
+# Counted DO loops, DO CONCURRENT and FORALL of device code are written as C
+# `for` loops.
+[[test]]
+filename = "../integration_tests/gpu_do_loop_01.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_do_loop_02.f90"
+gpu_cuda_kernel = true
 gpu_metal_kernel = true
 
 # Loop nests of two and three dimensions run in tiles of 32 x 8 iterations

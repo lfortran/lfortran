@@ -206,14 +206,17 @@ public:
     }
 };
 
-// For each statement label of a procedure body, the BLOCK and ASSOCIATE
-// constructs that contain the labeled statement, outermost first.
+// For each statement label of a procedure body, the constructs that contain
+// the labeled statement, outermost first: the BLOCK and ASSOCIATE constructs
+// (BlockCall, AssociateBlockCall) and the loops (DoLoop, DoConcurrentLoop,
+// WhileLoop), each identified by its statement.
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
 public:
-    std::map<uint64_t, std::vector<SymbolTable*>> &scopes;
-    std::vector<SymbolTable*> enclosing;
+    std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes;
+    std::vector<const ASR::stmt_t*> enclosing;
 
-    GoToTargetScopes(std::map<uint64_t, std::vector<SymbolTable*>> &scopes_):
+    GoToTargetScopes(
+        std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes_):
         scopes(scopes_) {}
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
@@ -226,19 +229,39 @@ public:
             scopes[x.m_label] = enclosing;
         }
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        enclosing.push_back(block->m_symtab);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-        enclosing.pop_back();
+        visit_construct(&x.base, block->m_body, block->n_body);
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
         ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
             x.m_m);
-        enclosing.push_back(block->m_symtab);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
+        visit_construct(&x.base, block->m_body, block->n_body);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+        // The loop-else runs after the loop, outside it.
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
+    }
+
+    void visit_construct(const ASR::stmt_t *construct, ASR::stmt_t **body,
+            size_t n_body) {
+        enclosing.push_back(construct);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(*body[i]);
         }
         enclosing.pop_back();
     }
@@ -743,9 +766,12 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
-    // The BLOCK and ASSOCIATE constructs that contain each labeled statement
-    // of the procedure being generated (see GoToTargetScopes).
-    std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
+    // The constructs that contain each labeled statement of the procedure
+    // being generated (see GoToTargetScopes).
+    std::map<uint64_t, std::vector<const ASR::stmt_t*>> goto_target_scopes;
+    // The constructs, in the sense of GoToTargetScopes, that contain the
+    // statement being generated, outermost first.
+    std::vector<const ASR::stmt_t*> enclosing_constructs;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint64_t> global_string_allocated;
     // The procedure or program whose contained procedures are being
@@ -1160,6 +1186,26 @@ public:
         }
     }
 
+    // Make `cycle_target` the block a CYCLE of the loop being generated
+    // branches to and `exit_target` the one its EXIT branches to.
+    void push_loop_targets(llvm::BasicBlock *cycle_target,
+            const std::string &cycle_name, llvm::BasicBlock *exit_target,
+            const std::string &exit_name) {
+        loop_head.push_back(cycle_target);
+        loop_head_names.push_back(cycle_name);
+        loop_end_index.push_back(loop_or_block_end.size());
+        loop_or_block_end.push_back(exit_target);
+        loop_or_block_end_names.push_back(exit_name);
+    }
+
+    void pop_loop_targets() {
+        loop_head.pop_back();
+        loop_head_names.pop_back();
+        loop_end_index.pop_back();
+        loop_or_block_end.pop_back();
+        loop_or_block_end_names.pop_back();
+    }
+
     template <typename Cond, typename Body>
     void create_loop(char *name, Cond condition, Body loop_body) {
 
@@ -1178,11 +1224,7 @@ public:
         llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, loopbody_name);
         llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, loopend_name);
 
-        loop_head.push_back(loophead);
-        loop_head_names.push_back(loophead_name);
-        loop_end_index.push_back(loop_or_block_end.size());
-        loop_or_block_end.push_back(loopend);
-        loop_or_block_end_names.push_back(loopend_name);
+        push_loop_targets(loophead, loophead_name, loopend, loopend_name);
 
         // head
         start_new_block(loophead); {
@@ -1197,11 +1239,7 @@ public:
         }
 
         // end
-        loop_head.pop_back();
-        loop_head_names.pop_back();
-        loop_end_index.pop_back();
-        loop_or_block_end.pop_back();
-        loop_or_block_end_names.pop_back();
+        pop_loop_targets();
         start_new_block(loopend);
     }
 
@@ -8311,6 +8349,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -8536,6 +8575,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         strings_to_be_deallocated.reserve(al, 1);
 
 #ifdef HAVE_TARGET_WASM
@@ -11061,6 +11101,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -11108,6 +11149,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
     }
@@ -14140,6 +14182,21 @@ public:
         return llvm_utils->CreateLoad2(t, ptr, is_volatile);
     }
 
+    // The address the scalar variable `target_expr` is stored at: the
+    // variable itself, or what it points to if it is a pointer.
+    llvm::Value* get_var_target_address(ASR::expr_t *target_expr) {
+        ASR::Variable_t *asr_target = EXPR2VAR(target_expr);
+        uint64_t h = get_hash((ASR::asr_t*)asr_target);
+        llvm::Value *target = llvm_symtab[h];
+        if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
+            !ASRUtils::is_character(*asr_target->m_type) &&
+            !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
+            llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_target->m_type, module.get());
+            target = llvm_utils->CreateLoad2(target_load_type, target);
+        }
+        return target;
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
@@ -15292,7 +15349,6 @@ public:
         }
 
         llvm::Value *target, *value;
-        uint64_t h;
         ASR::expr_t* target_expr_for_type = x.m_target;
         if( x.m_target->type == ASR::exprType::ArrayPhysicalCast ) {
             ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_target);
@@ -15383,14 +15439,7 @@ public:
                 throw CodeGenError("Assignment target must be a variable or subscripted expression, got: " + target_type);
             }
             ASR::Variable_t *asr_target = EXPR2VAR(x.m_target);
-            h = get_hash((ASR::asr_t*)asr_target);
-            target = llvm_symtab[h];
-            if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
-                !ASRUtils::is_character(*asr_target->m_type) &&
-                !ASRUtils::is_array(ASRUtils::get_contained_type(asr_target->m_type))) {
-                llvm::Type* target_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target->m_type, module.get());
-                target = llvm_utils->CreateLoad2(target_load_type, target);
-            }
+            target = get_var_target_address(x.m_target);
             ASR::ttype_t *cont_type = ASRUtils::get_contained_type(asr_target_type);
             if ( ASRUtils::is_array(cont_type) ) {
                 if( is_value_list_to_array ) {
@@ -16748,9 +16797,11 @@ public:
         block_cleanups.push_back({associate_block->m_symtab, heap_arrays_before,
             pending_char_writebacks.size(), saved_stack, loop_or_block_end.size(),
             false});
+        enclosing_constructs.push_back(&x.base);
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+        enclosing_constructs.pop_back();
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
@@ -16816,9 +16867,11 @@ public:
             wb_before, saved_stack, loop_or_block_end.size(), true});
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
+        enclosing_constructs.push_back(&x.base);
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+        enclosing_constructs.pop_back();
 
         start_new_block(blockend);
         emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
@@ -17725,9 +17778,225 @@ public:
         tmp = res;
     }
 
-    // TODO: Implement visit_DooLoop
-    //void visit_DoLoop(const ASR::DoLoop_t &x) {
-    //}
+    // The value of the integer control expression `e` of a DO loop head.
+    llvm::Value* do_loop_control_value(ASR::expr_t *e) {
+        ASR::ttype_t *type = ASRUtils::expr_type(e);
+        this->visit_expr_load_wrapper(e,
+            LLVM::is_llvm_pointer(*type) ? 2 : 1, true);
+        llvm::Value *value = tmp;
+        load_non_array_non_character_pointers(e, type, value);
+        return value;
+    }
+
+    // Generates the counted DO loop of the normalized head `head`, with
+    // `generate_body()` generating its body, as Fortran defines it (F2023
+    // 11.1.7.4): the start a, end b and step c are evaluated once, in this
+    // order, before a is stored to the DO variable i. The loop runs
+    // max((b - a + c) / c, 0) iterations. On normal completion i is one step
+    // past its last value, a + count*c, and the loop-else `orelse` runs; a
+    // loop that runs no iteration leaves i = a. A CYCLE branches to the
+    // latch, which steps i; an EXIT branches past the loop and the loop-else
+    // and keeps i. i is stored to its own storage whenever it changes, so
+    // that whatever can see it (COMMON, EQUIVALENCE, a pointer, a callee)
+    // sees the right value:
+    //
+    //         i = a
+    //         if c == 0: runtime error          (c not known at compile time)
+    //         if not (c > 0 ? a <= b : a >= b): goto orelse   (no iteration)
+    //     unit step (c = 1 or c = -1 at compile time):
+    //     body:   ...
+    //     latch:  last = i == b; i = i + c; if last goto orelse else body
+    //     any other step:
+    //         remaining = |b - a| / |c|, unsigned
+    //     body:   ...
+    //     latch:  i = i + c
+    //             if remaining == 0 goto orelse
+    //             remaining = remaining - 1; goto body
+    //     orelse: ...
+    //     end:
+    //
+    // The final value of i is representable in a conforming program, so the
+    // update of i does not overflow (nsw). The distance |b - a| is not, and
+    // neither is |c| for the most negative c, so they are computed unsigned,
+    // in the width of i, which holds them and the iteration count minus one.
+    template <typename Body>
+    void generate_counted_do_loop(const ASR::do_loop_head_t &head,
+            const char *name, Body generate_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        [[maybe_unused]] std::string reason;
+        LCOMPILERS_ASSERT(head.m_v != nullptr &&
+            ASRUtils::is_normalized_do_loop_head(head, reason));
+        ASR::ttype_t *v_type = ASRUtils::expr_type(head.m_v);
+        ASR::ttype_t *iv_asr_type =
+            ASRUtils::type_get_past_allocatable_pointer(v_type);
+        if (!ASR::is_a<ASR::Integer_t>(*iv_asr_type)) {
+            throw CodeGenError("a DO loop whose DO variable is not of "
+                "integer type is not supported yet", head.loc);
+        }
+        llvm::Type *iv_type = llvm_utils->get_type_from_ttype_t_util(
+            head.m_v, iv_asr_type, module.get());
+
+        // The temporary strings of the head are freed once it has been
+        // evaluated.
+        llvm::Value **saved_strings = strings_to_be_deallocated.p;
+        size_t saved_strings_n = strings_to_be_deallocated.n;
+        strings_to_be_deallocated.reserve(al, 1);
+        llvm::Value *start = do_loop_control_value(head.m_start);
+        llvm::Value *end = do_loop_control_value(head.m_end);
+        llvm::Value *step = do_loop_control_value(head.m_increment);
+        llvm::Value *v_ptr = get_var_target_address(head.m_v);
+        if (ASRUtils::is_allocatable(v_type)) {
+            check_and_allocate_scalar(head.m_v);
+            v_ptr = llvm_utils->CreateLoad2(
+                llvm_utils->get_type_from_ttype_t_util(head.m_v, v_type,
+                    module.get()), v_ptr);
+        }
+        LCOMPILERS_ASSERT(start->getType() == iv_type &&
+            end->getType() == iv_type && step->getType() == iv_type);
+        LLVM::CreateStore(*builder, start, v_ptr);
+        free_strings_to_be_deallocated(0);
+
+        int64_t step_value = 0;
+        bool step_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(head.m_increment), step_value);
+        LCOMPILERS_ASSERT(!step_known || step_value != 0);
+        bool unit_step = step_known && (step_value == 1 || step_value == -1);
+
+        std::string loop_name = (name && name[0]) ? name : "do_loop";
+        // A CYCLE finds the latch of a named loop as `<name>.head`, and an
+        // EXIT its end as `<name>.end`.
+        std::string latch_name = loop_name + ".head";
+        std::string end_name = loop_name + ".end";
+        llvm::BasicBlock *body_bb = llvm::BasicBlock::Create(context,
+            loop_name + ".body");
+        llvm::BasicBlock *latch = llvm::BasicBlock::Create(context,
+            latch_name);
+        llvm::BasicBlock *end_bb = llvm::BasicBlock::Create(context, end_name);
+        llvm::BasicBlock *orelse_bb = n_orelse > 0
+            ? llvm::BasicBlock::Create(context, loop_name + ".orelse")
+            : end_bb;
+
+        llvm::Value *zero = llvm::ConstantInt::get(iv_type, 0);
+        llvm::Value *step_positive = nullptr;
+        if (!step_known) {
+            llvm_utils->generate_runtime_error(
+                builder->CreateICmpEQ(step, zero),
+                "zero step in a DO loop",
+                {LLVMUtils::RuntimeLabel("this step is zero",
+                    {head.m_increment->base.loc})},
+                infile, location_manager);
+            step_positive = builder->CreateICmpSGT(step, zero);
+        }
+        // `positive()` for a positive step, `negative()` for a negative one.
+        auto by_step_sign = [&](auto positive, auto negative) {
+            if (step_known) {
+                return step_value > 0 ? positive() : negative();
+            }
+            llvm::Value *p = positive();
+            llvm::Value *n = negative();
+            return builder->CreateSelect(step_positive, p, n);
+        };
+        llvm::Value *enter = by_step_sign(
+            [&]() { return builder->CreateICmpSLE(start, end); },
+            [&]() { return builder->CreateICmpSGE(start, end); });
+        llvm::PHINode *remaining = nullptr;
+        if (unit_step) {
+            builder->CreateCondBr(enter, body_bb, orelse_bb);
+            start_new_block(body_bb);
+        } else {
+            llvm::BasicBlock *prep = llvm::BasicBlock::Create(context,
+                loop_name + ".prep");
+            builder->CreateCondBr(enter, prep, orelse_bb);
+            start_new_block(prep);
+            llvm::Value *distance = by_step_sign(
+                [&]() { return builder->CreateSub(end, start); },
+                [&]() { return builder->CreateSub(start, end); });
+            llvm::Value *step_magnitude = by_step_sign(
+                [&]() { return step; },
+                [&]() { return builder->CreateSub(zero, step); });
+            llvm::Value *count_minus_one = builder->CreateUDiv(distance,
+                step_magnitude);
+            builder->CreateBr(body_bb);
+            start_new_block(body_bb);
+            remaining = builder->CreatePHI(iv_type, 2,
+                loop_name + ".remaining");
+            remaining->addIncoming(count_minus_one, prep);
+        }
+
+        push_loop_targets(latch, latch_name, end_bb, end_name);
+        generate_body();
+        pop_loop_targets();
+
+        start_new_block(latch);
+        llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
+        LLVM::CreateStore(*builder,
+            builder->CreateNSWAdd(current, step), v_ptr);
+        llvm::Value *last;
+        if (unit_step) {
+            last = builder->CreateICmpEQ(current, end);
+        } else {
+            last = builder->CreateICmpEQ(remaining, zero);
+            remaining->addIncoming(builder->CreateSub(remaining,
+                llvm::ConstantInt::get(iv_type, 1)), latch);
+        }
+        builder->CreateCondBr(last, orelse_bb, body_bb);
+
+        if (n_orelse > 0) {
+            start_new_block(orelse_bb);
+            for (size_t i = 0; i < n_orelse; i++) {
+                this->visit_stmt(*orelse[i]);
+            }
+        }
+        start_new_block(end_bb);
+
+        strings_to_be_deallocated.reserve(al, saved_strings_n);
+        strings_to_be_deallocated.n = saved_strings_n;
+        strings_to_be_deallocated.p = saved_strings;
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        auto generate_body = [&]() {
+            enclosing_constructs.push_back(&x.base);
+            for (size_t i = 0; i < x.n_body; i++) {
+                this->visit_stmt(*x.m_body[i]);
+            }
+            enclosing_constructs.pop_back();
+        };
+        if (x.m_head.m_v == nullptr) {
+            // DO without loop control: it ends only by a branch out of it,
+            // so it never runs its loop-else.
+            create_loop(x.m_name, [&]() {
+                return llvm::ConstantInt::getTrue(context);
+            }, generate_body);
+            return;
+        }
+        generate_counted_do_loop(x.m_head, x.m_name, generate_body,
+            x.m_orelse, x.n_orelse);
+    }
+
+    // A DO CONCURRENT runs its iterations in no particular order. It is
+    // generated as counted loops nested in the order of its heads, the
+    // innermost of which a CYCLE continues.
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        generate_do_concurrent_heads(x, 0);
+    }
+
+    void generate_do_concurrent_heads(const ASR::DoConcurrentLoop_t &x,
+            size_t i) {
+        generate_counted_do_loop(x.m_head[i], nullptr, [&]() {
+            if (i + 1 < x.n_head) {
+                generate_do_concurrent_heads(x, i + 1);
+                return;
+            }
+            enclosing_constructs.push_back(&x.base);
+            for (size_t j = 0; j < x.n_body; j++) {
+                this->visit_stmt(*x.m_body[j]);
+            }
+            enclosing_constructs.pop_back();
+        }, nullptr, 0);
+    }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
         llvm::Value **strings_to_be_deallocated_copy = strings_to_be_deallocated.p;
@@ -17739,9 +18008,11 @@ public:
             free_strings_to_be_deallocated(0);
             return tmp;
         }, [&]() {
+            enclosing_constructs.push_back(&x.base);
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
+            enclosing_constructs.pop_back();
         });
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
@@ -17869,19 +18140,31 @@ public:
         auto target_scopes = goto_target_scopes.find(x.m_target_id);
         bool enters_construct = false;
         if (target_scopes != goto_target_scopes.end()) {
-            const std::vector<SymbolTable*> &scopes = target_scopes->second;
+            const std::vector<const ASR::stmt_t*> &scopes =
+                target_scopes->second;
             size_t kept = 0;
-            while (kept < block_cleanups.size() && kept < scopes.size() &&
-                    block_cleanups[kept].symtab == scopes[kept]) {
+            while (kept < enclosing_constructs.size() &&
+                    kept < scopes.size() &&
+                    enclosing_constructs[kept] == scopes[kept]) {
                 kept++;
             }
             // A branch cannot enter a construct from outside it. Semantics
             // makes such a GoTo, which is never executed, for the labels of
-            // an assigned GO TO without a label list: a branch into the
-            // BLOCK or ASSOCIATE construct would skip its declarations.
+            // an assigned GO TO without a label list: a branch into a BLOCK
+            // or ASSOCIATE construct would skip its declarations, and one
+            // into a loop its initialization.
             enters_construct = kept < scopes.size();
             if (!enters_construct) {
-                leave_innermost_blocks(kept);
+                // The BLOCK and ASSOCIATE constructs among the kept ones
+                // are the outermost entries of `block_cleanups`.
+                size_t kept_blocks = 0;
+                for (size_t i = 0; i < kept; i++) {
+                    if (ASR::is_a<ASR::BlockCall_t>(*scopes[i]) ||
+                            ASR::is_a<ASR::AssociateBlockCall_t>(*scopes[i])) {
+                        kept_blocks++;
+                    }
+                }
+                leave_innermost_blocks(kept_blocks);
             }
         }
         if (enters_construct) {
@@ -30153,6 +30436,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
+    // DO loops are lowered by visit_DoLoop and visit_DoConcurrentLoop, not
+    // rewritten to while loops.
+    pass_manager.skip_pass("do_loops");
     auto t1 = std::chrono::high_resolution_clock::now();
     // A pass reports a hard error by adding it to the diagnostics, so the
     // pipeline has to stop here: continuing would emit an object file for a

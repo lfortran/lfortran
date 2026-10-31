@@ -2087,6 +2087,40 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
     bool a_new_target = false, bool a_new_allocation = false);
 
+// Return `head` in the normalized form required of every counted DO-loop
+// head (`DoLoop`, each head of `DoConcurrentLoop` and `ForAllSingle`):
+// `m_start`, `m_end` and `m_increment` have exactly the type of the DO
+// variable `m_v` (explicit `Cast` nodes are inserted where needed) and a
+// missing `m_increment` becomes 1 (located at `loc`). A DO-forever head (all
+// four fields absent) is returned unchanged. A counted head must have a DO
+// variable.
+ASR::do_loop_head_t normalize_do_loop_head(Allocator &al,
+    const Location &loc, const ASR::do_loop_head_t &head);
+
+// Whether `head` is in the normalized form (see `normalize_do_loop_head`).
+// On failure, `reason` describes the first violation.
+bool is_normalized_do_loop_head(const ASR::do_loop_head_t &head,
+    std::string &reason);
+
+// `make_DoLoop_t` with a normalized head. Use it (or `ASRBuilder::DoLoop`)
+// instead of `ASR::make_DoLoop_t` whenever a loop is created.
+ASR::asr_t* make_DoLoop_t_util(Allocator &al, const Location &a_loc,
+    char* a_name, const ASR::do_loop_head_t &a_head,
+    ASR::stmt_t** a_body, size_t n_body,
+    ASR::stmt_t** a_orelse, size_t n_orelse);
+
+// `make_DoConcurrentLoop_t` with every head normalized in place.
+ASR::asr_t* make_DoConcurrentLoop_t_util(Allocator &al, const Location &a_loc,
+    ASR::do_loop_head_t* a_head, size_t n_head,
+    ASR::expr_t** a_shared, size_t n_shared,
+    ASR::expr_t** a_local, size_t n_local,
+    ASR::reduction_expr_t* a_reduction, size_t n_reduction,
+    ASR::stmt_t** a_body, size_t n_body);
+
+// `make_ForAllSingle_t` with a normalized head.
+ASR::asr_t* make_ForAllSingle_t_util(Allocator &al, const Location &a_loc,
+    const ASR::do_loop_head_t &a_head, ASR::stmt_t* a_assign_stmt);
+
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, ASR::expr_t* a_value,

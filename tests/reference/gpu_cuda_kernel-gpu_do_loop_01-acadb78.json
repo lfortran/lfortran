@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_do_loop_01-acadb78",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_do_loop_01.f90",
+    "infile_hash": "498eec5642fbda270f1dd4290f7973ffe40884b7b4229e6e60d94b3a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_do_loop_01-acadb78.stdout",
+    "stdout_hash": "6cb8ccc168536c34a66ea69749913334a171e03a22d9a46fe9f0db15",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

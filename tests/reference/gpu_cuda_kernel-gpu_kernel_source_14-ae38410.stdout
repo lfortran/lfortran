@@ -23,7 +23,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float t[4];
         {
             int __1__libasr_index_;
-            int __do_loop_end;
             float __libasr__created__var__0__array_constructor_[4];
             __1__libasr_index_ = 1;
             __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = x[((int)(j__dc) - (1))];
@@ -34,15 +33,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __1__libasr_index_ = (__1__libasr_index_ + 1);
             __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((  1.00000000000000000e+01f * x[((int)(j__dc) - (1))]) +   2.00000000000000000e+00f);
             __1__libasr_index_ = (__1__libasr_index_ + 1);
-            __gpu_elem_i = (1 - 1);
-            while (((__gpu_elem_i + 1) <= 4)) {
-                __gpu_elem_i = (__gpu_elem_i + 1);
+            for (__gpu_elem_i = 1; __gpu_elem_i <= 4; __gpu_elem_i++) {
                 t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
             }
-            __do_loop_end = ((((int)4) + ((int)1)) - 1);
-            __gpu_sec_i = (1 - 1);
-            while (((__gpu_sec_i + 1) <= __do_loop_end)) {
-                __gpu_sec_i = (__gpu_sec_i + 1);
+            for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)4) + ((int)1)) - 1); __gpu_sec_i++) {
                 g[((int)(__gpu_sec_i) - (1)) + (4 * ((int)(j__dc) - (1)))] = t[((int)(__gpu_sec_i) - (1))];
             }
         }
@@ -70,7 +64,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc1 = (__flat_idx + 1);
     {
-        int __do_loop_end;
         float __libasr__created__var__1__array_constructor_[4];
         float t[4];
         float u[4];
@@ -83,19 +76,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __1__libasr_index_ = (__1__libasr_index_ + 1);
         __libasr__created__var__1__array_constructor_[((int)(__1__libasr_index_) - (1))] = (  4.00000000000000000e+00f * x[((int)(j__dc1) - (1))]);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
-        __gpu_elem_i1 = (1 - 1);
-        while (((__gpu_elem_i1 + 1) <= 4)) {
-            __gpu_elem_i1 = (__gpu_elem_i1 + 1);
+        for (__gpu_elem_i1 = 1; __gpu_elem_i1 <= 4; __gpu_elem_i1++) {
             t[((int)(__gpu_elem_i1) - (1))] = __libasr__created__var__1__array_constructor_[((int)(__gpu_elem_i1) - (1))];
         }
         u[((int)(1) - (1))] = t[((int)(4) - (1))];
         u[((int)(2) - (1))] = t[((int)(3) - (1))];
         u[((int)(3) - (1))] = t[((int)(2) - (1))];
         u[((int)(4) - (1))] = t[((int)(1) - (1))];
-        __do_loop_end = ((((int)4) + ((int)1)) - 1);
-        __gpu_sec_i1 = (1 - 1);
-        while (((__gpu_sec_i1 + 1) <= __do_loop_end)) {
-            __gpu_sec_i1 = (__gpu_sec_i1 + 1);
+        for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= ((((int)4) + ((int)1)) - 1); __gpu_sec_i1++) {
             g[((int)(__gpu_sec_i1) - (1)) + (4 * ((int)(j__dc1) - (1)))] = u[((int)(__gpu_sec_i1) - (1))];
         }
     }

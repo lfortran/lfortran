@@ -19,7 +19,6 @@ passes = [
         "replace_symbolic",
         "replace_intrinsic_function",
         "loop_unroll",
-        "loop_vectorise",
         "nested_vars",
         "replace_param_to_const",
         "array_by_data",
