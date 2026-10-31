@@ -37,6 +37,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             dqk15w~fpcast:
@@ -94,6 +95,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             dqk15w~fpcast_ptr:
@@ -259,6 +261,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f~fpcast_ptr:
@@ -359,6 +362,7 @@
                                     Private
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -473,6 +477,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             func:
@@ -535,6 +540,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             c~fpcast:
@@ -618,6 +624,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             c~fpcast_ptr:
@@ -770,6 +777,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub2~fpcast:
@@ -827,6 +835,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub2~fpcast_ptr:
@@ -969,6 +978,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             main:
@@ -1031,6 +1041,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             a~fpcast:
@@ -1114,6 +1125,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             a~fpcast_ptr:
@@ -1214,6 +1226,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub~fpcast:
@@ -1271,6 +1284,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub~fpcast_ptr:

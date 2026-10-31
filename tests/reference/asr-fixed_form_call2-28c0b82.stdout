@@ -89,6 +89,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             prinf~fpcast:
@@ -174,6 +175,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             prinf~fpcast_ptr:
@@ -333,6 +335,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

@@ -2016,7 +2016,7 @@ public:
                                    new_func_return_var,
                                    proc_interface->m_access,
                                    proc_interface->m_deterministic,
-                                   proc_interface->m_side_effect_free,
+                                   proc_interface->m_side_effect_free, proc_interface->m_recursive,
                                    nullptr, nullptr);
         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
         ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
@@ -2174,6 +2174,16 @@ public:
             }
         }
         if (undeclared) throw SemanticAbort();
+    }
+
+    // Whether a procedure is recursive (F2018 15.6.2.1): its RECURSIVE or
+    // NON_RECURSIVE prefix (`prefix` 1 or 0), and otherwise recursive unless
+    // it is elemental
+    static bool procedure_is_recursive(int prefix, bool is_elemental) {
+        if (prefix >= 0) {
+            return prefix == 1;
+        }
+        return !is_elemental;
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
@@ -2505,6 +2515,8 @@ public:
         }
         bool is_pure = false, is_module = false, is_elemental = false;
         bool is_impure = false;
+        // 1: RECURSIVE, 0: NON_RECURSIVE, -1: neither
+        int recursive_prefix = -1;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -2517,6 +2529,10 @@ public:
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
                         is_elemental = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrRecursive ) {
+                        recursive_prefix = 1;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrNonRecursive ) {
+                        recursive_prefix = 0;
                     }
                     break;
                 }
@@ -2665,7 +2681,9 @@ public:
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, init_deterministic, init_side_effect_free);
+            is_requirement, init_deterministic, init_side_effect_free,
+            nullptr, nullptr, nullptr, ASR::exec_spaceType::Host,
+            procedure_is_recursive(recursive_prefix, is_elemental));
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -3446,6 +3464,8 @@ public:
 
         bool is_pure = false, is_module = false, is_elemental = false;
         bool is_impure = false;
+        // 1: RECURSIVE, 0: NON_RECURSIVE, -1: neither
+        int recursive_prefix = -1;
         for(size_t i = 0; i < x.n_attributes; i++) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -3459,6 +3479,10 @@ public:
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
                         is_elemental = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrRecursive ) {
+                        recursive_prefix = 1;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrNonRecursive ) {
+                        recursive_prefix = 0;
                     }
                     break;
                 }
@@ -3504,7 +3528,9 @@ public:
             /* m_deterministic */ init_deterministic,
             /* m_side_effect_free */ init_side_effect_free, /* m_c_header */ nullptr,
             /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
-            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
+            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr,
+            /* m_exec_space */ ASR::exec_spaceType::Host,
+            /* m_recursive */ procedure_is_recursive(recursive_prefix, is_elemental)
         );
 
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);

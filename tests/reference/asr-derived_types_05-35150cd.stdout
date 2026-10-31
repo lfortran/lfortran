@@ -114,6 +114,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_integer_int32:
@@ -211,6 +212,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_integer_int64:
@@ -308,6 +310,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_logical_lk:
@@ -405,6 +408,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             string_type:
@@ -582,6 +586,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string@~string_type:
@@ -689,6 +694,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_integer_int32@~string_type:
@@ -796,6 +802,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_integer_int64@~string_type:
@@ -903,6 +910,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             new_string_from_logical_lk@~string_type:

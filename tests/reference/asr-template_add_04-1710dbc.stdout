@@ -324,6 +324,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             f:
@@ -457,6 +458,7 @@
                                                     []
                                                     (Var 6 z)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -651,6 +653,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             func_arg_real:
@@ -774,6 +777,7 @@
                                     )]
                                     (Var 8 z)
                                     Private
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -914,6 +918,7 @@
                                                     []
                                                     (Var 4 z)
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1210,6 +1215,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             b:
@@ -1388,6 +1394,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })

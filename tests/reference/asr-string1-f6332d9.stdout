@@ -136,6 +136,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             cptr:
@@ -280,6 +281,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_string_cptr_n:
@@ -399,6 +401,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -496,6 +499,7 @@
                                     []
                                     (Var 14 f_string)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

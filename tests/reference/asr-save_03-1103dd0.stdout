@@ -480,6 +480,7 @@
                     Public
                     .true.
                     .true.
+                    .true.
                     ()
                 ),
             save_module_03:
@@ -852,6 +853,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             save_sub_mod:
@@ -1087,6 +1089,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1366,6 +1369,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             save_nested_func:
@@ -1577,6 +1581,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1601,6 +1606,7 @@
                     []
                     (Var 7 save_nested_func)
                     Public
+                    .true.
                     .true.
                     .true.
                     ()
@@ -1871,6 +1877,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             save_sub:
@@ -2056,6 +2063,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -2080,6 +2088,7 @@
                     []
                     ()
                     Public
+                    .true.
                     .true.
                     .true.
                     ()
@@ -2317,6 +2326,7 @@
                     []
                     ()
                     Public
+                    .true.
                     .true.
                     .true.
                     ()

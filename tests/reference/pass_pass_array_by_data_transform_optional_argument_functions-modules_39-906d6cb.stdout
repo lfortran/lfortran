@@ -208,6 +208,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             filewrite_string____1:
@@ -371,6 +372,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             join_path:
@@ -652,6 +654,7 @@
                                     []
                                     (Var 6 path)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

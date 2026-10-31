@@ -132,6 +132,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             int_min:
@@ -257,6 +258,7 @@
                                     )]
                                     (Var 10 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -385,6 +387,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             max_intrinsic1:
@@ -509,6 +512,7 @@
                                     )]
                                     (Var 15 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -637,6 +641,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             min_intrinsic1:
@@ -761,6 +766,7 @@
                                     )]
                                     (Var 13 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -910,6 +916,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             real_min:
@@ -1035,6 +1042,7 @@
                                     )]
                                     (Var 14 res)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1397,6 +1405,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:
@@ -1624,6 +1633,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             op_func:
@@ -1757,6 +1767,7 @@
                                                     []
                                                     (Var 6 res)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()

@@ -2,12 +2,12 @@
     "basename": "asr-variable_type_declaration_is_function-3ffc723",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/variable_type_declaration_is_function.asr",
-    "infile_hash": "7fac8aad3d9a8bfd15d273884c9a7c25777112a6fb666f3cd1513fd7",
+    "infile_hash": "17a3e86574cb8fcb7f6aa859a914a8f56f7b1f224b257aa265867e09",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-variable_type_declaration_is_function-3ffc723.stderr",
-    "stderr_hash": "1ffd96d92546bab0f63bac6399b6dc8463ccd2840b8095a9883b74cf",
+    "stderr_hash": "a9d4b3cfe931d2a4a044a6804264f6eee63ce0cdafe16b436895c49a",
     "returncode": 2
 }

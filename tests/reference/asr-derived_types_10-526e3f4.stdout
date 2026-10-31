@@ -84,6 +84,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             my_super_type:
@@ -402,6 +403,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             print_something:
@@ -511,6 +513,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             say_something:
@@ -620,6 +623,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             unary:
@@ -795,6 +799,7 @@
                                     []
                                     (Var 8 unary)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

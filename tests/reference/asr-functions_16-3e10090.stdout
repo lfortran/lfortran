@@ -199,6 +199,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             compare_less:
@@ -337,6 +338,7 @@
                                     (Var 4 less)
                                     Public
                                     .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -988,6 +990,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             sort:
@@ -1530,6 +1533,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             swap:
@@ -1665,6 +1669,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

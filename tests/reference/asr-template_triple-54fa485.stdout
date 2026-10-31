@@ -130,6 +130,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             max_integer:
@@ -254,6 +255,7 @@
                                     )]
                                     (Var 5 result)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -382,6 +384,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             minus_integer:
@@ -507,6 +510,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             one_integer:
@@ -572,6 +576,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -635,6 +640,7 @@
                                     )]
                                     (Var 7 result)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -776,6 +782,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             max_real:
@@ -900,6 +907,7 @@
                                     )]
                                     (Var 13 result)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1028,6 +1036,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             minus_real:
@@ -1153,6 +1162,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             one_real:
@@ -1219,6 +1229,7 @@
                                     )]
                                     (Var 16 result)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1346,6 +1357,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             zero_real:
@@ -1412,6 +1424,7 @@
                                     )]
                                     (Var 15 result)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1782,6 +1795,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -1958,6 +1972,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -2119,6 +2134,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_r:
@@ -2248,6 +2264,7 @@
                                                     )]
                                                     (Var 23 result)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2558,6 +2575,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_add_r:
@@ -2665,6 +2683,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -2744,6 +2763,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             test_max_triples:
@@ -2908,6 +2928,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_max_r:
@@ -3015,6 +3036,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -3100,6 +3122,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             test_minus_triples:
@@ -3264,6 +3287,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_minus_r:
@@ -3371,6 +3395,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })
@@ -3456,6 +3481,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             triple_tmpl:

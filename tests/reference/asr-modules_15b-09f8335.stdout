@@ -190,6 +190,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_f32_value:
@@ -273,6 +274,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_f64:
@@ -356,6 +358,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_f64_value:
@@ -439,6 +442,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i32:
@@ -522,6 +526,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i32_value:
@@ -605,6 +610,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i32_value2:
@@ -688,6 +694,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i64:
@@ -771,6 +778,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i64_value:
@@ -854,6 +862,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             call_fortran_i64_value2:
@@ -937,6 +946,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_double_complex_value_return:
@@ -1020,6 +1030,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_float_complex_value_return:
@@ -1103,6 +1114,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double:
@@ -1214,6 +1226,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double_complex:
@@ -1325,6 +1338,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double_complex2:
@@ -1436,6 +1450,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double_complex_value:
@@ -1547,6 +1562,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double_value:
@@ -1658,6 +1674,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_double_value_name:
@@ -1769,6 +1786,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_doublearray:
@@ -1896,6 +1914,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_doublearray_star:
@@ -2019,6 +2038,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_float:
@@ -2130,6 +2150,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_float_complex:
@@ -2241,6 +2262,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_float_complex2:
@@ -2352,6 +2374,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_float_complex_value:
@@ -2463,6 +2486,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_float_value:
@@ -2574,6 +2598,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_floatarray:
@@ -2701,6 +2726,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_floatarray_star:
@@ -2824,6 +2850,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_intarray:
@@ -2951,6 +2978,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_int_intarray_star:
@@ -3074,6 +3102,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_string:
@@ -3185,6 +3214,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_string0:
@@ -3268,6 +3298,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             fortran_f32:
@@ -3366,6 +3397,7 @@
                                     )]
                                     (Var 60 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -3468,6 +3500,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_f64:
@@ -3566,6 +3599,7 @@
                                     )]
                                     (Var 62 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -3668,6 +3702,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i32:
@@ -3765,6 +3800,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i32_value:
@@ -3860,6 +3896,7 @@
                                     )]
                                     (Var 57 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -3965,6 +4002,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             fortran_i64_value:
@@ -4066,6 +4104,7 @@
                                     )]
                                     (Var 59 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -4181,6 +4220,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_double_complex:
@@ -4294,6 +4334,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_double_complex_value:
@@ -4407,6 +4448,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_double_value:
@@ -4520,6 +4562,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_double_value_name:
@@ -4633,6 +4676,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_doublearray:
@@ -4762,6 +4806,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_float:
@@ -4875,6 +4920,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_float_complex:
@@ -4988,6 +5034,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_float_complex_value:
@@ -5101,6 +5148,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_float_value:
@@ -5214,6 +5262,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_floatarray:
@@ -5343,6 +5392,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             sub_int_intarray:
@@ -5472,6 +5522,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })

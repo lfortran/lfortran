@@ -237,6 +237,7 @@
               :access :Public
               :deterministic false
               :side_effect_free false
+              :recursive true
               :module_file nil
             )
           }

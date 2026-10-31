@@ -313,6 +313,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             real_return:
@@ -478,6 +479,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             trim_wrapper:
@@ -587,6 +589,7 @@
                                     )]
                                     (Var 3 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

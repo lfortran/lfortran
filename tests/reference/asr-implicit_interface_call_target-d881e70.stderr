@@ -1,5 +1,5 @@
 ASR verify pass error: FunctionCall::m_name f was declared external with no interface; the call must reference the signature inferred at this call site.
-   --> tests/asr/verify/implicit_interface_call_target.asr:107:14
+   --> tests/asr/verify/implicit_interface_call_target.asr:108:14
     |
-107 |             (FunctionCall
+108 |             (FunctionCall
     |              ^^^^^^^^^^^^ failed here

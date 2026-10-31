@@ -176,6 +176,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             list_files:
@@ -330,6 +331,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -488,6 +490,7 @@
                                                     Public
                                                     .false.
                                                     .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             cptr:
@@ -632,6 +635,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             f_string_cptr_n:
@@ -751,6 +755,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -848,6 +853,7 @@
                                     []
                                     (Var 9 f_string)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

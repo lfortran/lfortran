@@ -157,7 +157,7 @@
               :return_var nil
               :access :Public
               :deterministic false
-              :side_effect_free false
+              :side_effect_free false :recursive true
               :module_file nil
             )
             "zero" (Function
@@ -267,7 +267,7 @@
               :return_var nil
               :access :Public
               :deterministic false
-              :side_effect_free false
+              :side_effect_free false :recursive true
               :module_file nil
             )
           }

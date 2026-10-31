@@ -294,6 +294,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             __asr_resize:
@@ -676,6 +677,7 @@
                                                     Private
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             intvector:
@@ -883,6 +885,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1155,6 +1158,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1599,6 +1603,7 @@
                                                     )]
                                                     ()
                                                     Private
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()

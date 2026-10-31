@@ -106,6 +106,7 @@
               :Public
               true
               true
+              true
               nil
             )
             "derived" (Struct

@@ -63,6 +63,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             matveca~fpcast:
@@ -312,6 +313,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             matveca~fpcast_ptr:
@@ -648,6 +650,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

@@ -129,6 +129,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             string_type:
@@ -335,6 +336,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             ~assign:
@@ -508,6 +510,7 @@
                                     []
                                     (Var 7 chomped_string)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

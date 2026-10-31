@@ -242,6 +242,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             add_project_dependencies:
@@ -467,6 +468,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1312,6 +1314,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -2081,6 +2084,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

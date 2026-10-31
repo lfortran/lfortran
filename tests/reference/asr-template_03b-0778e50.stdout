@@ -226,6 +226,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus:
@@ -359,6 +360,7 @@
                                                     []
                                                     (Var 6 op)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -524,6 +526,7 @@
                                                     []
                                                     (Var 7 op)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -853,6 +856,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             dp:
@@ -1118,6 +1122,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             ~mul_intrinsic:
@@ -1247,6 +1252,7 @@
                                                     )]
                                                     (Var 14 ret)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -1410,6 +1416,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1613,6 +1620,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             my_axpy:
@@ -1867,6 +1875,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             my_mul:
@@ -2033,6 +2042,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             op:
@@ -2173,6 +2183,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .false.
                                                     ()
                                                 ),
                                             t:
