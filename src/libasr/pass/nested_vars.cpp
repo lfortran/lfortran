@@ -1914,23 +1914,8 @@ public:
     // `lcompilers_frame_slots`, which the openmp pass, run before this one,
     // would have made of one
     ASR::stmt_t *slot_lock(SymbolTable *scope, const Location &loc, bool start) {
-        SymbolTable *global = scope;
-        while (global->parent != nullptr) {
-            global = global->parent;
-        }
-        std::string lock_name = "__lcompilers_omp_critical_lcompilers_frame_slots";
-        ASR::symbol_t *lock = global->get_symbol(lock_name);
-        if (lock == nullptr) {
-            lock = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-                al, loc, global, s2c(al, lock_name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, ASRUtils::TYPE(ASR::make_CPtr_t(al,
-                    loc, ASR::cptr_kindType::CPointer)), nullptr,
-                ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::presenceType::Required, false, false, false,
-                s2c(al, ".gomp_critical_user_lcompilers_frame_slots")));
-            global->add_symbol(lock_name, lock);
-        }
+        ASR::symbol_t *lock = PassUtils::omp_critical_name_lock(al, loc, scope,
+            "lcompilers_frame_slots");
         std::string name = start ? "GOMP_critical_name_start" : "GOMP_critical_name_end";
         ASR::symbol_t *fn = scope->get_symbol(name);
         if (fn == nullptr) {

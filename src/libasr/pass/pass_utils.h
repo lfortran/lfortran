@@ -26,6 +26,33 @@ namespace LCompilers {
         const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
         const std::string &pass_name);
 
+    // The lock of the OpenMP critical constructs named `name`. Every critical
+    // construct of that name in the program must use the same lock, so it is
+    // a global variable under the name other compilers give it, with common
+    // linkage, which the linker merges across object files.
+    static inline ASR::symbol_t *omp_critical_name_lock(Allocator &al,
+            const Location &loc, SymbolTable *scope, const std::string &name) {
+        SymbolTable *global_scope = scope;
+        while (global_scope->parent != nullptr) {
+            global_scope = global_scope->parent;
+        }
+        // The leading underscores keep the name apart from any Fortran
+        // name in the global scope
+        std::string lock_name = "__lcompilers_omp_critical_" + name;
+        ASR::symbol_t *lock_sym = global_scope->get_symbol(lock_name);
+        if (lock_sym == nullptr) {
+            lock_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                al, loc, global_scope, s2c(al, lock_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPointer)),
+                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::presenceType::Required, false, false, false,
+                s2c(al, ".gomp_critical_user_" + name)));
+            global_scope->add_symbol(lock_name, lock_sym);
+        }
+        return lock_sym;
+    }
+
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
     // symbol a call is made through, which can be an alias that is not an
