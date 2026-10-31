@@ -1600,6 +1600,7 @@ RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure
 # function `os(1)%m(6)` of a named constant array element ("Operands of
 # comparison operator '/=' ... are TYPE(pc)/INTEGER(4)")
 RUN(NAME procedure_pointer_41 LABELS llvm)
+RUN(NAME procedure_pointer_42 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

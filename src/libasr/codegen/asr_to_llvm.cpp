@@ -19463,7 +19463,13 @@ public:
                         break;
                     }
                     case ASR::ttypeType::FunctionType:{
+                        // A procedure pointer holds the address of the code:
+                        // its value is one load away, there is nothing to
+                        // load through it
+                        int64_t ptr_loads_copy = ptr_loads;
+                        ptr_loads = std::min<int64_t>(ptr_loads, 1);
                         fetch_ptr(x);
+                        ptr_loads = ptr_loads_copy;
                         break;
                     }
                     default:
