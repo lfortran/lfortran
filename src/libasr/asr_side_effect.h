@@ -278,6 +278,12 @@ public:
         BaseWalkVisitor::visit_TraitDeferredCall(x);
     }
 
+    // Whichever override the dynamic type selects is called.
+    void visit_DeferredMethodCall(const DeferredMethodCall_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "call of a generic type-bound procedure through a polymorphic object");
+    }
+
     void visit_TraitAllocate(const TraitAllocate_t &x) {
         if (!found) mark_found(x.base.base.loc,
             "runtime trait allocation with unchecked dynamic lifecycle effects");
@@ -549,6 +555,17 @@ private:
         void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
             add_trait_call(x.base.base.loc, trait_deferred_call_interface(x), x.m_family);
             BaseWalkVisitor::visit_TraitDeferredCall(x);
+        }
+
+        void visit_DeferredMethodCall(const DeferredMethodCall_t &x) {
+            Call call;
+            call.loc = x.base.base.loc;
+            call.description = "call of the generic type-bound procedure '" +
+                std::string(ASRUtils::symbol_name(x.m_name)) +
+                "' through a polymorphic object";
+            call.unknown = true;
+            calls.push_back(call);
+            BaseWalkVisitor::visit_DeferredMethodCall(x);
         }
     };
 

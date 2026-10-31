@@ -4234,6 +4234,19 @@ RUN(NAME traits_generic_binding_05 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_generic_binding_05_oracle LABELS gfortran llvm ISOLATE_MODULES)
 RUN(NAME traits_generic_binding_06 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_binding_06_provider.f90)
+RUN(NAME traits_generic_override_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_override_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_generic_override_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_override_02_provider.f90)
+RUN(NAME traits_generic_type_extends_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_generic_type_extends_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_type_extends_02_provider.f90)
+RUN(NAME traits_interop_mixed LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_interop_static LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_requirement_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes --realloc-lhs-arrays)
 RUN(NAME traits_generic_requirement_01_oracle LABELS gfortran llvm ISOLATE_MODULES

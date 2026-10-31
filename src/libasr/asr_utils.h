@@ -6965,6 +6965,22 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     }
 }
 
+ASR::symbol_t *import_nested_symbol(Allocator &al, ASR::symbol_t *symbol,
+    SymbolTable *scope);
+
+// A type-bound binding referenced from `scope`: as import_class_procedure,
+// except that a binding of a generic type's definition, which its package
+// owns, is reached through the package.
+static inline ASR::symbol_t* import_binding(Allocator &al, const Location &loc,
+        ASR::symbol_t *binding, SymbolTable *scope) {
+    ASR::symbol_t *type = ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(binding));
+    ASR::symbol_t *owner = type ? ASRUtils::get_asr_owner(type) : nullptr;
+    if (owner && ASR::is_a<ASR::Template_t>(*owner)) {
+        return import_nested_symbol(al, binding, scope);
+    }
+    return import_class_procedure(al, loc, binding, scope);
+}
+
 static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                                            ASR::symbol_t* struct_member,
                                                            SymbolTable* scope)
@@ -6974,6 +6990,13 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
     ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(struct_member);
     std::string struct_t_name = ASRUtils::symbol_name(struct_t);
+    // A component of another generic type's definition, which its package
+    // owns, such as one a generic type inherits from its generic parent.
+    ASR::symbol_t* struct_t_owner_symbol = ASRUtils::get_asr_owner(struct_t);
+    if (struct_t_owner_symbol && ASR::is_a<ASR::Template_t>(*struct_t_owner_symbol) &&
+            ASRUtils::symbol_get_past_external(scope->resolve_symbol(struct_t_name)) != struct_t) {
+        return import_nested_symbol(al, struct_member, scope);
+    }
 
     std::string struct_external_symbol_name = struct_t_name;
 
@@ -11728,6 +11751,33 @@ InterfaceMismatch sealed_dispatch_adapter_mismatch(
 InterfaceMismatch binding_override_mismatch(
     const ASR::StructMethodDeclaration_t &x, ASR::Function_t *proc,
     const std::string &what, bool use_expr_context);
+
+// Member slots of generic type-bound procedures. A binding of a generic
+// procedure whose type parameters are all closed (type sets without a length
+// wildcard) has one member slot per member tuple, in trait_member_tuples
+// order: a binding of the same type named member_slot_binding_name that binds
+// the procedure's provider-owned member entry (TraitErasure) for that tuple.
+// A call through a polymorphic object dispatches through it, and an override
+// fills the slots with its own member entries.
+
+// The generic procedure that `binding` names, or nullptr.
+ASR::Template_t *binding_generic(const ASR::StructMethodDeclaration_t &binding);
+// The member tuples of `binding`'s member slots; empty if it has none.
+std::vector<std::vector<ASR::ttype_t*>> binding_member_tuples(
+    const ASR::StructMethodDeclaration_t &binding);
+std::string member_slot_binding_name(const std::string &binding, size_t member);
+// The member entry that `binding` binds when it is a member slot, else nullptr.
+ASR::TraitErasure_t *member_slot_entry(const ASR::StructMethodDeclaration_t &binding);
+// The position of `members` in binding_member_tuples(binding), or its size.
+size_t binding_member_index(const ASR::StructMethodDeclaration_t &binding,
+    ASR::ttype_t **members, size_t n_members);
+// The member slot `member` of generic binding `binding` of the derived type
+// `declaration` or its nearest ancestor that has it, or nullptr.
+ASR::StructMethodDeclaration_t *member_slot_binding(ASR::symbol_t *declaration,
+    const std::string &binding, size_t member);
+// The generic binding of the same type that the member slot `slot` belongs to.
+ASR::StructMethodDeclaration_t *member_slot_generic_binding(
+    const ASR::StructMethodDeclaration_t &slot);
 
 inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
         size_t n_body, bool procedure_values = false) {

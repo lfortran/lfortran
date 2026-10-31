@@ -339,9 +339,10 @@ contains
     end subroutine
 end program
 
-! A type-bound binding of a generic procedure is called only through static
-! specializations, so an extension cannot replace it, nor replace an ordinary
-! binding with one, until such bindings dispatch dynamically.
+! A type-bound binding of a generic procedure over closed type sets dispatches
+! through member slots, so an extension can override it with a corresponding
+! generic procedure (Child), but not replace an ordinary binding with one
+! (Special).
 module traits_generic_override_contracts
     implicit none
     abstract interface :: INumeric
@@ -396,8 +397,8 @@ contains
     end function
 end module
 
-! Each rejected override keeps the inherited binding, so later units still
-! call it statically through the extension and through its ancestor.
+! A rejected override keeps the inherited binding; later units call the
+! bindings through the extension and through its ancestor.
 module traits_generic_override_use
     use traits_generic_override
     implicit none
@@ -408,4 +409,34 @@ contains
         integer, intent(in) :: x(:)
         print *, c%sum(x), b%sum(x)
     end subroutine
+end module
+
+! Overriding a generic binding whose type parameter has an open nominal
+! constraint is not implemented: it has no member slots.
+module traits_generic_override_open
+    implicit none
+    abstract interface :: IValue
+        integer function value(self)
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+    type :: Holder
+    contains
+        procedure, nopass :: first => holder_first
+    end type
+    type, extends(Holder) :: Other
+    contains
+        procedure, nopass :: first => other_first
+    end type
+contains
+    function holder_first{IValue :: T}(x) result(s)
+        type(T), intent(in) :: x
+        integer :: s
+        s = x%value()
+    end function
+    function other_first{IValue :: T}(x) result(s)
+        type(T), intent(in) :: x
+        integer :: s
+        s = x%value() + 1
+    end function
 end module

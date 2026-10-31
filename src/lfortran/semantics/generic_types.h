@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_SEMANTICS_GENERIC_TYPES_H
 #define LFORTRAN_SEMANTICS_GENERIC_TYPES_H
 
+#include <functional>
 #include <map>
 #include <set>
 #include <string>
@@ -29,6 +30,10 @@ struct GenericTypePackageAST {
     // because they do not depend on the parameters, and the bindings'
     // locations.
     std::vector<std::pair<std::string, Location>> independent;
+    // A type declared without a parameter list that extends a generic type
+    // inherits that type's parameters; `definition` then holds them without
+    // constraints, which the semantic visitors copy from the parent.
+    bool inherited_parameters = false;
 };
 
 inline const AST::DerivedType_t &generic_type_definition(
@@ -102,9 +107,12 @@ inline bool generic_type_attribute_dependent(const AST::decl_attribute_t *x,
     if (!x) return false;
     if (AST::is_a<AST::AttrType_t>(*x)) {
         auto *attr = AST::down_cast<AST::AttrType_t>(x);
+        // Inside its package, the type's own name without a parameter list
+        // also names the type itself.
         if ((attr->m_type == AST::decl_typeType::TypeType ||
                 attr->m_type == AST::decl_typeType::TypeClass) && attr->m_name &&
-                parameters.count(to_lower(attr->m_name))) {
+                (parameters.count(to_lower(attr->m_name)) ||
+                    to_lower(attr->m_name) == type)) {
             return true;
         }
         return generic_type_attribute_dependent(attr->m_attr, parameters, type);
@@ -175,27 +183,110 @@ inline bool generic_type_procedure_dependent(const AST::program_unit_t &x,
     return dependence.found;
 }
 
+// The parent type that the derived type `x` names in its EXTENDS attribute,
+// or an empty string.
+inline std::string derived_type_parent_name(const AST::DerivedType_t &x) {
+    for (size_t i = 0; i < x.n_attrtype; i++) {
+        if (AST::is_a<AST::AttrExtends_t>(*x.m_attrtype[i])) {
+            return to_lower(AST::down_cast<AST::AttrExtends_t>(x.m_attrtype[i])->m_name);
+        }
+    }
+    return "";
+}
+
+// A type of `x` declared without a parameter list that extends a generic
+// type, of the same module or (as `parent_parameters` reports) of another,
+// inherits its parameters. The result maps each such type to a generic
+// definition with the parent's parameter names, in order.
+inline std::map<std::string, const AST::TraitDerivedType_t*> inherited_generic_types(
+        Allocator &al, const AST::Module_t &x,
+        const std::function<std::vector<std::string>(const std::string &)> &parent_parameters) {
+    std::map<std::string, std::vector<std::string>> generic;
+    for (size_t i = 0; i < x.n_items; i++) {
+        if (!AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) continue;
+        auto *definition = AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i]);
+        std::vector<std::string> names;
+        for (size_t j = 0; j < definition->n_parameters; j++) {
+            names.push_back(to_lower(definition->m_parameters[j].m_name));
+        }
+        generic.emplace(generic_type_name(*definition), names);
+    }
+    std::map<std::string, const AST::TraitDerivedType_t*> inherited;
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::DerivedType_t>(*x.m_items[i])) continue;
+            auto *type = AST::down_cast<AST::DerivedType_t>(x.m_items[i]);
+            std::string name = to_lower(type->m_name);
+            std::string parent = derived_type_parent_name(*type);
+            if (parent.empty() || inherited.count(name) || generic.count(name)) continue;
+            auto found = generic.find(parent);
+            std::vector<std::string> names = found != generic.end() ? found->second
+                : parent_parameters(parent);
+            if (names.empty()) continue;
+            Vec<AST::trait_parameter_t> parameters;
+            parameters.reserve(al, names.size());
+            for (const auto &binder : names) {
+                AST::trait_parameter_t parameter;
+                parameter.loc = type->base.base.loc;
+                parameter.m_name = s2c(al, binder);
+                parameter.m_traits = nullptr;
+                parameter.n_traits = 0;
+                parameter.m_member_types = nullptr;
+                parameter.n_member_types = 0;
+                parameters.push_back(al, parameter);
+            }
+            inherited[name] = AST::down_cast2<AST::TraitDerivedType_t>(
+                AST::make_TraitDerivedType_t(al, type->base.base.loc, x.m_items[i],
+                    parameters.p, parameters.size()));
+            generic[name] = names;
+            changed = true;
+        }
+    }
+    return inherited;
+}
+
 // The module `x` with each generic derived type lowered to its package, or
 // nullptr when it has none. `packages` receives each package Template.
+// `inherited` holds the definitions of the types that inherit the parameters
+// of a generic parent (inherited_generic_types).
 inline AST::Module_t *lower_generic_type_module(Allocator &al, const AST::Module_t &x,
-        std::map<const AST::Template_t*, GenericTypePackageAST> &packages) {
+        std::map<const AST::Template_t*, GenericTypePackageAST> &packages,
+        const std::map<std::string, const AST::TraitDerivedType_t*> &inherited = {}) {
     std::map<std::string, GenericTypePackageAST> generic_types;
+    // The module's items, with each type that inherits parameters replaced
+    // by its generic definition.
+    Vec<AST::decl_stmt_t*> module_items;
+    module_items.reserve(al, x.n_items);
     for (size_t i = 0; i < x.n_items; i++) {
-        if (AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) {
-            auto *definition = AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i]);
-            generic_types.emplace(generic_type_name(*definition),
-                GenericTypePackageAST{definition, {}, {}, {}});
+        AST::decl_stmt_t *item = x.m_items[i];
+        bool inherits = false;
+        if (AST::is_a<AST::DerivedType_t>(*item)) {
+            auto found = inherited.find(to_lower(
+                AST::down_cast<AST::DerivedType_t>(item)->m_name));
+            if (found != inherited.end()) {
+                item = const_cast<AST::decl_stmt_t*>(&found->second->base);
+                inherits = true;
+            }
+        }
+        module_items.push_back(al, item);
+        if (AST::is_a<AST::TraitDerivedType_t>(*item)) {
+            auto *definition = AST::down_cast<AST::TraitDerivedType_t>(item);
+            GenericTypePackageAST package{definition, {}, {}, {}};
+            package.inherited_parameters = inherits;
+            generic_types.emplace(generic_type_name(*definition), package);
         }
     }
     if (generic_types.empty()) return nullptr;
     std::set<const AST::decl_stmt_t*> attached;
-    for (size_t i = 0; i < x.n_items; i++) {
-        if (!AST::is_a<AST::Implements_t>(*x.m_items[i])) continue;
-        auto *implements = AST::down_cast<AST::Implements_t>(x.m_items[i]);
+    for (size_t i = 0; i < module_items.size(); i++) {
+        if (!AST::is_a<AST::Implements_t>(*module_items[i])) continue;
+        auto *implements = AST::down_cast<AST::Implements_t>(module_items[i]);
         auto found = generic_types.find(generic_implements_target(*implements));
         if (found == generic_types.end()) continue;
         found->second.implements.push_back(implements);
-        attached.insert(x.m_items[i]);
+        attached.insert(module_items[i]);
     }
     // A procedure bound to a generic type moves into its package when it is
     // an initializer or depends on the type's parameters. A procedure that
@@ -268,14 +359,14 @@ inline AST::Module_t *lower_generic_type_module(Allocator &al, const AST::Module
         }
     }
     Vec<AST::decl_stmt_t*> items;
-    items.reserve(al, x.n_items);
-    for (size_t i = 0; i < x.n_items; i++) {
-        if (attached.count(x.m_items[i])) continue;
-        if (!AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) {
-            items.push_back(al, x.m_items[i]);
+    items.reserve(al, module_items.size());
+    for (size_t i = 0; i < module_items.size(); i++) {
+        if (attached.count(module_items[i])) continue;
+        if (!AST::is_a<AST::TraitDerivedType_t>(*module_items[i])) {
+            items.push_back(al, module_items[i]);
             continue;
         }
-        auto *definition = AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i]);
+        auto *definition = AST::down_cast<AST::TraitDerivedType_t>(module_items[i]);
         auto &package = generic_types.at(generic_type_name(*definition));
         Vec<char*> names;
         names.reserve(al, definition->n_parameters);
@@ -284,7 +375,7 @@ inline AST::Module_t *lower_generic_type_module(Allocator &al, const AST::Module
         }
         Vec<AST::decl_stmt_t*> package_items;
         package_items.reserve(al, 1 + package.implements.size());
-        package_items.push_back(al, x.m_items[i]);
+        package_items.push_back(al, module_items[i]);
         for (auto *implements : package.implements) {
             package_items.push_back(al, const_cast<AST::decl_stmt_t*>(&implements->base));
         }

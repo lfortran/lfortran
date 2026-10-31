@@ -7920,7 +7920,7 @@ end module
     }
 }
 
-TEST_CASE("Bindings of generic procedures are inherited and never overridden") {
+TEST_CASE("Bindings of generic procedures override only corresponding generic procedures") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
     const std::string source = R"(
@@ -7983,19 +7983,21 @@ end module
     REQUIRE(ASRUtils::trait_method_template(*other));
     auto *child_label = ASR::down_cast<ASR::Function_t>(
         module->m_symtab->get_symbol("child_label"));
-    // A binding of a generic procedure has a null binding-table entry and is
-    // called through static specializations, so no override may involve one.
-    auto rejects = [&]() {
+    // A generic binding dispatches through member slots, which only a generic
+    // procedure binding the same type parameters can fill (TD-44); an
+    // ordinary binding has a single slot.
+    auto rejects = [&](const std::string &code = "generic_procedure") {
         LCompilers::diag::Diagnostics invalid;
         CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
         INFO(invalid.render2());
         REQUIRE(!invalid.diagnostics.empty());
         CHECK(invalid.diagnostics.back().code ==
-            "asr.verify.binding_override.generic_procedure");
+            "asr.verify.binding_override." + code);
     };
-    SUBCASE("a generic binding cannot be replaced by another of the same interface") {
+    SUBCASE("a generic binding cannot be replaced by one of other type parameters") {
+        // Each inline type set is a distinct constraint.
         binding("child", "total")->m_proc = &other->base;
-        rejects();
+        rejects("generic_parameters");
     }
     SUBCASE("an ordinary binding cannot be replaced by a generic procedure") {
         binding("child", "label")->m_proc = &other->base;

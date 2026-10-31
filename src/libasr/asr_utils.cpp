@@ -2199,7 +2199,16 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t *mem_es = nullptr;
         std::string mem_name = "1_" + std::string(member_variable->m_name) +
             "_" + std::string(ASRUtils::symbol_name(member));
-        if (current_scope->resolve_symbol(mem_name)) {
+        bool visible = false;
+        for (SymbolTable *scope = current_scope; scope && !visible &&
+                generic_type_instance(*member_variable); scope = scope->parent) {
+            visible = scope == member_variable->m_symtab->parent;
+        }
+        if (visible) {
+            // The parent instance of a generic type's instance, which the
+            // scope's own module or program owns.
+            mem_es = member;
+        } else if (current_scope->resolve_symbol(mem_name)) {
             mem_es = current_scope->resolve_symbol(mem_name);
         } else {
             mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
@@ -6220,6 +6229,20 @@ ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
     } else if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
         scope = symbol_symtab(symbol_get_past_external(
             ASR::down_cast<ASR::FunctionCall_t>(value)->m_name));
+    } else if (ASR::is_a<ASR::DeferredMethodCall_t>(*value)) {
+        // Its binder-typed result is a type argument of the call, declared
+        // where its object is.
+        auto *call = ASR::down_cast<ASR::DeferredMethodCall_t>(value);
+        for (size_t i = 0; i < call->n_args; i++) {
+            auto *binder = call->m_args[i].m_value
+                ? trait_type_parameter(call->m_args[i].m_value) : nullptr;
+            if (binder && parameter->m_param &&
+                    std::string(symbol_name(binder)) == parameter->m_param) return binder;
+        }
+        if (call->m_dt && ASR::is_a<ASR::Var_t>(*call->m_dt)) {
+            scope = symbol_parent_symtab(symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(call->m_dt)->m_v));
+        }
     }
     for (; scope; scope = scope->parent) {
         for (const auto &entry : scope->get_scope()) {
@@ -9158,6 +9181,19 @@ bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable
     ASR::Function_t *function = trait_method_function(const_cast<ASR::symbol_t*>(&generic.base));
     if (!function) return false;
     for (const auto &entry : scope->get_scope()) {
+        // A binding of an instance with member slots binds it at runtime too.
+        if (ASR::is_a<ASR::Struct_t>(*entry.second) &&
+                generic_type_instance(*ASR::down_cast<ASR::Struct_t>(entry.second))) {
+            for (const auto &member : ASR::down_cast<ASR::Struct_t>(entry.second)->
+                    m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*member.second)) continue;
+                auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(member.second);
+                if (binding_generic(*binding) == &generic &&
+                        member_slot_binding(entry.second, binding->m_name, 0)) {
+                    return true;
+                }
+            }
+        }
         if (!ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) continue;
         auto *implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
         bool binds = false;
@@ -9457,6 +9493,165 @@ ASR::StructMethodDeclaration_t* overridden_binding(
     return nullptr;
 }
 
+ASR::Template_t *binding_generic(const ASR::StructMethodDeclaration_t &binding)
+{
+    auto *procedure = trait_method_function(symbol_get_past_external(binding.m_proc));
+    return procedure ? trait_method_template(*procedure) : nullptr;
+}
+
+std::vector<std::vector<ASR::ttype_t*>> binding_member_tuples(
+    const ASR::StructMethodDeclaration_t &binding)
+{
+    auto *generic = binding_generic(binding);
+    if (!generic) return {};
+    auto tuples = trait_member_tuples(*generic);
+    for (const auto &tuple : tuples) {
+        for (auto *member : tuple) {
+            if (is_type_set_length_wildcard(member)) return {};
+        }
+    }
+    return tuples;
+}
+
+std::string member_slot_binding_name(const std::string &binding, size_t member)
+{
+    return binding + "{" + std::to_string(member) + "}";
+}
+
+ASR::TraitErasure_t *member_slot_entry(const ASR::StructMethodDeclaration_t &binding)
+{
+    auto *procedure = symbol_get_past_external(binding.m_proc);
+    if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure)) return nullptr;
+    auto *owner = ASR::down_cast<ASR::Function_t>(procedure)->m_symtab->parent->asr_owner;
+    if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !ASR::is_a<ASR::TraitErasure_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        return nullptr;
+    }
+    auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(ASR::down_cast<ASR::symbol_t>(owner));
+    return erasure->m_procedure == procedure && erasure->n_parameters &&
+        erasure->m_parameters[0].m_member ? erasure : nullptr;
+}
+
+size_t binding_member_index(const ASR::StructMethodDeclaration_t &binding,
+    ASR::ttype_t **members, size_t n_members)
+{
+    auto tuples = binding_member_tuples(binding);
+    for (size_t i = 0; i < tuples.size(); i++) {
+        if (trait_type_arguments_equal(tuples[i].data(), tuples[i].size(),
+                members, n_members)) {
+            return i;
+        }
+    }
+    return tuples.size();
+}
+
+ASR::StructMethodDeclaration_t *member_slot_binding(ASR::symbol_t *declaration,
+    const std::string &binding, size_t member)
+{
+    std::string name = member_slot_binding_name(binding, member);
+    std::set<ASR::symbol_t*> seen;
+    for (ASR::symbol_t *symbol = symbol_get_past_external(declaration);
+            symbol && ASR::is_a<ASR::Struct_t>(*symbol) && seen.insert(symbol).second;
+            symbol = symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(symbol)->m_parent)) {
+        auto *found = ASR::down_cast<ASR::Struct_t>(symbol)->m_symtab->get_symbol(name);
+        if (found && ASR::is_a<ASR::StructMethodDeclaration_t>(*found)) {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(found);
+        }
+    }
+    return nullptr;
+}
+
+ASR::StructMethodDeclaration_t *member_slot_generic_binding(
+    const ASR::StructMethodDeclaration_t &slot)
+{
+    auto *erasure = member_slot_entry(slot);
+    if (!erasure || !slot.m_parent_symtab) return nullptr;
+    for (const auto &entry : slot.m_parent_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*entry.second)) continue;
+        auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(entry.second);
+        if (binding_generic(*binding) != ASR::down_cast<ASR::Template_t>(
+                    symbol_get_past_external(erasure->m_generic))) {
+            continue;
+        }
+        size_t n = binding_member_tuples(*binding).size();
+        for (size_t i = 0; i < n; i++) {
+            if (member_slot_binding_name(binding->m_name, i) == slot.m_name) return binding;
+        }
+    }
+    return nullptr;
+}
+
+// Fortran 2018 7.5.7.3 for generic procedures: both bind every type
+// parameter with the same constraint in the same position, so that each
+// member slot of the overridden binding has a corresponding member entry.
+static InterfaceMismatch generic_override_mismatch(const std::string &what,
+    ASR::Function_t &proc, ASR::Function_t &base, size_t self)
+{
+    std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+    std::string correspondence = trait_generic_correspondence(proc, base, parameters);
+    if (!correspondence.empty()) {
+        return {true, "generic_parameters", what + " must bind the same generic type "
+            "parameters: " + correspondence};
+    }
+    if (trait_member_tuples(*trait_method_template(base)).empty()) {
+        return {true, "generic_procedure", what + " is not implemented yet for "
+            "generic procedures whose type parameters are not all constrained by "
+            "type sets"};
+    }
+    if (bool(proc.m_return_var) != bool(base.m_return_var)) {
+        return {true, "result_kind_matches", what + " must be a " +
+            std::string(base.m_return_var ? "function" : "subroutine")};
+    }
+    if (proc.n_args != base.n_args) {
+        return {true, "argument_count_matches", what + " must take " +
+            std::to_string(base.n_args) + " arguments, not " + std::to_string(proc.n_args)};
+    }
+    for (size_t i = 0; i < proc.n_args; i++) {
+        auto *a = expr_to_variable_or_null(proc.m_args[i]);
+        auto *b = expr_to_variable_or_null(base.m_args[i]);
+        if (!a || !b) {
+            return {true, "argument_matches", what + " must declare its dummy arguments"};
+        }
+        parameters.emplace(&a->base, &b->base);
+    }
+    for (size_t i = 0; i < proc.n_args; i++) {
+        if (i == self) continue;
+        auto *a = expr_to_variable_or_null(proc.m_args[i]);
+        auto *b = expr_to_variable_or_null(base.m_args[i]);
+        std::string argument = what + " dummy argument '" + std::string(a->m_name) + "'";
+        if (std::string(a->m_name) != b->m_name) {
+            return {true, "argument_matches", what + " dummy argument " +
+                std::to_string(i + 1) + " must be named '" + b->m_name + "'"};
+        }
+        if (extract_n_dims_from_ttype(a->m_type) != extract_n_dims_from_ttype(b->m_type) ||
+                is_pointer(a->m_type) != is_pointer(b->m_type) ||
+                is_allocatable(a->m_type) != is_allocatable(b->m_type) ||
+                !trait_shapes_equal(a->m_type, b->m_type, parameters) ||
+                !trait_types_equal(proc.m_args[i], base.m_args[i], parameters)) {
+            return {true, "argument_matches", argument + " must have the type and "
+                "shape of the overridden binding's"};
+        }
+        if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
+                a->m_value_attr != b->m_value_attr || a->m_target_attr != b->m_target_attr ||
+                a->m_contiguous_attr != b->m_contiguous_attr ||
+                a->m_is_volatile != b->m_is_volatile) {
+            return {true, "argument_matches", argument + " must have the attributes "
+                "of the overridden binding's"};
+        }
+    }
+    if (proc.m_return_var && !trait_types_equal(proc.m_return_var, base.m_return_var,
+            parameters)) {
+        return {true, "result_type_matches", what + " must return the type of the "
+            "overridden binding"};
+    }
+    auto *a = get_FunctionType(proc), *b = get_FunctionType(base);
+    if (a->m_pure != b->m_pure || a->m_elemental != b->m_elemental) {
+        return {true, "attributes_match", what + " must agree on the PURE and "
+            "ELEMENTAL attributes"};
+    }
+    return {};
+}
+
 InterfaceMismatch binding_override_mismatch(
     const ASR::StructMethodDeclaration_t &x, ASR::Function_t *proc,
     const std::string &what, bool use_expr_context)
@@ -9472,13 +9667,12 @@ InterfaceMismatch binding_override_mismatch(
     // An inherited binding names the very same procedure; only a binding that
     // names a different one overrides anything.
     if (base == proc) return {};
-    // A binding of a generic procedure has no single executable entry in the
-    // binding table; each call is a static specialization of the procedure it
-    // names, which would bypass an override. Dynamic dispatch of such bindings
-    // is not implemented.
-    if (trait_method_template(*proc) || trait_method_template(*base)) {
-        return {true, "generic_procedure",
-            what + " is not implemented yet for generic procedures"};
+    // A generic binding dispatches through one member slot per member tuple
+    // of its closed type parameters, which an override fills with its own
+    // member entries; an ordinary binding has a single slot.
+    if (bool(trait_method_template(*proc)) != bool(trait_method_template(*base))) {
+        return {true, "generic_procedure", what + " must be generic exactly when "
+            "the overridden binding is"};
     }
 
     if (x.m_is_nopass != base_decl->m_is_nopass) {
@@ -9492,6 +9686,9 @@ InterfaceMismatch binding_override_mismatch(
             what + " must take its passed-object dummy argument in the same "
             "position"};
     }
+    if (trait_method_template(*proc)) {
+        return generic_override_mismatch(what, *proc, *base, self_index);
+    }
     // The passed-object dummy argument is declared with the type it is bound
     // to, so the two deliberately differ there.
     return interface_mismatch(what, proc, base, self_index, use_expr_context);
@@ -9500,7 +9697,9 @@ InterfaceMismatch binding_override_mismatch(
 bool sealed_override_needs_adapter(
     const ASR::StructMethodDeclaration_t &binding, ASR::Function_t *procedure)
 {
+    // A generic binding has no slot of its own; its member slots have.
     if (binding.m_is_nopass || binding.m_is_deferred || !procedure ||
+            trait_method_template(*procedure) ||
             !binding.m_parent_symtab || !binding.m_parent_symtab->asr_owner ||
             !ASR::is_a<ASR::symbol_t>(*binding.m_parent_symtab->asr_owner)) {
         return false;

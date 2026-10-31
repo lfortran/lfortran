@@ -1165,6 +1165,24 @@ public:
         }
         verify_binding_override(x, x_m_proc);
         if (!check_external) return;
+        if (auto *erasure = ASRUtils::member_slot_entry(x)) {
+            auto *generic = ASRUtils::member_slot_generic_binding(x);
+            std::vector<ASR::ttype_t*> members;
+            for (size_t i = 0; i < erasure->n_parameters; i++) {
+                members.push_back(erasure->m_parameters[i].m_member);
+            }
+            require_id(generic && generic->m_is_nopass == x.m_is_nopass &&
+                    !x.m_is_deferred && ASRUtils::member_slot_binding_name(generic->m_name,
+                        ASRUtils::binding_member_index(*generic, members.data(),
+                            members.size())) ==
+                        x.m_name &&
+                    (generic->m_self_argument == nullptr) == (x.m_self_argument == nullptr) &&
+                    (!x.m_self_argument ||
+                        std::string(generic->m_self_argument) == x.m_self_argument),
+                "asr.verify.struct_method.member_slot",
+                "A member slot must bind the member entry of its type's generic binding "
+                "for the member tuple its name designates");
+        }
         require_id(x.m_dispatch_proc ||
                 !ASRUtils::sealed_override_needs_adapter(x, x_m_proc),
             "asr.verify.struct_method.dispatch_required",
@@ -4357,6 +4375,41 @@ public:
         return nullptr;
     }
 
+    void visit_DeferredMethodCall(const DeferredMethodCall_t &x) {
+        require_id(_inside_template,
+            "asr.verify.deferred_method_call.scope",
+            "A deferred type-bound call may exist only within a checked generic definition");
+        require_id(x.m_name && x.m_dt && x.m_type && x.n_type_arguments &&
+                x.m_type_arguments && ASRUtils::is_class_type(
+                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt))),
+            "asr.verify.deferred_method_call.fields",
+            "A deferred type-bound call requires a generic binding, its type arguments, "
+            "a polymorphic object and a result type");
+        BaseWalkVisitor<VerifyVisitor>::visit_DeferredMethodCall(x);
+        if (!check_external) return;
+        auto *binding = ASRUtils::symbol_get_past_external(x.m_name);
+        auto *generic = binding && ASR::is_a<StructMethodDeclaration_t>(*binding)
+            ? ASRUtils::binding_generic(*ASR::down_cast<StructMethodDeclaration_t>(binding))
+            : nullptr;
+        bool deferred = false;
+        for (size_t i = 0; i < x.n_type_arguments; i++) {
+            deferred |= ASR::is_a<TypeParameter_t>(*x.m_type_arguments[i]);
+        }
+        auto *declared = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
+        bool definition = declared && ASR::is_a<Struct_t>(*declared) &&
+            ASRUtils::generic_type_definition_metadata(*ASR::down_cast<Struct_t>(declared));
+        require_id(generic && generic->n_args == x.n_type_arguments &&
+                !ASRUtils::binding_member_tuples(
+                    *ASR::down_cast<StructMethodDeclaration_t>(binding)).empty() &&
+                (definition || (deferred && ASRUtils::member_slot_binding(declared,
+                    ASR::down_cast<StructMethodDeclaration_t>(binding)->m_name, 0))),
+            "asr.verify.deferred_method_call.binding",
+            "A deferred type-bound call names a generic binding with member slots, "
+            "through an object of a generic type's definition or with deferred type "
+            "arguments for its type parameters");
+    }
+
     void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
         require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
                 typed_expr_type(x.m_args[0].m_value) &&
@@ -5423,7 +5476,10 @@ public:
         size_t bindings = 0, definition_bindings = 0;
         bool corresponding = true;
         for (const auto &entry : x.m_symtab->get_scope()) {
-            if (!ASR::is_a<StructMethodDeclaration_t>(*entry.second)) continue;
+            // A member slot binds a member entry of a copy, not a copy.
+            if (!ASR::is_a<StructMethodDeclaration_t>(*entry.second) ||
+                    ASRUtils::member_slot_entry(
+                        *ASR::down_cast<StructMethodDeclaration_t>(entry.second))) continue;
             bindings++;
             ASR::symbol_t *original = definition->m_symtab->get_symbol(entry.first);
             corresponding &= original && ASR::is_a<StructMethodDeclaration_t>(*original);
@@ -5466,7 +5522,9 @@ public:
                 copies.insert(copy).second;
         }
         for (const auto &entry : x.m_symtab->get_scope()) {
-            if (!procedures || !ASR::is_a<StructMethodDeclaration_t>(*entry.second)) continue;
+            if (!procedures || !ASR::is_a<StructMethodDeclaration_t>(*entry.second) ||
+                    ASRUtils::member_slot_entry(
+                        *ASR::down_cast<StructMethodDeclaration_t>(entry.second))) continue;
             procedures = ASRUtils::generic_instance_procedure(instance,
                 ASR::down_cast<StructMethodDeclaration_t>(entry.second)->m_proc);
         }
@@ -5498,10 +5556,46 @@ public:
         }
     }
 
+    // A generic type extends only a generic type with the same parameters
+    // (TD-45): a definition the parent's definition, an instance the
+    // parent's instance for the same arguments.
+    bool generic_type_extends(const Struct_t &x) {
+        auto *parent_symbol = ASRUtils::symbol_get_past_external(x.m_parent);
+        if (!parent_symbol || !ASR::is_a<Struct_t>(*parent_symbol)) return false;
+        auto *parent = ASR::down_cast<Struct_t>(parent_symbol);
+        if (!parent->m_generic || parent->m_generic->type != x.m_generic->type) return false;
+        if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
+            auto *package = ASRUtils::generic_type_package(ASRUtils::get_asr_owner(
+                const_cast<ASR::symbol_t*>(&x.base)));
+            auto *parent_package = ASRUtils::generic_type_package(
+                ASRUtils::get_asr_owner(parent_symbol));
+            bool same = package && parent_package && package->n_args == parent_package->n_args;
+            for (size_t i = 0; same && i < package->n_args; i++) {
+                same = std::string(package->m_args[i]) == parent_package->m_args[i];
+            }
+            return same;
+        }
+        auto *instance = ASR::down_cast<GenericTypeInstance_t>(x.m_generic);
+        auto *parent_instance = ASR::down_cast<GenericTypeInstance_t>(parent->m_generic);
+        auto *definition = ASRUtils::generic_instance_definition(*instance);
+        if (!definition->m_parent || ASRUtils::symbol_get_past_external(definition->m_parent) !=
+                &ASRUtils::generic_instance_definition(*parent_instance)->base ||
+                instance->n_arguments != parent_instance->n_arguments) return false;
+        for (size_t i = 0; i < instance->n_arguments; i++) {
+            if (!ASRUtils::trait_type_argument_equal(
+                    {instance->m_arguments[i].m_type, instance->m_arguments[i].m_type_declaration},
+                    {parent_instance->m_arguments[i].m_type,
+                        parent_instance->m_arguments[i].m_type_declaration})) return false;
+        }
+        return true;
+    }
+
     void verify_generic_type(const Struct_t &x) {
         if (!x.m_generic) return;
-        require_id(x.m_parent == nullptr, "asr.verify.generic_type.not_extended",
-            "A generic type's definition or instance cannot extend another type");
+        require_id(x.m_parent == nullptr || !check_external || generic_type_extends(x),
+            "asr.verify.generic_type.not_extended",
+            "A generic type's definition or instance can extend only a generic type with "
+            "the same parameters: its definition, or its instance for the same arguments");
         if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
             verify_generic_type_definition(x,
                 *ASR::down_cast<GenericTypeDefinition_t>(x.m_generic));
@@ -5553,9 +5647,10 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
             if (check_external && parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
-                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_generic,
+                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_generic || x.m_generic,
                     "asr.verify.generic_type.not_extended",
-                    "A generic type's definition or instance cannot be extended");
+                    "A generic type's definition or instance can be extended only by a "
+                    "generic type");
             }
         }
         verify_generic_type(x);

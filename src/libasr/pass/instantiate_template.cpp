@@ -3097,6 +3097,67 @@ public:
             selected->m_args, selected->n_args, selected->m_type);
     }
 
+    // Substituted closed type arguments select the member slot of the
+    // binding in the dynamic type's binding table; binders of a still-generic
+    // caller keep the call deferred.
+    ASR::asr_t *duplicate_DeferredMethodCall(ASR::DeferredMethodCall_t *x) {
+        auto *call = ASR::down_cast2<ASR::DeferredMethodCall_t>(
+            BaseExprStmtDuplicator<BodyInstantiator>::duplicate_DeferredMethodCall(x));
+        const Location &loc = x->base.base.loc;
+        auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+            ASRUtils::symbol_get_past_external(x->m_name));
+        // In a copy of a generic type's method, the binding is the instance's.
+        ASR::symbol_t *declared = ASRUtils::get_struct_sym_from_struct_expr(call->m_dt);
+        std::set<ASR::symbol_t*> seen;
+        for (ASR::symbol_t *type = declared ? ASRUtils::symbol_get_past_external(declared)
+                    : nullptr;
+                type && ASR::is_a<ASR::Struct_t>(*type) && seen.insert(type).second;
+                type = ASR::down_cast<ASR::Struct_t>(type)->m_parent
+                    ? ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Struct_t>(type)->m_parent) : nullptr) {
+            auto *own = ASR::down_cast<ASR::Struct_t>(type)->m_symtab->get_symbol(
+                binding->m_name);
+            if (own && ASR::is_a<ASR::StructMethodDeclaration_t>(*own)) {
+                binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(own);
+                break;
+            }
+        }
+        bool deferred = !ASRUtils::member_slot_binding(declared, binding->m_name, 0);
+        for (size_t i = 0; i < call->n_type_arguments; i++) {
+            deferred |= ASR::is_a<ASR::TypeParameter_t>(*call->m_type_arguments[i]);
+        }
+        if (deferred) {
+            call->m_name = ASRUtils::import_binding(al, loc, &binding->base, new_scope);
+            // A binding of an instance of the same unit is not an import.
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*call->m_name)) {
+                ADD_ASR_DEPENDENCIES(new_scope, call->m_name, dependencies);
+            }
+            return &call->base.base;
+        }
+        for (size_t i = 0; i < call->n_type_arguments; i++) {
+            if (ASR::is_a<ASR::TypeParameter_t>(*call->m_type_arguments[i])) {
+                call->m_name = ASRUtils::import_class_procedure(al, loc, &binding->base,
+                    new_scope);
+                ADD_ASR_DEPENDENCIES(new_scope, call->m_name, dependencies);
+                return &call->base.base;
+            }
+        }
+        size_t index = ASRUtils::binding_member_index(*binding, call->m_type_arguments,
+            call->n_type_arguments);
+        auto *slot = ASRUtils::member_slot_binding(
+            ASRUtils::get_struct_sym_from_struct_expr(call->m_dt), binding->m_name, index);
+        LCOMPILERS_ASSERT(slot);
+        auto *entry = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(slot->m_proc));
+        auto *callee = ASRUtils::import_class_procedure(al, loc, &slot->base, new_scope);
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*callee)) {
+            ADD_ASR_DEPENDENCIES(new_scope, callee, dependencies);
+        }
+        return ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr, call->m_args,
+            call->n_args, ASRUtils::duplicate_type(al, ASRUtils::expr_type(entry->m_return_var)),
+            nullptr, call->m_dt);
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -3358,8 +3419,43 @@ public:
         return &copy->base.base;
     }
 
+    // The component of the generic type instance designated by `v` that
+    // corresponds to the component `member` of a generic definition the
+    // instance's definition extends: that of the parent instance (TD-45).
+    ASR::symbol_t *inherited_instance_component(ASR::expr_t *v, ASR::symbol_t *member) {
+        member = ASRUtils::symbol_get_past_external(member);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(member);
+        if (!owner || !ASR::is_a<ASR::Struct_t>(*owner) ||
+                !ASRUtils::generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(owner)) ||
+                !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(v)))) {
+            return nullptr;
+        }
+        ASR::symbol_t *declared = ASRUtils::get_struct_sym_from_struct_expr(v);
+        declared = declared ? ASRUtils::symbol_get_past_external(declared) : nullptr;
+        std::set<ASR::symbol_t*> seen;
+        for (ASR::symbol_t *type = declared;
+                type && ASR::is_a<ASR::Struct_t>(*type) && seen.insert(type).second;
+                type = ASR::down_cast<ASR::Struct_t>(type)->m_parent
+                    ? ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Struct_t>(type)->m_parent) : nullptr) {
+            auto *structure = ASR::down_cast<ASR::Struct_t>(type);
+            auto *instance = ASRUtils::generic_type_instance(*structure);
+            if (instance && &ASRUtils::generic_instance_definition(*instance)->base == owner) {
+                return type == declared
+                    ? nullptr : structure->m_symtab->get_symbol(ASRUtils::symbol_name(member));
+            }
+        }
+        return nullptr;
+    }
+
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
+        if (ASR::symbol_t *inherited = inherited_instance_component(v, x->m_m)) {
+            return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v,
+                ASRUtils::import_struct_instance_member(al, inherited, new_scope),
+                ASRUtils::duplicate_type(al, ASRUtils::symbol_type(inherited)),
+                duplicate_expr(x->m_value));
+        }
         ASR::ttype_t *t = substitute_type(&x->base, x->m_type);
         ASR::expr_t *value = duplicate_expr(x->m_value);
 

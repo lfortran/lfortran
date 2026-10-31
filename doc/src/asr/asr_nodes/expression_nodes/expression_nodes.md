@@ -38,6 +38,7 @@ CLoc
 CoarrayRef
 CompilerOptions
 ComplexBinOp
+DeferredMethodCall
 ComplexCompare
 ComplexConstant
 ComplexConstructor

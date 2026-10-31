@@ -852,7 +852,8 @@ public:
         // not carry over to a same-named entity of this module.
         assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        current_scope = module_scope ? module_scope : al.make_new<SymbolTable>(parent_scope);
+        module_scope = nullptr;
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
             true, x.m_items, x.n_items);
         // Isolate this module's externals from a previous program unit, and
@@ -1114,11 +1115,71 @@ public:
         dflt_access = ASR::Public;
     }
 
+    // The scope of the module being visited, when it was created before its
+    // USE statements loaded the modules they use.
+    SymbolTable *module_scope = nullptr;
+    bool generic_types_lowered = false;
+
+    // Whether a type of `x` extends a type that `x` does not declare, which
+    // may be a generic type of a used module.
+    static bool extends_used_type(const AST::Module_t &x) {
+        std::set<std::string> declared;
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
+                declared.insert(to_lower(AST::down_cast<AST::DerivedType_t>(x.m_items[i])->m_name));
+            } else if (AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) {
+                declared.insert(generic_type_name(
+                    *AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i])));
+            }
+        }
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::DerivedType_t>(*x.m_items[i])) continue;
+            std::string parent = derived_type_parent_name(
+                *AST::down_cast<AST::DerivedType_t>(x.m_items[i]));
+            if (!parent.empty() && !declared.count(parent)) return true;
+        }
+        return false;
+    }
+
     void visit_Module(const AST::Module_t &x) {
-        if (AST::Module_t *lowered = lower_generic_type_module(al, x,
-                generic_type_packages)) {
-            visit_Module(*lowered);
-            return;
+        if (!generic_types_lowered) {
+            std::map<std::string, const AST::TraitDerivedType_t*> inherited;
+            if (extends_used_type(x)) {
+                // A type that extends a generic type of a used module inherits
+                // its parameters (TD-45). The module's scope is created first
+                // and the used modules are loaded in the order of the USE
+                // statements, as visiting those statements would load them.
+                module_scope = al.make_new<SymbolTable>(current_scope);
+                for (size_t i = 0; i < x.n_items; i++) {
+                    if (!AST::is_a<AST::Use_t>(*x.m_items[i])) continue;
+                    auto &use = *AST::down_cast<AST::Use_t>(x.m_items[i]);
+                    UsedModule used = used_module(use);
+                    if (current_scope->resolve_symbol(used.name)) continue;
+                    ASRUtils::load_module(al, current_scope->get_tu_scope(), used.name,
+                        use.base.base.loc, used.intrinsic, loaded_submodules,
+                        compiler_options.po, true,
+                        [&](const std::string &msg, const Location &loc) {
+                            diag.add(diag::Diagnostic(msg, diag::Level::Error,
+                                diag::Stage::Semantic, {diag::Label("", {loc})}));
+                            throw SemanticAbort();
+                        }, lm, compiler_options.separate_compilation, false);
+                }
+                inherited = inherited_generic_types(al, x, [&](const std::string &parent) {
+                    return module_used_generic_type_parameters(x, parent);
+                });
+            }
+            if (AST::Module_t *lowered = lower_generic_type_module(al, x,
+                    generic_type_packages, inherited)) {
+                generic_types_lowered = true;
+                try {
+                    visit_Module(*lowered);
+                } catch (...) {
+                    generic_types_lowered = false;
+                    throw;
+                }
+                generic_types_lowered = false;
+                return;
+            }
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
@@ -7867,6 +7928,24 @@ public:
             }
         }
         check_class_procedure_overrides();
+        // An extension fills its ancestors' member slots, so they come first.
+        std::vector<std::pair<size_t, ASR::Struct_t*>> types;
+        for (auto &proc : class_procedures) {
+            ASR::symbol_t *type = ASRUtils::symbol_get_past_external(
+                current_scope->resolve_symbol(proc.first));
+            if (!type || !ASR::is_a<ASR::Struct_t>(*type)) continue;
+            size_t depth = 0;
+            for (ASR::symbol_t *parent = ASR::down_cast<ASR::Struct_t>(type)->m_parent;
+                    parent && depth < 1000; depth++) {
+                parent = ASRUtils::symbol_get_past_external(parent);
+                if (!ASR::is_a<ASR::Struct_t>(*parent)) break;
+                parent = ASR::down_cast<ASR::Struct_t>(parent)->m_parent;
+            }
+            types.push_back({depth, ASR::down_cast<ASR::Struct_t>(type)});
+        }
+        std::stable_sort(types.begin(), types.end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
+        for (auto &type : types) create_member_slots(*type.second);
         class_procedures.clear();
         class_deferred_procedures.clear();
     }
@@ -7891,143 +7970,6 @@ public:
         x->m_self_argument = base->m_self_argument;
         x->m_is_nopass = base->m_is_nopass;
         x->m_dispatch_proc = base->m_dispatch_proc;
-    }
-
-    void create_sealed_dispatch_adapter(ASR::StructMethodDeclaration_t &binding,
-            ASR::Function_t &procedure, ASR::Struct_t &owner) {
-        if (!ASRUtils::sealed_override_needs_adapter(binding, &procedure)) return;
-        const Location &loc = binding.base.base.loc;
-        size_t self = ASRUtils::passed_object_index(binding, &procedure);
-        auto *receiver_type = ASRUtils::expr_type(procedure.m_args[self]);
-        auto *signature = ASRUtils::get_FunctionType(procedure);
-        if (!ASR::is_a<ASR::StructType_t>(*receiver_type) ||
-                ASRUtils::trait_method_template(procedure) ||
-                signature->m_abi != ASR::abiType::Source) {
-            trait_error("sealed override dispatch requires an ordinary scalar nonpointer receiver", loc);
-        }
-        if (!ASRUtils::sealed_dispatch_result_supported(procedure)) {
-            trait_error("sealed override dispatch currently requires a scalar numeric "
-                "or logical result; other result forms are not implemented yet", loc);
-        }
-
-        SymbolTable *scope = al.make_new<SymbolTable>(owner.m_symtab->parent);
-        ASRUtils::SymbolDuplicator duplicator(al);
-        ASRUtils::ExprStmtDuplicator expressions(al);
-        expressions.allow_procedure_calls = true;
-        std::vector<ASR::Variable_t*> declarations;
-        std::set<ASR::Variable_t*> seen;
-        auto add_declaration = [&](ASR::expr_t *expr) {
-            auto *variable = expr && ASR::is_a<ASR::Var_t>(*expr)
-                ? ASRUtils::get_variable_from_symbol(ASR::down_cast<ASR::Var_t>(expr)->m_v)
-                : nullptr;
-            if (!variable) {
-                trait_error("sealed override dispatch requires typed dummy declarations", loc);
-            }
-            if (seen.insert(variable).second) declarations.push_back(variable);
-        };
-        for (size_t i = 0; i < procedure.n_args; i++) add_declaration(procedure.m_args[i]);
-        if (procedure.m_return_var) add_declaration(procedure.m_return_var);
-        for (size_t i = 0; i < declarations.size(); i++) {
-            auto *original = declarations[i];
-            auto *copy = duplicator.duplicate_Variable(original, scope, expressions);
-            if (!copy) trait_error("cannot copy a sealed override interface", loc);
-            scope->add_symbol(original->m_name, copy);
-            SetChar dependencies;
-            dependencies.reserve(al, 1);
-            ASRUtils::CollectIdentifiersFromASRExpression collector(al, dependencies);
-            collector.visit_Variable(*original);
-            for (size_t j = 0; j < dependencies.size(); j++) {
-                auto *dependency = procedure.m_symtab->get_symbol(dependencies[j]);
-                if (!dependency || scope->get_symbol(dependencies[j])) continue;
-                if (ASR::is_a<ASR::ExternalSymbol_t>(*dependency)) {
-                    duplicator.duplicate_symbol(dependency, scope);
-                } else if (ASR::is_a<ASR::Variable_t>(*dependency)) {
-                    auto *variable = ASR::down_cast<ASR::Variable_t>(dependency);
-                    if (seen.count(variable)) continue;
-                    if (variable->m_storage != ASR::storage_typeType::Parameter) {
-                        trait_error("sealed override signature depends on a local variable", loc);
-                    }
-                    seen.insert(variable);
-                    declarations.push_back(variable);
-                } else {
-                    trait_error("sealed override signature dependency is not implemented yet", loc);
-                }
-            }
-            auto *variable = ASR::down_cast<ASR::Variable_t>(copy);
-            if (variable->m_type_declaration) {
-                variable->m_type_declaration = ASRUtils::import_type_declaration(
-                    al, variable->m_type_declaration, scope);
-            }
-        }
-        duplicator.fixup_local_declarations(scope, procedure.m_symtab);
-
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, procedure.n_args);
-        for (size_t i = 0; i < procedure.n_args; i++) {
-            auto *variable = ASR::down_cast<ASR::Variable_t>(
-                scope->get_symbol(ASRUtils::EXPR2VAR(procedure.m_args[i])->m_name));
-            // The implementation, not the forwarding entry, owns OUT cleanup.
-            if (variable->m_intent == ASR::intentType::Out) {
-                variable->m_intent = ASR::intentType::InOut;
-            }
-            if (i == self) {
-                variable->m_type = ASRUtils::make_StructType_t_util(
-                    al, loc, variable->m_type_declaration, false);
-            }
-            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, &variable->base)));
-        }
-        ASR::expr_t *result = procedure.m_return_var
-            ? ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                scope->get_symbol(ASRUtils::EXPR2VAR(procedure.m_return_var)->m_name)))
-            : nullptr;
-        std::string name = scope->parent->get_unique_name(
-            std::string(owner.m_name) + "_" + binding.m_name + "_dispatch");
-        auto *adapter = ASR::down_cast2<ASR::Function_t>(ASRUtils::make_Function_t_util(
-            al, loc, scope, s2c(al, name), nullptr, 0, args.p, args.size(),
-            nullptr, 0, result, signature->m_abi, ASR::accessType::Private,
-            ASR::deftypeType::Implementation, nullptr, signature->m_elemental,
-            signature->m_pure, signature->m_module, false, false, nullptr, 0,
-            false, false, false));
-        scope->parent->add_symbol(name, &adapter->base);
-
-        Vec<ASR::call_arg_t> actuals;
-        actuals.reserve(al, args.size());
-        for (size_t i = 0; i < args.size(); i++) {
-            auto *value = i == self
-                ? ASRUtils::EXPR(ASR::make_Cast_t(al, loc, args[i],
-                    ASR::cast_kindType::ClassToStruct,
-                    ASRUtils::duplicate_type(al, receiver_type), nullptr, nullptr))
-                : args[i];
-            actuals.push_back(al, ASR::call_arg_t{loc, value});
-        }
-        SetChar dependencies;
-        dependencies.reserve(al, 1);
-        auto *callee = make_operator_proc_visible(&procedure.base, "dispatch", scope);
-        ADD_ASR_DEPENDENCIES(scope, callee, dependencies);
-        Vec<ASR::stmt_t*> body;
-        body.reserve(al, 2);
-        if (result) {
-            auto *call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
-                al, loc, callee, nullptr, actuals.p, actuals.size(),
-                ASRUtils::expr_type(result), nullptr, nullptr, scope, dependencies,
-                compiler_options.implicit_argument_casting));
-            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, result, call, nullptr, false, false)));
-        } else {
-            ASR::stmt_t *cast = nullptr;
-            auto *call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
-                al, loc, callee, nullptr, actuals.p, actuals.size(), nullptr, &cast,
-                compiler_options.implicit_argument_casting, scope, dependencies));
-            if (cast) body.push_back(al, cast);
-            body.push_back(al, call);
-        }
-        adapter->m_body = body.p;
-        adapter->n_body = body.size();
-        adapter->m_dependencies = dependencies.p;
-        adapter->n_dependencies = dependencies.size();
-        binding.m_dispatch_proc = &adapter->base;
-        auto mismatch = ASRUtils::sealed_dispatch_adapter_mismatch(binding, procedure, *adapter);
-        if (mismatch.mismatch) trait_error(mismatch.message, loc);
     }
 
     // Fortran 2018 7.5.7.3: an overriding type-bound procedure must have the
@@ -8966,6 +8908,15 @@ public:
                     binders.p, binders.size()));
             // The nominal definition is now available to an equality such as
             // ISubject(ObsType=Display{U}); no symbolic instance is created.
+            // A generic parent's definition has the same parameters (TD-45).
+            ASR::Template_t *parent_package = definition->m_parent
+                ? ASRUtils::generic_type_package(ASRUtils::get_asr_owner(
+                    ASRUtils::symbol_get_past_external(definition->m_parent)))
+                : nullptr;
+            if (definition->m_parent && !parent_package) {
+                trait_error("extending a type by a generic derived type is not "
+                    "implemented yet", generic.base.base.loc);
+            }
             for (size_t i = 0; i < generic.n_parameters; i++) {
                 const auto &parameter = generic.m_parameters[i];
                 std::vector<ASR::symbol_t*> traits;
@@ -8973,13 +8924,41 @@ public:
                     traits.push_back(scope->resolve_symbol(
                         to_lower(parameter.m_traits[j].m_name)));
                 }
+                if (package.inherited_parameters) {
+                    // A parameter inherited from the parent has its constraints.
+                    auto *inherited = parent_package->m_symtab->get_symbol(
+                        parent_package->m_args[i]);
+                    if (!ASRUtils::trait_associated_parameters(parent_package->m_symtab,
+                            inherited).empty()) {
+                        trait_error("inheriting generic parameter '" +
+                            std::string(parent_package->m_args[i]) + "', whose constraints "
+                            "bind associated types, is not implemented yet", parameter.loc);
+                    }
+                    for (auto *trait : ASRUtils::trait_parameter_traits(inherited)) {
+                        traits.push_back(make_operator_proc_visible(
+                            ASRUtils::symbol_get_past_external(trait), "trait", scope));
+                    }
+                }
                 auto same_types = resolve_trait_same_types(scope, parameter);
                 add_trait_parameter_constraints(scope, binders[i], traits,
                     parameter.loc, true, same_types);
             }
-            if (definition->m_parent) {
-                trait_error("extending a type by a generic derived type is not "
-                    "implemented yet", generic.base.base.loc);
+            for (size_t i = 0; parent_package && i < generic.n_parameters; i++) {
+                auto own = ASRUtils::trait_parameter_traits(binders[i]);
+                auto inherited = ASRUtils::trait_parameter_traits(
+                    parent_package->m_symtab->get_symbol(parent_package->m_args[i]));
+                bool same = own.size() == inherited.size();
+                for (size_t j = 0; same && j < own.size(); j++) {
+                    same = ASRUtils::symbol_get_past_external(own[j]) ==
+                        ASRUtils::symbol_get_past_external(inherited[j]);
+                }
+                if (!same) {
+                    trait_error("generic parameter '" + std::string(binders[i] ?
+                        ASRUtils::symbol_name(binders[i]) : "") + "' of '" + name +
+                        "' must have the constraints of the parameter it inherits from '" +
+                        std::string(ASRUtils::generic_type_definition(*parent_package)->m_name) +
+                        "'", generic.m_parameters[i].loc);
+                }
             }
             for (auto *implements : package.implements) {
                 check_generic_type_implements(*implements, generic, name);

@@ -1233,6 +1233,25 @@ public:
         src = r;
     }
 
+    // The name of the binding `name` in a type-bound call. A call through a
+    // member slot names its generic binding with the slot's type arguments.
+    std::string type_bound_name(ASR::symbol_t *name) {
+        auto *binding = ASRUtils::symbol_get_past_external(name);
+        auto *generic = ASR::is_a<ASR::StructMethodDeclaration_t>(*binding)
+            ? ASRUtils::member_slot_generic_binding(
+                *ASR::down_cast<ASR::StructMethodDeclaration_t>(binding))
+            : nullptr;
+        if (!generic) return ASRUtils::symbol_name(binding);
+        auto *erasure = ASRUtils::member_slot_entry(
+            *ASR::down_cast<ASR::StructMethodDeclaration_t>(binding));
+        Vec<ASR::ttype_t*> members;
+        members.reserve(al, erasure->n_parameters);
+        for (size_t i = 0; i < erasure->n_parameters; i++) {
+            members.push_back(al, erasure->m_parameters[i].m_member);
+        }
+        return std::string(generic->m_name) + trait_type_arguments(members.p, members.size());
+    }
+
     std::string trait_type_arguments(ASR::ttype_t **types, size_t n) {
         if (!n) return "";
         std::string r = "{";
@@ -1413,6 +1432,26 @@ public:
 
     void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
         print_trait_call(x, true);
+    }
+
+    void visit_DeferredMethodCall(const ASR::DeferredMethodCall_t &x) {
+        auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+            ASRUtils::symbol_get_past_external(x.m_name));
+        auto *procedure = ASRUtils::trait_method_function(
+            ASRUtils::symbol_get_past_external(binding->m_proc));
+        size_t self = ASRUtils::passed_object_index(*binding, procedure);
+        visit_expr(*x.m_dt);
+        std::string r = src + "%" + binding->m_name +
+            trait_type_arguments(x.m_type_arguments, x.n_type_arguments) + "(";
+        bool first = true;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i == self) continue;
+            if (!first) r += ", ";
+            first = false;
+            visit_expr(*x.m_args[i].m_value);
+            r += src;
+        }
+        src = r + ")";
     }
 
     // void visit_CustomOperator(const ASR::CustomOperator_t &x) {}
@@ -1710,6 +1749,11 @@ public:
     }
 
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
+        // A member slot is the binding table entry of a generic binding.
+        if (ASRUtils::member_slot_entry(x)) {
+            src = "";
+            return;
+        }
         std::string r = indent;
         r += "procedure";
         if (x.m_is_deferred) {
@@ -2500,7 +2544,7 @@ public:
         if (x.m_dt) {
             visit_expr(*x.m_dt);
             r += src + "%";
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+            r += type_bound_name(x.m_name);
         } else {
             r += call_name(x.m_name);
         }
@@ -2910,7 +2954,7 @@ public:
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
-                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
+                r += type_bound_name(x.m_name);
             } else {
                 r += call_name(x.m_name);
             }

@@ -393,6 +393,12 @@ expr
     -- the first slot of the message's member family in args[0]'s contract.
     -- Template instantiation selects the member slot or forwards the call.
     | TraitDeferredCall(int family, ttype* type_arguments, call_arg* args, ttype type)
+    -- A call through the polymorphic object dt of the generic type-bound
+    -- procedure binding name, whose closed type arguments are still deferred
+    -- binders, or whose object is of a generic type's nonsealed definition;
+    -- args include the passed object. Template instantiation selects the
+    -- binding's member slot (ASRUtils::member_slot_binding).
+    | DeferredMethodCall(symbol name, ttype* type_arguments, call_arg* args, expr dt, ttype type)
     -- The selected conformance dictionary passed with erased arguments.
     | TraitDictionaryValue(symbol dictionary, ttype type)
     -- Template-only: the dictionary of a still-generic binder. Instantiation

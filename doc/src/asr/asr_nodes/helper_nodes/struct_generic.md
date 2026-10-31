@@ -55,9 +55,11 @@ definition with one concrete argument per parameter and the evidence of each
 universal-trait constraint, that it has the definition's components with the
 arguments substituted (procedure-typed components are compared by kind
 only), that a completed instance has the definition's obligations and
-bindings and records one copy of each package procedure that its bindings
-and conformances use, that no two instances of one scope are equal, and that
-neither a definition nor an instance extends or is extended by a type. An
+bindings (besides member slots) and records one copy of each package
+procedure that its bindings and conformances use, that no two instances of
+one scope are equal, and that a definition extends only the definition of a
+generic type with the same parameters, an instance only that type's instance
+for the same arguments, and that only a generic type extends one. An
 instance its module or program has not completed yet, between the symbol
 table and body visitors, has no obligations, bindings or copies; the
 verifier cannot tell it apart from one whose completion was lost.

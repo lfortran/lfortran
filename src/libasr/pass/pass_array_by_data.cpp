@@ -1801,6 +1801,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             // (not in proc2newproc), but the submodule's implementation
             // must still be kept so the vtable can reference it.
             not_to_be_erased.insert(proc);
+            // A sealed override's dispatch adapter is the slot's entry instead.
+            if (x.m_dispatch_proc) {
+                not_to_be_erased.insert(ASRUtils::symbol_get_past_external(x.m_dispatch_proc));
+            }
         }
 };
 

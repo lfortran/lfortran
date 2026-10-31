@@ -6411,8 +6411,23 @@ public:
     std::map<const AST::Template_t*, GenericTypePackageAST> generic_type_packages;
 
     void visit_Module(const AST::Module_t &x) {
+        // The symbol table visitor resolved the parents through the module's
+        // USE statements, whose imports the module now has.
+        ASR::symbol_t *module = current_scope->get_symbol(to_lower(x.m_name));
+        auto inherited = inherited_generic_types(al, x, [&](const std::string &parent) {
+            std::vector<std::string> names;
+            ASR::symbol_t *symbol = module && ASR::is_a<ASR::Module_t>(*module)
+                ? ASR::down_cast<ASR::Module_t>(module)->m_symtab->get_symbol(parent)
+                : nullptr;
+            ASR::Template_t *package = symbol ? ASRUtils::generic_type_package(symbol)
+                : nullptr;
+            for (size_t i = 0; package && i < package->n_args; i++) {
+                names.push_back(package->m_args[i]);
+            }
+            return names;
+        });
         if (AST::Module_t *lowered = lower_generic_type_module(al, x,
-                generic_type_packages)) {
+                generic_type_packages, inherited)) {
             visit_SubmoduleModuleCommon(*lowered);
             return;
         }

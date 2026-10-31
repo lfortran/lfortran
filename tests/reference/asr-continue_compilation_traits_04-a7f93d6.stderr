@@ -86,7 +86,7 @@ semantic error: procedure 'describe' depends on the generic parameters of 'first
 265 |         procedure, nopass :: describe
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: extending a generic derived type is not implemented yet
+semantic error: sealed type 'pairwisesum' cannot be extended
    --> tests/errors/continue_compilation_traits_04.f90:278:11
     |
 278 |     type, extends(PairwiseSum) :: Child

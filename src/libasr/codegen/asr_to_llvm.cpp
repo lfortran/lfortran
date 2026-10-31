@@ -29351,6 +29351,11 @@ public:
             "runtime trait lowering", x.base.base.loc);
     }
 
+    void visit_DeferredMethodCall(const ASR::DeferredMethodCall_t &x) {
+        throw CodeGenError("a deferred generic type-bound call must be instantiated "
+            "before code generation", x.base.base.loc);
+    }
+
     llvm::Value *trait_owner_slot(ASR::expr_t *owner) {
         int64_t saved_loads = ptr_loads;
         ptr_loads = 0;

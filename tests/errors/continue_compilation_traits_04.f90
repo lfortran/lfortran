@@ -271,7 +271,7 @@ contains
     end function describe
 end module gt_neg_15
 
-! N16 (boundary): extending a generic type is not implemented.
+! N16: a sealed generic type cannot be extended; a nonsealed one can (TD-45).
 module gt_neg_16
     use gt_neg_generic, only: PairwiseSum
     implicit none

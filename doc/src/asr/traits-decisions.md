@@ -170,6 +170,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-18 | How a trait object formed from a polymorphic `class(T)` object selects its methods | **Dispatch through the declared type's bindings, so that overrides of the dynamic type run**; call the declared type's implementations statically; keep the restriction | TD-38 |
 | 2026-10-18 | Which trait objects can be formed from polymorphic objects | **Borrowed views, pointers and owners**; views and pointers; views only | TD-38 |
 | 2026-10-29 | How a generic observer declares the equality between its subject's associated observer type and its own type | **Explicit constraints first, with independently checked generic bodies**; infer additional requirements from generic bodies. Recursive specialization was discussed separately, not approved by choosing explicit equality. | TD-43 |
+| 2026-10-31 | The meaning of a type without a parameter list that extends a generic type (`PairwiseSum` extending `SimpleSum{ISum :: U}`) | **Implicit inheritance of the parent's parameters, with the bare name meaning the type itself in its own procedures**; explicit spelling only | TD-45 |
 
 ### Instructions given without an option form
 
@@ -192,6 +193,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-19 | Reported that trait objects cannot be passed to the default structure constructor of a type with an allocatable trait component, although a user-defined constructor assigning its `class(ITrait)` argument to the component works, and asked for default constructor values with the Fortran semantics of allocatable components, for every kind of trait object, concrete and polymorphic value, in every usage context and under separate compilation, behaving like the equivalent user-defined constructor. | TD-41 |
 | 2026-10-20 | Supplied the interface module of a dependency-injection container, whose `register` message takes a procedure pointer to a factory that receives a view of the container's parent trait, and which the prototype rejected once a view of the container was the argument of another trait's message, and asked for runtime dispatch of messages with procedure-pointer and dummy-procedure arguments, checked with a complete program and under separate compilation. | TD-42 |
 | 2026-10-29 | After discussing explicit contracts versus body-inferred requirements, and separately the observer's recursive generic pairing: "Ok, do the explicit constraints first. If possible, avoid the acyclic version. Document this decision." | TD-43 |
+| 2026-10-31 | Supplied interoperability variants of the paper's `mixed.f90` and `static.f90`, in which a sealed extension overrides an inherited generic `sum` and, in the static one, extends the generic `SimpleSum`, and asked to implement what they need so that both compile. | TD-44, TD-45 |
 
 ## Entries
 
@@ -1690,6 +1692,50 @@ specification action, that is, what the paper should say.
   instantiation diagnostics. Specify any finite recursive naming mechanism
   separately from equality syntax and ordinary argument inference.
 
+#### TD-44: Overriding generic type-bound procedures
+
+- **Status:** Implementation choice; requested by the maintainer without an
+  option form (2026-10-31).
+- **What the paper says.** A type adopting a trait implements a generic
+  message with a generic procedure (`sect:generic_methods`), and the
+  interoperability section combines `implements` with `extends`
+  (`sect:extended_types`), where ordinary overrides replace inherited
+  bindings. It does not say how an extension overrides a binding of a generic
+  procedure, or how a call through a polymorphic object reaches the override.
+- **Why it is not tight.** A generic binding has no single procedure to put in
+  the binding table: each call specializes the bound procedure for its type
+  arguments. Specializing it statically through `CLASS(Base)` storage, as the
+  prototype did, would call `Base`'s procedure even when the dynamic type
+  overrides it, so overriding was diagnosed as not implemented.
+- **Options presented.** Not asked. The maintainer supplied a program whose
+  sealed extension overrides an inherited generic `sum` and asked for it to
+  compile.
+- **Choice.** A generic binding whose type parameters are all closed type sets
+  gets one *member slot* per member tuple of those sets, the same tuples a
+  runtime trait contract has for a generic message (TD-15). Each slot binds
+  the provider-owned member entry of that tuple. A call through a polymorphic
+  object dispatches through the slot of its type arguments; a call through a
+  nonpolymorphic object, or through a sealed declared type, stays a static
+  specialization. An override must bind the same parameters with the same
+  constraints and the same interface apart from the passed object, and fills
+  the inherited slots with its own member entries.
+- **Consequences.** The results are those of the equivalent program with one
+  specific binding per member, overridden by the extension. Calls inside an
+  inherited generic method that pass the method's own type parameters on
+  dispatch once the method is instantiated. A conformance that binds the type's
+  own type-bound procedure dispatches through it too, so `obj%sum(x)` on a
+  `class(Base)` object runs the extension's override.
+- **Implementation status.** Implemented for module types and for instances of
+  generic types (TD-45), also under separate compilation, with sealed overrides
+  of a nonpolymorphic passed object reached through dispatch adapters.
+  Overriding a binding whose type parameters are not all closed type sets (an
+  open nominal or protocol trait, or a character length wildcard) remains
+  diagnosed as not implemented, as do overrides in types declared outside a
+  module and a dispatching call of a generic subroutine with deferred type
+  arguments.
+- **Specification action.** Specify overriding of generic type-bound
+  procedures and their dispatch, including open type parameters.
+
 #### TD-21: Character type arguments
 
 - **Status:** Implementation choice (recorded as an assumption, not asked).
@@ -1933,9 +1979,11 @@ specification action, that is, what the paper should say.
   - Instance entities have names that no source can spell and are not imported
     by `USE`. Compiling a client never changes the files of the module that
     defines the generic type.
-  - Generic types and their instances cannot be extended, overriding a binding
-    to a generic procedure is not implemented yet, and generic types cannot
-    have FINAL, GENERIC or DEFERRED bindings yet.
+  - Generic types cannot have FINAL, GENERIC or DEFERRED bindings yet. A
+    generic type can extend a generic type with the same parameters, and its
+    instances extend the parent's instances for the same arguments (TD-45);
+    instances cannot be extended. Overriding a binding to a generic procedure
+    is described in TD-44.
 - **Implementation status.** Implemented as described.
 - **Specification action.** Define instance identity, including the role of the
   selected conformances, ownership expectations under separate compilation, and
@@ -2052,6 +2100,44 @@ specification action, that is, what the paper should say.
   a generic derived type is that of its definition, independent of the unit
   that creates or owns an instance.
 
+#### TD-45: Extending a generic derived type
+
+- **Status:** Approved semantic decision (prototype spelling); temporary
+  limits diagnosed.
+- **What the paper says.** Generic derived types (`sect:generic_derived_types`)
+  and type extension combined with `implements` (`sect:extended_types`) are
+  described separately; the paper does not extend a generic type.
+- **Why it is not tight.** In the maintainer's interoperability variant of
+  `static.f90`, `type, sealed, extends(SimpleSum), implements(ISum) ::
+  PairwiseSum` has no parameter list although `SimpleSum{ISum :: U}` is
+  generic, and its bound `sum` uses the inherited component `basic` of type
+  `U` through a passed object declared `type(PairwiseSum)`.
+- **Options presented (2026-10-31).** Implicit inheritance: a type extending
+  a generic type without a parameter list inherits the parent's parameters,
+  and its bare name inside its own procedures means the type itself; or
+  explicit spelling only (`extends(SimpleSum{U})` on `PairwiseSum{ISum :: U}`).
+- **Choice.** The maintainer chose implicit inheritance.
+- **Consequences.** `PairwiseSum` is generic over `SimpleSum`'s parameters,
+  with the same names and constraints, and its instance for given arguments
+  extends `SimpleSum`'s instance for the same arguments. A generic type written
+  with a parameter list may also extend a generic type if it has the parent's
+  parameters, with the same names, order and constraints. As for any extended
+  type, a structure constructor's positional values follow the component order
+  (F2018 7.5.4.7), the parent's components first; the parent component is
+  given only by its keyword. `PairwiseSum(SimpleSum(BasicSum()))` therefore
+  gives the inherited component `basic` the value `SimpleSum(BasicSum())` and
+  infers `U` to be `SimpleSum{BasicSum}`, whereas
+  `PairwiseSum(simplesum=SimpleSum(BasicSum()))` infers `BasicSum`; the two
+  programs compute the same results. Initializers are not inherited.
+- **Implementation status.** Implemented for types declared in modules, also
+  across modules and under separate compilation. Extending an instance,
+  extending a generic type outside a module, a parameter list that renames,
+  reorders or adds parameters, and inheriting a parameter whose constraints
+  bind associated types are diagnosed as not implemented.
+- **Specification action.** Specify extension of generic types: inherited and
+  additional parameters, the parent's type arguments, constructors and the
+  identity of the parent instance.
+
 ### F. Errata and acceptance-copy adaptations
 
 #### TD-29: END TYPE closing statements
@@ -2167,7 +2253,7 @@ names the entries with the details.
 | OQ-10 | Name, contents and definitions of the intrinsic `generics` module. | TD-18 |
 | OQ-11 | `IAnyType` and the operations of unconstrained parameters; when unused bindings of generic types are checked; defined input/output in generic code. | TD-19, TD-27 |
 | OQ-12 | Generic methods: whether implementations may have weaker constraints; overloaded generic messages that differ only in their generic parameter lists (a commented-out paragraph of the paper source, lines 1737-1742, would allow them). | TD-23 |
-| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, binding of procedures that do not use the parameters, retroactive conformance from other modules, instance identity across program units, extension and overriding, and the accessibility of instance components (decided for the prototype in TD-37). Finite explicit recursive pairing is separate from same-type constraints; implicit recursive bare-family inference is not approved (TD-43). | TD-24, TD-25, TD-37, TD-43 |
+| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, binding of procedures that do not use the parameters, retroactive conformance from other modules, instance identity across program units, extension and overriding (decided for the prototype in TD-44 and TD-45), and the accessibility of instance components (decided for the prototype in TD-37). Finite explicit recursive pairing is separate from same-type constraints; implicit recursive bare-family inference is not approved (TD-43). | TD-24, TD-25, TD-37, TD-43, TD-44, TD-45 |
 | OQ-14 | Which separate-compilation properties are normative. For example: must adding a conformance for a new type work without recompiling a separately compiled generic provider (the OCP discussion, lines 2686-2699, only says no code needs to be modified), and must a constraint by a child trait forward to a callee constrained by its parent in separately compiled code? Dispatch tables, member entries and other mechanisms should remain processor details. | TD-15, TD-16 |
 | OQ-15 | Scope, lifetime and redeclaration of `:=` declarations, including loops and conditional code. | TD-22 |
 | OQ-16 | Whether kind and length type parameters are part of type arguments, and whether assumed or deferred lengths are allowed. | TD-21 |

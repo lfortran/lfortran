@@ -445,7 +445,8 @@ payload, preserves named PASS positions and leaves OUT-entry cleanup to the
 original procedure. It does not clone implementation locals.
 
 This prototype supports such adapters for ordinary subroutines and scalar
-numeric/logical function results. Generic overrides, indirect receivers and
+numeric/logical function results, also for the member slots of a generic
+override (see "Overriding generic bindings"). Indirect receivers and
 lifetime-bearing results (including arrays, pointers, allocatables, derived
 values and character results) still receive an explicit unsupported diagnostic
 when they need this adapter. They require transparent result-slot forwarding,
@@ -481,14 +482,72 @@ programs, within the existing static and runtime domains; initializers,
 trait-valued components and closed numeric generic messages are described in
 their own sections. A type-bound binding of a generic procedure names the
 procedure through an import in the type's module, so clients that load the
-module resolve it like any other binding. Its binding-table entry is null:
-each call, also through `CLASS(Base)` storage, is a static specialization of
-the procedure it names. Overriding such a binding in an extension, or
-overriding an ordinary binding with a generic procedure, is therefore
-diagnosed as not implemented yet; extensions inherit it unchanged, and their
-ordinary overrides keep dynamic dispatch. Generic derived types are
-described in their own section. A type declared in a BLOCK construct cannot
-adopt traits yet; `continue_compilation_traits_02` diagnoses it.
+module resolve it like any other binding. Its own binding-table entry is
+null; a binding whose type parameters are all closed type sets also has
+member slots, through which calls through `CLASS(Base)` storage dispatch, and
+an extension can override it (see "Overriding generic bindings"). Overriding
+an ordinary binding with a generic procedure, or a generic binding with an
+ordinary procedure, is diagnosed. Generic derived types are described in
+their own section. A type declared in a BLOCK construct cannot adopt traits
+yet; `continue_compilation_traits_02` diagnoses it.
+
+### Overriding generic bindings
+
+An extension overrides a binding of a generic procedure whose type parameters
+are all closed type sets with a generic procedure that binds the same
+parameters, with the same constraints in the same order, and has the same
+interface apart from the passed object (TD-44):
+
+```fortran
+type, implements(ISum) :: SimpleSum
+contains
+    procedure :: sum
+    procedure :: basic_sum
+end type
+type, sealed, extends(SimpleSum), implements(ISum) :: PairwiseSum
+contains
+    procedure :: sum    ! function sum{INumeric :: T}(self, x), self type(PairwiseSum)
+end type
+```
+
+Such a binding has one *member slot* per member tuple of its parameters'
+type sets, in the order of a runtime contract's member slots (see "Closed
+numeric runtime generic methods"): a binding of the same type, named like the
+generic binding followed by the tuple's position in braces, which binds the
+procedure's provider-owned member entry for that tuple, the same entry a
+runtime witness of the procedure uses. A nonsealed type of a module, and every
+instance of a nonsealed generic type, has member slots for each such binding,
+since an extension may override it; an override fills the inherited slots
+with its own member entries, through dispatch adapters for a sealed type's
+nonpolymorphic passed object.
+
+A call through a polymorphic object whose declared type has member slots for
+the binding, `class(SimpleSum) :: s` in `s%sum(x)`, is an ordinary type-bound
+call of the slot of its type arguments, so the dynamic type's override runs,
+also when the call resolves through a conformance that binds the type's own
+type-bound procedure. A call through a nonpolymorphic object, or through a
+sealed declared type, stays a static specialization. Inside a generic
+procedure, a call whose type arguments are the procedure's own parameters is
+a [`DeferredMethodCall`](asr_nodes/expression_nodes/DeferredMethodCall.md),
+which the template instantiator turns into the call of the substituted
+tuple's slot. So is any such call through a `class` object of a nonsealed
+generic type inside its own package, whose definition has no slots; it
+dispatches through the slots of the instance its method is copied into. An inherited generic `sum` calling `self%basic_sum(x)`, and a
+generic consumer calling `object%sum(x)` on its `class(SimpleSum)` dummy,
+therefore reach the extension's overrides.
+
+Overriding a binding whose type parameters are not all closed type sets (open
+nominal or protocol constraints, or a character length wildcard), overriding
+in a type declared outside a module, and a dispatching call of a generic
+subroutine with deferred type arguments are diagnosed as not implemented.
+Fortran output prints a call through a member slot as the generic binding
+with explicit type arguments and omits the slots from type definitions.
+`traits_generic_override_01` (with its standard-Fortran oracle) covers
+concrete, inferred and explicit type arguments, inherited generic methods,
+generic consumers, sealed and nonsealed overrides, NOPASS bindings,
+subroutines and the extension's conformance; `traits_generic_override_02`
+overrides a separately compiled provider's bindings and specializes its
+generic consumers in the client.
 
 The module-only paper examples `extends_parent.f90` and `abstract_new.f90`,
 unchanged except for their recorded TD-36 explicit receivers, are registered
@@ -633,8 +692,10 @@ polymorphic component. See `integration_tests/traits_generic_binding_04.f90`.
 A type-bound procedure bound to a generic procedure is called in the same way
 when it implements no trait message, also in a type that adopts no trait: the
 call is a static specialization of the bound procedure, checked against that
-procedure's own constraints, through any of these receivers, including
-`CLASS(...)` ones. Its argument list omits the passed-object dummy argument.
+procedure's own constraints, through any of these receivers. A `CLASS(...)`
+receiver whose declared type has member slots for the binding dispatches
+through them instead (see "Overriding generic bindings"). Its argument list
+omits the passed-object dummy argument.
 See `integration_tests/traits_generic_binding_05.f90`. A Fortran `GENERIC`
 binding whose specific procedure is generic is not supported.
 
@@ -1116,8 +1177,9 @@ integer`, exist once the unit's conformances are complete: an argument with
 none of its parameter's conformances visible yet, of a type the unit declares
 or of an intrinsic type, gets them then, in the scope where it is used.
 
-An instance is an ordinary sealed derived type of the module or main program
-that creates it; equal instances of one module or program are one type. It
+An instance is an ordinary derived type of the module or main program that
+creates it, sealed when the generic type is; equal instances of one module or
+program are one type. It
 owns copies of the type's procedures, specialized for its arguments, and its
 own bindings, initializers and conformances. These are private to the unit.
 Owning an instance does not grant the unit additional access to private
@@ -1190,7 +1252,8 @@ parameters do not reuse the type's parameter names; a procedure that uses the
 type's parameters is bound to that type only and is reached only through its
 bindings and constructors, not by name; parameters are constrained by
 universal traits; type arguments are concrete, not parameters of an
-enclosing generic; and generic types and their instances cannot be extended.
+enclosing generic; and instances cannot be extended, and a generic type
+extends only a generic type (see "Extending generic types").
 A generic type binds only procedures that use its parameters, and has no
 FINAL procedures and no GENERIC or DEFERRED bindings. A method calls a
 generic method through a parameter only with its own parameters as type
@@ -1213,6 +1276,56 @@ creates all work. Moving an instance with all of its entities, which makes
 it an instance of that module, is planned once the remaining paper examples
 are supported. `continue_compilation_traits_06` covers the diagnostic and
 `traits_generic_type_06` the uses that work.
+
+### Extending generic types
+
+A derived type of a module that extends a generic type without a parameter
+list inherits its parameters, with their names and constraints (TD-45):
+
+```fortran
+type, implements(ISum) :: SimpleSum{ISum :: U}
+    type(U), allocatable :: basic
+contains
+    initial   :: init
+    procedure :: sum
+end type SimpleSum
+
+type, sealed, extends(SimpleSum), implements(ISum) :: PairwiseSum
+contains
+    procedure, pass :: sum
+end type PairwiseSum
+...
+function sum{INumeric :: T}(self, x) result(s)
+    type(PairwiseSum), intent(in) :: self   ! PairwiseSum{U}
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    s = self%basic%sum(x)
+    ...
+```
+
+`PairwiseSum` is a generic type `PairwiseSum{ISum :: U}`, and inside its
+package the name `PairwiseSum` without a parameter list names the type
+itself, as `PairwiseSum{U}` does. A generic type written with a parameter list
+can also extend a generic type if it has the parent's parameters with the same
+names, order and constraints. The definition's parent is the parent's
+definition, so `self%basic` has the inherited parameter's type, and the
+instance `PairwiseSum{X}` extends the instance `SimpleSum{X}` of the same
+unit. The parent's initializers are not inherited. Inherited generic bindings
+can be overridden as described in "Overriding generic bindings"; a nonsealed
+generic type's instances have the member slots.
+
+A structure constructor's positional values follow the component order
+(F2018 7.5.4.7), the parent's components first: `PairwiseSum(SimpleSum(BasicSum()))`
+gives `basic` the value `SimpleSum(BasicSum())` and infers `U` to be
+`SimpleSum{BasicSum}`. The parent component is given by its keyword:
+`PairwiseSum(simplesum=SimpleSum(BasicSum()))` infers `U` to be `BasicSum`.
+
+Extending an instance, extending a generic type from a type outside a
+module, a parameter list that renames, reorders or adds parameters, and
+inheriting a parameter whose constraints bind associated types are diagnosed
+as not implemented. `traits_generic_type_extends_01` covers inherited and
+written parameter lists, both constructor forms, overrides through the
+parent's instance and a runtime view of the extension.
 
 ## Inheritance and composed constraints
 
