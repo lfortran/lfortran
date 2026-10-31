@@ -139,6 +139,7 @@ zstd-static = ">=1.5.6,<2"
 python = "==3.12"
 cmake = ">=3.29.1,<4"
 ninja = "==1.11.1"
+kokkos = ">=4,<5"
 re2c = "==3.1"
 # Cross-platform Bash-like shell (https://github.com/prefix-dev/shell) that
 # runs build0.sh and build1.sh on every platform, including native Windows.
@@ -154,6 +155,7 @@ llvm-openmp = "*"
 
 [feature.build.activation.env]
 LFORTRAN_BUILD_DIR = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME"
+LFORTRAN_KOKKOS_DIR = "$CONDA_PREFIX"
 
 [feature.build.target.linux.activation.env]
 PATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/src/bin:$PATH"
@@ -168,6 +170,7 @@ LFORTRAN_LINKER_PATH = "/usr/bin"
 [feature.build.target.win.activation.env]
 # Windows activation expands only %VAR% references.
 LFORTRAN_BUILD_DIR = "%PIXI_PROJECT_ROOT%\\build\\%PIXI_ENVIRONMENT_NAME%"
+LFORTRAN_KOKKOS_DIR = "%CONDA_PREFIX%"
 PATH = "%PIXI_PROJECT_ROOT%\\build\\%PIXI_ENVIRONMENT_NAME%\\src\\bin;%PATH%"
 
 # Dependencies to build the project to be installed on the build machine.

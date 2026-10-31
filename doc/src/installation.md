@@ -66,6 +66,8 @@ pixi run -e llvm22 start --version
 Dependencies live in `.pixi/envs/<environment>` and CMake builds in
 `build/<environment>`. Configuration names, not just LLVM versions, determine
 the directory, so feature combinations using the same LLVM can coexist too.
+Pixi also supplies Kokkos for the C++ backend and sets `LFORTRAN_KOKKOS_DIR`
+to the selected environment.
 Build configurations one at a time within a checkout because source generation
 is shared; use separate Git worktrees for parallel development.
 

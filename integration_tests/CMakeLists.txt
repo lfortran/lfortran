@@ -2121,12 +2121,17 @@ RUN(NAME intrinsics_491 LABELS llvm EXTRAFILES intrinsics_491c.c) # get_command 
 RUN(NAME intrinsics_492 LABELS gfortran llvm fortran) # spread of a constant rank>1 array is not rejected as an invalid dim
 RUN(NAME intrinsics_493 LABELS gfortran llvm) # dot_product/pack/unpack of kind=1/2 constant arrays are not rejected
 RUN(NAME intrinsics_494 LABELS gfortran llvm NO_FAST_MATH) # aint/anint of values beyond integer(8) range and of infinity (#15040)
+RUN(NAME intrinsic_nint_precision LABELS gfortran llvm c cpp)
 RUN(NAME intrinsics_495 LABELS gfortran llvm) # cshift/eoshift of deferred-length character arrays (#14451)
 RUN(NAME intrinsics_496 LABELS gfortran llvm) # transpose/spread of deferred-length character arrays (#14775)
 RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() of a parameter array (#15327)
 RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
 RUN(NAME intrinsics_499 LABELS gfortran llvm fortran) # spread of a scalar source, printed by the Fortran backend
 RUN(NAME intrinsics_502 LABELS gfortran llvm) # pack/count with a negated complex comparison of array sections (#15926)
+RUN(NAME intrinsics_503 LABELS gfortran llvm c cpp) # elemental intrinsics lowered in the C/C++ backend
+RUN(NAME intrinsic_sign_magnitude LABELS gfortran llvm c cpp)
+RUN(NAME modulo_03 LABELS gfortran llvm c cpp)
+RUN(NAME modulo_04 LABELS gfortran llvm c cpp wasm)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)

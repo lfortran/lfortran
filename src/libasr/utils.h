@@ -57,6 +57,8 @@ struct PassOptions {
     // unit only refers to it.
     bool separate_compilation = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
+    // Empty selects all elemental intrinsics; backends can lower a subset.
+    std::vector<int64_t> elemental_intrinsics_to_lower;
     bool module_name_mangling = false;
     bool intrinsic_module_name_mangling = false;
     bool global_symbols_mangling = false;

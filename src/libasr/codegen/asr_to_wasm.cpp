@@ -160,12 +160,43 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_wa.emit_import_fn( "wasi_snapshot_preview1", import_fn_to_str(fn), func_idx);
     }
 
+    bool is_c_remainder(const ASR::Function_t& fn) {
+        ASR::FunctionType_t* type = ASRUtils::get_FunctionType(fn);
+        if (type->m_abi != ASR::abiType::BindC || !type->m_bindc_name
+                || !fn.m_return_var || fn.n_args != 2) return false;
+        std::string name = type->m_bindc_name;
+        int kind = name == "fmodf" ? 4 : name == "fmod" ? 8 : 0;
+        if (kind == 0) return false;
+        for (ASR::expr_t* value : {fn.m_return_var, fn.m_args[0], fn.m_args[1]}) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            if (!ASR::is_a<ASR::Real_t>(*value_type)
+                    || ASRUtils::extract_kind_from_ttype_t(value_type) != kind) return false;
+        }
+        return ASRUtils::EXPR2VAR(fn.m_args[0])->m_value_attr
+            && ASRUtils::EXPR2VAR(fn.m_args[1])->m_value_attr;
+    }
+
     void import_function(ASR::Function_t* fn) {
-        if (ASRUtils::get_FunctionType(fn)->m_abi != ASR::abiType::BindJS) return;
+        ASR::FunctionType_t* type = ASRUtils::get_FunctionType(*fn);
+        if (type->m_abi != ASR::abiType::BindJS && !is_c_remainder(*fn)) return;
 
         emit_function_prototype(*fn);
-        m_wa.emit_import_fn("js", fn->m_name,
+        m_wa.emit_import_fn("js",
+            type->m_abi == ASR::abiType::BindC ? type->m_bindc_name : fn->m_name,
             m_func_name_idx_map[get_hash((ASR::asr_t*) fn)].index);
+    }
+
+    void emit_scope_imports(SymbolTable* scope) {
+        for (auto& item : scope->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                import_function(ASR::down_cast<ASR::Function_t>(item.second));
+            }
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    || ASR::is_a<ASR::Program_t>(*item.second)
+                    || ASR::is_a<ASR::Module_t>(*item.second)) {
+                emit_scope_imports(ASRUtils::symbol_symtab(item.second));
+            }
+        }
     }
 
     void emit_imports(SymbolTable *global_scope) {
@@ -178,28 +209,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         // In WASM: The indices of the imports precede the indices of other
         // definitions in the same index space. Therefore, declare the import
         // functions before defined functions
-        for (auto &item : global_scope->get_scope()) {
-            if (ASR::is_a<ASR::Program_t>(*item.second)) {
-                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(item.second);
-                for (auto &item : p->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
-                        import_function(fn);
-                    }
-                }
-            } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
-                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(item.second);
-                for (auto &item : m->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
-                        import_function(fn);
-                    }
-                }
-            } else if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
-                import_function(fn);
-            }
-        }
+        emit_scope_imports(global_scope);
     }
 
     void emit_print_int() {

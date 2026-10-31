@@ -1537,6 +1537,32 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return value;
     }
 
+    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        this->visit_expr(*x.m_v);
+        std::string var_name = src;
+        std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
+        this->visit_expr(*x.m_dim);
+        std::string idx = src;
+        if( x.m_bound == ASR::arrayboundType::LBound ) {
+            if (ASRUtils::is_simd_array(x.m_v)) {
+                src = "0";
+            } else {
+                src = "((" + result_type + ")" + var_name + "->dims[" + idx + "-1].lower_bound)";
+            }
+        } else if( x.m_bound == ASR::arrayboundType::UBound ) {
+            if (ASRUtils::is_simd_array(x.m_v)) {
+                int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
+                src = std::to_string(size - 1);
+            } else {
+                std::string lower_bound = var_name + "->dims[" + idx + "-1].lower_bound";
+                std::string length = var_name + "->dims[" + idx + "-1].length";
+                std::string upper_bound = length + " + " + lower_bound + " - 1";
+                src = "((" + result_type + ") " + upper_bound + ")";
+            }
+        }
+    }
+
     std::string construct_call_args(ASR::Function_t* f, size_t n_args, ASR::call_arg_t* m_args) {
         bracket_open++;
         std::string args = "";
@@ -2726,6 +2752,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 last_expr_precedence = 2;
                 break;
             }
+            case (ASR::cast_kindType::ComplexToInteger) : {
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+                if (is_c) {
+                    headers.insert("complex.h");
+                    src = "(int" + std::to_string(dest_kind * 8)
+                        + "_t)creal(" + src + ")";
+                } else {
+                    src = "(int" + std::to_string(dest_kind * 8)
+                        + "_t)std::real(" + src + ")";
+                }
+                last_expr_precedence = 2;
+                break;
+            }
             case (ASR::cast_kindType::RealToComplex) : {
                 if (is_c) {
                     headers.insert("complex.h");
@@ -3684,6 +3723,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             SET_INTRINSIC_NAME(Exp, "exp");
             SET_INTRINSIC_NAME(Exp2, "exp2");
             SET_INTRINSIC_NAME(Expm1, "expm1");
+            SET_INTRINSIC_NAME(Sqrt, "sqrt");
+            SET_INTRINSIC_NAME(Log, "log");
+            SET_INTRINSIC_NAME(Log10, "log10");
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Atan2)) : {
+                this->visit_expr(*x.m_args[0]);
+                std::string y = src;
+                this->visit_expr(*x.m_args[1]);
+                headers.insert("math.h");
+                src = "atan2(" + y + ", " + src + ")";
+                return;
+            }
             SET_INTRINSIC_NAME(Trunc, "trunc");
             SET_INTRINSIC_NAME(Fix, "fix");
             SET_INTRINSIC_NAME(FloorDiv, "floordiv");

@@ -3293,23 +3293,21 @@ namespace Anint {
         declare_basic_variables("_lcompilers_anint_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * if (x > 0) then
-        *     r = aint(x+0.5)
-        * else
-        *     r = aint(x-0.5)
-        * end if
-        */
-        // Make the calls one by one, so the helpers get the same names with every C++ compiler.
-        ASR::expr_t *aint_up = b.CallIntrinsic(scope, {arg_types[0]}, {b.Add(args[0], b.f_t(0.5, arg_types[0]))},
-                                    return_type, 0, Aint::instantiate_Aint);
-        ASR::expr_t *aint_down = b.CallIntrinsic(scope, {arg_types[0]}, {b.Sub(args[0], b.f_t(0.5, arg_types[0]))},
-                                    return_type, 0, Aint::instantiate_Aint);
-        body.push_back(al, b.If(b.Gt(args[0], b.f_t(0, arg_types[0])), {
-            b.Assignment(result, aint_up)
+        auto integral = declare("integral", arg_types[0], Local);
+        body.push_back(al, b.Assignment(integral,
+            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]},
+                arg_types[0], 0, Aint::instantiate_Aint)));
+        // Adding 0.5 to the input can change exact integers or round a value
+        // just below a tie upwards. Compare the fraction in the input kind.
+        auto fraction = b.Sub(args[0], integral);
+        body.push_back(al, b.If(b.GtE(fraction, b.f_t(0.5, arg_types[0])), {
+            b.Assignment(integral, b.Add(integral, b.f_t(1, arg_types[0])))
         }, {
-            b.Assignment(result, aint_down)
+            b.If(b.LtE(fraction, b.f_t(-0.5, arg_types[0])), {
+                b.Assignment(integral, b.Sub(integral, b.f_t(1, arg_types[0])))
+            }, {})
         }));
+        body.push_back(al, b.Assignment(result, b.r2r_t(integral, return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -4184,10 +4182,22 @@ namespace Mod {
             ASR::expr_t* arg0 = b.r2r_t(args[0], new_type);
             ASR::expr_t* arg1 = b.r2r_t(args[1], new_type);
 
-            if (upper_kind == 4) {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real32), real32)))));
-            } else if (upper_kind == 8) {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real64), real64)))));
+            if (upper_kind == 4 || upper_kind == 8) {
+                std::string c_func_name = upper_kind == 4 ? "fmodf" : "fmod";
+                Vec<ASR::ttype_t*> c_arg_types;
+                c_arg_types.reserve(al, 2);
+                c_arg_types.push_back(al, new_type);
+                c_arg_types.push_back(al, new_type);
+                ASR::symbol_t* s = b.create_c_func(c_func_name, fn_symtab,
+                    new_type, 2, c_arg_types);
+                fn_symtab->add_symbol(c_func_name, s);
+                dep.push_back(al, s2c(al, c_func_name));
+                Vec<ASR::expr_t*> c_args;
+                c_args.reserve(al, 2);
+                c_args.push_back(al, arg0);
+                c_args.push_back(al, arg1);
+                body.push_back(al, b.Assignment(result,
+                    b.r2r_t(b.Call(s, c_args, new_type), return_type)));
             } else {
                 // real(16): cast through int64 (int128 not available in ASR yet)
                 body.push_back(al, b.Assignment(result,
@@ -4903,7 +4913,13 @@ namespace Modulo {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
                 return nullptr;
             }
-            return ASRUtils::make_RealConstant_util(al, loc, a - b * std::floor(a/b), t1);
+            double r = std::fmod(a, b);
+            if (r == 0) {
+                r = std::copysign(0.0, b);
+            } else if ((r < 0 && b > 0) || (r > 0 && b < 0)) {
+                r += b;
+            }
+            return ASRUtils::make_RealConstant_util(al, loc, r, t1);
         }
         return nullptr;
     }
@@ -4920,7 +4936,22 @@ namespace Modulo {
             d = a - p * floor(a/p)
         end function
         */
-        if (is_real(*arg_types[0])) {
+        if (is_real(*arg_types[0]) &&
+                ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 16) {
+            ASR::expr_t* p = b.r2r_t(args[1], arg_types[0]);
+            ASR::expr_t* zero = b.f_t(0, arg_types[0]);
+            body.push_back(al, b.Assignment(result, Mod::MOD(b, args[0], p, scope)));
+            body.push_back(al, b.If(b.Eq(result, zero), {
+                b.Assignment(result, EXPR(ASR::make_RealCopySign_t(
+                    al, loc, zero, p, arg_types[0], nullptr)))
+            }, {
+                b.If(b.Or(
+                    b.And(b.Lt(result, zero), b.Gt(p, zero)),
+                    b.And(b.Gt(result, zero), b.Lt(p, zero))), {
+                    b.Assignment(result, b.Add(result, p))
+                }, {})
+            }));
+        } else if (is_real(*arg_types[0])) {
             body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(
                 b.r2r_t(args[1], arg_types[0]),
                 b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[0])))));

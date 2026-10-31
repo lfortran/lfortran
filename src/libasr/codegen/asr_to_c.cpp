@@ -1679,33 +1679,6 @@ R"(    // Initialise Numpy
         src = array_reshape_func + "(" + array + ", " + shape + ")";
     }
 
-    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
-        CHECK_FAST_C(compiler_options, x)
-        visit_expr(*x.m_v);
-        std::string var_name = src;
-        std::string args = "";
-        std::string result_type = CUtils::get_c_type_from_ttype_t(x.m_type);
-        visit_expr(*x.m_dim);
-        std::string idx = src;
-        if( x.m_bound == ASR::arrayboundType::LBound ) {
-            if (ASRUtils::is_simd_array(x.m_v)) {
-                src = "0";
-            } else {
-                src = "((" + result_type + ")" + var_name + "->dims[" + idx + "-1].lower_bound)";
-            }
-        } else if( x.m_bound == ASR::arrayboundType::UBound ) {
-            if (ASRUtils::is_simd_array(x.m_v)) {
-                int64_t size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_v));
-                src = std::to_string(size - 1);
-            } else {
-                std::string lower_bound = var_name + "->dims[" + idx + "-1].lower_bound";
-                std::string length = var_name + "->dims[" + idx + "-1].length";
-                std::string upper_bound = length + " + " + lower_bound + " - 1";
-                src = "((" + result_type + ") " + upper_bound + ")";
-            }
-        }
-    }
-
     void visit_ArrayConstant(const ASR::ArrayConstant_t& x) {
         // TODO: Support and test for multi-dimensional array constants
         headers.insert("stdarg.h");
