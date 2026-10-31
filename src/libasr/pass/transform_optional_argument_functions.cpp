@@ -631,6 +631,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(dummy_variable_type);
                     for (size_t i = 0; i < n_dims; i++) {
                         ASR::dimension_t dim;
+                        dim.loc = dummy_variable_type->base.loc;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
                         dim.loc = dummy_variable_type->base.loc;

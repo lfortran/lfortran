@@ -16,6 +16,7 @@
 #include <libasr/utils.h>
 #include <libasr/pass/string_length_arguments.h>
 #include <libasr/pass/string_format_array_args.h>
+#include <libasr/pass/transform_optional_argument_functions.h>
 
 namespace LCompilers::LFortran {
 
@@ -376,6 +377,93 @@ end program
     // A call that does not pass the hidden length is caught.
     call_stmt->n_args = 2;
     CHECK(!asr_verify(*asr, after_pass, diagnostics));
+}
+
+TEST_CASE("Optional argument fallback dimension locations") {
+    Allocator al(64*1024);
+    std::string src = R"""(
+program p
+    real, allocatable :: a(:, :)
+    call s(a)
+    if (f(a)) error stop
+contains
+    subroutine s(x)
+        real, optional :: x(:, :)
+        if (present(x)) error stop
+    end subroutine
+    logical function f(x)
+        real, optional :: x(:, :)
+        f = present(x)
+    end function
+end program
+)""";
+
+    diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "input.f90";
+    lm.files.push_back(file);
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t *ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t *asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+    REQUIRE(asr_verify(*asr, true, diagnostics));
+
+    ASR::Program_t *program = ASR::down_cast<ASR::Program_t>(
+        asr->m_symtab->get_symbol("p"));
+    std::vector<Location> formal_locations;
+    for (const char *name : {"s", "f"}) {
+        ASR::Function_t *procedure = ASR::down_cast<ASR::Function_t>(
+            program->m_symtab->get_symbol(name));
+        formal_locations.push_back(
+            ASRUtils::expr_type(procedure->m_args[0])->base.loc);
+    }
+
+    PassOptions pass_options;
+    pass_transform_optional_argument_functions(al, *asr, pass_options);
+    REQUIRE(asr_verify(*asr, true, diagnostics));
+
+    size_t arrays = 0;
+    for (const auto &item : program->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (!ASR::is_a<ASR::Array_t>(*variable->m_type)) continue;
+        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(variable->m_type);
+        if (array->m_physical_type != ASR::FixedSizeArray) continue;
+        ++arrays;
+        const Location &expected = array->base.base.loc;
+        REQUIRE(expected.first > 0);
+        bool matches_formal = false;
+        for (const Location &formal : formal_locations) {
+            if (formal.first == expected.first && formal.last == expected.last) {
+                matches_formal = true;
+            }
+        }
+        CHECK(matches_formal);
+        REQUIRE(array->n_dims == 2);
+        for (size_t d = 0; d < array->n_dims; ++d) {
+            CHECK(array->m_dims[d].loc.first == expected.first);
+            CHECK(array->m_dims[d].loc.last == expected.last);
+        }
+
+        // The verifier must report malformed bounds at their source type.
+        ASR::expr_t *saved_start = array->m_dims[0].m_start;
+        array->m_dims[0].m_start = ASRUtils::EXPR(ASR::make_RealConstant_t(
+            al, expected, 1.0, ASRUtils::TYPE(ASR::make_Real_t(al, expected, 4))));
+        diag::Diagnostics invalid_diagnostics;
+        CHECK(!asr_verify(*asr, true, invalid_diagnostics));
+        array->m_dims[0].m_start = saved_start;
+        REQUIRE(!invalid_diagnostics.diagnostics.empty());
+        const auto &error = invalid_diagnostics.diagnostics.back();
+        CHECK(error.message == "Start dimension must be a signed integer");
+        REQUIRE(error.labels.size() == 1);
+        REQUIRE(error.labels[0].spans.size() == 1);
+        CHECK(error.labels[0].spans[0].loc.first == expected.first);
+        CHECK(error.labels[0].spans[0].loc.last == expected.last);
+    }
+    CHECK(arrays == 2);
+    CHECK(asr_verify(*asr, true, diagnostics));
 }
 
 TEST_CASE("ASR Verify array arguments of StringFormat") {
