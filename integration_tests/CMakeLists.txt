@@ -3666,6 +3666,13 @@ RUN(NAME callback_06 LABELS gfortran llvm)
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME recursion_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME recursion_04 LABELS gfortran llvm)
+RUN(NAME recursion_05 LABELS gfortran llvm)
+RUN(NAME recursion_06 LABELS gfortran llvm EXTRAFILES recursion_06_module.f90)
+RUN(NAME recursion_07 LABELS gfortran llvm)
+# GFortran 15 has an internal compiler error on recursion_08 (`reduce` with a
+# procedure that enters the host of the internal procedure calling `reduce`)
+RUN(NAME recursion_08 LABELS llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
