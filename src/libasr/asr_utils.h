@@ -1020,11 +1020,38 @@ static inline bool is_frame_type(ASR::symbol_t *decl) {
     return false;
 }
 
-// Whether `v` is the frame slot of a host (see nested_vars): a saved pointer
-// to a frame, which the procedures nested in the host read directly.
+// Whether `decl` is the type of the frame slots of a thunk pool (see
+// nested_vars): a derived type whose one member is a pointer to a frame.
+static inline bool is_frame_slot_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(decl);
+    if (s->n_members != 1) {
+        return false;
+    }
+    ASR::symbol_t *member = s->m_symtab->get_symbol(s->m_members[0]);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return false;
+    }
+    ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(member);
+    return m->m_type != nullptr && ASR::is_a<ASR::Pointer_t>(*m->m_type) &&
+        is_frame_type(m->m_type_declaration);
+}
+
+// Whether `v` holds frame slots of a host (see nested_vars), which the
+// procedures nested in the host read directly: a saved pointer to a frame,
+// or the saved array of the frame slots of the thunk pools.
 static inline bool is_frame_slot(const ASR::Variable_t &v) {
-    return v.m_storage == ASR::storage_typeType::Save && v.m_type != nullptr &&
-        ASR::is_a<ASR::Pointer_t>(*v.m_type) && is_frame_type(v.m_type_declaration);
+    if (v.m_storage != ASR::storage_typeType::Save || v.m_type == nullptr) {
+        return false;
+    }
+    if (ASR::is_a<ASR::Pointer_t>(*v.m_type)) {
+        return is_frame_type(v.m_type_declaration);
+    }
+    return ASR::is_a<ASR::Array_t>(*v.m_type) &&
+        is_frame_slot_type(v.m_type_declaration);
 }
 
 // The common block in whose storage `v` lives, or nullptr when `v` has
