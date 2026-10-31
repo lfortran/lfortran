@@ -698,7 +698,7 @@ public:
                 if (head) {
                     s = b.DoLoop(dup.duplicate_expr(head->m_v),
                         dup.duplicate_expr(head->m_start), dup.duplicate_expr(head->m_end),
-                        body, head->m_increment ? dup.duplicate_expr(head->m_increment) : nullptr);
+                        body, dup.duplicate_expr(head->m_increment));
                 } else {
                     s = b.If(dup.duplicate_expr(levels[l - 1].second), body, {});
                 }

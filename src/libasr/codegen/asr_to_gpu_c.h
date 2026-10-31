@@ -4626,9 +4626,9 @@ public:
                 src << "; ";
                 visit_expr(dl->m_head.m_v);
                 int64_t step = 0;
-                if (!dl->m_head.m_increment || (ASRUtils::extract_value(
+                if (ASRUtils::extract_value(
                         ASRUtils::expr_value(dl->m_head.m_increment), step)
-                        && step == 1)) {
+                        && step == 1) {
                     src << "++";
                 } else {
                     src << " += ";

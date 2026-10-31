@@ -1210,18 +1210,15 @@ public:
         ASR::expr_t* c = x.m_head.m_increment;
         LCOMPILERS_ASSERT(a);
         LCOMPILERS_ASSERT(b);
+        LCOMPILERS_ASSERT(c);
         int increment;
-        if (!c) {
-            increment = 1;
+        if (c->type == ASR::exprType::IntegerConstant) {
+            increment = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n);
+        } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
+            ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
+            increment = static_cast<int>(-ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n);
         } else {
-            if (c->type == ASR::exprType::IntegerConstant) {
-                increment = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(c)->m_n);
-            } else if (c->type == ASR::exprType::IntegerUnaryMinus) {
-                ASR::IntegerUnaryMinus_t* ium = ASR::down_cast<ASR::IntegerUnaryMinus_t>(c);
-                increment = static_cast<int>(-ASR::down_cast<ASR::IntegerConstant_t>(ium->m_arg)->m_n);
-            } else {
-                throw CodeGenError("Do loop increment type not supported");
-            }
+            throw CodeGenError("Do loop increment type not supported");
         }
         out += lvname + " ∈ ";
         visit_expr(*a);
