@@ -26,7 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     b[((int)(j__dc) - (__lb_b_0))] = ((  3.00000000000000000e+00f * a[((int)(j__dc) - (__lb_a_0))]) -   1.00000000000000000e+00f);
 }
 
-__device__ inline void _lcompilers_matmul_gpu_91(float* matrix_a_m, int __1matrix_a_m, int __2matrix_a_m, float* matrix_b_m, int __size_matrix_b_m_dim1, int __stride_matrix_b_m_dim1, float* result, int __1result) {
+__device__ inline void _lcompilers_matmul_gpu_47(float* matrix_a_m, int __1matrix_a_m, int __2matrix_a_m, float* matrix_b_m, int __size_matrix_b_m_dim1, int __stride_matrix_b_m_dim1, float* result, int __1result) {
     int __do_loop_end;
     int __do_loop_end1;
     int __do_loop_end2;
@@ -124,47 +124,25 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
             int __1_t1;
             int __do_loop_end;
             int __do_loop_end1;
-            int __do_loop_end10;
             int __do_loop_end2;
             int __do_loop_end3;
             int __do_loop_end4;
-            int __do_loop_end5;
-            int __do_loop_end6;
-            int __do_loop_end7;
-            int __do_loop_end8;
-            int __do_loop_end9;
-            int __gpu_heap___libasr__created__var__2__constructor_buffer_base;
-            int __gpu_heap___libasr__created__var__2__constructor_buffer_lb1;
-            int __gpu_heap___libasr__created__var__2__constructor_buffer_n1;
-            int __gpu_heap___libasr__created__var__3__constructor_scratch_base;
-            int __gpu_heap___libasr__created__var__3__constructor_scratch_lb1;
-            int __gpu_heap___libasr__created__var__3__constructor_scratch_n1;
-            int __gpu_heap___libasr__created__var__6__constructor_result_base;
-            int __gpu_heap___libasr__created__var__6__constructor_result_lb1;
-            int __gpu_heap___libasr__created__var__6__constructor_result_n1;
-            int __gpu_heap___libasr__created__var__9__constructor_leaf_base;
-            int __gpu_heap___libasr__created__var__9__constructor_leaf_lb1;
-            int __gpu_heap___libasr__created__var__9__constructor_leaf_n1;
+            int __gpu_heap___libasr__created__var__3__constructor_result_base;
+            int __gpu_heap___libasr__created__var__3__constructor_result_lb1;
+            int __gpu_heap___libasr__created__var__3__constructor_result_n1;
             int __gpu_heap_r_base;
             int __gpu_heap_r_lb1;
             int __gpu_heap_r_n1;
-            int __libasr__created__var__4__constructor_used;
-            int __libasr__created__var__5__constructor_capacity;
-            int __libasr__created__var__7__constructor_copy;
-            float* __libasr__created__var__8__constructor_leaf = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+            float* __libasr__created__var__2__constructor_leaf = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+            int __libasr__created__var__4__constructor_index;
             float* __libasr_created__intrinsic_array_function_MatMul;
             int __libasr_index_0_;
             int __libasr_index_0_1;
             int __libasr_index_0_2;
             int __libasr_index_0_3;
             int __libasr_index_0_4;
-            int __libasr_index_0_5;
-            int __libasr_index_0_6;
             float* tail = __workspace_8 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-            __gpu_heap___libasr__created__var__2__constructor_buffer_base = -1;
-            __gpu_heap___libasr__created__var__3__constructor_scratch_base = -1;
-            __gpu_heap___libasr__created__var__6__constructor_result_base = -1;
-            __gpu_heap___libasr__created__var__9__constructor_leaf_base = -1;
+            __gpu_heap___libasr__created__var__3__constructor_result_base = -1;
             __gpu_heap_r_base = -1;
             __do_loop_end = __workspace_extent1;
             __libasr_index_0_ = (1 - 1);
@@ -181,223 +159,71 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
                 }
                 return;
             }
-            __libasr__created__var__4__constructor_used = 0;
-            __libasr__created__var__5__constructor_capacity = 0;
-            __gpu_heap___libasr__created__var__2__constructor_buffer_base = -1;
-            __gpu_heap___libasr__created__var__2__constructor_buffer_lb1 = 1;
-            __gpu_heap___libasr__created__var__2__constructor_buffer_n1 = 0;
-            __gpu_heap___libasr__created__var__2__constructor_buffer_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__2__constructor_buffer_n1);
-            if ((__gpu_heap___libasr__created__var__2__constructor_buffer_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__2__constructor_buffer_n1))) {
+            __libasr_created__intrinsic_array_function_MatMul = v + ((int)(((int)__lb_v_0)) - (__lb_v_0)) + (__dim_v_0 * ((int)(j__dc) - (__lb_v_1)));
+            _lcompilers_matmul_gpu_47(op, __dim_op_0, __dim_op_1, __libasr_created__intrinsic_array_function_MatMul, ((((((((int)__dim_v_0) + ((int)__lb_v_0)) - 1)) - (((int)__lb_v_0))) / (1)) + 1), 1, __libasr__created__var__2__constructor_leaf, __dim_op_0);
+            __gpu_heap___libasr__created__var__3__constructor_result_base = -1;
+            __gpu_heap___libasr__created__var__3__constructor_result_lb1 = 1;
+            __gpu_heap___libasr__created__var__3__constructor_result_n1 = max(0, (((int)__dim_op_0) + __workspace_extent1));
+            __gpu_heap___libasr__created__var__3__constructor_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__3__constructor_result_n1);
+            if ((__gpu_heap___libasr__created__var__3__constructor_result_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__3__constructor_result_n1))) {
                 if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
                     __gpu_stop_status[((int)(1) - (1))] = 2;
                 }
                 return;
             }
-            __libasr_created__intrinsic_array_function_MatMul = v + ((int)(((int)__lb_v_0)) - (__lb_v_0)) + (__dim_v_0 * ((int)(j__dc) - (__lb_v_1)));
-            _lcompilers_matmul_gpu_91(op, __dim_op_0, __dim_op_1, __libasr_created__intrinsic_array_function_MatMul, ((((((((int)__dim_v_0) + ((int)__lb_v_0)) - 1)) - (((int)__lb_v_0))) / (1)) + 1), 1, __libasr__created__var__8__constructor_leaf, __dim_op_0);
+            __libasr__created__var__4__constructor_index = 1;
             __do_loop_end1 = (1 + __dim_op_0 - 1);
             __1_t = (1 - 1);
             while (((__1_t + 1) <= __do_loop_end1)) {
                 __1_t = (__1_t + 1);
-                if ((__libasr__created__var__4__constructor_used == 2147483647)) {
+                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_result_base + 1) + (__libasr__created__var__4__constructor_index - __gpu_heap___libasr__created__var__3__constructor_result_lb1))) - (1))] = __libasr__created__var__2__constructor_leaf[((int)(__1_t) - (1))];
+                __libasr__created__var__4__constructor_index = (__libasr__created__var__4__constructor_index + 1);
+            }
+            __do_loop_end2 = __workspace_extent1;
+            __1_t1 = (1 - 1);
+            while (((__1_t1 + 1) <= __do_loop_end2)) {
+                __1_t1 = (__1_t1 + 1);
+                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_result_base + 1) + (__libasr__created__var__4__constructor_index - __gpu_heap___libasr__created__var__3__constructor_result_lb1))) - (1))] = tail[((int)(__1_t1) - (1))];
+                __libasr__created__var__4__constructor_index = (__libasr__created__var__4__constructor_index + 1);
+            }
+            if (((int)(!(((int)((__gpu_heap_r_base >= 0) && (__gpu_heap_r_n1 == max(0, __gpu_heap___libasr__created__var__3__constructor_result_n1)))))))) {
+                __gpu_heap_r_lb1 = __gpu_heap___libasr__created__var__3__constructor_result_lb1;
+                __gpu_heap_r_n1 = max(0, __gpu_heap___libasr__created__var__3__constructor_result_n1);
+                __gpu_heap_r_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_r_n1);
+                if ((__gpu_heap_r_base > (__gpu_heap_cap_r4 - __gpu_heap_r_n1))) {
                     if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                        __gpu_stop_status[((int)((3 + 1)) - (1))] = 1;
                         __gpu_stop_status[((int)(1) - (1))] = 3;
                     }
                     return;
                 }
-                if ((__libasr__created__var__4__constructor_used == __libasr__created__var__5__constructor_capacity)) {
-                    if ((__libasr__created__var__5__constructor_capacity > 1073741823)) {
-                        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                            __gpu_stop_status[((int)((4 + 1)) - (1))] = 1;
-                            __gpu_stop_status[((int)(1) - (1))] = 4;
-                        }
-                        return;
-                    }
-                    if ((__libasr__created__var__4__constructor_used > 0)) {
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_lb1 = 1;
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_n1 = max(0, __libasr__created__var__4__constructor_used);
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__3__constructor_scratch_n1);
-                        if ((__gpu_heap___libasr__created__var__3__constructor_scratch_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__3__constructor_scratch_n1))) {
-                            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                                __gpu_stop_status[((int)(1) - (1))] = 5;
-                            }
-                            return;
-                        }
-                        __do_loop_end7 = __libasr__created__var__4__constructor_used;
-                        __libasr__created__var__7__constructor_copy = (1 - 1);
-                        while (((__libasr__created__var__7__constructor_copy + 1) <= __do_loop_end7)) {
-                            __libasr__created__var__7__constructor_copy = (__libasr__created__var__7__constructor_copy + 1);
-                            __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_scratch_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__3__constructor_scratch_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))];
-                        }
-                    }
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_base = -1;
-                    if ((__libasr__created__var__5__constructor_capacity == 0)) {
-                        __libasr__created__var__5__constructor_capacity = 1;
-                    } else {
-                        __libasr__created__var__5__constructor_capacity = (__libasr__created__var__5__constructor_capacity * 2);
-                    }
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_lb1 = 1;
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_n1 = max(0, __libasr__created__var__5__constructor_capacity);
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__2__constructor_buffer_n1);
-                    if ((__gpu_heap___libasr__created__var__2__constructor_buffer_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__2__constructor_buffer_n1))) {
-                        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                            __gpu_stop_status[((int)(1) - (1))] = 6;
-                        }
-                        return;
-                    }
-                    if ((__libasr__created__var__4__constructor_used > 0)) {
-                        __do_loop_end8 = __libasr__created__var__4__constructor_used;
-                        __libasr__created__var__7__constructor_copy = (1 - 1);
-                        while (((__libasr__created__var__7__constructor_copy + 1) <= __do_loop_end8)) {
-                            __libasr__created__var__7__constructor_copy = (__libasr__created__var__7__constructor_copy + 1);
-                            __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_scratch_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__3__constructor_scratch_lb1))) - (1))];
-                        }
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_base = -1;
-                    }
-                }
-                __libasr__created__var__4__constructor_used = (__libasr__created__var__4__constructor_used + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__4__constructor_used - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))] = __libasr__created__var__8__constructor_leaf[((int)(__1_t) - (1))];
             }
-            if (((int)(!(((int)((__gpu_heap___libasr__created__var__9__constructor_leaf_base >= 0) && (__gpu_heap___libasr__created__var__9__constructor_leaf_n1 == __workspace_extent1))))))) {
-                __gpu_heap___libasr__created__var__9__constructor_leaf_lb1 = 1;
-                __gpu_heap___libasr__created__var__9__constructor_leaf_n1 = __workspace_extent1;
-                __gpu_heap___libasr__created__var__9__constructor_leaf_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__9__constructor_leaf_n1);
-                if ((__gpu_heap___libasr__created__var__9__constructor_leaf_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__9__constructor_leaf_n1))) {
-                    if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                        __gpu_stop_status[((int)(1) - (1))] = 7;
-                    }
-                    return;
-                }
-            }
-            __libasr_index_0_2 = 1;
-            __do_loop_end2 = ((__gpu_heap___libasr__created__var__9__constructor_leaf_lb1 + __gpu_heap___libasr__created__var__9__constructor_leaf_n1) - 1);
-            __libasr_index_0_1 = (__gpu_heap___libasr__created__var__9__constructor_leaf_lb1 - 1);
-            while (((__libasr_index_0_1 + 1) <= __do_loop_end2)) {
+            __libasr_index_0_2 = __gpu_heap___libasr__created__var__3__constructor_result_lb1;
+            __do_loop_end3 = ((__gpu_heap_r_lb1 + __gpu_heap_r_n1) - 1);
+            __libasr_index_0_1 = (__gpu_heap_r_lb1 - 1);
+            while (((__libasr_index_0_1 + 1) <= __do_loop_end3)) {
                 __libasr_index_0_1 = (__libasr_index_0_1 + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__9__constructor_leaf_base + 1) + (__libasr_index_0_1 - __gpu_heap___libasr__created__var__9__constructor_leaf_lb1))) - (1))] = tail[((int)(__libasr_index_0_2) - (1))];
+                __gpu_heap_r4[((int)(((__gpu_heap_r_base + 1) + (__libasr_index_0_1 - __gpu_heap_r_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_result_base + 1) + (__libasr_index_0_2 - __gpu_heap___libasr__created__var__3__constructor_result_lb1))) - (1))];
                 __libasr_index_0_2 = (__libasr_index_0_2 + 1);
             }
-            __do_loop_end3 = ((__gpu_heap___libasr__created__var__9__constructor_leaf_lb1 + __gpu_heap___libasr__created__var__9__constructor_leaf_n1) - 1);
-            __1_t1 = (__gpu_heap___libasr__created__var__9__constructor_leaf_lb1 - 1);
-            while (((__1_t1 + 1) <= __do_loop_end3)) {
-                __1_t1 = (__1_t1 + 1);
-                if ((__libasr__created__var__4__constructor_used == 2147483647)) {
-                    if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                        __gpu_stop_status[((int)((8 + 1)) - (1))] = 1;
-                        __gpu_stop_status[((int)(1) - (1))] = 8;
-                    }
-                    return;
-                }
-                if ((__libasr__created__var__4__constructor_used == __libasr__created__var__5__constructor_capacity)) {
-                    if ((__libasr__created__var__5__constructor_capacity > 1073741823)) {
-                        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                            __gpu_stop_status[((int)((9 + 1)) - (1))] = 1;
-                            __gpu_stop_status[((int)(1) - (1))] = 9;
-                        }
-                        return;
-                    }
-                    if ((__libasr__created__var__4__constructor_used > 0)) {
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_lb1 = 1;
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_n1 = max(0, __libasr__created__var__4__constructor_used);
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__3__constructor_scratch_n1);
-                        if ((__gpu_heap___libasr__created__var__3__constructor_scratch_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__3__constructor_scratch_n1))) {
-                            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                                __gpu_stop_status[((int)(1) - (1))] = 10;
-                            }
-                            return;
-                        }
-                        __do_loop_end9 = __libasr__created__var__4__constructor_used;
-                        __libasr__created__var__7__constructor_copy = (1 - 1);
-                        while (((__libasr__created__var__7__constructor_copy + 1) <= __do_loop_end9)) {
-                            __libasr__created__var__7__constructor_copy = (__libasr__created__var__7__constructor_copy + 1);
-                            __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_scratch_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__3__constructor_scratch_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))];
-                        }
-                    }
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_base = -1;
-                    if ((__libasr__created__var__5__constructor_capacity == 0)) {
-                        __libasr__created__var__5__constructor_capacity = 1;
-                    } else {
-                        __libasr__created__var__5__constructor_capacity = (__libasr__created__var__5__constructor_capacity * 2);
-                    }
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_lb1 = 1;
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_n1 = max(0, __libasr__created__var__5__constructor_capacity);
-                    __gpu_heap___libasr__created__var__2__constructor_buffer_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__2__constructor_buffer_n1);
-                    if ((__gpu_heap___libasr__created__var__2__constructor_buffer_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__2__constructor_buffer_n1))) {
-                        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                            __gpu_stop_status[((int)(1) - (1))] = 11;
-                        }
-                        return;
-                    }
-                    if ((__libasr__created__var__4__constructor_used > 0)) {
-                        __do_loop_end10 = __libasr__created__var__4__constructor_used;
-                        __libasr__created__var__7__constructor_copy = (1 - 1);
-                        while (((__libasr__created__var__7__constructor_copy + 1) <= __do_loop_end10)) {
-                            __libasr__created__var__7__constructor_copy = (__libasr__created__var__7__constructor_copy + 1);
-                            __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__3__constructor_scratch_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__3__constructor_scratch_lb1))) - (1))];
-                        }
-                        __gpu_heap___libasr__created__var__3__constructor_scratch_base = -1;
-                    }
-                }
-                __libasr__created__var__4__constructor_used = (__libasr__created__var__4__constructor_used + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__4__constructor_used - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__9__constructor_leaf_base + 1) + (__1_t1 - __gpu_heap___libasr__created__var__9__constructor_leaf_lb1))) - (1))];
-            }
-            __gpu_heap___libasr__created__var__9__constructor_leaf_base = -1;
-            __gpu_heap___libasr__created__var__6__constructor_result_base = -1;
-            __gpu_heap___libasr__created__var__6__constructor_result_lb1 = 1;
-            __gpu_heap___libasr__created__var__6__constructor_result_n1 = max(0, __libasr__created__var__4__constructor_used);
-            __gpu_heap___libasr__created__var__6__constructor_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr__created__var__6__constructor_result_n1);
-            if ((__gpu_heap___libasr__created__var__6__constructor_result_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr__created__var__6__constructor_result_n1))) {
-                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                    __gpu_stop_status[((int)(1) - (1))] = 12;
-                }
-                return;
-            }
-            __do_loop_end4 = __libasr__created__var__4__constructor_used;
-            __libasr__created__var__7__constructor_copy = (1 - 1);
-            while (((__libasr__created__var__7__constructor_copy + 1) <= __do_loop_end4)) {
-                __libasr__created__var__7__constructor_copy = (__libasr__created__var__7__constructor_copy + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__6__constructor_result_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__6__constructor_result_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__2__constructor_buffer_base + 1) + (__libasr__created__var__7__constructor_copy - __gpu_heap___libasr__created__var__2__constructor_buffer_lb1))) - (1))];
-            }
-            __gpu_heap___libasr__created__var__2__constructor_buffer_base = -1;
-            if (((int)(!(((int)((__gpu_heap_r_base >= 0) && (__gpu_heap_r_n1 == max(0, __gpu_heap___libasr__created__var__6__constructor_result_n1)))))))) {
-                __gpu_heap_r_lb1 = __gpu_heap___libasr__created__var__6__constructor_result_lb1;
-                __gpu_heap_r_n1 = max(0, __gpu_heap___libasr__created__var__6__constructor_result_n1);
-                __gpu_heap_r_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap_r_n1);
-                if ((__gpu_heap_r_base > (__gpu_heap_cap_r4 - __gpu_heap_r_n1))) {
-                    if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                        __gpu_stop_status[((int)(1) - (1))] = 13;
-                    }
-                    return;
-                }
-            }
-            __libasr_index_0_4 = __gpu_heap___libasr__created__var__6__constructor_result_lb1;
-            __do_loop_end5 = ((__gpu_heap_r_lb1 + __gpu_heap_r_n1) - 1);
-            __libasr_index_0_3 = (__gpu_heap_r_lb1 - 1);
-            while (((__libasr_index_0_3 + 1) <= __do_loop_end5)) {
-                __libasr_index_0_3 = (__libasr_index_0_3 + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap_r_base + 1) + (__libasr_index_0_3 - __gpu_heap_r_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr__created__var__6__constructor_result_base + 1) + (__libasr_index_0_4 - __gpu_heap___libasr__created__var__6__constructor_result_lb1))) - (1))];
-                __libasr_index_0_4 = (__libasr_index_0_4 + 1);
-            }
-            __gpu_heap___libasr__created__var__6__constructor_result_base = -1;
+            __gpu_heap___libasr__created__var__3__constructor_result_base = -1;
             if (((int)(!(((int)((__gpu_heap___gpu_call_result_base >= 0) && (__gpu_heap___gpu_call_result_n1 == max(0, __gpu_heap_r_n1)))))))) {
                 __gpu_heap___gpu_call_result_lb1 = __gpu_heap_r_lb1;
                 __gpu_heap___gpu_call_result_n1 = max(0, __gpu_heap_r_n1);
                 __gpu_heap___gpu_call_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___gpu_call_result_n1);
                 if ((__gpu_heap___gpu_call_result_base > (__gpu_heap_cap_r4 - __gpu_heap___gpu_call_result_n1))) {
                     if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                        __gpu_stop_status[((int)(1) - (1))] = 14;
+                        __gpu_stop_status[((int)(1) - (1))] = 4;
                     }
                     return;
                 }
             }
-            __libasr_index_0_6 = __gpu_heap_r_lb1;
-            __do_loop_end6 = ((__gpu_heap___gpu_call_result_lb1 + __gpu_heap___gpu_call_result_n1) - 1);
-            __libasr_index_0_5 = (__gpu_heap___gpu_call_result_lb1 - 1);
-            while (((__libasr_index_0_5 + 1) <= __do_loop_end6)) {
-                __libasr_index_0_5 = (__libasr_index_0_5 + 1);
-                __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + (__libasr_index_0_5 - __gpu_heap___gpu_call_result_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap_r_base + 1) + (__libasr_index_0_6 - __gpu_heap_r_lb1))) - (1))];
-                __libasr_index_0_6 = (__libasr_index_0_6 + 1);
+            __libasr_index_0_4 = __gpu_heap_r_lb1;
+            __do_loop_end4 = ((__gpu_heap___gpu_call_result_lb1 + __gpu_heap___gpu_call_result_n1) - 1);
+            __libasr_index_0_3 = (__gpu_heap___gpu_call_result_lb1 - 1);
+            while (((__libasr_index_0_3 + 1) <= __do_loop_end4)) {
+                __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+                __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + (__libasr_index_0_3 - __gpu_heap___gpu_call_result_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap_r_base + 1) + (__libasr_index_0_4 - __gpu_heap_r_lb1))) - (1))];
+                __libasr_index_0_4 = (__libasr_index_0_4 + 1);
             }
         }
         __do_loop_end = ((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1);
