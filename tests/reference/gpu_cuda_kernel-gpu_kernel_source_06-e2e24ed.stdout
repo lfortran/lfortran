@@ -28,10 +28,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         j__dc = (__flat_idx + 1);
     } else {
         __flat_idx = blockIdx.x;
-        __tiles = ((((__loop_end_0 - 1) + 1) + 31) >> 5);
-        i__dc = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        __tiles = ((int)((int)((((__loop_end_0 - 1) + 1) + 31)) >> (5)));
+        i__dc = (((int)((unsigned int)((__flat_idx - ((__flat_idx / __tiles) * __tiles))) << (5))) + (threadIdx.x & 31));
         __flat_idx = (__flat_idx / __tiles);
-        j__dc = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        j__dc = (((int)((unsigned int)(__flat_idx) << (3))) + ((int)((int)(threadIdx.x) >> (5))));
         if ((i__dc >= ((__loop_end_0 - 1) + 1))) {
             return;
         }
