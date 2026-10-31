@@ -513,7 +513,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         head.m_end = thread_count;
         head.m_increment = nullptr;
         launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_DoLoop_t(al, loc, nullptr, head,
+            ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                 fold_body.p, fold_body.n, nullptr, 0)));
 
         Vec<ASR::expr_t*> dealloc_args;
