@@ -4867,6 +4867,11 @@ RUN(NAME do_loop_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME do_loop_09 LABELS gfortran llvm)
 RUN(NAME do_loop_10 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_11 LABELS gfortran c cpp)
+# Pin an x86-64 CPU whose tuning enables upper-bound loop unrolling, which
+# exposes an LLVM 7 and 8 miscompile on any x86-64 host.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    RUN(NAME do_loop_12 LABELS gfortran llvm EXTRA_ARGS --fast --mcpu=x86-64)
+endif()
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
