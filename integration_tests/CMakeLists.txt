@@ -3700,6 +3700,9 @@ RUN(NAME host_assoc_20 LABELS gfortran llvm)
 RUN(NAME host_assoc_21 LABELS gfortran llvm)
 RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thunks=512)
 RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
+# GFortran 15 does not support the NON_RECURSIVE prefix
+RUN(NAME host_assoc_24 LABELS llvm)
+RUN(NAME host_assoc_25 FAIL LABELS llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
