@@ -3364,7 +3364,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 } else if (right.empty()) {
                     out += var + " >= " + left;
                 } else {
-                    out += left + " <= " + var + " <= " + right;
+                    out += "(" + var + " >= " + left + " && " + var + " <= " + right + ")";
                 }
                 out += ") {\n";
                 bracket_open--;
