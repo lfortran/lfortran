@@ -2078,7 +2078,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 if( ds[i] != "" ) {
                     std::string dim_length = "((( (" + ubs[i] + ") - (" + lbs[i] + ") )" + "/" + ds[i] + ") + 1)";
                     std::string target_dim_des = target_dim_des_array + "[" + std::to_string(j) + "]";
-                    update_target_desc += indent + target_dim_des + ".stride = " + stride + ";\n";
+                    update_target_desc += indent + target_dim_des + ".stride = (" + stride + " * (" + ds[i] + "));\n";
                     update_target_desc += indent + target_dim_des + ".lower_bound = 1;\n";
                     update_target_desc += indent + target_dim_des + ".length = " + dim_length + ";\n";
                     j--;
