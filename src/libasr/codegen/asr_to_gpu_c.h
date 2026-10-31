@@ -5406,6 +5406,19 @@ public:
                     src << "), (float)(";
                     visit_expr(op->m_right);
                     src << "))";
+                } else if (op->m_op == ASR::binopType::LBitRShift
+                        || op->m_op == ASR::binopType::BitLShift
+                        || op->m_op == ASR::binopType::BitRShift) {
+                    std::string result_type = gpu_type(op->m_type);
+                    std::string operand_type = result_type;
+                    if (op->m_op != ASR::binopType::BitRShift) {
+                        operand_type = "unsigned " + operand_type;
+                    }
+                    src << "((" << result_type << ")((" << operand_type << ")(";
+                    visit_expr(op->m_left);
+                    src << ") " << binop_str(op->m_op) << " (";
+                    visit_expr(op->m_right);
+                    src << ")))";
                 } else {
                     src << "(";
                     visit_expr(op->m_left);

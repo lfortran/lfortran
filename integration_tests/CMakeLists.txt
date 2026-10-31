@@ -6998,6 +6998,8 @@ RUN(NAME gpu_kernel_source_37 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-s
 RUN(NAME gpu_kernel_source_38 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_39 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_40 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_bit_shift_masks LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_bit_shift_masks_8 LABELS gfortran llvm cuda)
 RUN(NAME gpu_liveout_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_03 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_01 LABELS gfortran llvm metal cuda)

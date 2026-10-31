@@ -40,6 +40,10 @@ the signed left operand is negative. `BitRShift` instead copies the sign
 bit. These distinctions are explicit in `op`, not inferred from the
 operand's signedness. Backend lowering must preserve them without signed
 left-shift overflow or widening an untyped literal before shifting.
+The shared CUDA/Metal device emitter, including CUDA-on-CPU, lowers logical
+right and bitwise left shifts through the result-width unsigned type and
+converts the result back to the declared ASR type. Arithmetic right shifts
+use the corresponding signed type.
 
 ## Examples
 
