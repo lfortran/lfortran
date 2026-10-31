@@ -206,14 +206,17 @@ public:
     }
 };
 
-// For each statement label of a procedure body, the BLOCK and ASSOCIATE
-// constructs that contain the labeled statement, outermost first.
+// For each statement label of a procedure body, the constructs that contain
+// the labeled statement, outermost first: the BLOCK and ASSOCIATE constructs
+// (BlockCall, AssociateBlockCall) and the loops (DoLoop, DoConcurrentLoop,
+// WhileLoop), each identified by its statement.
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
 public:
-    std::map<uint64_t, std::vector<SymbolTable*>> &scopes;
-    std::vector<SymbolTable*> enclosing;
+    std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes;
+    std::vector<const ASR::stmt_t*> enclosing;
 
-    GoToTargetScopes(std::map<uint64_t, std::vector<SymbolTable*>> &scopes_):
+    GoToTargetScopes(
+        std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes_):
         scopes(scopes_) {}
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
@@ -226,19 +229,39 @@ public:
             scopes[x.m_label] = enclosing;
         }
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        enclosing.push_back(block->m_symtab);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-        enclosing.pop_back();
+        visit_construct(&x.base, block->m_body, block->n_body);
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
         ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
             x.m_m);
-        enclosing.push_back(block->m_symtab);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
+        visit_construct(&x.base, block->m_body, block->n_body);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+        // The loop-else runs after the loop, outside it.
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        visit_construct(&x.base, x.m_body, x.n_body);
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
+    }
+
+    void visit_construct(const ASR::stmt_t *construct, ASR::stmt_t **body,
+            size_t n_body) {
+        enclosing.push_back(construct);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(*body[i]);
         }
         enclosing.pop_back();
     }
@@ -743,9 +766,12 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
-    // The BLOCK and ASSOCIATE constructs that contain each labeled statement
-    // of the procedure being generated (see GoToTargetScopes).
-    std::map<uint64_t, std::vector<SymbolTable*>> goto_target_scopes;
+    // The constructs that contain each labeled statement of the procedure
+    // being generated (see GoToTargetScopes).
+    std::map<uint64_t, std::vector<const ASR::stmt_t*>> goto_target_scopes;
+    // The constructs, in the sense of GoToTargetScopes, that contain the
+    // statement being generated, outermost first.
+    std::vector<const ASR::stmt_t*> enclosing_constructs;
     std::unordered_map<const ASR::symbol_t*, llvm::BasicBlock*> symbol_to_returnBlock; /// Get Symbol's Return Block -- Used for Finalization. See LLVMFinalize
     std::set<uint64_t> global_string_allocated;
     // The procedure or program whose contained procedures are being
@@ -8321,6 +8347,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -8546,6 +8573,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         strings_to_be_deallocated.reserve(al, 1);
 
 #ifdef HAVE_TARGET_WASM
@@ -10987,6 +11015,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -11034,6 +11063,7 @@ public:
         loop_or_block_end_names.clear();
         loop_end_index.clear();
         block_cleanups.clear();
+        enclosing_constructs.clear();
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
     }
@@ -16681,9 +16711,11 @@ public:
         block_cleanups.push_back({associate_block->m_symtab, heap_arrays_before,
             pending_char_writebacks.size(), saved_stack, loop_or_block_end.size(),
             false});
+        enclosing_constructs.push_back(&x.base);
         for (size_t i = 0; i < associate_block->n_body; i++) {
             this->visit_stmt(*(associate_block->m_body[i]));
         }
+        enclosing_constructs.pop_back();
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
@@ -16749,9 +16781,11 @@ public:
             wb_before, saved_stack, loop_or_block_end.size(), true});
         loop_or_block_end.push_back(blockend);
         loop_or_block_end_names.push_back(blockend_name);
+        enclosing_constructs.push_back(&x.base);
         for (size_t i = 0; i < block->n_body; i++) {
             this->visit_stmt(*(block->m_body[i]));
         }
+        enclosing_constructs.pop_back();
 
         start_new_block(blockend);
         emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
@@ -17672,9 +17706,11 @@ public:
             free_strings_to_be_deallocated(0);
             return tmp;
         }, [&]() {
+            enclosing_constructs.push_back(&x.base);
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
+            enclosing_constructs.pop_back();
         });
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
@@ -17802,19 +17838,31 @@ public:
         auto target_scopes = goto_target_scopes.find(x.m_target_id);
         bool enters_construct = false;
         if (target_scopes != goto_target_scopes.end()) {
-            const std::vector<SymbolTable*> &scopes = target_scopes->second;
+            const std::vector<const ASR::stmt_t*> &scopes =
+                target_scopes->second;
             size_t kept = 0;
-            while (kept < block_cleanups.size() && kept < scopes.size() &&
-                    block_cleanups[kept].symtab == scopes[kept]) {
+            while (kept < enclosing_constructs.size() &&
+                    kept < scopes.size() &&
+                    enclosing_constructs[kept] == scopes[kept]) {
                 kept++;
             }
             // A branch cannot enter a construct from outside it. Semantics
             // makes such a GoTo, which is never executed, for the labels of
-            // an assigned GO TO without a label list: a branch into the
-            // BLOCK or ASSOCIATE construct would skip its declarations.
+            // an assigned GO TO without a label list: a branch into a BLOCK
+            // or ASSOCIATE construct would skip its declarations, and one
+            // into a loop its initialization.
             enters_construct = kept < scopes.size();
             if (!enters_construct) {
-                leave_innermost_blocks(kept);
+                // The BLOCK and ASSOCIATE constructs among the kept ones
+                // are the outermost entries of `block_cleanups`.
+                size_t kept_blocks = 0;
+                for (size_t i = 0; i < kept; i++) {
+                    if (ASR::is_a<ASR::BlockCall_t>(*scopes[i]) ||
+                            ASR::is_a<ASR::AssociateBlockCall_t>(*scopes[i])) {
+                        kept_blocks++;
+                    }
+                }
+                leave_innermost_blocks(kept_blocks);
             }
         }
         if (enters_construct) {
