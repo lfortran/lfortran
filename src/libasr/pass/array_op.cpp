@@ -1360,6 +1360,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     ASR::expr_t* contiguous_array_storage(ASR::expr_t* array,
             const Location& loc) {
+        // Device preparation owns array storage; its arrays already lower to
+        // device pointers, not the host descriptors this optimization exposes.
+        for( SymbolTable* scope = current_scope; scope; scope = scope->parent ) {
+            if( scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASRUtils::runs_on_device(
+                        ASR::down_cast<ASR::symbol_t>(scope->asr_owner)) ) {
+                return array;
+            }
+        }
         ASR::ttype_t* type = ASRUtils::expr_type(array);
         if( !pass_options.fast || bounds_checking || !ASRUtils::is_array(type) ||
                 !ASRUtils::is_contiguous_array_designator(array) ||
