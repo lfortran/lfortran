@@ -5278,6 +5278,7 @@ public:
                                                     check_for_bounds, array_name, infile);
             }
         }
+        record_component_data_address(x.base, tmp);
         current_der_type_name = array_der_type_name;
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
             current_der_type_name = get_type_key(
@@ -6217,6 +6218,7 @@ public:
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
         member_type = ASRUtils::type_get_past_array(member_type);
+        record_component_data_address(x.base, tmp);
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = member->m_type_declaration;
             current_der_type_name = get_type_key(s_sym);
@@ -10463,7 +10465,7 @@ public:
     }
 
     // Under --fast the loads and stores of the procedures for which
-    // dummies_may_be_noalias holds get TBAA metadata with two classes of
+    // dummies_may_be_noalias holds get TBAA metadata with two main classes of
     // memory, so that LLVM knows that a store to an array element does not
     // change array descriptors or the pointers that lead to them:
     // - "descriptor": the fields of array descriptors and the pointers
@@ -10473,6 +10475,8 @@ public:
     //   pointer or the descriptor.
     // - "data": the elements of arrays (and parts of complex elements),
     //   reached through the base address in an array descriptor.
+    //   ASR-proven numeric components of non-TARGET, nonpointer CLASS
+    //   receivers have separate inline and allocated subclasses.
     // A conforming program cannot make an array element share storage with
     // a pointer or a descriptor: EQUIVALENCE does not allow pointers or
     // objects with pointer or allocatable components, a pointer in COMMON
@@ -10501,6 +10505,69 @@ public:
     // value (local allocatable arrays are reached through their descriptor,
     // like any descriptor array).
     std::set<llvm::Value*> local_array_storage;
+
+    // An allocatable numeric component owns storage separate from the inline
+    // components of any derived-type object. Keep both below "data" so a
+    // pointer array, which may alias an inline component, still aliases both.
+    // Record ASR component provenance before lowering loses that distinction.
+    std::set<llvm::Value*> inline_component_data;
+    std::set<llvm::Value*> allocated_component_data;
+
+    void record_component_data_address(const ASR::expr_t &expression,
+            llvm::Value *address) {
+        if (!alias_info_enabled() || !address->getType()->isPointerTy()) {
+            return;
+        }
+        const ASR::expr_t *component = &expression;
+        bool element = ASR::is_a<ASR::ArrayItem_t>(expression);
+        if (element) {
+            component = ASR::down_cast<ASR::ArrayItem_t>(component)->m_v;
+            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*component)) {
+                component = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+                    component)->m_arg;
+            }
+        }
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*component)) {
+            return;
+        }
+        const ASR::StructInstanceMember_t *access =
+            ASR::down_cast<ASR::StructInstanceMember_t>(component);
+        if (!ASR::is_a<ASR::Var_t>(*access->m_v) ||
+                !ASR::is_a<ASR::Variable_t>(
+                    *ASRUtils::symbol_get_past_external(access->m_m))) {
+            return;
+        }
+        const ASR::Variable_t *receiver = ASRUtils::EXPR2VAR(access->m_v);
+        const ASR::Variable_t *member = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(access->m_m));
+        if (!ASRUtils::is_class_type(ASRUtils::extract_type(receiver->m_type)) ||
+                ASRUtils::is_pointer(receiver->m_type) ||
+                receiver->m_target_attr || receiver->m_is_volatile ||
+                receiver->m_is_asynchronous || receiver->n_codims != 0 ||
+                ASRUtils::has_scoped_variable_attribute(*receiver,
+                    receiver->m_parent_symtab) ||
+                ASRUtils::is_pointer(member->m_type) ||
+                member->m_is_volatile || member->m_is_asynchronous ||
+                member->n_codims != 0 ||
+                ASRUtils::is_array(member->m_type) != element) {
+            return;
+        }
+        ASR::ttype_t *type = ASRUtils::extract_type(member->m_type);
+        if (!ASR::is_a<ASR::Integer_t>(*type) &&
+                !ASR::is_a<ASR::UnsignedInteger_t>(*type) &&
+                !ASR::is_a<ASR::Real_t>(*type) &&
+                !ASR::is_a<ASR::Complex_t>(*type) &&
+                !ASR::is_a<ASR::Logical_t>(*type)) {
+            return;
+        }
+        if (ASRUtils::is_allocatable(member->m_type)) {
+            if (element) {
+                allocated_component_data.insert(address);
+            }
+        } else {
+            inline_component_data.insert(address);
+        }
+    }
 
     static bool is_local_array_storage(const ASR::Variable_t &v,
             llvm::Value *ptr) {
@@ -10621,10 +10688,19 @@ public:
     // a pointer in a struct, `data` for an array element that is not a
     // byte (bytes can be used to copy any storage), nullptr otherwise.
     llvm::MDNode* tbaa_access_tag(llvm::Value *ptr, llvm::Type *type,
-            llvm::MDNode *descriptor, llvm::MDNode *data) {
+            llvm::MDNode *descriptor, llvm::MDNode *data,
+            llvm::MDNode *inline_component, llvm::MDNode *allocated_component) {
         if (!type->isIntegerTy() && !type->isFloatingPointTy() &&
                 !type->isPointerTy()) {
             return nullptr;
+        }
+        if (!type->isPointerTy() && !type->isIntegerTy(8)) {
+            if (inline_component_data.count(ptr)) {
+                return inline_component;
+            }
+            if (allocated_component_data.count(ptr)) {
+                return allocated_component;
+            }
         }
         if (llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr)) {
             uint64_t field = 0;
@@ -10684,10 +10760,18 @@ public:
         llvm::MDNode *descriptor_type = mdb.createTBAAScalarTypeNode(
             "descriptor", root);
         llvm::MDNode *data_type = mdb.createTBAAScalarTypeNode("data", root);
+        llvm::MDNode *inline_component_type = mdb.createTBAAScalarTypeNode(
+            "inline component", data_type);
+        llvm::MDNode *allocated_component_type = mdb.createTBAAScalarTypeNode(
+            "allocated component", data_type);
         llvm::MDNode *descriptor = mdb.createTBAAStructTagNode(
             descriptor_type, descriptor_type, 0);
         llvm::MDNode *data = mdb.createTBAAStructTagNode(
             data_type, data_type, 0);
+        llvm::MDNode *inline_component = mdb.createTBAAStructTagNode(
+            inline_component_type, inline_component_type, 0);
+        llvm::MDNode *allocated_component = mdb.createTBAAStructTagNode(
+            allocated_component_type, allocated_component_type, 0);
         for (llvm::Function &F: *module) {
             if (tbaa_functions.find(&F) == tbaa_functions.end()) {
                 continue;
@@ -10698,14 +10782,16 @@ public:
                     if (llvm::LoadInst *load = llvm::dyn_cast<llvm::LoadInst>(&I)) {
                         if (load->isSimple()) {
                             tag = tbaa_access_tag(load->getPointerOperand(),
-                                load->getType(), descriptor, data);
+                                load->getType(), descriptor, data,
+                                inline_component, allocated_component);
                         }
                     } else if (llvm::StoreInst *store =
                             llvm::dyn_cast<llvm::StoreInst>(&I)) {
                         if (store->isSimple()) {
                             tag = tbaa_access_tag(store->getPointerOperand(),
                                 store->getValueOperand()->getType(),
-                                descriptor, data);
+                                descriptor, data, inline_component,
+                                allocated_component);
                         }
                     }
                     if (tag != nullptr) {

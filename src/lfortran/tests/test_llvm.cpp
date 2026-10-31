@@ -29,10 +29,12 @@
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
 
+#include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
@@ -653,6 +655,10 @@ void inspect_definitions(const std::string &source, bool fast,
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
     co.po.stack_arrays = stack_arrays;
+    if (optimize) {
+        co.po.bounds_checking = false;
+        co.po.strict_bounds_checking = false;
+    }
     co.detect_leaks = detect_leaks;
     if (configure) configure(co);
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
@@ -1019,8 +1025,10 @@ std::string tbaa_accesses(const std::string &source, bool fast,
                     }
                     llvm::MDNode *access_type = llvm::cast<llvm::MDNode>(
                         tag->getOperand(1));
-                    llvm::MDNode *root = llvm::cast<llvm::MDNode>(
-                        access_type->getOperand(1));
+                    llvm::MDNode *root = access_type;
+                    while (root->getNumOperands() > 1) {
+                        root = llvm::cast<llvm::MDNode>(root->getOperand(1));
+                    }
                     REQUIRE(llvm::cast<llvm::MDString>(root->getOperand(0))
                         ->getString() == "LFortran TBAA");
                     result.insert(procedure + ":" + access + " " + type_name
@@ -1233,13 +1241,13 @@ end module
     // Nothing in the bind(c) procedure.
     std::string expected =
         // Elements of self%out and self%w.
-        "forward:load float:data; "
+        "forward:load float:allocated component; "
         // Offsets, lower bounds and strides of the descriptors.
         "forward:load i64:descriptor; "
         // The class wrapper (self), the descriptor pointers of the
         // components and the base addresses of their data.
         "forward:load pointer:descriptor; "
-        "forward:store float:data; "
+        "forward:store float:allocated component; "
         // TRANSFER reinterprets each element through an untagged scalar;
         // only the integer elements of the local fixed-size temporary that
         // holds its result are tagged.
@@ -1247,6 +1255,176 @@ end module
         "pun:store i32:data; ";
     CHECK(tbaa_accesses(source, true, procedures) == expected);
     CHECK(tbaa_accesses(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM CLASS component storage provenance") {
+    std::string source = R"(module component_storage_m
+implicit none
+type :: inner_t
+    integer :: width
+end type
+type :: state_t
+    integer :: width
+    real :: fixed(4)
+    real, allocatable :: values(:,:)
+    real, allocatable :: scalar
+    real, pointer :: alias(:)
+    integer(kind=1) :: byte
+    character :: text
+    type(inner_t) :: inner
+end type
+type, extends(state_t) :: extended_t
+end type
+contains
+subroutine touch(self, i, out)
+    class(state_t), intent(inout) :: self
+    integer, intent(in) :: i
+    real, intent(out) :: out
+    out = self%fixed(i) + self%values(i,1) + self%alias(i) + self%width
+    self%fixed(i) = out
+    self%values(i,1) = out
+end subroutine
+subroutine excluded_members(self, out)
+    class(state_t), intent(in) :: self
+    real, intent(out) :: out
+    out = self%scalar + self%byte + iachar(self%text) + self%inner%width
+end subroutine
+subroutine parent_component(self, out)
+    class(extended_t), intent(in) :: self
+    real, intent(out) :: out
+    out = self%state_t%width + self%state_t%values(1,1)
+end subroutine
+end module
+)";
+    auto procedures = std::vector<std::pair<std::string, std::string>>{
+        {"touch", "_m_touch"}, {"excluded_members", "_m_excluded_members"},
+        {"parent_component", "_m_parent_component"}};
+    CHECK(tbaa_accesses(source, false, procedures).empty());
+    inspect_definitions(source, true, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            std::set<std::string> components;
+            std::set<llvm::MDNode*> component_parents;
+            llvm::MDNode *generic_data_type = nullptr;
+            bool generic_pointer_data = false;
+            for (llvm::BasicBlock &block: fn) {
+                for (llvm::Instruction &inst: block) {
+                    llvm::MDNode *tag = inst.getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (!tag) continue;
+                    auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                    std::string name = llvm::cast<llvm::MDString>(
+                        type->getOperand(0))->getString().str();
+                    if (name == "data") {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                        if (load && load->getType()->isFloatTy()) {
+                            generic_pointer_data = true;
+                            generic_data_type = type;
+                        }
+                    }
+                    if (name != "inline component" &&
+                            name != "allocated component") continue;
+                    REQUIRE(procedure == "touch");
+                    auto *parent = llvm::cast<llvm::MDNode>(type->getOperand(1));
+                    component_parents.insert(parent);
+                    CHECK(llvm::cast<llvm::MDString>(parent->getOperand(0))
+                        ->getString() == "data");
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                    auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                    REQUIRE((load || store));
+                    llvm::Type *value_type = load ? load->getType()
+                        : store->getValueOperand()->getType();
+                    CHECK(!value_type->isPointerTy());
+                    CHECK(!value_type->isIntegerTy(8));
+                    components.insert(name);
+                }
+            }
+            if (procedure == "touch") {
+                std::set<std::string> expected = {
+                    "inline component", "allocated component"};
+                CHECK(components == expected);
+                CHECK(generic_pointer_data);
+                REQUIRE(component_parents.size() == 1);
+                CHECK(*component_parents.begin() == generic_data_type);
+            } else {
+                CHECK(components.empty());
+            }
+        });
+
+    // Exclusions change only the receiver, not the accesses under test.
+    for (const char *declaration: {
+            "type(state_t), intent(inout) :: self",
+            "class(state_t), target, intent(inout) :: self",
+            "class(state_t), pointer, intent(inout) :: self",
+            "class(state_t), volatile, intent(inout) :: self",
+            "class(state_t), asynchronous, intent(inout) :: self"}) {
+        std::string excluded = source;
+        std::string original = "class(state_t), intent(inout) :: self";
+        excluded.replace(excluded.find(original), original.size(), declaration);
+        std::string accesses = tbaa_accesses(excluded, true, {procedures[0]});
+        CHECK(accesses.find("inline component") == std::string::npos);
+        CHECK(accesses.find("allocated component") == std::string::npos);
+    }
+    // The declaration-scope query must see attributes in contained BLOCKs.
+    std::string scoped = source;
+    std::string start = "    out = self%fixed(i)";
+    scoped.insert(scoped.find(start), "    block\n    volatile :: self\n");
+    std::string end = "end subroutine";
+    scoped.insert(scoped.find(end), "    end block\n");
+    std::string accesses = tbaa_accesses(scoped, true, {procedures[0]});
+    CHECK(accesses.find("inline component") == std::string::npos);
+    CHECK(accesses.find("allocated component") == std::string::npos);
+}
+
+TEST_CASE("LLVM CLASS inline component load hoists across owned array writes") {
+    std::string source = R"(module component_alias_m
+implicit none
+type :: state_t
+    integer :: width
+    real, allocatable :: values(:,:)
+end type
+contains
+subroutine accumulate(self, x, n)
+    class(state_t), intent(inout) :: self
+    integer, intent(in) :: n
+    real, intent(in) :: x(n,n)
+    integer :: i, j
+    do j = 1, n
+        do i = 1, self%width
+            self%values(i,j) = self%values(i,j) + x(i,j)
+        end do
+    end do
+end subroutine
+end module
+)";
+    inspect_definitions(source, true, {{"accumulate", "_m_accumulate"}},
+        [&](const std::string &, llvm::Function &fn) {
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            size_t width_reads = 0;
+            size_t loop_stores = 0;
+            for (llvm::BasicBlock &block: fn) {
+                for (llvm::Instruction &inst: block) {
+                    auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                    if (store && loops.getLoopFor(&block) &&
+                            store->getValueOperand()->getType()->isFPOrFPVectorTy()) {
+                        loop_stores++;
+                    }
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                    if (!load || !load->getType()->isIntegerTy(32)) continue;
+                    llvm::MDNode *tag = load->getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (!tag) continue;
+                    auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                    auto *name = llvm::cast<llvm::MDString>(type->getOperand(0));
+                    if (name->getString() == "inline component") {
+                        width_reads++;
+                        CHECK(loops.getLoopFor(load->getParent()) == nullptr);
+                    }
+                }
+            }
+            CHECK(width_reads == 1);
+            CHECK(loop_stores > 0);
+        }, false, true);
 }
 
 TEST_CASE("LLVM private array function result slots") {
@@ -1311,6 +1489,96 @@ end module
             });
     }
 }
+
+#if LLVM_VERSION_MAJOR >= 17
+TEST_CASE("LLVM late cleanup hoists conditional window descriptors") {
+    // Keep unswitching profitable without relying on target-specific unrolling.
+    std::string source = R"(module conditional_window_updates
+implicit none
+type :: state_t
+    integer :: width, channels, kernel_size, filters, stride
+    real, allocatable :: kernel(:), gradient(:), dw(:,:,:)
+contains
+    procedure :: update
+end type
+contains
+pure subroutine update(self, input, gradient, enabled)
+    class(state_t), intent(inout) :: self
+    real, intent(in) :: input(:,:), gradient(:,:)
+    logical, intent(in) :: enabled
+    real :: dw(self%filters,self%channels,self%kernel_size)
+    integer :: i, k, n, r, iws, iwe
+    dw = 0
+    self%gradient = 0
+    do i = 1, self%width
+        iws = 1 + self%stride*(i-1)
+        iwe = min(iws + self%kernel_size - 1, size(input,2))
+        do k = 1, self%channels
+            do n = 1, self%filters
+                dw(n,k,1) = dw(n,k,1) + gradient(n,i)
+                if (enabled) then
+                    do r = iws, iwe
+                        self%gradient(r) = self%gradient(r) + self%kernel(r-iws+1)
+                    end do
+                end if
+            end do
+        end do
+    end do
+    self%dw = self%dw + dw
+end subroutine
+end module
+)";
+    inspect_definitions(source, true,
+        {{"update", "_update_real_______1_real_______2"}},
+        [&](const std::string &, llvm::Function &fn) {
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            struct Accesses {
+                unsigned data_stores = 0, component_stores = 0, descriptor_loads = 0;
+            };
+            auto accesses = [](llvm::Loop *loop) {
+                Accesses result;
+                for (llvm::BasicBlock *block: loop->blocks()) {
+                    for (llvm::Instruction &inst: *block) {
+                        llvm::MDNode *tag = inst.getMetadata(llvm::LLVMContext::MD_tbaa);
+                        if (!tag) continue;
+                        auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                        auto *name = llvm::cast<llvm::MDString>(type->getOperand(0));
+                        if (auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                            if (!store->getValueOperand()->getType()->isFPOrFPVectorTy()) continue;
+                            result.data_stores += name->getString() == "data";
+                            result.component_stores += name->getString() == "allocated component";
+                        } else if (llvm::isa<llvm::LoadInst>(inst)) {
+                            result.descriptor_loads += name->getString() == "descriptor";
+                        }
+                    }
+                }
+                return result;
+            };
+            std::vector<llvm::Loop *> pending(loops.begin(), loops.end());
+            // Versioning and unrolling may clone stores and update loops.
+            unsigned update_loops = 0;
+            while (!pending.empty()) {
+                llvm::Loop *loop = pending.back();
+                pending.pop_back();
+                pending.insert(pending.end(), loop->begin(), loop->end());
+                Accesses found = accesses(loop);
+                if (!found.data_stores || !found.component_stores) continue;
+                bool nested_update = false;
+                for (llvm::Loop *child: *loop) {
+                    Accesses nested = accesses(child);
+                    nested_update |= nested.data_stores && nested.component_stores;
+                }
+                if (nested_update) continue;
+                update_loops++;
+                CHECK(found.descriptor_loads == 0);
+                REQUIRE(loop->getParentLoop() != nullptr);
+                CHECK(accesses(loop->getParentLoop()).descriptor_loads == 0);
+            }
+            CHECK(update_loops > 0);
+        }, false, true);
+}
+#endif
 
 TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
     std::string source = R"(module saved_volatile_m

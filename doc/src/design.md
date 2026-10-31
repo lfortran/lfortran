@@ -131,6 +131,18 @@ compiler-managed descriptors and struct pointer fields using TBAA. Numeric
 and logical elements share one data class, so this metadata does not claim
 that two data arrays cannot overlap.
 
+For direct component accesses through nonpointer, non-TARGET CLASS variables,
+ASR storage facts distinguish inline numeric/logical components from elements
+of numeric/logical allocatable array components. These are sibling subclasses
+of data: allocated payload cannot overlap inline object storage, but generic
+pointer-array data remains their parent and may alias either. Scalar
+allocatable payloads, pointer members, nested component receivers, ordinary
+TYPE receivers, and byte/character accesses receive no new classification.
+VOLATILE, ASYNCHRONOUS (including scoped declarations), and coarray receivers
+or members are excluded. The backend records the component provenance while
+lowering ASR, before LLVM addresses lose it; it does not infer ownership from
+LLVM types.
+
 Lowered function results retain the explicit `ResultArgument` storage role;
 the backend does not infer that role from dummy position or type. A C_PTR
 passed as a C address is not a restricted Fortran object's address and is
