@@ -234,6 +234,7 @@
             ()
             [(AttrExtends
                 Base
+                []
             )]
             [(Declaration
                 (AttrType

@@ -273,9 +273,10 @@ end module gt_neg_15
 
 ! N16: a sealed generic type cannot be extended; a nonsealed one can (TD-45).
 module gt_neg_16
+    use gt_neg_contracts, only: ISum
     use gt_neg_generic, only: PairwiseSum
     implicit none
-    type, extends(PairwiseSum) :: Child
+    type, extends(PairwiseSum{U}) :: Child{ISum :: U}
     end type Child
 end module gt_neg_16
 

@@ -16,6 +16,16 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+// In a generic definition, a call of a binding of a generic ancestor has the
+// type that the definition's type arguments give the binding's parameter
+// result, while the callee, whose scalar result is a type parameter, keeps
+// its function form (TD-45).
+static bool keeps_function_form(const ASR::FunctionCall_t &x) {
+    ASR::Function_t *callee = ASRUtils::get_function(x.m_name);
+    return callee && callee->m_return_var && ASR::is_a<ASR::TypeParameter_t>(
+        *ASRUtils::expr_type(callee->m_return_var));
+}
+
 
 /**
  * @class CreateFunctionFromSubroutine
@@ -777,6 +787,7 @@ public :
             // function form of its untransformed callee.
             return;
         }
+        if (keeps_function_form(*x)) return;
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
         // Elemental functions returning primitive scalars are not converted
         // to subroutines, but the call expression type is an array (due to
@@ -1267,6 +1278,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 return false;
 
             ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(m_value);
+            if (keeps_function_form(*fc)) return false;
             if (ASRUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type)) {
                 ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(fc->m_type);
 

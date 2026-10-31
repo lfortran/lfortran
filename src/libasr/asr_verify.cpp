@@ -7,6 +7,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <optional>
 #include <set>
 
 namespace LCompilers {
@@ -5556,36 +5557,72 @@ public:
         }
     }
 
-    // A generic type extends only a generic type with the same parameters
-    // (TD-45): a definition the parent's definition, an instance the
-    // parent's instance for the same arguments.
+    // A generic type extends only a generic type (TD-45): a definition the
+    // parent's definition, with one type argument per parameter of the
+    // parent, each a parameter of the definition or a concrete type; an
+    // instance the parent's instance for those arguments, in which its own
+    // arguments replace the parameters.
     bool generic_type_extends(const Struct_t &x) {
         auto *parent_symbol = ASRUtils::symbol_get_past_external(x.m_parent);
         if (!parent_symbol || !ASR::is_a<Struct_t>(*parent_symbol)) return false;
         auto *parent = ASR::down_cast<Struct_t>(parent_symbol);
         if (!parent->m_generic || parent->m_generic->type != x.m_generic->type) return false;
         if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
+            auto *metadata = ASR::down_cast<GenericTypeDefinition_t>(x.m_generic);
             auto *package = ASRUtils::generic_type_package(ASRUtils::get_asr_owner(
                 const_cast<ASR::symbol_t*>(&x.base)));
             auto *parent_package = ASRUtils::generic_type_package(
                 ASRUtils::get_asr_owner(parent_symbol));
-            bool same = package && parent_package && package->n_args == parent_package->n_args;
-            for (size_t i = 0; same && i < package->n_args; i++) {
-                same = std::string(package->m_args[i]) == parent_package->m_args[i];
+            if (!package || !parent_package ||
+                    metadata->n_parent_arguments != parent_package->n_args) return false;
+            for (size_t i = 0; i < metadata->n_parent_arguments; i++) {
+                const auto &argument = metadata->m_parent_arguments[i];
+                if (!argument.m_type || argument.n_evidence) return false;
+                if (!ASR::is_a<TypeParameter_t>(*argument.m_type)) {
+                    // A concrete argument names its derived type.
+                    if (ASR::is_a<StructType_t>(*argument.m_type) !=
+                            (argument.m_type_declaration != nullptr)) return false;
+                    continue;
+                }
+                // A binder of the definition.
+                std::string binder = ASR::down_cast<TypeParameter_t>(argument.m_type)->m_param;
+                bool binds = false;
+                for (size_t j = 0; j < package->n_args; j++) {
+                    binds = binds || binder == package->m_args[j];
+                }
+                if (!binds || argument.m_type_declaration) return false;
             }
-            return same;
+            return true;
         }
         auto *instance = ASR::down_cast<GenericTypeInstance_t>(x.m_generic);
         auto *parent_instance = ASR::down_cast<GenericTypeInstance_t>(parent->m_generic);
         auto *definition = ASRUtils::generic_instance_definition(*instance);
-        if (!definition->m_parent || ASRUtils::symbol_get_past_external(definition->m_parent) !=
-                &ASRUtils::generic_instance_definition(*parent_instance)->base ||
-                instance->n_arguments != parent_instance->n_arguments) return false;
-        for (size_t i = 0; i < instance->n_arguments; i++) {
-            if (!ASRUtils::trait_type_argument_equal(
-                    {instance->m_arguments[i].m_type, instance->m_arguments[i].m_type_declaration},
-                    {parent_instance->m_arguments[i].m_type,
-                        parent_instance->m_arguments[i].m_type_declaration})) return false;
+        auto *metadata = ASRUtils::generic_type_definition_metadata(*definition);
+        auto *package = ASRUtils::generic_type_package(ASRUtils::get_asr_owner(
+            &definition->base));
+        if (!metadata || !package || !definition->m_parent ||
+                ASRUtils::symbol_get_past_external(definition->m_parent) !=
+                    &ASRUtils::generic_instance_definition(*parent_instance)->base ||
+                metadata->n_parent_arguments != parent_instance->n_arguments ||
+                instance->n_arguments != package->n_args) return false;
+        for (size_t i = 0; i < parent_instance->n_arguments; i++) {
+            const auto &argument = metadata->m_parent_arguments[i];
+            if (!ASR::is_a<TypeParameter_t>(*argument.m_type)) {
+                if (!ASRUtils::trait_type_argument_equal(
+                        {argument.m_type, argument.m_type_declaration},
+                        {parent_instance->m_arguments[i].m_type,
+                            parent_instance->m_arguments[i].m_type_declaration})) return false;
+                continue;
+            }
+            std::string binder = ASR::down_cast<TypeParameter_t>(argument.m_type)->m_param;
+            for (size_t j = 0; j < package->n_args; j++) {
+                if (binder != package->m_args[j]) continue;
+                if (!ASRUtils::trait_type_argument_equal(
+                        {instance->m_arguments[j].m_type,
+                            instance->m_arguments[j].m_type_declaration},
+                        {parent_instance->m_arguments[i].m_type,
+                            parent_instance->m_arguments[i].m_type_declaration})) return false;
+            }
         }
         return true;
     }
@@ -5594,8 +5631,9 @@ public:
         if (!x.m_generic) return;
         require_id(x.m_parent == nullptr || !check_external || generic_type_extends(x),
             "asr.verify.generic_type.not_extended",
-            "A generic type's definition or instance can extend only a generic type with "
-            "the same parameters: its definition, or its instance for the same arguments");
+            "A generic type's definition can extend only a generic type's definition, "
+            "giving it its parameters or concrete types as type arguments, and an "
+            "instance only the parent's instance for those arguments");
         if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
             verify_generic_type_definition(x,
                 *ASR::down_cast<GenericTypeDefinition_t>(x.m_generic));
@@ -7145,6 +7183,16 @@ public:
                 "Method call with PASS must supply its passed-object argument.");
         }
 
+        // A binding of a generic ancestor called through an object of an
+        // extending definition takes the ancestor's parameters as the
+        // definition's type arguments give them (TD-45).
+        std::optional<Allocator> inherited_al;
+        ASRUtils::GenericTypeArguments inherited;
+        if (func && is_method && ASRUtils::generic_type_package(
+                ASRUtils::get_asr_owner(&func->base))) {
+            inherited_al.emplace(1024);
+            inherited = ASRUtils::generic_inherited_call_arguments(x.m_dt, &func->base);
+        }
         if (func) {
             require(x.n_args <= func->n_args,
                 "More actual arguments than formal arguments in call. "
@@ -7194,7 +7242,9 @@ public:
 
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
-                ASR::ttype_t *formal_type = callee_param->m_type;
+                ASR::ttype_t *formal_type = inherited.empty() ? callee_param->m_type
+                    : ASRUtils::substitute_type_parameters(*inherited_al,
+                        callee_param->m_type, inherited);
                 require_with_loc_id(!actual_type || !ASRUtils::is_trait_erased(actual_type) ||
                         ASRUtils::is_trait_erased(formal_type),
                     "asr.verify.trait_erased.boundary",

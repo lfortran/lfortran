@@ -6411,23 +6411,8 @@ public:
     std::map<const AST::Template_t*, GenericTypePackageAST> generic_type_packages;
 
     void visit_Module(const AST::Module_t &x) {
-        // The symbol table visitor resolved the parents through the module's
-        // USE statements, whose imports the module now has.
-        ASR::symbol_t *module = current_scope->get_symbol(to_lower(x.m_name));
-        auto inherited = inherited_generic_types(al, x, [&](const std::string &parent) {
-            std::vector<std::string> names;
-            ASR::symbol_t *symbol = module && ASR::is_a<ASR::Module_t>(*module)
-                ? ASR::down_cast<ASR::Module_t>(module)->m_symtab->get_symbol(parent)
-                : nullptr;
-            ASR::Template_t *package = symbol ? ASRUtils::generic_type_package(symbol)
-                : nullptr;
-            for (size_t i = 0; package && i < package->n_args; i++) {
-                names.push_back(package->m_args[i]);
-            }
-            return names;
-        });
         if (AST::Module_t *lowered = lower_generic_type_module(al, x,
-                generic_type_packages, inherited)) {
+                generic_type_packages)) {
             visit_SubmoduleModuleCommon(*lowered);
             return;
         }
@@ -9862,7 +9847,12 @@ public:
                         adapt_runtime_trait_argument(args.p[i].m_value, f->m_args[formal_index]);
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);
-                        ASR::ttype_t* param_type = v->m_type;
+                        // A binding of a generic ancestor takes its parameters
+                        // as the extending definition's type arguments give
+                        // them (TD-45).
+                        ASR::ttype_t* param_type = ASRUtils::substitute_type_parameters(al,
+                            v->m_type, ASRUtils::generic_inherited_call_arguments(v_expr,
+                                &f->base));
                         // Check if parameter expects a procedure type
                         if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(param_type))){
                             if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(

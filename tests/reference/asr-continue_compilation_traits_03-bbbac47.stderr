@@ -84,6 +84,72 @@ semantic error: Type bound procedure 'first' of 'other' overriding the binding o
 429 |         procedure, nopass :: first => other_first
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: generic type 'simplesum' requires its generic type arguments
+   --> tests/errors/continue_compilation_traits_03.f90:490:11
+    |
+490 |     type, extends(SimpleSum) :: Missing{ISum :: V}
+    |           ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type 'simplesum' requires its generic type arguments
+   --> tests/errors/continue_compilation_traits_03.f90:492:11
+    |
+492 |     type, extends(SimpleSum) :: Implicit
+    |           ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incorrect number of generic type arguments
+   --> tests/errors/continue_compilation_traits_03.f90:494:11
+    |
+494 |     type, extends(SimpleSum{V, V}) :: TooMany{ISum :: V}
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic parameter 'v' of 'unconstrained' does not satisfy the constraint 'isum' of the generic parameter 'u' of 'simplesum'
+   --> tests/errors/continue_compilation_traits_03.f90:496:29
+    |
+496 |     type, extends(SimpleSum{V}) :: Unconstrained{V}
+    |                             ^ 
+
+semantic error: generic parameter 'v' of 'wrongtrait' does not satisfy the constraint 'isum' of the generic parameter 'u' of 'simplesum'
+   --> tests/errors/continue_compilation_traits_03.f90:498:29
+    |
+498 |     type, extends(SimpleSum{V}) :: WrongTrait{IOther :: V}
+    |                             ^ 
+
+semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'u' of 'simplesum' (argument 'plain')
+   --> tests/errors/continue_compilation_traits_03.f90:506:29
+    |
+506 |     type, extends(SimpleSum{Plain}) :: Unsatisfied{ISum :: V}
+    |                             ^^^^^ 
+
+semantic error: generic type arguments that are generic type parameters are not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:510:34
+    |
+510 |     type, extends(SimpleSum{Wrap{V}}) :: Nested{ISum :: V}
+    |                                  ^ 
+
+semantic error: extending an instance of the generic type 'simplesum' by a type that is not generic is not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:512:11
+    |
+512 |     type, extends(SimpleSum{Leaf}) :: Instance
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'plain' is not a generic derived type
+   --> tests/errors/continue_compilation_traits_03.f90:514:11
+    |
+514 |     type, extends(Plain{V}) :: NotGeneric{ISum :: V}
+    |           ^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type 'bareself' requires its generic type arguments
+   --> tests/errors/continue_compilation_traits_03.f90:523:9
+    |
+523 |         class(BareSelf), intent(in) :: self
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'bare' must be a module procedure or an external procedure with an explicit interface
+   --> tests/errors/continue_compilation_traits_03.f90:519:9
+    |
+519 |         procedure :: bare
+    |         ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
   --> tests/errors/continue_compilation_traits_03.f90:31:9
    |

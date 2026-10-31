@@ -250,6 +250,15 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             } else {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(struct_instance_member->m_m)));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
+                if (!var->m_type_declaration && ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(struct_instance_member->m_type))) {
+                    // A component of a parameter type that a generic
+                    // definition inherits has the derived type the parents'
+                    // type arguments give it.
+                    return generic_inherited_component_declaration(
+                        get_struct_sym_from_struct_expr(struct_instance_member->m_v),
+                        struct_instance_member->m_m);
+                }
                 return var->m_type_declaration;
             }
         }
@@ -304,6 +313,15 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::Function_t* func = get_function(func_call->m_name);
             if (func == nullptr || func->m_return_var == nullptr) {
                 return nullptr;
+            }
+            ASR::ttype_t *result = ASRUtils::extract_type(ASRUtils::expr_type(func->m_return_var));
+            if (ASR::is_a<ASR::TypeParameter_t>(*result) && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(func_call->m_type))) {
+                // A binding of a generic ancestor returns the derived type
+                // that the parents' type arguments give its parameter.
+                auto arguments = generic_inherited_call_arguments(func_call->m_dt, &func->base);
+                auto found = arguments.find(ASR::down_cast<ASR::TypeParameter_t>(result)->m_param);
+                return found != arguments.end() ? found->second.m_type_declaration : nullptr;
             }
             return ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var);
         }
@@ -2291,6 +2309,20 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             }
         }
         value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
+        // A component that a generic definition inherits from a generic
+        // ancestor has the type the parents' type arguments give it.
+        ASR::symbol_t *declared = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                ASRUtils::expr_type(ASRUtils::EXPR(v_var))))
+            ? ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(v_var)) : nullptr;
+        declared = declared ? ASRUtils::symbol_get_past_external(declared) : nullptr;
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(member);
+        if (declared && owner && declared != owner && ASR::is_a<ASR::Struct_t>(*declared) &&
+                ASR::is_a<ASR::Struct_t>(*owner) &&
+                generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(declared))) {
+            member_type = substitute_type_parameters(al, member_type,
+                generic_ancestor_arguments(*ASR::down_cast<ASR::Struct_t>(declared),
+                    *ASR::down_cast<ASR::Struct_t>(owner)));
+        }
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, import_trait_type(al, member_type, current_scope), value);
     }
@@ -8899,6 +8931,120 @@ ASR::GenericTypeDefinition_t *generic_type_definition_metadata(const ASR::Struct
     return ASR::down_cast<ASR::GenericTypeDefinition_t>(x.m_generic);
 }
 
+ASR::ttype_t *substitute_type_parameters(Allocator &al, ASR::ttype_t *type,
+    const GenericTypeArguments &arguments)
+{
+    if (!type || arguments.empty()) return type;
+    switch (type->type) {
+        case ASR::ttypeType::Allocatable:
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, type->base.loc,
+                substitute_type_parameters(al,
+                    ASR::down_cast<ASR::Allocatable_t>(type)->m_type, arguments)));
+        case ASR::ttypeType::Pointer:
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, type->base.loc,
+                substitute_type_parameters(al,
+                    ASR::down_cast<ASR::Pointer_t>(type)->m_type, arguments)));
+        case ASR::ttypeType::Array: {
+            auto *array = ASR::down_cast<ASR::Array_t>(type);
+            return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc,
+                substitute_type_parameters(al, array->m_type, arguments),
+                array->m_dims, array->n_dims, array->m_physical_type,
+                array->m_memory_space));
+        }
+        case ASR::ttypeType::TypeParameter: {
+            auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(type);
+            auto found = arguments.find(parameter->m_param);
+            if (found == arguments.end()) return type;
+            const ASR::generic_type_argument_t &argument = found->second;
+            if (ASR::is_a<ASR::TypeParameter_t>(*argument.m_type)) {
+                // A binder keeps the polymorphism it is declared with.
+                auto *binder = ASR::down_cast<ASR::TypeParameter_t>(argument.m_type);
+                return ASRUtils::TYPE(ASR::make_TypeParameter_t(al, type->base.loc,
+                    binder->m_param, binder->m_deferred_attr, parameter->m_is_class));
+            }
+            if (parameter->m_is_class && argument.m_type_declaration) {
+                return make_StructType_t_util(al, type->base.loc,
+                    argument.m_type_declaration, false);
+            }
+            return duplicate_type(al, argument.m_type);
+        }
+        default:
+            return type;
+    }
+}
+
+GenericTypeArguments generic_ancestor_arguments(
+    const ASR::Struct_t &definition, const ASR::Struct_t &ancestor)
+{
+    GenericTypeArguments arguments;
+    bool first = true;
+    std::set<const ASR::Struct_t*> seen;
+    for (const ASR::Struct_t *type = &definition; type->m_parent && seen.insert(type).second;) {
+        auto *metadata = generic_type_definition_metadata(*type);
+        auto *parent_symbol = symbol_get_past_external(type->m_parent);
+        if (!metadata || !ASR::is_a<ASR::Struct_t>(*parent_symbol)) break;
+        auto *parent = ASR::down_cast<ASR::Struct_t>(parent_symbol);
+        auto *package = generic_type_package(get_asr_owner(parent_symbol));
+        if (!package || package->n_args != metadata->n_parent_arguments) break;
+        GenericTypeArguments parent_arguments;
+        for (size_t i = 0; i < package->n_args; i++) {
+            // A parent's argument is a binder of the extending type or a
+            // concrete type.
+            const ASR::generic_type_argument_t &argument = metadata->m_parent_arguments[i];
+            auto found = first || !ASR::is_a<ASR::TypeParameter_t>(*argument.m_type)
+                ? arguments.end()
+                : arguments.find(ASR::down_cast<ASR::TypeParameter_t>(argument.m_type)->m_param);
+            parent_arguments.emplace(package->m_args[i],
+                found != arguments.end() ? found->second : argument);
+        }
+        arguments = parent_arguments;
+        first = false;
+        if (parent == &ancestor) return arguments;
+        type = parent;
+    }
+    return {};
+}
+
+GenericTypeArguments generic_inherited_call_arguments(
+    ASR::expr_t *receiver, ASR::symbol_t *procedure)
+{
+    if (!receiver || !procedure ||
+            !ASR::is_a<ASR::StructType_t>(*extract_type(expr_type(receiver)))) return {};
+    ASR::symbol_t *declared = get_struct_sym_from_struct_expr(receiver);
+    declared = declared ? symbol_get_past_external(declared) : nullptr;
+    if (!declared || !ASR::is_a<ASR::Struct_t>(*declared) ||
+            !generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(declared))) {
+        return {};
+    }
+    ASR::symbol_t *owner = get_asr_owner(symbol_get_past_external(procedure));
+    ASR::Template_t *package = owner ? generic_type_package(owner) : nullptr;
+    ASR::Struct_t *ancestor = package ? generic_type_definition(*package) : nullptr;
+    if (!ancestor || &ancestor->base == declared) return {};
+    return generic_ancestor_arguments(*ASR::down_cast<ASR::Struct_t>(declared), *ancestor);
+}
+
+ASR::symbol_t *generic_inherited_component_declaration(ASR::symbol_t *declared,
+    ASR::symbol_t *member)
+{
+    declared = declared ? symbol_get_past_external(declared) : nullptr;
+    member = member ? symbol_get_past_external(member) : nullptr;
+    if (!declared || !member || !ASR::is_a<ASR::Struct_t>(*declared) ||
+            !ASR::is_a<ASR::Variable_t>(*member) ||
+            !generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(declared))) {
+        return nullptr;
+    }
+    ASR::ttype_t *type = extract_type(ASR::down_cast<ASR::Variable_t>(member)->m_type);
+    ASR::symbol_t *owner = get_asr_owner(member);
+    if (!ASR::is_a<ASR::TypeParameter_t>(*type) || !owner || owner == declared ||
+            !ASR::is_a<ASR::Struct_t>(*owner)) {
+        return nullptr;
+    }
+    auto arguments = generic_ancestor_arguments(*ASR::down_cast<ASR::Struct_t>(declared),
+        *ASR::down_cast<ASR::Struct_t>(owner));
+    auto found = arguments.find(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param);
+    return found != arguments.end() ? found->second.m_type_declaration : nullptr;
+}
+
 ASR::GenericTypeInstance_t *generic_type_instance(const ASR::Struct_t &x)
 {
     if (!x.m_generic || !ASR::is_a<ASR::GenericTypeInstance_t>(*x.m_generic)) {
@@ -9337,8 +9483,32 @@ static InterfaceMismatch string_length_mismatch(const std::string &what,
 
 // The dummy argument `impl` declares at position `i`, compared against the one
 // `decl` declares in the same position.
+// The type argument that `parameters` maps the element type of `decl_type`,
+// a TypeParameter of an ancestor's procedure, to; nullptr otherwise.
+static ASR::ttype_t *mapped_type_parameter(ASR::ttype_t *decl_type,
+    const GenericTypeArguments &parameters)
+{
+    ASR::ttype_t *element = decl_type ? extract_type(decl_type) : nullptr;
+    if (!element || !ASR::is_a<ASR::TypeParameter_t>(*element)) return nullptr;
+    auto found = parameters.find(ASR::down_cast<ASR::TypeParameter_t>(element)->m_param);
+    return found != parameters.end() ? found->second.m_type : nullptr;
+}
+
+// Whether the element type of `type` is the type argument `argument`.
+static bool mapped_type_parameter_matches(ASR::ttype_t *type, ASR::ttype_t *argument)
+{
+    ASR::ttype_t *element = extract_type(type);
+    if (ASR::is_a<ASR::TypeParameter_t>(*argument)) {
+        return ASR::is_a<ASR::TypeParameter_t>(*element) &&
+            std::string(ASR::down_cast<ASR::TypeParameter_t>(element)->m_param) ==
+                ASR::down_cast<ASR::TypeParameter_t>(argument)->m_param;
+    }
+    return check_equal_type(element, argument, nullptr, nullptr);
+}
+
 static InterfaceMismatch argument_mismatch(const std::string &what, size_t i,
-    ASR::Function_t *impl, ASR::Function_t *decl, bool use_expr_context)
+    ASR::Function_t *impl, ASR::Function_t *decl, bool use_expr_context,
+    const GenericTypeArguments &parameters)
 {
     if (!ASR::is_a<ASR::Var_t>(*impl->m_args[i]) ||
             !ASR::is_a<ASR::Var_t>(*decl->m_args[i])) {
@@ -9395,6 +9565,14 @@ static InterfaceMismatch argument_mismatch(const std::string &what, size_t i,
             is_procedure_type(type) || is_procedure_type(decl_type)) {
         return {};
     }
+    if (ASR::ttype_t *argument = mapped_type_parameter(decl_type, parameters)) {
+        if (!mapped_type_parameter_matches(type, argument)) {
+            return {true, "argument_type_matches",
+                which + " must have type " + ASRUtils::get_type_code(argument) + ", not " +
+                ASRUtils::get_type_code(extract_type(type))};
+        }
+        return {};
+    }
     if (!ASRUtils::check_equal_type(type, decl_type,
             use_expr_context ? impl->m_args[i] : nullptr,
             use_expr_context ? decl->m_args[i] : nullptr)) {
@@ -9408,7 +9586,7 @@ static InterfaceMismatch argument_mismatch(const std::string &what, size_t i,
 
 InterfaceMismatch interface_mismatch(const std::string &what,
     ASR::Function_t *impl, ASR::Function_t *decl, size_t skip,
-    bool use_expr_context)
+    bool use_expr_context, const GenericTypeArguments &parameters)
 {
     bool decl_is_function = decl->m_return_var != nullptr;
     bool is_function = impl->m_return_var != nullptr;
@@ -9419,7 +9597,13 @@ InterfaceMismatch interface_mismatch(const std::string &what,
     if (decl_is_function && is_function) {
         ASR::ttype_t *decl_type = typed_expr_type(decl->m_return_var);
         ASR::ttype_t *type = typed_expr_type(impl->m_return_var);
-        if (decl_type != nullptr && type != nullptr &&
+        ASR::ttype_t *argument = mapped_type_parameter(decl_type, parameters);
+        if (argument && type && !mapped_type_parameter_matches(type, argument)) {
+            return {true, "result_type_matches", what + " must return " +
+                ASRUtils::get_type_code(argument) + ", not " +
+                ASRUtils::get_type_code(extract_type(type))};
+        }
+        if (!argument && decl_type != nullptr && type != nullptr &&
                 !is_struct_like_type(decl_type) && !is_struct_like_type(type)) {
             if (!ASRUtils::check_equal_type(type, decl_type,
                     use_expr_context ? impl->m_return_var : nullptr,
@@ -9441,7 +9625,7 @@ InterfaceMismatch interface_mismatch(const std::string &what,
     for (size_t i = 0; i < impl->n_args; i++) {
         if (i == skip) continue;
         InterfaceMismatch m = argument_mismatch(what, i, impl, decl,
-            use_expr_context);
+            use_expr_context, parameters);
         if (m.mismatch) return m;
     }
     return {};
@@ -9585,7 +9769,8 @@ ASR::StructMethodDeclaration_t *member_slot_generic_binding(
 // parameter with the same constraint in the same position, so that each
 // member slot of the overridden binding has a corresponding member entry.
 static InterfaceMismatch generic_override_mismatch(const std::string &what,
-    ASR::Function_t &proc, ASR::Function_t &base, size_t self)
+    ASR::Function_t &proc, ASR::Function_t &base, size_t self,
+    const GenericTypeArguments &type_parameters)
 {
     std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
     std::string correspondence = trait_generic_correspondence(proc, base, parameters);
@@ -9623,11 +9808,13 @@ static InterfaceMismatch generic_override_mismatch(const std::string &what,
             return {true, "argument_matches", what + " dummy argument " +
                 std::to_string(i + 1) + " must be named '" + b->m_name + "'"};
         }
+        ASR::ttype_t *mapped = mapped_type_parameter(b->m_type, type_parameters);
         if (extract_n_dims_from_ttype(a->m_type) != extract_n_dims_from_ttype(b->m_type) ||
                 is_pointer(a->m_type) != is_pointer(b->m_type) ||
                 is_allocatable(a->m_type) != is_allocatable(b->m_type) ||
                 !trait_shapes_equal(a->m_type, b->m_type, parameters) ||
-                !trait_types_equal(proc.m_args[i], base.m_args[i], parameters)) {
+                !(mapped ? mapped_type_parameter_matches(a->m_type, mapped)
+                    : trait_types_equal(proc.m_args[i], base.m_args[i], parameters))) {
             return {true, "argument_matches", argument + " must have the type and "
                 "shape of the overridden binding's"};
         }
@@ -9639,8 +9826,11 @@ static InterfaceMismatch generic_override_mismatch(const std::string &what,
                 "of the overridden binding's"};
         }
     }
-    if (proc.m_return_var && !trait_types_equal(proc.m_return_var, base.m_return_var,
-            parameters)) {
+    ASR::ttype_t *mapped_result = proc.m_return_var
+        ? mapped_type_parameter(expr_type(base.m_return_var), type_parameters) : nullptr;
+    if (proc.m_return_var && !(mapped_result
+            ? mapped_type_parameter_matches(expr_type(proc.m_return_var), mapped_result)
+            : trait_types_equal(proc.m_return_var, base.m_return_var, parameters))) {
         return {true, "result_type_matches", what + " must return the type of the "
             "overridden binding"};
     }
@@ -9686,12 +9876,27 @@ InterfaceMismatch binding_override_mismatch(
             what + " must take its passed-object dummy argument in the same "
             "position"};
     }
+    // A generic definition overrides a binding of a generic ancestor with the
+    // ancestor's parameters replaced by its type arguments (TD-45).
+    GenericTypeArguments parameters;
+    auto *owner = x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)
+        ? ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner) : nullptr;
+    auto *base_owner = base_decl->m_parent_symtab && base_decl->m_parent_symtab->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*base_decl->m_parent_symtab->asr_owner)
+        ? ASR::down_cast<ASR::symbol_t>(base_decl->m_parent_symtab->asr_owner) : nullptr;
+    if (owner && base_owner && ASR::is_a<ASR::Struct_t>(*owner) &&
+            ASR::is_a<ASR::Struct_t>(*base_owner) &&
+            generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(owner))) {
+        parameters = generic_ancestor_arguments(*ASR::down_cast<ASR::Struct_t>(owner),
+            *ASR::down_cast<ASR::Struct_t>(base_owner));
+    }
     if (trait_method_template(*proc)) {
-        return generic_override_mismatch(what, *proc, *base, self_index);
+        return generic_override_mismatch(what, *proc, *base, self_index, parameters);
     }
     // The passed-object dummy argument is declared with the type it is bound
     // to, so the two deliberately differ there.
-    return interface_mismatch(what, proc, base, self_index, use_expr_context);
+    return interface_mismatch(what, proc, base, self_index, use_expr_context, parameters);
 }
 
 bool sealed_override_needs_adapter(

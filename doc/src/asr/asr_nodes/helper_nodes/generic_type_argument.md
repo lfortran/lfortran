@@ -1,7 +1,8 @@
 # generic_type_argument
 
 The concrete type argument of one parameter of a generic derived type's
-instance.
+instance, or the type argument that a generic definition gives one parameter
+of the generic type it extends.
 
 ## Declaration
 
@@ -24,6 +25,12 @@ generic_type_argument = (ttype type, symbol? type_declaration, symbol* evidence)
 None.
 
 ## Description
+
+In the `parent_arguments` of a definition (see
+[struct_generic](struct_generic.md)), an argument is either concrete, as for
+an instance but without evidence, which an instance of the parent selects, or
+a parameter of the definition: its `TypeParameter`, without a type declaration
+or evidence.
 
 The evidence is selected where the instance is created, among the
 conformances visible there, and is part of the instance's identity: equal

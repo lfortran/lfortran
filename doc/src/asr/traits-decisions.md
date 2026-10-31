@@ -170,7 +170,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-18 | How a trait object formed from a polymorphic `class(T)` object selects its methods | **Dispatch through the declared type's bindings, so that overrides of the dynamic type run**; call the declared type's implementations statically; keep the restriction | TD-38 |
 | 2026-10-18 | Which trait objects can be formed from polymorphic objects | **Borrowed views, pointers and owners**; views and pointers; views only | TD-38 |
 | 2026-10-29 | How a generic observer declares the equality between its subject's associated observer type and its own type | **Explicit constraints first, with independently checked generic bodies**; infer additional requirements from generic bodies. Recursive specialization was discussed separately, not approved by choosing explicit equality. | TD-43 |
-| 2026-10-31 | The meaning of a type without a parameter list that extends a generic type (`PairwiseSum` extending `SimpleSum{ISum :: U}`) | **Implicit inheritance of the parent's parameters, with the bare name meaning the type itself in its own procedures**; explicit spelling only | TD-45 |
+| 2026-10-31 | The meaning of a type without a parameter list that extends a generic type (`PairwiseSum` extending `SimpleSum{ISum :: U}`) | **Implicit inheritance of the parent's parameters, with the bare name meaning the type itself in its own procedures** (rescinded the same day, see the next row); explicit spelling only | TD-45 |
+| 2026-10-31 | Revisiting TD-45 after a colleague of the maintainer corrected the `static.f90` variant against Swift, and which type arguments of a generic parent to support | **Explicit spelling only: `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}`, with the extending type's parameters and concrete types as arguments; the forms Swift also allows that need more machinery (a generic type applied to a parameter, a type that is not generic extending an instance) diagnosed as not implemented** | TD-45 |
 
 ### Instructions given without an option form
 
@@ -194,6 +195,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-20 | Supplied the interface module of a dependency-injection container, whose `register` message takes a procedure pointer to a factory that receives a view of the container's parent trait, and which the prototype rejected once a view of the container was the argument of another trait's message, and asked for runtime dispatch of messages with procedure-pointer and dummy-procedure arguments, checked with a complete program and under separate compilation. | TD-42 |
 | 2026-10-29 | After discussing explicit contracts versus body-inferred requirements, and separately the observer's recursive generic pairing: "Ok, do the explicit constraints first. If possible, avoid the acyclic version. Document this decision." | TD-43 |
 | 2026-10-31 | Supplied interoperability variants of the paper's `mixed.f90` and `static.f90`, in which a sealed extension overrides an inherited generic `sum` and, in the static one, extends the generic `SimpleSum`, and asked to implement what they need so that both compile. | TD-44, TD-45 |
+| 2026-10-31 | Relayed a colleague's correction: the `static.f90` variant was wrong, and Swift, to be consulted when in doubt, always requires a generic parent's type arguments. Asked to rescind implicit inheritance, to require `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}` with `V` from the extending type's parameter list, to diagnose a missing parameter list consistently with the rest of the proposal, and to keep accepting a redundant `implements` of an inherited conformance, as Java does. Supplied the colleague's Swift version and corrected Fortran version (`mixed.f90` needed no change). | TD-45 |
 
 ## Entries
 
@@ -1980,8 +1982,8 @@ specification action, that is, what the paper should say.
     by `USE`. Compiling a client never changes the files of the module that
     defines the generic type.
   - Generic types cannot have FINAL, GENERIC or DEFERRED bindings yet. A
-    generic type can extend a generic type with the same parameters, and its
-    instances extend the parent's instances for the same arguments (TD-45);
+    generic type can extend a generic type, giving it type arguments, and its
+    instances extend the parent's instances for those arguments (TD-45);
     instances cannot be extended. Overriding a binding to a generic procedure
     is described in TD-44.
 - **Implementation status.** Implemented as described.
@@ -2103,39 +2105,66 @@ specification action, that is, what the paper should say.
 #### TD-45: Extending a generic derived type
 
 - **Status:** Approved semantic decision (prototype spelling); temporary
-  limits diagnosed.
+  limits diagnosed. Revised on 2026-10-31: the first choice, implicit
+  inheritance, is rescinded.
 - **What the paper says.** Generic derived types (`sect:generic_derived_types`)
   and type extension combined with `implements` (`sect:extended_types`) are
   described separately; the paper does not extend a generic type.
-- **Why it is not tight.** In the maintainer's interoperability variant of
-  `static.f90`, `type, sealed, extends(SimpleSum), implements(ISum) ::
-  PairwiseSum` has no parameter list although `SimpleSum{ISum :: U}` is
-  generic, and its bound `sum` uses the inherited component `basic` of type
-  `U` through a passed object declared `type(PairwiseSum)`.
+- **Why it is not tight.** The maintainer's first interoperability variant of
+  `static.f90` declared `type, sealed, extends(SimpleSum), implements(ISum) ::
+  PairwiseSum` without type arguments although `SimpleSum{ISum :: U}` is
+  generic, with a bound `sum` that used the inherited component `basic` of
+  type `U` through a passed object declared `type(PairwiseSum)`.
 - **Options presented (2026-10-31).** Implicit inheritance: a type extending
   a generic type without a parameter list inherits the parent's parameters,
   and its bare name inside its own procedures means the type itself; or
   explicit spelling only (`extends(SimpleSum{U})` on `PairwiseSum{ISum :: U}`).
-- **Choice.** The maintainer chose implicit inheritance.
-- **Consequences.** `PairwiseSum` is generic over `SimpleSum`'s parameters,
-  with the same names and constraints, and its instance for given arguments
-  extends `SimpleSum`'s instance for the same arguments. A generic type written
-  with a parameter list may also extend a generic type if it has the parent's
-  parameters, with the same names, order and constraints. As for any extended
-  type, a structure constructor's positional values follow the component order
-  (F2018 7.5.4.7), the parent's components first; the parent component is
-  given only by its keyword. `PairwiseSum(SimpleSum(BasicSum()))` therefore
-  gives the inherited component `basic` the value `SimpleSum(BasicSum())` and
-  infers `U` to be `SimpleSum{BasicSum}`, whereas
-  `PairwiseSum(simplesum=SimpleSum(BasicSum()))` infers `BasicSum`; the two
-  programs compute the same results. Initializers are not inherited.
+- **Choice.** The maintainer first chose implicit inheritance. The same day a
+  colleague of the maintainer reported that the variant itself was wrong:
+  coded in Swift, the language to consult when the interplay of these
+  features is in doubt, it reads `class PairwiseSum<V: ISum>: SimpleSum<V>`,
+  and Swift always requires the generic arguments, also of a generic parent.
+  The maintainer then rescinded implicit inheritance and chose explicit
+  spelling only, with the colleague's corrected `static.f90` variant
+  (`type, extends(SimpleSum{V}) :: PairwiseSum{ISum :: V}`, its `sum` taking
+  `class(PairwiseSum{V})`, without the `sealed` attributes) as the reference.
+  The parent's arguments are taken from the extending type's parameter list,
+  as in Swift. Omitting them must be diagnosed, consistently with every other
+  use of a generic type. A conformance that the parent already provides may be
+  repeated, `type, extends(SimpleSum{V}), implements(ISum) ::
+  PairwiseSum{ISum :: V}`; Swift rejects that redundant conformance, but it is
+  accepted here, as in Java, consistently with the paper's examples of
+  combining `extends` and `implements`. Concrete type arguments were approved
+  as well; a generic type applied to a parameter and a type that is not
+  generic extending an instance stay not implemented.
+- **Consequences.** `extends(SimpleSum{V})` gives `SimpleSum` the type
+  arguments of the extending type: its parameters, in any order and under any
+  names, or concrete types; the extending type may have parameters that it
+  does not pass on. Each argument must satisfy the constraints of the parent's
+  parameter: a parameter by being constrained by the same trait or one that
+  extends it, a concrete type by its conformance. `extends(SimpleSum)` and the
+  type's own name without arguments in its procedures are diagnosed as
+  "generic type '...' requires its generic type arguments". Inside the
+  extending type's package, an inherited component, binding dummy argument or
+  binding result of one of the parent's parameters has the type that the
+  arguments give it, composed along a chain of generic parents, and the
+  inherited bindings are called and overridden accordingly. The instance for
+  given arguments extends the parent's instance for the parent's arguments
+  with them substituted. As for any extended type, a structure constructor's
+  positional values follow the component order (F2018 7.5.4.7), the parent's
+  components first, and the parent component is given only by its keyword:
+  `PairwiseSum(BasicSum())` and `PairwiseSum(simplesum=SimpleSum(BasicSum()))`
+  both infer `V` to be `BasicSum`. Initializers are not inherited.
 - **Implementation status.** Implemented for types declared in modules, also
-  across modules and under separate compilation. Extending an instance,
-  extending a generic type outside a module, a parameter list that renames,
-  reorders or adds parameters, and inheriting a parameter whose constraints
-  bind associated types are diagnosed as not implemented.
-- **Specification action.** Specify extension of generic types: inherited and
-  additional parameters, the parent's type arguments, constructors and the
+  across modules and under separate compilation; the colleague's corrected
+  variant runs as `traits_interop_static`. A type argument that applies a
+  generic type to a parameter, a type that is not generic extending an
+  instance, extending a generic type outside a module and a parent whose
+  parameter's constraints bind associated types are diagnosed as not
+  implemented.
+- **Specification action.** Specify extension of generic types: the parent's
+  type arguments in terms of the extending type's parameters, the
+  constraints they must satisfy, repeated conformances, constructors and the
   identity of the parent instance.
 
 ### F. Errata and acceptance-copy adaptations

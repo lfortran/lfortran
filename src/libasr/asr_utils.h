@@ -11671,6 +11671,31 @@ ASR::Struct_t *generic_type_definition(const ASR::Template_t &x);
 ASR::Template_t *generic_type_package(ASR::symbol_t *symbol);
 // The definition Struct an instance instantiates, past imports.
 ASR::Struct_t *generic_instance_definition(const ASR::GenericTypeInstance_t &x);
+// Type arguments by the names of the parameters they replace.
+using GenericTypeArguments = std::map<std::string, ASR::generic_type_argument_t>;
+// The type arguments of `ancestor`, a generic definition that the generic
+// definition `definition` extends directly or indirectly, by the ancestor's
+// parameter names and in terms of the parameters of `definition`: the
+// parents' type arguments, composed along the chain. Empty when `ancestor` is
+// not such an ancestor.
+GenericTypeArguments generic_ancestor_arguments(
+    const ASR::Struct_t &definition, const ASR::Struct_t &ancestor);
+// `type` with each TypeParameter that `arguments` maps by name replaced by
+// its argument, inside arrays, allocatables and pointers; a polymorphic
+// parameter becomes the polymorphic argument.
+ASR::ttype_t *substitute_type_parameters(Allocator &al, ASR::ttype_t *type,
+    const GenericTypeArguments &arguments);
+// The type arguments by which a call of `procedure`, a procedure of a
+// generic ancestor's package, through `receiver`, an object of a generic
+// definition that extends it, sees the ancestor's parameters
+// (generic_ancestor_arguments); empty for any other call.
+GenericTypeArguments generic_inherited_call_arguments(
+    ASR::expr_t *receiver, ASR::symbol_t *procedure);
+// The declaration of the derived type that the parents' type arguments give
+// `member`, a component of a parameter type that the generic definition
+// `declared` inherits from a generic ancestor, or nullptr.
+ASR::symbol_t *generic_inherited_component_declaration(ASR::symbol_t *declared,
+    ASR::symbol_t *member);
 bool generic_type_arguments_equal(const ASR::generic_type_argument_t &left,
     const ASR::generic_type_argument_t &right);
 // `Name{args}` for diagnostics; the plain name for any other Struct.
@@ -11719,9 +11744,11 @@ ASR::symbol_t *conflicting_trait_binding(
 // argument expressions to resolve the struct symbols they refer to, which
 // requires dereferencing ExternalSymbol; pass `use_expr_context = false`
 // before externals are resolved to fall back to a structural comparison.
+// `parameters` maps the type parameters of a generic ancestor that declares
+// `decl` to the type arguments the extending definition gives them.
 InterfaceMismatch interface_mismatch(const std::string &what,
     ASR::Function_t *impl, ASR::Function_t *decl, size_t skip,
-    bool use_expr_context);
+    bool use_expr_context, const GenericTypeArguments &parameters = {});
 
 // The position of the passed-object dummy argument of a binding, or `n_args`
 // when the binding has none.

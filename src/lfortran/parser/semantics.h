@@ -340,7 +340,7 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 #define BIND(x, l) make_AttrBind_t( \
             p.m_a, l, bind_opt(x))
 #define EXTENDS(x, l) make_AttrExtends_t( \
-            p.m_a, l, name2char(x))
+            p.m_a, l, name2char(x), nullptr, 0)
 #define DIMENSION(x, l) make_AttrDimension_t( \
             p.m_a, l, \
             x.p, x.size())
@@ -1216,6 +1216,18 @@ static inline ast_t *GENERIC_TYPE_ARGS(Allocator &al, const ast_t *name,
         attributes.push_back(al, down_cast<decl_attribute_t>(arg));
     }
     return make_AttrGenericTypeArgs_t(al, loc, name2char(name),
+        attributes.p, attributes.size());
+}
+
+static inline ast_t *GENERIC_EXTENDS(Allocator &al, const ast_t *name,
+        const Vec<ast_t*> &args, Location &loc)
+{
+    Vec<decl_attribute_t*> attributes;
+    attributes.reserve(al, args.size());
+    for (auto *arg : args) {
+        attributes.push_back(al, down_cast<decl_attribute_t>(arg));
+    }
+    return make_AttrExtends_t(al, loc, name2char(name),
         attributes.p, attributes.size());
 }
 

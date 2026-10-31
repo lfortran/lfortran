@@ -301,7 +301,10 @@ decl_attribute
     | AttrCodimension(codimension* codim)
     | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
-    | AttrExtends(identifier name)
+-- `extends(name)`, or `extends(name{args})` naming an application of a generic
+-- derived type as the parent type. The arguments use the instantiation-argument
+-- forms; `args` is empty without braces.
+    | AttrExtends(identifier name, decl_attribute* args)
     | AttrIntent(attr_intent intent)
     | AttrName(identifier name)
     | AttrNamelist(namelist_group* groups)

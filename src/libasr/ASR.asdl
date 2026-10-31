@@ -56,17 +56,21 @@ trait_lifecycle
 -- A generic derived type is a Template package that owns its binders, their
 -- constraints, its definition Struct and the procedures that depend on its
 -- parameters. The definition records the binders (the Template's arguments,
--- in order). An instance is an ordinary Struct of the Module or Program that
--- instantiated it; it records the definition, its type arguments and the
--- copies of the package's procedures that the same unit owns for it (none
--- until the unit completes it).
+-- in order) and, when it extends a generic type, the parent's type arguments
+-- in terms of these binders, one per parameter of the parent. An instance is
+-- an ordinary Struct of the Module or Program that instantiated it; it
+-- records the definition, its type arguments and the copies of the package's
+-- procedures that the same unit owns for it (none until the unit completes
+-- it).
 struct_generic
-    = GenericTypeDefinition(symbol* parameters)
+    = GenericTypeDefinition(symbol* parameters, generic_type_argument* parent_arguments)
     | GenericTypeInstance(symbol definition, generic_type_argument* arguments, symbol* procedures)
 
--- A concrete type argument of an instance. type_declaration is present iff
--- type is a derived type. evidence holds the conformance selected for each
--- universal-trait constraint of the parameter, in constraint order.
+-- A type argument of an instance, or a parent's type argument of a
+-- definition. type_declaration is present iff type is a derived type.
+-- evidence holds the conformance selected for each universal-trait
+-- constraint of the parameter, in constraint order. A parent's argument that
+-- is a binder of the definition is its TypeParameter, without evidence.
 generic_type_argument
     = (ttype type, symbol? type_declaration, symbol* evidence)
 

@@ -2110,6 +2110,7 @@ public:
         r += syn();
         r += "(";
         r.append(x.m_name);
+        if (x.n_args > 0) r += format_generic_args(x.m_args, x.n_args);
         r += ")";
         s = r;
     }

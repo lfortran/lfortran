@@ -6078,6 +6078,10 @@ asr = true
 options = "--verify-all-passes"
 
 [[test]]
+filename = "../integration_tests/traits_interop_static.f90"
+ast_f90 = true
+
+[[test]]
 filename = "errors/traits_component_loaded_pure_01.f90"
 asr = true
 extrafiles = "errors/traits_component_loaded_pure_mod.f90"

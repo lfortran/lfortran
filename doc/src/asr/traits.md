@@ -1279,8 +1279,8 @@ are supported. `continue_compilation_traits_06` covers the diagnostic and
 
 ### Extending generic types
 
-A derived type of a module that extends a generic type without a parameter
-list inherits its parameters, with their names and constraints (TD-45):
+A generic type extends a generic type by giving it type arguments, as Swift
+writes `class PairwiseSum<V: ISum>: SimpleSum<V>` (TD-45):
 
 ```fortran
 type, implements(ISum) :: SimpleSum{ISum :: U}
@@ -1290,42 +1290,58 @@ contains
     procedure :: sum
 end type SimpleSum
 
-type, sealed, extends(SimpleSum), implements(ISum) :: PairwiseSum
+type, extends(SimpleSum{V}) :: PairwiseSum{ISum :: V}
 contains
-    procedure, pass :: sum
+    procedure :: sum
 end type PairwiseSum
 ...
 function sum{INumeric :: T}(self, x) result(s)
-    type(PairwiseSum), intent(in) :: self   ! PairwiseSum{U}
+    class(PairwiseSum{V}), intent(in) :: self
     type(T), intent(in) :: x(:)
     type(T) :: s
     s = self%basic%sum(x)
     ...
 ```
 
-`PairwiseSum` is a generic type `PairwiseSum{ISum :: U}`, and inside its
-package the name `PairwiseSum` without a parameter list names the type
-itself, as `PairwiseSum{U}` does. A generic type written with a parameter list
-can also extend a generic type if it has the parent's parameters with the same
-names, order and constraints. The definition's parent is the parent's
-definition, so `self%basic` has the inherited parameter's type, and the
+The arguments are the extending type's own parameters, in any order and
+under any names, or concrete types; the extending type may have parameters
+that it does not pass on. Each argument must satisfy the constraints of the
+parent's parameter: a parameter must be constrained by the same trait or by
+one that extends it, and a concrete type must conform. The parent's name
+without arguments, `extends(SimpleSum)`, is diagnosed like any other use of a
+generic type's name without its type arguments, and so is the type's own name
+without arguments in its procedures. The conformance that the parent adopts is
+inherited; repeating it, `type, extends(SimpleSum{V}), implements(ISum) ::
+PairwiseSum{ISum :: V}`, is accepted, as in Java, although Swift rejects it.
+
+The definition's parent is the parent's definition. Inside the package, an
+inherited component, binding dummy argument or binding result of one of the
+parent's parameters has the type that the arguments give it, so `self%basic`
+has type `V`; along a chain of generic parents the arguments compose. The
 instance `PairwiseSum{X}` extends the instance `SimpleSum{X}` of the same
-unit. The parent's initializers are not inherited. Inherited generic bindings
-can be overridden as described in "Overriding generic bindings"; a nonsealed
-generic type's instances have the member slots.
+unit, and in general the parent's instance for its arguments with `X`
+substituted. The parent's initializers are not inherited. Inherited bindings
+can be overridden, also generic ones as described in "Overriding generic
+bindings"; a nonsealed generic type's instances have the member slots.
 
 A structure constructor's positional values follow the component order
-(F2018 7.5.4.7), the parent's components first: `PairwiseSum(SimpleSum(BasicSum()))`
-gives `basic` the value `SimpleSum(BasicSum())` and infers `U` to be
-`SimpleSum{BasicSum}`. The parent component is given by its keyword:
-`PairwiseSum(simplesum=SimpleSum(BasicSum()))` infers `U` to be `BasicSum`.
+(F2018 7.5.4.7), the parent's components first: `PairwiseSum(BasicSum())`
+gives `basic` the value `BasicSum()` and infers `V` to be `BasicSum`. The
+parent component is given by its keyword:
+`PairwiseSum(simplesum=SimpleSum(BasicSum()))` also infers `BasicSum`.
 
-Extending an instance, extending a generic type from a type outside a
-module, a parameter list that renames, reorders or adds parameters, and
-inheriting a parameter whose constraints bind associated types are diagnosed
-as not implemented. `traits_generic_type_extends_01` covers inherited and
-written parameter lists, both constructor forms, overrides through the
-parent's instance and a runtime view of the extension.
+A type argument that applies a generic type to a parameter
+(`extends(SimpleSum{Wrap{V}})`), a type that is not generic extending an
+instance (`extends(SimpleSum{BasicSum}) :: Fixed`), extending a generic type
+from a type outside a module and a parent whose parameter's constraints bind
+associated types are diagnosed as not implemented.
+`traits_generic_type_extends_01` covers renamed parameters, both constructor
+forms, overrides through the parent's instance and a runtime view of the
+extension; `traits_generic_type_extends_02` a separately compiled parent;
+`traits_generic_type_extends_03` reordered and additional parameters,
+concrete arguments, a third level and inherited bindings with parameter
+types; `traits_interop_static` the maintainer's corrected `static.f90`
+variant; `continue_compilation_traits_03` the diagnostics.
 
 ## Inheritance and composed constraints
 

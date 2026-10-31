@@ -440,3 +440,87 @@ contains
         s = x%value() + 1
     end function
 end module
+
+! Extending a generic type requires its type arguments, which are parameters
+! of the extending type that satisfy the parent's constraints (TD-45).
+module traits_generic_extends_base
+    implicit none
+    abstract interface :: ISum
+        integer function total(self)
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+    abstract interface, extends(ISum) :: IFastSum
+    end interface
+    abstract interface :: IOther
+        integer function other(self)
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+    type, implements(ISum) :: Leaf
+    contains
+        procedure :: total => leaf_total
+    end type
+    type :: Plain
+        integer :: n = 0
+    end type
+contains
+    integer function leaf_total(self)
+        class(Leaf), intent(in) :: self
+        leaf_total = 1
+    end function
+end module
+
+module traits_generic_extends_simple
+    use traits_generic_extends_base, only: ISum
+    implicit none
+    type :: SimpleSum{ISum :: U}
+        type(U), allocatable :: basic
+    end type
+    type :: Wrap{ISum :: U}
+        type(U), allocatable :: item
+    end type
+end module
+
+module traits_generic_extends_errors
+    use traits_generic_extends_base
+    use traits_generic_extends_simple, only: SimpleSum, Wrap
+    implicit none
+    ! The parent's type arguments are missing.
+    type, extends(SimpleSum) :: Missing{ISum :: V}
+    end type
+    type, extends(SimpleSum) :: Implicit
+    end type
+    type, extends(SimpleSum{V, V}) :: TooMany{ISum :: V}
+    end type
+    type, extends(SimpleSum{V}) :: Unconstrained{V}
+    end type
+    type, extends(SimpleSum{V}) :: WrongTrait{IOther :: V}
+    end type
+    ! A trait that extends the parent's constraint satisfies it, and so does
+    ! a type that implements it.
+    type, extends(SimpleSum{V}) :: Narrower{IFastSum :: V}
+    end type
+    type, extends(SimpleSum{Leaf}) :: Concrete{ISum :: V}
+    end type
+    type, extends(SimpleSum{Plain}) :: Unsatisfied{ISum :: V}
+    end type
+    ! Not implemented: a generic type applied to a parameter and a type that
+    ! is not generic extending an instance.
+    type, extends(SimpleSum{Wrap{V}}) :: Nested{ISum :: V}
+    end type
+    type, extends(SimpleSum{Leaf}) :: Instance
+    end type
+    type, extends(Plain{V}) :: NotGeneric{ISum :: V}
+    end type
+    ! The type's own name requires its type arguments.
+    type, extends(SimpleSum{V}) :: BareSelf{ISum :: V}
+    contains
+        procedure :: bare
+    end type
+contains
+    integer function bare(self)
+        class(BareSelf), intent(in) :: self
+        bare = 0
+    end function
+end module

@@ -1880,6 +1880,8 @@ var_modifier
     | KW_VALUE { $$ = SIMPLE_ATTR(Value, @$); }
     | KW_VOLATILE { $$ = SIMPLE_ATTR(Volatile, @$); }
     | KW_EXTENDS "(" id ")" { $$ = EXTENDS($3, @$); }
+    | KW_EXTENDS "(" id "{" instantiate_symbol_list "}" ")" {
+        $$ = GENERIC_EXTENDS(p.m_a, $3, $5, @$); }
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }

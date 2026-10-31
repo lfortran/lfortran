@@ -9,7 +9,7 @@ derived type, or an instance of one.
 
 ```text
 struct_generic
-    = GenericTypeDefinition(symbol* parameters)
+    = GenericTypeDefinition(symbol* parameters, generic_type_argument* parent_arguments)
     | GenericTypeInstance(symbol definition, generic_type_argument* arguments, symbol* procedures)
 ```
 
@@ -18,6 +18,7 @@ struct_generic
 | Argument | Description |
 | --- | --- |
 | `parameters` | The type parameters of a definition: the binder `Variable`s of its package, in the package's argument order. |
+| `parent_arguments` | For a definition that extends a generic type, one [generic_type_argument](generic_type_argument.md) per parameter of the parent, in order: a parameter of the definition (its `TypeParameter`, without a type declaration or evidence) or a concrete type; empty otherwise. |
 | `definition` | The definition `Struct` an instance instantiates, through an import when the instance is outside the package. |
 | `arguments` | One [generic_type_argument](generic_type_argument.md) per parameter of the definition, in order. |
 | `procedures` | The copies of the package's procedures (a `Function`, or a method's `Template`) that the instance's module or program owns, in the package's order; empty until the module or program completes the instance. |
@@ -45,26 +46,36 @@ owned by the same module or program. The instance and these copies are
 private to that module or program. A module or program has at most one
 instance for equal type arguments with agreeing evidence.
 
+A definition that extends a generic type, `type, extends(SimpleSum{V}) ::
+PairwiseSum{ISum :: V}`, has the parent's definition as its parent and records
+the type arguments it gives the parent in `parent_arguments`. Inside its
+package, a component, a binding's dummy argument or result of a parameter type
+that it inherits has the type those arguments give the parameter, composed
+along a chain of generic parents. Its instance for given arguments extends the
+parent's instance for the parent's arguments, in which the instance's own
+arguments replace the parameters.
+
 Substitution includes the types of component initializer expressions, not
 just component declarations. Each instance owns a specialized copy, preserving
 pointer and array wrappers without modifying the shared definition.
 
-Verification checks that a definition is the symbol of its package's name in
-a module and records the package's binders, that an instance names such a
+Verification checks that a definition is the symbol of its package's name in a
+module and records the package's binders, that an instance names such a
 definition with one concrete argument per parameter and the evidence of each
 universal-trait constraint, that it has the definition's components with the
-arguments substituted (procedure-typed components are compared by kind
-only), that a completed instance has the definition's obligations and
-bindings (besides member slots) and records one copy of each package
-procedure that its bindings and conformances use, that no two instances of
-one scope are equal, and that a definition extends only the definition of a
-generic type with the same parameters, an instance only that type's instance
-for the same arguments, and that only a generic type extends one. An
-instance its module or program has not completed yet, between the symbol
-table and body visitors, has no obligations, bindings or copies; the
-verifier cannot tell it apart from one whose completion was lost.
-Component initializer expressions of an instance must contain no deferred
-types, including inside typed null pointer constants.
+arguments substituted (procedure-typed components are compared by kind only),
+that a completed instance has the definition's obligations and bindings
+(besides member slots) and records one copy of each package procedure that its
+bindings and conformances use, that no two instances of one scope are equal,
+and that a definition extends only the definition of a generic type, giving it
+one argument per parameter that is a parameter of the definition or a concrete
+type, an instance only that type's instance for those arguments with its own
+arguments substituted, and that only a generic type extends one. An instance
+its module or program has not completed yet, between the symbol table and body
+visitors, has no obligations, bindings or copies; the verifier cannot tell it
+apart from one whose completion was lost. Component initializer expressions of
+an instance must contain no deferred types, including inside typed null
+pointer constants.
 
 ## Examples
 

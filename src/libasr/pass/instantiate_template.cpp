@@ -3097,6 +3097,55 @@ public:
             selected->m_args, selected->n_args, selected->m_type);
     }
 
+    // A binding of a generic definition that a call names through an object
+    // of an instance becomes the binding of the instance or of its nearest
+    // ancestor that has one, such as the parent instance of an extension
+    // (TD-45); nullptr for any other call.
+    ASR::symbol_t *instance_binding(ASR::expr_t *dt, ASR::symbol_t *name,
+            const Location &loc) {
+        ASR::symbol_t *binding = name ? ASRUtils::symbol_get_past_external(name) : nullptr;
+        if (!dt || !binding || !ASR::is_a<ASR::StructMethodDeclaration_t>(*binding) ||
+                !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(dt)))) {
+            return nullptr;
+        }
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(binding);
+        if (!owner || !ASR::is_a<ASR::Struct_t>(*owner) ||
+                !ASRUtils::generic_type_definition_metadata(*ASR::down_cast<ASR::Struct_t>(owner))) {
+            return nullptr;
+        }
+        ASR::symbol_t *declared = ASRUtils::get_struct_sym_from_struct_expr(dt);
+        declared = declared ? ASRUtils::symbol_get_past_external(declared) : nullptr;
+        if (!declared || !ASR::is_a<ASR::Struct_t>(*declared) ||
+                !ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(declared))) {
+            return nullptr;
+        }
+        std::string binding_name = ASRUtils::symbol_name(binding);
+        std::set<ASR::symbol_t*> seen;
+        for (ASR::symbol_t *type = declared;
+                type && ASR::is_a<ASR::Struct_t>(*type) && seen.insert(type).second;
+                type = ASR::down_cast<ASR::Struct_t>(type)->m_parent
+                    ? ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Struct_t>(type)->m_parent) : nullptr) {
+            auto *own = ASR::down_cast<ASR::Struct_t>(type)->m_symtab->get_symbol(binding_name);
+            if (own && ASR::is_a<ASR::StructMethodDeclaration_t>(*own)) {
+                if (own == binding) return nullptr;
+                ASR::symbol_t *callee = ASRUtils::import_class_procedure(al, loc, own,
+                    new_scope);
+                // The copy's signature was instantiated before the instance
+                // had bindings, which left the import without its target.
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*callee) &&
+                        !ASR::down_cast<ASR::ExternalSymbol_t>(callee)->m_external) {
+                    ASR::down_cast<ASR::ExternalSymbol_t>(callee)->m_external = own;
+                }
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*callee)) {
+                    ADD_ASR_DEPENDENCIES(new_scope, callee, dependencies);
+                }
+                return callee;
+            }
+        }
+        return nullptr;
+    }
+
     // Substituted closed type arguments select the member slot of the
     // binding in the dynamic type's binding table; binders of a still-generic
     // caller keep the call deferred.
@@ -3171,6 +3220,10 @@ public:
         ASR::ttype_t* type = substitute_type(&x->base, x->m_type);
         ASR::expr_t* value = duplicate_expr(x->m_value);
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
+        if (ASR::symbol_t *binding = instance_binding(dt, x->m_name, x->base.base.loc)) {
+            return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, binding,
+                nullptr, args.p, args.size(), type, value, dt);
+        }
 
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t* name = new_scope->resolve_symbol(call_name);
@@ -3234,6 +3287,10 @@ public:
         }
 
         ASR::expr_t* dt = duplicate_expr(x->m_dt);
+        if (ASR::symbol_t *binding = instance_binding(dt, x->m_name, x->base.base.loc)) {
+            return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, binding,
+                nullptr, args.p, args.size(), dt, nullptr, false);
+        }
 
         std::string call_name = ASRUtils::symbol_name(x->m_name);
         ASR::symbol_t* name = new_scope->resolve_symbol(call_name);

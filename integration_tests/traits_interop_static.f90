@@ -1,15 +1,17 @@
-! The maintainer's interoperability variant of the paper's static.f90 in which PairwiseSum extends the generic SimpleSum{ISum :: U},
-! inheriting its parameter, and overrides its generic sum (TD-44, TD-45),
-! with both averaging methods run in turn instead of read from input.
+! The maintainer's corrected interoperability variant of the paper's
+! static.f90, written to correspond to a Swift version: PairwiseSum{ISum :: V}
+! extends the generic SimpleSum{V}, giving it its own parameter, and overrides
+! its generic sum (TD-44, TD-45). Both averaging methods run in turn instead
+! of being read from input.
 module interfaces
 
    use, intrinsic :: iso_fortran_env, only: real64
 
    implicit none
    private
-
+   
    public :: INumeric, ISum, IAverager
-
+   
    abstract interface :: INumeric
       integer | real(real64)
    end interface INumeric
@@ -32,6 +34,7 @@ module interfaces
 
 end module interfaces
 
+
 module basic_library
 
    use interfaces, only: ISum, INumeric
@@ -41,7 +44,7 @@ module basic_library
 
    public :: BasicSum
 
-   type, sealed, implements(ISum) :: BasicSum
+   type, implements(ISum) :: BasicSum
    contains
       procedure :: sum
    end type BasicSum
@@ -49,9 +52,9 @@ module basic_library
 contains
 
    function sum{INumeric :: T}(self,x) result(s)
-      type(BasicSum), intent(in) :: self
-      type(T),        intent(in) :: x(:)
-      type(T)                    :: s
+      class(BasicSum), intent(in) :: self
+      type(T),         intent(in) :: x(:)
+      type(T)                     :: s
       s = T(0)
       do i := 1, size(x)
          s = s + x(i)
@@ -59,6 +62,7 @@ contains
    end function sum
 
 end module basic_library
+
 
 module simple_library
 
@@ -68,14 +72,14 @@ module simple_library
    private
 
    public :: SimpleSum
-
+   
    type, implements(ISum) :: SimpleSum{ISum :: U}
       type(U), allocatable :: basic
    contains
       initial   :: init
       procedure :: sum
    end type SimpleSum
-
+   
 contains
 
    function init(basic) result(res)
@@ -83,11 +87,11 @@ contains
       type(SimpleSum{U})  :: res
       res%basic = basic
    end function init
-
+   
    function sum{INumeric :: T}(self,x) result(s)
       class(SimpleSum{U}), intent(in) :: self
-      type(T),          intent(in) :: x(:)
-      type(T)                      :: s
+      type(T),             intent(in) :: x(:)
+      type(T)                         :: s
       s = self%basic%sum(x)
    end function sum
 
@@ -102,18 +106,18 @@ module pairwise_library
    private
 
    public :: PairwiseSum
-
-   type, sealed, extends(SimpleSum), implements(ISum) :: PairwiseSum
+   
+   type, extends(SimpleSum{V}) :: PairwiseSum{ISum :: V}
    contains
-      procedure, pass :: sum
+      procedure :: sum
    end type PairwiseSum
 
 contains
 
    function sum{INumeric :: T}(self,x) result(s)
-      type(PairwiseSum), intent(in) :: self
-      type(T),           intent(in) :: x(:)
-      type(T)                       :: s
+      class(PairwiseSum{V}), intent(in) :: self
+      type(T),               intent(in) :: x(:)
+      type(T)                           :: s
       if (size(x) <= 2) then
          s = self%basic%sum(x)
       else
@@ -134,12 +138,12 @@ module averager_library
 
    public :: Averager
 
-   type, sealed, implements(IAverager) :: Averager{ISum :: U}
+   type, implements(IAverager) :: Averager{ISum :: U}
       private
       type(U), allocatable :: drv
    contains
       initial :: init
-      procedure, pass :: average
+      procedure :: average
    end type Averager
 
 contains
@@ -149,11 +153,11 @@ contains
       type(Averager{U})   :: res
       res%drv = drv
    end function init
-
+   
    function average{INumeric :: T}(self,x) result(a)
-      type(Averager{U}), intent(in) :: self
-      type(T),           intent(in) :: x(:)
-      type(T)                       :: a
+      class(Averager{U}), intent(in) :: self
+      type(T),            intent(in) :: x(:)
+      type(T)                        :: a
       a = self%drv%sum(x) / T(size(x))
    end function average
 
@@ -171,7 +175,7 @@ program main
    use averager_library, only: Averager
 
    implicit none
-
+   
    ! declarations
    class(IAverager), allocatable :: av
    integer :: key
@@ -184,7 +188,7 @@ program main
       case (1)
          av = Averager(drv = SimpleSum(BasicSum()))
       case (2)
-         av = Averager(drv = PairwiseSum(SimpleSum(BasicSum())))
+         av = Averager(drv = PairwiseSum(BasicSum()))
       case default
          stop 'Case not implemented!'
       end select

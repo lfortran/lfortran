@@ -78,6 +78,7 @@
             )
             [(AttrExtends
                 B
+                []
             )
             (SimpleAttribute
                 AttrPublic

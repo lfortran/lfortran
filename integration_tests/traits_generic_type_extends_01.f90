@@ -1,11 +1,12 @@
-! Generic derived types that extend a generic type: one without a parameter
-! list inherits its parent's (PairwiseSum), one repeats it (Scaled). Their
-! instances extend the parent's instance for the same arguments; an inherited
-! component of a parameter type, constructors with positional values in
-! component order and with the parent component by keyword, overrides of the
-! parent's generic binding through the parent's instance, and runtime views
-! of the instances are covered. A counter of leaf sums tells the pairwise
-! summation from the simple one.
+! Generic derived types that extend a generic type, giving it their own
+! parameters as its type arguments: one with the parent's parameter name,
+! sealed and repeating the conformance it inherits (PairwiseSum), one with
+! another name (Scaled). Their instances extend the parent's instance for
+! those arguments; an inherited component of a parameter type, constructors
+! with positional values in component order and with the parent component by
+! keyword, overrides of the parent's generic binding through the parent's
+! instance, and runtime views of the instances are covered. A counter of leaf
+! sums tells the pairwise summation from the simple one.
 module traits_generic_type_extends_01_interfaces
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -96,14 +97,14 @@ module traits_generic_type_extends_01_pairwise
     private
     public :: PairwiseSum, Scaled
 
-    ! Inherits the parameter U of SimpleSum.
-    type, sealed, extends(SimpleSum), implements(ISum) :: PairwiseSum
+    ! The conformance to ISum, which SimpleSum{U} already has, is repeated.
+    type, sealed, extends(SimpleSum{U}), implements(ISum) :: PairwiseSum{ISum :: U}
     contains
         procedure, pass :: sum
     end type PairwiseSum
 
-    ! Repeats it.
-    type, extends(SimpleSum) :: Scaled{ISum :: U}
+    ! SimpleSum's U is W.
+    type, extends(SimpleSum{W}) :: Scaled{ISum :: W}
         integer :: factor = 10
     contains
         procedure :: sum => scaled_sum
@@ -112,7 +113,7 @@ module traits_generic_type_extends_01_pairwise
 contains
 
     function sum{INumeric :: T}(self, x) result(s)
-        type(PairwiseSum), intent(in) :: self
+        type(PairwiseSum{U}), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         if (size(x) <= 2) then
@@ -124,7 +125,7 @@ contains
     end function sum
 
     function scaled_sum{INumeric :: T}(self, x) result(s)
-        class(Scaled{U}), intent(in) :: self
+        class(Scaled{W}), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         s = T(10) * self%basic%sum(x)

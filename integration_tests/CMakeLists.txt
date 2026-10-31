@@ -4243,6 +4243,8 @@ RUN(NAME traits_generic_type_extends_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MOD
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_generic_type_extends_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_generic_type_extends_02_provider.f90)
+RUN(NAME traits_generic_type_extends_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_interop_mixed LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_interop_static LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES

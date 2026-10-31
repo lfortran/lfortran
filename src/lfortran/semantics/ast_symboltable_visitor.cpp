@@ -852,8 +852,7 @@ public:
         // not carry over to a same-named entity of this module.
         assgnd_access.clear();
         SymbolTable *parent_scope = current_scope;
-        current_scope = module_scope ? module_scope : al.make_new<SymbolTable>(parent_scope);
-        module_scope = nullptr;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
             true, x.m_items, x.n_items);
         // Isolate this module's externals from a previous program unit, and
@@ -1115,71 +1114,11 @@ public:
         dflt_access = ASR::Public;
     }
 
-    // The scope of the module being visited, when it was created before its
-    // USE statements loaded the modules they use.
-    SymbolTable *module_scope = nullptr;
-    bool generic_types_lowered = false;
-
-    // Whether a type of `x` extends a type that `x` does not declare, which
-    // may be a generic type of a used module.
-    static bool extends_used_type(const AST::Module_t &x) {
-        std::set<std::string> declared;
-        for (size_t i = 0; i < x.n_items; i++) {
-            if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
-                declared.insert(to_lower(AST::down_cast<AST::DerivedType_t>(x.m_items[i])->m_name));
-            } else if (AST::is_a<AST::TraitDerivedType_t>(*x.m_items[i])) {
-                declared.insert(generic_type_name(
-                    *AST::down_cast<AST::TraitDerivedType_t>(x.m_items[i])));
-            }
-        }
-        for (size_t i = 0; i < x.n_items; i++) {
-            if (!AST::is_a<AST::DerivedType_t>(*x.m_items[i])) continue;
-            std::string parent = derived_type_parent_name(
-                *AST::down_cast<AST::DerivedType_t>(x.m_items[i]));
-            if (!parent.empty() && !declared.count(parent)) return true;
-        }
-        return false;
-    }
-
     void visit_Module(const AST::Module_t &x) {
-        if (!generic_types_lowered) {
-            std::map<std::string, const AST::TraitDerivedType_t*> inherited;
-            if (extends_used_type(x)) {
-                // A type that extends a generic type of a used module inherits
-                // its parameters (TD-45). The module's scope is created first
-                // and the used modules are loaded in the order of the USE
-                // statements, as visiting those statements would load them.
-                module_scope = al.make_new<SymbolTable>(current_scope);
-                for (size_t i = 0; i < x.n_items; i++) {
-                    if (!AST::is_a<AST::Use_t>(*x.m_items[i])) continue;
-                    auto &use = *AST::down_cast<AST::Use_t>(x.m_items[i]);
-                    UsedModule used = used_module(use);
-                    if (current_scope->resolve_symbol(used.name)) continue;
-                    ASRUtils::load_module(al, current_scope->get_tu_scope(), used.name,
-                        use.base.base.loc, used.intrinsic, loaded_submodules,
-                        compiler_options.po, true,
-                        [&](const std::string &msg, const Location &loc) {
-                            diag.add(diag::Diagnostic(msg, diag::Level::Error,
-                                diag::Stage::Semantic, {diag::Label("", {loc})}));
-                            throw SemanticAbort();
-                        }, lm, compiler_options.separate_compilation, false);
-                }
-                inherited = inherited_generic_types(al, x, [&](const std::string &parent) {
-                    return module_used_generic_type_parameters(x, parent);
-                });
-            }
-            if (AST::Module_t *lowered = lower_generic_type_module(al, x,
-                    generic_type_packages, inherited)) {
-                generic_types_lowered = true;
-                try {
-                    visit_Module(*lowered);
-                } catch (...) {
-                    generic_types_lowered = false;
-                    throw;
-                }
-                generic_types_lowered = false;
-                return;
-            }
+        if (AST::Module_t *lowered = lower_generic_type_module(al, x,
+                generic_type_packages)) {
+            visit_Module(*lowered);
+            return;
         }
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
@@ -8747,6 +8686,57 @@ public:
         }
     }
 
+    // Each type argument of a generic parent satisfies the constraints of
+    // its parameter: a parameter of the extending type has, for each trait
+    // that constrains the parent's parameter, that trait or a trait that
+    // extends it, and a concrete type has a visible conformance, unless its
+    // unit declares the conformance later, when an instance of the parent
+    // checks it (TD-45).
+    void check_generic_parent_constraints(ASR::Template_t &parent,
+            const Vec<ASR::generic_type_argument_t> &arguments, const std::string &name) {
+        std::function<bool(ASR::symbol_t*, ASR::symbol_t*)> implies =
+                [&](ASR::symbol_t *trait, ASR::symbol_t *required) {
+            trait = ASRUtils::symbol_get_past_external(trait);
+            if (trait == required) return true;
+            if (!ASR::is_a<ASR::Trait_t>(*trait)) return false;
+            auto *declaration = ASR::down_cast<ASR::Trait_t>(trait);
+            for (size_t i = 0; i < declaration->n_parents; i++) {
+                if (implies(declaration->m_parents[i], required)) return true;
+            }
+            return false;
+        };
+        std::string parent_name = ASRUtils::generic_type_definition(parent)->m_name;
+        for (size_t i = 0; i < arguments.size(); i++) {
+            ASR::symbol_t *parameter = parent.m_symtab->get_symbol(parent.m_args[i]);
+            if (!ASRUtils::trait_associated_parameters(parent.m_symtab, parameter).empty()) {
+                trait_error("extending generic type '" + parent_name + "', whose generic "
+                    "parameter '" + std::string(parent.m_args[i]) + "' has constraints that "
+                    "bind associated types, is not implemented yet", arguments[i].loc);
+            }
+            if (!ASR::is_a<ASR::TypeParameter_t>(*arguments[i].m_type)) {
+                bool deferred = false;
+                generic_type_argument_evidence(parent, i, {arguments[i].m_type,
+                    arguments[i].m_type_declaration}, arguments[i].loc, &deferred);
+                continue;
+            }
+            auto *binder = ASR::down_cast<ASR::TypeParameter_t>(arguments[i].m_type);
+            auto own = ASRUtils::trait_parameter_traits(
+                current_scope->get_symbol(binder->m_param));
+            for (auto *required : ASRUtils::trait_parameter_traits(parameter)) {
+                required = ASRUtils::symbol_get_past_external(required);
+                bool satisfied = false;
+                for (auto *trait : own) satisfied = satisfied || implies(trait, required);
+                if (!satisfied) {
+                    trait_error("generic parameter '" + std::string(binder->m_param) +
+                        "' of '" + name + "' does not satisfy the constraint '" +
+                        ASRUtils::symbol_name(required) + "' of the generic parameter '" +
+                        std::string(parent.m_args[i]) + "' of '" + parent_name + "'",
+                        arguments[i].loc);
+                }
+            }
+        }
+    }
+
     // A generic derived type and the procedures that depend on its parameters
     // form a package: a Template whose binders are the type's parameters and
     // whose symbol of the type's name is the definition. Instances are created
@@ -8905,10 +8895,9 @@ public:
             ASR::Struct_t *definition = ASR::down_cast<ASR::Struct_t>(definition_symbol);
             definition->m_generic = ASR::down_cast<ASR::struct_generic_t>(
                 ASR::make_GenericTypeDefinition_t(al, generic.base.base.loc,
-                    binders.p, binders.size()));
+                    binders.p, binders.size(), nullptr, 0));
             // The nominal definition is now available to an equality such as
             // ISubject(ObsType=Display{U}); no symbolic instance is created.
-            // A generic parent's definition has the same parameters (TD-45).
             ASR::Template_t *parent_package = definition->m_parent
                 ? ASRUtils::generic_type_package(ASRUtils::get_asr_owner(
                     ASRUtils::symbol_get_past_external(definition->m_parent)))
@@ -8924,41 +8913,26 @@ public:
                     traits.push_back(scope->resolve_symbol(
                         to_lower(parameter.m_traits[j].m_name)));
                 }
-                if (package.inherited_parameters) {
-                    // A parameter inherited from the parent has its constraints.
-                    auto *inherited = parent_package->m_symtab->get_symbol(
-                        parent_package->m_args[i]);
-                    if (!ASRUtils::trait_associated_parameters(parent_package->m_symtab,
-                            inherited).empty()) {
-                        trait_error("inheriting generic parameter '" +
-                            std::string(parent_package->m_args[i]) + "', whose constraints "
-                            "bind associated types, is not implemented yet", parameter.loc);
-                    }
-                    for (auto *trait : ASRUtils::trait_parameter_traits(inherited)) {
-                        traits.push_back(make_operator_proc_visible(
-                            ASRUtils::symbol_get_past_external(trait), "trait", scope));
-                    }
-                }
                 auto same_types = resolve_trait_same_types(scope, parameter);
                 add_trait_parameter_constraints(scope, binders[i], traits,
                     parameter.loc, true, same_types);
             }
-            for (size_t i = 0; parent_package && i < generic.n_parameters; i++) {
-                auto own = ASRUtils::trait_parameter_traits(binders[i]);
-                auto inherited = ASRUtils::trait_parameter_traits(
-                    parent_package->m_symtab->get_symbol(parent_package->m_args[i]));
-                bool same = own.size() == inherited.size();
-                for (size_t j = 0; same && j < own.size(); j++) {
-                    same = ASRUtils::symbol_get_past_external(own[j]) ==
-                        ASRUtils::symbol_get_past_external(inherited[j]);
+            // The type arguments of a generic parent (TD-45).
+            if (parent_package) {
+                const AST::AttrExtends_t *extends = nullptr;
+                for (size_t i = 0; i < type.n_attrtype; i++) {
+                    if (AST::is_a<AST::AttrExtends_t>(*type.m_attrtype[i])) {
+                        extends = AST::down_cast<AST::AttrExtends_t>(type.m_attrtype[i]);
+                    }
                 }
-                if (!same) {
-                    trait_error("generic parameter '" + std::string(binders[i] ?
-                        ASRUtils::symbol_name(binders[i]) : "") + "' of '" + name +
-                        "' must have the constraints of the parameter it inherits from '" +
-                        std::string(ASRUtils::generic_type_definition(*parent_package)->m_name) +
-                        "'", generic.m_parameters[i].loc);
-                }
+                LCOMPILERS_ASSERT(extends);
+                Vec<ASR::generic_type_argument_t> parent_arguments =
+                    generic_parent_arguments(*parent_package, *extends);
+                check_generic_parent_constraints(*parent_package, parent_arguments, name);
+                auto *metadata = ASR::down_cast<ASR::GenericTypeDefinition_t>(
+                    definition->m_generic);
+                metadata->m_parent_arguments = parent_arguments.p;
+                metadata->n_parent_arguments = parent_arguments.size();
             }
             for (auto *implements : package.implements) {
                 check_generic_type_implements(*implements, generic, name);
