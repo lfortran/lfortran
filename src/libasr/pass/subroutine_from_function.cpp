@@ -1350,6 +1350,24 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             remove_original_statement = false;
         }
 
+        // The expression whose type the array temporary that receives the
+        // result `value` of an assignment to `target` takes. A deferred-length
+        // temporary would reach an allocatable result of constant length with
+        // a length of 0, so the temporary then takes the type of the result.
+        static ASR::expr_t* array_result_temporary_model(
+                ASR::expr_t* value, ASR::expr_t* target) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            if (ASRUtils::is_deferredLength_string(ASRUtils::expr_type(target)) &&
+                    ASRUtils::is_allocatable(value_type) &&
+                    ASRUtils::is_character(*value_type) &&
+                    ASRUtils::get_string_type(value_type)->m_len &&
+                    ASRUtils::is_value_constant(
+                        ASRUtils::get_string_type(value_type)->m_len)) {
+                return value;
+            }
+            return target;
+        }
+
         static bool is_allocatable_scalar_result_to_non_allocatable(
                 ASR::expr_t* value, ASR::expr_t* target) {
             ASR::ttype_t* value_type = ASRUtils::expr_type(value);
@@ -1579,7 +1597,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     result_var = ASRUtils::EXPR(ASR::make_Var_t(
                         al, temp_sym->base.loc, temp_sym));
                 } else if (ASRUtils::is_array(ASRUtils::expr_type(target))) {
-                    result_var = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
+                    result_var = create_temporary_variable_for_array(al, array_result_temporary_model(value, target), current_scope, "_subroutine_from_function_", is_pointer_return);      //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 } else {
                     result_var = create_temporary_variable_for_scalar(al, target, current_scope, "_subroutine_from_function_", is_pointer_return);     //TODO: move this function impl & definition from array_struct_temporary.cpp file to pass_utils
                 }
@@ -1597,7 +1615,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     ASR::is_a<ASR::Assignment_t>(xx)) {
                     // If we already used a temp var for return don't use it here
                     if (!use_temp_var_for_return) {
-                        target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
+                        target = create_temporary_variable_for_array(al,
+                            array_result_temporary_model(value, target),
+                            current_scope, "_subroutine_from_function_");
                     }
                     value_and_target_allocatable_array = true;
                 }
