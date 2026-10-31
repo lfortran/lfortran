@@ -5988,6 +5988,104 @@ public:
     }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        lower_struct_instance_member(x);
+        if (ASR::Variable_t* member = ASRUtils::get_reference_member(x)) {
+            // A member of Reference type designates the variable whose
+            // address it holds: load that address, the form llvm_symtab
+            // has for the variable.
+            tmp = llvm_utils->CreateLoad2(reference_storage_type(*member), tmp);
+            ASR::ttype_t* referenced = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type));
+            if (ASR::is_a<ASR::StructType_t>(*referenced)) {
+                current_der_type_name = get_type_key(member->m_type_declaration);
+            }
+        }
+    }
+
+    // The LLVM type of a member of Reference type: the address of a variable
+    // of the referenced type.
+    llvm::Type* reference_storage_type(ASR::Variable_t& member) {
+        return llvm_utils->get_type_from_ttype_t_util(member.m_type,
+            member.m_type_declaration, module.get(), member.m_abi);
+    }
+
+    // Makes the member store the address of the variable, which it then
+    // designates.
+    void visit_BindReference(const ASR::BindReference_t& x) {
+        ASR::StructInstanceMember_t* reference =
+            ASR::down_cast<ASR::StructInstanceMember_t>(x.m_reference);
+        ASR::Variable_t* member = ASRUtils::get_reference_member(*reference);
+        LCOMPILERS_ASSERT(member != nullptr);
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_variable);
+        llvm::Value* address = tmp;
+        lower_struct_instance_member(*reference);
+        llvm::Value* storage = tmp;
+        ptr_loads = ptr_loads_copy;
+        llvm::Type* storage_type = reference_storage_type(*member);
+        if (address->getType() != storage_type) {
+            std::string holds, given;
+            llvm::raw_string_ostream holds_os(holds), given_os(given);
+            storage_type->print(holds_os);
+            address->getType()->print(given_os);
+            throw CodeGenError("internal error: the reference member '" +
+                std::string(member->m_name) + "' holds " + holds_os.str() +
+                ", but the variable bound to it has the address " +
+                given_os.str(), x.base.base.loc);
+        }
+        builder->CreateStore(address, storage);
+    }
+
+    // Binds each HostAssociated variable of `x` to the variable of the host
+    // that its symbolic value designates through the frame dummy argument.
+    void bind_host_associated_variables(const ASR::Function_t& x) {
+        for (auto& item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (!ASRUtils::is_host_associated(*v)) {
+                continue;
+            }
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*v->m_symbolic_value);
+            ptr_loads = ptr_loads_copy;
+            if (ASRUtils::is_array(v->m_type) && !LLVM::is_llvm_pointer(*v->m_type) &&
+                    ASRUtils::extract_physical_type(v->m_type) ==
+                        ASR::array_physical_typeType::UnboundedPointerArray &&
+                    !ASRUtils::is_assumed_size_string_array(v->m_type)) {
+                // An assumed-size array is represented by its data, as a
+                // dummy argument is (an array of strings by the descriptor
+                // of its data, which the member refers to).
+                tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                    v->m_type, v->m_type_declaration, module.get()), tmp);
+            }
+            llvm_symtab[get_hash((ASR::asr_t*)v)] = tmp;
+            if (compiler_options.emit_debug_info) {
+                builder->SetCurrentDebugLocation(nullptr);
+                uint32_t line, column;
+                debug_get_line_column(v->base.base.loc.first, line, column);
+                std::string type_name;
+                uint32_t type_size, type_encoding;
+                get_type_debug_info(v->m_type, type_name, type_size,
+                    type_encoding);
+                llvm::DILocalVariable* debug_var = DBuilder->createAutoVariable(
+                    debug_current_scope, v->m_name, debug_Unit, line,
+                    DBuilder->createBasicType(type_name, type_size, type_encoding),
+                    true);
+                DBuilder->insertDeclare(tmp, debug_var, DBuilder->createExpression(),
+                    llvm::DILocation::get(debug_current_scope->getContext(),
+                    line, 0, debug_current_scope), builder->GetInsertBlock());
+            }
+        }
+    }
+
+    // The storage of the member `x` designates, and for a member of
+    // Reference type the storage of the member itself.
+    void lower_struct_instance_member(const ASR::StructInstanceMember_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return;
@@ -8365,6 +8463,7 @@ public:
         }
 
         // Generate code for nested subroutines and functions first:
+        declare_frame_slots(x);
         procedure_host = &x.base;
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
@@ -8772,6 +8871,10 @@ public:
                     continue ;
                 }
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
+                // A member of Reference type is set only by BindReference.
+                if (ASRUtils::is_reference(symbol_type)) {
+                    continue;
+                }
                 ASR::expr_t* member_init = nullptr;
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     member_init = init_sc ? init_sc_args[item.first]
@@ -9784,6 +9887,37 @@ public:
         }
     }
 
+    // The frame slot of a host (see nested_vars) is read by the procedures
+    // nested in the host, which are generated before the host declares its
+    // variables, so its global is declared first. Declaring the variable
+    // later finds the same global.
+    template<typename T>
+    void declare_frame_slots(const T &x) {
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (!ASRUtils::is_frame_slot(*v)) {
+                continue;
+            }
+            bool is_array_type = false, is_malloc_array_type = false,
+                is_list = false;
+            ASR::dimension_t *m_dims = nullptr;
+            int n_dims = 0, a_kind = 4;
+            llvm::Type *type = llvm_utils->get_type_from_ttype_t(
+                nullptr, v->m_type, v->m_type_declaration, v->m_storage, is_array_type,
+                is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module.get());
+            std::string global_name = save_variable_global_prefix(x) + "." +
+                std::string(v->m_name);
+            llvm::Constant *ptr = module->getOrInsertGlobal(global_name, type);
+            llvm::GlobalVariable *global = module->getNamedGlobal(global_name);
+            global->setLinkage(llvm::GlobalValue::InternalLinkage);
+            global->setInitializer(llvm::Constant::getNullValue(type));
+            llvm_symtab[get_hash((ASR::asr_t*)v)] = ptr;
+        }
+    }
+
     template<typename T>
     void process_Variable(ASR::symbol_t* var_sym, T& x, uint32_t &debug_arg_count) {
         llvm::Value *target_var = nullptr;
@@ -10176,8 +10310,14 @@ public:
                     // An initializer already laid out as static data describes
                     // every element completely, and the component defaults
                     // this would apply would overwrite it.
+                    //
+                    // An assumed-size array (the pointer view of one, see
+                    // nested_vars) only holds the address of elements that
+                    // it does not own.
                     if (ASRUtils::extract_physical_type(v->m_type) !=
                             ASR::array_physical_typeType::DescriptorArray
+                            && ASRUtils::extract_physical_type(v->m_type) !=
+                            ASR::array_physical_typeType::UnboundedPointerArray
                             && !has_static_struct_array_initializer(v)) {
                         allocate_array_members_of_struct_arrays(v->m_type_declaration, ptr, v->m_type);
                     }
@@ -10384,8 +10524,10 @@ public:
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             // A variable in a common block lives in the block's storage,
             // which declare_common_block_storage laid out.
+            // A HostAssociated variable was bound on entry, see
+            // bind_host_associated_variables.
             if (is_a<ASR::Variable_t>(*var_sym) &&
-                    ASR::down_cast<ASR::Variable_t>(var_sym)->m_common_block == nullptr &&
+                    ASRUtils::has_own_storage(*ASR::down_cast<ASR::Variable_t>(var_sym)) &&
                     locals_declared_on_entry.find(var_sym) == locals_declared_on_entry.end()) {
                 process_Variable(var_sym, x, debug_arg_count);
             }
@@ -10433,6 +10575,15 @@ public:
     bool dummies_may_be_noalias(const ASR::Function_t &x) {
         if (!alias_info_enabled()) {
             return false;
+        }
+        // A host-associated view can reach the same storage as an ordinary
+        // dummy through the frame, rather than through that dummy.
+        for (const auto &item: x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                    ASRUtils::is_host_associated(
+                        *ASR::down_cast<ASR::Variable_t>(item.second))) {
+                return false;
+            }
         }
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
         return ft->m_abi == ASR::abiType::Source &&
@@ -10868,6 +11019,10 @@ public:
             }
             asr_arg_idx++;
         }
+
+        // The host variables are bound before any declaration is evaluated,
+        // since a declaration may depend on them.
+        bind_host_associated_variables(x);
     }
 
     // Array dummy arguments with the VALUE attribute. This runs after all
@@ -11004,6 +11159,7 @@ public:
             current_scope = current_scope_copy;
             return;
         }
+        declare_frame_slots(x);
         visit_procedures(x);
         generate_function(x);
         procedure_host = nullptr;
@@ -11305,7 +11461,7 @@ public:
                 if (v->m_parent_symtab != x.m_symtab) continue;
                 if ((v->m_intent == ASR::intentType::Local
                         || v->m_intent == ASR::intentType::ReturnVar)
-                        && v->m_common_block == nullptr
+                        && ASRUtils::has_own_storage(*v)
                         && !is_argument(v, x.m_args, x.n_args)) {
                     state[r] = 0;
                     set(r);

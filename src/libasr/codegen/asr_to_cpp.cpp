@@ -239,6 +239,10 @@ public:
             throw CodeGenError("threadprivate variables are not supported by the cpp backend",
                 v.base.base.loc);
         }
+        if (ASRUtils::is_host_associated(v) || ASRUtils::is_reference(v.m_type)) {
+            throw CodeGenError("host association is not supported by the cpp backend yet",
+                v.base.base.loc);
+        }
         bool use_static;
         bool use_templates_for_arrays;
 

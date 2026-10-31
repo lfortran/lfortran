@@ -338,6 +338,10 @@ public:
             } case ASR::ttypeType::Pointer: {
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
+            } case ASR::ttypeType::Reference: {
+                // Not Fortran: a member of a host frame (see BindReference)
+                r = get_type(down_cast<ASR::Reference_t>(t)->m_type, type_decl) + ", reference";
+                break;
             } case ASR::ttypeType::StructType: {
                 if (!type_decl) {
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
@@ -544,6 +548,11 @@ public:
         std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
         for (auto &item : struct_deps) {
             ASR::symbol_t* struct_sym = symtab->get_symbol(item);
+            if (struct_sym == nullptr) {
+                // A dependency declared in an enclosing scope, such as the
+                // type of a variable that a procedure's host frame captures
+                continue;
+            }
             visit_symbol(*struct_sym);
             r += src;
         }
@@ -942,6 +951,9 @@ public:
                 visit_symbol(*item.second);
                 r += src;
             }
+            // Its own derived types, such as the frame of a host (see
+            // nested_vars)
+            append_struct_definitions(x.m_symtab, r);
         }
         {
             std::string variable_declaration;
@@ -1210,6 +1222,7 @@ public:
         }
 
         dec_indent();
+        r += indent;
         r += "end type ";
         r.append(x.m_name);
         r += "\n";
@@ -1290,6 +1303,10 @@ public:
             // A variable in a common block cannot have the SAVE attribute: it
             // is saved with its block (`save /blk/`).
             r += ", save";
+        } else if (ASRUtils::is_host_associated(x)) {
+            // Not Fortran: an alias of a host variable, bound on entry to
+            // the variable its symbolic value designates
+            r += ", host_associated";
         }
         if (x.m_value_attr) {
             r += ", value";
@@ -1314,7 +1331,11 @@ public:
             src = r;
             return;
         }
-        if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
+        if (ASRUtils::is_host_associated(x)) {
+            r += " => ";
+            visit_expr(*x.m_symbolic_value);
+            r += src;
+        } else if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
             r += src;
@@ -1591,7 +1612,19 @@ public:
         }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
-        src = t + " => " + v + "\n";
+        src = indent + t + " => " + v + "\n";
+    }
+
+    // Not Fortran: binds the reference member of a host frame
+    void visit_BindReference(const ASR::BindReference_t &x) {
+        std::string r = indent + "bind_reference(";
+        visit_expr(*x.m_reference);
+        r += src + ", ";
+        visit_expr(*x.m_variable);
+        r += src + ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
     }
 
     void visit_Cycle(const ASR::Cycle_t &x) {

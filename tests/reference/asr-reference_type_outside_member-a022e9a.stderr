@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.reference.member_only]: a reference type can only be the type of a member of a derived type
+  --> tests/asr/verify/reference_type_outside_member.asr:17:16
+   |
+17 |               (Reference
+   |                ^^^^^^^^^ failed here

@@ -3240,6 +3240,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // that read it in place (see reads_target_only_in_place)
     std::set<ASR::expr_t*> target_operands_read_in_place;
     const DummiesSharingActualType& dummies_sharing_actual;
+    // Whether an argument of the call being visited was replaced by a
+    // temporary
+    bool replaced_call_arg = false;
 
     public:
 
@@ -3596,6 +3599,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                replaced_call_arg = replaced_call_arg || is_call;
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = rebuild_array_physical_cast(
@@ -4468,12 +4472,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        bool replaced_call_arg_copy = replaced_call_arg;
+        replaced_call_arg = false;
         traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
             name_hint + ASRUtils::symbol_name(x.m_name), true,
             is_elemental_array_call);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
+        // A temporary can have another physical type than the actual it
+        // replaces, such as the allocatable descriptor of an array of
+        // deferred-length strings for a concatenation passed to an
+        // explicit-shape dummy: the arguments are matched with the dummy
+        // arguments again.
+        if (replaced_call_arg) {
+            ASRUtils::rematch_call_args(al, xx);
+        }
+        replaced_call_arg = replaced_call_arg_copy;
     }
 
     void visit_StructConstructor(const ASR::StructConstructor_t& x) {
@@ -6291,10 +6306,11 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if (x.m_common_block != nullptr) {
+        if (!ASRUtils::has_own_storage(x)) {
             // The initial value of a variable in a common block is the
             // initial value of the block's static storage, which the view
-            // of the block gives.
+            // of the block gives. The symbolic value of a HostAssociated
+            // variable designates the variable it denotes.
             return;
         }
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
@@ -6786,8 +6802,9 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
-            // A variable in a common block keeps its static initial value.
-            x.m_common_block == nullptr &&
+            // A variable in a common block keeps its static initial value,
+            // and a HostAssociated variable denotes a host variable.
+            ASRUtils::has_own_storage(x) &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&

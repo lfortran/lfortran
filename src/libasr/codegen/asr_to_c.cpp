@@ -254,6 +254,10 @@ public:
             throw CodeGenError("threadprivate variables are not supported by the c backend",
                 v.base.base.loc);
         }
+        if (ASRUtils::is_host_associated(v) || ASRUtils::is_reference(v.m_type)) {
+            throw CodeGenError("host association is not supported by the c backend yet",
+                v.base.base.loc);
+        }
         bool pre_initialise_derived_type;
         bool use_ptr_for_derived_type;
         bool use_static;
