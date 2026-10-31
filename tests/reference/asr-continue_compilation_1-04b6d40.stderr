@@ -4963,3 +4963,27 @@ semantic error: cannot assign to use-associated variable 'cc1_pa_values' in a pu
      |
 3991 |         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
      |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4004:33
+     |
+4004 |         do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'r' for operator .or. must be of type logical, found real(4)
+    --> tests/errors/continue_compilation_1.f90:4007:33
+     |
+4007 |         do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+     |                                 ^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4010:33
+     |
+4010 |         do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4013:33
+     |
+4013 |         do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^ 

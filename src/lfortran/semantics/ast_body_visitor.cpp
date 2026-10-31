@@ -11001,7 +11001,30 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    red.m_arg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, current_scope->resolve_symbol(to_lower(reduce->m_vars[j]))));
+                    ASR::symbol_t *red_sym = current_scope->resolve_symbol(to_lower(reduce->m_vars[j]));
+                    red.m_arg = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, red_sym));
+                    std::string logical_op;
+                    if ( op == AST::reduce_opType::ReduceAND ) {
+                        logical_op = ".and.";
+                    } else if ( op == AST::reduce_opType::ReduceOR ) {
+                        logical_op = ".or.";
+                    } else if ( op == AST::reduce_opType::ReduceEQV ) {
+                        logical_op = ".eqv.";
+                    } else if ( op == AST::reduce_opType::ReduceNEQV ) {
+                        logical_op = ".neqv.";
+                    }
+                    ASR::ttype_t *red_type = red_sym ? ASRUtils::expr_type(red.m_arg) : nullptr;
+                    if ( !logical_op.empty() && red_type && !ASRUtils::is_logical(*red_type) ) {
+                        diag.add(Diagnostic(
+                            "reduction variable '" + std::string(reduce->m_vars[j])
+                            + "' for operator " + logical_op
+                            + " must be of type logical, found "
+                            + ASRUtils::type_to_str_with_kind(red_type, red.m_arg),
+                            Level::Error, Stage::Semantic, {
+                                Label("", {reduce->base.base.loc})
+                            }));
+                        continue;
+                    }
                     reductions.push_back(al, red);
                 }
             } else if ( locality->type == AST::concurrent_localityType::ConcurrentShared ) {
