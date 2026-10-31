@@ -26,8 +26,10 @@ None.
 ## Description
 
 The trip count is computed from `head` before the first iteration, so changing
-the bounds inside the body does not change the number of iterations. An
-increment of `nil` means one.
+the bounds inside the body does not change the number of iterations. The head
+is always in the [normalized form](../helper_nodes/do_loop_head.md):
+`start`, `end` and `increment` are present and have the type of the index
+variable.
 
 A `do` loop with no head at all is an infinite loop, `do ... end do`, and is
 represented by a head whose members are all `nil`.
