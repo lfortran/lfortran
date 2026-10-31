@@ -154,6 +154,7 @@ public:
 
     SymbolTable* current_scope;
     bool is_string_concat_present;
+    bool is_string_adjust_present;
 
     // The views of a common block in this translation unit, the CommonBlock
     // symbols with its link name, share the object of that linker symbol. A
@@ -203,7 +204,7 @@ public:
         bind_py_utils_functions{std::make_unique<BindPyUtils::BindPyUtilFunctions>()},
         const_name{"constname"},
         const_vars_count{0}, loop_end_count{0}, bracket_open{0},
-        is_string_concat_present{false} {
+        is_string_concat_present{false}, is_string_adjust_present{false} {
         }
 
     /****************************** COMMON blocks *****************************/
@@ -650,6 +651,30 @@ public:
             strcat_def += "        return strcat(str_tmp, y);\n";
             strcat_def += "    }\n\n";
             head += strcat_def;
+        }
+        if( is_string_adjust_present ) {
+            std::string adjust_def = "";
+            adjust_def += "    char* adjustl_(char* x) {\n";
+            adjust_def += "        size_t n = strlen(x);\n";
+            adjust_def += "        size_t p = strspn(x, \" \");\n";
+            adjust_def += "        char* str_tmp = (char*) malloc((n + 1) * sizeof(char));\n";
+            adjust_def += "        memcpy(str_tmp, x + p, n - p);\n";
+            adjust_def += "        memset(str_tmp + (n - p), ' ', p);\n";
+            adjust_def += "        str_tmp[n] = '\\0';\n";
+            adjust_def += "        return str_tmp;\n";
+            adjust_def += "    }\n";
+            adjust_def += "    char* adjustr_(char* x) {\n";
+            adjust_def += "        size_t n = strlen(x);\n";
+            adjust_def += "        size_t t = n;\n";
+            adjust_def += "        while (t > 0 && x[t - 1] == ' ') t--;\n";
+            adjust_def += "        size_t p = n - t;\n";
+            adjust_def += "        char* str_tmp = (char*) malloc((n + 1) * sizeof(char));\n";
+            adjust_def += "        memset(str_tmp, ' ', p);\n";
+            adjust_def += "        memcpy(str_tmp + p, x, t);\n";
+            adjust_def += "        str_tmp[n] = '\\0';\n";
+            adjust_def += "        return str_tmp;\n";
+            adjust_def += "    }\n\n";
+            head += adjust_def;
         }
 
         // Include dimension_descriptor definition that is used by array types
@@ -3735,6 +3760,46 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     }
                 }
                 src = result;
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat)) : {
+                LCOMPILERS_ASSERT(x.n_args == 2);
+                this->visit_expr(*x.m_args[0]);
+                std::string left = std::move(src);
+                this->visit_expr(*x.m_args[1]);
+                std::string right = std::move(src);
+                if (is_c) {
+                    is_string_concat_present = true;
+                    src = "strcat_(" + left + ", " + right + ")";
+                } else {
+                    src = "std::string(" + left + ") + std::string(" + right + ")";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Adjustl)) : {
+                LCOMPILERS_ASSERT(x.n_args == 1);
+                this->visit_expr(*x.m_args[0]);
+                if (is_c) {
+                    is_string_adjust_present = true;
+                    src = "adjustl_(" + src + ")";
+                } else {
+                    src = "([](std::string _s){ size_t _p = _s.find_first_not_of(' '); "
+                        "if (_p == std::string::npos) return _s; "
+                        "return _s.substr(_p) + std::string(_p, ' '); })(" + src + ")";
+                }
+                return;
+            }
+            case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Adjustr)) : {
+                LCOMPILERS_ASSERT(x.n_args == 1);
+                this->visit_expr(*x.m_args[0]);
+                if (is_c) {
+                    is_string_adjust_present = true;
+                    src = "adjustr_(" + src + ")";
+                } else {
+                    src = "([](std::string _s){ size_t _p = _s.find_last_not_of(' '); "
+                        "if (_p == std::string::npos) return _s; "
+                        "return std::string(_s.size() - 1 - _p, ' ') + _s.substr(0, _p + 1); })(" + src + ")";
+                }
                 return;
             }
             default : {
