@@ -56,7 +56,7 @@ subroutine add_col(a, j)
     real(4), dimension(:), pointer :: __libasr_created__array_section_
     type(t), intent(inout) :: a
     integer(4), intent(in) :: j
-__libasr_created__array_section_ => a%z(lbound(a%z, 1):ubound(a%z, 1), j)
+    __libasr_created__array_section_ => a%z(lbound(a%z, 1):ubound(a%z, 1), j)
     __libasr_created__array_section_ = a%x + a%y
 end subroutine add_col
 
@@ -102,7 +102,7 @@ subroutine reversed(a, n)
     real(4), dimension(:), allocatable :: __libasr_created__assignment_value_
     type(t), intent(inout) :: a
     integer(4), intent(in) :: n
-__libasr_created__array_section_ => a%x(n:1:-1)
+    __libasr_created__array_section_ => a%x(n:1:-1)
     deallocate(__libasr_created__assignment_value_)
     allocate(__libasr_created__assignment_value_(size(a%x, 1)))
     __libasr_created__assignment_value_ = a%x + real(1, kind=4)
@@ -118,10 +118,10 @@ subroutine shifted(a, n)
     integer(4), intent(in) :: n
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((n - 1 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => a%x(1:n - 1)
+    __libasr_created__array_section_pointer_ => a%x(1:n - 1)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created_real_binop_right_ => a%y(1:n - 1)
-__libasr_created__array_section_ => a%x(2:n)
+    __libasr_created_real_binop_right_ => a%y(1:n - 1)
+    __libasr_created__array_section_ => a%x(2:n)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + __libasr_created_real_binop_right_
 end subroutine shifted
 
