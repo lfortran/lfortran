@@ -1642,7 +1642,8 @@ namespace LCompilers {
         void insert_stmts_in_loop_body(Allocator& al,
                                        const ASR::DoLoop_t& loop,
                                        Vec<ASR::stmt_t*>& body,
-                                       ASR::expr_t* increment)
+                                       ASR::expr_t* increment,
+                                       ASR::expr_t* predecessor = nullptr)
         {
             Vec<ASR::stmt_t*> new_body;
             new_body.from_pointer_n_copy(al, body.p, body.n);
@@ -1657,7 +1658,7 @@ namespace LCompilers {
                                                 al,
                                                 loc,
                                                 target,
-                                                ASRUtils::EXPR(
+                                                predecessor ? predecessor : ASRUtils::EXPR(
                                                     ASR::make_IntegerBinOp_t(
                                                     al, loc, target, ASR::binopType::Sub,
                                                     increment, type, nullptr)),
@@ -1696,6 +1697,33 @@ namespace LCompilers {
             ASR::stmt_t *loop_init_stmt = nullptr;
             ASR::stmt_t *stmt_add_c_after_loop = nullptr;
             ASR::expr_t *zero_trip_guard = nullptr;
+            bool modular_induction = false;
+            auto induction_op = [&](ASR::expr_t *left, ASR::binopType op,
+                                    ASR::expr_t *right) {
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(loop_var))));
+                if (!modular_induction) {
+                    return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        left, op, right, type, nullptr));
+                }
+                ASR::ttype_t *unsigned_type = ASRUtils::TYPE(
+                    ASR::make_UnsignedInteger_t(al, loc,
+                        ASRUtils::extract_kind_from_ttype_t(type)));
+                auto unsigned_operand = [&](ASR::expr_t *operand) {
+                    return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, operand,
+                        ASR::cast_kindType::IntegerToUnsignedInteger,
+                        unsigned_type, nullptr, nullptr));
+                };
+                // The predecessor and its first increment are compiler state,
+                // not Fortran arithmetic: a-c may wrap even in a valid DO loop.
+                ASR::expr_t *value = ASRUtils::EXPR(
+                    ASR::make_UnsignedIntegerBinOp_t(al, loc,
+                        unsigned_operand(left), op, unsigned_operand(right),
+                        unsigned_type, nullptr));
+                return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+                    ASR::cast_kindType::UnsignedIntegerToInteger, type,
+                    nullptr, nullptr));
+            };
             Vec<ASR::stmt_t*> pre_loop_stmts;
             pre_loop_stmts.reserve(al, 2);
             // The head is normalized when the loop is created (checked by
@@ -1766,6 +1794,20 @@ namespace LCompilers {
                         not_constant_inc = true;
                     }
 
+                    if (exact_unit_step_exit) {
+                        int kind = ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(loop_var));
+                        int64_t first;
+                        int64_t max_value = kind <= 8 ? (int64_t)(
+                            ((uint64_t)1 << (8 * kind - 1)) - 1) : 0;
+                        modular_induction = kind > 8 || not_constant_inc
+                            || !ASRUtils::extract_value(ASRUtils::expr_value(a), first);
+                        if (!modular_induction) {
+                            modular_induction = increment > 0
+                                ? first < (-max_value - 1) + increment
+                                : first > max_value + increment;
+                        }
+                    }
                     if (not_constant_inc) {
                         ASR::expr_t *target = loop_var;
                         int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
@@ -1785,13 +1827,13 @@ namespace LCompilers {
 
                         // test11: target + c <= b
                         ASR::expr_t *test11 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::LtE, b, log_type, nullptr));
+                            induction_op(target, ASR::binopType::Add, c),
+                            ASR::cmpopType::LtE, b, log_type, nullptr));
 
                         // test22: target + c >= b
                         ASR::expr_t *test22 = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                            ASR::binopType::Add, c, int_type, nullptr)), ASR::cmpopType::GtE, b, log_type, nullptr));
+                            induction_op(target, ASR::binopType::Add, c),
+                            ASR::cmpopType::GtE, b, log_type, nullptr));
 
                         // cond1: test1 && test11
                         ASR::expr_t *cond1 = ASRUtils::EXPR(make_LogicalBinOp_t(al, loc,
@@ -1832,7 +1874,8 @@ namespace LCompilers {
                     //   iteration count is not representable, differs.
                     // In both forms the DO variable takes the values a, ...,
                     // b, the loop runs |b - a| + 1 times (also for
-                    // b = huge(i)), and `i + c` in the body never wraps.
+                    // b = huge(i)). Only the artificial predecessor and its
+                    // first increment can wrap in a valid loop.
                     if (!not_constant_inc && exact_unit_step_exit &&
                             current_scope && loop.n_orelse == 0 &&
                             (increment == 1 || increment == -1)) {
@@ -1849,13 +1892,10 @@ namespace LCompilers {
                             || first < -max_value || first > max_value
                             || (increment == -1 && first == max_value);
                         if (a_minus_c_wraps) {
-                            ASR::ttype_t *int_type = ASRUtils::TYPE(
-                                ASR::make_Integer_t(al, loc, a_kind));
                             zero_trip_guard = ASRUtils::EXPR(
                                 ASR::make_IntegerCompare_t(al, loc,
-                                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                                loop_var, ASR::binopType::Add, c, int_type,
-                                nullptr)), cmp_op, b, log_type, nullptr));
+                                induction_op(loop_var, ASR::binopType::Add, c),
+                                cmp_op, b, log_type, nullptr));
                         }
                         ASR::cmpopType exit_op = a_minus_c_wraps
                             ? ASR::cmpopType::NotEq
@@ -1869,25 +1909,19 @@ namespace LCompilers {
                 }
 
                 ASR::expr_t *target = loop_var;
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target));
-                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
 
                 loop_init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
-                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a,
-                            ASR::binopType::Sub, c, type, nullptr)), nullptr, false, false));
+                    induction_op(a, ASR::binopType::Sub, c), nullptr, false, false));
                 if (use_loop_variable_after_loop) {
                     stmt_add_c_after_loop = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
-                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                ASR::binopType::Add, c, type, nullptr)), nullptr, false, false));
+                        induction_op(target, ASR::binopType::Add, c), nullptr, false, false));
                 }
 
                 inc_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target,
-                            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                ASR::binopType::Add, c, type, nullptr)), nullptr, false, false));
+                            induction_op(target, ASR::binopType::Add, c), nullptr, false, false));
                 if (cond == nullptr) {
                     ASR::ttype_t *log_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
-                    ASR::expr_t* left = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, target,
-                                            ASR::binopType::Add, c, type, nullptr));
+                    ASR::expr_t* left = induction_op(target, ASR::binopType::Add, c);
 
                     cond = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                         left, cmp_op, b, log_type, nullptr));
@@ -1900,7 +1934,9 @@ namespace LCompilers {
             }
 
             if (use_loop_variable_after_loop) {
-                insert_stmts_in_loop_body(al, loop, body, c);
+                insert_stmts_in_loop_body(al, loop, body, c,
+                    modular_induction ? induction_op(loop_var, ASR::binopType::Sub, c)
+                                      : nullptr);
             } else {
                 for (size_t i = 0; i < loop.n_body; i++) {
                     body.push_back(al, loop.m_body[i]);

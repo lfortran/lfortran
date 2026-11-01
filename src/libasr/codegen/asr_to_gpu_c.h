@@ -915,6 +915,12 @@ public:
 
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
+            case ASR::ttypeType::UnsignedInteger: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(type);
+                if (kind == 4) return "unsigned int";
+                if (kind == 8) return "unsigned long";
+                return unsupported_gpu_type("unsigned integer", kind);
+            }
             case ASR::ttypeType::Integer: {
                 int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(type)->m_kind);
                 if (kind == 4) return "int";
@@ -5396,6 +5402,16 @@ public:
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t *c = ASR::down_cast<ASR::LogicalConstant_t>(expr);
                 src << (c->m_value ? "1" : "0");
+                break;
+            }
+            case ASR::exprType::UnsignedIntegerBinOp: {
+                ASR::UnsignedIntegerBinOp_t *op =
+                    ASR::down_cast<ASR::UnsignedIntegerBinOp_t>(expr);
+                src << "((" << gpu_type(op->m_type) << ")(";
+                visit_expr(op->m_left);
+                src << " " << binop_str(op->m_op) << " ";
+                visit_expr(op->m_right);
+                src << "))";
                 break;
             }
             case ASR::exprType::IntegerBinOp: {

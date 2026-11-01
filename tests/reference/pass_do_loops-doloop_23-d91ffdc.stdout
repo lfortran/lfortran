@@ -751,15 +751,39 @@
                     )
                     (Assignment
                         (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 n)
-                            Sub
-                            (IntegerUnaryMinus
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                (IntegerConstant -1 (Integer 4) Decimal)
+                        (Cast
+                            (UnsignedIntegerBinOp
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToUnsignedInteger
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
+                                    ()
+                                )
+                                Sub
+                                (Cast
+                                    (IntegerUnaryMinus
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                    )
+                                    IntegerToUnsignedInteger
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
+                                    ()
+                                )
+                                (UnsignedInteger
+                                    4
+                                )
+                                ()
                             )
+                            UnsignedIntegerToInteger
                             (Integer 4)
+                            ()
                             ()
                         )
                         ()
@@ -771,15 +795,39 @@
                     (If
                         ()
                         (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerUnaryMinus
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant -1 (Integer 4) Decimal)
+                            (Cast
+                                (UnsignedIntegerBinOp
+                                    (Cast
+                                        (Var 2 i)
+                                        IntegerToUnsignedInteger
+                                        (UnsignedInteger
+                                            4
+                                        )
+                                        ()
+                                        ()
+                                    )
+                                    Add
+                                    (Cast
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        IntegerToUnsignedInteger
+                                        (UnsignedInteger
+                                            4
+                                        )
+                                        ()
+                                        ()
+                                    )
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
                                 )
+                                UnsignedIntegerToInteger
                                 (Integer 4)
+                                ()
                                 ()
                             )
                             GtE
@@ -798,15 +846,39 @@
                             )
                             [(Assignment
                                 (Var 2 i)
-                                (IntegerBinOp
-                                    (Var 2 i)
-                                    Add
-                                    (IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant -1 (Integer 4) Decimal)
+                                (Cast
+                                    (UnsignedIntegerBinOp
+                                        (Cast
+                                            (Var 2 i)
+                                            IntegerToUnsignedInteger
+                                            (UnsignedInteger
+                                                4
+                                            )
+                                            ()
+                                            ()
+                                        )
+                                        Add
+                                        (Cast
+                                            (IntegerUnaryMinus
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                (IntegerConstant -1 (Integer 4) Decimal)
+                                            )
+                                            IntegerToUnsignedInteger
+                                            (UnsignedInteger
+                                                4
+                                            )
+                                            ()
+                                            ()
+                                        )
+                                        (UnsignedInteger
+                                            4
+                                        )
+                                        ()
                                     )
+                                    UnsignedIntegerToInteger
                                     (Integer 4)
+                                    ()
                                     ()
                                 )
                                 ()
@@ -972,11 +1044,35 @@
                     )
                     (Assignment
                         (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 n)
-                            Sub
-                            (Var 2 __do_loop_inc)
+                        (Cast
+                            (UnsignedIntegerBinOp
+                                (Cast
+                                    (Var 2 n)
+                                    IntegerToUnsignedInteger
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
+                                    ()
+                                )
+                                Sub
+                                (Cast
+                                    (Var 2 __do_loop_inc)
+                                    IntegerToUnsignedInteger
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
+                                    ()
+                                )
+                                (UnsignedInteger
+                                    4
+                                )
+                                ()
+                            )
+                            UnsignedIntegerToInteger
                             (Integer 4)
+                            ()
                             ()
                         )
                         ()
@@ -998,11 +1094,35 @@
                                 )
                                 And
                                 (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc)
+                                    (Cast
+                                        (UnsignedIntegerBinOp
+                                            (Cast
+                                                (Var 2 i)
+                                                IntegerToUnsignedInteger
+                                                (UnsignedInteger
+                                                    4
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            Add
+                                            (Cast
+                                                (Var 2 __do_loop_inc)
+                                                IntegerToUnsignedInteger
+                                                (UnsignedInteger
+                                                    4
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            (UnsignedInteger
+                                                4
+                                            )
+                                            ()
+                                        )
+                                        UnsignedIntegerToInteger
                                         (Integer 4)
+                                        ()
                                         ()
                                     )
                                     LtE
@@ -1024,11 +1144,35 @@
                                 )
                                 And
                                 (IntegerCompare
-                                    (IntegerBinOp
-                                        (Var 2 i)
-                                        Add
-                                        (Var 2 __do_loop_inc)
+                                    (Cast
+                                        (UnsignedIntegerBinOp
+                                            (Cast
+                                                (Var 2 i)
+                                                IntegerToUnsignedInteger
+                                                (UnsignedInteger
+                                                    4
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            Add
+                                            (Cast
+                                                (Var 2 __do_loop_inc)
+                                                IntegerToUnsignedInteger
+                                                (UnsignedInteger
+                                                    4
+                                                )
+                                                ()
+                                                ()
+                                            )
+                                            (UnsignedInteger
+                                                4
+                                            )
+                                            ()
+                                        )
+                                        UnsignedIntegerToInteger
                                         (Integer 4)
+                                        ()
                                         ()
                                     )
                                     GtE
@@ -1044,11 +1188,35 @@
                         )
                         [(Assignment
                             (Var 2 i)
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (Var 2 __do_loop_inc)
+                            (Cast
+                                (UnsignedIntegerBinOp
+                                    (Cast
+                                        (Var 2 i)
+                                        IntegerToUnsignedInteger
+                                        (UnsignedInteger
+                                            4
+                                        )
+                                        ()
+                                        ()
+                                    )
+                                    Add
+                                    (Cast
+                                        (Var 2 __do_loop_inc)
+                                        IntegerToUnsignedInteger
+                                        (UnsignedInteger
+                                            4
+                                        )
+                                        ()
+                                        ()
+                                    )
+                                    (UnsignedInteger
+                                        4
+                                    )
+                                    ()
+                                )
+                                UnsignedIntegerToInteger
                                 (Integer 4)
+                                ()
                                 ()
                             )
                             ()

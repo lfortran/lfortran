@@ -1607,16 +1607,24 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {
+        visit_integer_binop(x, true);
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        visit_integer_binop(x, false);
+    }
+
+    template <class T>
+    void visit_integer_binop(const T &x, bool unsigned_integer) {
         if (x.m_value) {
             visit_expr(*x.m_value);
             return;
         }
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(x.m_type)));
-        ASR::Integer_t *i = ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type));
-        if (i->m_kind == 4) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind == 4) {
             switch (x.m_op) {
                 case ASR::binopType::Add: {
                     m_wa.emit_i32_add();
@@ -1631,7 +1639,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::Div: {
-                    m_wa.emit_i32_div_s();
+                    if (unsigned_integer) m_wa.emit_i32_div_u();
+                    else m_wa.emit_i32_div_s();
                     break;
                 };
                 case ASR::binopType::Pow: {
@@ -1673,7 +1682,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::BitRShift: {
-                    m_wa.emit_i32_shr_s();
+                    if (unsigned_integer) m_wa.emit_i32_shr_u();
+                    else m_wa.emit_i32_shr_s();
                     break;
                 };
                 case ASR::binopType::LBitRShift: {
@@ -1685,7 +1695,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                         "ICE IntegerBinop kind 4: unknown operation");
                 }
             }
-        } else if (i->m_kind == 8) {
+        } else if (kind == 8) {
             switch (x.m_op) {
                 case ASR::binopType::Add: {
                     m_wa.emit_i64_add();
@@ -1700,7 +1710,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::Div: {
-                    m_wa.emit_i64_div_s();
+                    if (unsigned_integer) m_wa.emit_i64_div_u();
+                    else m_wa.emit_i64_div_s();
                     break;
                 };
                 case ASR::binopType::Pow: {
@@ -1742,7 +1753,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     break;
                 };
                 case ASR::binopType::BitRShift: {
-                    m_wa.emit_i64_shr_s();
+                    if (unsigned_integer) m_wa.emit_i64_shr_u();
+                    else m_wa.emit_i64_shr_s();
                     break;
                 };
                 case ASR::binopType::LBitRShift: {
@@ -3076,6 +3088,15 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
         this->visit_expr(*x.m_arg);
         switch (x.m_kind) {
+            case ASR::cast_kindType::IntegerToUnsignedInteger:
+            case ASR::cast_kindType::UnsignedIntegerToInteger: {
+                int arg_kind = -1, dest_kind = -1;
+                extract_kinds(x, arg_kind, dest_kind);
+                if (arg_kind != dest_kind) {
+                    throw CodeGenError("integer signedness cast requires equal widths");
+                }
+                break;
+            }
             case (ASR::cast_kindType::IntegerToReal): {
                 int arg_kind = -1, dest_kind = -1;
                 extract_kinds(x, arg_kind, dest_kind);

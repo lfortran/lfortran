@@ -38,6 +38,10 @@ The comparison is >= for c<0. With --fast, a loop with c = 1 or c = -1
 tests `i < b` (`i > b` for c<0) if a is a constant for which `a-c` does not
 overflow, and `i /= b` guarded by `if (i+c <= b)` otherwise, so that LLVM can
 compute its trip count (see PassUtils::replace_doloop).
+When the predecessor `a-c` is not proven representable, the fast lowering
+expresses its induction arithmetic as same-width unsigned operations with
+explicit casts back to the signed DO variable. This compiler state may wrap
+even when every source-level DO variable value is representable.
 */
 class DoLoopVisitor : public ASR::StatementWalkVisitor<DoLoopVisitor>
 {
