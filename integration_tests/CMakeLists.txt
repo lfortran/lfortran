@@ -691,7 +691,7 @@ RUN(NAME if_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # select case rang
 RUN(NAME if_07 LABELS gfortran llvm)
 RUN(NAME if_09 LABELS gfortran llvm)
 
-RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
+RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran mlir)
 RUN(NAME while_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran mlir)
 RUN(NAME while_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --fixed-form fortran)
 RUN(NAME while_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -702,12 +702,12 @@ RUN(NAME while_08 LABELS gfortran llvm)
 RUN(NAME while_09 LABELS gfortran llvm)
 RUN(NAME while_10 LABELS gfortran llvm)
 
-RUN(NAME doloop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm fortran)
+RUN(NAME doloop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm fortran mlir)
 RUN(NAME doloop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm mlir fortran)
 RUN(NAME doloop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir)
 RUN(NAME doloop_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # uses goto target
 RUN(NAME doloop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # uses goto
-RUN(NAME doloop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran)
+RUN(NAME doloop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir)
 RUN(NAME doloop_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir)
 RUN(NAME doloop_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir)
 RUN(NAME doloop_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nested subroutine
@@ -4885,7 +4885,7 @@ RUN(NAME do_loop_20 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_
 RUN(NAME do_loop_21 LABELS gfortran llvm c cpp wasm mlir)
 RUN(NAME do_loop_22 LABELS gfortran llvm c cpp wasm)
 RUN(NAME do_loop_mlir_01 LABELS gfortran llvm mlir)
-RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp EXTRA_ARGS --fast)
+RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp mlir EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
 
@@ -5509,7 +5509,7 @@ RUN(NAME selected_int_kind_02 LABELS gfortran llvm)
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
 RUN(NAME do_concurrent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc mlir)
-RUN(NAME do_concurrent_02 LABELS llvm_omp llvm)
+RUN(NAME do_concurrent_02 LABELS llvm_omp llvm mlir)
 RUN(NAME do_concurrent_03 LABELS llvm_omp)
 RUN(NAME do_concurrent_04 LABELS llvm_omp)
 RUN(NAME do_concurrent_05 LABELS llvm_omp)
@@ -5522,7 +5522,7 @@ RUN(NAME do_concurrent_11 LABELS llvm_omp llvm) # every other `do_concurrent` te
 RUN(NAME do_concurrent_12 LABELS llvm_omp llvm NO_FAST_MATH) # to not include is that we do a `omp_set_num_threads(xx)` call
 RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a `omp_set_num_threads(xx)` call
 RUN(NAME do_concurrent_14 LABELS llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_concurrent_15 LABELS llvm llvm_wasm llvm_wasm_emcc mlir)
 RUN(NAME do_concurrent_16 LABELS gfortran llvm llvm_omp)
 RUN(NAME do_concurrent_17 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
 RUN(NAME do_concurrent_18 LABELS gfortran llvm)
