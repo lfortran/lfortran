@@ -545,7 +545,7 @@ class WorkflowPolicyTests(unittest.TestCase):
 
     def test_quick_compatibility_setup_does_not_preinstall_reference_only_mpi(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-        setups = source.split("      - uses: mamba-org/setup-micromamba@v2.0.2\n")[1:]
+        setups = re.split(r"      - uses: mamba-org/setup-micromamba@\S+\n", source)[1:]
         quick_setups = [step for step in setups if
                         "if: matrix.llvm-version == '7'\n" in step or
                         "if: contains(matrix.llvm-version, '23')" in step or
