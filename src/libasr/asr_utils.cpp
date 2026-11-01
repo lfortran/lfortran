@@ -14691,6 +14691,30 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
     copied_scopes.push_back({orig_scope, new_scope});
     RetargetToCopies retarget(copied_scopes);
     for (auto &item : new_scope->get_scope()) {
+        // The name in the scope of a component of a derived type of the
+        // scope refers to the component of the copy of the type
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(
+                item.second);
+            ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(
+                e->m_external)->asr_owner;
+            if (owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner)) &&
+                    ASRUtils::symbol_parent_symtab(ASR::down_cast<ASR::symbol_t>(
+                        owner)) == orig_scope) {
+                ASR::symbol_t *type_copy = new_scope->get_symbol(
+                    ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(owner)));
+                if (type_copy != nullptr && ASR::is_a<ASR::Struct_t>(*type_copy)) {
+                    ASR::symbol_t *member = ASR::down_cast<ASR::Struct_t>(
+                        type_copy)->m_symtab->get_symbol(ASRUtils::symbol_name(
+                            e->m_external));
+                    if (member != nullptr) {
+                        e->m_external = member;
+                    }
+                }
+            }
+            continue;
+        }
         if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
             retarget.visit_symbol(*item.second);
             continue;
@@ -14715,9 +14739,12 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
             continue;
         }
         SymbolTable *new_nested = nullptr;
+        // A derived type of the scope can declare a component with
+        // another derived type of the scope
         if (ASR::is_a<ASR::Block_t>(*item.second) ||
                 ASR::is_a<ASR::AssociateBlock_t>(*item.second) ||
-                ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::is_a<ASR::Function_t>(*item.second) ||
+                ASR::is_a<ASR::Struct_t>(*item.second)) {
             new_nested = ASRUtils::symbol_symtab(item.second);
         }
         ASR::symbol_t *orig_sym = orig_scope->get_symbol(item.first);

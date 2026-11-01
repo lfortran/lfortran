@@ -116,6 +116,9 @@ struct PassOptions {
     // Set by the pass manager so that a pass can report a diagnostic. It is
     // null when the passes are run outside the pass manager.
     diag::Diagnostics *diagnostics = nullptr;
+    // The number of activations of a host that can hold a procedure value of
+    // one of its internal procedures at the same time (nested_vars)
+    int64_t internal_procedure_thunks = 64;
 };
 
 struct CompilerOptions {

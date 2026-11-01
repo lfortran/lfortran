@@ -3,8 +3,10 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/asr_builder.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/pass_utils.h>
+#include <deque>
 #include <functional>
 #include <map>
 #include <set>
@@ -66,43 +68,66 @@ host variables of their own internal procedures in turn. A call to an
 internal procedure of a more distant host passes the frame dummy of the
 procedure nested in that host, which is reached the same way.
 
-A procedure value of an internal procedure P that needs the frame (an
-actual argument, a pointer target, an interface of a procedure variable, the
-callback of a defined output procedure) has no frame to pass when it is
-invoked. Every such use names instead a thunk `P__lcompilers_value` of the
-host, with P's own interface, which calls P with the host's current frame
-slot, a saved pointer of the host:
+A procedure value of an internal procedure P that needs the frame has no
+frame to pass when it is invoked: it is a raw code address, so that it keeps
+the ABI of every other procedure value (dummy procedures, procedure pointers,
+EXTERNAL and implicit interfaces, c_funloc). Its uses name thunks of the host
+instead, procedures with P's own interface that call P with a frame that a
+saved pointer of the host, a frame slot, points at.
+
+A value that can be invoked after the statement that makes it (a Var naming
+P: an actual argument, a pointer target, a component, c_funloc) is one of a
+pool of K thunks `P__lcompilers_value_<i>` (K is
+PassOptions::internal_procedure_thunks), thunk i reading frame slot i of a
+saved array of the host. An instance of the host that makes a value takes a
+free slot, once, points it at its frame and names the thunk of that slot; it
+gives the slot back before it returns. The index of the slot it holds (0 for
+none) is a variable of the host in the frame, so that taking the slot again
+and returning without one cost a comparison. So every live instance has its own
+thunks, and a value reaches the instance that made it (Fortran 2018
+15.6.2.4), also while a newer instance of the host is active:
 
     subroutine h(n)                             ! after the pass
         ...
-        type(__lcompilers_frame_h), pointer, save :: __lcompilers_current_frame
-        type(__lcompilers_frame_h), pointer :: __lcompilers_previous_frame
-        bind_reference(__lcompilers_frame%k, k)
-        __lcompilers_previous_frame => __lcompilers_current_frame
-        __lcompilers_current_frame => __lcompilers_frame
-        call solve(inner__lcompilers_value)
-        __lcompilers_current_frame => __lcompilers_previous_frame
+        type :: __lcompilers_frame_slot_h
+            type(__lcompilers_frame_h), pointer :: frame
+        end type
+        type(__lcompilers_frame_slot_h), save :: __lcompilers_frame_slots(K)
+        procedure(inner__lcompilers_value_1), pointer :: inner__lcompilers_value_pointer
+        integer :: __lcompilers_held_frame_slot, __lcompilers_frame_slot
+        bind_reference(__lcompilers_frame%n, n)
+        bind_reference(__lcompilers_frame%__lcompilers_held_frame_slot, __lcompilers_held_frame_slot)
+        __lcompilers_held_frame_slot = 0
+        call __lcompilers_acquire_frame_slot(__lcompilers_frame, __lcompilers_frame_slot)
+        call inner__lcompilers_value_select(__lcompilers_frame_slot, inner__lcompilers_value_pointer)
+        call solve(inner__lcompilers_value_pointer)
+        if (__lcompilers_held_frame_slot /= 0) call __lcompilers_release_frame_slot(__lcompilers_frame)
     contains
-        subroutine inner__lcompilers_value(x)
+        subroutine inner__lcompilers_value_1(x)
             real, intent(inout) :: x
-            call inner(x, __lcompilers_current_frame)
+            call inner(x, __lcompilers_frame_slots(1)%frame)
         end subroutine
-        ...
+        ...                                     ! up to thunk K
 
-A statement that makes a procedure value of the host's instance, which may be
-invoked later, first points the slot at the frame of that instance. Every
-instance saves the slot when it starts and restores it before it returns. So
-a value invoked while its host is active, or after the host made it in an
-instance that then called the host again, reaches the frame of the instance
-that made it, unless a newer instance of the host made a procedure value
-since and is still active (Fortran 2018 15.6.2.4 asks for the instance that
-made the invoked value; values that carry their frame would give it in every
-case). The calls in an interface body, or in the interface of a procedure
-variable, to a procedure of the host that reads one of its variables for a
-bound or a length (`import :: n`) use the thunk too: they are evaluated at a
-call through that interface, which points the slot at its own frame first.
-If the interface of P depends on host variables, the thunk reaches them, like
-an internal procedure, through aliases bound from the frame in the slot.
+If the instance holds no slot, the acquire helper takes a free one, or stops
+naming the option when all K are taken; so the values one instance makes are
+the same thunk. With OpenMP, both
+helpers run under the lock of a named critical construct, so instances on
+several threads take and give back slots safely. A value invoked after its
+instance returned is undefined (Fortran 2018 19.5.2.5): its slot is null or
+belongs to another instance. A main program is not entered again, so it
+needs no pool. The other uses cannot outlive the
+statement that makes them: the interface of a procedure variable, the
+callback of a defined output procedure, and the calls in an interface body
+or in the interface of a procedure variable to a procedure of the host that
+reads one of its variables for a bound or a length (`import :: n`). They name
+one thunk `P__lcompilers_value`, which reads a single slot,
+`__lcompilers_current_frame`: such a statement first points it at the frame
+of its instance, and every instance saves the slot when it starts and
+restores it before it returns, so a newer instance active during the
+statement has restored it before the statement goes on. If the interface of
+P depends on host variables, a thunk reaches them, like an internal
+procedure, through aliases bound from the frame in its slot.
 */
 
 namespace HostFrames {
@@ -182,8 +207,10 @@ public:
             return;
         }
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
-            if (ASRUtils::is_reached_through_host_frame(
-                    *ASR::down_cast<ASR::Variable_t>(sym))) {
+            // The frame slots are static storage that is read directly
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::is_reached_through_host_frame(*v) &&
+                    !ASRUtils::is_frame_slot(*v)) {
                 entities.insert(sym);
             }
         } else if (ASR::is_a<ASR::Function_t>(*sym) &&
@@ -363,12 +390,27 @@ struct Child {
     ASR::Function_t *proc = nullptr;
     ASR::symbol_t *frame_dummy = nullptr;
     // The variable that holds the frame: the frame dummy, or for a thunk the
-    // frame slot of the host
+    // frame slot of the host (for a thunk of a pool, the frame slots)
     ASR::symbol_t *frame = nullptr;
+    // For a thunk of a pool, the designator of its frame slot, which is
+    // copied for every use
+    ASR::expr_t *frame_designator = nullptr;
     // host variable, named constant or dummy procedure -> its alias or copy
     std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
     // namelist group of the host -> its copy
     std::map<ASR::symbol_t*, ASR::symbol_t*> namelists;
+};
+
+// The frame slots of the thunk pools of a host (see above): a saved array of
+// a derived type whose one member points at a frame
+struct PoolSlots {
+    ASR::symbol_t *slots = nullptr;
+    // The index of the slot that the instance holds, 0 if none: a variable
+    // of the host in its frame, so that its internal procedures reach it
+    ASR::symbol_t *held = nullptr;
+    // The member, as named in the host
+    ASR::symbol_t *member = nullptr;
+    ASR::ttype_t *member_type = nullptr;
 };
 
 // Replaces the entities of the host in an expression
@@ -650,6 +692,15 @@ public:
                 child.proc->n_args - 1, ASRUtils::symbol_type(child.frame_dummy),
                 nullptr));
         }
+        if (child.frame_designator != nullptr) {
+            // Its types refer to the host variables that the frame type
+            // refers to, which the thunk reaches through its aliases
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t *frame = duplicator.duplicate_expr(child.frame_designator);
+            replacer.current_expr = &frame;
+            replacer.replace_expr(frame);
+            return frame;
+        }
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, child.frame));
     }
 
@@ -692,6 +743,9 @@ public:
     const std::set<ASR::symbol_t*> &procs;
     // procedure -> the places that name it
     std::map<ASR::symbol_t*, std::vector<ASR::symbol_t**>> uses;
+    // The procedures named by a Var outside interfaces: their values can be
+    // invoked after the statement that makes them
+    std::set<ASR::symbol_t*> valued;
     // Inside an interface body, or the interface of a procedure variable
     // or dummy procedure
     size_t in_interface = 0;
@@ -726,6 +780,9 @@ public:
     void visit_Template(const ASR::Template_t &/*x*/) {}
 
     void visit_Var(const ASR::Var_t &x) {
+        if (in_interface == 0 && procs.count(x.m_v)) {
+            valued.insert(x.m_v);
+        }
         use(const_cast<ASR::Var_t&>(x).m_v);
     }
 
@@ -735,6 +792,10 @@ public:
     }
 
     void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+        // The callback that the formatter calls, and the procedure that it
+        // stands for, which must keep the interface of a defined output
+        // procedure
+        use(const_cast<ASR::dtio_binding_t&>(x).m_procedure);
         use(const_cast<ASR::dtio_binding_t&>(x).m_callback);
         ASR::BaseWalkVisitor<ProcedureValueFinder>::visit_dtio_binding(x);
     }
@@ -891,6 +952,127 @@ public:
     }
 };
 
+// The Vars of a statement that make a procedure value of a thunk with a pool
+// (see above). The statements nested in it are not part of it.
+class PoolValueVars: public ASR::BaseWalkVisitor<PoolValueVars> {
+public:
+    // thunk -> the helper that selects a thunk of its pool
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &pools;
+    std::vector<ASR::Var_t*> vars;
+    bool in_statement = false;
+
+    PoolValueVars(const std::map<ASR::symbol_t*, ASR::symbol_t*> &pools_):
+        pools(pools_) {}
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (in_statement) {
+            return;
+        }
+        in_statement = true;
+        ASR::BaseWalkVisitor<PoolValueVars>::visit_stmt(x);
+        in_statement = false;
+    }
+
+    void visit_Function(const ASR::Function_t &/*x*/) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (pools.count(x.m_v)) {
+            vars.push_back(const_cast<ASR::Var_t*>(&x));
+        }
+    }
+};
+
+// Before every statement that makes a procedure value of a thunk with a
+// pool, takes the frame slot of the instance (`acquire`) and points a
+// procedure pointer at the thunk of the pool bound to it (the select helper
+// of the pool), which the statement then names instead.
+class PoolValueSites: public PassUtils::PassVisitor<PoolValueSites> {
+public:
+    // thunk -> the helper that selects a thunk of its pool
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &pools;
+    const std::set<ASR::symbol_t*> &skipped;
+    ASR::symbol_t *acquire;
+    ASR::symbol_t *frame;
+    // Where the slot index and the procedure pointers are declared
+    SymbolTable *declarations;
+    std::function<ASR::symbol_t*(SymbolTable*)> make_index;
+    std::function<ASR::symbol_t*(SymbolTable*, ASR::symbol_t*)> make_pointer;
+    ASR::symbol_t *index = nullptr;
+    std::map<ASR::symbol_t*, ASR::symbol_t*> pointers;
+    bool nested = false;
+
+    PoolValueSites(Allocator &al_,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &pools_,
+            const std::set<ASR::symbol_t*> &skipped_, ASR::symbol_t *acquire_,
+            ASR::symbol_t *frame_, SymbolTable *declarations_,
+            std::function<ASR::symbol_t*(SymbolTable*)> make_index_,
+            std::function<ASR::symbol_t*(SymbolTable*, ASR::symbol_t*)> make_pointer_):
+            PassVisitor(al_, nullptr), pools(pools_), skipped(skipped_),
+            acquire(acquire_), frame(frame_), declarations(declarations_),
+            make_index(make_index_), make_pointer(make_pointer_) {
+        pass_result.reserve(al, 1);
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        PassUtils::PassVisitor<PoolValueSites>::visit_stmt(x);
+        PoolValueVars site(pools);
+        site.visit_stmt(x);
+        if (site.vars.empty()) {
+            return;
+        }
+        const Location &loc = x.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        if (index == nullptr) {
+            index = make_index(declarations);
+        }
+        pass_result.n = 0;
+        auto call = [&](ASR::symbol_t *name, ASR::symbol_t *a1, ASR::symbol_t *a2) {
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 2);
+            for (ASR::symbol_t *arg: {a1, a2}) {
+                ASR::call_arg_t a;
+                a.loc = loc;
+                a.m_value = b.Var(arg);
+                args.push_back(al, a);
+            }
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                al, loc, name, nullptr, args.p, args.size(), nullptr, nullptr, false)));
+        };
+        call(acquire, frame, index);
+        std::set<ASR::symbol_t*> selected;
+        for (ASR::Var_t *v: site.vars) {
+            ASR::symbol_t *thunk = v->m_v;
+            if (pointers.find(thunk) == pointers.end()) {
+                pointers[thunk] = make_pointer(declarations, thunk);
+            }
+            ASR::symbol_t *pointer = pointers.at(thunk);
+            if (selected.insert(thunk).second) {
+                call(pools.at(thunk), index, pointer);
+            }
+            v->m_v = pointer;
+        }
+        retain_original_stmt = true;
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        if (nested && skipped.count((ASR::symbol_t*) &x) == 0) {
+            PassUtils::PassVisitor<PoolValueSites>::visit_Function(x);
+        }
+    }
+
+    void visit_host(ASR::stmt_t **&body, size_t &n_body, SymbolTable *scope) {
+        current_scope = scope;
+        transform_stmts(body, n_body);
+        for (auto &item: scope->get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                visit_Block(*ASR::down_cast<ASR::Block_t>(item.second));
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                visit_AssociateBlock(*ASR::down_cast<ASR::AssociateBlock_t>(item.second));
+            }
+        }
+    }
+};
+
 // Puts the statements made by `make_restores` before every return of a
 // procedure, including the returns in its BLOCK and ASSOCIATE constructs, but
 // not those of the procedures nested in it.
@@ -932,10 +1114,17 @@ public:
     std::map<ASR::symbol_t*, ASR::symbol_t*> thunk_targets;
 
     diag::Diagnostics *diagnostics;
+    // The number of thunks of each pool (see above)
+    int64_t pool_size;
+    // Whether the instances of a host can run on several threads, which
+    // then take and give back frame slots under a lock
+    bool openmp;
     bool failed = false;
 
-    HostFrameBuilder(Allocator &al_, diag::Diagnostics *diagnostics_):
-        al(al_), diagnostics(diagnostics_) {}
+    HostFrameBuilder(Allocator &al_, diag::Diagnostics *diagnostics_,
+            int64_t pool_size_, bool openmp_):
+        al(al_), diagnostics(diagnostics_), pool_size(pool_size_),
+        openmp(openmp_) {}
 
     // A value dummy argument of a bind(c) procedure is held by the procedure
     // as a value, not as a variable with an address that a frame can refer
@@ -1133,12 +1322,18 @@ public:
     // `object%member`, which designates the variable the member refers to
     ASR::expr_t *member_designator(const Location &loc, const Frame &frame,
             ASR::symbol_t *object, ASR::Variable_t *member) {
+        return member_designator(loc, frame,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, object)), member);
+    }
+
+    ASR::expr_t *member_designator(const Location &loc, const Frame &frame,
+            ASR::expr_t *object, ASR::Variable_t *member) {
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::ttype_t *referenced = duplicator.duplicate_ttype(
             ASR::down_cast<ASR::Reference_t>(member->m_type)->m_type);
         return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc,
-            ASRUtils::EXPR(ASR::make_Var_t(al, loc, object)),
-            frame.member_names.at(member), referenced, nullptr));
+            duplicator.duplicate_expr(object), frame.member_names.at(member),
+            referenced, nullptr));
     }
 
     // Appends the frame dummy to an internal procedure of the host
@@ -1196,7 +1391,9 @@ public:
         }
         return (ASR::symbol_t*) add_variable(child.proc->m_symtab,
             ASRUtils::symbol_name(sym), loc, ASR::intentType::Local,
-            member_designator(loc, frame, child.frame, member), nullptr,
+            child.frame_designator != nullptr
+                ? member_designator(loc, frame, child.frame_designator, member)
+                : member_designator(loc, frame, child.frame, member), nullptr,
             ASR::storage_typeType::HostAssociated, type,
             member->m_type_declaration, target, is_volatile, is_asynchronous);
     }
@@ -1223,7 +1420,8 @@ public:
     // thunk, so that only `p` applies the effects of intent(out) on entry
     // (deallocation, finalization, default initialization), and a pointer
     // result is associated with the result of `p`, not assigned its target.
-    ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p) {
+    ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p,
+            const std::string &suffix = "__lcompilers_value") {
         const Location &loc = p->base.base.loc;
         SymbolTable *scope = al.make_new<SymbolTable>(host);
         std::set<ASR::symbol_t*> dummies;
@@ -1287,7 +1485,7 @@ public:
         duplicator.fixup_local_type_declarations(scope, p->m_symtab);
 
         std::string name = host->get_unique_name(std::string(p->m_name) +
-            "__lcompilers_value", false);
+            suffix, false);
         if (p->m_return_var != nullptr) {
             // The result is named after the thunk, so that the name of `p`
             // does not denote it in the thunk
@@ -1379,8 +1577,7 @@ public:
         }
 
         std::map<ASR::Function_t*, HostReferenceCollector*> uses;
-        std::vector<HostReferenceCollector> collectors;
-        collectors.reserve(procs.size() + thunk_procs.size());
+        std::deque<HostReferenceCollector> collectors;
         for (ASR::Function_t *proc: procs) {
             collectors.emplace_back(host, thunk_targets);
             collectors.back().visit_Function(*proc);
@@ -1439,6 +1636,35 @@ public:
             thunk_targets.erase((ASR::symbol_t*) thunk);
         }
 
+        // A procedure value that can be invoked after the statement that
+        // makes it is a thunk of a pool, bound to the frame slot that the
+        // instance holds (see above). A main program is not entered again,
+        // so the one frame slot of its thunk is enough.
+        // thunk -> its pool, pool thunk -> the index of its frame slot
+        std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> pools;
+        std::map<ASR::symbol_t*, size_t> pool_index;
+        std::vector<ASR::Function_t*> pool_procs;
+        if (ASR::is_a<ASR::Function_t>(*host_sym)) {
+            for (ASR::Function_t *thunk: kept_thunks) {
+                ASR::symbol_t *target = thunk_targets.at((ASR::symbol_t*) thunk);
+                if (!values.valued.count(target)) {
+                    continue;
+                }
+                std::vector<ASR::symbol_t*> &pool = pools[(ASR::symbol_t*) thunk];
+                for (int64_t i = 0; i < pool_size; i++) {
+                    ASR::symbol_t *t = make_thunk(host,
+                        ASR::down_cast<ASR::Function_t>(target),
+                        "__lcompilers_value_" + std::to_string(i + 1));
+                    pool.push_back(t);
+                    pool_index[t] = i;
+                    pool_procs.push_back(ASR::down_cast<ASR::Function_t>(t));
+                    collectors.emplace_back(host, thunk_targets);
+                    collectors.back().visit_Function(*ASR::down_cast<ASR::Function_t>(t));
+                    uses[ASR::down_cast<ASR::Function_t>(t)] = &collectors.back();
+                }
+            }
+        }
+
         // The host entities the frame refers to, including those that their
         // types refer to, in the order of the host's symbol table
         std::set<ASR::symbol_t*> captured_set;
@@ -1446,6 +1672,8 @@ public:
         std::vector<ASR::Function_t*> children_procs(procs);
         children_procs.insert(children_procs.end(), kept_thunks.begin(),
             kept_thunks.end());
+        children_procs.insert(children_procs.end(), pool_procs.begin(),
+            pool_procs.end());
         for (ASR::Function_t *proc: children_procs) {
             for (ASR::symbol_t *e: uses[proc]->entities) {
                 if (!is_constant(e) && captured_set.insert(e).second) {
@@ -1467,6 +1695,15 @@ public:
                     worklist.push_back(d);
                 }
             }
+        }
+        // The index of the frame slot that the instance holds
+        ASR::symbol_t *held = nullptr;
+        if (!pools.empty()) {
+            held = (ASR::symbol_t*) add_variable(host, "__lcompilers_held_frame_slot",
+                loc, ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, 4)), nullptr);
+            captured_set.insert(held);
         }
         std::vector<ASR::symbol_t*> captured;
         for (auto &item: host->get_scope()) {
@@ -1493,6 +1730,27 @@ public:
                 ASR::storage_typeType::Save, ASRUtils::TYPE(ASR::make_Pointer_t(al,
                     loc, frame_type(loc, frame))), frame.type);
         }
+        PoolSlots pool_slots;
+        // The helpers that take and give back the frame slot of an instance
+        // take its frame like an internal procedure, through which they
+        // reach the host variables that the frame type refers to
+        std::map<ASR::Function_t*, ASR::symbol_t*> helper_frames;
+        ASR::symbol_t *acquire = nullptr, *release = nullptr;
+        if (!pools.empty()) {
+            pool_slots = make_pool_slots(host_sym, frame);
+            pool_slots.held = held;
+            ASRUtils::ASRBuilder b(al, loc);
+            prologue.push_back(al, b.Assignment(b.Var(held), b.i32(0)));
+            make_pool_frame_helpers(host_sym, frame, pool_slots, acquire, release);
+            for (ASR::symbol_t *h: {acquire, release}) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(h);
+                helper_frames[f] = ASR::down_cast<ASR::Var_t>(f->m_args[0])->m_v;
+                children_procs.push_back(f);
+                collectors.emplace_back(host, thunk_targets);
+                collectors.back().visit_Function(*f);
+                uses[f] = &collectors.back();
+            }
+        }
 
         // Frame dummies first, so that every call can pass the frame
         std::map<ASR::Function_t*, Child> children;
@@ -1504,6 +1762,15 @@ public:
                 child.frame = child.frame_dummy;
             } else if (thunks.count((ASR::symbol_t*) proc)) {
                 child.frame = slot;
+            } else if (helper_frames.count(proc)) {
+                child.frame_dummy = helper_frames.at(proc);
+                child.frame = child.frame_dummy;
+            } else if (pool_index.count((ASR::symbol_t*) proc)) {
+                child.frame = pool_slots.slots;
+                child.frame_designator = slot_designator(loc, pool_slots,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                        pool_index.at((ASR::symbol_t*) proc) + 1,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))));
             }
         }
         FrameActuals actuals(al, needs_frame);
@@ -1513,6 +1780,13 @@ public:
             // their types and values refer to
             std::vector<ASR::symbol_t*> pending(uses[proc]->entities.begin(),
                 uses[proc]->entities.end());
+            if (child.frame_designator != nullptr) {
+                // The host variables that the types of the designator of
+                // the frame slot refer to
+                std::set<ASR::symbol_t*> deps;
+                collect(host, nullptr, child.frame_designator, deps);
+                pending.insert(pending.end(), deps.begin(), deps.end());
+            }
             std::vector<ASR::symbol_t*> created;
             while (!pending.empty()) {
                 ASR::symbol_t *e = pending.back();
@@ -1560,6 +1834,10 @@ public:
                     calls.visit_symbol(*item.second);
                 }
             }
+            if (!pools.empty()) {
+                use_pools(host_sym, body, n_body, frame, pools, acquire, release,
+                    pool_slots.held, procs, children);
+            }
             if (!thunks.empty()) {
                 mark_procedure_value_sites(host_sym, body, n_body, frame, slot,
                     thunks, procs, children, prologue);
@@ -1573,6 +1851,366 @@ public:
 
         for (ASR::Function_t *proc: procs) {
             process((ASR::symbol_t*) proc);
+        }
+    }
+
+    // The frame slots of the thunk pools of a host
+    PoolSlots make_pool_slots(ASR::symbol_t *host_sym, const Frame &frame) {
+        SymbolTable *host = procedure_scope(host_sym);
+        const Location &loc = host_sym->base.loc;
+        PoolSlots ps;
+        SymbolTable *members_scope = al.make_new<SymbolTable>(host);
+        std::string type_name = host->get_unique_name("__lcompilers_frame_slot_" +
+            std::string(ASRUtils::symbol_name(host_sym)), false);
+        ps.member_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            frame_type(loc, frame)));
+        ASR::Variable_t *member = add_variable(members_scope, "frame", loc,
+            ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+            ps.member_type, frame.type);
+        std::string member_name = host->get_unique_name("1_" + type_name + "_frame",
+            false);
+        ps.member = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+            host, s2c(al, member_name), (ASR::symbol_t*) member, s2c(al, type_name),
+            nullptr, 0, member->m_name, ASR::accessType::Public));
+        host->add_symbol(member_name, ps.member);
+        Vec<char*> member_names;
+        member_names.reserve(al, 1);
+        member_names.push_back(al, member->m_name);
+        SetChar dependencies;
+        dependencies.reserve(al, 1);
+        dependencies.push_back(al, s2c(al, ASRUtils::symbol_name(frame.type)));
+        ASR::symbol_t *type = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al,
+            loc, members_scope, s2c(al, type_name), nullptr, dependencies.p,
+            dependencies.size(), member_names.p, member_names.size(), nullptr, 0,
+            ASR::abiType::Source, ASR::accessType::Public, false, false, false,
+            nullptr, 0, nullptr, nullptr, nullptr, 0));
+        ASR::down_cast<ASR::Struct_t>(type)->m_struct_signature =
+            ASRUtils::make_StructType_t_util(al, loc, type, true);
+        host->add_symbol(type_name, type);
+        ASR::ttype_t *integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+            integer_type));
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            pool_size, integer_type));
+        dims.push_back(al, dim);
+        ps.slots = (ASR::symbol_t*) add_variable(host, "__lcompilers_frame_slots",
+            loc, ASR::intentType::Local, nullptr, nullptr,
+            ASR::storage_typeType::Save, ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::make_StructType_t_util(al, loc, type, true), dims.p,
+                dims.size(), ASR::array_physical_typeType::FixedSizeArray,
+                ASR::memory_spaceType::Global)), type);
+        return ps;
+    }
+
+    // `slots(index)%frame`: the frame slot `index` of the thunk pools
+    ASR::expr_t *slot_designator(const Location &loc, const PoolSlots &ps,
+            ASR::expr_t *index) {
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, 1);
+        ASR::array_index_t ai;
+        ai.loc = loc;
+        ai.m_left = nullptr;
+        ai.m_right = index;
+        ai.m_step = nullptr;
+        indices.push_back(al, ai);
+        ASR::Variable_t *slots = ASR::down_cast<ASR::Variable_t>(ps.slots);
+        ASR::expr_t *element = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, ps.slots)), indices.p,
+            indices.size(), ASRUtils::make_StructType_t_util(al, loc,
+                slots->m_type_declaration, true),
+            ASR::arraystorageType::ColMajor, nullptr, false));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, element,
+            ps.member, duplicator.duplicate_ttype(ps.member_type), nullptr));
+    }
+
+    // The statements that take (`start`) or give back the lock of the frame
+    // slots, the OpenMP runtime lock of the named critical construct
+    // `lcompilers_frame_slots`, which the openmp pass, run before this one,
+    // would have made of one
+    ASR::stmt_t *slot_lock(SymbolTable *scope, const Location &loc, bool start) {
+        ASR::symbol_t *lock = PassUtils::omp_critical_name_lock(al, loc, scope,
+            "lcompilers_frame_slots");
+        std::string name = start ? "GOMP_critical_name_start" : "GOMP_critical_name_end";
+        ASR::symbol_t *fn = scope->get_symbol(name);
+        if (fn == nullptr) {
+            SymbolTable *fn_scope = al.make_new<SymbolTable>(scope);
+            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, fn_scope, s2c(al, "pptr"),
+                    nullptr, 0, ASR::intentType::InOut, nullptr, nullptr,
+                    ASR::storage_typeType::Default, ASRUtils::TYPE(ASR::make_CPtr_t(
+                        al, loc, ASR::cptr_kindType::CPointer)), nullptr,
+                    ASR::abiType::BindC, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            fn_scope->add_symbol("pptr", arg);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg)));
+            fn = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al,
+                loc, fn_scope, s2c(al, name), nullptr, 0, args.p, args.size(),
+                nullptr, 0, nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::deftypeType::Interface, s2c(al, name), false, false, false,
+                false, false, nullptr, 0, false, false, false));
+            scope->add_symbol(name, fn);
+        }
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, 1);
+        ASR::call_arg_t a;
+        a.loc = loc;
+        a.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, lock));
+        call_args.push_back(al, a);
+        return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc, fn,
+            nullptr, call_args.p, call_args.size(), nullptr, nullptr, false));
+    }
+
+    // The helpers acquire(frame, index), which gives the index of the slot
+    // that the instance holds, taking a free one if it holds none, and
+    // release(frame), which gives back the slot that the instance holds
+    void make_pool_frame_helpers(ASR::symbol_t *host_sym, const Frame &frame,
+            const PoolSlots &ps, ASR::symbol_t *&acquire, ASR::symbol_t *&release) {
+        SymbolTable *host = procedure_scope(host_sym);
+        const Location &loc = host_sym->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t *integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        auto error_stop = [&](const std::string &msg) {
+            return ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, b.StringConstant(msg,
+                b.String(b.i32(msg.size()), ASR::ExpressionLength))));
+        };
+        auto frame_dummy = [&](SymbolTable *scope) {
+            return (ASR::symbol_t*) add_variable(scope, "__lcompilers_frame", loc,
+                ASR::intentType::In, nullptr, nullptr,
+                ASR::storage_typeType::Default, frame_type(loc, frame), frame.type,
+                true);
+        };
+        auto locked = [&](SymbolTable *scope, std::vector<ASR::stmt_t*> stmts) {
+            if (openmp) {
+                stmts.insert(stmts.begin(), slot_lock(scope, loc, true));
+                stmts.push_back(slot_lock(scope, loc, false));
+            }
+            return stmts;
+        };
+        // A new expression for every use
+        auto held = [&]() { return b.Var(ps.held); };
+        std::string host_name = ASRUtils::symbol_name(host_sym);
+
+        // acquire(frame, index): the index of the slot that the instance
+        // holds, taking a free one if it holds none
+        acquire = make_pool_helper(host, loc,
+            "__lcompilers_acquire_frame_slot",
+            [&](SymbolTable *scope, Vec<ASR::expr_t*> &args) {
+                args.push_back(al, b.Var(frame_dummy(scope)));
+                args.push_back(al, b.Var((ASR::symbol_t*) add_variable(scope, "index",
+                    loc, ASR::intentType::Out, nullptr, nullptr,
+                    ASR::storage_typeType::Default, integer_type, nullptr)));
+            },
+            [&](SymbolTable *scope, Vec<ASR::stmt_t*> &stmts) {
+                ASR::symbol_t *f = scope->get_symbol("__lcompilers_frame");
+                ASR::symbol_t *i = (ASR::symbol_t*) add_variable(scope, "i", loc,
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, integer_type, nullptr);
+                ASR::expr_t *slot = slot_designator(loc, ps, b.Var(i));
+                // i = 1; while (i <= K .and. held == 0) { take slot i if it
+                // is free; i = i + 1 }
+                ASR::stmt_t *search = b.While(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(
+                    al, loc, b.LtE(b.Var(i), b.i32(pool_size)),
+                    ASR::logicalbinopType::And, b.Eq(held(), b.i32(0)), logical_type,
+                    nullptr)), {
+                    b.If(ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
+                        ASRUtils::EXPR(ASR::make_PointerAssociated_t(al, loc, slot,
+                            nullptr, logical_type, nullptr)), logical_type, nullptr)),
+                        {ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                            slot, b.Var(f))),
+                         b.Assignment(held(), b.Var(i))}, {}),
+                    b.Assignment(b.Var(i), ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                        al, loc, b.Var(i), ASR::binopType::Add, b.i32(1),
+                        integer_type, nullptr)))});
+                std::vector<ASR::stmt_t*> take = locked(scope,
+                    {b.Assignment(b.Var(i), b.i32(1)), search});
+                take.push_back(b.If(b.Eq(held(), b.i32(0)), {error_stop(
+                    "more than " + std::to_string(pool_size) + " instances of '" +
+                    host_name + "' that made procedure values of its internal "
+                    "procedures are active at the same time; recompile with "
+                    "--internal-procedure-thunks=<larger value>")}, {}));
+                stmts.push_back(al, b.If(b.Eq(held(), b.i32(0)), take, {}));
+                stmts.push_back(al, b.Assignment(b.Var(scope->get_symbol("index")),
+                    held()));
+            });
+        // release(frame): gives back the slot that the instance holds
+        release = make_pool_helper(host, loc,
+            "__lcompilers_release_frame_slot",
+            [&](SymbolTable *scope, Vec<ASR::expr_t*> &args) {
+                args.push_back(al, b.Var(frame_dummy(scope)));
+            },
+            [&](SymbolTable *scope, Vec<ASR::stmt_t*> &stmts) {
+                Vec<ASR::expr_t*> vars;
+                vars.reserve(al, 1);
+                vars.push_back(al, slot_designator(loc, ps, held()));
+                for (ASR::stmt_t *stmt: locked(scope, {ASRUtils::STMT(
+                        ASR::make_Nullify_t(al, loc, vars.p, vars.size()))})) {
+                    stmts.push_back(al, stmt);
+                }
+                stmts.push_back(al, b.Assignment(held(), b.i32(0)));
+            });
+    }
+
+    // A subroutine of the host with the dummies that `make_dummies` adds
+    // and the body that `make_body` makes
+    ASR::symbol_t *make_pool_helper(SymbolTable *host, const Location &loc,
+            const std::string &hint,
+            std::function<void(SymbolTable*, Vec<ASR::expr_t*>&)> make_dummies,
+            std::function<void(SymbolTable*, Vec<ASR::stmt_t*>&)> make_body) {
+        SymbolTable *scope = al.make_new<SymbolTable>(host);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        make_dummies(scope, args);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        make_body(scope, body);
+        std::string name = host->get_unique_name(hint, false);
+        ASR::symbol_t *helper = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, loc, scope, s2c(al, name), nullptr, 0,
+                args.p, args.size(), body.p, body.size(), nullptr,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::deftypeType::Implementation, nullptr, false, false, false,
+                false, false, nullptr, 0, false, false, false));
+        host->add_symbol(name, helper);
+        return helper;
+    }
+
+    // The procedure pointer type of the values of the thunks of `pool`: the
+    // bounds of the dummies of a thunk are its own declarations, which can
+    // call internal procedures of the host, so the pointer keeps only their
+    // kinds, ranks and representations
+    ASR::ttype_t *pool_pointer_type(const Location &loc,
+            const std::vector<ASR::symbol_t*> &pool) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t *signature = duplicator.duplicate_ttype(
+            ASR::down_cast<ASR::Function_t>(pool[0])->m_function_signature);
+        ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(signature);
+        ft->m_deftype = ASR::deftypeType::Interface;
+        for (size_t i = 0; i < ft->n_arg_types; i++) {
+            ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+                ft->m_arg_types[i]);
+            if (ASR::is_a<ASR::Array_t>(*t) && ASR::down_cast<ASR::Array_t>(
+                    t)->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+                for (size_t j = 0; j < a->n_dims; j++) {
+                    a->m_dims[j].m_start = nullptr;
+                    a->m_dims[j].m_length = nullptr;
+                }
+            }
+        }
+        return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, signature));
+    }
+
+    // Makes the procedure values of the thunks with a pool (see above): the
+    // helpers that select the thunk of a slot, the statements that make the
+    // values, and the return of the slot before every return of the host.
+    void use_pools(ASR::symbol_t *host_sym, ASR::stmt_t **&body, size_t &n_body,
+            const Frame &frame,
+            const std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> &pools,
+            ASR::symbol_t *acquire, ASR::symbol_t *release, ASR::symbol_t *held,
+            const std::vector<ASR::Function_t*> &procs,
+            std::map<ASR::Function_t*, Child> &children) {
+        SymbolTable *host = procedure_scope(host_sym);
+        const Location &loc = host_sym->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        auto local = [&](SymbolTable *scope, const std::string &name,
+                ASR::intentType intent) {
+            return (ASR::symbol_t*) add_variable(scope, name, loc, intent,
+                nullptr, nullptr, ASR::storage_typeType::Default, integer_type,
+                nullptr);
+        };
+
+        // select(index, pointer) for each pool: points `pointer` at the
+        // thunk of slot `index`
+        std::map<ASR::symbol_t*, ASR::symbol_t*> selects;
+        for (auto &item: pools) {
+            const std::vector<ASR::symbol_t*> &pool = item.second;
+            selects[item.first] = make_pool_helper(host, loc,
+                std::string(ASRUtils::symbol_name(item.first)) + "_select",
+                [&](SymbolTable *scope, Vec<ASR::expr_t*> &args) {
+                    args.push_back(al, b.Var(local(scope, "index", ASR::intentType::In)));
+                    args.push_back(al, b.Var((ASR::symbol_t*) add_variable(scope,
+                        "pointer", loc, ASR::intentType::Out, nullptr, nullptr,
+                        ASR::storage_typeType::Default, pool_pointer_type(loc, pool),
+                        pool[0])));
+                },
+                [&](SymbolTable *scope, Vec<ASR::stmt_t*> &stmts) {
+                    ASR::symbol_t *index = scope->get_symbol("index");
+                    ASR::symbol_t *pointer = scope->get_symbol("pointer");
+                    for (size_t i = 0; i < pool.size(); i++) {
+                        stmts.push_back(al, b.If(b.Eq(b.Var(index), b.i32(i + 1)),
+                            {ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
+                                b.Var(pointer), b.Var(pool[i])))}, {}));
+                    }
+                });
+        }
+
+        std::set<ASR::symbol_t*> skipped{acquire, release};
+        for (auto &item: pools) {
+            skipped.insert(item.first);
+            skipped.insert(item.second.begin(), item.second.end());
+            skipped.insert(selects.at(item.first));
+        }
+        auto make_index = [&](SymbolTable *scope) {
+            return local(scope, "__lcompilers_frame_slot", ASR::intentType::Local);
+        };
+        auto make_pointer = [&](SymbolTable *scope, ASR::symbol_t *thunk) {
+            const std::vector<ASR::symbol_t*> &pool = pools.at(thunk);
+            return (ASR::symbol_t*) add_variable(scope,
+                std::string(ASRUtils::symbol_name(thunk)) + "_pointer", loc,
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, pool_pointer_type(loc, pool),
+                pool[0]);
+        };
+        PoolValueSites host_sites(al, selects, skipped, acquire, frame.object, host,
+            make_index, make_pointer);
+        host_sites.visit_host(body, n_body, host);
+        for (ASR::Function_t *proc: procs) {
+            ASR::symbol_t *frame_dummy = children[proc].frame_dummy;
+            if (frame_dummy == nullptr) {
+                continue;
+            }
+            PoolValueSites proc_sites(al, selects, skipped, acquire, frame_dummy,
+                proc->m_symtab, make_index, make_pointer);
+            proc_sites.nested = true;
+            proc_sites.visit_Function(*proc);
+        }
+
+        // The host gives back its slot, if it holds one, before it returns
+        auto release_call = [&]() {
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 1);
+            ASR::call_arg_t a;
+            a.loc = loc;
+            a.m_value = b.Var(frame.object);
+            args.push_back(al, a);
+            return b.If(b.NotEq(b.Var(held), b.i32(0)),
+                {ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
+                    release, nullptr, args.p, args.size(), nullptr, nullptr,
+                    false))}, {});
+        };
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(host_sym);
+        ReturnRestorer restorer(al, [&]() {
+            return std::vector<ASR::stmt_t*>{release_call()};
+        });
+        restorer.restore_before_returns(*f);
+        if (f->n_body == 0 || !ASR::is_a<ASR::Return_t>(*f->m_body[f->n_body - 1])) {
+            Vec<ASR::stmt_t*> released;
+            released.reserve(al, f->n_body + 1);
+            for (size_t i = 0; i < f->n_body; i++) {
+                released.push_back(al, f->m_body[i]);
+            }
+            released.push_back(al, release_call());
+            f->m_body = released.p;
+            f->n_body = released.size();
         }
     }
 
@@ -1651,7 +2289,8 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
     std::vector<ASR::symbol_t*> units;
     HostFrames::collect_program_units(unit.m_symtab, units);
-    HostFrames::HostFrameBuilder builder(al, pass_options.diagnostics);
+    HostFrames::HostFrameBuilder builder(al, pass_options.diagnostics,
+        pass_options.internal_procedure_thunks, pass_options.openmp);
     for (ASR::symbol_t *u: units) {
         // A procedure defined in another translation unit (loaded from a
         // module file) is lowered there.

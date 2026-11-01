@@ -339,6 +339,12 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);
+        app.add_option("--internal-procedure-thunks",
+            compiler_options.po.internal_procedure_thunks,
+            "Number of activations of a host that can hold a procedure value of "
+            "one of its internal procedures at the same time")
+            ->check(CLI::Range(int64_t(1), int64_t(1000000)))
+            ->capture_default_str()->group(group_pass_transformation_options);
 
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
