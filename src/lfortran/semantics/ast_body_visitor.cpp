@@ -12462,7 +12462,7 @@ private:
     // The DO loop that contains the branch and whose terminal statement,
     // labeled `label` (the end of the constructs `to`), is shared with the
     // DO loops nested in it, or nullptr.
-    const ASR::stmt_t *shared_termination_loop(uint64_t label,
+    const ASR::stmt_t *shared_termination_loop(int64_t label,
             const std::vector<const ASR::stmt_t*> &to, size_t kept) {
         if (kept == 0) return nullptr;
         const ASR::stmt_t *construct = to[kept - 1];
