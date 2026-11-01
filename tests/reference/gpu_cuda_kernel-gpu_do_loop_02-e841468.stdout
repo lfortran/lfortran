@@ -66,10 +66,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         q__dc = (__flat_idx + 1);
     } else {
         __flat_idx = blockIdx.x;
-        __tiles = ((((4 - 1) + 1) + 31) >> 5);
-        p__dc = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        __tiles = ((int)((int)((((4 - 1) + 1) + 31)) >> (5)));
+        p__dc = (((int)((unsigned int)((__flat_idx - ((__flat_idx / __tiles) * __tiles))) << (5))) + (threadIdx.x & 31));
         __flat_idx = (__flat_idx / __tiles);
-        q__dc = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        q__dc = (((int)((unsigned int)(__flat_idx) << (3))) + ((int)((int)(threadIdx.x) >> (5))));
         if ((p__dc >= ((4 - 1) + 1))) {
             return;
         }
