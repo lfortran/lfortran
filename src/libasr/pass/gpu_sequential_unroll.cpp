@@ -61,7 +61,7 @@ class SequentialUnrollVisitor
             if (!ASR::is_a<ASR::Integer_t>(*control_type)
                     || ASRUtils::extract_kind_from_ttype_t(control_type) != 4) return false;
         }
-        int64_t start, step = 1;
+        int64_t start = 0, step = 1;
         if (!ASRUtils::extract_value(ASRUtils::expr_value(x.m_head.m_start), start)
                 || start < 0
                 || (x.m_head.m_increment &&
@@ -70,17 +70,10 @@ class SequentialUnrollVisitor
                 || step != 1) return false;
 
         // No control transfer can enter or leave one of the duplicated iterations.
-        ASRUtils::ExprStmtDuplicator duplicator(al);
-        std::vector<std::vector<ASR::stmt_t*>> copies(factor);
-        for (int k = 0; k < factor; k++) {
-            for (size_t i = 0; i < x.n_body; i++) {
-                if (!ASR::is_a<ASR::Assignment_t>(*x.m_body[i])) return false;
-                duplicator.success = true;
-                ASR::stmt_t *copy = duplicator.duplicate_stmt(x.m_body[i]);
-                if (!duplicator.success) return false;
-                copies[k].push_back(copy);
-            }
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*x.m_body[i])) return false;
         }
+        if (!PassUtils::can_unroll_iterations(al, x)) return false;
 
         ASR::expr_t *start_expr = x.m_head.m_start;
         ASR::expr_t *end_expr = x.m_head.m_end;
@@ -93,12 +86,8 @@ class SequentialUnrollVisitor
         ASR::expr_t *group = PassUtils::create_auxiliary_variable(
             x.base.base.loc, group_name, al, current_scope, type,
             ASR::intentType::Local, nullptr, nullptr);
-        std::vector<ASR::stmt_t*> body;
-        for (int k = 0; k < factor; k++) {
-            body.push_back(b.Assignment(x.m_head.m_v,
-                k == 0 ? group : b.Add(group, b.i_t(k, type))));
-            body.insert(body.end(), copies[k].begin(), copies[k].end());
-        }
+        std::vector<ASR::stmt_t*> body = PassUtils::unroll_iterations(al, x,
+            group, 1, factor);
         ASR::stmt_t *main = b.DoLoop(group, start_expr,
             b.Sub(end, b.i_t(factor - 1, type)), body, b.i_t(factor, type));
         std::vector<ASR::stmt_t*> remainder(x.m_body, x.m_body + x.n_body);

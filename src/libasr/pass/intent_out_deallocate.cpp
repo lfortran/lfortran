@@ -312,19 +312,16 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             }
             return;
         }
-        emit_array_loops(arr_expr, idx_vars, body, current_scope, loc,
-            out_stmts);
+        emit_array_loops(arr_expr, idx_vars, body, loc, out_stmts);
     }
 
     // Run `body` once for every element of `arr_expr`, with `idx_vars` (one
     // per dimension, first dimension innermost) running over its bounds.
-    // The loops are emitted already lowered, because this pass runs after the
-    // one that lowers `DoLoop`.  Nothing is emitted for an empty body.
+    // Nothing is emitted for an empty body.
     void emit_array_loops(
             ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars,
             Vec<ASR::stmt_t*>& body,
-            SymbolTable* current_scope,
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
         if (body.size() == 0) return;
@@ -337,21 +334,18 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 al, 4);
             head.m_end = PassUtils::get_bound(arr_expr, d + 1, "ubound",
                 al, 4);
-            head.m_increment = nullptr;
+            head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                loc, 1, ASRUtils::expr_type(idx_vars[d])));
             head.loc = loc;
 
             ASR::stmt_t* doloop = ASRUtils::STMT(
                 ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, current_body.p,
                     current_body.size(), nullptr, 0));
-            Vec<ASR::stmt_t*> init_and_while = PassUtils::replace_doloop(al,
-                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, false,
-                current_scope);
-
-            current_body.reserve(al, init_and_while.size());
-            current_body.n = 0;
-            for (size_t k = 0; k < init_and_while.size(); k++) {
-                current_body.push_back(al, init_and_while[k]);
-            }
+            // The loop keeps the buffer of current_body as its body.
+            Vec<ASR::stmt_t*> loop;
+            loop.reserve(al, 1);
+            loop.push_back(al, doloop);
+            current_body = loop;
         }
 
         for (size_t i = 0; i < current_body.size(); i++) {
@@ -777,8 +771,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         emit_struct_default_init_stmts(arr_ref, struct_type,
             current_scope, loc, innermost_body);
 
-        emit_array_loops(arr_expr, idx_vars, innermost_body, current_scope,
-            loc, out_stmts);
+        emit_array_loops(arr_expr, idx_vars, innermost_body, loc, out_stmts);
     }
 
     // Helper: Wrap statement in optional presence check if needed

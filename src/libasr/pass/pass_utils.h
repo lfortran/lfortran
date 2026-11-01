@@ -394,6 +394,28 @@ namespace LCompilers {
                                          Allocator& al, ASR::TranslationUnit_t& unit,
                                          Location& loc, PassOptions& pass_options);
 
+        // Whether the iterations of the DO loop `x` can be unrolled by
+        // unroll_iterations: every statement of its body can be duplicated,
+        // and none can leave an iteration or be jumped to (EXIT, CYCLE,
+        // GO TO, a label).
+        bool can_unroll_iterations(Allocator &al, const ASR::DoLoop_t &x);
+
+        // The body of a DO loop over `group` with the step factor * step
+        // that runs `factor` iterations of the DO loop `x` (of the constant
+        // step `step`) in a row:
+        //
+        //     i = group
+        //     ...
+        //     i = group + step
+        //     ...
+        //     i = group + (factor - 1) * step
+        //     ...
+        //
+        // `x` must satisfy can_unroll_iterations.
+        std::vector<ASR::stmt_t*> unroll_iterations(Allocator &al,
+            const ASR::DoLoop_t &x, ASR::expr_t *group, int64_t step,
+            int64_t factor);
+
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp=-1, bool use_loop_variable_after_loop=false,
                                          SymbolTable* current_scope=nullptr,
