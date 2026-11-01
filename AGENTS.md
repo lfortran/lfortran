@@ -75,6 +75,16 @@ follow [make-release](.agents/skills/make-release/SKILL.md). Invoking it
 authorizes the tag, the downstream PRs, and the fix PRs it describes; only
 the green tip of `main` may be released.
 
+## Merge Workflow
+
+When the user asks to merge, land, or go through open PRs, or to judge
+whether a PR can be merged, load and follow
+[merge-pr](.agents/skills/merge-pr/SKILL.md). It judges the change itself
+(complexity, locality, non-local interactions, placement, design impact)
+and the merge gates, then merges or takes the specific next step (request,
+rebase, adopt, consolidate, split, close, or escalate). Readiness and triage
+requests stay read-only.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -108,6 +118,7 @@ Available skills:
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
+| `merge-pr` | Decide whether PRs can be merged by judging the change itself (risk class from size, locality, non-local interactions, placement, design impact) and the gates (Quick green on a fresh head, tests, history, stacks), then merge or do the exact remedy: draft-marking notes, rebase, adopt/rewrite external PRs with credit, consolidate duplicates, split, close with a link, or escalate |
 | `make-release` | Release the green tip of `main`: tag with generated notes, verify the tarball, update the conda-forge feedstock (patches upstreamed afterwards) and lfortran-conda-testing, and turn regressions into issues and fix PRs |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
