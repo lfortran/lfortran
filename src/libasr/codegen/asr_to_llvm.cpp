@@ -30528,9 +30528,6 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
     pass_manager.rtlib = co.rtlib;
-    for (const std::string &pass: PassManager::passes_lowered_by_llvm()) {
-        pass_manager.skip_pass(pass);
-    }
     auto t1 = std::chrono::high_resolution_clock::now();
     // A pass reports a hard error by adding it to the diagnostics, so the
     // pipeline has to stop here: continuing would emit an object file for a

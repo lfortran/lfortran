@@ -16,7 +16,6 @@
     #include <lpython/utils.h>
 #endif
 
-#include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
@@ -108,7 +107,6 @@ namespace LCompilers {
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
             {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
-            {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
@@ -185,16 +183,6 @@ namespace LCompilers {
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
         std::vector<std::string> passes_to_skip_with_llvm;
-        // The passes whose work the LLVM backend does itself. asr_to_llvm
-        // skips them, and so does the driver's pass list for that backend
-        // (unless --pass names them), so that --dump-all-passes shows the
-        // ASR the backend lowers.
-        static const std::vector<std::string> &passes_lowered_by_llvm() {
-            // DO loops are lowered by visit_DoLoop and visit_DoConcurrentLoop,
-            // not rewritten to while loops.
-            static const std::vector<std::string> passes = {"do_loops"};
-            return passes;
-        }
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
@@ -447,10 +435,8 @@ namespace LCompilers {
                 // change the physical type of an array, and before its copy
                 // loops are lowered.
                 "string_format_array_args",
-                // The short loops of Metal device code are unrolled before
-                // do_loops, which leaves the loops of device code alone.
+                // The short loops of Metal device code are unrolled.
                 "gpu_sequential_unroll",
-                "do_loops",
                 "while_else",
                 // Every call the passes above can create is in place, so each
                 // character dummy gets its hidden length argument here, and
@@ -482,7 +468,6 @@ namespace LCompilers {
                 "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
-                "do_loops",
                 "select_case",
                 "inline_function_calls",
                 // Only the LLVM backend formats and transfers arrays

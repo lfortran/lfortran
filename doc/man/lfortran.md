@@ -75,10 +75,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--use-loop-variable-after-loop`: Leave the variable of an implied DO loop
   of an input/output statement at its final value after the statement. A DO
-  loop always leaves its variable at the value the standard specifies with
-  the LLVM backend; with the backends that still lower DO loops to while
-  loops (WASM, x86, MLIR), this option also makes a completed DO loop leave
-  it one step past its last value.
+  loop always leaves its variable at the value the standard specifies.
 - `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target
