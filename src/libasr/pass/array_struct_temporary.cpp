@@ -5571,6 +5571,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
     }
 
+    // The argument of GetPointer is storage, e.g. `dst(lv(1))` passed by
+    // sequence association, so it must not be replaced by a copy.
+    void replace_GetPointer(ASR::GetPointer_t* x) {
+        bool saved_context = in_array_context;
+        in_array_context = false;
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_GetPointer(x);
+        in_array_context = saved_context;
+    }
+
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         std::vector<ASR::expr_t*> original_args;
         for (size_t i = 0; i < x->n_args; i++) {
