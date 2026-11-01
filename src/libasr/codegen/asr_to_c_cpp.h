@@ -2210,6 +2210,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             + indent + target_desc + "->n_dims = " + std::to_string(target_rank) + ";\n";
     }
 
+    void visit_BindReference(const ASR::BindReference_t &x) {
+        throw CodeGenError(std::string("host association is not supported by the ") +
+            (is_c ? "c" : "cpp") + " backend yet", x.base.base.loc);
+    }
+
     void visit_Associate(const ASR::Associate_t &x) {
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
             handle_array_section_association_to_pointer(x);
