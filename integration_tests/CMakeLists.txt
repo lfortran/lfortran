@@ -4861,7 +4861,7 @@ RUN(NAME array_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray f
 RUN(NAME do_loop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop)
-RUN(NAME do_loop_04 LABELS llvm) # This test is not supported by gfortran, as it uses a loop variable after the loop ( bad code practice )
+RUN(NAME do_loop_04 LABELS gfortran llvm)
 RUN(NAME do_loop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4874,6 +4874,14 @@ RUN(NAME do_loop_11 LABELS gfortran c cpp)
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
     RUN(NAME do_loop_12 LABELS gfortran llvm EXTRA_ARGS --fast --mcpu=x86-64)
 endif()
+RUN(NAME do_loop_13 LABELS gfortran llvm)
+RUN(NAME do_loop_14 LABELS gfortran llvm)
+RUN(NAME do_loop_15 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=do)
+RUN(NAME do_loop_16 LABELS gfortran llvm)
+RUN(NAME do_loop_17 LABELS gfortran llvm)
+RUN(NAME do_loop_18 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
+RUN(NAME do_loop_19 LABELS gfortran llvm)
+RUN(NAME do_loop_20 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
@@ -7024,7 +7032,7 @@ RUN(NAME gpu_derived_component_20 LABELS gfortran llvm metal cuda EXTRA_ARGS --r
 RUN(NAME gpu_derived_component_21 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 # No llvm label yet: the host code generator leaves a DO variable at its last
 # value instead of one step past it (#12294), which Step 3 of #16398 fixes.
-RUN(NAME gpu_do_loop_01 LABELS gfortran metal cuda)
+RUN(NAME gpu_do_loop_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_03 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
 

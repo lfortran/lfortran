@@ -2913,6 +2913,10 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::llvm;
         lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
         lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
+        for (const std::string &pass:
+                LCompilers::PassManager::passes_lowered_by_llvm()) {
+            lfortran_pass_manager.passes_to_skip_with_llvm.push_back(pass);
+        }
     } else if (opts.arg_backend == "c") {
         backend = Backend::c;
     } else if (opts.arg_backend == "cpp") {

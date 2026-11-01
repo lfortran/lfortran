@@ -4987,3 +4987,29 @@ semantic error: reduction variable 'k' for operator .neqv. must be of type logic
      |
 4013 |         do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
      |                                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: branch to label 20 enters a DO loop from outside it
+    --> tests/errors/continue_compilation_1.f90:4024:9
+     |
+4024 |         go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+     |         ^^^^^^^^ 
+     |
+4025 |            do i = 1, 3
+     |            ~~~~~~~~~~~...
+...
+     |
+4027 |            end do
+     | ...~~~~~~~~~~~~~~ label 20 is inside this DO loop
+
+semantic error: branch to label 30 enters a BLOCK construct from outside it
+    --> tests/errors/continue_compilation_1.f90:4028:9
+     |
+4028 |         go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+     |         ^^^^^^^^ 
+     |
+4029 |            block
+     |            ~~~~~...
+...
+     |
+4033 |            end block
+     | ...~~~~~~~~~~~~~~~~~ label 30 is inside this BLOCK construct

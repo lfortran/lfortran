@@ -710,6 +710,207 @@ end program)";
     }
 }
 
+TEST_CASE("ASR -> LLVM lowers DoLoop with loop-else and EXIT") {
+    std::string source = R"(
+integer function f_normal()
+    integer :: i
+    f_normal = 0
+    do i = 1, 3
+        f_normal = f_normal + 1
+    end do
+    f_normal = f_normal + 10
+    f_normal = f_normal + 100 * i
+end function
+
+integer function f_zero_trip()
+    integer :: i
+    f_zero_trip = 0
+    do i = 1, 0
+        f_zero_trip = f_zero_trip + 1
+    end do
+    f_zero_trip = f_zero_trip + 10
+    f_zero_trip = f_zero_trip + 100 * i
+end function
+
+integer function f_exit()
+    integer :: i
+    f_exit = 0
+    do i = 1, 3
+        f_exit = f_exit + 1
+        exit
+    end do
+    f_exit = f_exit + 10
+    f_exit = f_exit + 100 * i
+end function
+
+integer function f_while_nested_exit()
+    integer :: i, s
+    s = 0
+    do while (s < 2)
+        do i = 1, 3
+            exit
+        end do
+        s = s + 1
+    end do
+    s = s + 40
+    f_while_nested_exit = s
+end function
+)";
+
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.platform = LCompilers::get_platform();
+    FortranEvaluator evaluator(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "doloop_else.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    LCompilers::ASR::TranslationUnit_t *asr = parsed.result;
+
+    // Fortran has no loop-else, so move the statement that follows the
+    // first loop of `name` into the loop-else of that loop: it then runs
+    // only when the loop completes normally (not after an EXIT).
+    auto seed_orelse_from_next_stmt = [&](const std::string &name,
+                                          bool while_loop) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        REQUIRE(LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*sym));
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        size_t loop_idx = fn->n_body;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            bool matched = while_loop
+                ? LCompilers::ASR::is_a<LCompilers::ASR::WhileLoop_t>(*fn->m_body[i])
+                : LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i]);
+            if (matched) {
+                loop_idx = i;
+                break;
+            }
+        }
+        REQUIRE(loop_idx < fn->n_body);
+        REQUIRE(loop_idx + 1 < fn->n_body);
+        LCompilers::ASR::stmt_t *orelse_stmt = fn->m_body[loop_idx + 1];
+        auto **orelse_block = al.allocate<LCompilers::ASR::stmt_t*>(1);
+        orelse_block[0] = orelse_stmt;
+        if (while_loop) {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::WhileLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::WhileLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        } else {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::DoLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::DoLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        }
+        for (size_t i = loop_idx + 1; i + 1 < fn->n_body; i++) {
+            fn->m_body[i] = fn->m_body[i + 1];
+        }
+        fn->n_body--;
+    };
+
+    seed_orelse_from_next_stmt("f_normal", false);
+    seed_orelse_from_next_stmt("f_zero_trip", false);
+    seed_orelse_from_next_stmt("f_exit", false);
+    seed_orelse_from_next_stmt("f_while_nested_exit", true);
+
+    auto function_has_doloop = [&](const std::string &name) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i])) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    LCompilers::LLVMEvaluator e(co);
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res =
+        LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    INFO(diagnostics.render2());
+    REQUIRE(res.ok);
+
+    // The passes kept the loops for the backend.
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    e.add_module(std::move(res.result));
+    CHECK(e.execfn<int32_t>("f_normal") == 413);
+    CHECK(e.execfn<int32_t>("f_zero_trip") == 110);
+    CHECK(e.execfn<int32_t>("f_exit") == 101);
+    CHECK(e.execfn<int32_t>("f_while_nested_exit") == 42);
+}
+
+TEST_CASE("The LLVM pass list leaves DO loops to the backend") {
+    std::string source = R"(
+subroutine sum3(s)
+    integer, intent(out) :: s
+    integer :: i
+    s = 0
+    do i = 1, 3
+        s = s + i
+    end do
+end subroutine
+)";
+    namespace ASR = LCompilers::ASR;
+    // The driver's pass list for the LLVM backend (and so --dump-all-passes)
+    // skips the passes that the backend does itself, unless --pass names
+    // them.
+    for (bool requested: {false, true}) {
+        CAPTURE(requested);
+        Allocator al(64*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        co.platform = LCompilers::get_platform();
+        FortranEvaluator evaluator(co);
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations file;
+        file.in_filename = "sum3.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        LCompilers::PassManager passes;
+        for (const std::string &pass:
+                LCompilers::PassManager::passes_lowered_by_llvm()) {
+            passes.passes_to_skip_with_llvm.push_back(pass);
+        }
+        std::string pass = requested ? "do_loops" : "", skip;
+        passes.parse_pass_arg(pass, skip);
+        passes.apply_passes(al, parsed.result, co.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        ASR::symbol_t *sym = parsed.result->m_symtab->resolve_symbol("sum3");
+        REQUIRE(sym != nullptr);
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+        size_t do_loops = 0, while_loops = 0;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            do_loops += ASR::is_a<ASR::DoLoop_t>(*fn->m_body[i]);
+            while_loops += ASR::is_a<ASR::WhileLoop_t>(*fn->m_body[i]);
+        }
+        CHECK(do_loops == (requested ? 0u : 1u));
+        CHECK(while_loops == (requested ? 1u : 0u));
+    }
+}
+
 namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls

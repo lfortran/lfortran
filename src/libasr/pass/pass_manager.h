@@ -69,6 +69,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_sequential_unroll.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
@@ -153,6 +154,7 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
+            {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
@@ -183,6 +185,16 @@ namespace LCompilers {
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
         std::vector<std::string> passes_to_skip_with_llvm;
+        // The passes whose work the LLVM backend does itself. asr_to_llvm
+        // skips them, and so does the driver's pass list for that backend
+        // (unless --pass names them), so that --dump-all-passes shows the
+        // ASR the backend lowers.
+        static const std::vector<std::string> &passes_lowered_by_llvm() {
+            // DO loops are lowered by visit_DoLoop and visit_DoConcurrentLoop,
+            // not rewritten to while loops.
+            static const std::vector<std::string> passes = {"do_loops"};
+            return passes;
+        }
         bool rtlib=false;
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            std::vector<std::string>& passes, PassOptions &pass_options,
@@ -435,6 +447,9 @@ namespace LCompilers {
                 // change the physical type of an array, and before its copy
                 // loops are lowered.
                 "string_format_array_args",
+                // The short loops of Metal device code are unrolled before
+                // do_loops, which leaves the loops of device code alone.
+                "gpu_sequential_unroll",
                 "do_loops",
                 "while_else",
                 // Every call the passes above can create is in place, so each
@@ -485,8 +500,16 @@ namespace LCompilers {
         void parse_pass_arg(std::string& arg_pass, std::string& skip_pass) {
             _user_defined_passes.clear();
             _skip_passes.clear();
-            _skip_passes.insert(_skip_passes.end(),passes_to_skip_with_llvm.begin(), passes_to_skip_with_llvm.end());
             _parse_pass_arg(arg_pass, _user_defined_passes);
+            // A pass that --pass names runs even if the backend skips it in
+            // its own pipeline.
+            for (const std::string &pass: passes_to_skip_with_llvm) {
+                if (std::find(_user_defined_passes.begin(),
+                        _user_defined_passes.end(), pass)
+                        == _user_defined_passes.end()) {
+                    _skip_passes.push_back(pass);
+                }
+            }
             _parse_pass_arg(skip_pass, _skip_passes);
         }
 
