@@ -1,11 +1,11 @@
 #include <iostream>
 #include <chrono>
+#include <functional>
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_x86.h>
 #include <libasr/codegen/x86_assembler.h>
-#include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
@@ -65,6 +65,11 @@ public:
         std::string cycle;
     };
     std::vector<ConstructFrame> construct_frames;
+
+    // The stack offset of the first of the three slots that the counted loop
+    // with the head holds its end, its step and the number of iterations
+    // left in.
+    std::map<const ASR::do_loop_head_t*, uint32_t> m_loop_slots;
 public:
 
     ASRToX86Visitor(Allocator &al) : m_al{al}, m_a{al, false} {}
@@ -180,7 +185,8 @@ public:
                 }
             }
         }
-        m_a.asm_sub_r32_imm8(X86Reg::esp, total_offset);
+        total_offset = allocate_loop_slots(x.m_body, x.n_body, total_offset);
+        allocate_stack(total_offset);
 
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
@@ -197,6 +203,60 @@ public:
             emit_data_string(m_a, s.first, s.second);
         }
 
+    }
+
+    // Gives the counted loops among `body` the slots of m_loop_slots, after
+    // the `total_offset` bytes of the locals, and returns the new total.
+    // Loops that are not nested in each other share them, so a set of slots
+    // is made for each depth of nesting.
+    uint32_t allocate_loop_slots(ASR::stmt_t **body, size_t n_body,
+            uint32_t total_offset) {
+        class LoopHeads : public ASR::BaseWalkVisitor<LoopHeads> {
+        public:
+            // Each counted head with the number of counted heads around it.
+            std::vector<std::pair<const ASR::do_loop_head_t*, size_t>> heads;
+            size_t depth = 0;
+
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                bool counted = x.m_head.m_v != nullptr;
+                if (counted) heads.push_back({&x.m_head, depth++});
+                ASR::BaseWalkVisitor<LoopHeads>::visit_DoLoop(x);
+                if (counted) depth--;
+            }
+
+            void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+                for (size_t i = 0; i < x.n_head; i++) {
+                    heads.push_back({&x.m_head[i], depth++});
+                }
+                ASR::BaseWalkVisitor<LoopHeads>::visit_DoConcurrentLoop(x);
+                depth -= x.n_head;
+            }
+
+            void visit_expr(const ASR::expr_t &/*x*/) {}
+            void visit_ttype(const ASR::ttype_t &/*x*/) {}
+        };
+        LoopHeads loops;
+        for (size_t i = 0; i < n_body; i++) {
+            loops.visit_stmt(*body[i]);
+        }
+        std::vector<uint32_t> sets;
+        for (auto &[head, depth] : loops.heads) {
+            while (sets.size() <= depth) {
+                sets.push_back(total_offset + 4);
+                total_offset += 12;
+            }
+            m_loop_slots[head] = sets[depth];
+        }
+        return total_offset;
+    }
+
+    // Reserve `size` bytes of locals below ebp.
+    void allocate_stack(uint32_t size) {
+        if (size < 128) {
+            m_a.asm_sub_r32_imm8(X86Reg::esp, static_cast<uint8_t>(size));
+        } else {
+            m_a.asm_sub_r32_imm32(X86Reg::esp, size);
+        }
     }
 
     void visit_Function(const ASR::Function_t &x) {
@@ -251,7 +311,8 @@ public:
                 }
             }
         }
-        m_a.asm_sub_r32_imm8(X86Reg::esp, total_offset);
+        total_offset = allocate_loop_slots(x.m_body, x.n_body, total_offset);
+        allocate_stack(total_offset);
 
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
@@ -433,8 +494,11 @@ public:
     void visit_Assignment(const ASR::Assignment_t &x) {
         this->visit_expr(*x.m_value);
         // RHS is in eax
+        store_eax(ASRUtils::EXPR2VAR(x.m_target));
+    }
 
-        ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_target);
+    // Store eax in the variable `v`; ecx is overwritten.
+    void store_eax(ASR::Variable_t *v) {
         uint64_t h = get_hash((ASR::asr_t*)v);
         LCOMPILERS_ASSERT(x86_symtab.find(h) != x86_symtab.end());
         Sym s = x86_symtab[h];
@@ -550,6 +614,193 @@ public:
 
         // end
         m_a.add_label(".loop.end" + id);
+    }
+
+    // A counted DO loop, lowered by the rules for native CFG backends
+    // (#16398). The start a, end b and step c are evaluated once; b and a
+    // step that is not constant are kept in stack slots:
+    //
+    //     i = a
+    //     [c not constant: c == 0 -> "Runtime error: zero step in a DO loop"]
+    //     if (c > 0 ? a > b : a < b) goto orelse
+    //     [other steps: r = |b - a| / |c|]
+    //   body:               // EXIT -> end, CYCLE -> latch
+    //     ...
+    //   latch:
+    //     i = i + c
+    //     step 1 or -1: if (i - c != b) goto body
+    //     other steps:  if (r != 0) { r = r - 1; goto body }
+    //   orelse:
+    //     loop-else
+    //   end:
+    //
+    // The remaining trip count r is unsigned, so it is right even where
+    // b - a overflows.
+    //
+    // `body` writes the loop body.
+    void emit_counted_loop(const ASR::do_loop_head_t &head, const char *name,
+            const std::function<void()> &body, ASR::stmt_t **orelse,
+            size_t n_orelse) {
+        std::string id = std::to_string(get_hash((ASR::asr_t*)&head));
+        std::string body_label = ".do.body" + id;
+        std::string latch_label = ".do.latch" + id;
+        std::string orelse_label = ".do.orelse" + id;
+        std::string end_label = ".do.end" + id;
+        if (!head.m_v) {
+            // A DO without loop control ends only by an EXIT, which skips
+            // the loop-else.
+            m_a.add_label(body_label);
+            construct_frames.push_back({name, end_label, body_label});
+            body();
+            construct_frames.pop_back();
+            m_a.asm_jmp_label(body_label);
+            m_a.add_label(end_label);
+            return;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*head.m_v)
+                || !ASRUtils::is_integer(*ASRUtils::expr_type(head.m_v))) {
+            throw CodeGenError("the x86 backend supports only an integer "
+                "variable as the index of a DO loop", head.m_v->base.loc);
+        }
+        ASR::Variable_t *v = ASRUtils::EXPR2VAR(head.m_v);
+        int64_t step = 0;
+        bool step_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(head.m_increment), step);
+        if (step_known && step == 0) {
+            throw CodeGenError("a DO loop with a zero step reached the x86 "
+                "backend", head.m_increment->base.loc);
+        }
+        bool unit = step_known && (step == 1 || step == -1);
+        X86Reg base = X86Reg::ebp;
+        int32_t end_slot = -checked_integer_cast<int32_t>(m_loop_slots.at(&head));
+        int32_t step_slot = end_slot - 4;
+        int32_t count_slot = end_slot - 8;
+        // Load the step into `r`.
+        auto load_step = [&](X86Reg r) {
+            if (step_known) {
+                m_a.asm_mov_r32_imm32(r, static_cast<uint32_t>(step));
+            } else {
+                m_a.asm_mov_r32_m32(r, &base, nullptr, 1, step_slot);
+            }
+        };
+
+        if (!step_known) {
+            this->visit_expr(*head.m_increment);
+            m_a.asm_mov_m32_r32(&base, nullptr, 1, step_slot, X86Reg::eax);
+        }
+        this->visit_expr(*head.m_end);
+        m_a.asm_mov_m32_r32(&base, nullptr, 1, end_slot, X86Reg::eax);
+        this->visit_expr(*head.m_start);
+        m_a.asm_push_r32(X86Reg::eax);
+        store_eax(v);
+        if (!step_known) {
+            m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, step_slot);
+            m_a.asm_cmp_r32_imm8(X86Reg::eax, 0);
+            m_a.asm_jne_label(".do.step" + id);
+            std::string msg = "Runtime error: zero step in a DO loop\n";
+            std::string msg_id = "zerostep" + id;
+            emit_print(m_a, msg_id, checked_integer_cast<uint32_t>(msg.size()));
+            m_global_strings[msg_id] = msg;
+            m_a.asm_call_label("exit_error_stop");
+            m_a.add_label(".do.step" + id);
+        }
+        m_a.asm_pop_r32(X86Reg::eax);
+
+        // With a in eax and b in ecx, skip the loop if it has no iterations
+        // and otherwise store the remaining trip count.
+        auto enter = [&](bool positive) {
+            m_a.asm_cmp_r32_r32(X86Reg::eax, X86Reg::ecx);
+            if (positive) {
+                m_a.asm_jg_label(orelse_label);
+            } else {
+                m_a.asm_jl_label(orelse_label);
+            }
+            if (unit) return;
+            if (positive) {
+                m_a.asm_sub_r32_r32(X86Reg::ecx, X86Reg::eax);
+                m_a.asm_mov_r32_r32(X86Reg::eax, X86Reg::ecx);
+                load_step(X86Reg::ecx);
+            } else {
+                m_a.asm_sub_r32_r32(X86Reg::eax, X86Reg::ecx);
+                load_step(X86Reg::ecx);
+                m_a.asm_neg_r32(X86Reg::ecx);
+            }
+            m_a.asm_mov_r32_imm32(X86Reg::edx, 0);
+            m_a.asm_div_r32(X86Reg::ecx);
+            m_a.asm_mov_m32_r32(&base, nullptr, 1, count_slot, X86Reg::eax);
+        };
+        m_a.asm_mov_r32_m32(X86Reg::ecx, &base, nullptr, 1, end_slot);
+        if (step_known) {
+            enter(step > 0);
+        } else {
+            m_a.asm_mov_r32_m32(X86Reg::edx, &base, nullptr, 1, step_slot);
+            m_a.asm_cmp_r32_imm8(X86Reg::edx, 0);
+            m_a.asm_jl_label(".do.negative" + id);
+            enter(true);
+            m_a.asm_jmp_label(body_label);
+            m_a.add_label(".do.negative" + id);
+            enter(false);
+        }
+
+        m_a.add_label(body_label);
+        construct_frames.push_back({name, end_label, latch_label});
+        body();
+        construct_frames.pop_back();
+
+        m_a.add_label(latch_label);
+        this->visit_expr(*head.m_v);
+        if (unit) {
+            m_a.asm_push_r32(X86Reg::eax);
+        }
+        load_step(X86Reg::ecx);
+        m_a.asm_add_r32_r32(X86Reg::eax, X86Reg::ecx);
+        store_eax(v);
+        if (unit) {
+            m_a.asm_pop_r32(X86Reg::eax);
+            m_a.asm_mov_r32_m32(X86Reg::ecx, &base, nullptr, 1, end_slot);
+            m_a.asm_cmp_r32_r32(X86Reg::eax, X86Reg::ecx);
+            m_a.asm_jne_label(body_label);
+        } else {
+            m_a.asm_mov_r32_m32(X86Reg::eax, &base, nullptr, 1, count_slot);
+            m_a.asm_cmp_r32_imm8(X86Reg::eax, 0);
+            m_a.asm_je_label(orelse_label);
+            m_a.asm_dec_r32(X86Reg::eax);
+            m_a.asm_mov_m32_r32(&base, nullptr, 1, count_slot, X86Reg::eax);
+            m_a.asm_jmp_label(body_label);
+        }
+
+        m_a.add_label(orelse_label);
+        for (size_t i = 0; i < n_orelse; i++) {
+            this->visit_stmt(*orelse[i]);
+        }
+        m_a.add_label(end_label);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        emit_counted_loop(x.m_head, x.m_name,
+            [&]() {
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                }
+            }, x.m_orelse, x.n_orelse);
+    }
+
+    // DO CONCURRENT runs its iterations in order, as nested counted loops
+    // with the first index outermost. A CYCLE goes to the next iteration of
+    // the innermost one, which is the next iteration of the construct.
+    void emit_concurrent_loops(const ASR::DoConcurrentLoop_t &x, size_t i) {
+        if (i == x.n_head) {
+            for (size_t j = 0; j < x.n_body; j++) {
+                this->visit_stmt(*x.m_body[j]);
+            }
+            return;
+        }
+        emit_counted_loop(x.m_head[i], nullptr,
+            [&]() { emit_concurrent_loops(x, i + 1); }, nullptr, 0);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        emit_concurrent_loops(x, 0);
     }
 
     // An EXIT or a CYCLE without a name refers to the innermost loop.
@@ -680,7 +931,6 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
         diag::Diagnostics &diagnostics)
 {
     int64_t time_pass_global=0;
-    int64_t time_pass_do_loops=0;
     int64_t time_visit_asr=0;
     int64_t time_verify=0;
     int64_t time_save=0;
@@ -695,13 +945,6 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
         pass_wrap_global_stmts(al, asr, pass_options);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_pass_global = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    }
-
-    {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        pass_replace_do_loops(al, asr, pass_options);
-        auto t2 = std::chrono::high_resolution_clock::now();
-        time_pass_do_loops = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
 
     {
@@ -741,11 +984,10 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
     if (time_report) {
         std::cout << "Codegen Time report:" << std::endl;
         std::cout << "Global:     " << std::setw(5) << time_pass_global << std::endl;
-        std::cout << "Do loops:   " << std::setw(5) << time_pass_do_loops << std::endl;
         std::cout << "ASR -> x86: " << std::setw(5) << time_visit_asr << std::endl;
         std::cout << "Verify:     " << std::setw(5) << time_verify << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int64_t total = time_pass_global + time_pass_do_loops + time_visit_asr + time_verify + time_verify + time_save;
+        int64_t total = time_pass_global + time_visit_asr + time_verify + time_verify + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }
     return 0;
