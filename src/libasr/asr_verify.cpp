@@ -136,7 +136,10 @@ public:
 
     // The initializer a Module, a Program or the TranslationUnit names must
     // be a real, argument-less procedure of that owner's own scope, so that a
-    // backend can lower the link without searching or guessing.
+    // backend can lower the link without searching or guessing. The
+    // initializer of a Program is an internal procedure of the program, which
+    // the program calls first: after the nested_vars pass, it takes the
+    // program's frame when it initializes variables of the program.
     void verify_global_init(const char *global_init, SymbolTable *scope,
             const std::string &owner, const Location &loc) {
         if (global_init == nullptr) return;
@@ -148,7 +151,10 @@ public:
         ASRUtils::require_impl(sym != nullptr && ASR::is_a<ASR::Function_t>(*sym),
             owner + "::m_global_init must name a Function", loc, diagnostics);
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-        ASRUtils::require_impl(fn->n_args == 0 && fn->m_return_var == nullptr,
+        bool program_frame = owner == "Program" &&
+            fn->n_args == 1 && takes_frame(fn);
+        ASRUtils::require_impl((fn->n_args == 0 || program_frame) &&
+                fn->m_return_var == nullptr,
             owner + "::m_global_init must name a subroutine taking no "
             "arguments", loc, diagnostics);
     }
@@ -2061,17 +2067,22 @@ public:
     }
 
     // A HostAssociated variable denotes the variable that its symbolic_value
-    // designates through the frame dummy argument of its own procedure, and
-    // it is bound when the procedure is entered.
+    // designates through the frame dummy argument of its own procedure, or in
+    // a thunk of a procedure value the frame slot of its host, and it is bound
+    // when the procedure is entered. The messages are built only when a check
+    // fails: there is one such variable per host entity that each internal
+    // procedure uses.
     void verify_host_associated_variable(const Variable_t &x) {
-        std::string var = "the host associated variable '" +
-            std::string(x.m_name) + "'";
-        require_id(x.m_intent == ASR::intentType::Local &&
+        auto var = [&x]() {
+            return "the host associated variable '" + std::string(x.m_name) + "'";
+        };
+        if (!(x.m_intent == ASR::intentType::Local &&
                 x.m_value == nullptr && x.m_common_block == nullptr &&
-                x.n_codims == 0,
-            "asr.verify.host_associated.local",
-            var + " must be a local variable without a value, a common "
-            "block or codimensions");
+                x.n_codims == 0)) {
+            require_id(false, "asr.verify.host_associated.local",
+                var() + " must be a local variable without a value, a common "
+                "block or codimensions");
+        }
         ASR::asr_t *owner = x.m_parent_symtab->asr_owner;
         ASR::Function_t *procedure = nullptr;
         if (ASR::is_a<ASR::symbol_t>(*owner) && ASR::is_a<ASR::Function_t>(
@@ -2079,18 +2090,18 @@ public:
             procedure = ASR::down_cast<ASR::Function_t>(
                 ASR::down_cast<ASR::symbol_t>(owner));
         }
-        require_id(procedure != nullptr,
-            "asr.verify.host_associated.procedure",
-            var + " must be declared by a procedure");
         if (procedure == nullptr) {
+            require_id(false, "asr.verify.host_associated.procedure",
+                var() + " must be declared by a procedure");
             return;
         }
         for (size_t i = 0; i < procedure->n_args; i++) {
-            require_id(!ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) ||
+            if (ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) &&
                     ASR::down_cast<ASR::Var_t>(procedure->m_args[i])->m_v
-                        != &x.base,
-                "asr.verify.host_associated.not_argument",
-                var + " cannot be a dummy argument");
+                        == &x.base) {
+                require_id(false, "asr.verify.host_associated.not_argument",
+                    var() + " cannot be a dummy argument");
+            }
         }
         ASR::StructInstanceMember_t *designator = nullptr;
         if (x.m_symbolic_value != nullptr &&
@@ -2109,10 +2120,15 @@ public:
                 (ASR::is_a<ASR::Var_t>(*procedure->m_args[i]) &&
                  ASR::down_cast<ASR::Var_t>(procedure->m_args[i])->m_v == frame);
         }
-        if (!frame_is_dummy) {
+        bool frame_is_host_slot = frame != nullptr &&
+            ASR::is_a<ASR::Variable_t>(*frame) &&
+            ASRUtils::is_frame_slot(*ASR::down_cast<ASR::Variable_t>(frame)) &&
+            ASRUtils::symbol_parent_symtab(frame) == procedure->m_symtab->parent;
+        if (!frame_is_dummy && !frame_is_host_slot) {
             require_id(false, "asr.verify.host_associated.designator",
-                var + " must be bound to a reference member of a dummy argument "
-                "of its own procedure");
+                var() + " must be bound to a reference member of a dummy "
+                "argument of its own procedure, or of the frame slot of its "
+                "host");
             return;
         }
         // It has the type of the variable that the member references
@@ -2120,7 +2136,7 @@ public:
             ASRUtils::get_reference_member(*designator)->m_type)->m_type;
         if (!same_variable_type(x.m_type, referenced, nullptr, nullptr)) {
             require_id(false, "asr.verify.host_associated.type",
-                var + " has type " +
+                var() + " has type " +
                 ASRUtils::type_to_str_python_symbol(x.m_type, nullptr) +
                 ", but the reference member it is bound to references " +
                 ASRUtils::type_to_str_python_symbol(referenced, nullptr));
@@ -2478,10 +2494,12 @@ public:
             return;
         }
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
-        // Constants and the variables that nested_vars leaves out of the
-        // frame
+        // Constants, variables that nested_vars leaves out of the frame and
+        // the frame slot of a host, which is static storage that its thunks
+        // and the procedures that make procedure values read directly
         if (v->m_storage == ASR::storage_typeType::Parameter ||
-                !ASRUtils::is_reached_through_host_frame(*v)) {
+                !ASRUtils::is_reached_through_host_frame(*v) ||
+                ASRUtils::is_frame_slot(*v)) {
             return;
         }
         ASR::symbol_t *owner = enclosing_procedure(v->m_parent_symtab);

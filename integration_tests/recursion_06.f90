@@ -29,5 +29,7 @@ a = [7, 7]
 call s%solve(a, 3)
 if (any(a /= 8)) error stop
 
+call pointer_after_recursion(3)
+if (any(seen /= 2)) error stop
 print *, "ok"
 end program recursion_06

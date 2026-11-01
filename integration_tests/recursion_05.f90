@@ -1,11 +1,40 @@
 module recursion_05_mod
 implicit none
 
+abstract interface
+    subroutine callback()
+    end subroutine callback
+end interface
+
+procedure(callback), pointer :: saved_proc => null()
 integer, target :: targets(3) = [10, 20, 30]
+integer :: ncalls = 0
 integer :: pointer_seen(3) = 0
 integer :: npointer_seen = 0
 
 contains
+
+subroutine call_saved_proc()
+    call saved_proc()
+end subroutine call_saved_proc
+
+! An internal procedure called through a procedure pointer after a direct call
+subroutine pointer_call()
+    integer :: k
+    integer :: arr(3)
+    k = 5
+    arr = [1, 2, 3]
+    call inner()
+    saved_proc => inner
+    call call_saved_proc()
+    if (ncalls /= 2) error stop
+contains
+    subroutine inner()
+        if (k /= 5) error stop
+        if (any(arr /= [1, 2, 3])) error stop
+        ncalls = ncalls + 1
+    end subroutine inner
+end subroutine pointer_call
 
 ! An internal procedure passes a variable of its host to a new instance of the host
 recursive subroutine pass_alloc_down(x, depth, nseen)
@@ -221,6 +250,7 @@ use recursion_05_mod
 implicit none
 integer, allocatable :: a(:)
 integer :: n, total
+call pointer_call()
 allocate(a(1))
 a = 7
 n = 0
