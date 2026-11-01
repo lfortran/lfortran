@@ -19,9 +19,9 @@ runs:
     # The same Pixi environment (pixi.toml) that builds
     # LFortran locally. Activating it puts its tools on PATH for every later
     # step of the job.
-    - uses: prefix-dev/setup-pixi@v0.10.2
+    - uses: prefix-dev/setup-pixi@v0.11.3
       with:
-        pixi-version: v0.82.1
+        pixi-version: v0.83.0
         environments: llvm${{ inputs.llvm-version }}
         activate-environment: llvm${{ inputs.llvm-version }}
         # A compressed environment is ~0.7 GB per platform. Caching them
