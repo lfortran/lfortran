@@ -972,6 +972,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
+        // Statements to put after the statement being visited
+        Vec<ASR::stmt_t*> pass_result_after;
         Vec<ASR::stmt_t*>* parent_body;
         std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
         const LCompilers::PassOptions& pass_options;
@@ -991,6 +993,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.call_replacer_on_value = false;
             pass_result.n = 0;
             pass_result.reserve(al, 0);
+            pass_result_after.n = 0;
+            pass_result_after.reserve(al, 0);
             print = false, file_write = false;
             m_unit = nullptr;
             m_rec = nullptr;
@@ -1110,6 +1114,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for (size_t i = 0; i < n_body; i++) {
                 pass_result.n = 0;
                 pass_result.reserve(al, 1);
+                pass_result_after.n = 0;
                 remove_original_statement = false;
                 replacer.result_var = nullptr;
                 Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
@@ -1122,6 +1127,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 if( !remove_original_statement ) {
                     body.push_back(al, m_body[i]);
                 }
+                for (size_t j = 0; j < pass_result_after.size(); j++) {
+                    body.push_back(al, pass_result_after[j]);
+                }
+                pass_result_after.n = 0;
                 remove_original_statement = false;
             }
             m_body = body.p;
@@ -1485,8 +1494,136 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         }
 
+        // Collects the variables of `idl` and of the implied do loops nested
+        // in it.
+        static void implied_do_variables(ASR::ImpliedDoLoop_t* idl,
+                std::vector<ASR::symbol_t*>& vars) {
+            if (ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+                vars.push_back(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+            }
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                    implied_do_variables(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), vars);
+                }
+            }
+        }
+
+        // Whether the heads of `idl` and of the implied do loops nested in it
+        // give the same iterations when they are evaluated again after the
+        // statement: no bound calls a function, which must be called only
+        // once, no loop has the variable of a loop enclosing it (not
+        // conforming), and the bounds of a nested loop use no variable of
+        // `nest` but those of the loops `enclosing` it. Those of the
+        // outermost loop are evaluated before the statement.
+        bool can_run_implied_do_again(ASR::ImpliedDoLoop_t* idl,
+                const std::vector<ASR::symbol_t*>& nest,
+                std::vector<ASR::symbol_t*>& enclosing) {
+            class HasFunctionCall : public ASR::BaseWalkVisitor<HasFunctionCall> {
+                public:
+                bool found = false;
+                void visit_FunctionCall(const ASR::FunctionCall_t &/*x*/) {
+                    found = true;
+                }
+            };
+            if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) return false;
+            ASR::symbol_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+            if (std::find(enclosing.begin(), enclosing.end(), var) != enclosing.end()) {
+                return false;
+            }
+            for (ASR::expr_t* bound : {idl->m_start, idl->m_end, idl->m_increment}) {
+                if (!bound) continue;
+                HasFunctionCall has_call;
+                has_call.visit_expr(*bound);
+                if (has_call.found) return false;
+                if (enclosing.empty()) continue;
+                for (ASR::symbol_t* var : nest) {
+                    if (std::find(enclosing.begin(), enclosing.end(), var) == enclosing.end()
+                            && ASRUtils::expr_references_symbol(bound, var)) {
+                        return false;
+                    }
+                }
+            }
+            enclosing.push_back(var);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])
+                        && !can_run_implied_do_again(
+                            ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]),
+                            nest, enclosing)) {
+                    return false;
+                }
+            }
+            enclosing.pop_back();
+            return true;
+        }
+
+        // The value of `bound` of the outermost loop, evaluated before the
+        // statement into a variable unless it is a constant.
+        ASR::expr_t* bound_before_statement(ASR::expr_t* bound) {
+            if (ASRUtils::expr_value(bound)) return ASRUtils::expr_value(bound);
+            std::string name = current_scope->get_unique_name("__implied_do_bound");
+            ASR::stmt_t* assign = nullptr;
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* var = PassUtils::create_auxiliary_variable_for_expr(
+                duplicator.duplicate_expr(bound), name, al, current_scope, assign);
+            pass_result.push_back(al, assign);
+            return var;
+        }
+
+        // A DO loop nest with the heads of `idl` and of the implied do loops
+        // nested in it, and no other statements.
+        ASR::stmt_t* implied_do_variable_loop(ASR::ImpliedDoLoop_t* idl, bool outermost) {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                    body.push_back(al, implied_do_variable_loop(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), false));
+                }
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::do_loop_head_t head;
+            head.loc = idl->base.base.loc;
+            head.m_v = idl->m_var;
+            if (outermost) {
+                head.m_start = bound_before_statement(idl->m_start);
+                head.m_end = bound_before_statement(idl->m_end);
+                head.m_increment = idl->m_increment
+                    ? bound_before_statement(idl->m_increment) : nullptr;
+            } else {
+                head.m_start = duplicator.duplicate_expr(idl->m_start);
+                head.m_end = duplicator.duplicate_expr(idl->m_end);
+                head.m_increment = idl->m_increment
+                    ? duplicator.duplicate_expr(idl->m_increment) : nullptr;
+            }
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, idl->base.base.loc,
+                nullptr, head, body.p, body.size(), nullptr, 0));
+        }
+
+        // An implied do loop of an output list leaves its variable at its
+        // final value (F2023 12.6.3). The values may be written without a
+        // loop, expanded at compile time, so the loops run again, without
+        // values, after the statement, and the backends set the variables as
+        // for any DO loop.
+        void set_implied_do_variables_after(ASR::expr_t** values, size_t n_values) {
+            for (size_t i = 0; i < n_values; i++) {
+                if (ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                    ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                    set_implied_do_variables_after(format->m_args, format->n_args);
+                } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+                    std::vector<ASR::symbol_t*> nest, enclosing;
+                    implied_do_variables(idl, nest);
+                    if (can_run_implied_do_again(idl, nest, enclosing)) {
+                        pass_result_after.push_back(al, implied_do_variable_loop(idl, true));
+                    }
+                }
+            }
+        }
+
         void visit_Print(const ASR::Print_t &x) {
             print = true;
+            set_implied_do_variables_after(const_cast<ASR::expr_t**>(&x.m_text), 1);
             /*
                 integer :: i
                 print *, (i, i=1, 10)
@@ -2104,6 +2241,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         void visit_FileWrite(const ASR::FileWrite_t &x) {
             file_write = true;
+            set_implied_do_variables_after(x.m_values, x.n_values);
             m_unit = x.m_unit;
             m_rec = x.m_rec;
             m_iomsg = x.m_iomsg;
