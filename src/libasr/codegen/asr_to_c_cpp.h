@@ -114,6 +114,21 @@ public:
     std::map<uint64_t, SymbolInfo> sym_info;
     std::map<uint64_t, std::string> const_var_names;
     std::map<int64_t, std::string> gotoid2name;
+
+    // The constructs being written that an EXIT or a CYCLE can leave,
+    // innermost last: the loops, and the BLOCK, named IF and named SELECT
+    // CASE constructs. A `break` or a `continue` leaves only the innermost
+    // C loop, so leaving any other construct goes to a label of it, and so
+    // does leaving a loop with a loop-else, which runs only when the loop
+    // completes.
+    struct ConstructFrame {
+        const char *name;
+        bool is_loop;
+        bool has_else;
+        std::string exit_label, cycle_label;
+    };
+    std::vector<ConstructFrame> construct_frames;
+    size_t construct_label_count = 0;
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
     std::string forward_decl_functions;
@@ -873,9 +888,17 @@ R"(#include <stdio.h>
                 decl += check_tmp_buffer() + d;
             }
         }
+        construct_frames.push_back({block->m_name, false, false, "", ""});
         for (size_t i=0; i<block->n_body; i++) {
             self().visit_stmt(*block->m_body[i]);
             body += src;
+        }
+        std::string exit_label = construct_frames.back().exit_label;
+        construct_frames.pop_back();
+        if (!exit_label.empty()) {
+            close_paranthesis += std::string(
+                (indentation_level - 1)*indentation_spaces, ' ')
+                + exit_label + ": ;\n";
         }
         decl += check_tmp_buffer();
         src = open_paranthesis + decl + body + close_paranthesis;
@@ -3320,6 +3343,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         this->visit_expr(*x.m_test);
         std::string var = std::move(src);
         std::string out = indent + "if (";
+        // Only a named SELECT CASE construct can be left by an EXIT.
+        if (x.m_name != nullptr) {
+            construct_frames.push_back({x.m_name, false, false, "", ""});
+        }
 
         for (size_t i = 0; i < x.n_body; i++) {
             if (i > 0)
@@ -3388,6 +3415,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             out += indent + "}\n";
             indentation_level -= 1;
         }
+        if (x.m_name != nullptr) {
+            std::string exit_label = construct_frames.back().exit_label;
+            construct_frames.pop_back();
+            if (!exit_label.empty()) {
+                out += indent + exit_label + ": ;\n";
+            }
+        }
         src = check_tmp_buffer() + out;
     }
 
@@ -3399,24 +3433,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         out += src + ") {\n";
         bracket_open--;
         out = check_tmp_buffer() + out;
-        indentation_level += 1;
-        for (size_t i=0; i<x.n_body; i++) {
-            self().visit_stmt(*x.m_body[i]);
-            out += check_tmp_buffer() + src;
-        }
-        out += indent + "}\n";
-        indentation_level -= 1;
+        construct_frames.push_back({x.m_name, true, x.n_orelse > 0, "", ""});
+        out += close_loop(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
         src = out;
     }
 
-    void visit_Exit(const ASR::Exit_t & /* x */) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "break;\n";
+    void visit_Exit(const ASR::Exit_t &x) {
+        src = leave_construct(
+            construct_frame(x.m_stmt_name, x.base.base.loc), true);
     }
 
-    void visit_Cycle(const ASR::Cycle_t & /* x */) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "continue;\n";
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        src = leave_construct(
+            construct_frame(x.m_stmt_name, x.base.base.loc), false);
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
@@ -3477,6 +3506,90 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out = indent + " /* FIXME: implied do loop */ ";
         src = out;
         last_expr_precedence = 2;
+    }
+
+    // The index in construct_frames of the construct that an EXIT or a
+    // CYCLE naming `name` leaves: the innermost loop if it names none.
+    size_t construct_frame(const char *name, const Location &loc) {
+        for (size_t i = construct_frames.size(); i-- > 0;) {
+            const ConstructFrame &f = construct_frames[i];
+            if (name == nullptr ? f.is_loop
+                    : f.name != nullptr && std::string(f.name) == name) {
+                return i;
+            }
+        }
+        throw CodeGenError("exit or cycle outside the construct it leaves",
+            loc);
+    }
+
+    // The statement that leaves the construct construct_frames[f], to its
+    // end if `exit` and to the next iteration otherwise.
+    std::string leave_construct(size_t f, bool exit) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        ConstructFrame &frame = construct_frames[f];
+        bool innermost_loop = frame.is_loop;
+        for (size_t i = f + 1; i < construct_frames.size(); i++) {
+            innermost_loop = innermost_loop && !construct_frames[i].is_loop;
+        }
+        if (innermost_loop && !(exit && frame.has_else)) {
+            return indent + (exit ? "break;\n" : "continue;\n");
+        }
+        std::string &label = exit ? frame.exit_label : frame.cycle_label;
+        if (label.empty()) {
+            label = std::string("__lfortran_") + (exit ? "exit" : "cycle")
+                + "_" + (frame.name ? std::string(frame.name) + "_" : "")
+                + std::to_string(construct_label_count++);
+        }
+        return indent + "goto " + label + ";\n";
+    }
+
+    // Writes the body of the loop that the frame on top of
+    // construct_frames describes and the `}` that closes it, followed by
+    // its loop-else and the labels that leaving it goes to, and removes the
+    // frame.
+    std::string close_loop(ASR::stmt_t **body, size_t n_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string inner(indent + std::string(indentation_spaces, ' '));
+        std::string out;
+        indentation_level += 1;
+        for (size_t i = 0; i < n_body; i++) {
+            self().visit_stmt(*body[i]);
+            out += check_tmp_buffer() + src;
+        }
+        indentation_level -= 1;
+        const ConstructFrame &frame = construct_frames.back();
+        if (!frame.cycle_label.empty() && !is_c) {
+            // The body goes in a block of its own, so that the jump to the
+            // label at its end does not enter the scope of a declaration
+            // in it, which C++ forbids.
+            std::string block = inner + "{\n";
+            size_t line = 0;
+            while (line < out.size()) {
+                size_t next = out.find('\n', line);
+                next = next == std::string::npos ? out.size() : next + 1;
+                if (out[line] != '\n') {
+                    block += std::string(indentation_spaces, ' ');
+                }
+                block += out.substr(line, next - line);
+                line = next;
+            }
+            out = block + inner + "}\n";
+        }
+        if (!frame.cycle_label.empty()) {
+            out += inner + frame.cycle_label + ": ;\n";
+        }
+        out += indent + "}\n";
+        std::string exit_label = frame.exit_label;
+        construct_frames.pop_back();
+        for (size_t i = 0; i < n_orelse; i++) {
+            self().visit_stmt(*orelse[i]);
+            out += check_tmp_buffer() + src;
+        }
+        if (!exit_label.empty()) {
+            out += indent + exit_label + ": ;\n";
+        }
+        return out;
     }
 
     // The end or the step `e` of a counted loop as its `for` header writes
@@ -3588,21 +3701,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        std::string current_body_copy = current_body;
-        current_body = "";
-        std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = counted_for(x.m_head, x.m_body, x.n_body,
             x.base.base.loc);
-        indentation_level += 1;
-        for (size_t i=0; i<x.n_body; i++) {
-            self().visit_stmt(*x.m_body[i]);
-            current_body += check_tmp_buffer() + src;
-        }
-        out += current_body;
-        out += indent + "}\n";
-        indentation_level -= 1;
+        construct_frames.push_back({x.m_name, true, x.n_orelse > 0, "", ""});
+        out += close_loop(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
         src = out;
-        current_body = current_body_copy;
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -3616,6 +3719,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bracket_open--;
         out = check_tmp_buffer() + out;
         indentation_level += 1;
+        // Only a named IF construct can be left by an EXIT.
+        if (x.m_name != nullptr) {
+            construct_frames.push_back({x.m_name, false, false, "", ""});
+        }
         for (size_t i=0; i<x.n_body; i++) {
             self().visit_stmt(*x.m_body[i]);
             current_body += check_tmp_buffer() + src;
@@ -3633,6 +3740,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
             out += current_body;
             out += indent + "}\n";
+        }
+        if (x.m_name != nullptr) {
+            std::string exit_label = construct_frames.back().exit_label;
+            construct_frames.pop_back();
+            if (!exit_label.empty()) {
+                out += indent + exit_label + ": ;\n";
+            }
         }
         indentation_level -= 1;
         src = out;

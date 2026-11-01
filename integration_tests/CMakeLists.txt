@@ -4883,6 +4883,7 @@ RUN(NAME do_loop_18 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typi
 RUN(NAME do_loop_19 LABELS gfortran llvm)
 RUN(NAME do_loop_20 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME do_loop_21 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_22 LABELS gfortran llvm c cpp)
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
@@ -5801,7 +5802,7 @@ RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
-RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
 RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME exit_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

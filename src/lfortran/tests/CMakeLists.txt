@@ -61,6 +61,7 @@ set(SRC
     test_asr_text.cpp
     test_asr_text_parser.cpp
     test_gpu.cpp
+    test_c_cpp.cpp
     ../../bin/cuda_link_helpers.cpp
     ../../tests/test_cuda_link_helpers.cpp
     ../../bin/lfortran_command_line_parser.cpp
