@@ -1682,6 +1682,54 @@ namespace LCompilers {
             body = new_body;
         }
 
+        bool can_unroll_iterations(Allocator &al, const ASR::DoLoop_t &x) {
+            class Jumps : public ASR::BaseWalkVisitor<Jumps> {
+            public:
+                bool found = false;
+                void visit_Exit(const ASR::Exit_t &) { found = true; }
+                void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+                void visit_GoTo(const ASR::GoTo_t &) { found = true; }
+                void visit_GoToTarget(const ASR::GoToTarget_t &) {
+                    found = true;
+                }
+                void visit_BlockCall(const ASR::BlockCall_t &x) {
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                    for (size_t i = 0; i < block->n_body; i++) {
+                        visit_stmt(*block->m_body[i]);
+                    }
+                }
+            };
+            Jumps jumps;
+            for (size_t i = 0; i < x.n_body; i++) {
+                jumps.visit_stmt(*x.m_body[i]);
+            }
+            if (jumps.found) return false;
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            for (size_t i = 0; i < x.n_body; i++) {
+                duplicator.success = true;
+                duplicator.duplicate_stmt(x.m_body[i]);
+                if (!duplicator.success) return false;
+            }
+            return true;
+        }
+
+        std::vector<ASR::stmt_t*> unroll_iterations(Allocator &al,
+                const ASR::DoLoop_t &x, ASR::expr_t *group, int64_t step,
+                int64_t factor) {
+            ASR::ttype_t *type = ASRUtils::expr_type(x.m_head.m_v);
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            std::vector<ASR::stmt_t*> body;
+            for (int64_t k = 0; k < factor; k++) {
+                body.push_back(b.Assignment(x.m_head.m_v, k == 0 ? group
+                    : b.Add(group, b.i_t(k * step, type))));
+                for (size_t i = 0; i < x.n_body; i++) {
+                    body.push_back(duplicator.duplicate_stmt(x.m_body[i]));
+                }
+            }
+            return body;
+        }
+
         Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
                                          int comp, bool use_loop_variable_after_loop,
                                          SymbolTable* current_scope,
