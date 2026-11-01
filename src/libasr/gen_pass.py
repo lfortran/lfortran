@@ -7,7 +7,6 @@ passes = [
         "replace_class_constructor",
         "dead_code_removal",
         "replace_div_to_mul",
-        "replace_do_loops",
         "replace_flip_sign",
         "replace_fma",
         "replace_for_all",

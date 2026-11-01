@@ -990,7 +990,6 @@ asr = true
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
-pass = "do_loops"
 wat = true
 julia = true
 
@@ -1014,7 +1013,6 @@ ast = true
 ast_f90 = true
 asr = true
 llvm = true
-pass = "do_loops"
 
 [[test]]
 filename = "../integration_tests/doloop_05.f90"
@@ -6424,16 +6422,6 @@ options = "--implicit-interface"
 [[test]]
 filename = "document_symbols_continuation.f90"
 document_symbols = true
-
-[[test]]
-filename = "../integration_tests/loop_var_use_after_loop.f90"
-pass = "do_loops"
-options = "--use-loop-variable-after-loop"
-
-[[test]]
-filename = "../integration_tests/doloop_23.f90"
-pass = "do_loops"
-options = "--fast"
 
 [[test]]
 filename = "../integration_tests/use_02.f90"
