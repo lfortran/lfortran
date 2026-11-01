@@ -4876,14 +4876,14 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
 endif()
 RUN(NAME do_loop_13 LABELS gfortran llvm)
 RUN(NAME do_loop_14 LABELS gfortran llvm)
-RUN(NAME do_loop_15 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=do)
+RUN(NAME do_loop_15 FAIL LABELS gfortran llvm wasm GFORTRAN_ARGS -fcheck=do)
 RUN(NAME do_loop_16 LABELS gfortran llvm)
 RUN(NAME do_loop_17 LABELS gfortran llvm c)
 RUN(NAME do_loop_18 LABELS gfortran llvm c EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
 RUN(NAME do_loop_19 LABELS gfortran llvm c cpp)
 RUN(NAME do_loop_20 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
-RUN(NAME do_loop_21 LABELS gfortran llvm c cpp)
-RUN(NAME do_loop_22 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_21 LABELS gfortran llvm c cpp wasm)
+RUN(NAME do_loop_22 LABELS gfortran llvm c cpp wasm)
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
@@ -5532,7 +5532,7 @@ RUN(NAME do_concurrent_22 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_23 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_24 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_25 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
-RUN(NAME do_concurrent_26 LABELS gfortran llvm c cpp)
+RUN(NAME do_concurrent_26 LABELS gfortran llvm c cpp wasm)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
