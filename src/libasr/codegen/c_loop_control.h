@@ -173,6 +173,127 @@ inline int loop_step_sign(ASR::expr_t *e,
     }
 }
 
+// The variables that the statements of a loop body may modify, as
+// `written` of loop_control_invariant. A variable counts as modified
+// wherever the walk does not know that it is only read: it knows
+// assignments, calls (an actual argument bound to an `intent(in)` or
+// by-value dummy is read), the subscripts of a designator, and the
+// statements that only evaluate expressions. `calls` is set when the body
+// calls a procedure, which may modify a variable of its host or of a
+// module without naming it.
+class LoopModifiedVariables
+        : public ASR::BaseWalkVisitor<LoopModifiedVariables> {
+private:
+    bool reading = false;
+
+    void walk(ASR::expr_t *e, bool read) {
+        if (e == nullptr) return;
+        bool outer = reading;
+        reading = read;
+        visit_expr(*e);
+        reading = outer;
+    }
+
+    void visit_call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        calls = true;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
+        ASR::Function_t *f = ASR::is_a<ASR::Function_t>(*s)
+                || ASR::is_a<ASR::Variable_t>(*s)
+                || ASR::is_a<ASR::StructMethodDeclaration_t>(*s)
+            ? ASRUtils::get_function(s) : nullptr;
+        for (size_t i = 0; i < n_args; i++) {
+            bool read = false;
+            if (f != nullptr && i < f->n_args
+                    && ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*d)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
+                    read = v->m_intent == ASR::intentType::In
+                        || v->m_value_attr;
+                }
+            }
+            walk(args[i].m_value, read);
+        }
+    }
+
+public:
+    std::set<ASR::symbol_t*> modified;
+    bool calls = false;
+
+    void read(ASR::expr_t *e) { walk(e, true); }
+
+    void write(ASR::expr_t *e) { walk(e, false); }
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (!reading) {
+            modified.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        visit_expr(*x.m_v);
+        for (size_t i = 0; i < x.n_args; i++) {
+            read(x.m_args[i].m_left);
+            read(x.m_args[i].m_right);
+            read(x.m_args[i].m_step);
+        }
+    }
+
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        visit_expr(*x.m_v);
+        for (size_t i = 0; i < x.n_args; i++) {
+            read(x.m_args[i].m_left);
+            read(x.m_args[i].m_right);
+            read(x.m_args[i].m_step);
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        write(x.m_dt);
+        visit_call_args(x.m_name, x.m_args, x.n_args);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        write(x.m_dt);
+        visit_call_args(x.m_name, x.m_args, x.n_args);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        write(x.m_target);
+        read(x.m_value);
+        if (x.m_overloaded != nullptr) visit_stmt(*x.m_overloaded);
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        read(x.m_test);
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        read(x.m_test);
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        write(x.m_head.m_v);
+        read(x.m_head.m_start);
+        read(x.m_head.m_end);
+        read(x.m_head.m_increment);
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+
+    void visit_Print(const ASR::Print_t &x) { read(x.m_text); }
+
+    void visit_ErrorStop(const ASR::ErrorStop_t &x) { read(x.m_code); }
+
+    void visit_Stop(const ASR::Stop_t &x) { read(x.m_code); }
+};
+
 } // namespace LCompilers::CUtils
 
 #endif // LIBASR_CODEGEN_C_LOOP_CONTROL_H

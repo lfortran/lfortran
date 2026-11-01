@@ -62,7 +62,8 @@ float sum(T0* a)
     float r;
 std::cout<< "sum"<<std::endl;
     r = (float)(0);
-    for (i=1; i<=a->data->extent(0); i++) {
+    const int32_t __lfortran_end_0 = a->data->extent(0);
+    for (i = 1; i <= __lfortran_end_0; i++) {
         r = r + a->data->operator[](i - a->dims[0].lower_bound);
     }
     return r;

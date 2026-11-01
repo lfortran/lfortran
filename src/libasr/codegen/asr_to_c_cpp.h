@@ -20,6 +20,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/c_utils.h>
+#include <libasr/codegen/c_loop_control.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
@@ -3478,79 +3479,129 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
+    // The end or the step `e` of a counted loop as its `for` header writes
+    // it. Fortran evaluates both once, before the loop: one that the loop
+    // cannot change (see CUtils::loop_control_invariant) is written as it
+    // is, anything else is copied into a constant declared in `decl`.
+    std::string loop_control(ASR::expr_t *e, const char *role,
+            ASR::ttype_t *type, const std::set<ASR::symbol_t*> &modified,
+            const std::set<ASR::symbol_t*> &unshared, std::string &decl) {
+        self().visit_expr(*e);
+        if (CUtils::loop_control_invariant(e, modified, unshared)) {
+            return src;
+        }
+        std::string name = current_scope->get_unique_name(
+            std::string("__lfortran_") + role + "_"
+            + std::to_string(loop_end_count++));
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        decl += indent + "const " + CUtils::get_c_type_from_ttype_t(type, is_c)
+            + " " + name + " = " + src + ";\n";
+        return name;
+    }
+
+    // Opens the C `for` of the counted loop `head` with the body
+    // `loop_body`, declaring first the copies of its end and step that it
+    // needs. The loop tests `<=` for a positive step and `>=` for a
+    // negative one, so it ends with the index one step past the last
+    // iteration, and a loop that runs no iteration leaves it at the start,
+    // as Fortran has it. Only a step whose sign is not evident (see
+    // CUtils::loop_step_sign) needs a test that depends on it.
+    std::string counted_for(const ASR::do_loop_head_t &head,
+            ASR::stmt_t **loop_body, size_t n_body, const Location &loc) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        if (head.m_v == nullptr) {
+            return indent + "for (;;) {\n";
+        }
+        LCOMPILERS_ASSERT(head.m_start != nullptr && head.m_end != nullptr
+            && head.m_increment != nullptr);
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(head.m_v));
+        CUtils::LoopModifiedVariables body;
+        body.write(head.m_v);
+        for (size_t i = 0; i < n_body; i++) {
+            body.visit_stmt(*loop_body[i]);
+        }
+        // Without a call, only the statements of the loop can modify a
+        // variable while it runs, and `body` has seen all of them: the
+        // variables of the end and the step (all of which `controls`
+        // collects) can then change only if `body` modifies them.
+        CUtils::LoopModifiedVariables controls;
+        if (!body.calls) {
+            controls.write(head.m_end);
+            controls.write(head.m_increment);
+        }
+        int64_t step = 0;
+        bool step_known = ASRUtils::is_integer(*type)
+            && ASRUtils::extract_value(
+                ASRUtils::expr_value(head.m_increment), step);
+        int sign = 0;
+        if (step_known) {
+            if (step == 0) {
+                throw CodeGenError("a DO loop with a zero step reached the "
+                    "C code generator", loc);
+            }
+            sign = step > 0 ? 1 : -1;
+        } else if (ASRUtils::is_integer(*type)) {
+            sign = CUtils::loop_step_sign(head.m_increment, {});
+        } else {
+            double real_step = 0;
+            if (ASRUtils::extract_value(
+                    ASRUtils::expr_value(head.m_increment), real_step)) {
+                sign = real_step > 0 ? 1 : (real_step < 0 ? -1 : 0);
+            }
+        }
+        bracket_open++;
+        std::string decl;
+        std::string end = loop_control(head.m_end, "end", type,
+            body.modified, controls.modified, decl);
+        std::string inc = step_known ? std::string()
+            : loop_control(head.m_increment, "step", type, body.modified,
+                controls.modified, decl);
+        // Spelled as any other reference to the variable, which need not be
+        // a local of its own (one in a common block, say).
+        self().visit_expr(*head.m_v);
+        std::string v = src;
+        std::string out = indent + "for (" + v + " = ";
+        self().visit_expr(*head.m_start);
+        out += src + "; ";
+        if (sign != 0) {
+            out += v + (sign > 0 ? " <= " : " >= ") + end;
+        } else {
+            out += inc + " > 0 ? " + v + " <= " + end + " : " + v + " >= "
+                + end;
+        }
+        out += "; " + v;
+        if (!step_known) {
+            out += " += " + inc;
+        } else if (step == 1) {
+            out += "++";
+        } else if (step == -1) {
+            out += "--";
+        } else if (step > 0) {
+            out += " += " + std::to_string(step);
+        } else {
+            out += " -= " + std::to_string(-step);
+        }
+        out += ") {\n";
+        bracket_open--;
+        return check_tmp_buffer() + decl + out;
+    }
+
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         std::string current_body_copy = current_body;
         current_body = "";
-        std::string loop_end_decl = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "for (";
-        // Spelled as any other reference to the variable, which need not be
-        // a local of its own (one in a common block, say).
-        self().visit_expr(*x.m_head.m_v);
-        std::string lvname = src;
-        ASR::expr_t *a=x.m_head.m_start;
-        ASR::expr_t *b=x.m_head.m_end;
-        ASR::expr_t *c=x.m_head.m_increment;
-        LCOMPILERS_ASSERT(a);
-        LCOMPILERS_ASSERT(b);
-        LCOMPILERS_ASSERT(c);
-        int increment = 1;
-        bool is_c_constant = false;
-        if (ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
-            ASR::expr_t* c_value = ASRUtils::expr_value(c);
-            is_c_constant = ASRUtils::extract_value(c_value, increment);
-        }
-
-        if( is_c_constant ) {
-            std::string cmp_op;
-            if (increment > 0) {
-                cmp_op = "<=";
-            } else {
-                cmp_op = ">=";
-            }
-
-            out += lvname + "=";
-            self().visit_expr(*a);
-            out += src + "; " + lvname + cmp_op;
-            self().visit_expr(*b);
-            out += src + "; " + lvname;
-            if (increment == 1) {
-                out += "++";
-            } else if (increment == -1) {
-                out += "--";
-            } else {
-                out += "+=" + std::to_string(increment);
-            }
-        } else {
-            this->visit_expr(*c);
-            std::string increment_ = std::move(src);
-            self().visit_expr(*b);
-            std::string do_loop_end = std::move(src);
-            std::string do_loop_end_name = current_scope->get_unique_name(
-                "loop_end___" + std::to_string(loop_end_count));
-            loop_end_count += 1;
-            loop_end_decl = indent + CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(b), is_c) +
-                            " " + do_loop_end_name + " = " + do_loop_end + ";\n";
-            out += lvname + " = ";
-            self().visit_expr(*a);
-            out += src + "; ";
-            out += "((" + increment_ + " >= 0) && (" +
-                    lvname + " <= " + do_loop_end_name + ")) || (("
-                    + increment_ + " < 0) && (" + lvname + " >= "
-                    + do_loop_end_name + ")); " + lvname;
-            out += " += " + increment_;
-        }
-
-        out += ") {\n";
+        std::string out = counted_for(x.m_head, x.m_body, x.n_body,
+            x.base.base.loc);
         indentation_level += 1;
         for (size_t i=0; i<x.n_body; i++) {
             self().visit_stmt(*x.m_body[i]);
-            current_body += src;
+            current_body += check_tmp_buffer() + src;
         }
         out += current_body;
         out += indent + "}\n";
         indentation_level -= 1;
-        src = loop_end_decl + out;
+        src = out;
         current_body = current_body_copy;
     }
 
