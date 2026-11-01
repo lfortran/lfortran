@@ -1,0 +1,8 @@
+style suggestion: the do loop variable 'a' is used after the loop
+  --> tests/../integration_tests/common_05.f90:34:14
+   |
+34 |     print *, a, b, c, d
+   |              ^ after the loop, 'a' is one step past the last iteration
+   |
+31 |     do a = 1, c(1), 1
+   |        ~ the loop sets 'a' here

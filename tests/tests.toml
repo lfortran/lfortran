@@ -7410,3 +7410,7 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/save_before_declaration_01.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/do_variable_after_loop_01.f90"
+semantics_only_cc = true
