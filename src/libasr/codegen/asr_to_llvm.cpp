@@ -27198,11 +27198,24 @@ public:
                             && !already_has_assumed_rank_desc) {
                         ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                         uint64_t h = get_hash((ASR::asr_t*)arg);
-                        tmp = llvm_symtab[h];
-                        // tmp is now the variable's alloca (ptr-to-ptr for
+                        // The variable's alloca (ptr-to-ptr for
                         // allocatable). Load once to get the descriptor ptr.
+                        llvm::Value* desc_ptr_ptr = llvm_symtab[h];
+                        // Create the descriptor if it does not exist yet
+                        llvm::Value* desc_is_null = builder->CreateICmpEQ(
+                            llvm_utils->CreateLoad2(desc_type->getPointerTo(), desc_ptr_ptr),
+                            llvm::ConstantPointerNull::get(desc_type->getPointerTo()));
+                        llvm_utils->create_if_else(desc_is_null, [&]() {
+                            llvm::Value* new_desc = arr_descr->allocate_descriptor_on_heap(desc_type);
+                            if (ASRUtils::is_character(*elem_asr_type)) {
+                                builder->CreateStore(
+                                    llvm_utils->allocate_string_descriptor_on_heap(elem_llvm_type),
+                                    arr_descr->get_pointer_to_data(desc_type, new_desc));
+                            }
+                            builder->CreateStore(new_desc, desc_ptr_ptr);
+                        }, [](){});
                         tmp = llvm_utils->CreateLoad2(
-                            desc_type->getPointerTo(), tmp);
+                            desc_type->getPointerTo(), desc_ptr_ptr);
                     }
 
                     // convert_to_polymorphic_arg may have converted tmp to
