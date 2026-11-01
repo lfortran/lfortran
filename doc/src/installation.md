@@ -283,7 +283,9 @@ exercise the runtime-enabled Release LLVM 11/19 and macOS LLVM 22 profiles;
 success with the former disabled-runtime flags is not evidence for this change.
 
 The distinct Kokkos/out-of-source and custom-install configurations run
-full suites. Standalone C++ builds, documentation/kernel tests, the
+full suites. The out-of-source job also removes the Prefix `shell` from its
+environment and checks that CMake runs `build0.sh` with Bash, which is how
+builds without Pixi work. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
 
 PRs do not run the Exhaustive workflow at all. For a rare, explicitly
@@ -645,6 +647,10 @@ Generate files that are needed for the build (this step depends on `re2c`, `biso
 ```bash
 ./build0.sh
 ```
+Configuring CMake with `-DLFORTRAN_BUILD_ALL=yes` (as `build1.sh` does) runs
+`build0.sh` itself, with the Prefix [`shell`](https://github.com/prefix-dev/shell)
+when it is installed and otherwise with Bash, so a build without Pixi needs
+only Bash. Pass `-DLFORTRAN_SHELL=/path/to/bash` to choose explicitly.
 Now you can use our script `./build1.sh` to build in Debug mode:
 ```bash
 ./build1.sh

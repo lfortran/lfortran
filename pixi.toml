@@ -172,8 +172,9 @@ python = "==3.12"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
 re2c = "==3.1"
-# Cross-platform Bash-like shell (https://github.com/prefix-dev/shell) that
-# runs build0.sh and build1.sh on every platform, including native Windows.
+# Cross-platform Bash-compatible shell (https://github.com/prefix-dev/shell)
+# that runs build0.sh and build1.sh on every platform, including native
+# Windows. Builds without Pixi fall back to Bash (see CMakeLists.txt).
 shell = "==0.3.0"
 
 [feature.build.target.linux.dependencies]
