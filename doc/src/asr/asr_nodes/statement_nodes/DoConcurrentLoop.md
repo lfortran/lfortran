@@ -46,8 +46,9 @@ that one loop, so a program may mix serial, host-threaded and device loops.
 Only the outermost loop of a nest becomes a region, so a concurrent loop left
 in the body keeps this node and runs its iterations in order inside the thread
 that reached it. Passes that run after the parallel pipeline, such as `forall`
-and `array_struct_temporary`, also build this node; `do_loops` lowers all of
-them into an ordinary loop nest.
+and `array_struct_temporary`, also build this node; every backend runs the
+iterations of all of them in order, as a nest of counted loops with the first
+index outermost.
 
 ## Examples
 
