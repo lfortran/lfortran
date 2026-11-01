@@ -6,6 +6,7 @@
 #include <lfortran/parser/source_offset.h>
 #include <lfortran/utils.h>
 #include <libasr/asr.h>
+#include <libasr/pass/pass_manager.h>
 
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
@@ -121,4 +122,45 @@ end function
     __lfortran_exit_1: ;
 )") != std::string::npos);
     }
+}
+
+TEST_CASE("The C pipeline runs the loop-else of a while loop once") {
+    std::string source = R"(
+integer function f_while()
+    integer :: s
+    s = 0
+    do while (s < 3)
+        s = s + 1
+        if (s == 5) exit
+    end do
+    s = s + 40
+    f_while = s
+end function
+)";
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.platform = LCompilers::get_platform();
+    FortranEvaluator evaluator(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "while_else.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    auto asr = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(asr.ok);
+    seed_loop_else(al, *asr.result, "f_while");
+
+    // while_else lowers the loop-else to a flag and an IF after the loop.
+    LCompilers::PassManager pass_manager;
+    pass_manager.use_default_passes();
+    auto out = evaluator.get_c3(*asr.result, diagnostics, pass_manager, 1);
+    INFO(diagnostics.render2());
+    REQUIRE(out.ok);
+    INFO(out.result);
+    size_t first = out.result.find("s = s + 40;");
+    REQUIRE(first != std::string::npos);
+    CHECK(out.result.find("s = s + 40;", first + 1) == std::string::npos);
 }
