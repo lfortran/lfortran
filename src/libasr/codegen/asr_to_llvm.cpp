@@ -27222,7 +27222,9 @@ public:
                     // points to a string_descriptor struct ({i8*, i64}).
                     // For CFI interop, replace it with the raw i8* data
                     // pointer (field 0 of the string_descriptor).
-                    if (ASRUtils::is_character(*elem_asr_type)) {
+                    bool is_character_array = ASRUtils::is_character(*elem_asr_type);
+                    llvm::Value* orig_desc_ptr = tmp;
+                    if (is_character_array) {
                         // Make a temporary copy so we don't corrupt the
                         // original descriptor's base_addr.
                         llvm::Value* desc_copy = arr_descr->create_descriptor_alloca(
@@ -27268,10 +27270,11 @@ public:
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size,
                         cfi_type_code, cfi_attr);
                     if (cfi_attr != 0 && !is_type_star &&
-                            !ASRUtils::is_character(*elem_asr_type) &&
                             ASRUtils::is_array(actual_type) &&
                             orig_arg->m_intent != ASR::intentType::In) {
-                        pending_cfi_array_writebacks.push_back({internal_desc_ptr,
+                        // Write back to the original descriptor, not to the
+                        // base_addr-replaced copy made for character arrays
+                        pending_cfi_array_writebacks.push_back({orig_desc_ptr,
                             tmp, desc_type, elem_llvm_type, n_dims, elem_size});
                     }
                     if (is_type_star) {
@@ -28960,10 +28963,20 @@ public:
         }
     }
 
+    // Character array elements are a string_descriptor struct ({i8*, i64})
+    bool is_string_descriptor_type(llvm::Type* el_type) {
+        return el_type == llvm_utils->string_descriptor;
+    }
+
     void apply_cfi_array_writebacks() {
         for (auto& wb : pending_cfi_array_writebacks) {
-            arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
-                wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
+            if (is_string_descriptor_type(wb.el_type)) {
+                arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
+                    wb.cfi_desc, wb.n_dims, wb.internal_desc);
+            } else {
+                arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
+                    wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
+            }
         }
         pending_cfi_array_writebacks.clear();
     }

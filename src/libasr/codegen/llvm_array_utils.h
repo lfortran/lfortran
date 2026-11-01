@@ -401,6 +401,12 @@ namespace LCompilers {
                     llvm::Value* internal_desc = nullptr) = 0;
 
                 virtual
+                void cfi_to_internal_string(
+                    llvm::Type* internal_type, llvm::Type* str_desc_type,
+                    llvm::Value* cfi_desc, int n_dims,
+                    llvm::Value* internal_desc) = 0;
+
+                virtual
                 void push_data_array_args(
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
                     llvm::Value* data_ptr, llvm::Value* n_elems,
@@ -699,7 +705,16 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size,
                     llvm::Value* internal_desc = nullptr);
-                
+
+                // Write a CFI character array descriptor back into an
+                // existing internal one: its string_descriptor takes the
+                // CFI base_addr and elem_len (the runtime character length),
+                // and byte strides are divided by that length.
+                void cfi_to_internal_string(
+                    llvm::Type* internal_type, llvm::Type* str_desc_type,
+                    llvm::Value* cfi_desc, int n_dims,
+                    llvm::Value* internal_desc);
+
                 void push_data_array_args(
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
                     llvm::Value* data_ptr, llvm::Value* n_elems,
