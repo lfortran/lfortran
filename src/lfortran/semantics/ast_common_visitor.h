@@ -23828,7 +23828,7 @@ public:
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
             ASRUtils::expr_type(var));
         return declare_implicit_variable2(loc,
-            current_scope->get_unique_name("__implied_do_" + name),
+            current_scope->get_unique_name("lfortran_implied_do_" + name),
             ASRUtils::intent_local, type);
     }
 

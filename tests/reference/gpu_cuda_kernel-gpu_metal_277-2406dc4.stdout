@@ -14,16 +14,16 @@ __device__ inline float _lcompilers_dot_product_gpu_57(float* matrix_a, int __1m
 __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c, float* faces, float* __libasr__created__var__3__array_constructor_) {
     const int end_point = 1;
     int __1__libasr_index_;
-    int __implied_do_row;
     float* __libasr_created__intrinsic_array_function_DotProduct;
     int __libasr_index_0_;
     int __libasr_index_0_1;
+    int lfortran_implied_do_row;
     __1__libasr_index_ = 1;
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)(end_point) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
-    for (__implied_do_row = end_point; __implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); __implied_do_row++) {
-        __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(__implied_do_row) - (1));
-        __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_57(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((__implied_do_row + (1 * ((int)__1w))) - 1)) - (__implied_do_row)) / (1)) + 1), 1);
+    for (lfortran_implied_do_row = end_point; lfortran_implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); lfortran_implied_do_row++) {
+        __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(lfortran_implied_do_row) - (1));
+        __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_57(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((lfortran_implied_do_row + (1 * ((int)__1w))) - 1)) - (lfortran_implied_do_row)) / (1)) + 1), 1);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
     }
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)((1 * ((int)__1c))) - (1))] * w[((int)(end_point) - (1))]);
@@ -150,16 +150,16 @@ __device__ inline float _lcompilers_dot_product1_gpu_59(float* matrix_a, int __1
 __device__ inline void face_values_gpu_43(float* w, int __1w, float* c, int __1c, float* faces, float* __libasr__created__var__3__array_constructor_) {
     const int end_point = 1;
     int __1__libasr_index_;
-    int __implied_do_row;
     float* __libasr_created__intrinsic_array_function_DotProduct;
     int __libasr_index_0_;
     int __libasr_index_0_1;
+    int lfortran_implied_do_row;
     __1__libasr_index_ = 1;
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)(end_point) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
-    for (__implied_do_row = end_point; __implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); __implied_do_row++) {
-        __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(__implied_do_row) - (1));
-        __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product1_gpu_59(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((__implied_do_row + (1 * ((int)__1w))) - 1)) - (__implied_do_row)) / (1)) + 1), 1);
+    for (lfortran_implied_do_row = end_point; lfortran_implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); lfortran_implied_do_row++) {
+        __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(lfortran_implied_do_row) - (1));
+        __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product1_gpu_59(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((lfortran_implied_do_row + (1 * ((int)__1w))) - 1)) - (lfortran_implied_do_row)) / (1)) + 1), 1);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
     }
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)((1 * ((int)__1c))) - (1))] * w[((int)(end_point) - (1))]);

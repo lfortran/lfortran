@@ -1002,32 +1002,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            __implied_do_i:
-                                                (Variable
-                                                    5
-                                                    __implied_do_i
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                ),
                                             compare:
                                                 (Variable
                                                     5
@@ -1185,6 +1159,32 @@
                                                             Global
                                                         )
                                                     )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            lfortran_implied_do_i:
+                                                (Variable
+                                                    5
+                                                    lfortran_implied_do_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
                                                     ()
                                                     Source
                                                     Public
@@ -1422,8 +1422,8 @@
                                         ()
                                         (ArrayConstructor
                                             [(ImpliedDoLoop
-                                                [(Var 5 __implied_do_i)]
-                                                (Var 5 __implied_do_i)
+                                                [(Var 5 lfortran_implied_do_i)]
+                                                (Var 5 lfortran_implied_do_i)
                                                 (Var 5 low)
                                                 (Var 5 high)
                                                 ()
