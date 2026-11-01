@@ -4685,15 +4685,6 @@ semantic error: output of an implied-do loop with run-time bounds or step and va
 3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
      |                                                ~ not a constant expression
 
-semantic error: output of an implied-do loop with a nested loop that reuses an enclosing loop variable and values of different types, including derived types, is not supported yet
-    --> tests/errors/continue_compilation_1.f90:3694:25
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                          ~~~~~~~~~~~~~ reuses the variable of an enclosing loop
-
 semantic error: output of an implied-do loop with more than 256 iterations, bounds that are not all literals and values of different types, including derived types, is not supported yet
     --> tests/errors/continue_compilation_1.f90:3695:25
      |
