@@ -1175,6 +1175,32 @@
                                                     []
                                                     ()
                                                 ),
+                                            lfortran_implied_do_i:
+                                                (Variable
+                                                    5
+                                                    lfortran_implied_do_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             list:
                                                 (Variable
                                                     5
@@ -1396,8 +1422,8 @@
                                         ()
                                         (ArrayConstructor
                                             [(ImpliedDoLoop
-                                                [(Var 5 i)]
-                                                (Var 5 i)
+                                                [(Var 5 lfortran_implied_do_i)]
+                                                (Var 5 lfortran_implied_do_i)
                                                 (Var 5 low)
                                                 (Var 5 high)
                                                 ()

@@ -2587,6 +2587,64 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    // Whether the implied do loops being visited are in an array constructor
+    bool in_array_constructor = false;
+    // The variables of the implied do loops whose values are being visited
+    std::vector<std::string> implied_do_variables;
+
+    // Sets `in_array_constructor` and restores it even when the visit throws
+    // SemanticAbort.
+    struct ArrayConstructorScope {
+        CommonVisitor &v;
+        bool previous;
+        ArrayConstructorScope(CommonVisitor &v_)
+                : v{v_}, previous{v_.in_array_constructor} {
+            v.in_array_constructor = true;
+        }
+        ~ArrayConstructorScope() {
+            v.in_array_constructor = previous;
+        }
+        ArrayConstructorScope(const ArrayConstructorScope &) = delete;
+        ArrayConstructorScope &operator=(const ArrayConstructorScope &) = delete;
+    };
+
+    // Adds `name` to `implied_do_variables` and removes it even when the
+    // visit throws SemanticAbort.
+    struct ImpliedDoVariableScope {
+        CommonVisitor &v;
+        ImpliedDoVariableScope(CommonVisitor &v_, const std::string &name)
+                : v{v_} {
+            v.implied_do_variables.push_back(name);
+        }
+        ~ImpliedDoVariableScope() {
+            v.implied_do_variables.pop_back();
+        }
+        ImpliedDoVariableScope(const ImpliedDoVariableScope &) = delete;
+        ImpliedDoVariableScope &operator=(const ImpliedDoVariableScope &) = delete;
+    };
+
+    // Makes `name` refer to `sym` in `scope`, and restores what it referred
+    // to even when the visit throws SemanticAbort.
+    struct ShadowedNameScope {
+        SymbolTable *scope;
+        std::string name;
+        ASR::symbol_t *previous;
+        ShadowedNameScope(SymbolTable *scope_, const std::string &name_,
+                ASR::symbol_t *sym)
+                : scope{scope_}, name{name_},
+                  previous{scope_->get_symbol(name_)} {
+            scope->add_or_overwrite_symbol(name, sym);
+        }
+        ~ShadowedNameScope() {
+            if (previous) {
+                scope->overwrite_symbol(name, previous);
+            } else {
+                scope->erase_symbol(name);
+            }
+        }
+        ShadowedNameScope(const ShadowedNameScope &) = delete;
+        ShadowedNameScope &operator=(const ShadowedNameScope &) = delete;
+    };
     // The body that holds the outermost `where` construct being visited, or
     // `nullptr` outside one. A statement that a masked assignment needs but
     // which has to run whatever the mask selects belongs there rather than in
@@ -17115,6 +17173,7 @@ public:
                 }
             }
             if (expr == nullptr) {
+                ArrayConstructorScope array_constructor_scope(*this);
                 this->visit_expr(*x.m_args[i]);
                 expr = ASRUtils::EXPR(tmp);
             }
@@ -23754,6 +23813,25 @@ public:
     // The loop variable of an implied-do has to be a scalar integer. Left to
     // reach the pass that expands the loop, anything else fails there with an
     // internal error, having passed semantic analysis.
+    // A variable of its own for the implied do loop variable `name`, with
+    // the type of the variable `name` refers to. Returns nullptr if `name`
+    // does not refer to a variable.
+    ASR::symbol_t* declare_implied_do_variable(const std::string &name,
+            const Location &loc) {
+        ASR::symbol_t* sym = current_scope->resolve_symbol(name);
+        if (sym == nullptr
+                || !ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(sym))) {
+            return nullptr;
+        }
+        ASR::expr_t* var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        check_implied_do_loop_variable(var, name, loc);
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(var));
+        return declare_implicit_variable2(loc,
+            current_scope->get_unique_name("lfortran_implied_do_" + name),
+            ASRUtils::intent_local, type);
+    }
+
     void check_implied_do_loop_variable(ASR::expr_t* a_var, const std::string &name,
         const Location &loc)
     {
@@ -24069,22 +24147,45 @@ public:
         Vec<ASR::ttype_t*> type_tuple;
         type_tuple.reserve(al, 1);
         bool unique_type = true;
-        for( size_t i = 0; i < x.n_values; i++ ) {
-            this->visit_expr(*(x.m_values[i]));
-            ASR::expr_t *expr = ASRUtils::EXPR(tmp);
-            ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(
-                ASRUtils::expr_type(expr));
-            if( type == nullptr ) {
-                type = type_;
-            } else {
-                if (!unique_type || !implied_do_value_types_equal(
-                        type_, expr, type, a_values_vec[0])) {
-                    unique_type = false;
-                }
+        // The variable of an implied do loop in an array constructor has the
+        // implied do loop as its scope (F2023 19.4). A variable of its own
+        // stands for it in the values, so the variable of the same name
+        // outside, which a contained procedure may use, keeps its value.
+        // So does that of an implied do loop in an input/output list that
+        // reuses the variable of an enclosing one (not conforming, but
+        // accepted), so that the enclosing loop still runs to its end.
+        ASR::symbol_t* own_sym = nullptr;
+        if (is_body_visitor && (in_array_constructor
+                || std::find(implied_do_variables.begin(),
+                    implied_do_variables.end(), idl_var_name_lower)
+                    != implied_do_variables.end())) {
+            own_sym = declare_implied_do_variable(idl_var_name_lower,
+                x.base.base.loc);
+        }
+        {
+            std::unique_ptr<ShadowedNameScope> shadowed_name;
+            if (own_sym) {
+                shadowed_name = std::make_unique<ShadowedNameScope>(
+                    current_scope, idl_var_name_lower, own_sym);
             }
-            type_tuple.push_back(al, type_);
+            ImpliedDoVariableScope implied_do_variable(*this, idl_var_name_lower);
+            for( size_t i = 0; i < x.n_values; i++ ) {
+                this->visit_expr(*(x.m_values[i]));
+                ASR::expr_t *expr = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* type_ = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::expr_type(expr));
+                if( type == nullptr ) {
+                    type = type_;
+                } else {
+                    if (!unique_type || !implied_do_value_types_equal(
+                            type_, expr, type, a_values_vec[0])) {
+                        unique_type = false;
+                    }
+                }
+                type_tuple.push_back(al, type_);
 
-            a_values_vec.push_back(al, expr);
+                a_values_vec.push_back(al, expr);
+            }
         }
         this->visit_expr(*(x.m_start));
         a_start = ASRUtils::EXPR(tmp);
@@ -24097,7 +24198,8 @@ public:
         ASR::expr_t** a_values = a_values_vec.p;
         size_t n_values = a_values_vec.size();
 
-        ASR::symbol_t* a_sym = current_scope->resolve_symbol(to_lower(x.m_var));
+        ASR::symbol_t* a_sym = own_sym ? own_sym
+            : current_scope->resolve_symbol(to_lower(x.m_var));
         if (a_sym == nullptr) {
             if (compiler_options.implicit_typing) {
                 std::string var_name = to_lower(x.m_var);

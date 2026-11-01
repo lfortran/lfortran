@@ -3691,7 +3691,7 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
-    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! not conforming, but accepted: the nested loop has a variable of its own
     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
     print '(*(i0,1x))', (x(i), y(i), i=1,3)

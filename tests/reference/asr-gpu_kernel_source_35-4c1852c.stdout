@@ -782,32 +782,6 @@
                                     []
                                     ()
                                 ),
-                            __libasr__created__var__0__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__0__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
                             __libasr__created__var__1__array_constructor_:
                                 (Variable
                                     2
@@ -826,32 +800,6 @@
                                             Global
                                         )
                                     )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__1__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__1__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -966,6 +914,58 @@
                                 (Variable
                                     2
                                     i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lfortran_implied_do_i:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lfortran_implied_do_i1:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i1
                                     []
                                     Local
                                     ()
@@ -1262,18 +1262,9 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
                         (IntegerConstant 1 (Integer 4) Decimal))
@@ -1302,7 +1293,7 @@
                                 Mul
                                 (IntrinsicElementalFunction
                                     Real
-                                    [(Var 2 i)]
+                                    [(Var 2 lfortran_implied_do_i)]
                                     0
                                     (Real 4)
                                     ()
@@ -1332,15 +1323,6 @@
                             .false.
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
                     )
                     (If
                         ()
@@ -1406,18 +1388,9 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
                         (IntegerConstant 1 (Integer 4) Decimal))
@@ -1458,7 +1431,7 @@
                                     Mul
                                     (IntrinsicElementalFunction
                                         Real
-                                        [(Var 2 i)]
+                                        [(Var 2 lfortran_implied_do_i1)]
                                         0
                                         (Real 4)
                                         ()
@@ -1491,15 +1464,6 @@
                             .false.
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
                     )
                     (If
                         ()
