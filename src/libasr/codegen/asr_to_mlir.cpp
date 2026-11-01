@@ -475,6 +475,42 @@ public:
                 type, attr).getResult();
     }
 
+    void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
+        tmp = builder->create<mlir::LLVM::ConstantOp>(loc,
+            getType(x.m_type), builder->getBoolAttr(x.m_value));
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        this->visit_expr2(*x.m_arg);
+        mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(loc,
+            getType(x.m_type), builder->getBoolAttr(true));
+        tmp = builder->create<mlir::LLVM::XOrOp>(loc, tmp, one);
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        this->visit_expr2(*x.m_left);
+        mlir::Value left = tmp;
+        this->visit_expr2(*x.m_right);
+        mlir::Value right = tmp;
+        switch (x.m_op) {
+            case ASR::logicalbinopType::And: {
+                tmp = builder->create<mlir::LLVM::AndOp>(loc, left, right);
+                break;
+            } case ASR::logicalbinopType::Or: {
+                tmp = builder->create<mlir::LLVM::OrOp>(loc, left, right);
+                break;
+            } case ASR::logicalbinopType::Xor:
+              case ASR::logicalbinopType::NEqv: {
+                tmp = builder->create<mlir::LLVM::XOrOp>(loc, left, right);
+                break;
+            } case ASR::logicalbinopType::Eqv: {
+                tmp = builder->create<mlir::LLVM::ICmpOp>(loc,
+                    mlir::LLVM::ICmpPredicate::eq, left, right);
+                break;
+            }
+        }
+    }
+
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
         mlir::Type type = getType(x.m_type);
         int unaryMinus = 0;
