@@ -8,6 +8,7 @@
 #include <lfortran/ast_kind.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_goto_scopes.h>
 #include <libasr/asr_verify.h>
 #include <libasr/asr_side_effect.h>
 #include <libasr/exception.h>
@@ -151,6 +152,10 @@ public:
     // being visited
     std::unique_ptr<BlockInterfaceVisitor> block_interfaces;
     std::set<std::string> labels;
+    // The branches that an assigned GO TO without a label list makes to
+    // every label of the procedure; the ones a branch cannot reach from the
+    // GO TO are dropped once the procedure is complete.
+    std::set<const ASR::stmt_t*> assigned_goto_branches;
     size_t starting_n_body = 0;
     bool in_loop = false;
     // Temporarily binds names in `scope` to the given symbols, restoring the
@@ -11340,7 +11345,10 @@ public:
                     int32_t num = std::stoi(label);
                     Vec<ASR::stmt_t*> body;
                     body.reserve(al, 1);
-                    body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, x.base.base.loc, num, s2c(al, std::to_string(num)))));
+                    ASR::stmt_t *branch = ASRUtils::STMT(ASR::make_GoTo_t(al,
+                        x.base.base.loc, num, s2c(al, std::to_string(num))));
+                    assigned_goto_branches.insert(branch);
+                    body.push_back(al, branch);
                     Vec<ASR::expr_t*> comparator_one;
                     comparator_one.reserve(al, 1);
                     ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
@@ -12265,6 +12273,281 @@ public:
 
 };
 
+namespace {
+
+// The body of a DO loop, which a statement label can terminate (a DO
+// without loop control is a WhileLoop).
+bool labeled_loop_body(const ASR::stmt_t *s, ASR::stmt_t **&body,
+        size_t &n_body) {
+    if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+        const ASR::DoLoop_t *loop = ASR::down_cast<ASR::DoLoop_t>(s);
+        body = loop->m_body;
+        n_body = loop->n_body;
+        return true;
+    }
+    if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+        const ASR::WhileLoop_t *loop = ASR::down_cast<ASR::WhileLoop_t>(s);
+        body = loop->m_body;
+        n_body = loop->n_body;
+        return true;
+    }
+    return false;
+}
+
+std::string construct_description(const ASR::stmt_t *s) {
+    switch (s->type) {
+        case ASR::stmtType::DoConcurrentLoop: return "DO CONCURRENT construct";
+        case ASR::stmtType::BlockCall: return "BLOCK construct";
+        case ASR::stmtType::AssociateBlockCall: return "ASSOCIATE construct";
+        default: return "DO loop";
+    }
+}
+
+// For the labels and the given branches of a procedure body, the statement
+// blocks (the bodies of IF, SELECT, loops and the other constructs) that
+// contain them, outermost first. Passes may wrap any construct in a BLOCK,
+// so a branch is safe from becoming one into a construct only if it does
+// not enter any statement block.
+class StatementBlocks : public ASR::ASRPassBaseWalkVisitor<StatementBlocks> {
+public:
+    const std::set<const ASR::stmt_t*> &branches;
+    std::vector<const void*> enclosing;
+    std::map<uint64_t, std::vector<const void*>> targets;
+    std::map<const ASR::stmt_t*, std::vector<const void*>> branch_blocks;
+
+    StatementBlocks(const std::set<const ASR::stmt_t*> &branches)
+        : branches{branches} {}
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        enclosing.push_back(m_body);
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(*m_body[i]);
+        }
+        enclosing.pop_back();
+    }
+
+    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        targets[x.m_id] = enclosing;
+    }
+
+    void visit_GoTo(const ASR::GoTo_t &x) {
+        if (branches.find(&x.base) != branches.end()) {
+            branch_blocks[&x.base] = enclosing;
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        // The label of the BLOCK statement is outside the construct.
+        if (x.m_label != -1) {
+            targets[x.m_label] = enclosing;
+        }
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            x.m_m);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_expr(const ASR::expr_t & /*x*/) {}
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+// Finds the branches of a procedure body that enter a construct (see
+// ASRUtils::ConstructNestingVisitor), which no branch may do, and decides
+// what becomes of each:
+// * the branches that an assigned GO TO without a label list makes to every
+//   label of the procedure are dropped where they would enter a statement
+//   block (see StatementBlocks), which the GO TO cannot branch to;
+// * a branch from the range of a DO loop to the terminal statement that it
+//   shares with the loops nested in it, as in
+//       DO 10 I = 1, N
+//       IF (I .EQ. 2) GO TO 10
+//       DO 10 J = 1, M
+//    10 CONTINUE
+//   is a legacy idiom that ends the iteration of that DO loop, as GFortran
+//   has it, so it becomes a CYCLE of that loop;
+// * any other is an error.
+class BranchesIntoConstructs :
+        public ASRUtils::ConstructNestingVisitor<BranchesIntoConstructs> {
+public:
+    Allocator &al;
+    diag::Diagnostics &diagnostics;
+    const std::set<const ASR::stmt_t*> &assigned_goto_branches;
+    // The replacement of each branch found; nullptr drops it.
+    std::map<const ASR::stmt_t*, ASR::stmt_t*> replacements;
+
+    BranchesIntoConstructs(Allocator &al, diag::Diagnostics &diagnostics,
+            const std::set<const ASR::stmt_t*> &assigned_goto_branches)
+        : al{al}, diagnostics{diagnostics},
+          assigned_goto_branches{assigned_goto_branches} {}
+
+    // The procedures of `scope` and the ones nested in them.
+    void visit_procedures(SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *s = item.second;
+            if (ASR::is_a<ASR::Program_t>(*s)) {
+                ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(s);
+                visit_procedure_body(p->m_body, p->n_body);
+                visit_procedures(p->m_symtab);
+            } else if (ASR::is_a<ASR::Function_t>(*s)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
+                visit_procedure_body(f->m_body, f->n_body);
+                visit_procedures(f->m_symtab);
+            } else if (ASR::is_a<ASR::Module_t>(*s)) {
+                visit_procedures(ASR::down_cast<ASR::Module_t>(s)->m_symtab);
+            }
+        }
+    }
+
+    void visit_procedure_body(ASR::stmt_t **body, size_t n_body) {
+        StatementBlocks blocks(assigned_goto_branches);
+        blocks.transform_stmts(body, n_body);
+        for (auto &branch : blocks.branch_blocks) {
+            const ASR::GoTo_t *x = ASR::down_cast<ASR::GoTo_t>(branch.first);
+            auto target = blocks.targets.find(x->m_target_id);
+            if (target != blocks.targets.end() && target->second.size()
+                    > common_prefix(branch.second, target->second)) {
+                replacements[branch.first] = nullptr;
+            }
+        }
+        scopes.clear();
+        ASRUtils::GoToTargetScopes target_scopes(scopes);
+        for (size_t i = 0; i < n_body; i++) {
+            target_scopes.visit_stmt(*body[i]);
+        }
+        for (size_t i = 0; i < n_body; i++) {
+            visit_stmt(*body[i]);
+        }
+    }
+
+    void visit_GoTo(const ASR::GoTo_t &x) {
+        auto target = scopes.find(x.m_target_id);
+        if (target == scopes.end()) return;
+        const std::vector<const ASR::stmt_t*> &to = target->second;
+        size_t kept = ASRUtils::common_construct_depth(enclosing, to);
+        if (kept == to.size()) return;
+        // An assigned GO TO's branch that enters a construct also enters a
+        // statement block, and is dropped already.
+        if (replacements.find(&x.base) != replacements.end()) return;
+        if (const ASR::stmt_t *loop = shared_termination_loop(
+                x.m_target_id, to, kept)) {
+            replacements[&x.base] = cycle(x, loop);
+            return;
+        }
+        std::string label = std::to_string(x.m_target_id);
+        std::string construct = construct_description(to[kept]);
+        diagnostics.add(diag::Diagnostic(
+            "branch to label " + label + " enters a " + construct
+                + " from outside it",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("", {x.base.base.loc}),
+                diag::Label("label " + label + " is inside this " + construct,
+                    {to[kept]->base.loc}, false)
+            }));
+    }
+
+private:
+    std::map<uint64_t, std::vector<const ASR::stmt_t*>> scopes;
+
+    static size_t common_prefix(const std::vector<const void*> &a,
+            const std::vector<const void*> &b) {
+        size_t n = 0;
+        while (n < a.size() && n < b.size() && a[n] == b[n]) n++;
+        return n;
+    }
+
+    // The DO loop that contains the branch and whose terminal statement,
+    // labeled `label` (the end of the constructs `to`), is shared with the
+    // DO loops nested in it, or nullptr.
+    const ASR::stmt_t *shared_termination_loop(uint64_t label,
+            const std::vector<const ASR::stmt_t*> &to, size_t kept) {
+        if (kept == 0) return nullptr;
+        const ASR::stmt_t *construct = to[kept - 1];
+        for (size_t i = kept; i <= to.size(); i++) {
+            ASR::stmt_t **body;
+            size_t n_body;
+            if (!labeled_loop_body(construct, body, n_body) || n_body == 0) {
+                return nullptr;
+            }
+            const ASR::stmt_t *last = body[n_body - 1];
+            if (i == to.size()) {
+                bool terminal = ASR::is_a<ASR::GoToTarget_t>(*last) &&
+                    ASR::down_cast<ASR::GoToTarget_t>(last)->m_id == label;
+                return terminal ? to[kept - 1] : nullptr;
+            }
+            if (last != to[i]) return nullptr;
+            construct = to[i];
+        }
+        return nullptr;
+    }
+
+    // A CYCLE of `loop` in place of the branch `x`, naming the loop if
+    // another one is nested between them.
+    ASR::stmt_t *cycle(const ASR::GoTo_t &x, const ASR::stmt_t *loop) {
+        const ASR::stmt_t *innermost = nullptr;
+        for (auto it = enclosing.rbegin(); it != enclosing.rend(); ++it) {
+            if (ASR::is_a<ASR::DoLoop_t>(**it) ||
+                    ASR::is_a<ASR::WhileLoop_t>(**it) ||
+                    ASR::is_a<ASR::DoConcurrentLoop_t>(**it)) {
+                innermost = *it;
+                break;
+            }
+        }
+        char *name = nullptr;
+        if (innermost != loop) {
+            ASR::stmt_t *named = const_cast<ASR::stmt_t*>(loop);
+            char *&loop_name = ASR::is_a<ASR::DoLoop_t>(*named)
+                ? ASR::down_cast<ASR::DoLoop_t>(named)->m_name
+                : ASR::down_cast<ASR::WhileLoop_t>(named)->m_name;
+            if (loop_name == nullptr) {
+                loop_name = s2c(al, "lfortran_do_"
+                    + std::to_string(x.m_target_id));
+            }
+            name = loop_name;
+        }
+        return ASRUtils::STMT(ASR::make_Cycle_t(al, x.base.base.loc, name));
+    }
+};
+
+// Replaces or drops the branches that BranchesIntoConstructs found.
+class ReplaceBranches : public ASR::ASRPassBaseWalkVisitor<ReplaceBranches> {
+public:
+    Allocator &al;
+    const std::map<const ASR::stmt_t*, ASR::stmt_t*> &replacements;
+
+    ReplaceBranches(Allocator &al,
+            const std::map<const ASR::stmt_t*, ASR::stmt_t*> &replacements)
+        : al{al}, replacements{replacements} {}
+
+    void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_body);
+        bool changed = false;
+        for (size_t i = 0; i < n_body; i++) {
+            auto r = replacements.find(m_body[i]);
+            if (r != replacements.end()) {
+                changed = true;
+                if (r->second) body.push_back(al, r->second);
+                continue;
+            }
+            visit_stmt(*m_body[i]);
+            body.push_back(al, m_body[i]);
+        }
+        if (changed) {
+            m_body = body.p;
+            n_body = body.size();
+        }
+    }
+
+    void visit_expr(const ASR::expr_t & /*x*/) {}
+    void visit_ttype(const ASR::ttype_t & /*x*/) {}
+};
+
+} // namespace
+
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
         diag::Diagnostics &diagnostics,
@@ -12296,6 +12579,20 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         return error;
     }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
+
+    {
+        BranchesIntoConstructs branches(al, diagnostics,
+            b.assigned_goto_branches);
+        branches.visit_procedures(tu->m_symtab);
+        if (diagnostics.has_error() && !compiler_options.continue_compilation) {
+            Error error;
+            return error;
+        }
+        if (!branches.replacements.empty()) {
+            ReplaceBranches replace(al, branches.replacements);
+            replace.visit_TranslationUnit(*tu);
+        }
+    }
 
     // A dummy argument declared as a variable is known to be a procedure only
     // once the body of its procedure is visited. A call to that procedure

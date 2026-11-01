@@ -18093,36 +18093,32 @@ public:
         // End the constructs that the branch leaves: those that do not
         // contain the target.
         auto target_scopes = goto_target_scopes.find(x.m_target_id);
-        bool enters_construct = false;
         if (target_scopes != goto_target_scopes.end()) {
             const std::vector<const ASR::stmt_t*> &scopes =
                 target_scopes->second;
             size_t kept = ASRUtils::common_construct_depth(
                 enclosing_constructs, scopes);
-            // A branch cannot enter a construct from outside it. Semantics
-            // makes such a GoTo, which is never executed, for the labels of
-            // an assigned GO TO without a label list: a branch into a BLOCK
-            // or ASSOCIATE construct would skip its declarations, and one
-            // into a loop its initialization.
-            enters_construct = kept < scopes.size();
-            if (!enters_construct) {
-                // The BLOCK and ASSOCIATE constructs among the kept ones
-                // are the outermost entries of `block_cleanups`.
-                size_t kept_blocks = 0;
-                for (size_t i = 0; i < kept; i++) {
-                    if (ASR::is_a<ASR::BlockCall_t>(*scopes[i]) ||
-                            ASR::is_a<ASR::AssociateBlockCall_t>(*scopes[i])) {
-                        kept_blocks++;
-                    }
-                }
-                leave_innermost_blocks(kept_blocks);
+            // A branch cannot enter a construct from outside it: into a
+            // BLOCK or ASSOCIATE construct it would skip the declarations,
+            // into a loop its initialization. The frontend rejects such a
+            // branch or rewrites it.
+            if (kept < scopes.size()) {
+                throw CodeGenError("a branch to label "
+                    + std::to_string(x.m_target_id)
+                    + " enters a construct from outside it", x.base.base.loc);
             }
+            // The BLOCK and ASSOCIATE constructs among the kept ones are the
+            // outermost entries of `block_cleanups`.
+            size_t kept_blocks = 0;
+            for (size_t i = 0; i < kept; i++) {
+                if (ASR::is_a<ASR::BlockCall_t>(*scopes[i]) ||
+                        ASR::is_a<ASR::AssociateBlockCall_t>(*scopes[i])) {
+                    kept_blocks++;
+                }
+            }
+            leave_innermost_blocks(kept_blocks);
         }
-        if (enters_construct) {
-            builder->CreateUnreachable();
-        } else {
-            builder->CreateBr(target);
-        }
+        builder->CreateBr(target);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_goto");
         start_new_block(bb);
     }

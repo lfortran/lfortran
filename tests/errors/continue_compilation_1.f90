@@ -4015,3 +4015,21 @@ contains
         end do
     end subroutine
 end module
+
+module cc1_branch_into_construct
+contains
+    subroutine cc1_branch_into_construct_sub()
+        integer :: i, k
+        k = 0
+        go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+        do i = 1, 3
+20          k = k + 1
+        end do
+        go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+        block
+            integer :: m
+30          m = k
+            k = m + 1
+        end block
+    end subroutine
+end module
