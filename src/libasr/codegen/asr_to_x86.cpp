@@ -55,6 +55,16 @@ public:
     X86Assembler m_a;
     std::map<std::string,std::string> m_global_strings;
     std::map<uint64_t, Sym> x86_symtab;
+
+    // The enclosing constructs that an EXIT or a CYCLE can name: an EXIT
+    // jumps to the label `exit`, a CYCLE to `cycle` (empty for a construct
+    // that is not a loop).
+    struct ConstructFrame {
+        const char *name;
+        std::string exit;
+        std::string cycle;
+    };
+    std::vector<ConstructFrame> construct_frames;
 public:
 
     ASRToX86Visitor(Allocator &al) : m_al{al}, m_a{al, false} {}
@@ -500,6 +510,9 @@ public:
         m_a.asm_je_label(".then" + id);
         m_a.asm_jmp_label(".else" + id);
         m_a.add_label(".then" + id);
+        if (x.m_name) {
+            construct_frames.push_back({x.m_name, ".endif" + id, ""});
+        }
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -507,6 +520,9 @@ public:
         m_a.add_label(".else" + id);
         for (size_t i=0; i<x.n_orelse; i++) {
             this->visit_stmt(*x.m_orelse[i]);
+        }
+        if (x.m_name) {
+            construct_frames.pop_back();
         }
         m_a.add_label(".endif" + id);
     }
@@ -524,13 +540,38 @@ public:
 
         // body
         m_a.add_label(".loop.body" + id);
+        construct_frames.push_back({x.m_name, ".loop.end" + id,
+            ".loop.head" + id});
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        construct_frames.pop_back();
         m_a.asm_jmp_label(".loop.head" + id);
 
         // end
         m_a.add_label(".loop.end" + id);
+    }
+
+    // An EXIT or a CYCLE without a name refers to the innermost loop.
+    const ConstructFrame &construct_frame(const char *name,
+            const Location &loc) {
+        for (auto f = construct_frames.rbegin();
+                f != construct_frames.rend(); ++f) {
+            if (name ? f->name && std::string(f->name) == name
+                    : !f->cycle.empty()) {
+                return *f;
+            }
+        }
+        throw CodeGenError("the construct that EXIT or CYCLE refers to was "
+            "not found", loc);
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) {
+        m_a.asm_jmp_label(construct_frame(x.m_stmt_name, x.base.base.loc).exit);
+    }
+
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        m_a.asm_jmp_label(construct_frame(x.m_stmt_name, x.base.base.loc).cycle);
     }
 
     // Push arguments to stack (last argument first)
