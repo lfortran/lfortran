@@ -1,3 +1,5 @@
+#include <functional>
+
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
@@ -867,6 +869,176 @@ public:
         builder->setInsertionPointToStart(contBlock);
     }
 
+    // A counted DO loop, lowered by the rules for native CFG backends
+    // (#16398). The start a, end b and step c are evaluated once:
+    //
+    //     i = a
+    //     [c not constant: c == 0 -> "Runtime error: zero step in a DO loop"]
+    //     cond_br (c > 0 ? a <= b : a >= b), body(n), orelse
+    //   body(r):           // EXIT -> end, CYCLE -> latch
+    //     ...
+    //   latch:
+    //     done = (i == b)  // step 1 or -1
+    //     done = (r == 0)  // other steps
+    //     i = i + c
+    //     cond_br done, orelse, body(r - 1)
+    //   orelse:
+    //     loop-else
+    //   end:
+    //
+    // The remaining trip count n = |b - a| / |c| is unsigned, so it is right
+    // even where b - a overflows the kind of i.
+    //
+    // `body` writes the loop body.
+    void emit_counted_loop(const ASR::do_loop_head_t &head, const char *name,
+            const std::function<void()> &body, ASR::stmt_t **orelse,
+            size_t n_orelse) {
+        mlir::Region *region = builder->getBlock()->getParent();
+        mlir::Block *endBlock = new mlir::Block();
+        if (!head.m_v) {
+            // A DO without loop control ends only by an EXIT, which skips
+            // the loop-else.
+            mlir::Block *bodyBlock = new mlir::Block();
+            branch_to(bodyBlock);
+            region->push_back(bodyBlock);
+            builder->setInsertionPointToStart(bodyBlock);
+            construct_frames.push_back({name, endBlock, bodyBlock});
+            body();
+            construct_frames.pop_back();
+            branch_to(bodyBlock);
+            region->push_back(endBlock);
+            builder->setInsertionPointToStart(endBlock);
+            return;
+        }
+        if (!ASRUtils::is_integer(*ASRUtils::expr_type(head.m_v))) {
+            throw CodeGenError("the MLIR backend supports only an integer "
+                "variable as the index of a DO loop", head.m_v->base.loc);
+        }
+        mlir::Type type = getType(ASRUtils::expr_type(head.m_v));
+        this->visit_expr2(*head.m_start);
+        mlir::Value start = tmp;
+        this->visit_expr2(*head.m_end);
+        mlir::Value end = tmp;
+        this->visit_expr2(*head.m_increment);
+        mlir::Value step = tmp;
+        this->visit_expr(*head.m_v);
+        mlir::Value v = tmp;
+        builder->create<mlir::LLVM::StoreOp>(loc, start, v);
+
+        int64_t step_value = 0;
+        bool step_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(head.m_increment), step_value);
+        if (step_known && step_value == 0) {
+            throw CodeGenError("a DO loop with a zero step reached the MLIR "
+                "backend", head.m_increment->base.loc);
+        }
+        bool unit_step = step_known && (step_value == 1 || step_value == -1);
+        auto constant = [&](int64_t value) -> mlir::Value {
+            return builder->create<mlir::LLVM::ConstantOp>(loc, type,
+                builder->getIntegerAttr(type, value));
+        };
+        auto icmp = [&](mlir::LLVM::ICmpPredicate p, mlir::Value l,
+                mlir::Value r) -> mlir::Value {
+            return builder->create<mlir::LLVM::ICmpOp>(loc, p, l, r);
+        };
+        mlir::Value zero = constant(0);
+        mlir::Value positive;
+        if (!step_known) {
+            mlir::Block *errorBlock = new mlir::Block();
+            mlir::Block *okBlock = new mlir::Block();
+            builder->create<mlir::LLVM::CondBrOp>(loc,
+                icmp(mlir::LLVM::ICmpPredicate::eq, step, zero),
+                errorBlock, okBlock);
+            region->push_back(errorBlock);
+            builder->setInsertionPointToStart(errorBlock);
+            error_exit("Runtime error: zero step in a DO loop\n");
+            region->push_back(okBlock);
+            builder->setInsertionPointToStart(okBlock);
+            positive = icmp(mlir::LLVM::ICmpPredicate::sgt, step, zero);
+        }
+        // `p` for a positive step, `n` for a negative one.
+        auto by_step_sign = [&](mlir::Value p, mlir::Value n) -> mlir::Value {
+            if (step_known) {
+                return step_value > 0 ? p : n;
+            }
+            return builder->create<mlir::LLVM::SelectOp>(loc, positive, p, n);
+        };
+        auto sub = [&](mlir::Value l, mlir::Value r) -> mlir::Value {
+            return builder->create<mlir::LLVM::SubOp>(loc, l, r);
+        };
+        mlir::Value enter = by_step_sign(
+            icmp(mlir::LLVM::ICmpPredicate::sle, start, end),
+            icmp(mlir::LLVM::ICmpPredicate::sge, start, end));
+
+        mlir::Block *bodyBlock = new mlir::Block();
+        mlir::Block *latchBlock = new mlir::Block();
+        mlir::Block *orelseBlock = n_orelse > 0 ? new mlir::Block() : endBlock;
+        llvm::SmallVector<mlir::Value, 1> count;
+        if (!unit_step) {
+            count.push_back(builder->create<mlir::LLVM::UDivOp>(loc,
+                by_step_sign(sub(end, start), sub(start, end)),
+                by_step_sign(step, sub(zero, step))));
+            bodyBlock->addArgument(type, loc);
+        }
+        builder->create<mlir::LLVM::CondBrOp>(loc, enter, bodyBlock, count,
+            orelseBlock, mlir::ValueRange{});
+
+        region->push_back(bodyBlock);
+        builder->setInsertionPointToStart(bodyBlock);
+        construct_frames.push_back({name, endBlock, latchBlock});
+        body();
+        construct_frames.pop_back();
+        branch_to(latchBlock);
+
+        region->push_back(latchBlock);
+        builder->setInsertionPointToStart(latchBlock);
+        mlir::Value i = builder->create<mlir::LLVM::LoadOp>(loc, type, v);
+        mlir::Value done;
+        llvm::SmallVector<mlir::Value, 1> next_count;
+        if (unit_step) {
+            done = icmp(mlir::LLVM::ICmpPredicate::eq, i, end);
+        } else {
+            mlir::Value r = bodyBlock->getArgument(0);
+            done = icmp(mlir::LLVM::ICmpPredicate::eq, r, zero);
+            next_count.push_back(sub(r, constant(1)));
+        }
+        builder->create<mlir::LLVM::StoreOp>(loc,
+            builder->create<mlir::LLVM::AddOp>(loc, i, step), v);
+        builder->create<mlir::LLVM::CondBrOp>(loc, done, orelseBlock,
+            mlir::ValueRange{}, bodyBlock, next_count);
+
+        if (n_orelse > 0) {
+            region->push_back(orelseBlock);
+            builder->setInsertionPointToStart(orelseBlock);
+            visit_body(orelse, n_orelse);
+            branch_to(endBlock);
+        }
+        region->push_back(endBlock);
+        builder->setInsertionPointToStart(endBlock);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        emit_counted_loop(x.m_head, x.m_name,
+            [&]() { visit_body(x.m_body, x.n_body); },
+            x.m_orelse, x.n_orelse);
+    }
+
+    // DO CONCURRENT runs its iterations in order, as nested counted loops
+    // with the first index outermost. A CYCLE goes to the next iteration of
+    // the innermost one, which is the next iteration of the construct.
+    void emit_concurrent_loops(const ASR::DoConcurrentLoop_t &x, size_t i) {
+        if (i == x.n_head) {
+            visit_body(x.m_body, x.n_body);
+            return;
+        }
+        emit_counted_loop(x.m_head[i], nullptr,
+            [&]() { emit_concurrent_loops(x, i + 1); }, nullptr, 0);
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        emit_concurrent_loops(x, 0);
+    }
+
     // An EXIT or a CYCLE without a name refers to the innermost loop.
     const ConstructFrame &construct_frame(const char *name,
             const Location &l) {
@@ -889,77 +1061,12 @@ public:
         branch_to(construct_frame(x.m_stmt_name, x.base.base.loc).cycle);
     }
 
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        //
-        // The following source code:
-        //
-        // do concurrent (i = 1: 10)
-        //   x(i) = i
-        // end do
-        //
-        // becomes:
-        //
-        // %i = llvm.alloca %0 x i32 : (i32) -> !llvm.ptr<i32>
-        // omp.parallel {
-        // %c1 = llvm.mlir.constant(1 : index) : i32
-        // %c10 = llvm.mlir.constant(10 : index) : i32
-        // %1 = llvm.add %c10, %c1  : i32
-        //   omp.wsloop {
-        //     omp.loop_nest(%arg0) : i32 = (%c1) to (%1) inclusive step (%c1) {
-        //       llvm.store %arg0, %i : !llvm.ptr<i32>
-        //       [...] // x(i) = i
-        //       omp.yield
-        //     }
-        //     omp.terminator
-        //   }
-        //   omp.terminator
-        // }
-        mlir::OpBuilder::InsertionGuard ipGuard(*builder);
-
-        mlir::omp::ParallelOp pOp{builder->create<mlir::omp::ParallelOp>(loc)};
-        mlir::Block *pOpBlock{builder->createBlock(&pOp.getRegion())};
-        builder->setInsertionPointToStart(pOpBlock);
-
-        this->visit_expr2(*x.m_head->m_start);
-        mlir::Value lowerBound{tmp};
-
-        this->visit_expr2(*x.m_head->m_end);
-        mlir::Value upperBound{tmp};
-        mlir::Value step{};
-
-        if (x.m_head->m_increment) {
-            this->visit_expr2(*x.m_head->m_increment);
-            step = tmp;
-        } else {
-            mlir::Type type{getType(ASRUtils::expr_type(x.m_head->m_v))};
-            mlir::Value one = builder->create<mlir::LLVM::ConstantOp>(
-                loc, type, builder->getIndexAttr(1)).getResult();
-            step = one;
-        }
-
-        mlir::omp::WsloopOp wslOp{builder->create<mlir::omp::WsloopOp>(loc)};
-        builder->create<mlir::omp::TerminatorOp>(loc);
-
-        mlir::Block *wslOpBlock{builder->createBlock(&wslOp.getRegion())};
-        builder->setInsertionPointToStart(wslOpBlock);
-
-        mlir::omp::LoopNestOp lnOp{builder->create<mlir::omp::LoopNestOp>(loc,
-            lowerBound, upperBound, step, true)};
-        builder->create<mlir::omp::TerminatorOp>(loc);
-        mlir::Block *lnOpBlock{builder->createBlock(&lnOp.getRegion())};
-        builder->setInsertionPointToStart(lnOpBlock);
-
-        lnOpBlock->addArgument(getType(ASRUtils::expr_type(x.m_head->m_v)), loc);
-        this->visit_expr(*x.m_head->m_v);
-        builder->create<mlir::LLVM::StoreOp>(loc, lnOpBlock->getArgument(0), tmp);
-
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-        }
-        builder->create<mlir::omp::YieldOp>(loc);
+    void visit_ErrorStop(const ASR::ErrorStop_t &) {
+        error_exit("ERROR STOP\n");
     }
 
-    void visit_ErrorStop(const ASR::ErrorStop_t &) {
+    // Print `msg` and exit with status 1.
+    void error_exit(const std::string &msg) {
         mlir::OpBuilder builder0(module->getBodyRegion());
         mlir::LLVM::LLVMFuncOp printf_fn =
             module->lookupSymbol<mlir::LLVM::LLVMFuncOp>("printf");
@@ -974,7 +1081,7 @@ public:
         mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
             builder->getI64Type(), builder->getIndexAttr(0));
         tmp = builder->create<mlir::LLVM::GEPOp>(loc, voidPtr, voidPtr,
-            createGlobalString("ERROR STOP\n"), zero);
+            createGlobalString(msg), zero);
         builder->create<mlir::LLVM::CallOp>(loc, printf_fn, tmp);
 
         mlir::LLVM::LLVMFuncOp exit_fn =
