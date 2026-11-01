@@ -1621,6 +1621,8 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     // arguments of a StringFormat and the array items of a READ or WRITE
     // are lowered for the LLVM backend alone.
     pass_manager.skip_pass("string_format_array_args");
+    // The MLIR backend lowers DO loops itself.
+    pass_manager.skip_pass("do_loops");
     if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
