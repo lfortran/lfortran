@@ -7,6 +7,32 @@
                     (SymbolTable
                         2
                         {
+                            __loop_unroll_group:
+                                (Variable
+                                    2
+                                    __loop_unroll_group
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             array:
                                 (Variable
                                     2
@@ -68,40 +94,49 @@
                         })
                     loop_unroll_integer8
                     []
-                    [(Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (IntegerConstant 1 (Integer 8) Decimal)
-                            Sub
-                            (IntegerConstant 1 (Integer 8) Decimal)
-                            (Integer 8)
-                            ()
-                        )
+                    [(DoLoop
                         ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (WhileLoop
-                        ()
-                        (IntegerCompare
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
-                                (Integer 8)
-                                ()
-                            )
-                            LtE
-                            (IntegerConstant 32 (Integer 8) Decimal)
-                            (Logical 4)
-                            ()
-                        )
+                        ((Var 2 __loop_unroll_group)
+                        (IntegerConstant 1 (Integer 8) Decimal)
+                        (IntegerConstant 1 (Integer 8) Decimal)
+                        (IntegerConstant 32 (Integer 8) Decimal))
                         [(Assignment
                             (Var 2 i)
-                            (IntegerBinOp
+                            (Var 2 __loop_unroll_group)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (ArrayItem
+                                (Var 2 array)
+                                [(()
                                 (Var 2 i)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (IntrinsicElementalFunction
+                                Int
+                                [(Var 2 i)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 __loop_unroll_group)
                                 Add
                                 (IntegerConstant 1 (Integer 8) Decimal)
                                 (Integer 8)
@@ -140,9 +175,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 2 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -179,9 +214,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 3 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -218,9 +253,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 4 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -257,9 +292,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 5 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -296,9 +331,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 6 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -335,9 +370,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 7 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -374,9 +409,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 8 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -413,9 +448,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 9 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -452,9 +487,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 10 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -491,9 +526,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 11 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -530,9 +565,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 12 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -569,9 +604,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 13 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -608,9 +643,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 14 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -647,9 +682,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 15 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -686,9 +721,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 16 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -725,9 +760,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 17 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -764,9 +799,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 18 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -803,9 +838,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 19 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -842,9 +877,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 20 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -881,9 +916,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 21 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -920,9 +955,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 22 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -959,9 +994,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 23 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -998,9 +1033,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 24 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1037,9 +1072,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 25 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1076,9 +1111,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 26 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1115,9 +1150,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 27 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1154,9 +1189,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 28 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1193,9 +1228,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 29 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1232,9 +1267,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 30 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1271,48 +1306,9 @@
                         (Assignment
                             (Var 2 i)
                             (IntegerBinOp
-                                (Var 2 i)
+                                (Var 2 __loop_unroll_group)
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
-                                (Integer 8)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (Assignment
-                            (ArrayItem
-                                (Var 2 array)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Integer 4)
-                                ColMajor
-                                ()
-                                .false.
-                            )
-                            (IntrinsicElementalFunction
-                                Int
-                                [(Var 2 i)]
-                                0
-                                (Integer 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 i)
-                            (IntegerBinOp
-                                (Var 2 i)
-                                Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (IntegerConstant 31 (Integer 8) Decimal)
                                 (Integer 8)
                                 ()
                             )
@@ -1348,44 +1344,37 @@
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (IntegerBinOp
-                            (Var 2 i)
-                            Add
-                            (IntegerConstant 1 (Integer 8) Decimal)
-                            (Integer 8)
-                            ()
-                        )
+                    (DoLoop
                         ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (ArrayItem
-                            (Var 2 array)
-                            [(()
-                            (Var 2 i)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                        ((Var 2 i)
+                        (IntegerConstant 33 (Integer 8) Decimal)
+                        (IntegerConstant 33 (Integer 8) Decimal)
+                        (IntegerConstant 1 (Integer 8) Decimal))
+                        [(Assignment
+                            (ArrayItem
+                                (Var 2 array)
+                                [(()
+                                (Var 2 i)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (IntrinsicElementalFunction
+                                Int
+                                [(Var 2 i)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
                             ()
                             .false.
-                        )
-                        (IntrinsicElementalFunction
-                            Int
-                            [(Var 2 i)]
-                            0
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
                     )
                     (Print
                         (StringFormat

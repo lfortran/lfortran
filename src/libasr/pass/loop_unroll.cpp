@@ -2,11 +2,12 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_builder.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <cmath>
+#include <algorithm>
 
 
 namespace LCompilers {
@@ -20,76 +21,74 @@ private:
 
     int64_t unroll_factor;
 
-    ASRUtils::ExprStmtDuplicator node_duplicator;
-
 public:
 
     LoopUnrollVisitor(Allocator &al_, size_t unroll_factor_) :
     PassVisitor(al_, nullptr),
-    unroll_factor(unroll_factor_), node_duplicator(al_)
+    unroll_factor(unroll_factor_)
     {
         pass_result.reserve(al, 1);
     }
 
+    /*
+    A DO loop of constant bounds and step, with n > factor iterations,
+
+        do i = a, b, c
+            ...
+        end do
+
+    becomes, with g = n / factor groups of factor iterations,
+
+        do group = a, a + (g - 1) * factor * c, factor * c
+            i = group
+            ...
+            i = group + c
+            ...
+            i = group + (factor - 1) * c
+            ...
+        end do
+        do i = a + g * factor * c, b, c
+            ...
+        end do
+
+    The second loop runs the remaining iterations and leaves i with its
+    value after the original loop. A loop whose body can leave an iteration
+    (EXIT, CYCLE, GO TO) is not unrolled.
+    */
     void visit_DoLoop(const ASR::DoLoop_t& x) {
-        ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
-        ASR::do_loop_head_t x_head = x.m_head;
-        ASR::expr_t* x_start = ASRUtils::expr_value(x_head.m_start);
-        ASR::expr_t* x_end = ASRUtils::expr_value(x_head.m_end);
-        ASR::expr_t* x_inc = ASRUtils::expr_value(x_head.m_increment);
-
-        int64_t _start, _end, _inc;
-        if( !ASRUtils::is_value_constant(x_start, _start) ||
-            !ASRUtils::is_value_constant(x_end, _end) ||
-            !ASRUtils::is_value_constant(x_inc, _inc) ) {
+        ASR::do_loop_head_t head = x.m_head;
+        if (!head.m_v || x.n_orelse > 0) {
             return ;
         }
-        int64_t loop_size = (_end - _start)/_inc + 1;
-        int64_t unroll_factor_ = std::min(unroll_factor, loop_size);
-        bool create_unrolled_loop = unroll_factor_ < loop_size;
+        int64_t a, b, c;
+        if( !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_start), a) ||
+            !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_end), b) ||
+            !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_increment), c) ||
+            c == 0 ) {
+            return ;
+        }
+        int64_t n = std::max<int64_t>((b - a + c) / c, 0);
         // Avoid unnecessary loop unrolling
-        if( !create_unrolled_loop ) {
+        if( n <= unroll_factor || !PassUtils::can_unroll_iterations(al, x) ) {
             return ;
         }
-        int64_t groups = loop_size / unroll_factor_;
-        int64_t new_end = _start + (groups - 1) * _inc * unroll_factor_ + (unroll_factor_ - 1) * _inc;
-        int64_t remaining_part = loop_size % unroll_factor_;
-        xx.m_head.m_end = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-            x_end->base.loc, new_end, ASRUtils::type_get_past_allocatable_pointer(
-                ASRUtils::expr_type(x_head.m_v))));
-
-        Vec<ASR::stmt_t*> init_and_whileloop = PassUtils::replace_doloop(al, x);
-        ASR::stmt_t* whileloop_stmt = init_and_whileloop[1];
-        ASR::WhileLoop_t* whileloop = ASR::down_cast<ASR::WhileLoop_t>(whileloop_stmt);
-        ASR::stmt_t* init_stmt = init_and_whileloop[0];
-
-        Vec<ASR::stmt_t*> unrolled_loop;
-        unrolled_loop.reserve(al, whileloop->n_body * unroll_factor_);
-        for( size_t i = 0; i < whileloop->n_body; i++ ) {
-            unrolled_loop.push_back(al, whileloop->m_body[i]);
-        }
-
-        for( int64_t j = 1; j < unroll_factor_; j++ ) {
-            for( size_t i = 0; i < whileloop->n_body; i++ ) {
-                node_duplicator.success = true;
-                ASR::stmt_t* m_body_copy = node_duplicator.duplicate_stmt(whileloop->m_body[i]);
-                if( !node_duplicator.success ) {
-                    return ;
-                }
-                unrolled_loop.push_back(al, m_body_copy);
-            }
-        }
-
-        pass_result.push_back(al, init_stmt);
-        ASR::stmt_t* unrolled_whileloop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, x.base.base.loc,
-            whileloop->m_name, whileloop->m_test, unrolled_loop.p, unrolled_loop.size(), x.m_orelse, x.n_orelse));
-        pass_result.push_back(al, unrolled_whileloop);
-        for( int64_t i = 0; i < remaining_part; i++ ) {
-            for( size_t i = 0; i < whileloop->n_body; i++ ) {
-                ASR::stmt_t* m_body_copy = node_duplicator.duplicate_stmt(whileloop->m_body[i]);
-                pass_result.push_back(al, m_body_copy);
-            }
-        }
+        int64_t groups = n / unroll_factor;
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(head.m_v));
+        std::string group_name = current_scope->get_unique_name("__loop_unroll_group");
+        ASR::expr_t* group = PassUtils::create_auxiliary_variable(
+            x.base.base.loc, group_name, al, current_scope, type,
+            ASR::intentType::Local, nullptr, nullptr);
+        ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+        std::vector<ASR::stmt_t*> body = PassUtils::unroll_iterations(al, x,
+            group, c, unroll_factor);
+        pass_result.push_back(al, builder.DoLoop(group, builder.i_t(a, type),
+            builder.i_t(a + (groups - 1) * unroll_factor * c, type), body,
+            builder.i_t(unroll_factor * c, type)));
+        std::vector<ASR::stmt_t*> remainder(x.m_body, x.m_body + x.n_body);
+        pass_result.push_back(al, builder.DoLoop(head.m_v,
+            builder.i_t(a + groups * unroll_factor * c, type), head.m_end,
+            remainder, head.m_increment));
     }
 
 };
