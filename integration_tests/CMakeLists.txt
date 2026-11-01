@@ -693,7 +693,7 @@ RUN(NAME if_09 LABELS gfortran llvm)
 
 RUN(NAME while_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran mlir)
 RUN(NAME while_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran mlir x86)
-RUN(NAME while_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm EXTRA_ARGS --fixed-form fortran)
+RUN(NAME while_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm x86 EXTRA_ARGS --fixed-form fortran)
 RUN(NAME while_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME while_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME while_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -707,7 +707,7 @@ RUN(NAME doloop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp x86 wasm 
 RUN(NAME doloop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir x86)
 RUN(NAME doloop_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # uses goto target
 RUN(NAME doloop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # uses goto
-RUN(NAME doloop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir)
+RUN(NAME doloop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir x86)
 RUN(NAME doloop_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir x86)
 RUN(NAME doloop_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm fortran mlir x86)
 RUN(NAME doloop_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nested subroutine
