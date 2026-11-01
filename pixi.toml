@@ -138,6 +138,16 @@ clangdev = "==22.1.0"
 libunwind = "==1.7.2"
 clangdev = "==23.1.0"
 
+# The MLIR backend, with the MLIR release of Quick's MLIR job. Build it with
+# `pixi run -e mlir build -DWITH_MLIR=yes` (see doc/src/installation.md).
+[feature.mlir]
+platforms = ["linux-64"]
+[feature.mlir.dependencies]
+llvmdev = "==19.1.6"
+mlir = "==19.1.6"
+clangdev = "==19.1.6"
+libunwind = "==1.7.2"
+
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
 [feature.build]
@@ -389,6 +399,7 @@ llvm20 = {features = ["llvm20", "build", "test"]}
 llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}
 llvm23 = {features = ["llvm23", "build", "test"]}
+mlir = {features = ["mlir", "build", "test"]}
 test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
