@@ -29,7 +29,8 @@ the number of registers available with the CPU.
 */
 enum Block {
     LOOP = 0,
-    IF = 1
+    IF = 1,
+    BLOCK = 2
 };
 
 class X64Visitor : public WASMDecoder<X64Visitor>,
@@ -147,6 +148,16 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         }
     }
 
+    void visit_Block() {
+        std::string label = std::to_string(block_id);
+        blocks.push_back({block_id++, Block::BLOCK});
+        {
+            decode_instructions();
+        }
+        m_a.add_label(".block.end_" + label);
+        blocks.pop_back();
+    }
+
     void visit_Loop() {
         std::string label = std::to_string(block_id);
         blocks.push_back({block_id++, Block::LOOP});
@@ -187,6 +198,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
             */
             case Block::LOOP: m_a.asm_jmp_label(".loop.head_" + label); break;
             case Block::IF: m_a.asm_jmp_label(".endif_" + label); break;
+            case Block::BLOCK: m_a.asm_jmp_label(".block.end_" + label); break;
         }
     }
 

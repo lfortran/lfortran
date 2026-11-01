@@ -219,6 +219,29 @@ class WASMAssembler: public WASM_INSTS_VISITOR::WASMInstsAssembler<WASMAssembler
         cur_loop_nest_lvl = prev_cur_loop_nest_lvl;
     }
 
+    // A `block` around what `body` emits: a branch to it goes to its end.
+    // The label of the block is `nest_lvl` inside `body`.
+    void emit_block(std::function<void()> body) {
+        wasm::emit_b8(m_code_section, m_al, 0x02);  // emit block start
+        wasm::emit_b8(m_code_section, m_al, 0x40);  // empty block type
+        nest_lvl++;
+        body();
+        nest_lvl--;
+        wasm::emit_expr_end(m_code_section, m_al); // instructions end
+    }
+
+    // A `loop` around what `body` emits, without a test: a branch to it
+    // goes back to its start, and the end of `body` leaves it. The label of
+    // the loop is `nest_lvl` inside `body`.
+    void emit_plain_loop(std::function<void()> body) {
+        wasm::emit_b8(m_code_section, m_al, 0x03);  // emit loop start
+        wasm::emit_b8(m_code_section, m_al, 0x40);  // empty block type
+        nest_lvl++;
+        body();
+        nest_lvl--;
+        wasm::emit_expr_end(m_code_section, m_al); // instructions end
+    }
+
     uint32_t emit_func_type(std::vector<wasm::var_type> &params, std::vector<wasm::var_type> &results) {
         wasm::emit_b8(m_type_section, m_al, 0x60);
 
