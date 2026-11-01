@@ -72,6 +72,9 @@ jobs:
             fi
             bash ci/test_llvm_integration.sh --platform
 
+  # Besides the out-of-source configuration, this job builds the way a user
+  # without Pixi does: the Prefix `shell` is removed from the environment, so
+  # CMake must run build0.sh with Bash, and the CI scripts run with Bash too.
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
@@ -89,6 +92,14 @@ jobs:
           create-args: >-
             python=3.10
 
+      - name: Remove the Prefix shell
+        shell: bash -e -l {0}
+        run: |
+            micromamba remove -y -n lf shell
+            if command -v shell; then
+                echo "shell is still installed" && exit 1
+            fi
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -98,7 +109,7 @@ jobs:
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
-            ( cd src && ./build0.sh )
+            # No explicit ./build0.sh: CMake must run it itself, with Bash.
             export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
@@ -113,6 +124,7 @@ jobs:
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            grep '^LFORTRAN_SHELL:FILEPATH=.*/bash$' builddir/CMakeCache.txt
 
             cmake --build builddir  -j16 --target install
 
@@ -135,7 +147,7 @@ jobs:
         shell: bash -e -l {0}
         working-directory: src
         run: |
-            shell ci/test_cpp_version.sh
+            bash ci/test_cpp_version.sh
 
       - name: Test Moved Installation
         shell: bash -e -l {0}

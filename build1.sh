@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # `pixi run build [cmake_args...]` runs this with the Prefix `shell` as
-# `build1.sh <build_dir> [cmake_args...]`. Keep to syntax that Bash also
-# supports.
+# `build1.sh <build_dir> [cmake_args...]`. Builds without Pixi run it with
+# Bash. Keep to syntax that both support.
 
 set -e
 set -x
