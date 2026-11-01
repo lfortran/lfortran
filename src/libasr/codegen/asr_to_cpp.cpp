@@ -749,10 +749,18 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        // A RangePolicy runs one index with unit step; any other DO
+        // CONCURRENT runs as nested loops.
+        int64_t step = 0;
+        if (x.n_head != 1 || !ASRUtils::extract_value(
+                ASRUtils::expr_value(x.m_head[0].m_increment), step)
+                || step != 1) {
+            BaseCCPPVisitor<ASRToCPPVisitor>::visit_DoConcurrentLoop(x);
+            return;
+        }
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "Kokkos::parallel_for(";
         out += "Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(";
-        LCOMPILERS_ASSERT(x.n_head == 1);
         visit_expr(*x.m_head[0].m_start);
         out += src + ", ";
         visit_expr(*x.m_head[0].m_end);
@@ -762,10 +770,14 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         out += ", KOKKOS_LAMBDA(const long " + std::string(loop_var->m_name)
                 + ") {\n";
         indentation_level += 1;
+        // A CYCLE ends the call of the lambda for this iteration.
+        construct_frames.push_back({nullptr, true, false, "", ""});
+        construct_frames.back().is_lambda = true;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
             out += src;
         }
+        construct_frames.pop_back();
         out += indent + "});\n";
         indentation_level -= 1;
         src = out;

@@ -12,6 +12,7 @@
  */
 
 #include <algorithm>
+#include <functional>
 #include <cctype>
 #include <memory>
 #include <set>
@@ -126,6 +127,9 @@ public:
         bool is_loop;
         bool has_else;
         std::string exit_label, cycle_label;
+        // The body of a C++ lambda (see asr_to_cpp.cpp), which a CYCLE
+        // leaves by returning.
+        bool is_lambda = false;
     };
     std::vector<ConstructFrame> construct_frames;
     size_t construct_label_count = 0;
@@ -3531,6 +3535,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         for (size_t i = f + 1; i < construct_frames.size(); i++) {
             innermost_loop = innermost_loop && !construct_frames[i].is_loop;
         }
+        if (innermost_loop && frame.is_lambda && !exit) {
+            return indent + "return;\n";
+        }
         if (innermost_loop && !(exit && frame.has_else)) {
             return indent + (exit ? "break;\n" : "continue;\n");
         }
@@ -3549,14 +3556,23 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // frame.
     std::string close_loop(ASR::stmt_t **body, size_t n_body,
             ASR::stmt_t **orelse, size_t n_orelse) {
+        return close_loop([&]() {
+            std::string out;
+            for (size_t i = 0; i < n_body; i++) {
+                self().visit_stmt(*body[i]);
+                out += check_tmp_buffer() + src;
+            }
+            return out;
+        }, orelse, n_orelse);
+    }
+
+    // As above, with the body that `write_body` returns.
+    std::string close_loop(const std::function<std::string()> &write_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string inner(indent + std::string(indentation_spaces, ' '));
-        std::string out;
         indentation_level += 1;
-        for (size_t i = 0; i < n_body; i++) {
-            self().visit_stmt(*body[i]);
-            out += check_tmp_buffer() + src;
-        }
+        std::string out = write_body();
         indentation_level -= 1;
         const ConstructFrame &frame = construct_frames.back();
         if (!frame.cycle_label.empty() && !is_c) {
@@ -3706,6 +3722,26 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         construct_frames.push_back({x.m_name, true, x.n_orelse > 0, "", ""});
         out += close_loop(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
         src = out;
+    }
+
+    // A DO CONCURRENT runs its iterations in order, as nested loops over its
+    // indices from the `h`-th on, the first index outermost.
+    std::string concurrent_loops(const ASR::DoConcurrentLoop_t &x, size_t h) {
+        std::string out = counted_for(x.m_head[h], x.m_body, x.n_body,
+            x.base.base.loc);
+        construct_frames.push_back({nullptr, true, false, "", ""});
+        if (h + 1 == x.n_head) {
+            out += close_loop(x.m_body, x.n_body, nullptr, 0);
+        } else {
+            out += close_loop([&]() { return concurrent_loops(x, h + 1); },
+                nullptr, 0);
+        }
+        return out;
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        LCOMPILERS_ASSERT(x.n_head > 0);
+        src = concurrent_loops(x, 0);
     }
 
     void visit_If(const ASR::If_t &x) {
