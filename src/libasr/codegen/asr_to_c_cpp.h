@@ -12,6 +12,7 @@
  */
 
 #include <algorithm>
+#include <functional>
 #include <cctype>
 #include <memory>
 #include <set>
@@ -20,6 +21,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/c_utils.h>
+#include <libasr/codegen/c_loop_control.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
@@ -113,6 +115,24 @@ public:
     std::map<uint64_t, SymbolInfo> sym_info;
     std::map<uint64_t, std::string> const_var_names;
     std::map<int64_t, std::string> gotoid2name;
+
+    // The constructs being written that an EXIT or a CYCLE can leave,
+    // innermost last: the loops, and the BLOCK, named IF and named SELECT
+    // CASE constructs. A `break` or a `continue` leaves only the innermost
+    // C loop, so leaving any other construct goes to a label of it, and so
+    // does leaving a loop with a loop-else, which runs only when the loop
+    // completes.
+    struct ConstructFrame {
+        const char *name;
+        bool is_loop;
+        bool has_else;
+        std::string exit_label, cycle_label;
+        // The body of a C++ lambda (see asr_to_cpp.cpp), which a CYCLE
+        // leaves by returning.
+        bool is_lambda = false;
+    };
+    std::vector<ConstructFrame> construct_frames;
+    size_t construct_label_count = 0;
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
     std::string forward_decl_functions;
@@ -872,9 +892,17 @@ R"(#include <stdio.h>
                 decl += check_tmp_buffer() + d;
             }
         }
+        construct_frames.push_back({block->m_name, false, false, "", ""});
         for (size_t i=0; i<block->n_body; i++) {
             self().visit_stmt(*block->m_body[i]);
             body += src;
+        }
+        std::string exit_label = construct_frames.back().exit_label;
+        construct_frames.pop_back();
+        if (!exit_label.empty()) {
+            close_paranthesis += std::string(
+                (indentation_level - 1)*indentation_spaces, ' ')
+                + exit_label + ": ;\n";
         }
         decl += check_tmp_buffer();
         src = open_paranthesis + decl + body + close_paranthesis;
@@ -3319,6 +3347,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         this->visit_expr(*x.m_test);
         std::string var = std::move(src);
         std::string out = indent + "if (";
+        // Only a named SELECT CASE construct can be left by an EXIT.
+        if (x.m_name != nullptr) {
+            construct_frames.push_back({x.m_name, false, false, "", ""});
+        }
 
         for (size_t i = 0; i < x.n_body; i++) {
             if (i > 0)
@@ -3387,6 +3419,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             out += indent + "}\n";
             indentation_level -= 1;
         }
+        if (x.m_name != nullptr) {
+            std::string exit_label = construct_frames.back().exit_label;
+            construct_frames.pop_back();
+            if (!exit_label.empty()) {
+                out += indent + exit_label + ": ;\n";
+            }
+        }
         src = check_tmp_buffer() + out;
     }
 
@@ -3398,24 +3437,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         out += src + ") {\n";
         bracket_open--;
         out = check_tmp_buffer() + out;
-        indentation_level += 1;
-        for (size_t i=0; i<x.n_body; i++) {
-            self().visit_stmt(*x.m_body[i]);
-            out += check_tmp_buffer() + src;
-        }
-        out += indent + "}\n";
-        indentation_level -= 1;
+        construct_frames.push_back({x.m_name, true, x.n_orelse > 0, "", ""});
+        out += close_loop(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
         src = out;
     }
 
-    void visit_Exit(const ASR::Exit_t & /* x */) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "break;\n";
+    void visit_Exit(const ASR::Exit_t &x) {
+        src = leave_construct(
+            construct_frame(x.m_stmt_name, x.base.base.loc), true);
     }
 
-    void visit_Cycle(const ASR::Cycle_t & /* x */) {
-        std::string indent(indentation_level*indentation_spaces, ' ');
-        src = indent + "continue;\n";
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        src = leave_construct(
+            construct_frame(x.m_stmt_name, x.base.base.loc), false);
     }
 
     void visit_Return(const ASR::Return_t & /* x */) {
@@ -3478,80 +3512,236 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
-        std::string current_body_copy = current_body;
-        current_body = "";
-        std::string loop_end_decl = "";
+    // The index in construct_frames of the construct that an EXIT or a
+    // CYCLE naming `name` leaves: the innermost loop if it names none.
+    size_t construct_frame(const char *name, const Location &loc) {
+        for (size_t i = construct_frames.size(); i-- > 0;) {
+            const ConstructFrame &f = construct_frames[i];
+            if (name == nullptr ? f.is_loop
+                    : f.name != nullptr && std::string(f.name) == name) {
+                return i;
+            }
+        }
+        throw CodeGenError("exit or cycle outside the construct it leaves",
+            loc);
+    }
+
+    // The statement that leaves the construct construct_frames[f], to its
+    // end if `exit` and to the next iteration otherwise.
+    std::string leave_construct(size_t f, bool exit) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "for (";
+        ConstructFrame &frame = construct_frames[f];
+        bool innermost_loop = frame.is_loop;
+        for (size_t i = f + 1; i < construct_frames.size(); i++) {
+            innermost_loop = innermost_loop && !construct_frames[i].is_loop;
+        }
+        if (innermost_loop && frame.is_lambda && !exit) {
+            return indent + "return;\n";
+        }
+        if (innermost_loop && !(exit && frame.has_else)) {
+            return indent + (exit ? "break;\n" : "continue;\n");
+        }
+        std::string &label = exit ? frame.exit_label : frame.cycle_label;
+        if (label.empty()) {
+            label = std::string("__lfortran_") + (exit ? "exit" : "cycle")
+                + "_" + (frame.name ? std::string(frame.name) + "_" : "")
+                + std::to_string(construct_label_count++);
+        }
+        return indent + "goto " + label + ";\n";
+    }
+
+    // Writes the body of the loop that the frame on top of
+    // construct_frames describes and the `}` that closes it, followed by
+    // its loop-else and the labels that leaving it goes to, and removes the
+    // frame.
+    std::string close_loop(ASR::stmt_t **body, size_t n_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        return close_loop([&]() {
+            std::string out;
+            for (size_t i = 0; i < n_body; i++) {
+                self().visit_stmt(*body[i]);
+                out += check_tmp_buffer() + src;
+            }
+            return out;
+        }, orelse, n_orelse);
+    }
+
+    // As above, with the body that `write_body` returns.
+    std::string close_loop(const std::function<std::string()> &write_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string inner(indent + std::string(indentation_spaces, ' '));
+        indentation_level += 1;
+        std::string out = write_body();
+        indentation_level -= 1;
+        const ConstructFrame &frame = construct_frames.back();
+        if (!frame.cycle_label.empty() && !is_c) {
+            // The body goes in a block of its own, so that the jump to the
+            // label at its end does not enter the scope of a declaration
+            // in it, which C++ forbids.
+            std::string block = inner + "{\n";
+            size_t line = 0;
+            while (line < out.size()) {
+                size_t next = out.find('\n', line);
+                next = next == std::string::npos ? out.size() : next + 1;
+                if (out[line] != '\n') {
+                    block += std::string(indentation_spaces, ' ');
+                }
+                block += out.substr(line, next - line);
+                line = next;
+            }
+            out = block + inner + "}\n";
+        }
+        if (!frame.cycle_label.empty()) {
+            out += inner + frame.cycle_label + ": ;\n";
+        }
+        out += indent + "}\n";
+        std::string exit_label = frame.exit_label;
+        construct_frames.pop_back();
+        for (size_t i = 0; i < n_orelse; i++) {
+            self().visit_stmt(*orelse[i]);
+            out += check_tmp_buffer() + src;
+        }
+        if (!exit_label.empty()) {
+            out += indent + exit_label + ": ;\n";
+        }
+        return out;
+    }
+
+    // The end or the step `e` of a counted loop as its `for` header writes
+    // it. Fortran evaluates both once, before the loop: one that the loop
+    // cannot change (see CUtils::loop_control_invariant) is written as it
+    // is, anything else is copied into a constant declared in `decl`.
+    std::string loop_control(ASR::expr_t *e, const char *role,
+            ASR::ttype_t *type, const std::set<ASR::symbol_t*> &modified,
+            const std::set<ASR::symbol_t*> &unshared, std::string &decl) {
+        self().visit_expr(*e);
+        if (CUtils::loop_control_invariant(e, modified, unshared)) {
+            return src;
+        }
+        std::string name = current_scope->get_unique_name(
+            std::string("__lfortran_") + role + "_"
+            + std::to_string(loop_end_count++));
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        decl += indent + "const " + CUtils::get_c_type_from_ttype_t(type, is_c)
+            + " " + name + " = " + src + ";\n";
+        return name;
+    }
+
+    // Opens the C `for` of the counted loop `head` with the body
+    // `loop_body`, declaring first the copies of its end and step that it
+    // needs. The loop tests `<=` for a positive step and `>=` for a
+    // negative one, so it ends with the index one step past the last
+    // iteration, and a loop that runs no iteration leaves it at the start,
+    // as Fortran has it. Only a step whose sign is not evident (see
+    // CUtils::loop_step_sign) needs a test that depends on it.
+    std::string counted_for(const ASR::do_loop_head_t &head,
+            ASR::stmt_t **loop_body, size_t n_body, const Location &loc) {
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        if (head.m_v == nullptr) {
+            return indent + "for (;;) {\n";
+        }
+        LCOMPILERS_ASSERT(head.m_start != nullptr && head.m_end != nullptr
+            && head.m_increment != nullptr);
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(head.m_v));
+        CUtils::LoopModifiedVariables body;
+        body.write(head.m_v);
+        for (size_t i = 0; i < n_body; i++) {
+            body.visit_stmt(*loop_body[i]);
+        }
+        // Without a call, only the statements of the loop can modify a
+        // variable while it runs, and `body` has seen all of them: the
+        // variables of the end and the step (all of which `controls`
+        // collects) can then change only if `body` modifies them.
+        CUtils::LoopModifiedVariables controls;
+        if (!body.calls) {
+            controls.write(head.m_end);
+            controls.write(head.m_increment);
+        }
+        int64_t step = 0;
+        bool step_known = ASRUtils::is_integer(*type)
+            && ASRUtils::extract_value(
+                ASRUtils::expr_value(head.m_increment), step);
+        int sign = 0;
+        if (step_known) {
+            if (step == 0) {
+                throw CodeGenError("a DO loop with a zero step reached the "
+                    "C code generator", loc);
+            }
+            sign = step > 0 ? 1 : -1;
+        } else if (ASRUtils::is_integer(*type)) {
+            sign = CUtils::loop_step_sign(head.m_increment, {});
+        } else {
+            double real_step = 0;
+            if (ASRUtils::extract_value(
+                    ASRUtils::expr_value(head.m_increment), real_step)) {
+                sign = real_step > 0 ? 1 : (real_step < 0 ? -1 : 0);
+            }
+        }
+        bracket_open++;
+        std::string decl;
+        std::string end = loop_control(head.m_end, "end", type,
+            body.modified, controls.modified, decl);
+        std::string inc = step_known ? std::string()
+            : loop_control(head.m_increment, "step", type, body.modified,
+                controls.modified, decl);
         // Spelled as any other reference to the variable, which need not be
         // a local of its own (one in a common block, say).
-        self().visit_expr(*x.m_head.m_v);
-        std::string lvname = src;
-        ASR::expr_t *a=x.m_head.m_start;
-        ASR::expr_t *b=x.m_head.m_end;
-        ASR::expr_t *c=x.m_head.m_increment;
-        LCOMPILERS_ASSERT(a);
-        LCOMPILERS_ASSERT(b);
-        LCOMPILERS_ASSERT(c);
-        int increment = 1;
-        bool is_c_constant = false;
-        if (ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
-            ASR::expr_t* c_value = ASRUtils::expr_value(c);
-            is_c_constant = ASRUtils::extract_value(c_value, increment);
-        }
-
-        if( is_c_constant ) {
-            std::string cmp_op;
-            if (increment > 0) {
-                cmp_op = "<=";
-            } else {
-                cmp_op = ">=";
-            }
-
-            out += lvname + "=";
-            self().visit_expr(*a);
-            out += src + "; " + lvname + cmp_op;
-            self().visit_expr(*b);
-            out += src + "; " + lvname;
-            if (increment == 1) {
-                out += "++";
-            } else if (increment == -1) {
-                out += "--";
-            } else {
-                out += "+=" + std::to_string(increment);
-            }
+        self().visit_expr(*head.m_v);
+        std::string v = src;
+        std::string out = indent + "for (" + v + " = ";
+        self().visit_expr(*head.m_start);
+        out += src + "; ";
+        if (sign != 0) {
+            out += v + (sign > 0 ? " <= " : " >= ") + end;
         } else {
-            this->visit_expr(*c);
-            std::string increment_ = std::move(src);
-            self().visit_expr(*b);
-            std::string do_loop_end = std::move(src);
-            std::string do_loop_end_name = current_scope->get_unique_name(
-                "loop_end___" + std::to_string(loop_end_count));
-            loop_end_count += 1;
-            loop_end_decl = indent + CUtils::get_c_type_from_ttype_t(ASRUtils::expr_type(b), is_c) +
-                            " " + do_loop_end_name + " = " + do_loop_end + ";\n";
-            out += lvname + " = ";
-            self().visit_expr(*a);
-            out += src + "; ";
-            out += "((" + increment_ + " >= 0) && (" +
-                    lvname + " <= " + do_loop_end_name + ")) || (("
-                    + increment_ + " < 0) && (" + lvname + " >= "
-                    + do_loop_end_name + ")); " + lvname;
-            out += " += " + increment_;
+            out += inc + " > 0 ? " + v + " <= " + end + " : " + v + " >= "
+                + end;
         }
-
+        out += "; " + v;
+        if (!step_known) {
+            out += " += " + inc;
+        } else if (step == 1) {
+            out += "++";
+        } else if (step == -1) {
+            out += "--";
+        } else if (step > 0) {
+            out += " += " + std::to_string(step);
+        } else {
+            out += " -= " + std::to_string(-step);
+        }
         out += ") {\n";
-        indentation_level += 1;
-        for (size_t i=0; i<x.n_body; i++) {
-            self().visit_stmt(*x.m_body[i]);
-            current_body += src;
+        bracket_open--;
+        return check_tmp_buffer() + decl + out;
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        std::string out = counted_for(x.m_head, x.m_body, x.n_body,
+            x.base.base.loc);
+        construct_frames.push_back({x.m_name, true, x.n_orelse > 0, "", ""});
+        out += close_loop(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
+        src = out;
+    }
+
+    // A DO CONCURRENT runs its iterations in order, as nested loops over its
+    // indices from the `h`-th on, the first index outermost.
+    std::string concurrent_loops(const ASR::DoConcurrentLoop_t &x, size_t h) {
+        std::string out = counted_for(x.m_head[h], x.m_body, x.n_body,
+            x.base.base.loc);
+        construct_frames.push_back({nullptr, true, false, "", ""});
+        if (h + 1 == x.n_head) {
+            out += close_loop(x.m_body, x.n_body, nullptr, 0);
+        } else {
+            out += close_loop([&]() { return concurrent_loops(x, h + 1); },
+                nullptr, 0);
         }
-        out += current_body;
-        out += indent + "}\n";
-        indentation_level -= 1;
-        src = loop_end_decl + out;
-        current_body = current_body_copy;
+        return out;
+    }
+
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        LCOMPILERS_ASSERT(x.n_head > 0);
+        src = concurrent_loops(x, 0);
     }
 
     void visit_If(const ASR::If_t &x) {
@@ -3565,6 +3755,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bracket_open--;
         out = check_tmp_buffer() + out;
         indentation_level += 1;
+        // Only a named IF construct can be left by an EXIT.
+        if (x.m_name != nullptr) {
+            construct_frames.push_back({x.m_name, false, false, "", ""});
+        }
         for (size_t i=0; i<x.n_body; i++) {
             self().visit_stmt(*x.m_body[i]);
             current_body += check_tmp_buffer() + src;
@@ -3582,6 +3776,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
             out += current_body;
             out += indent + "}\n";
+        }
+        if (x.m_name != nullptr) {
+            std::string exit_label = construct_frames.back().exit_label;
+            construct_frames.pop_back();
+            if (!exit_label.empty()) {
+                out += indent + exit_label + ": ;\n";
+            }
         }
         indentation_level -= 1;
         src = out;

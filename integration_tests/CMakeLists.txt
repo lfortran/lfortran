@@ -727,21 +727,21 @@ RUN(NAME doloop_22 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loo
 RUN(NAME doloop_23 LABELS gfortran llvm)
 RUN(NAME doloop_24 LABELS gfortran llvm c cpp)
 
-RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME cycle_and_exit3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME cycle_and_exit4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME cycle_and_exit5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME cycle_and_exit6 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
+RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
+RUN(NAME cycle_and_exit3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
+RUN(NAME cycle_and_exit4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
+RUN(NAME cycle_and_exit5 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
+RUN(NAME cycle_and_exit6 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
 
-RUN(NAME goto_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME goto_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
 RUN(NAME goto_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME goto_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME goto_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME goto_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME goto_06 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME goto_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
+RUN(NAME goto_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
+RUN(NAME goto_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
+RUN(NAME goto_06 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME goto_07 LABELS gfortran llvm)
-RUN(NAME goto_08 LABELS gfortran llvm)
+RUN(NAME goto_08 LABELS gfortran llvm c cpp)
 RUN(NAME goto_09 LABELS gfortran llvm)
 
 RUN(NAME subroutines_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir fortran)
@@ -4844,7 +4844,7 @@ RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
     EXTRA_ARGS --separate-compilation)
 
-RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
 
 RUN(NAME iso_c_binding_01 LABELS gfortran llvm fortran)
 RUN(NAME iso_c_binding_02 LABELS gfortran llvm)
@@ -4858,16 +4858,16 @@ RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray f
 RUN(NAME array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME array_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 
-RUN(NAME do_loop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_loop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
 RUN(NAME do_loop_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop)
-RUN(NAME do_loop_04 LABELS gfortran llvm)
-RUN(NAME do_loop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME do_loop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME do_loop_04 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
+RUN(NAME do_loop_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME do_loop_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME do_loop_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME do_loop_09 LABELS gfortran llvm)
-RUN(NAME do_loop_10 LABELS gfortran llvm EXTRA_ARGS --use-loop-variable-after-loop)
+RUN(NAME do_loop_09 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_10 LABELS gfortran llvm c cpp EXTRA_ARGS --use-loop-variable-after-loop)
 RUN(NAME do_loop_11 LABELS gfortran c cpp)
 # Pin an x86-64 CPU whose tuning enables upper-bound loop unrolling, which
 # exposes an LLVM 7 and 8 miscompile on any x86-64 host.
@@ -4878,11 +4878,13 @@ RUN(NAME do_loop_13 LABELS gfortran llvm)
 RUN(NAME do_loop_14 LABELS gfortran llvm)
 RUN(NAME do_loop_15 FAIL LABELS gfortran llvm GFORTRAN_ARGS -fcheck=do)
 RUN(NAME do_loop_16 LABELS gfortran llvm)
-RUN(NAME do_loop_17 LABELS gfortran llvm)
-RUN(NAME do_loop_18 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
-RUN(NAME do_loop_19 LABELS gfortran llvm)
-RUN(NAME do_loop_20 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
-RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c EXTRA_ARGS --fast)
+RUN(NAME do_loop_17 LABELS gfortran llvm c)
+RUN(NAME do_loop_18 LABELS gfortran llvm c EXTRA_ARGS --fixed-form --implicit-typing GFORTRAN_ARGS -ffixed-form)
+RUN(NAME do_loop_19 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_20 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME do_loop_21 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_22 LABELS gfortran llvm c cpp)
+RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 
 
@@ -5498,7 +5500,7 @@ RUN(NAME equivalence_38 LABELS gfortran llvm)
 
 RUN(NAME fortran_primes_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran c cpp)
 
 RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME selected_int_kind_02 LABELS gfortran llvm)
@@ -5530,6 +5532,7 @@ RUN(NAME do_concurrent_22 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_23 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_24 LABELS gfortran llvm fortran)
 RUN(NAME do_concurrent_25 LABELS llvm llvm_omp) # `reduce` locality is not accepted by every supported gfortran
+RUN(NAME do_concurrent_26 LABELS gfortran llvm c cpp)
 
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5800,9 +5803,9 @@ RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
-RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME exit_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp)
+RUN(NAME exit_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
+RUN(NAME exit_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 
 RUN(NAME struct_constant_extends_01 LABELS gfortran llvm)
 RUN(NAME struct_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
