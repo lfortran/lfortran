@@ -56,6 +56,16 @@ public:
 
     std::map<uint64_t, mlir::Value> mlir_symtab; // Used for variables
 
+    // The enclosing constructs that an EXIT or a CYCLE can name: an EXIT
+    // branches to `exit`, a CYCLE to `cycle` (null for a construct that is
+    // not a loop).
+    struct ConstructFrame {
+        const char *name;
+        mlir::Block *exit;
+        mlir::Block *cycle;
+    };
+    std::vector<ConstructFrame> construct_frames;
+
 public:
     ASRToMLIRVisitor(Allocator &al)
         : al{al},
@@ -72,6 +82,26 @@ public:
         }
 
     /********************************** Utils *********************************/
+    bool block_terminated() {
+        mlir::Block *block = builder->getBlock();
+        return !block->empty()
+            && block->back().hasTrait<mlir::OpTrait::IsTerminator>();
+    }
+
+    // Statements after a branch or an ERROR STOP are unreachable, and a
+    // block must not continue past its terminator.
+    void visit_body(ASR::stmt_t **body, size_t n_body) {
+        for (size_t i = 0; i < n_body && !block_terminated(); i++) {
+            this->visit_stmt(*body[i]);
+        }
+    }
+
+    void branch_to(mlir::Block *target) {
+        if (!block_terminated()) {
+            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, target);
+        }
+    }
+
     mlir::Type getType(ASR::ttype_t *asr_type) {
         int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
         switch (asr_type->type) {
@@ -798,22 +828,18 @@ public:
 
         builder->setInsertionPointToEnd(thisBlock);
         builder->create<mlir::LLVM::CondBrOp>(loc, test, thenBlock, elseBlock);
+        if (x.m_name) {
+            construct_frames.push_back({x.m_name, contBlock, nullptr});
+        }
         builder->setInsertionPointToStart(thenBlock);
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-        }
-        if (!(!thenBlock->empty() &&
-                mlir::isa<mlir::LLVM::UnreachableOp>(thenBlock->back()))) {
-            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
-        }
+        visit_body(x.m_body, x.n_body);
+        branch_to(contBlock);
 
         builder->setInsertionPointToStart(elseBlock);
-        for (size_t i=0; i<x.n_orelse; i++) {
-            this->visit_stmt(*x.m_orelse[i]);
-        }
-        if (!(!elseBlock->empty() &&
-            mlir::isa<mlir::LLVM::UnreachableOp>(elseBlock->back()))) {
-            builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, contBlock);
+        visit_body(x.m_orelse, x.n_orelse);
+        branch_to(contBlock);
+        if (x.m_name) {
+            construct_frames.pop_back();
         }
 
         builder->setInsertionPointToStart(contBlock);
@@ -833,12 +859,34 @@ public:
         builder->create<mlir::LLVM::CondBrOp>(loc, tmp, bodyBlock, contBlock);
 
         builder->setInsertionPointToStart(bodyBlock);
-        for (size_t i=0; i<x.n_body; i++) {
-            this->visit_stmt(*x.m_body[i]);
-        }
-        builder->create<mlir::LLVM::BrOp>(loc, mlir::ValueRange{}, headBlock);
+        construct_frames.push_back({x.m_name, contBlock, headBlock});
+        visit_body(x.m_body, x.n_body);
+        construct_frames.pop_back();
+        branch_to(headBlock);
 
         builder->setInsertionPointToStart(contBlock);
+    }
+
+    // An EXIT or a CYCLE without a name refers to the innermost loop.
+    const ConstructFrame &construct_frame(const char *name,
+            const Location &l) {
+        for (auto f = construct_frames.rbegin();
+                f != construct_frames.rend(); ++f) {
+            if (name ? f->name && std::string(f->name) == name
+                    : f->cycle != nullptr) {
+                return *f;
+            }
+        }
+        throw CodeGenError("the construct that EXIT or CYCLE refers to was "
+            "not found", l);
+    }
+
+    void visit_Exit(const ASR::Exit_t &x) {
+        branch_to(construct_frame(x.m_stmt_name, x.base.base.loc).exit);
+    }
+
+    void visit_Cycle(const ASR::Cycle_t &x) {
+        branch_to(construct_frame(x.m_stmt_name, x.base.base.loc).cycle);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
