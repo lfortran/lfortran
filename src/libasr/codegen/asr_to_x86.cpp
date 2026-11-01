@@ -285,6 +285,43 @@ public:
         m_a.asm_mov_r32_imm32(X86Reg::eax, val);
     }
 
+    // Logical values are 1 (true) and 0 (false) in eax.
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        this->visit_expr(*x.m_arg);
+        m_a.asm_mov_r32_imm32(X86Reg::ecx, 1);
+        m_a.asm_xor_r32_r32(X86Reg::eax, X86Reg::ecx);
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        this->visit_expr(*x.m_right);
+        m_a.asm_push_r32(X86Reg::eax);
+        this->visit_expr(*x.m_left);
+        m_a.asm_pop_r32(X86Reg::ecx);
+        // The left operand is in eax, the right operand is in ecx
+        // Leave the result in eax.
+        switch (x.m_op) {
+            case ASR::logicalbinopType::And: {
+                m_a.asm_and_r32_r32(X86Reg::eax, X86Reg::ecx);
+                break;
+            }
+            case ASR::logicalbinopType::Or: {
+                m_a.asm_or_r32_r32(X86Reg::eax, X86Reg::ecx);
+                break;
+            }
+            case ASR::logicalbinopType::Xor:
+            case ASR::logicalbinopType::NEqv: {
+                m_a.asm_xor_r32_r32(X86Reg::eax, X86Reg::ecx);
+                break;
+            }
+            case ASR::logicalbinopType::Eqv: {
+                m_a.asm_xor_r32_r32(X86Reg::eax, X86Reg::ecx);
+                m_a.asm_mov_r32_imm32(X86Reg::ecx, 1);
+                m_a.asm_xor_r32_r32(X86Reg::eax, X86Reg::ecx);
+                break;
+            }
+        }
+    }
+
     void visit_Var(const ASR::Var_t &x) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(x.m_v);
         uint64_t h = get_hash((ASR::asr_t*)v);
