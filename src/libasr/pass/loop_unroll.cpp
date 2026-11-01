@@ -60,7 +60,7 @@ public:
         if (!head.m_v || x.n_orelse > 0) {
             return ;
         }
-        int64_t a, b, c;
+        int64_t a = 0, b = 0, c = 0;
         if( !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_start), a) ||
             !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_end), b) ||
             !ASRUtils::is_value_constant(ASRUtils::expr_value(head.m_increment), c) ||

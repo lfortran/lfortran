@@ -61,7 +61,7 @@ class SequentialUnrollVisitor
             if (!ASR::is_a<ASR::Integer_t>(*control_type)
                     || ASRUtils::extract_kind_from_ttype_t(control_type) != 4) return false;
         }
-        int64_t start, step = 1;
+        int64_t start = 0, step = 1;
         if (!ASRUtils::extract_value(ASRUtils::expr_value(x.m_head.m_start), start)
                 || start < 0
                 || (x.m_head.m_increment &&
