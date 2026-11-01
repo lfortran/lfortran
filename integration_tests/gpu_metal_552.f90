@@ -1,9 +1,8 @@
 program gpu_metal_552
     ! The variable of an implied DO in a PRINT of the time loop is the
-    ! producer's bound `m`. With --use-loop-variable-after-loop it keeps
-    ! its final value after the statement, as the standard requires. The
-    ! consumer updates the field the producer reads (the array is
-    ! renamed).
+    ! producer's bound `m`. It keeps its final value after the statement,
+    ! as the standard requires. The consumer updates the field the
+    ! producer reads (the array is renamed).
     implicit none
     real, allocatable :: q(:), f(:)
     real :: expected_f(8), expected_q(8)

@@ -23304,25 +23304,23 @@ public:
                 builder->CreateBr(loop_cond_bb);
 
                 builder->SetInsertPoint(loop_end_bb);
-                if (compiler_options.po.use_loop_variable_after_loop) {
-                    llvm::Value* cur_val = builder->CreateLoad(
-                        llvm::Type::getInt64Ty(context), loop_var_alloca);
-                    llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
-                        idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
-                    cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
+                llvm::Value* cur_val = builder->CreateLoad(
+                    llvm::Type::getInt64Ty(context), loop_var_alloca);
+                llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
+                    idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+                cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
 
-                    int64_t ptr_copy_inner = ptr_loads;
-                    ptr_loads = 0;
-                    bool iat_copy_inner = is_assignment_target;
-                    is_assignment_target = true;
-                    this->visit_expr(*idl->m_var);
-                    llvm::Value* real_var_ptr = tmp;
-                    is_assignment_target = iat_copy_inner;
-                    ptr_loads = ptr_copy_inner;
+                int64_t ptr_copy_inner = ptr_loads;
+                ptr_loads = 0;
+                bool iat_copy_inner = is_assignment_target;
+                is_assignment_target = true;
+                this->visit_expr(*idl->m_var);
+                llvm::Value* real_var_ptr = tmp;
+                is_assignment_target = iat_copy_inner;
+                ptr_loads = ptr_copy_inner;
 
-                    if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
-                        builder->CreateStore(cur_val, real_var_ptr);
-                    }
+                if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
+                    builder->CreateStore(cur_val, real_var_ptr);
                 }
             } else {
                 emit_single_formatted_read(val_expr, unit_val, loop_iostat, read_size,
@@ -24010,25 +24008,23 @@ public:
 
                     var_size = builder->CreateMul(var_size, count);
 
-                    if (compiler_options.po.use_loop_variable_after_loop) {
-                        llvm::Value* final_val = builder->CreateAdd(
-                            loop_start, builder->CreateMul(count, loop_step));
-                        llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
-                            idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
-                        final_val = llvm_utils->convert_kind(final_val, loop_var_type);
+                    llvm::Value* final_val = builder->CreateAdd(
+                        loop_start, builder->CreateMul(count, loop_step));
+                    llvm::Type* loop_var_type = llvm_utils->get_type_from_ttype_t_util(
+                        idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+                    final_val = llvm_utils->convert_kind(final_val, loop_var_type);
 
-                        int64_t ptr_copy = ptr_loads;
-                        ptr_loads = 0;
-                        bool iat_copy = is_assignment_target;
-                        is_assignment_target = true;
-                        this->visit_expr(*idl->m_var);
-                        llvm::Value* real_var_ptr = tmp;
-                        is_assignment_target = iat_copy;
-                        ptr_loads = ptr_copy;
+                    int64_t ptr_copy = ptr_loads;
+                    ptr_loads = 0;
+                    bool iat_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    this->visit_expr(*idl->m_var);
+                    llvm::Value* real_var_ptr = tmp;
+                    is_assignment_target = iat_copy;
+                    ptr_loads = ptr_copy;
 
-                        if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
-                            builder->CreateStore(final_val, real_var_ptr);
-                        }
+                    if (real_var_ptr && real_var_ptr->getType()->isPointerTy()) {
+                        builder->CreateStore(final_val, real_var_ptr);
                     }
                 }
 
