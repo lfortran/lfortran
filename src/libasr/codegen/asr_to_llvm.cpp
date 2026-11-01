@@ -65,6 +65,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_goto_scopes.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -204,70 +205,6 @@ public:
     void visit_Var(const ASR::Var_t &x) {
         variables.push_back(ASRUtils::symbol_get_past_external(x.m_v));
     }
-};
-
-// For each statement label of a procedure body, the constructs that contain
-// the labeled statement, outermost first: the BLOCK and ASSOCIATE constructs
-// (BlockCall, AssociateBlockCall) and the loops (DoLoop, DoConcurrentLoop,
-// WhileLoop), each identified by its statement.
-class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
-public:
-    std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes;
-    std::vector<const ASR::stmt_t*> enclosing;
-
-    GoToTargetScopes(
-        std::map<uint64_t, std::vector<const ASR::stmt_t*>> &scopes_):
-        scopes(scopes_) {}
-
-    void visit_GoToTarget(const ASR::GoToTarget_t &x) {
-        scopes[x.m_id] = enclosing;
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        // The label of the BLOCK statement is outside the construct.
-        if (x.m_label != -1) {
-            scopes[x.m_label] = enclosing;
-        }
-        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        visit_construct(&x.base, block->m_body, block->n_body);
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
-            x.m_m);
-        visit_construct(&x.base, block->m_body, block->n_body);
-    }
-
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
-        visit_construct(&x.base, x.m_body, x.n_body);
-        // The loop-else runs after the loop, outside it.
-        for (size_t i = 0; i < x.n_orelse; i++) {
-            visit_stmt(*x.m_orelse[i]);
-        }
-    }
-
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        visit_construct(&x.base, x.m_body, x.n_body);
-    }
-
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        visit_construct(&x.base, x.m_body, x.n_body);
-        for (size_t i = 0; i < x.n_orelse; i++) {
-            visit_stmt(*x.m_orelse[i]);
-        }
-    }
-
-    void visit_construct(const ASR::stmt_t *construct, ASR::stmt_t **body,
-            size_t n_body) {
-        enclosing.push_back(construct);
-        for (size_t i = 0; i < n_body; i++) {
-            visit_stmt(*body[i]);
-        }
-        enclosing.pop_back();
-    }
-
-    void visit_expr(const ASR::expr_t & /*x*/) {}
-    void visit_ttype(const ASR::ttype_t & /*x*/) {}
 };
 
 } // anonymous namespace
@@ -1172,7 +1109,7 @@ public:
 
     void predeclare_goto_targets(llvm::Function *fn, ASR::stmt_t **body, size_t n) {
         goto_target_scopes.clear();
-        GoToTargetScopes target_scopes(goto_target_scopes);
+        ASRUtils::GoToTargetScopes target_scopes(goto_target_scopes);
         for (size_t i = 0; i < n; i++) {
             target_scopes.visit_stmt(*body[i]);
         }
@@ -18160,12 +18097,8 @@ public:
         if (target_scopes != goto_target_scopes.end()) {
             const std::vector<const ASR::stmt_t*> &scopes =
                 target_scopes->second;
-            size_t kept = 0;
-            while (kept < enclosing_constructs.size() &&
-                    kept < scopes.size() &&
-                    enclosing_constructs[kept] == scopes[kept]) {
-                kept++;
-            }
+            size_t kept = ASRUtils::common_construct_depth(
+                enclosing_constructs, scopes);
             // A branch cannot enter a construct from outside it. Semantics
             // makes such a GoTo, which is never executed, for the labels of
             // an assigned GO TO without a label list: a branch into a BLOCK
