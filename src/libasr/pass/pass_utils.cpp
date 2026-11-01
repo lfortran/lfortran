@@ -1772,7 +1772,7 @@ namespace LCompilers {
                 ASR::cmpopType cmp_op;
 
                 if( comp == -1 ) {
-                    int64_t increment;
+                    int64_t increment = 0;
                     bool not_constant_inc = false;
                     if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
                         throw LCompilersException("Do loop increment type should be an integer");
