@@ -5312,6 +5312,8 @@ public:
             require_with_loc(head.m_v != nullptr,
                 node + "::m_head must have a DO variable", head.loc);
         }
+        // The type check needs resolved ExternalSymbols
+        if (!check_external) return;
         std::string reason;
         bool normalized = ASRUtils::is_normalized_do_loop_head(head, reason);
         require_with_loc(normalized,
