@@ -67,8 +67,7 @@ program do_variable_after_loop_01
         if (i /= 3) error stop
     end if
 
-    ! Not suggested: a statement that assigns the variable, even if it also
-    ! reads it.
+    ! Suggested: read in the value assigned to the variable itself.
     do i = 1, 2
     end do
     i = i + 1

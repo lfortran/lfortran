@@ -33,3 +33,12 @@ style suggestion: the do loop variable 'i' is used after the loop
    |
 32 |     do i = 5, 1
    |        ~ the loop sets 'i' here
+
+style suggestion: the do loop variable 'i' is used after the loop
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:73:9
+   |
+73 |     i = i + 1
+   |         ^ after the loop, 'i' is 3
+   |
+71 |     do i = 1, 2
+   |        ~ the loop sets 'i' here

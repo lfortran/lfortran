@@ -2677,11 +2677,11 @@ public:
         return nullptr;
     }
 
-    // The variable `name` is about to be assigned
-    void do_variable_assigned(const char *name) {
-        if (!ended_do_loops.empty()) {
-            forget_ended_do_loop(current_scope->resolve_symbol(to_lower(name)));
-        }
+    // The variable `name` is about to be assigned: forgets its loop, if
+    // any, and returns it
+    const ASR::DoLoop_t* do_variable_assigned(const char *name) {
+        if (ended_do_loops.empty()) return nullptr;
+        return forget_ended_do_loop(current_scope->resolve_symbol(to_lower(name)));
     }
 
     // `e` is a reference to the value of a variable. No suggestion is made
