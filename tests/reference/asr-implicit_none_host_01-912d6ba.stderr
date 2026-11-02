@@ -1,3 +1,19 @@
+semantic error: Variable 'n' is not declared
+  --> tests/errors/implicit_none_host_01.f90:13:34
+   |
+13 |         integer, intent(in) :: x(n)  ! {Error} `n` is used before it is typed
+   |                                  ^ 'n' is undeclared
+
+semantic error: Dummy argument 'x' not defined
+  --> tests/errors/implicit_none_host_01.f90:12:5 - 15:18
+   |
+12 |        subroutine t(n, x)
+   |        ^^^^^^^^^^^^^^^^^^...
+...
+   |
+15 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Variable 'y' is not declared
  --> tests/errors/implicit_none_host_01.f90:6:5
   |

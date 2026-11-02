@@ -9,4 +9,8 @@ contains
     subroutine s()
         q = 1  ! {Error} `q` is not declared
     end subroutine
+    subroutine t(n, x)
+        integer, intent(in) :: x(n)  ! {Error} `n` is used before it is typed
+        integer, intent(in) :: n
+    end subroutine
 end program
