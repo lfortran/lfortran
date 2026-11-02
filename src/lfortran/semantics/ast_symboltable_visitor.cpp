@@ -765,6 +765,19 @@ public:
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
             AST::DeclStmtKind::Implicit);
+        // A scoping unit has at most one IMPLICIT NONE statement (F2018 8.7).
+        bool seen_implicit_none = false;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) continue;
+            if (seen_implicit_none) {
+                diag.add(diag::Diagnostic(
+                    "duplicate implicit none statement",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_items[i]->base.loc})}));
+                throw SemanticAbort();
+            }
+            seen_implicit_none = true;
+        }
         if (implicit_stack.size() > 0 && !is_interface) {
             // A procedure contained in a module, submodule, program or
             // procedure starts from its host's mapping; its own IMPLICIT statements, if any, override

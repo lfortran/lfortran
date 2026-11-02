@@ -14,6 +14,18 @@ semantic error: Dummy argument 'x' not defined
 15 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_host_01.f90:21:5
+   |
+21 |     implicit none (external)  ! {Error} duplicate implicit none statement
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_host_01.f90:26:5
+   |
+26 |     implicit none (external)  ! {Error} duplicate implicit none statement
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Variable 'y' is not declared
  --> tests/errors/implicit_none_host_01.f90:6:5
   |
