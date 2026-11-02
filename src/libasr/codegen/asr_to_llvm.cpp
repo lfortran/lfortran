@@ -18748,17 +18748,21 @@ public:
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right_val);
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
+        // Signed integer overflow makes a Fortran program non-conforming, so
+        // under --fast the arithmetic is marked nsw, as GCC assumes by default.
+        // This lets LLVM widen 32-bit subscripts to 64-bit induction variables.
+        bool nsw = signed_int && compiler_options.po.fast;
         switch (x.m_op) {
             case ASR::binopType::Add: {
-                tmp = builder->CreateAdd(left_val, right_val);
+                tmp = builder->CreateAdd(left_val, right_val, "", false, nsw);
                 break;
             };
             case ASR::binopType::Sub: {
-                tmp = builder->CreateSub(left_val, right_val);
+                tmp = builder->CreateSub(left_val, right_val, "", false, nsw);
                 break;
             };
             case ASR::binopType::Mul: {
-                tmp = builder->CreateMul(left_val, right_val);
+                tmp = builder->CreateMul(left_val, right_val, "", false, nsw);
                 break;
             };
             case ASR::binopType::Div: {
