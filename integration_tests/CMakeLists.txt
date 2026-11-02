@@ -1602,6 +1602,9 @@ RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure
 RUN(NAME procedure_pointer_41 LABELS llvm)
 RUN(NAME procedure_pointer_42 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_43 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_44 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # reassociation of pointers without explicit interface (#16414)
+RUN(NAME procedure_pointer_45 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # same, with components (#16414)
+RUN(NAME procedure_pointer_46 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # same, external pointers with implicitly typed results (#16414)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

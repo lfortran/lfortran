@@ -7231,17 +7231,11 @@ public:
             // make the same-named external private in every later program unit
             // of the same file.
             if (assgnd_pointer.count(sym) > 0) {
-                ASR::ttype_t *type = nullptr;
-                if (determined_type) {
-                    type = determined_type;
-                } else {
-                    type = implicit_dictionary[std::string(1,sym[0])];
-                    if (!type) {
-                        type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
-                    }
-                }
+                // Without a declared type the pointer can be associated with
+                // a subroutine or with a function of any type, and a function
+                // referenced through it has its implicit type.
                 ASR::ttype_t *func_type = ASRUtils::make_opaque_procedure_type(
-                    al, loc, type);
+                    al, loc, determined_type);
                 std::string iface_name = "__" + sym + "_iface_implicit";
                 SymbolTable *parent_scope = current_scope->parent;
                 if (!parent_scope) parent_scope = current_scope;
@@ -22585,10 +22579,16 @@ public:
     // declared in `current_body_scope`, the scope those statements belong
     // to, so it is never shared with another procedure, e.g. between a
     // statement function and its host.
+    // When `source_expr` is given, the procedure is that designator, e.g.
+    // the procedure pointer component `source` of an object, `obj%source`.
+    // Its temporary is not shared with other calls: the actuals of the call
+    // can reference the same component of another object, as in
+    // `a%f(b%f(1))`, and are associated before it.
     ASR::symbol_t* make_fpcast_call_target(
         const Location& loc,
         ASR::symbol_t* source,
-        ASR::symbol_t* to_iface)
+        ASR::symbol_t* to_iface,
+        ASR::expr_t* source_expr = nullptr)
     {
         LCOMPILERS_ASSERT(current_body != nullptr);
         LCOMPILERS_ASSERT(current_body_scope != nullptr);
@@ -22602,7 +22602,7 @@ public:
 
         SymbolTable* tmp_scope = current_body_scope;
         Vec<ASR::stmt_t*>* association_body = current_body;
-        if (statement_function_host_body != nullptr &&
+        if (source_expr == nullptr && statement_function_host_body != nullptr &&
                 is_statement_function_host_dummy(source)) {
             // A dummy procedure of the host is a value of the host, which a
             // statement function can only reach through a variable of the
@@ -22612,7 +22612,9 @@ public:
             tmp_scope = statement_function_host_body_scope;
             association_body = statement_function_host_body;
         }
-        ASR::symbol_t*& tmp_var = fpcast_call_targets[tmp_scope][{source, to_sym}];
+        ASR::symbol_t* unshared_tmp_var = nullptr;
+        ASR::symbol_t*& tmp_var = source_expr != nullptr ? unshared_tmp_var
+            : fpcast_call_targets[tmp_scope][{source, to_sym}];
         if (tmp_var == nullptr) {
             ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                 ASRUtils::duplicate_type(al, to_fn->m_function_signature)));
@@ -22629,7 +22631,8 @@ public:
             implicit_call_procedures[tmp_var] = source;
         }
 
-        ASR::expr_t* src = ASRUtils::EXPR(ASR::make_Var_t(al, loc, source));
+        ASR::expr_t* src = source_expr != nullptr ? source_expr
+            : ASRUtils::EXPR(ASR::make_Var_t(al, loc, source));
         ASR::expr_t* cast = ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(
             al, loc, src, to_sym, fn_type, nullptr));
         ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_Var_t(al, loc, tmp_var));
@@ -23142,8 +23145,11 @@ public:
     // The call target of a reference to `name` through an implicit
     // interface: `source` (an opaque procedure or procedure variable) cast to
     // the interface built from this reference's actuals.
+    // `source_expr`, when given, is the designator of the procedure, see
+    // make_fpcast_call_target.
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
-            ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type) {
+            ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type,
+            ASR::expr_t* source_expr = nullptr) {
         check_implicit_procedure_kind(loc, name, source, return_type != nullptr);
         check_actuals_against_external_definition(loc, source, args,
             return_type != nullptr);
@@ -23151,7 +23157,7 @@ public:
         // Nothing is known about the called procedure.
         current_function_deterministic = false;
         current_function_side_effect_free = false;
-        return make_fpcast_call_target(loc, source, iface);
+        return make_fpcast_call_target(loc, source, iface, source_expr);
     }
 
     // The module that `scope` is in, or null.
@@ -23728,9 +23734,12 @@ public:
     // (F2018 10.1.11 p2 (9)). A specification function must be pure
     // (10.1.11 p5), which a procedure with an implicit interface cannot be
     // known to be (15.4.2.2), so the reference is rejected.
+    // `source_expr`, when given, is the designator of the procedure, see
+    // make_fpcast_call_target.
     template <class Call>
     ASR::symbol_t* implicit_function_reference_target(const Call &x,
-            const std::string &name, ASR::symbol_t* source, ASR::ttype_t* return_type) {
+            const std::string &name, ASR::symbol_t* source, ASR::ttype_t* return_type,
+            ASR::expr_t* source_expr = nullptr) {
         if (current_body == nullptr) {
             diag.add(Diagnostic("the procedure '" + name + "' has an implicit "
                 "interface, so it is not a specification function and cannot be "
@@ -23740,7 +23749,7 @@ public:
         }
         Vec<ASR::call_arg_t> c_args = visit_implicit_call_actuals(x);
         ASR::symbol_t* target = implicit_call_target(x.base.base.loc, name, source,
-            c_args, return_type);
+            c_args, return_type, source_expr);
         implicit_call_result_types[target] = return_type;
         return target;
     }
@@ -24644,17 +24653,23 @@ public:
                 implicit_call_done = true;
             }
         }
+        // Whether `v` is a procedure pointer component referenced through an
+        // implicit interface, so that the reference is not made through the
+        // object `v_expr`.
+        bool component_implicit_call = false;
         if (compiler_options.implicit_interface && !implicit_call_done && v &&
-                ASRUtils::is_symbol_procedure_variable(v) &&
+                ASRUtils::is_symbol_procedure_variable(
+                    ASRUtils::symbol_get_past_external(v)) &&
                 ASRUtils::is_opaque_procedure_type(ASRUtils::symbol_type(v))) {
-            // A procedure variable with an implicit interface (`procedure()`,
-            // an external pointer) is referenced through an interface built
-            // from this reference's actuals.
+            // A procedure variable or component with an implicit interface
+            // (`procedure()`, an external pointer) is referenced through an
+            // interface built from this reference's actuals. The result type
+            // is the declared type of the procedure, else its implicit type,
+            // never the type of a procedure it is associated with.
             ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(
                 ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(v)));
             ASR::ttype_t* return_type = func_type->m_return_var_type;
             if (!return_type) {
-                // Use implicit typing rules for the return type
                 std::string first_letter = std::string(1, var_name[0]);
                 if (compiler_options.implicit_typing &&
                         implicit_dictionary.find(first_letter) != implicit_dictionary.end() &&
@@ -24669,7 +24684,18 @@ public:
                     }
                 }
             }
-            v = implicit_function_reference_target(x, var_name, v, return_type);
+            ASR::expr_t* source_expr = nullptr;
+            if (x.n_member >= 1) {
+                source_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+                    x.base.base.loc, v_expr, v, ASRUtils::import_procedure_type(al,
+                        ASRUtils::symbol_type(v), current_scope), nullptr));
+                if (check_procedure_component_of_constant(source_expr, "called")) {
+                    throw SemanticAbort();
+                }
+                component_implicit_call = true;
+            }
+            v = implicit_function_reference_target(x, var_name, v, return_type,
+                source_expr);
             implicit_call_done = true;
         }
         // if v is a function which has null pointer return type, give error
@@ -24834,8 +24860,9 @@ public:
             }
             Vec<ASR::call_arg_t> args;
             Vec<ASR::call_arg_t> args_with_mdt;
-            visit_expr_list(x.m_args, x.n_args, args, f2, x.n_member);
-            if (x.n_member >= 1) {
+            visit_expr_list(x.m_args, x.n_args, args, f2,
+                component_implicit_call ? 0 : x.n_member);
+            if (x.n_member >= 1 && !component_implicit_call) {
                 args_with_mdt.reserve(al, x.n_args + 1);
                 ASR::call_arg_t v_expr_call_arg;
                 v_expr_call_arg.loc = v_expr->base.loc;
@@ -24991,7 +25018,7 @@ public:
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
                 ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, f, args);
             }
-            if (x.n_member >= 1) {
+            if (x.n_member >= 1 && !component_implicit_call) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {
                 tmp = create_FunctionCallWithASTNode(x, v, args);
