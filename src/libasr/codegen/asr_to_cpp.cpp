@@ -266,6 +266,14 @@ public:
                 ASRUtils::is_frame_type(v.m_type_declaration)) {
             return convert_frame_decl(v);
         }
+        if (ASRUtils::is_frame_type(v.m_type_declaration) ||
+                ASRUtils::is_frame_slot_type(v.m_type_declaration)) {
+            // The frame slots of a thunk pool (see nested_vars)
+            throw CodeGenError("calling an internal procedure that accesses "
+                "its host through a procedure pointer, a dummy procedure or "
+                "defined input/output is not supported by the cpp backend yet",
+                v.base.base.loc);
+        }
         bool use_static;
         bool use_templates_for_arrays;
 

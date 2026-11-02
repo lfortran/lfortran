@@ -2214,6 +2214,43 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             + indent + target_desc + "->n_dims = " + std::to_string(target_rank) + ";\n";
     }
 
+    // The variable of a BLOCK construct in `scope` that `pointer`, a pointer
+    // variable of `scope`, stands for, or nullptr. A procedure that reads a
+    // variable of a BLOCK construct from outside of it reads it through such
+    // a pointer, which the BLOCK associates with the variable on entry, at
+    // the location of the variable's declaration.
+    static const ASR::Variable_t* construct_variable_of(const SymbolTable &scope,
+            const ASR::Variable_t &pointer) {
+        for (auto &item: scope.get_scope()) {
+            if (!ASR::is_a<ASR::Block_t>(*item.second)) {
+                continue;
+            }
+            const ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(item.second);
+            for (size_t i = 0; i < block->n_body; i++) {
+                if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
+                    continue;
+                }
+                const ASR::Associate_t *a = ASR::down_cast<ASR::Associate_t>(
+                    block->m_body[i]);
+                const Location &loc = a->base.base.loc;
+                if (ASR::is_a<ASR::Var_t>(*a->m_target) && ASR::is_a<ASR::Var_t>(*a->m_value)
+                        && ASR::down_cast<ASR::Var_t>(a->m_target)->m_v
+                            == (const ASR::symbol_t*) &pointer
+                        && loc.first == pointer.base.base.loc.first
+                        && loc.last == pointer.base.base.loc.last) {
+                    const ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(a->m_value)->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*v)) {
+                        return ASR::down_cast<ASR::Variable_t>(v);
+                    }
+                }
+            }
+            if (const ASR::Variable_t *v = construct_variable_of(*block->m_symtab, pointer)) {
+                return v;
+            }
+        }
+        return nullptr;
+    }
+
     // The error for a member of a frame (see nested_vars), named after the
     // host variable it refers to, whose variable the backend cannot designate
     // yet. A member that refers to a frame passes it to an internal procedure
@@ -2227,11 +2264,28 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 "supported by the " + backend + " backend yet", loc);
         }
         ASR::ttype_t *t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        std::string name = member.m_name;
+        ASR::symbol_t *type_declaration = member.m_type_declaration;
+        std::string what_prefix;
+        // A variable of a BLOCK construct is reached through a pointer of the
+        // host; describe the variable itself.
+        SymbolTable *host = member.m_parent_symtab->parent;
+        ASR::symbol_t *host_sym = host != nullptr
+            ? host->get_symbol(member.m_name) : nullptr;
+        if (host_sym != nullptr && ASR::is_a<ASR::Variable_t>(*host_sym)
+                && ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(host_sym)->m_type)) {
+            if (const ASR::Variable_t *v = construct_variable_of(*host,
+                    *ASR::down_cast<ASR::Variable_t>(host_sym))) {
+                name = v->m_name;
+                t = v->m_type;
+                type_declaration = v->m_type_declaration;
+                what_prefix = "BLOCK ";
+            }
+        }
         ASR::ttype_t *past_pointer = ASRUtils::type_get_past_allocatable_pointer(t);
         if (ASR::is_a<ASR::FunctionType_t>(*past_pointer)) {
-            return CodeGenError("the host-associated procedure '"
-                + std::string(member.m_name) + "' is not supported by the "
-                + backend + " backend yet", loc);
+            return CodeGenError("the host-associated procedure '" + name
+                + "' is not supported by the " + backend + " backend yet", loc);
         }
         ASR::ttype_t *elem = ASRUtils::type_get_past_array(past_pointer);
         // A non-allocatable array or a character variable is reached through
@@ -2246,11 +2300,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         // The length of a character variable is that of its view.
         std::string type = ASRUtils::is_character(*elem) ? "character"
-            : ASRUtils::type_to_str_fortran_symbol(elem,
-                member.m_type_declaration, true);
-        return CodeGenError("the host-associated " + what + " '"
-            + std::string(member.m_name) + "' of type " + type
-            + " is not supported by the " + backend + " backend yet", loc);
+            : ASRUtils::type_to_str_fortran_symbol(elem, type_declaration, true);
+        if (ASR::is_a<ASR::StructType_t>(*elem) &&
+                !ASR::down_cast<ASR::StructType_t>(elem)->m_is_unlimited_polymorphic) {
+            type = (ASRUtils::is_class_type(elem) ? "class(" : "type(") + type + ")";
+        }
+        return CodeGenError("the host-associated " + what_prefix + what + " '"
+            + name + "' of type " + type + " is not supported by the "
+            + backend + " backend yet", loc);
     }
 
     // Makes the member store the address of the variable, which it then
