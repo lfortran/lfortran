@@ -3696,6 +3696,11 @@ RUN(NAME callback_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_06 LABELS gfortran llvm)
+RUN(NAME callback_07 LABELS gfortran llvm EXTRAFILES callback_07c.c
+    EXTRA_ARGS --implicit-interface --mangle-underscore --all-mangling) # C calls a non-bind(c) external with EXTERNAL dummies (#16400)
+RUN(NAME callback_08 LABELS gfortran llvm EXTRAFILES callback_08c.c
+    EXTRA_ARGS --implicit-interface) # module and capturing internal procedures passed to C through implicit interfaces (#16400)
+RUN(NAME callback_09 LABELS gfortran llvm EXTRAFILES callback_09c.c) # c_funloc of a capturing internal procedure in a recursive host, called from C (#16400)
 
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
