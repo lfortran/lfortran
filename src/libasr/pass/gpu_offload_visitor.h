@@ -613,6 +613,16 @@ public:
         // the dimensions the width and the height of a tile run along.
         int tiled_arg = -1;
         size_t tile_dims[2] = {0, 0};
+        // The dimensions in the order the kernel numbers the iterations in,
+        // fastest first, and for each dimension the launch may split into
+        // chunks the kernel parameters that hold its bounds (nullptr for
+        // one it never splits), and the product of the constant extents of
+        // the others, or 0 when the launch is never split (see
+        // GpuKernelLaunch.chunk_dimensions).
+        std::vector<size_t> order;
+        std::vector<ASR::symbol_t*> start_parameters;
+        std::vector<ASR::symbol_t*> end_parameters;
+        int64_t chunk_fixed_iterations = 0;
     };
 
     void decline(const ASR::OMPRegion_t &x);

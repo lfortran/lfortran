@@ -245,6 +245,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     ASR::expr_t *thread_count = nullptr;
     ASR::ttype_t *count_type = gpu_iteration_number_type(al, loc,
         plan.int_type, device_caps);
+    // Whether the launch may run in chunks (GpuKernelLaunch.chunk_dimensions).
+    bool chunked = plan.chunk_fixed_iterations > 0;
     auto widen = [&](ASR::expr_t *limit) {
         ASRUtils::ExprStmtDuplicator copy(al);
         copy.success = true;
@@ -303,10 +305,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             current_scope->get_unique_name("__gpu_tiled"),
             ASRUtils::duplicate_type(al, plan.int_type),
             ASR::intentType::Local);
+        // A launch of more threads than the chunk limit runs in chunks,
+        // which split the nest into boxes the kernel numbers flat.
+        ASR::expr_t *flat = b.Gt(b.Mul(count(4),
+            b.Sub(tile_threads, iteration_count)), iteration_count);
+        if (chunked) {
+            flat = b.Or(flat, b.Gt(tile_threads,
+                count(pass_options.gpu_chunk_limit)));
+        }
         prelude.push_back(al, b.Assignment(tiled,
-            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
-                b.Gt(b.Mul(count(4), b.Sub(tile_threads, iteration_count)),
-                    iteration_count),
+            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, flat,
                 b.i_t(0, plan.int_type), b.i_t(1, plan.int_type),
                 plan.int_type, nullptr))));
         plan.call_args.p[plan.tiled_arg].m_value = tiled;
@@ -429,13 +437,29 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
+    // The dimensions a launch that may run in chunks splits, in the order
+    // the kernel numbers its iterations.
+    Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
+    chunk_dimensions.reserve(al, chunked ? plan.n_dims : 0);
+    if (chunked) {
+        for (size_t d : plan.order) {
+            if (plan.start_parameters[d] == nullptr) continue;
+            ASR::gpu_launch_dimension_t dim;
+            dim.loc = loc;
+            dim.m_start_parameter = plan.start_parameters[d];
+            dim.m_end_parameter = plan.end_parameters[d];
+            chunk_dimensions.push_back(al, dim);
+        }
+    }
+
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             thread_count, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
-            overwritten_if.p, overwritten_if.n)));
+            overwritten_if.p, overwritten_if.n, chunk_dimensions.p,
+            chunk_dimensions.n, plan.chunk_fixed_iterations)));
 
     // The launch does not wait for the kernel. What follows reads what the
     // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that

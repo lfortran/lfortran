@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -156,6 +157,85 @@ static size_t store_dimension(const ParallelLoopNest &nest, size_t subscript,
         }
     }
     return otherwise;
+}
+
+// `a * b`, or UINT64_MAX when that does not fit.
+static uint64_t gpu_saturating_product(uint64_t a, uint64_t b) {
+    if (a != 0 && b > UINT64_MAX / a) return UINT64_MAX;
+    return a * b;
+}
+
+// The number of values from `start` to `end`, or UINT64_MAX when that does
+// not fit, and 0 when `end < start`.
+static uint64_t gpu_value_count(int64_t start, int64_t end) {
+    if (end < start) return 0;
+    uint64_t span = static_cast<uint64_t>(end) - static_cast<uint64_t>(start);
+    return span == UINT64_MAX ? UINT64_MAX : span + 1;
+}
+
+// Which dimensions of a nest a launch splits into chunks of at most `limit`
+// iterations when it has more (GpuKernelLaunch.chunk_dimensions), given the
+// bounds of each dimension, the kind of its index and the order the kernel
+// numbers the iterations in, fastest first. A chunk covers a dimension it
+// does not split whole, wherever it is in that order: the kernel numbers the
+// iterations of each chunk from the bounds of its box. So a dimension with
+// a constant extent is never split, and keeps its bounds as constants in the
+// kernel, as long as its extent and those of the ones before it in that
+// order that are never split come to at most `limit` iterations in all; the
+// others are split, as is every dimension whose extent is not a constant.
+// None is split when `chunked` is false, when a constant extent makes the
+// nest empty, or when the nest cannot have more than `limit` iterations:
+// the value of an index fits its kind, which bounds the extent of a
+// dimension whose bounds are not both constants, as a constant bound does
+// further. `fixed_iterations` is set to the product of the extents of the
+// dimensions that are never split when one is (1 when there are none), and
+// to 0 otherwise.
+static std::vector<bool> gpu_splittable_dimensions(
+        const std::vector<ASR::expr_t*> &starts,
+        const std::vector<ASR::expr_t*> &ends,
+        const std::vector<int> &index_kinds,
+        const std::vector<size_t> &order, bool chunked, int64_t limit,
+        int64_t &fixed_iterations) {
+    std::vector<bool> splittable(order.size(), false);
+    fixed_iterations = 0;
+    if (!chunked) return splittable;
+    // The constant extent of each dimension, 0 where it is not a constant,
+    // and the most iterations the nest can have.
+    std::vector<uint64_t> extents(order.size(), 0);
+    uint64_t most = 1;
+    for (size_t d = 0; d < order.size(); d++) {
+        int64_t start = 0, end = 0;
+        bool start_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(starts[d]), start);
+        bool end_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(ends[d]), end);
+        uint64_t extent = 0;
+        if (start_known && end_known) {
+            if (end < start) return splittable;
+            extent = gpu_value_count(start, end);
+            extents[d] = extent;
+        } else {
+            int64_t huge = index_kinds[d] < 1 || index_kinds[d] >= 8
+                ? INT64_MAX
+                : (int64_t(1) << (8 * index_kinds[d] - 1)) - 1;
+            extent = gpu_value_count(
+                start_known ? std::max(start, -huge - 1) : -huge - 1,
+                end_known ? std::min(end, huge) : huge);
+        }
+        most = gpu_saturating_product(most, extent);
+    }
+    if (most <= static_cast<uint64_t>(limit)) return splittable;
+    uint64_t fixed = 1;
+    for (size_t d : order) {
+        if (extents[d] > 0
+                && extents[d] <= static_cast<uint64_t>(limit) / fixed) {
+            fixed *= extents[d];
+        } else {
+            splittable[d] = true;
+        }
+    }
+    fixed_iterations = static_cast<int64_t>(fixed);
+    return splittable;
 }
 
 // The loop was assigned to the device by the unsupported-construct check,
@@ -2124,8 +2204,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // Save host-side head expressions BEFORE in-place replacement
     std::vector<DimInfo> dim_info;
+    // The kind of each loop index, which bounds the values it takes.
+    std::vector<int> index_kinds;
     for (size_t d = 0; d < n_dims; d++) {
         dim_info.push_back({work.head(d).m_start, work.head(d).m_end});
+        index_kinds.push_back(ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(work.head(d).m_v)));
     }
 
     // Deep-copy the body statements so that in-place symbol remapping
@@ -2278,12 +2362,68 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // ArrayBound/ArraySize on allocatable arrays that cannot be
     // correctly evaluated in the kernel scope), pass the loop
     // bounds as pre-computed scalar parameters from the host.
+    // A nest of two or more dimensions can be launched in tiles where the
+    // device asks for them (GpuDeviceCapabilities::tile_width): a block
+    // covers tile_width iterations of the fastest dimension by the rest of
+    // its threads along a second one, the dimension the stores step through
+    // next in memory (or else the next one in loop order), and the block
+    // index numbers the tiles. The launch runs whole tiles, and a thread of
+    // a partial tile that falls outside the nest returns. Where whole tiles
+    // would pad the nest by more than a quarter, as a short dimension
+    // does, the launch passes __tiled = 0 instead and the kernel numbers
+    // the iterations flat, one thread each (gpu_offload_launch.cpp). Tile
+    // widths and block sizes are powers of two, so a thread finds its place
+    // in a tile with constant shifts and masks, which a device compiler
+    // folds, and one division of the block index finds the tile. A
+    // reduction keeps the flat numbering, which gives every thread an
+    // accumulator slot.
+    auto is_power_of_two = [](int64_t value) {
+        return value > 0 && (value & (value - 1)) == 0;
+    };
+    bool tiled = device_caps.tile_width > 0 && n_dims >= 2
+        && slot_index == nullptr
+        && is_power_of_two(device_caps.tile_width)
+        && is_power_of_two(device_caps.threads_per_block)
+        && device_caps.threads_per_block % device_caps.tile_width == 0;
+    // The dimensions in the order the iterations are numbered along: the
+    // fastest first, then the one a tile's height runs along, then the
+    // others in the order the loop names them.
+    std::vector<size_t> order;
+    order.push_back(fastest_dimension);
+    if (n_dims >= 2) {
+        order.push_back(tiled && next_store_dimension != fastest_dimension
+            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
+    }
+    for (size_t d = 0; d < n_dims; d++) {
+        if (std::find(order.begin(), order.end(), d) == order.end()) {
+            order.push_back(d);
+        }
+    }
+    // A launch with a reduction runs as one: its accumulators are numbered
+    // over all its iterations.
+    std::vector<ASR::expr_t*> host_starts, host_ends;
+    for (const DimInfo &dim : dim_info) {
+        host_starts.push_back(dim.host_start);
+        host_ends.push_back(dim.host_end);
+    }
+    int64_t chunk_fixed_iterations = 0;
+    std::vector<bool> splittable = gpu_splittable_dimensions(host_starts,
+        host_ends, index_kinds, order,
+        device_caps.chunked_launches && slot_index == nullptr,
+        pass_options.gpu_chunk_limit, chunk_fixed_iterations);
+    std::vector<ASR::symbol_t*> start_parameters(n_dims, nullptr);
+    std::vector<ASR::symbol_t*> end_parameters(n_dims, nullptr);
+
     std::vector<ASR::expr_t*> kernel_starts, kernel_ends;
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *host_start = dim_info[d].host_start;
         ASR::expr_t *host_end = dim_info[d].host_end;
-        bool start_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_start);
-        bool end_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_end);
+        // A dimension a launch may split has the bounds of the chunk it
+        // runs, which the launch passes, even when they are constants.
+        bool start_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_start)
+            && !splittable[d];
+        bool end_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_end)
+            && !splittable[d];
 
         if (start_is_const) {
             kernel_starts.push_back(dup_expr_to_scope(host_start, kernel_scope));
@@ -2300,6 +2440,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             call_args.push_back(al, carg);
             kernel_starts.push_back(
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
+            if (splittable[d]) start_parameters[d] = param;
         }
 
         if (end_is_const) {
@@ -2317,6 +2458,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             call_args.push_back(al, carg);
             kernel_ends.push_back(
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
+            if (splittable[d]) end_parameters[d] = param;
         }
     }
 
@@ -2383,29 +2525,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             kernel_scope->get_symbol(loop_var_names[d])));
     };
 
-    // A nest of two or more dimensions can be launched in tiles where the
-    // device asks for them (GpuDeviceCapabilities::tile_width): a block
-    // covers tile_width iterations of the fastest dimension by the rest of
-    // its threads along a second one, the dimension the stores step through
-    // next in memory (or else the next one in loop order), and the block
-    // index numbers the tiles. The launch runs whole tiles, and a thread of
-    // a partial tile that falls outside the nest returns. Where whole tiles
-    // would pad the nest by more than a quarter, as a short dimension
-    // does, the launch passes __tiled = 0 instead and the kernel numbers
-    // the iterations flat, one thread each (gpu_offload_launch.cpp). Tile
-    // widths and block sizes are powers of two, so a thread finds its place
-    // in a tile with constant shifts and masks, which a device compiler
-    // folds, and one division of the block index finds the tile. A
-    // reduction keeps the flat numbering, which gives every thread an
-    // accumulator slot.
-    auto is_power_of_two = [](int64_t value) {
-        return value > 0 && (value & (value - 1)) == 0;
-    };
-    bool tiled = device_caps.tile_width > 0 && n_dims >= 2
-        && slot_index == nullptr
-        && is_power_of_two(device_caps.tile_width)
-        && is_power_of_two(device_caps.threads_per_block)
-        && device_caps.threads_per_block % device_caps.tile_width == 0;
     ASR::expr_t *tiled_flag = nullptr;
     int tiled_arg = -1;
     if (tiled) {
@@ -2421,20 +2540,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             0, int_type, ASR::integerbozType::Decimal));
         call_args.push_back(al, carg);
         tiled_arg = static_cast<int>(call_args.n) - 1;
-    }
-    // The dimensions in the order the iterations are numbered along: the
-    // fastest first, then the one a tile's height runs along, then the
-    // others in the order the loop names them.
-    std::vector<size_t> order;
-    order.push_back(fastest_dimension);
-    if (n_dims >= 2) {
-        order.push_back(tiled && next_store_dimension != fastest_dimension
-            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
-    }
-    for (size_t d = 0; d < n_dims; d++) {
-        if (std::find(order.begin(), order.end(), d) == order.end()) {
-            order.push_back(d);
-        }
     }
 
     // Every thread past the number of iterations returns, so the per-dim
@@ -2978,6 +3083,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
     plan.tiled_arg = tiled_arg;
+    plan.order = order;
+    plan.start_parameters = start_parameters;
+    plan.end_parameters = end_parameters;
+    plan.chunk_fixed_iterations = chunk_fixed_iterations;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);

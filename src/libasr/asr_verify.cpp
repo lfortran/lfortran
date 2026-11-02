@@ -4135,7 +4135,51 @@ public:
                 "the condition of an overwritten buffer of a GpuKernelLaunch "
                 "must be a scalar logical");
         }
+        verify_gpu_kernel_launch_chunks(x,
+            *ASR::down_cast<ASR::Function_t>(x.m_kernel));
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
+    // The dimensions a launch may split into chunks (gpu_launch_dimension):
+    // the bound parameters of each are scalar integer parameters of the
+    // kernel, and the product of the constant extents of the dimensions a
+    // chunk covers whole is positive exactly when there are dimensions to
+    // split. The chunks of a launch count its iterations, so a kernel whose
+    // launch runs several threads per iteration (lanes) is not run in
+    // chunks.
+    void verify_gpu_kernel_launch_chunks(const GpuKernelLaunch_t &x,
+            const ASR::Function_t &kernel) {
+        auto is_integer_parameter = [&](ASR::symbol_t *parameter) {
+            for (size_t i = 0; i < kernel.n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*kernel.m_args[i])
+                        || ASR::down_cast<ASR::Var_t>(
+                            kernel.m_args[i])->m_v != parameter) {
+                    continue;
+                }
+                ASR::ttype_t *type = ASRUtils::symbol_type(parameter);
+                return ASRUtils::is_integer(*type)
+                    && !ASRUtils::is_array(type);
+            }
+            return false;
+        };
+        for (size_t i = 0; i < x.n_chunk_dimensions; i++) {
+            const ASR::gpu_launch_dimension_t &dim = x.m_chunk_dimensions[i];
+            require_id(is_integer_parameter(dim.m_start_parameter)
+                    && is_integer_parameter(dim.m_end_parameter),
+                "asr.verify.gpu_kernel_launch.chunk_parameter_kind",
+                "the bound parameters of a GpuKernelLaunch chunk dimension "
+                "must be scalar integer parameters of its kernel");
+        }
+        require_id(x.n_chunk_dimensions == 0
+                ? x.m_chunk_fixed_iterations == 0
+                : x.m_chunk_fixed_iterations > 0,
+            "asr.verify.gpu_kernel_launch.chunk_fixed_iterations",
+            "a GpuKernelLaunch with chunk dimensions must have positive "
+            "chunk_fixed_iterations, and one without must have 0");
+        require_id(x.n_chunk_dimensions == 0 || kernel.m_gpu == nullptr
+                || kernel.m_gpu->m_lanes == nullptr,
+            "asr.verify.gpu_kernel_launch.chunk_lanes",
+            "a GpuKernelLaunch of a kernel with lanes cannot run in chunks");
     }
 
     // The procedure whose code `scope` belongs to, past the BLOCK and

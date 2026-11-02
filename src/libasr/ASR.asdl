@@ -143,7 +143,15 @@ stmt
     -- element of the array overwritten[i], an actual argument of the launch,
     -- before it reads any of them: what the host holds there need not reach
     -- the device.
-    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if)
+    -- `chunk_dimensions` is empty when the launch always runs its kernel
+    -- once, and otherwise lists the dimensions of the iteration space a
+    -- launch of more iterations than the chunk limit splits into chunks,
+    -- in the order the kernel numbers the iterations, fastest-varying first
+    -- (see gpu_launch_dimension). Every chunk covers the other dimensions
+    -- whole: their extents are constants, whose product is
+    -- `chunk_fixed_iterations` (1 when there are none, and 0 when
+    -- `chunk_dimensions` is empty).
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if, gpu_launch_dimension* chunk_dimensions, int chunk_fixed_iterations)
     | GpuSync()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)
@@ -359,6 +367,12 @@ gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
+-- A dimension of the iteration space of a GpuKernelLaunch that the launch
+-- may split into chunks, each run as a launch of its kernel over a box of
+-- the space: the kernel parameters that hold its bounds, which each launch
+-- sets to the bounds of its box. The launch reads the bounds of the whole
+-- dimension from its arguments for them.
+gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)

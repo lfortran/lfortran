@@ -73,6 +73,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // A warp: one warp loads one contiguous 128-byte line of a
             // `float` array, and a block of 256 threads covers 8 of them.
             caps.tile_width = 32;
+            caps.chunked_launches = true;
             break;
         case GpuDevice::None:
             break;

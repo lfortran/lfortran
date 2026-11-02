@@ -2,7 +2,7 @@
     "basename": "asr-gpu_kernel_launch_component_fit_not_block-3153686",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_kernel_launch_component_fit_not_block.asr",
-    "infile_hash": "d449eb665cfb610cd58550ee53f9686613733f95c3eb659f2f2afd78",
+    "infile_hash": "e27eec09b71b5a9c17dea9d0d208cdbe7aaaa6146ffce802a3e8e2c3",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
