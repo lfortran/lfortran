@@ -5435,6 +5435,7 @@ RUN(NAME optional_16 LABELS gfortran llvm)
 RUN(NAME optional_17 LABELS gfortran llvm)
 RUN(NAME optional_18 LABELS gfortran llvm)
 RUN(NAME optional_19 LABELS gfortran llvm)
+RUN(NAME optional_20 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_02 LABELS gfortran llvm)
 

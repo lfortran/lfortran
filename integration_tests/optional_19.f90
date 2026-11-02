@@ -44,7 +44,6 @@ b%x = -1
 b%k = -1
 b%c = "xxxxx"
 call s(b=b)
-print *, b%x
 if (any(b%x /= 1)) error stop 1
 if (any(b%k /= 7)) error stop 2
 if (any(b%c /= "hello")) error stop 3
