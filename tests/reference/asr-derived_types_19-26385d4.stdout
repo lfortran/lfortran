@@ -212,6 +212,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             child_value:
@@ -301,6 +302,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             new:
@@ -345,6 +347,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             toml_value:
@@ -451,6 +454,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

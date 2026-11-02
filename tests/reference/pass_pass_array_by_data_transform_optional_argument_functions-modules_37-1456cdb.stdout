@@ -531,6 +531,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             build_target_ptr:
@@ -874,6 +875,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

@@ -37,6 +37,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             fcn~fpcast:
@@ -122,6 +123,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             fcn~fpcast_ptr:
@@ -321,6 +323,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

@@ -222,6 +222,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             gpu_kernel_source_11:

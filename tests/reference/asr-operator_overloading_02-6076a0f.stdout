@@ -223,6 +223,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             logical_gets_integer_use:
@@ -321,6 +322,7 @@
                                     )]
                                     ()
                                     Private
+                                    .true.
                                     .true.
                                     .true.
                                     ()

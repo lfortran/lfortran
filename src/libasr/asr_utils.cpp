@@ -11372,7 +11372,7 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header, Location* m_start_name,
     Location* m_end_name,
-    ASR::exec_spaceType m_exec_space) {
+    ASR::exec_spaceType m_exec_space, bool m_recursive) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
@@ -11380,7 +11380,8 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header, nullptr, m_start_name, m_end_name);
+        m_side_effect_free, m_recursive, m_c_header, nullptr, m_start_name,
+        m_end_name);
 }
 
 void cast_to_wider_kind(Allocator& al, ASR::expr_t*& a, ASR::expr_t*& b) {
@@ -14857,7 +14858,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Function(ASR::Function_t* function,
         function_type->m_restrictions, function_type->n_restrictions,
         function_type->m_is_restriction, function->m_deterministic,
         function->m_side_effect_free, nullptr, nullptr, nullptr,
-        function_type->m_exec_space));
+        function_type->m_exec_space, function->m_recursive));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_Module(ASR::Module_t* module_t,

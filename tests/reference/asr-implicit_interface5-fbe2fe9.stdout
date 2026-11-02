@@ -101,6 +101,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             driver~fpcast:
@@ -210,6 +211,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             driver~fpcast_ptr:
@@ -385,6 +387,7 @@
                     Public
                     .false.
                     .false.
+                    .true.
                     ()
                 )
         })

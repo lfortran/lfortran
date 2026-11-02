@@ -445,6 +445,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             module_bound:
@@ -574,6 +575,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1023,6 +1025,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             extent:
@@ -1316,6 +1319,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1842,6 +1846,7 @@
                     )]
                     ()
                     Public
+                    .true.
                     .true.
                     .true.
                     ()

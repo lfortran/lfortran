@@ -189,6 +189,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             merger32:
@@ -364,6 +365,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             merger64:
@@ -537,6 +539,7 @@
                                     []
                                     (Var 5 r)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

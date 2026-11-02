@@ -243,6 +243,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             get_elem_keyval:
@@ -386,6 +387,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -542,6 +544,7 @@
                                     )]
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -720,6 +723,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             get_value_float_sp:
@@ -831,6 +835,7 @@
                                     []
                                     ()
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

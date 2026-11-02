@@ -89,6 +89,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_atomic_start:
@@ -121,6 +122,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_barrier:
@@ -153,6 +155,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_critical_end:
@@ -185,6 +188,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_critical_name_end:
@@ -246,6 +250,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_critical_name_start:
@@ -307,6 +312,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_critical_start:
@@ -339,6 +345,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_auto_next:
@@ -450,6 +457,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_auto_start:
@@ -645,6 +653,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_dynamic_next:
@@ -756,6 +765,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_dynamic_start:
@@ -979,6 +989,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_end:
@@ -1011,6 +1022,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_end_nowait:
@@ -1043,6 +1055,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_guided_next:
@@ -1154,6 +1167,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_guided_start:
@@ -1377,6 +1391,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_runtime_next:
@@ -1488,6 +1503,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_runtime_start:
@@ -1683,6 +1699,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_static_next:
@@ -1794,6 +1811,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_loop_static_start:
@@ -2017,6 +2035,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_parallel:
@@ -2166,6 +2185,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_sections_end:
@@ -2198,6 +2218,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_sections_next:
@@ -2255,6 +2276,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_sections_start:
@@ -2338,6 +2360,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_task:
@@ -2607,6 +2630,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_taskwait:
@@ -2639,6 +2663,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             gomp_teams:
@@ -2788,6 +2813,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_max_threads:
@@ -2845,6 +2871,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_num_procs:
@@ -2902,6 +2929,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_num_teams:
@@ -2959,6 +2987,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_num_threads:
@@ -3016,6 +3045,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_team_num:
@@ -3073,6 +3103,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_team_size:
@@ -3156,6 +3187,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_thread_num:
@@ -3213,6 +3245,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_get_wtime:
@@ -3270,6 +3303,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             omp_set_num_threads:
@@ -3327,6 +3361,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 )
                         })

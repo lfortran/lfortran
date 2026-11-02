@@ -451,6 +451,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             change_positions_int:
@@ -897,6 +898,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             change_positions_tmpl:
@@ -1042,6 +1044,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             ~neq_intrinsic1:
@@ -1165,6 +1168,7 @@
                                     )]
                                     (Var 11 ret)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()
@@ -1746,6 +1750,7 @@
                                                     Public
                                                     .true.
                                                     .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             ne:
@@ -1871,6 +1876,7 @@
                                                     []
                                                     (Var 6 ne)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()
@@ -2043,6 +2049,7 @@
                                                     []
                                                     (Var 4 ne)
                                                     Public
+                                                    .true.
                                                     .true.
                                                     .true.
                                                     ()

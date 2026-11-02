@@ -2,7 +2,7 @@
     "basename": "asr-host_associated_not_own_frame-ff182e3",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/host_associated_not_own_frame.asr",
-    "infile_hash": "261cc68c0461c1102921eabd44a8745c8c540fb700ba0cfdc5141973",
+    "infile_hash": "d8b10678b9ae74bdf0daa79f12c13b5aa37e445f739c136f7b70c105",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

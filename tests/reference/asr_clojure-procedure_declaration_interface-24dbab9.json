@@ -2,11 +2,11 @@
     "basename": "asr_clojure-procedure_declaration_interface-24dbab9",
     "cmd": "lfortran --show-asr --no-color --no-indent --clojure --no-member-names {infile} -o {outfile}",
     "infile": "tests/asr/compile/procedure_declaration_interface.asr",
-    "infile_hash": "78662c8a03592972ccf50e59f056f83ca8eab0d11cbae40dccef226d",
+    "infile_hash": "642a93b3a900bc25f25a0c0ef9832e586fdbd8b68847c4793ca00980",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_clojure-procedure_declaration_interface-24dbab9.stdout",
-    "stdout_hash": "0e1ca2683d195f2b7300c2c2508960658e74a2c61b792458995b60f4",
+    "stdout_hash": "df9aad658786a6bc9ecfd76fe1856288ad003bde896791f58cde684e",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

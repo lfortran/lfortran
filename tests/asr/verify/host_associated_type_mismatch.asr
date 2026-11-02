@@ -191,6 +191,7 @@
               :Public
               true
               true
+              true
               nil
             )
           }

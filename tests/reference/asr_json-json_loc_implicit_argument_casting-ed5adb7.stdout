@@ -207,6 +207,7 @@
                         "access": "Public",
                         "deterministic": true,
                         "side_effect_free": true,
+                        "recursive": true,
                         "module_file": []
                     },
                     "loc": {
@@ -429,6 +430,7 @@
                                         "access": "Public",
                                         "deterministic": false,
                                         "side_effect_free": false,
+                                        "recursive": true,
                                         "module_file": []
                                     },
                                     "loc": {
@@ -1127,6 +1129,7 @@
                         "access": "Public",
                         "deterministic": false,
                         "side_effect_free": false,
+                        "recursive": true,
                         "module_file": []
                     },
                     "loc": {

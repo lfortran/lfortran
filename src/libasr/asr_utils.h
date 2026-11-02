@@ -3218,7 +3218,8 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
     bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
     Location* m_end_name = nullptr,
-    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host);
+    ASR::exec_spaceType m_exec_space = ASR::exec_spaceType::Host,
+    bool m_recursive = true);
 
 
 class SymbolDuplicator {

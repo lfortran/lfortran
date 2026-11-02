@@ -561,6 +561,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             less_than_inverse:
@@ -723,6 +724,7 @@
                                     Public
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             less_than_overload_use:
@@ -855,6 +857,7 @@
                                     )]
                                     (Var 5 less_than_overload_use)
                                     Public
+                                    .true.
                                     .true.
                                     .true.
                                     ()

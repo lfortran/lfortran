@@ -424,6 +424,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             __module_prif_prif_init:
@@ -481,6 +482,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             __module_prif_prif_initial_team_index:
@@ -648,6 +650,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             __module_prif_prif_stop:
@@ -761,6 +764,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             __module_prif_prif_sync_all:
@@ -878,6 +882,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             __module_prif_prif_team_type:
@@ -1053,6 +1058,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             coarrays_51:
@@ -1185,6 +1191,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             ca:
@@ -1674,6 +1681,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             ca:
@@ -1781,6 +1789,7 @@
                                     Public
                                     .false.
                                     .false.
+                                    .true.
                                     ()
                                 ),
                             cb:
@@ -2207,6 +2216,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             lcompilers_prif_this_image:
@@ -2271,6 +2281,7 @@
                     Private
                     .false.
                     .false.
+                    .true.
                     ()
                 ),
             prif_coarray_handle:

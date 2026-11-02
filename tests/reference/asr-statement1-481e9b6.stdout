@@ -136,6 +136,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             dp:
@@ -322,6 +323,7 @@
                                     Public
                                     .false.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             j:
@@ -478,6 +480,7 @@
                                     (Var 3 sfloat_return_var_name)
                                     Public
                                     .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

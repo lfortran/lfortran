@@ -221,6 +221,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             datetime_to_string:
@@ -689,6 +690,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .true.
                                     ()
                                 ),
                             new_toml_time:
@@ -1088,6 +1090,7 @@
                                     Private
                                     .true.
                                     .true.
+                                    .false.
                                     ()
                                 ),
                             time_to_string:
@@ -1492,6 +1495,7 @@
                                     )]
                                     ()
                                     Private
+                                    .true.
                                     .true.
                                     .true.
                                     ()
