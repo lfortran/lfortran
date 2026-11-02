@@ -3505,7 +3505,8 @@ namespace Eoshift {
         declare_basic_variables(eoshift_fn_name);
         fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
         fill_func_arg("shift", arg_types[1]);
-        fill_func_arg("boundary", arg_types[2]);
+        fill_func_arg("boundary", ASRUtils::is_array(arg_types[2])
+            ? duplicate_type_with_empty_dims(al, arg_types[2]) : arg_types[2]);
         ASR::ttype_t* return_type_ = return_type;
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             bool is_allocatable = ASRUtils::is_allocatable(return_type);
@@ -3534,7 +3535,6 @@ namespace Eoshift {
         ASR::expr_t* abs_shift = declare("z", b.int_type(index_kind), Local);
         ASR::expr_t* abs_shift_val = declare("k", b.int_type(index_kind), Local);
         ASR::expr_t* shift_val = declare("shift_val", b.int_type(index_kind), Local);
-        ASR::expr_t* boundary = args[2];
 
         int n_dims = extract_n_dims_from_ttype(return_type);
         std::vector<ASR::expr_t*> do_loop_variables;
@@ -3542,6 +3542,8 @@ namespace Eoshift {
             ASR::expr_t* var = declare("i_" + std::to_string(idx), b.int_type(index_kind), Local);
             do_loop_variables.push_back(var);
         }
+        ASR::expr_t* boundary_value = ASRUtils::is_array(arg_types[2])
+            ? b.ArrayItem_01(args[2], do_loop_variables) : args[2];
 
         if (is_shift_array) {
             int rank = n_dims;
@@ -3559,7 +3561,7 @@ namespace Eoshift {
             ASR::stmt_t* copy_element = b.Assignment(
                 b.ArrayItem_01(result, res_vars), b.ArrayItem_01(args[0], array_vars));
             ASR::stmt_t* fill_element = b.Assignment(
-                b.ArrayItem_01(result, res_vars), boundary);
+                b.ArrayItem_01(result, res_vars), boundary_value);
             ASR::expr_t* lb = b.GetLBound(args[0], shifting_dim, index_kind);
             std::vector<ASR::stmt_t*> inner_body;
             inner_body.push_back(b.Assignment(shift_val, b.ArrayItem_01(args[1], do_loop_variables)));
@@ -3640,7 +3642,7 @@ namespace Eoshift {
         ));
 
         ASR::stmt_t *do_loop_fill = PassUtils::create_do_loop_helper_eoshift_fill(al, loc,
-            do_loop_variables, i, boundary, args[0], result, 0, shifting_dim);
+            do_loop_variables, i, boundary_value, args[0], result, 0, shifting_dim);
 
         body.push_back(al, b.DoLoop(j, b.i_idx(1, index_kind), abs_shift,
             {do_loop_fill, b.Assignment(i, b.Add(i, b.i_idx(1, index_kind)))}, nullptr));
