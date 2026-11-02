@@ -2694,6 +2694,7 @@ RUN(NAME implicit_typing_16 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_17 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_typing_18 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_21 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a main program with internal procedures
+RUN(NAME implicit_typing_22 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a module procedure with internal procedures
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

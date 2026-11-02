@@ -762,8 +762,8 @@ public:
         size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
             AST::DeclStmtKind::Implicit);
         if (implicit_stack.size() > 0 && !is_interface) {
-            // A procedure contained in a module or program starts from its
-            // host's mapping; its own IMPLICIT statements, if any, override
+            // A procedure contained in a module, submodule, program or
+            // procedure starts from its host's mapping; its own IMPLICIT statements, if any, override
             // only the letters they name (F2018 8.7 p4). Interface bodies
             // start from the default rules.
             implicit_dictionary = implicit_stack.back();
@@ -2427,6 +2427,11 @@ public:
             is_Function = false;
         }
         process_simd_variables();
+        // The internal procedures start from this procedure's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2445,6 +2450,9 @@ public:
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
         visit_later_interface_decls(later_interface_decls);
         Vec<ASR::expr_t*> args;
@@ -3415,9 +3423,15 @@ public:
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
+        // The internal procedures start from this function's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             SymbolTable *host_scope = current_scope;
@@ -3429,8 +3443,12 @@ public:
                 // current.
                 current_scope = host_scope;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
 
         // Create and register the function
