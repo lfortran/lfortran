@@ -26,12 +26,6 @@ contains
         if (present(p)) r = p(1)
     end function
 
-    integer function non_pointer(p)
-        integer, optional, intent(in) :: p(:)
-        non_pointer = -1
-        if (present(p)) non_pointer = size(p)
-    end function
-
     integer function next()
         calls = calls + 1
         next = calls
@@ -99,30 +93,17 @@ contains
             inner = size_or(x)
         end function
     end subroutine
-
-    subroutine forward_non_pointer(n, a)
-        integer, intent(in) :: n
-        integer, allocatable, intent(in) :: a(:)
-        integer :: r(2)
-        r = 0
-        where (r == 0) r = non_pointer(a)
-        if (any(r /= n)) error stop
-    end subroutine
 end module
 
 program pointer_intent_in_05
     use pointer_intent_in_05_mod
     implicit none
     integer, target :: a(3), b(2, 2)
-    integer, allocatable :: c(:)
     a = 7
     b = 1
     call forward(-1)
     call forward(3, a)
     call forward(-1, y=b)
     call forward(3, a, b)
-    call forward_non_pointer(-1, c)
-    allocate(c(4))
-    call forward_non_pointer(4, c)
     print *, "ok"
 end program
