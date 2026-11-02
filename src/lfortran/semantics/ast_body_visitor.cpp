@@ -5095,13 +5095,17 @@ public:
                                         )
                                     );
                                 }
+                                // Record the mold's element type: it marks the
+                                // allocation as MOLD=, so the mold's values are not
+                                // copied, and gives a class(*) target its dynamic type.
+                                ASR::ttype_t* mold_elem_type = ASRUtils::extract_type(mold_type);
                                 if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->n_dims > 0 && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                     ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
-                                    new_arg.m_type = nullptr;
+                                    new_arg.m_type = mold_elem_type;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_array_type->m_dims;
                                     new_arg.n_dims = mold_array_type->n_dims;
@@ -5145,7 +5149,7 @@ public:
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
-                                    new_arg.m_type = nullptr;
+                                    new_arg.m_type = mold_elem_type;
                                     new_arg.m_sym_subclass = nullptr;
                                     new_arg.m_dims = mold_dims_vec.p;
                                     new_arg.n_dims = mold_dims_vec.size();
@@ -5261,20 +5265,14 @@ public:
                     }
                 } else {
                     // n_dims > 0: explicit bounds provided in the allocate statement.
-                    // For mold with unlimited polymorphic target, record the mold type
-                    // so the codegen can copy type info from the mold at runtime.
+                    // Record the mold's element type: it marks the allocation as
+                    // MOLD=, so the mold's values are not copied, and gives a
+                    // class(*) target its dynamic type.
                     if (mold_cond) {
-                        ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                        if (ASRUtils::is_unlimited_polymorphic_type(a_type)) {
-                            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(
-                                ASRUtils::expr_type(mold));
-                            ASR::alloc_arg_t new_arg = alloc_args_vec[i];
-                            new_arg.m_type = mold_type;
-                            new_alloc_args_vec.push_back(al, new_arg);
-                        } else {
-                            new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
-                        }
+                        ASR::alloc_arg_t new_arg = alloc_args_vec[i];
+                        new_arg.m_type = ASRUtils::extract_type(
+                            ASRUtils::expr_type(mold));
+                        new_alloc_args_vec.push_back(al, new_arg);
                     } else {
                         new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                     }
