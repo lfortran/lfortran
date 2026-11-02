@@ -17,7 +17,6 @@ passes = [
         "inline_function_calls",
         "replace_symbolic",
         "replace_intrinsic_function",
-        "loop_unroll",
         "nested_vars",
         "replace_param_to_const",
         "array_by_data",

@@ -40,7 +40,6 @@ struct PassOptions {
     std::string runtime_library_dir;
     bool always_run = false; // for unused_functions pass
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
-    int64_t unroll_factor = 32; // for loop_unroll pass
     bool fast = false; // is fast flag enabled.
     bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
     bool verbose = false; // For developer debugging
