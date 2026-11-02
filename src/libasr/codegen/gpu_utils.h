@@ -554,7 +554,7 @@ inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
     switch (t->type) {
         case ASR::ttypeType::Integer:
             switch (ASR::down_cast<ASR::Integer_t>(t)->m_kind) {
-                case 4: case 8: return true;
+                case 1: case 2: case 4: case 8: return true;
                 default: return false;
             }
         case ASR::ttypeType::Real:

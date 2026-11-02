@@ -698,6 +698,13 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
         return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, v,
             ASRUtils::duplicate_type(al, t)));
     };
+    // The largest integer of the accumulator's kind; the smallest is one
+    // below its negation.
+    auto int_max = [&]() -> int64_t {
+        LCOMPILERS_ASSERT(kind == 1 || kind == 2 || kind == 4 || kind == 8);
+        return kind == 1 ? INT8_MAX : kind == 2 ? INT16_MAX
+            : kind == 4 ? INT32_MAX : INT64_MAX;
+    };
     switch (op) {
         case ASR::reduction_opType::ReduceAdd:
         case ASR::reduction_opType::ReduceSub:
@@ -715,13 +722,13 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
                 return fraction(kind == 8 ? 1.7976931348623157e308
                                           : 3.40282347e38);
             }
-            return whole(kind == 8 ? INT64_MAX : INT32_MAX);
+            return whole(int_max());
         case ASR::reduction_opType::ReduceMAX:
             if (is_real) {
                 return fraction(kind == 8 ? -1.7976931348623157e308
                                           : -3.40282347e38);
             }
-            return whole(kind == 8 ? INT64_MIN : INT32_MIN);
+            return whole(-int_max() - 1);
         case ASR::reduction_opType::ReduceAND:
         case ASR::reduction_opType::ReduceOR:
         case ASR::reduction_opType::ReduceEQV:
