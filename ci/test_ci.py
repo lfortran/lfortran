@@ -855,7 +855,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
         cache = wasm.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
         self.assertNotIn("variant: sccache", cache)
-        self.assertIn("key: ${{ github.job }}-ubuntu-latest\n", cache)
+        self.assertIn("key: ${{ github.job }}-pixi-ubuntu-latest\n", cache)
         self.assertIn("max-size: 1500M", cache)
         for name in ("Build native LFortran", "Build to WASM"):
             step = wasm.split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
@@ -867,6 +867,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertTrue(cleans)
         for clean in cleans:
             self.assertIn("-e .ccache", clean)
+            # Nor the Pixi environments.
+            self.assertIn("-e .pixi", clean)
 
     def test_every_job_has_a_timeout(self):
         # Without timeout-minutes, a hung job holds a runner for GitHub's
