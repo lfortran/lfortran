@@ -146,6 +146,7 @@ program pointer_intent_in_03
 
     h%arr = 3.0
     h%v = [1, 2, 3, 4, 5]
+    hs(1)%v = 9
     hs(2)%v = 9
     call shape_2d(h%arr, rows, cols)
     if (rows /= 2 .or. cols /= 3) error stop "component shape"
