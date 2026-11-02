@@ -617,64 +617,36 @@ void GpuOffloadVisitor::remap_block_to_own_scope(ASR::Block_t *block) {
 void GpuOffloadVisitor::retarget_nested_calls_in(
         ASR::symbol_t *owner, SymbolTable *scope,
         ASR::stmt_t **body, size_t n_body) {
-    std::function<void(ASR::stmt_t**, size_t)> walk =
-        [&](ASR::stmt_t **stmts, size_t n_stmts) {
-        for (size_t i = 0; i < n_stmts; i++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                ASR::BlockCall_t *bc =
-                    ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
-                if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-                ASR::Block_t *inner =
-                    ASR::down_cast<ASR::Block_t>(bc->m_m);
-                ASR::symbol_t *local =
-                    scope->get_symbol(inner->m_name);
-                if (local && ASR::is_a<ASR::Block_t>(*local)
-                        && local != owner) {
-                    bc->m_m = local;
-                    retarget_block_calls_in(
-                        ASR::down_cast<ASR::Block_t>(local));
-                }
-                continue;
+    GpuConstructCallVisitor walk(
+        [&](ASR::BlockCall_t &bc) {
+            if (!ASR::is_a<ASR::Block_t>(*bc.m_m)) return;
+            ASR::Block_t *inner = ASR::down_cast<ASR::Block_t>(bc.m_m);
+            ASR::symbol_t *local = scope->get_symbol(inner->m_name);
+            if (local && ASR::is_a<ASR::Block_t>(*local)
+                    && local != owner) {
+                bc.m_m = local;
+                retarget_block_calls_in(ASR::down_cast<ASR::Block_t>(local));
             }
-            if (ASR::is_a<ASR::AssociateBlockCall_t>(*stmts[i])) {
-                // An ASSOCIATE inside the construct is copied with it,
-                // and the call has to name the copy for the same
-                // reason a nested block's does.
-                ASR::AssociateBlockCall_t *abc =
-                    ASR::down_cast<ASR::AssociateBlockCall_t>(stmts[i]);
-                ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(
-                    abc->m_m);
-                if (inner == nullptr
-                        || !ASR::is_a<ASR::AssociateBlock_t>(*inner)) {
-                    continue;
-                }
-                ASR::symbol_t *local = scope->get_symbol(
-                    ASRUtils::symbol_name(inner));
-                if (local && ASR::is_a<ASR::AssociateBlock_t>(*local)) {
-                    abc->m_m = local;
-                    ASR::AssociateBlock_t *ab =
-                        ASR::down_cast<ASR::AssociateBlock_t>(local);
-                    retarget_nested_calls_in(local, ab->m_symtab,
-                        ab->m_body, ab->n_body);
-                }
-                continue;
+        },
+        [&](ASR::AssociateBlockCall_t &abc) {
+            ASR::symbol_t *inner = ASRUtils::symbol_get_past_external(abc.m_m);
+            if (inner == nullptr || !ASR::is_a<ASR::AssociateBlock_t>(*inner)) {
+                return;
             }
-            if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                ASR::DoLoop_t *dl =
-                    ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                walk(dl->m_body, dl->n_body);
-            } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(stmts[i]);
-                walk(ifs->m_body, ifs->n_body);
-                walk(ifs->m_orelse, ifs->n_orelse);
-            } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
-                ASR::WhileLoop_t *wl =
-                    ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
-                walk(wl->m_body, wl->n_body);
+            ASR::symbol_t *local = scope->get_symbol(
+                ASRUtils::symbol_name(inner));
+            if (local && ASR::is_a<ASR::AssociateBlock_t>(*local)) {
+                abc.m_m = local;
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(local);
+                retarget_nested_calls_in(local, ab->m_symtab,
+                    ab->m_body, ab->n_body);
             }
         }
-    };
-    walk(body, n_body);
+    );
+    for (size_t i = 0; i < n_body; i++) {
+        walk.visit_stmt(*body[i]);
+    }
 }
 
 void GpuOffloadVisitor::retarget_block_calls_in(ASR::Block_t *block) {

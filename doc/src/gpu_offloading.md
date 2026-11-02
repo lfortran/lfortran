@@ -132,6 +132,9 @@ kernel, lowers it through the shared ASR passes, lays out its arguments and
 generates the device source. It never falls back to the CPU:
 
 * There is no CPU alternative kept alongside the kernel, and nothing to undo.
+* Outlining copies nested `block` and `associate` scopes with their bodies.
+  Calls inside nested parallel regions name those copied scopes and the
+  kernel's copies of their helper procedures, not the host's symbols.
 * A construct the pipeline cannot lower yet is a compiler error at the loop
   ("not yet implemented"). It is fixed like any other compiler bug: reduce it to
   a minimal reproducer, fix the pipeline, add an integration test.
