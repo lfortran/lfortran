@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_cuda_kernel-gpu_do_loop_01-acadb78.stdout",
-    "stdout_hash": "6cb8ccc168536c34a66ea69749913334a171e03a22d9a46fe9f0db15",
+    "stdout_hash": "eb178ba5b66f9ddfe994907628816bdd42e4c606c26369c14b072034",
     "stderr": "gpu_cuda_kernel-gpu_do_loop_01-acadb78.stderr",
     "stderr_hash": "2ba1a0fba4ce19c449ffc1dfef5a42e8b182fdd615206b1cb9ac6a47",
     "returncode": 0
