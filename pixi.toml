@@ -197,6 +197,17 @@ platforms = ["osx-arm64", "linux-64"]
 [feature.cmake331.dependencies]
 cmake = "==3.31.2"
 
+# The documentation (doc/build.py), which Exhaustive's "Documentation" job
+# builds with the docs environment after installing the Jupyter kernel.
+[feature.docs]
+platforms = ["osx-arm64", "linux-64"]
+[feature.docs.dependencies]
+sphinx = "==4.5.0"
+nbsphinx = "==0.8.9"
+myst-parser = "==0.18.0"
+sphinx-copybutton = "==0.5.0"
+sphinx-material = "==0.0.35"
+
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
 [feature.build]
@@ -482,6 +493,7 @@ apps11 = {features = ["llvm11", "build", "test", "node", "apps", "mpi"]}
 apps19 = {features = ["llvm19", "build", "test", "apps", "mpi"]}
 apps22 = {features = ["llvm22", "build", "test", "apps"]}
 cmake331 = {features = ["cmake331"], no-default-feature = true}
+docs = {features = ["llvm11", "build", "test", "docs"]}
 test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
