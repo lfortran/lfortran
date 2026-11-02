@@ -17002,6 +17002,10 @@ public:
         in_block_context = true;
         declare_vars(*block);
         in_block_context = false;
+        // Declaring the locals clears the debug location; the statements
+        // of the body need not set one, and the code that ends the
+        // construct (finalizing its locals) is emitted with the current one.
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
         block_cleanups.push_back({block->m_symtab, heap_arrays_before,
             wb_before, saved_stack, loop_or_block_end.size(), true});
         loop_or_block_end.push_back(blockend);
