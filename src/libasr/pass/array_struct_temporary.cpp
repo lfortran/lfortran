@@ -3313,8 +3313,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return !ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_array(ASRUtils::expr_type(expr));
     }
 
+    // `is_defined_by_callee`: the actual argument is associated with a dummy
+    // that the procedure may define, so a section is never copied into a
+    // temporary, whose new value would be lost, but bound to a pointer.
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
-        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
+        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target,
+        bool is_defined_by_callee=false) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
         ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
@@ -3324,7 +3328,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         bool is_read_in_place = target_operands_read_in_place.count(expr) > 0 ||
             target_operands_read_in_place.count(x_m_args_i) > 0;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
-                    (is_read_in_place ||
+                    (is_read_in_place || is_defined_by_callee ||
                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr, dummies_sharing_actual)) &&
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
@@ -3604,7 +3608,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                // E.g. the target `b(1:2)` of the elemental defined
+                // assignment `b(1:2) = b(2:3)`, which is passed to its
+                // `intent(inout)` dummy.
+                bool is_defined_by_callee = is_call && dummy &&
+                    (dummy->m_intent == ASRUtils::intent_out ||
+                     dummy->m_intent == ASRUtils::intent_inout);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target,
+                    is_defined_by_callee);
                 replaced_call_arg = replaced_call_arg || is_call;
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
