@@ -9,6 +9,14 @@ program pointer_intent_in_02
   integer, target :: c(0:3)
   character(len=3), target :: ch(2)
   real(dp), allocatable, target :: b(:,:)
+  integer :: r
+  abstract interface
+    subroutine sum_iface(p, r)
+      integer, pointer, intent(in) :: p(:)
+      integer, intent(out) :: r
+    end subroutine
+  end interface
+  procedure(sum_iface), pointer :: fp
   a = 1.0_dp
   a(4, 5) = 7.0_dp
   c = [10, 11, 12, 13]
@@ -23,6 +31,9 @@ program pointer_intent_in_02
   call check_char(ch)
   call wrap_2d(a)
   call wrap_1d(c)
+  fp => sum_ptr
+  call fp(c, r)
+  if (r /= 46) error stop "wrong sum through procedure pointer"
 
 contains
 
@@ -77,6 +88,13 @@ contains
     integer, intent(in) :: n
     if (size(p) /= n .or. lbound(p, 1) /= 1) error stop "wrong shape of 1d p"
     if (p(1) /= 10 .or. p(n) /= 13) error stop "wrong elements of 1d p"
+  end subroutine
+
+  subroutine sum_ptr(p, r)
+    integer, pointer, intent(in) :: p(:)
+    integer, intent(out) :: r
+    if (lbound(p, 1) /= 0) error stop "wrong lbound through procedure pointer"
+    r = sum(p)
   end subroutine
 
 end program
