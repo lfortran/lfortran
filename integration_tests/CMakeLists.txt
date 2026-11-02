@@ -3705,6 +3705,15 @@ RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thun
 RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
+RUN(NAME procedure_argument_specialization_01 LABELS gfortran llvm)
+# Passes only with the copies that --fast makes: without them the recursive
+# host needs more than 2 thunks.
+RUN(NAME procedure_argument_specialization_02 LABELS gfortran llvm
+    EXTRA_ARGS --fast --internal-procedure-thunks=2)
+RUN(NAME procedure_argument_specialization_03 LABELS gfortran llvm)
+RUN(NAME procedure_argument_specialization_04 LABELS gfortran llvm)
+RUN(NAME procedure_argument_specialization_05 LABELS gfortran llvm)
+RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -4607,6 +4616,7 @@ RUN(NAME nested_vars_19 LABELS gfortran llvm)
 RUN(NAME nested_vars_27 LABELS gfortran llvm)
 RUN(NAME nested_vars_28 LABELS gfortran llvm)
 RUN(NAME nested_vars_31 LABELS gfortran llvm)
+RUN(NAME nested_vars_32 LABELS gfortran llvm)
 
 # No `wasm` label: the wasm backend does not support host association yet
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)

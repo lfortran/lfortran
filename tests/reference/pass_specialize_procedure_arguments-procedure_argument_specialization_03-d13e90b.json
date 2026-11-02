@@ -1,0 +1,13 @@
+{
+    "basename": "pass_specialize_procedure_arguments-procedure_argument_specialization_03-d13e90b",
+    "cmd": "lfortran --pass=specialize_procedure_arguments --show-asr --no-color --fast {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/procedure_argument_specialization_03.f90",
+    "infile_hash": "6de0d997dbf126aad2942e7454b1ef6d4a2eadb7f9b94f98c3f400c9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_specialize_procedure_arguments-procedure_argument_specialization_03-d13e90b.stdout",
+    "stdout_hash": "fb7037392d5f7315feda6982b4090df59767b09b6ad54a819342b518",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

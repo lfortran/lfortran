@@ -1787,6 +1787,15 @@ public:
                 collect(host, nullptr, child.frame_designator, deps);
                 pending.insert(pending.end(), deps.begin(), deps.end());
             }
+            if (child.frame_dummy != nullptr) {
+                // The host variables that the type of the frame dummy
+                // refers to, such as the length of a member, also when the
+                // procedure only calls procedures that use the variable
+                std::set<ASR::symbol_t*> deps;
+                collect(host, ASRUtils::symbol_type(child.frame_dummy),
+                    nullptr, deps);
+                pending.insert(pending.end(), deps.begin(), deps.end());
+            }
             std::vector<ASR::symbol_t*> created;
             while (!pending.empty()) {
                 ASR::symbol_t *e = pending.back();

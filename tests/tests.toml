@@ -7410,3 +7410,19 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/save_before_declaration_01.f90"
 semantics_only_cc = true
+
+# With --fast, a procedure that an internal procedure is passed to is copied
+# into the host, and the recursive call in the copy calls the copy.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_03.f90"
+asr = true
+pass_with_llvm = true
+pass = "specialize_procedure_arguments"
+fast = true
+
+# With --fast, the copy in the recursive host calls the internal procedure
+# directly: there are no thunks of it.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_02.f90"
+llvm = true
+options = "--fast --internal-procedure-thunks=2"
