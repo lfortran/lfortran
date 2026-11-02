@@ -113,11 +113,6 @@ jobs:
             set "PATH=%PATH:C:\mingw64\bin;=%"
             shell ci\test.sh
 
-      - name: Install Timeout (macOS)
-        shell: bash -e {0}
-        if: contains(matrix.os, 'macos')
-        run: brew install coreutils
-
       - name: LSP Test (Linux / macOS)
         shell: bash -e {0}
         if: (contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')) && contains(matrix.llvm-version, '11')
@@ -132,22 +127,19 @@ jobs:
             PYTEST_TIMEOUT: 10
         run: |
             set -ex
-            pip install src/server/tests tests/server
             timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
-                pytest -vv \
+                pixi run -e llvm11 lsp_tests -vv \
                     --showlocals \
                     --timeout=$PYTEST_TIMEOUT \
-                    --execution-strategy="concurrent" \
-                    tests/server
+                    --execution-strategy="concurrent"
             set +e
             for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
                 echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
                 timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
-                    pytest -vv \
+                    pixi run -e llvm11 lsp_tests -vv \
                         --showlocals \
                         --timeout=$PYTEST_TIMEOUT \
-                        --execution-strategy="parallel" \
-                        tests/server
+                        --execution-strategy="parallel"
                 EXIT_CODE=$?
                 if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
                     break
@@ -180,19 +172,6 @@ jobs:
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            mkdir build-kokkos
-            cd build-kokkos
-            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-            tar xaf 3.1.01.tar.gz
-            cd kokkos-3.1.01
-            mkdir build
-            cd build
-            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
-            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-            make
-            make install
-            cd ../../..
-
             pixi run -e llvm11 integration_tests -b cpp c c_nopragma
             pixi run -e llvm11 integration_tests -b cpp c c_nopragma -f
 
