@@ -63,6 +63,10 @@ filename = "asr/verify/frame_member_not_bound.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/call_frame_argument_not_frame.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 

@@ -2617,6 +2617,71 @@ public:
             "', which takes the frame of its host, before the frame is bound");
     }
 
+    // The frame type of `e` when it designates a frame (see nested_vars):
+    // the frame object or the frame dummy of a procedure, or a frame slot
+    // that points at a frame; nullptr otherwise.
+    static ASR::symbol_t *frame_type_of(ASR::expr_t *e) {
+        ASR::symbol_t *s = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            s = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            s = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
+        }
+        s = s != nullptr ? ASRUtils::symbol_get_past_external(s) : nullptr;
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        if (s == nullptr || !ASR::is_a<ASR::Variable_t>(*s) || t == nullptr ||
+                !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(t))) {
+            return nullptr;
+        }
+        ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+        return ASRUtils::is_frame_type(decl)
+            ? ASRUtils::symbol_get_past_external(decl) : nullptr;
+    }
+
+    // A procedure that takes the frame of its host (see nested_vars) is
+    // always passed a frame of that type: a call has no other way to give
+    // it the variables of the host.
+    template <typename T>
+    void verify_frame_actuals(const T &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+            return;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*arg)) {
+                continue;
+            }
+            ASR::Variable_t *dummy = ASR::down_cast<ASR::Variable_t>(arg);
+            if (dummy->m_type == nullptr ||
+                    !ASR::is_a<ASR::StructType_t>(*dummy->m_type) ||
+                    !ASRUtils::is_frame_type(dummy->m_type_declaration)) {
+                continue;
+            }
+            ASR::symbol_t *type = ASRUtils::symbol_get_past_external(
+                dummy->m_type_declaration);
+            ASR::expr_t *actual = i < x.n_args ? x.m_args[i].m_value : nullptr;
+            // In an interface, a dummy argument is a FunctionParam, whose
+            // type is all that tells which dummy it is
+            bool frame = actual != nullptr &&
+                (ASR::is_a<ASR::FunctionParam_t>(*actual)
+                    ? ASRUtils::types_equal(ASRUtils::expr_type(actual),
+                        dummy->m_type, nullptr, nullptr, false)
+                    : frame_type_of(actual) == type);
+            if (!frame) {
+                require_id(false, "asr.verify.call.frame_argument",
+                    "the call to '" + std::string(fn->m_name) + "' must "
+                    "pass a frame of type '" +
+                    std::string(ASRUtils::symbol_name(type)) + "' as its "
+                    "argument '" + std::string(dummy->m_name) + "'");
+            }
+        }
+    }
+
     // The statements that use a frame object, also in the BLOCK constructs
     // they enter
     class FrameUse: public BaseWalkVisitor<FrameUse> {
@@ -4159,6 +4224,7 @@ public:
         record_subroutine_call_dependencies(x.m_name);
 
         verify_args(x);
+        verify_frame_actuals(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
     }
 
@@ -4427,6 +4493,7 @@ public:
             }
         }
         verify_args(x);
+        verify_frame_actuals(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
         visit_ttype(*x.m_type);
     }
