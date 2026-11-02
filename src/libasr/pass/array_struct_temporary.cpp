@@ -3314,8 +3314,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     // `is_defined_by_callee`: the actual argument is associated with a dummy
-    // that the procedure may define, so a section is never copied into a
-    // temporary, whose new value would be lost, but bound to a pointer.
+    // that the procedure may define, so a section without vector subscripts
+    // is bound to a pointer rather than copied into a temporary, whose new
+    // value would be lost.
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target,
         bool is_defined_by_callee=false) {
