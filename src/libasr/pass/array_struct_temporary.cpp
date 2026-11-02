@@ -3445,6 +3445,43 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return null_pointer_temporary;
     }
 
+    // Whether `value` is a whole array variable or array component that is
+    // neither a pointer nor allocatable, which a pointer dummy can be
+    // associated with only through a pointer of its own.
+    bool is_nonpointer_array_target(ASR::expr_t* value) {
+        if( value == nullptr ) {
+            return false;
+        }
+        ASR::expr_t* value_no_cast = ASRUtils::get_past_array_physical_cast(value);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value_no_cast);
+        return (ASR::is_a<ASR::Var_t>(*value_no_cast) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*value_no_cast)) &&
+            ASRUtils::is_array(value_type) &&
+            !ASRUtils::is_pointer(value_type) &&
+            !ASRUtils::is_allocatable(value_type);
+    }
+
+    // Declares a temporary array pointer, associates it with `target`, a
+    // nonpointer array, and returns it. The pointer has the shape and bounds
+    // of `target`.
+    ASR::expr_t* create_and_associate_pointer_temporary(
+        ASR::expr_t* target, ASR::symbol_t* type_declaration,
+        const std::string& name_hint) {
+        ASR::expr_t* target_no_cast = ASRUtils::get_past_array_physical_cast(target);
+        const Location& loc = target_no_cast->base.loc;
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target_no_cast);
+        ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            ASRUtils::create_array_type_with_empty_dims(al,
+                ASRUtils::extract_n_dims_from_ttype(target_type), target_type)));
+        ASR::expr_t* pointer_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint, pointer_type, target_no_cast,
+            type_declaration);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+            al, loc, pointer_temporary, target_no_cast,
+            ASR::pointer_bounds_formType::NoPointerBounds)));
+        return pointer_temporary;
+    }
+
     // Gathers `arg`, a component of an array of derived type, into a
     // contiguous temporary, passes the temporary in its place, and scatters
     // the temporary back into the component after the call unless the dummy
@@ -3585,6 +3622,24 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     ASR::call_arg_t call_arg;
                     call_arg.loc = null_pointer_temporary->base.loc;
                     call_arg.m_value = null_pointer_temporary;
+                    x_m_args_vec.push_back(al, call_arg);
+                    continue;
+                }
+                if (is_call && current_body != nullptr && orig_variable &&
+                    ASRUtils::is_pointer(orig_variable->m_type) &&
+                    is_nonpointer_array_target(x_m_args[i].m_value)) {
+                    // A pointer dummy (necessarily INTENT(IN)) given a
+                    // nonpointer, nonallocatable array target becomes
+                    // associated with it. Such an array has no pointer
+                    // descriptor of its own, so associate a temporary
+                    // pointer with it and pass that pointer instead.
+                    ASR::expr_t* pointer_temporary =
+                        create_and_associate_pointer_temporary(
+                            x_m_args[i].m_value, orig_variable->m_type_declaration,
+                            name_hint);
+                    ASR::call_arg_t call_arg;
+                    call_arg.loc = pointer_temporary->base.loc;
+                    call_arg.m_value = pointer_temporary;
                     x_m_args_vec.push_back(al, call_arg);
                     continue;
                 }
