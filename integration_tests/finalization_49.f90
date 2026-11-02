@@ -37,6 +37,46 @@ integer function via_allocatable(f)
     x = f()
     via_allocatable = x%v
 end function
+integer function via_class(f)
+    interface
+        function f() result(r)
+            import :: t
+            class(t), allocatable :: r
+        end function
+    end interface
+    class(t), allocatable :: x
+    x = f()
+    via_class = x%v
+end function
+integer function via_allocated(f)
+    interface
+        function f() result(r)
+            import :: t
+            type(t), allocatable :: r
+        end function
+    end interface
+    type(t), allocatable :: x
+    allocate(x)
+    finalized = 0
+    ! x and the result of f
+    x = f()
+    if (finalized /= 2) error stop
+    via_allocated = x%v
+end function
+integer function via_allocated_class(f)
+    interface
+        function f() result(r)
+            import :: t
+            class(t), allocatable :: r
+        end function
+    end interface
+    class(t), allocatable :: x
+    allocate(x)
+    finalized = 0
+    x = f()
+    if (finalized /= 2) error stop
+    via_allocated_class = x%v
+end function
 subroutine host(n)
     integer, intent(in) :: n
     integer :: v
@@ -60,6 +100,16 @@ subroutine host(n)
     v = via_allocatable(make_allocatable)
     if (v /= n + 1) error stop
     if (finalized /= 2) error stop
+    ! the result of make_class; and the local x of via_class
+    finalized = 0
+    v = via_class(make_class)
+    if (v /= n + 2) error stop
+    if (finalized /= 2) error stop
+    ! the caller's variable is already allocated
+    v = via_allocated(make_allocatable)
+    if (v /= n + 1) error stop
+    v = via_allocated_class(make_class)
+    if (v /= n + 2) error stop
 contains
     function make() result(r)
         type(t) :: r
@@ -69,6 +119,11 @@ contains
         type(t), allocatable :: r
         allocate(r)
         r%v = n + 1
+    end function
+    function make_class() result(r)
+        class(t), allocatable :: r
+        allocate(r)
+        r%v = n + 2
     end function
 end subroutine
 end module
