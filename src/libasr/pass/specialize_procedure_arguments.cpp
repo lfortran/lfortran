@@ -105,13 +105,8 @@ ASR::symbol_t *scope_owner(SymbolTable *scope) {
     return nullptr;
 }
 
-bool in_scope_chain(SymbolTable *scope, const SymbolTable *s) {
-    for (; scope != nullptr; scope = scope->parent) {
-        if (scope == s) {
-            return true;
-        }
-    }
-    return false;
+bool in_scope_chain(SymbolTable *scope, SymbolTable *s) {
+    return scope == s || ASRUtils::is_parent(s, scope);
 }
 
 // `sym` is visible from `scope` the way asr_verify requires it: it is the
@@ -909,16 +904,8 @@ public:
         } else {
             return;
         }
-        for (size_t i = 0; i < n_deps; i++) {
-            if (module_name == deps[i]) {
-                return;
-            }
-        }
-        Vec<char*> new_deps;
-        new_deps.reserve(al, n_deps + 1);
-        for (size_t i = 0; i < n_deps; i++) {
-            new_deps.push_back(al, deps[i]);
-        }
+        SetChar new_deps;
+        new_deps.from_pointer_n_copy(al, deps, n_deps);
         new_deps.push_back(al, s2c(al, module_name));
         if (ASR::is_a<ASR::Module_t>(*unit)) {
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(unit);
