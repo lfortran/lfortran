@@ -59,6 +59,10 @@ filename = "asr/verify/nested_vars_frame_call_in_declaration.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/frame_member_not_bound.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 

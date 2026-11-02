@@ -6,6 +6,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <algorithm>
 #include <set>
 
 namespace LCompilers {
@@ -243,6 +244,7 @@ public:
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
+        verify_frames_bound(x.m_symtab, x.m_body, x.n_body);
         current_symtab = parent_symtab;
     }
 
@@ -1290,6 +1292,7 @@ public:
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
         verify_argument_memory_spaces(x);
+        verify_frames_bound(x.m_symtab, x.m_body, x.n_body);
         if (check_string_length_arguments) verify_hidden_string_lengths(x);
         if (x.m_gpu) verify_gpu_kernel_layout(x);
 
@@ -2612,6 +2615,90 @@ public:
             "internal procedure '" + (calls.found ? std::string(
                 ASRUtils::symbol_name(calls.found)) : std::string()) +
             "', which takes the frame of its host, before the frame is bound");
+    }
+
+    // The statements that use a frame object, also in the BLOCK constructs
+    // they enter
+    class FrameUse: public BaseWalkVisitor<FrameUse> {
+    public:
+        ASR::symbol_t *frame;
+        bool found = false;
+
+        FrameUse(ASR::symbol_t *frame_): frame(frame_) {}
+
+        void visit_Var(const Var_t &x) {
+            found = found || x.m_v == frame;
+        }
+
+        void visit_BlockCall(const BlockCall_t &x) {
+            if (ASR::is_a<ASR::Block_t>(*x.m_m)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) {
+                    visit_stmt(*block->m_body[i]);
+                }
+            }
+        }
+    };
+
+    // The frame object of a host (see nested_vars) is a local object of a
+    // frame type. Its host binds each of its reference members at the start
+    // of its body, before the frame is used: passed to a procedure, read
+    // through a member or pointed at by a frame slot. A member that is not
+    // bound refers to no variable.
+    void verify_frames_bound(SymbolTable *scope, ASR::stmt_t **body,
+            size_t n_body) {
+        for (auto &item: scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_intent != ASR::intentType::Local ||
+                    ASRUtils::is_host_associated(*v) || v->m_type == nullptr ||
+                    !ASR::is_a<ASR::StructType_t>(*v->m_type) ||
+                    !ASRUtils::is_frame_type(v->m_type_declaration)) {
+                continue;
+            }
+            ASR::Struct_t *type = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            std::vector<std::string> unbound;
+            for (size_t i = 0; i < type->n_members; i++) {
+                ASR::symbol_t *m = type->m_symtab->get_symbol(type->m_members[i]);
+                if (m != nullptr && ASR::is_a<ASR::Variable_t>(*m) &&
+                        ASRUtils::is_reference(
+                            ASR::down_cast<ASR::Variable_t>(m)->m_type)) {
+                    unbound.push_back(type->m_members[i]);
+                }
+            }
+            for (size_t i = 0; i < n_body && !unbound.empty(); i++) {
+                ASR::stmt_t *stmt = body[i];
+                if (ASR::is_a<ASR::BindReference_t>(*stmt)) {
+                    ASR::expr_t *ref = ASR::down_cast<ASR::BindReference_t>(
+                        stmt)->m_reference;
+                    if (ASR::is_a<ASR::StructInstanceMember_t>(*ref)) {
+                        ASR::StructInstanceMember_t *m =
+                            ASR::down_cast<ASR::StructInstanceMember_t>(ref);
+                        ASR::Variable_t *member =
+                            ASRUtils::get_reference_member(*m);
+                        if (member != nullptr && ASR::is_a<ASR::Var_t>(*m->m_v) &&
+                                ASR::down_cast<ASR::Var_t>(m->m_v)->m_v ==
+                                    item.second) {
+                            unbound.erase(std::remove(unbound.begin(),
+                                unbound.end(), std::string(member->m_name)),
+                                unbound.end());
+                            continue;
+                        }
+                    }
+                }
+                FrameUse use(item.second);
+                use.visit_stmt(*stmt);
+                if (use.found) {
+                    require_with_loc_id(false, "asr.verify.frame.member_unbound",
+                        "the frame '" + std::string(v->m_name) + "' is used "
+                        "before its member '" + unbound.front() + "' is bound",
+                        stmt->base.loc);
+                }
+            }
+        }
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
