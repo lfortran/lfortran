@@ -49,6 +49,7 @@
 #include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
+#include <libasr/pass/specialize_procedure_arguments.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
@@ -137,6 +138,7 @@ namespace LCompilers {
             {"global_init", &pass_global_init},
             {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
+            {"specialize_procedure_arguments", &pass_specialize_procedure_arguments},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"dtio_callbacks", &pass_dtio_callbacks},
@@ -369,6 +371,11 @@ namespace LCompilers {
                 "global_init_wire",
                 "transform_optional_argument_functions",
                 "select_case",
+                // With --fast, a call that passes an internal procedure to a
+                // procedure of this file whose dummy only calls it becomes a
+                // direct call of a copy of that procedure in the host, so
+                // nested_vars below needs no procedure value for it.
+                "specialize_procedure_arguments",
                 "nested_vars",
                 "class_constructor",
                 "pass_list_expr",
