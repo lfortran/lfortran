@@ -4149,6 +4149,18 @@ public:
         return ASR::pointer_bounds_formType::PointerBoundsSpec;
     }
 
+    // True if functions with the results `a` and `b` have the same type
+    // and kind. A character length is not compared: the result of a
+    // function with an implicit interface can have an assumed length.
+    static bool same_function_result_type(ASR::ttype_t* a, ASR::ttype_t* b) {
+        if (ASRUtils::is_character(*a) && ASRUtils::is_character(*b)) {
+            return !ASRUtils::is_array(a) && !ASRUtils::is_array(b) &&
+                ASRUtils::extract_kind_from_ttype_t(a) ==
+                    ASRUtils::extract_kind_from_ttype_t(b);
+        }
+        return ASRUtils::types_equal(a, b, nullptr, nullptr);
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             pointer_bounds_args =
@@ -4298,6 +4310,31 @@ public:
                 throw SemanticAbort();
             }            
             if (implicit_iface) {
+                // A pointer with an implicit interface that is a function
+                // can only be associated with a function of the same type
+                // (F2018 10.2.2.4 p6). The pointer is untyped when it was
+                // not declared with a type.
+                ASR::ttype_t* target_result = target_func_type->m_return_var_type;
+                ASR::ttype_t* value_result = value_func_type->m_return_var_type;
+                bool value_is_known_subroutine = value_result == nullptr &&
+                    !ASRUtils::is_opaque_procedure_type(value_type);
+                if (target_result != nullptr && (value_is_known_subroutine ||
+                        (value_result != nullptr &&
+                            !same_function_result_type(target_result, value_result)))) {
+                    std::string target_result_str = ASRUtils::type_to_str_with_kind(
+                        target_result, nullptr);
+                    std::string label = value_is_known_subroutine
+                        ? "the target is a subroutine, but the pointer is a "
+                            "function of type " + target_result_str
+                        : "the result of the target is "
+                            + ASRUtils::type_to_str_with_kind(value_result, nullptr)
+                            + ", but the pointer is a function of type "
+                            + target_result_str;
+                    diag.semantic_error_label(
+                        "interface mismatch in procedure pointer assignment",
+                        {target->base.loc, value->base.loc}, label);
+                    throw SemanticAbort();
+                }
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target,
                     cast_procedure(value, target_func_type, nullptr));
             } else if (ASRUtils::is_opaque_procedure_type(value_type)) {

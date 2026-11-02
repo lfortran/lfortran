@@ -1,0 +1,49 @@
+! A procedure pointer with an implicit interface that is a function can only
+! be associated with a function of the same type and kind (F2018 10.2.2.4
+! p6), and a function referenced through an untyped one has its implicit type.
+subroutine kind_mismatch()
+    implicit none
+    procedure(real), pointer :: p
+    p => g  ! {Error} the result of the target is real(8), not real(4)
+contains
+    real(8) function g(x)
+        real(8), intent(in) :: x
+        g = x + 1
+    end function
+end subroutine
+
+subroutine subroutine_target()
+    implicit none
+    procedure(integer), pointer :: ip
+    ip => s  ! {Error} the target is a subroutine
+contains
+    subroutine s()
+    end subroutine
+end subroutine
+
+subroutine component_mismatch()
+    implicit none
+    type :: holder
+        procedure(real), pointer, nopass :: f => null()
+    end type
+    type(holder) :: h
+    h%f => g  ! {Error} the result of the target is integer(4), not real(4)
+contains
+    integer function g(x)
+        integer, intent(in) :: x
+        g = x
+    end function
+end subroutine
+
+subroutine untyped_function_reference()
+    implicit none
+    procedure(), pointer :: p
+    integer :: y
+    p => f
+    y = p(1)  ! {Error} `p` has no implicit type
+contains
+    integer function f(x)
+        integer, intent(in) :: x
+        f = x
+    end function
+end subroutine

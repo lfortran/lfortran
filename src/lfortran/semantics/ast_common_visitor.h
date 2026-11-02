@@ -24671,10 +24671,24 @@ public:
             ASR::ttype_t* return_type = func_type->m_return_var_type;
             if (!return_type) {
                 std::string first_letter = std::string(1, var_name[0]);
+                if (compiler_options.implicit_typing && current_scope->asr_owner) {
+                    auto it = implicit_mapping.find(get_hash(current_scope->asr_owner));
+                    if (it != implicit_mapping.end()) {
+                        implicit_dictionary = it->second;
+                    }
+                }
                 if (compiler_options.implicit_typing &&
-                        implicit_dictionary.find(first_letter) != implicit_dictionary.end() &&
-                        implicit_dictionary[first_letter] != nullptr) {
+                        implicit_dictionary.find(first_letter) != implicit_dictionary.end()) {
                     return_type = implicit_dictionary[first_letter];
+                    if (return_type == nullptr) {
+                        diag.add(Diagnostic("the procedure '" + var_name + "' is "
+                            "referenced as a function, but it has no type",
+                            Level::Error, Stage::Semantic, {Label("help: declare "
+                                "the type of its result, e.g. with "
+                                "'procedure(integer), pointer :: " + var_name + "'",
+                                {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
                 } else {
                     char first_char = var_name[0];
                     if (first_char >= 'i' && first_char <= 'n') {

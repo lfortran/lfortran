@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_pointer_result_mismatch_01-818459b",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/procedure_pointer_result_mismatch_01.f90",
+    "infile_hash": "2d64a5fc84b084ab23934e27aeeb3b7d11f60b64e963841438377189",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-procedure_pointer_result_mismatch_01-818459b.stderr",
+    "stderr_hash": "59240e0faa85950514f4d296e5dae466d2fa05169083d9268a191c5d",
+    "returncode": 1
+}
