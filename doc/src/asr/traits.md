@@ -2243,14 +2243,46 @@ borrowed elements, as an erased array is, followed by the view of their
 dynamic type without a payload; an element's view takes that view and the
 element's address.
 
-Trait-array locals, components, owners and pointers, explicit-shape and
-assumed-size trait arrays, polymorphic or vector-subscripted actuals,
-forwarding to a dummy of another contract and trait arrays of generic
-messages are diagnosed as not implemented. `traits_runtime_array_01` passes
-whole arrays, strided and reversed sections, explicit-shape, allocatable,
-component and rank-two arrays, forwards them, updates elements through a
-defining receiver and calls the reported message statically and through a
-view; `traits_runtime_array_02` compiles the reported module separately.
+A deferred-shape allocatable trait array, a dummy or a local variable, owns
+its elements, which also share one dynamic type. A later report returns one
+from a message:
+
+```fortran
+abstract interface :: ITraitTwo
+   subroutine method(self, arr)
+      type(itself),     pass,        intent(in)  :: self
+      class(ITraitOne), allocatable, intent(out) :: arr(:)
+   end subroutine method
+end interface
+```
+
+An implementation allocates the elements with a type specification or a
+concrete scalar SOURCE and the bounds of each dimension, as
+`allocate(Cell :: arr(0:n - 1))`, in a `TraitArrayAllocate` that selects the
+witness of their type. The storage is contiguous and described in bytes, as a
+borrowed trait array's is, with the view of the elements' type after the
+dimensions; each element is default-initialized or initialize-copied through
+the witness's lifecycle. DEALLOCATE, the entry to an `intent(out)` dummy and
+the end of the owner's scope destroy each element through the same lifecycle,
+finalizing its components, before freeing the storage. `allocated`, `size`,
+`lbound` and `ubound` inquire an owner, its elements are views as above, and
+it is passed to a borrowed trait array dummy, or to an allocatable trait array
+dummy of the same contract and rank, also through a slot of a message that is
+not generic.
+
+Trait-array components, module variables and pointers, MOLD allocation,
+assignment and MOVE_ALLOC of owners, explicit-shape and assumed-size trait
+arrays, sections of trait arrays as actuals, polymorphic or
+vector-subscripted actuals, forwarding to a dummy of another contract and
+trait arrays of generic messages are diagnosed as not implemented.
+`traits_runtime_array_01` passes whole arrays, strided and reversed sections,
+explicit-shape, allocatable, component and rank-two arrays, forwards them,
+updates elements through a defining receiver and calls the reported message
+statically and through a view; `traits_runtime_array_02` compiles the
+reported module separately. `traits_runtime_array_owner_01` allocates owners
+of two element types in the reported `intent(out)` message, called statically
+and through a view, reallocates one through an `intent(inout)` dummy, and
+checks their cleanup, also with `--detect-leaks`.
 `continue_compilation_traits_12` checks the diagnostics.
 
 ### Optional and allocatable arguments

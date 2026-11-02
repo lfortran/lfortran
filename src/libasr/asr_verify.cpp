@@ -4278,6 +4278,42 @@ public:
         }
     }
 
+    void visit_TraitArrayAllocate(const TraitArrayAllocate_t &x) {
+        auto *type = typed_expr_type(x.m_target);
+        require_id(ASRUtils::is_trait_array_owner(type) && ASR::is_a<Var_t>(*x.m_target) &&
+                x.n_dims == (size_t)ASRUtils::extract_n_dims_from_ttype(type),
+            "asr.verify.trait_array_allocate.target",
+            "A runtime trait array allocation allocates every dimension of an owner variable");
+        for (size_t i = 0; i < x.n_dims; i++) {
+            require_id(x.m_dims[i].m_length != nullptr,
+                "asr.verify.trait_array_allocate.target",
+                "A runtime trait array allocation allocates every dimension of an owner variable");
+        }
+        if (check_external) {
+            auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
+            verify_runtime_trait_evidence(*witness, x.base.base.loc);
+            auto *concrete = ASRUtils::symbol_get_past_external(
+                witness->m_lifecycle.m_type_declaration);
+            require_id(!witness->m_lifecycle.m_polymorphic &&
+                    !ASR::down_cast<Struct_t>(concrete)->m_is_abstract,
+                "asr.verify.trait_owner.concrete_type",
+                "Typed allocation requires an instantiable concrete type");
+            require_id(ASRUtils::trait_contracts_equal(witness->m_contract,
+                    &ASRUtils::trait_runtime_contract(ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(type)))->base),
+                "asr.verify.trait_allocate.contract",
+                "Typed allocation requires a witness of the owner's exact contract");
+            require_id(!x.m_source || (!ASRUtils::is_array(typed_expr_type(x.m_source)) &&
+                    ASR::is_a<StructType_t>(*typed_expr_type(x.m_source)) &&
+                    !ASRUtils::is_class_type(typed_expr_type(x.m_source)) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_source)) == concrete),
+                "asr.verify.trait_array_allocate.source",
+                "The source of a runtime trait array allocation is a scalar of the witness's type");
+        }
+        BaseWalkVisitor::visit_TraitArrayAllocate(x);
+    }
+
     void visit_TraitAssignment(const TraitAssignment_t &x) {
         auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
         verify_trait_copy_source(x.m_value, type, x.m_witness, x.base.base.loc);
@@ -6011,7 +6047,8 @@ public:
                     ASRUtils::is_trait_array(x.m_type)) &&
                 dummy && x.m_storage == storage_typeType::Default &&
                 (x.m_intent == intentType::In || x.m_intent == intentType::InOut);
-            bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
+            bool slot = (ASRUtils::is_trait_owner(x.m_type) ||
+                    ASRUtils::is_trait_array_owner(x.m_type)) && dummy &&
                 x.m_storage == storage_typeType::Default &&
                 ASRUtils::is_arg_dummy(x.m_intent);
             bool result = ASRUtils::is_trait_owner(x.m_type) && returned &&
@@ -6045,7 +6082,8 @@ public:
                         "A null initializer must use the pointer's declared runtime trait contract");
                 }
             }
-            bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
+            bool owner = (ASRUtils::is_trait_owner(x.m_type) ||
+                    ASRUtils::is_trait_array_owner(x.m_type)) && !dummy &&
                 x.m_intent == intentType::Local && x.m_parent_symtab &&
                 x.m_parent_symtab->asr_owner &&
                 ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
@@ -6698,6 +6736,13 @@ public:
                 "A data association owns no storage and cannot deallocate a read-only subobject");
             auto *type = typed_expr_type(x.m_vars[i]);
             if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
+            if (ASRUtils::is_trait_array_owner(type)) {
+                require_id(ASR::is_a<Var_t>(*x.m_vars[i]) &&
+                        ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent != intentType::In,
+                    "asr.verify.trait_array_owner.deallocate",
+                    "A runtime trait array deallocation requires a definable owner variable");
+                continue;
+            }
             verify_trait_owner(x.m_vars[i], x.base.base.loc);
             // A component is released while its definable containing object
             // takes a new value, such as an omitted constructor component.
@@ -7349,8 +7394,12 @@ public:
                                 : ASR::is_a<Var_t>(*passed_arg_expr) ||
                                   ASR::is_a<StructInstanceMember_t>(*passed_arg_expr))
                             : pointer ? pointer_actual
+                            : ASRUtils::is_trait_array_owner(formal_type)
+                                ? ASRUtils::is_trait_array_owner(actual_type) &&
+                                    ASR::is_a<Var_t>(*passed_arg_expr)
                             : ASRUtils::is_trait_array(formal_type)
-                                ? ASRUtils::is_trait_array(actual_type) &&
+                                ? ASRUtils::is_trait_array(ASRUtils::type_get_past_allocatable(
+                                        actual_type)) &&
                                     (ASR::is_a<TraitPack_t>(*ASRUtils::get_past_array_physical_cast(
                                         passed_arg_expr)) ||
                                      ASR::is_a<Var_t>(*ASRUtils::get_past_array_physical_cast(

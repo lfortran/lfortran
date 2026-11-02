@@ -3788,6 +3788,11 @@ public:
                     llvm::Type* llvm_data_type = llvm_utils->get_el_type(tmp_expr, element_type, module.get());
                     llvm::Value *cond = arr_descr->get_is_allocated_flag(tmp, tmp_expr);
                     llvm_utils->create_if_else(cond, [=]() {
+                        if (ASRUtils::is_trait_array_owner(cur_type)) {
+                            llvm_utils->destroy_trait_array_elements(typ, tmp, dims);
+                            call_lfortran_free(free_fn, typ, llvm_data_type);
+                            return;
+                        }
                         llvm_symtab_finalizer.finalize_before_deallocate(tmp, cur_type, struct_sym, in_struct);
 
                         if (ASRUtils::non_unlimited_polymorphic_class(element_type)) {
@@ -5164,7 +5169,8 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        if (!trait_array_element && ASRUtils::is_trait_array(ASRUtils::expr_type(x.m_v))) {
+        if (!trait_array_element && ASRUtils::is_trait_array(
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_v)))) {
             visit_trait_array_item(x);
             return;
         }
@@ -29665,6 +29671,92 @@ public:
             "cannot allocate an already allocated runtime trait object");
         auto *value = trait_snapshot(x.m_source, x.m_copy_value, x.m_witness);
         builder->CreateStore(value, slot);
+    }
+
+    void visit_TraitArrayAllocate(const ASR::TraitArrayAllocate_t &x) {
+        auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+            ASRUtils::symbol_get_past_external(x.m_witness));
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_target);
+        llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+            ASRUtils::type_get_past_allocatable(type), module.get());
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*x.m_target);
+        ptr_loads = saved_loads;
+        llvm::Value *descriptor = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+        llvm_utils->trait_error_if(arr_descr->get_is_allocated_flag(descriptor, x.m_target),
+            "cannot allocate an already allocated runtime trait array");
+        auto *concrete = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+            witness->m_lifecycle.m_type_declaration));
+        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        llvm::Type *index_type = arr_descr->get_index_type();
+        uint64_t element_size = llvm::DataLayout(module->getDataLayout())
+            .getTypeAllocSize(llvm_utils->getStructType(concrete, module.get()));
+        builder->CreateStore(llvm::ConstantInt::get(index_type, 0),
+            arr_descr->get_offset(array_type, descriptor, false));
+        arr_descr->set_rank(array_type, descriptor,
+            llvm::ConstantInt::get(context, llvm::APInt(32, x.n_dims)));
+        llvm::Value *dimensions = arr_descr->get_pointer_to_dimension_descriptor_array(
+            array_type, descriptor, true);
+        llvm::Value *stride = llvm::ConstantInt::get(index_type, element_size);
+        for (size_t i = 0; i < x.n_dims; i++) {
+            llvm::Value *dimension = arr_descr->get_pointer_to_dimension_descriptor(
+                dimensions, llvm::ConstantInt::get(context, llvm::APInt(32, i)));
+            llvm::Value *lower = llvm::ConstantInt::get(index_type, 1);
+            if (x.m_dims[i].m_start) {
+                this->visit_expr_wrapper(x.m_dims[i].m_start, true);
+                lower = builder->CreateSExtOrTrunc(tmp, index_type);
+            }
+            this->visit_expr_wrapper(x.m_dims[i].m_length, true);
+            llvm::Value *extent = builder->CreateSExtOrTrunc(tmp, index_type);
+            llvm::Value *zero = llvm::ConstantInt::get(index_type, 0);
+            extent = builder->CreateSelect(builder->CreateICmpSLT(extent, zero), zero, extent);
+            builder->CreateStore(lower, arr_descr->get_lower_bound(dimension, false));
+            builder->CreateStore(extent, arr_descr->get_dimension_size(dimension, false));
+            builder->CreateStore(stride, arr_descr->get_stride(dimension, false));
+            stride = builder->CreateMul(stride, extent);
+        }
+        builder->CreateStore(llvm::ConstantInt::get(i64, element_size),
+            llvm_utils->create_gep2(array_type, descriptor, 1));
+        // `stride` is now the size of the storage in bytes.
+        llvm::Value *bytes = builder->CreateSExtOrTrunc(stride, i64);
+        bytes = builder->CreateSelect(builder->CreateICmpEQ(bytes,
+            llvm::ConstantInt::get(i64, 0)), llvm::ConstantInt::get(i64, 1), bytes);
+        llvm::Value *data = LLVM::lfortran_malloc(context, *module, *builder, bytes);
+        llvm_utils->trait_error_if(builder->CreateIsNull(data), "runtime trait allocation failed");
+        builder->CreateStore(data, arr_descr->get_pointer_to_data(array_type, descriptor));
+        auto *view_type = llvm_utils->getTraitType(type);
+        llvm::Value *view = trait_witness_view(*witness,
+            llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+        builder->CreateStore(llvm_utils->CreateLoad2(view_type, view),
+            llvm_utils->create_gep2(array_type, descriptor, 9));
+        llvm::Value *source = llvm::ConstantPointerNull::get(llvm_utils->i8_ptr);
+        if (x.m_source) {
+            bool indirect = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_source));
+            visit_expr_load_wrapper(x.m_source, indirect, indirect);
+            source = tmp;
+            if (ASR::is_a<ASR::StructConstant_t>(*x.m_source) ||
+                    ASR::is_a<ASR::StructConstructor_t>(*x.m_source)) {
+                auto *storage = llvm_utils->CreateAlloca(
+                    llvm_utils->getStructType(concrete, module.get()));
+                builder->CreateStore(source, storage);
+                source = storage;
+            }
+            source = builder->CreateBitCast(source, llvm_utils->i8_ptr);
+        }
+        // Each element is default-initialized or initialize-copied from the
+        // source into fresh storage, which is then moved into the array.
+        auto *initialize = llvm::FunctionType::get(llvm_utils->i8_ptr,
+            {llvm_utils->i8_ptr}, false);
+        llvm_utils->for_trait_array_elements(array_type, descriptor, x.n_dims,
+                [&](llvm::Value *element, llvm::Value *header) {
+            llvm::Value *value = llvm_utils->trait_lifecycle_call(
+                llvm_utils->trait_field(header, 2), llvm_utils->trait_field(header, 0),
+                LLVMUtils::TraitLifecycleEntry::Initialize, initialize, {source});
+            builder->CreateMemCpy(element, llvm::MaybeAlign(), value,
+                llvm::MaybeAlign(), element_size);
+            llvm_utils->lfortran_free(value);
+        });
     }
 
     void visit_TraitAssignment(const ASR::TraitAssignment_t &x) {

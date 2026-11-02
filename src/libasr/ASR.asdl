@@ -235,6 +235,10 @@ stmt
     -- Concrete sources and typed allocation carry selected witness evidence;
     -- an already formed view carries its own witness.
     | TraitAllocate(expr target, expr? source, symbol? witness, bool copy_value, symbol? type_declaration)
+    -- Allocate the elements of a runtime trait array owner (TD-46) with the
+    -- bounds dims and the concrete type of witness, each initialize-copied
+    -- from the concrete scalar source or default-initialized.
+    | TraitArrayAllocate(expr target, dimension* dims, expr? source, symbol witness)
     -- Capture an intrinsic fresh RHS snapshot before destroying the old value.
     -- Assign to the actual destination, release the snapshot without FINAL,
     -- retain same-type outer storage and replace the selected witness.

@@ -25768,9 +25768,10 @@ public:
             "is not implemented yet", loc);
     }
 
-    // A runtime trait array is a borrowed view of an array whose elements
-    // share one dynamic type and one witness (TD-46): an assumed-shape dummy
-    // that is neither allocatable nor a pointer.
+    // A runtime trait array is an array whose elements share one dynamic type
+    // and one witness (TD-46): a borrowed view, an assumed-shape dummy that
+    // is neither allocatable nor a pointer, or an owner, a deferred-shape
+    // allocatable dummy or local variable.
     ASR::ttype_t *runtime_trait_declared_type(ASR::TraitRuntimeContract_t *contract,
             const Location &loc, bool pointer, bool allocatable,
             Vec<ASR::dimension_t> &dims, bool is_argument, bool assumed_rank) {
@@ -25778,13 +25779,19 @@ public:
         for (size_t i = 0; i < dims.size(); i++) {
             if (dims[i].m_length) assumed_shape = false;
         }
-        if (!assumed_shape || !is_argument || pointer || allocatable || is_derived_type) {
+        bool owner = allocatable && assumed_shape && !pointer && !is_derived_type &&
+            !(current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+              ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                current_scope->asr_owner)));
+        if (!owner && (!assumed_shape || !is_argument || pointer || allocatable ||
+                is_derived_type)) {
             return runtime_trait_type(contract, loc, pointer, allocatable,
                 dims.size() || assumed_rank);
         }
         auto *view = runtime_trait_type(contract, loc, false, false, false);
-        return ASRUtils::make_Array_t_util(al, loc, view, dims.p, dims.size(),
+        auto *array = ASRUtils::make_Array_t_util(al, loc, view, dims.p, dims.size(),
             ASR::abiType::Source, true);
+        return owner ? ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, array)) : array;
     }
 
     ASR::ttype_t *runtime_trait_type(ASR::TraitRuntimeContract_t *contract,
@@ -25794,8 +25801,9 @@ public:
         }
         if (array) {
             trait_call_error("runtime trait arrays other than assumed-shape dummy "
-                "arguments without the allocatable or pointer attribute are not "
-                "implemented yet", loc);
+                "arguments without the allocatable or pointer attribute and "
+                "deferred-shape allocatable dummy arguments and local variables "
+                "are not implemented yet", loc);
         }
         if (!contract) {
             trait_call_error("runtime dispatch for this trait method signature "
@@ -27951,6 +27959,27 @@ public:
             make_runtime_trait_array_view(actual, target);
             return;
         }
+        if (ASRUtils::is_trait_array_owner(target)) {
+            auto intent = ASRUtils::EXPR2VAR(dummy)->m_intent;
+            if (intent == ASR::intentType::Out) {
+                current_function_side_effect_free = false;
+                current_function_deterministic = false;
+            }
+            if (!ASRUtils::is_trait_array_owner(source) || !ASR::is_a<ASR::Var_t>(*actual) ||
+                    ASRUtils::extract_n_dims_from_ttype(source) !=
+                        ASRUtils::extract_n_dims_from_ttype(target) ||
+                    !ASRUtils::trait_contracts_equal(source, target)) {
+                trait_call_error("an allocatable runtime trait array dummy requires an "
+                    "allocatable runtime trait array actual of the same rank and declared "
+                    "trait contract", actual->base.loc);
+            }
+            if (intent != ASR::intentType::In &&
+                    ASRUtils::EXPR2VAR(actual)->m_intent == ASR::intentType::In) {
+                trait_call_error("a defining allocatable runtime trait array dummy requires "
+                    "a definable actual", actual->base.loc);
+            }
+            return;
+        }
         if (ASRUtils::is_trait_pointer(target)) {
             check_runtime_trait_pointer_context(actual);
             auto intent = ASRUtils::EXPR2VAR(dummy)->m_intent;
@@ -28103,7 +28132,11 @@ public:
     void make_runtime_trait_array_view(ASR::expr_t *&actual, ASR::ttype_t *target) {
         const Location &loc = actual->base.loc;
         auto *source = ASRUtils::expr_type(actual);
-        if (ASRUtils::is_trait_array(source)) {
+        if (ASRUtils::is_trait_array(ASRUtils::type_get_past_allocatable(source))) {
+            if (!ASR::is_a<ASR::Var_t>(*actual)) {
+                trait_call_error("passing a section of a runtime trait array is not "
+                    "implemented yet", loc);
+            }
             if (!ASRUtils::trait_contracts_equal(&ASRUtils::trait_runtime_contract(source)->base,
                     &ASRUtils::trait_runtime_contract(target)->base)) {
                 trait_call_error("passing a runtime trait array to a dummy of another "
@@ -28824,6 +28857,53 @@ public:
     }
 
     // `copy` is false for MOLD=, which takes only the source's type.
+    // Allocates the elements of a runtime trait array owner (TD-46) with
+    // the explicit bounds of `arg` and a type specification or a concrete
+    // scalar SOURCE, which selects the witness of their shared type.
+    ASR::asr_t *runtime_trait_array_allocate(const ASR::alloc_arg_t &arg,
+            ASR::expr_t *source, ASR::expr_t *mold, const Location &loc) {
+        if (mold || (arg.m_sym_subclass && source) || (!arg.m_sym_subclass && !source)) {
+            trait_call_error("runtime trait array allocation requires exactly one of "
+                "a type specifier or a source", loc);
+        }
+        auto *type = ASRUtils::expr_type(arg.m_a);
+        if (!arg.n_dims || arg.n_dims != (size_t)ASRUtils::extract_n_dims_from_ttype(type)
+                || arg.n_codims) {
+            trait_call_error("runtime trait array allocation requires the bounds "
+                "of each dimension", arg.loc);
+        }
+        if (!ASR::is_a<ASR::Var_t>(*arg.m_a) ||
+                ASRUtils::EXPR2VAR(arg.m_a)->m_intent == ASR::intentType::In) {
+            trait_call_error("cannot allocate an intent(in) runtime trait array", arg.loc);
+        }
+        auto *element = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(type));
+        ASR::symbol_t *witness = nullptr;
+        if (source) {
+            auto *source_type = ASRUtils::expr_type(source);
+            if (ASRUtils::is_array(source_type) ||
+                    !ASR::is_a<ASR::StructType_t>(*source_type) ||
+                    ASRUtils::is_class_type(source_type)) {
+                trait_call_error("the source of a runtime trait array allocation must be "
+                    "a nonpolymorphic scalar of a derived type", source->base.loc);
+            }
+            auto *constant = ASRUtils::expr_value(source);
+            if (constant && ASR::is_a<ASR::StructConstant_t>(*constant)) source = constant;
+            witness = select_runtime_trait_witness(element,
+                ASRUtils::get_struct_sym_from_struct_expr(source), source->base.loc, true);
+        } else {
+            auto *concrete = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(arg.m_sym_subclass));
+            if (concrete->m_is_abstract) {
+                trait_call_error("an abstract type cannot be allocated", arg.loc);
+            }
+            witness = select_runtime_trait_witness(element, arg.m_sym_subclass, arg.loc, true);
+        }
+        current_function_deterministic = false;
+        current_function_side_effect_free = false;
+        return ASR::make_TraitArrayAllocate_t(al, loc, arg.m_a, arg.m_dims, arg.n_dims,
+            source, witness);
+    }
+
     ASR::symbol_t *prepare_runtime_trait_value(ASR::expr_t *&value, ASR::ttype_t *target,
             bool copy = true) {
         auto *type = ASRUtils::expr_type(value);
@@ -28892,7 +28972,13 @@ public:
                     !ASR::is_a<ASR::TraitObjectType_t>(
                         *ASRUtils::extract_type(variable->m_type))) continue;
             std::string message;
-            if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
+            if (ASRUtils::is_trait_array_owner(variable->m_type) && !variable->n_codims) {
+                if (variable->m_symbolic_value || variable->m_value ||
+                        variable->m_storage == ASR::storage_typeType::Save) {
+                    message = "runtime trait array owners require uninitialized "
+                        "storage that is not saved";
+                }
+            } else if (ASRUtils::is_array(variable->m_type) || variable->n_codims) {
                 message = "runtime trait arrays and coarrays are not implemented yet";
             } else if (ASRUtils::is_trait_pointer(variable->m_type)) {
                 if ((variable->m_symbolic_value &&

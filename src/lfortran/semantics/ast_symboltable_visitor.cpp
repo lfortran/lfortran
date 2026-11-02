@@ -1265,7 +1265,8 @@ public:
             if (!ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(dummy->m_type))) continue;
             std::string message;
-            bool slot = ASRUtils::is_trait_owner(dummy->m_type);
+            bool slot = ASRUtils::is_trait_owner(dummy->m_type) ||
+                ASRUtils::is_trait_array_owner(dummy->m_type);
             bool pointer = ASRUtils::is_trait_pointer(dummy->m_type);
             if ((!slot && !pointer && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type) &&
                     !ASRUtils::is_trait_array(dummy->m_type)) || dummy->n_codims) {

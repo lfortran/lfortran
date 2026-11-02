@@ -4286,6 +4286,10 @@ public:
                     "errmsg or other options is not implemented yet", x.base.base.loc);
             }
             auto &arg = alloc_args_vec[0];
+            if (ASRUtils::is_trait_array_owner(ASRUtils::expr_type(arg.m_a))) {
+                tmp = runtime_trait_array_allocate(arg, source, mold, x.base.base.loc);
+                return;
+            }
             if (!ASRUtils::trait_owner_variable(arg.m_a) ||
                     !ASRUtils::is_allocatable(ASRUtils::expr_type(arg.m_a)) ||
                     arg.n_dims || arg.n_codims) {

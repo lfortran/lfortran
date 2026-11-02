@@ -10491,6 +10491,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }, [](){});
     }
 
+    // Destroys the elements of the allocated runtime trait array owner
+    // `descriptor` in place, finalizing them, before its storage is freed.
+    void LLVMUtils::destroy_trait_array_elements(llvm::Type* array_type,
+            llvm::Value* descriptor, int rank) {
+        auto *destroy = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {i8_ptr}, false);
+        for_trait_array_elements(array_type, descriptor, rank,
+                [&](llvm::Value* element, llvm::Value* view) {
+            trait_lifecycle_call(trait_field(view, 2), trait_field(view, 0),
+                TraitLifecycleEntry::Destroy, destroy, {element});
+        });
+    }
+
     void LLVMUtils::retain_trait_owner(llvm::Value* storage, llvm::Value* owner) {
         owner = builder->CreateBitCast(owner, getTraitType()->getPointerTo()->getPointerTo());
         auto *value = CreateLoad2(getTraitType()->getPointerTo(), owner);

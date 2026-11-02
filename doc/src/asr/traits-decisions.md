@@ -200,6 +200,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-31 | Relayed a colleague's correction: the `static.f90` variant was wrong, and Swift, to be consulted when in doubt, always requires a generic parent's type arguments. Asked to rescind implicit inheritance, to require `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}` with `V` from the extending type's parameter list, to diagnose a missing parameter list consistently with the rest of the proposal, and to keep accepting a redundant `implements` of an inherited conformance, as Java does. Supplied the colleague's Swift version and corrected Fortran version (`mixed.f90` needed no change). | TD-45 |
 | 2026-11-02 | Relayed the colleague's last interoperability case, `static_interop_concrete.f90` and its Swift version, in which a type that is not generic extends the instance `SimpleSum{BasicSum}` and overrides its generic `sum`, and asked to get it working. | TD-45 |
 | 2026-11-02 | Relayed `static_interop_ocp.f90`, the interoperability variant of the paper's `ocp.f90` whose generic `PairwiseSum{V}` overrides `sum{INumeric :: T}` with the open protocol `INumeric`, and a module whose trait message takes `class(ISomeTrait) :: arr(:)`. Chose, from the options offered, dispatch through an open slot that passes the type arguments' dictionaries, and homogeneous trait arrays with the Fortran CLASS semantics of one dynamic type, for dummies only. | TD-44, TD-46 |
+| 2026-11-02 | Relayed two further module MREs: a trait message taking `class(AbsType), intent(inout) :: arr(:)` of an abstract derived type, used by another message's `class(ITrait1), allocatable, intent(out)` argument, and a message taking `class(ITraitOne), allocatable, intent(out) :: arr(:)`. | TD-46 |
 
 ## Entries
 
@@ -1400,12 +1401,24 @@ specification action, that is, what the paper should say.
   `class(T)` array dummy of an abstract type `T`. Nothing is copied: a
   defining callee updates the actual's elements, also of a strided or
   reversed section.
+- **Extension (2026-11-02).** A later report declares a message with
+  `class(ITraitOne), allocatable, intent(out) :: arr(:)`. Keeping the chosen
+  homogeneous semantics, a deferred-shape allocatable trait array, a dummy or
+  a local variable, owns contiguous elements of one dynamic type, allocated
+  with a type specification or a concrete scalar SOURCE and explicit bounds,
+  as `allocate(Cell :: arr(n))`. Its elements are initialized and destroyed
+  through the witness's lifecycle, which also finalizes their components, on
+  DEALLOCATE, on entry to an `intent(out)` dummy and at the end of its scope.
+  It is passed to a borrowed trait array dummy and to an allocatable one of
+  the same contract and rank, also through a slot of a message that is not
+  generic.
 - **Implementation status.** Implemented, also through runtime views and
-  under separate compilation. Trait-array locals, components, owners and
-  pointers, explicit-shape and assumed-size trait arrays, polymorphic or
-  vector-subscripted actuals, forwarding to a dummy of another contract,
-  trait arrays of generic messages and heterogeneous arrays are not
-  implemented.
+  under separate compilation. Trait-array components, module variables,
+  pointers, MOLD allocation, assignment and MOVE_ALLOC of owners,
+  explicit-shape and assumed-size trait arrays, sections of trait arrays as
+  actuals, polymorphic or vector-subscripted actuals, forwarding to a dummy of
+  another contract, trait arrays of generic messages and heterogeneous arrays
+  are not implemented.
 - **Specification action.** Say whether trait arrays are homogeneous, as
   Fortran CLASS arrays are, and which actuals they accept.
 

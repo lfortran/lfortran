@@ -11498,6 +11498,12 @@ inline bool is_trait_array(const ASR::ttype_t *type) {
             ASR::array_physical_typeType::DescriptorArray;
 }
 
+// An allocatable runtime trait array, which owns its elements (TD-46).
+inline bool is_trait_array_owner(const ASR::ttype_t *type) {
+    return type && ASR::is_a<ASR::Allocatable_t>(*type) &&
+        is_trait_array(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+}
+
 inline bool is_trait_pointer(const ASR::ttype_t *type) {
     return type && ASR::is_a<ASR::Pointer_t>(*type) &&
         ASR::is_a<ASR::TraitObjectType_t>(
@@ -11528,7 +11534,8 @@ inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
             ASR::down_cast<ASR::Var_t>(function.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
         auto *dummy = ASR::down_cast<ASR::Variable_t>(symbol);
-        if (dummy->m_intent == ASR::intentType::Out && contains_trait_owner(dummy->m_type)) {
+        if (dummy->m_intent == ASR::intentType::Out && (contains_trait_owner(dummy->m_type) ||
+                is_trait_array_owner(dummy->m_type))) {
             return true;
         }
     }

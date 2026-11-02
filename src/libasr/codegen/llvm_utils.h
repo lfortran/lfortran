@@ -937,6 +937,42 @@ class ASRToLLVMVisitor;
             llvm::Value* create_trait_value(llvm::StructType* type,
                 llvm::Value* view, llvm::Value* source);
             void destroy_trait_value(llvm::Value* view, bool finalize = true);
+            void destroy_trait_array_elements(llvm::Type* array_type,
+                llvm::Value* descriptor, int rank);
+
+            // Calls `element` with the address of each element of the
+            // contiguous storage of the allocated runtime trait array owner
+            // `descriptor` of rank `rank` (TD-46), whose element size the
+            // descriptor records, and the address of its view header.
+            template <typename F>
+            void for_trait_array_elements(llvm::Type* array_type, llvm::Value* descriptor,
+                    int rank, F element) {
+                llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+                llvm::Value* data = CreateLoad2(i8_ptr,
+                    arr_api->get_pointer_to_data(array_type, descriptor));
+                llvm::Value* size = CreateLoad2(i64, create_gep2(array_type, descriptor, 1));
+                llvm::Value* dimensions = arr_api->get_pointer_to_dimension_descriptor_array(
+                    array_type, descriptor, true);
+                llvm::Value* count = llvm::ConstantInt::get(i64, 1);
+                for (int i = 0; i < rank; i++) {
+                    llvm::Value* dimension = arr_api->get_pointer_to_dimension_descriptor(
+                        dimensions, llvm::ConstantInt::get(context, llvm::APInt(32, i)));
+                    count = builder->CreateMul(count, builder->CreateSExtOrTrunc(
+                        arr_api->get_dimension_size(dimension, true), i64));
+                }
+                llvm::Value* index = CreateAlloca(*builder, i64);
+                builder->CreateStore(llvm::ConstantInt::get(i64, -1, true), index);
+                create_loop("trait_array_elements", [&]() {
+                    llvm::Value* next = builder->CreateAdd(CreateLoad2(i64, index),
+                        llvm::ConstantInt::get(i64, 1));
+                    builder->CreateStore(next, index);
+                    return builder->CreateICmpSLT(next, count);
+                }, [&]() {
+                    llvm::Value* offset = builder->CreateMul(CreateLoad2(i64, index), size);
+                    element(create_ptr_gep2(llvm::Type::getInt8Ty(context), data, offset),
+                        create_gep2(array_type, descriptor, 9));
+                });
+            }
             void retain_trait_owner(llvm::Value* storage, llvm::Value* owner);
             void release_trait_owners(llvm::Value* storage);
             void assign_trait_value(llvm::Value* slot, llvm::Value* snapshot,
@@ -1482,6 +1518,21 @@ class ASRToLLVMVisitor;
         void finalize_allocatable(llvm::Value* ptr, ASR::ttype_t* const t, ASR::Struct_t* const struct_sym,const bool in_struct){
             LCOMPILERS_ASSERT_MSG(ASRUtils::is_allocatable(t), "Must be allocatable.")
             auto const t_past = ASRUtils::type_get_past_allocatable(t);
+            if (ASRUtils::is_trait_array_owner(t)) {
+                // The elements of a runtime trait array owner are destroyed
+                // through the lifecycle of their shared dynamic type.
+                check_if_array_allocated_then_finalize(ptr, t_past, struct_sym, [&]() {
+                    llvm::Type* const array_type = get_llvm_type(t_past, struct_sym);
+                    llvm_utils_->destroy_trait_array_elements(array_type, ptr,
+                        ASRUtils::extract_n_dims_from_ttype(t_past));
+                    llvm::Value* const data = llvm_utils_->create_gep2(array_type, ptr, 0);
+                    llvm_utils_->lfortran_free_nocheck(
+                        llvm_utils_->CreateLoad2(llvm_utils_->i8_ptr, data));
+                    builder_->CreateStore(llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr),
+                        data);
+                });
+                return;
+            }
             switch (t_past->type) {
                 case ASR::TraitObjectType:
                     llvm_utils_->destroy_trait_value(ptr, invoke_user_finalizers_);

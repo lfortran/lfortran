@@ -7181,6 +7181,15 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                 continue;
             }
         }
+        // An allocatable runtime trait array is passed on as its owner's
+        // descriptor, with any INTENT.
+        if (is_trait_array_owner(arg->m_type)) {
+            if (trait_method_template(method) ||
+                    arg->m_presence != ASR::presenceType::Required ||
+                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->n_codims) return false;
+            continue;
+        }
         // A runtime trait array is passed on as its descriptor (TD-46).
         if (is_trait_array(arg->m_type)) {
             auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);

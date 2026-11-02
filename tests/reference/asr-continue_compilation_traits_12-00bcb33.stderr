@@ -1,95 +1,125 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
-  --> tests/errors/continue_compilation_traits_12.f90:8:5 - 13:1
+  --> tests/errors/continue_compilation_traits_12.f90:9:5 - 14:1
    |
- 8 |        abstract interface :: ISomeTrait
+ 9 |        abstract interface :: ISomeTrait
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-13 |    
+14 |    
    | ...^ LFortran extension
 
-semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute are not implemented yet
-  --> tests/errors/continue_compilation_traits_12.f90:60:9
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute and deferred-shape allocatable dummy arguments and local variables are not implemented yet
+  --> tests/errors/continue_compilation_traits_12.f90:63:5
    |
-60 |         class(ISomeTrait), allocatable, intent(inout) :: a(:)
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+63 |     class(ISomeTrait), allocatable :: saved(:)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute are not implemented yet
-  --> tests/errors/continue_compilation_traits_12.f90:61:9
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute and deferred-shape allocatable dummy arguments and local variables are not implemented yet
+  --> tests/errors/continue_compilation_traits_12.f90:68:9
    |
-61 |         class(ISomeTrait), intent(in) :: b(3)
+68 |         class(ISomeTrait), pointer, intent(inout) :: a(:)
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute and deferred-shape allocatable dummy arguments and local variables are not implemented yet
+  --> tests/errors/continue_compilation_traits_12.f90:69:9
+   |
+69 |         class(ISomeTrait), intent(in) :: b(3)
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'a' not defined
-  --> tests/errors/continue_compilation_traits_12.f90:58:5 - 62:25
+  --> tests/errors/continue_compilation_traits_12.f90:65:5 - 70:25
    |
-58 |        subroutine owners(a, b)
+65 |        subroutine owners(a, b)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-62 |        end subroutine owners
+70 |        end subroutine owners
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'b' not defined
-  --> tests/errors/continue_compilation_traits_12.f90:58:5 - 62:25
+  --> tests/errors/continue_compilation_traits_12.f90:65:5 - 70:25
    |
-58 |        subroutine owners(a, b)
+65 |        subroutine owners(a, b)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-62 |        end subroutine owners
+70 |        end subroutine owners
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait inspection requires a scalar variable or an owning function result
-  --> tests/errors/continue_compilation_traits_12.f90:73:27
+semantic error: runtime trait array allocation requires the bounds of each dimension
+  --> tests/errors/continue_compilation_traits_12.f90:76:9
    |
-73 |         select type (e => items(1))
+76 |         allocate(c, source=Item(1))
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait array allocation requires exactly one of a type specifier or a source
+  --> tests/errors/continue_compilation_traits_12.f90:78:9
+   |
+78 |         allocate(d(2), mold=Item(1))
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot allocate an intent(in) runtime trait array
+  --> tests/errors/continue_compilation_traits_12.f90:80:9
+   |
+80 |         allocate(Item :: e(2))
+   |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime trait inspection requires a scalar variable or an owning function result
+  --> tests/errors/continue_compilation_traits_12.f90:93:27
+   |
+93 |         select type (e => items(1))
    |                           ^^^^^^^^ 
 
 semantic error: borrowing a runtime trait array from this expression is not implemented yet
-  --> tests/errors/continue_compilation_traits_12.f90:90:19
-   |
-90 |     n = use_items(items([1, 3]))
-   |                   ^^^^^^^^^^^^^ 
+   --> tests/errors/continue_compilation_traits_12.f90:111:19
+    |
+111 |     n = use_items(items([1, 3]))
+    |                   ^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_traits_12.f90:90:5
-   |
-90 |     n = use_items(items([1, 3]))
-   |     ^             ^^^^^^^^^^^^^ type mismatch (integer and item[:])
+   --> tests/errors/continue_compilation_traits_12.f90:111:5
+    |
+111 |     n = use_items(items([1, 3]))
+    |     ^             ^^^^^^^^^^^^^ type mismatch (integer and item[:])
 
 semantic error: a runtime trait array dummy requires an array actual of the same rank
-  --> tests/errors/continue_compilation_traits_12.f90:92:19
-   |
-92 |     n = use_items(matrix)
-   |                   ^^^^^^ 
+   --> tests/errors/continue_compilation_traits_12.f90:113:19
+    |
+113 |     n = use_items(matrix)
+    |                   ^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_traits_12.f90:92:5
-   |
-92 |     n = use_items(matrix)
-   |     ^             ^^^^^^ type mismatch (integer and item[:, :])
+   --> tests/errors/continue_compilation_traits_12.f90:113:5
+    |
+113 |     n = use_items(matrix)
+    |     ^             ^^^^^^ type mismatch (integer and item[:, :])
 
 semantic error: a runtime trait array dummy currently requires a nonpolymorphic derived-type array actual
-  --> tests/errors/continue_compilation_traits_12.f90:95:19
-   |
-95 |     n = use_items(poly)
-   |                   ^^^^ 
+   --> tests/errors/continue_compilation_traits_12.f90:116:19
+    |
+116 |     n = use_items(poly)
+    |                   ^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_traits_12.f90:95:5
-   |
-95 |     n = use_items(poly)
-   |     ^             ^^^^ type mismatch (integer and item[:] allocatable)
+   --> tests/errors/continue_compilation_traits_12.f90:116:5
+    |
+116 |     n = use_items(poly)
+    |     ^             ^^^^ type mismatch (integer and item[:] allocatable)
 
 semantic error: no visible nominal implementation of trait 'isometrait' for type 'other'
-  --> tests/errors/continue_compilation_traits_12.f90:97:19
-   |
-97 |     n = use_items(others)
-   |                   ^^^^^^ 
+   --> tests/errors/continue_compilation_traits_12.f90:118:19
+    |
+118 |     n = use_items(others)
+    |                   ^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-  --> tests/errors/continue_compilation_traits_12.f90:97:5
-   |
-97 |     n = use_items(others)
-   |     ^             ^^^^^^ type mismatch (integer and other[:])
+   --> tests/errors/continue_compilation_traits_12.f90:118:5
+    |
+118 |     n = use_items(others)
+    |     ^             ^^^^^^ type mismatch (integer and other[:])
+
+semantic error: passing a section of a runtime trait array is not implemented yet
+   --> tests/errors/continue_compilation_traits_12.f90:123:22
+    |
+123 |     call touch_items(owned(1:1))
+    |                      ^^^^^^^^^^ 

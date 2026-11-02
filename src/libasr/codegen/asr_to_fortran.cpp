@@ -1371,6 +1371,34 @@ public:
         src = result + ")\n";
     }
 
+    void visit_TraitArrayAllocate(const ASR::TraitArrayAllocate_t &x) {
+        std::string result = indent + "allocate(";
+        if (!x.m_source) {
+            auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+                ASRUtils::symbol_get_past_external(x.m_witness));
+            result += std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                witness->m_lifecycle.m_type_declaration))) + " :: ";
+        }
+        visit_expr(*x.m_target);
+        result += src + "(";
+        for (size_t i = 0; i < x.n_dims; i++) {
+            if (i > 0) result += ", ";
+            std::string start = "1";
+            if (x.m_dims[i].m_start) {
+                visit_expr(*x.m_dims[i].m_start);
+                start = src;
+            }
+            visit_expr(*x.m_dims[i].m_length);
+            result += start + ":" + start + " + " + src + " - 1";
+        }
+        result += ")";
+        if (x.m_source) {
+            visit_expr(*x.m_source);
+            result += ", source=" + src;
+        }
+        src = result + ")\n";
+    }
+
     void visit_TraitAssignment(const ASR::TraitAssignment_t &x) {
         visit_expr(*x.m_target);
         std::string result = indent + src + " = ";

@@ -1,9 +1,10 @@
 ! Runtime trait arrays (TD-46) are assumed-shape dummies that borrow a
-! nonpolymorphic derived-type array in place.
+! nonpolymorphic derived-type array in place, and deferred-shape allocatable
+! dummies and local variables that own their elements.
 module continue_compilation_traits_12_m
     implicit none
     private
-    public :: ISomeTrait, IOther, Item, Other, use_items, use_other
+    public :: ISomeTrait, IOther, Item, Other, use_items, use_other, touch_items
 
     abstract interface :: ISomeTrait
         integer function value(self)
@@ -45,6 +46,10 @@ contains
         s = size(items)
     end function use_items
 
+    subroutine touch_items(items)
+        class(ISomeTrait), intent(inout) :: items(:)
+    end subroutine touch_items
+
     integer function use_other(items) result(s)
         class(IOther), intent(in) :: items(:)
         s = size(items)
@@ -52,14 +57,29 @@ contains
 end module continue_compilation_traits_12_m
 
 module continue_compilation_traits_12_storage
-    use continue_compilation_traits_12_m, only: ISomeTrait
+    use continue_compilation_traits_12_m, only: ISomeTrait, Item, use_items
     implicit none
+    ! Allocatable trait arrays are dummies and local variables.
+    class(ISomeTrait), allocatable :: saved(:)
 contains
     subroutine owners(a, b)
-        ! Only assumed-shape dummies without allocatable or pointer.
-        class(ISomeTrait), allocatable, intent(inout) :: a(:)
+        ! Only assumed-shape dummies without allocatable or pointer, and
+        ! deferred-shape allocatable ones.
+        class(ISomeTrait), pointer, intent(inout) :: a(:)
         class(ISomeTrait), intent(in) :: b(3)
     end subroutine owners
+
+    subroutine allocations(c, d, e)
+        class(ISomeTrait), allocatable, intent(inout) :: c(:), d(:)
+        class(ISomeTrait), allocatable, intent(in) :: e(:)
+        ! The bounds of each dimension are required.
+        allocate(c, source=Item(1))
+        ! A mold is not implemented.
+        allocate(d(2), mold=Item(1))
+        ! An intent(in) owner cannot be allocated.
+        allocate(Item :: e(2))
+    end subroutine allocations
+
 end module continue_compilation_traits_12_storage
 
 module continue_compilation_traits_12_inspection
@@ -83,6 +103,7 @@ program continue_compilation_traits_12
     type(Item) :: items(4), matrix(2, 2)
     type(Other) :: others(2)
     class(Item), allocatable :: poly(:)
+    class(ISomeTrait), allocatable :: owned(:)
     integer :: n
 
     n = use_items(items)
@@ -96,4 +117,8 @@ program continue_compilation_traits_12
     ! Its element type must implement the dummy's trait.
     n = use_items(others)
     n = use_other(others)
+    ! A section of a trait array is not passed yet.
+    allocate(Item :: owned(2))
+    n = use_items(owned)
+    call touch_items(owned(1:1))
 end program continue_compilation_traits_12

@@ -289,6 +289,11 @@ public:
             "runtime trait allocation with unchecked dynamic lifecycle effects");
     }
 
+    void visit_TraitArrayAllocate(const TraitArrayAllocate_t &x) {
+        if (!found) mark_found(x.base.base.loc,
+            "runtime trait array allocation with unchecked dynamic lifecycle effects");
+    }
+
     void visit_TraitAssignment(const TraitAssignment_t &x) {
         if (!found) mark_found(x.base.base.loc,
             "runtime trait assignment with unchecked dynamic lifecycle effects");
