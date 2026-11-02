@@ -1,4 +1,4 @@
-style suggestion: the do loop variable 'a' is used after the loop
+style suggestion: do not rely on the DO variable 'a' after the loop
   --> tests/../integration_tests/common_05.f90:34:14
    |
 34 |     print *, a, b, c, d
@@ -6,3 +6,6 @@ style suggestion: the do loop variable 'a' is used after the loop
    |
 31 |     do a = 1, c(1), 1
    |        ~ the loop sets 'a' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead

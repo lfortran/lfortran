@@ -1,4 +1,4 @@
-style suggestion: the do loop variable 'i' is used after the loop
+style suggestion: do not rely on the DO variable 'i' after the loop
   --> tests/../integration_tests/do_variable_after_loop_01.f90:15:9
    |
 15 |     if (i /= 11) error stop
@@ -6,8 +6,11 @@ style suggestion: the do loop variable 'i' is used after the loop
    |
 12 |     do i = 1, 10
    |        ~ the loop sets 'i' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
 
-style suggestion: the do loop variable 'j' is used after the loop
+style suggestion: do not rely on the DO variable 'j' after the loop
   --> tests/../integration_tests/do_variable_after_loop_01.f90:21:9
    |
 21 |     if (j /= 3) error stop
@@ -15,8 +18,11 @@ style suggestion: the do loop variable 'j' is used after the loop
    |
 18 |     do j = 1, n
    |        ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
 
-style suggestion: the do loop variable 'k' is used after the loop
+style suggestion: do not rely on the DO variable 'k' after the loop
   --> tests/../integration_tests/do_variable_after_loop_01.f90:28:13
    |
 28 |         if (k /= 0) error stop
@@ -24,8 +30,11 @@ style suggestion: the do loop variable 'k' is used after the loop
    |
 24 |     do k = n, 1, -1
    |        ~ the loop sets 'k' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
 
-style suggestion: the do loop variable 'i' is used after the loop
+style suggestion: do not rely on the DO variable 'i' after the loop
   --> tests/../integration_tests/do_variable_after_loop_01.f90:34:9
    |
 34 |     if (i /= 5) error stop
@@ -33,8 +42,11 @@ style suggestion: the do loop variable 'i' is used after the loop
    |
 32 |     do i = 5, 1
    |        ~ the loop sets 'i' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
 
-style suggestion: the do loop variable 'i' is used after the loop
+style suggestion: do not rely on the DO variable 'i' after the loop
   --> tests/../integration_tests/do_variable_after_loop_01.f90:73:9
    |
 73 |     i = i + 1
@@ -42,3 +54,6 @@ style suggestion: the do loop variable 'i' is used after the loop
    |
 71 |     do i = 1, 2
    |        ~ the loop sets 'i' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead

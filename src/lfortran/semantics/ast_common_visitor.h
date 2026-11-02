@@ -2750,13 +2750,19 @@ public:
                     "last iteration";
             }
         }
-        diag.add(diag::Diagnostic(
-            "the do loop variable '" + name + "' is used after the loop",
+        diag::Diagnostic d(
+            "do not rely on the DO variable '" + name + "' after the loop",
             diag::Level::Style, diag::Stage::Semantic, {
                 diag::Label(value, {loc}),
                 diag::Label("the loop sets '" + name + "' here",
                     {loop.m_head.m_v->base.loc}, false)
-            }));
+            });
+        d.children.push_back(diag::Diagnostic(
+            "the value is well defined, but it depends on how the loop ends and\n"
+            "is easy to misread; inside the loop, assign the value you need to\n"
+            "a variable with a meaningful name instead",
+            diag::Level::Help, diag::Stage::Semantic));
+        diag.add(d);
     }
     // The body that holds the outermost `where` construct being visited, or
     // `nullptr` outside one. A statement that a masked assignment needs but
