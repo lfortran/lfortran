@@ -6,6 +6,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 if (LFORTRAN_BUILD_ALL)
     find_program(RE2C re2c REQUIRED)
     find_program(BISON bison REQUIRED)
+    # NAMES_PER_DIR: the first PATH entry with either name wins, so an active
+    # environment's `python` is preferred over a system `python3`.
+    find_program(LFORTRAN_PYTHON NAMES python3 python NAMES_PER_DIR REQUIRED
+        DOC "Python 3 interpreter that runs the code generators in build0.sh")
+    message(STATUS "Running build0.sh generators with ${LFORTRAN_PYTHON}")
     # build0.sh runs with the cross-platform Prefix `shell`
     # (https://github.com/prefix-dev/shell), which Pixi and CI install on
     # every platform, or with Bash when `shell` is not installed, so builds
@@ -14,7 +19,7 @@ if (LFORTRAN_BUILD_ALL)
         DOC "Bash-compatible shell (Prefix shell or bash) that runs build0.sh")
     message(STATUS "Running build0.sh with ${LFORTRAN_SHELL}")
     # Both shells accept --norc; Bash only reads rc files interactively anyway.
-    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "RE2C=${RE2C}" "BISON=${BISON}" "${LFORTRAN_SHELL}" "--norc" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "RE2C=${RE2C}" "BISON=${BISON}" "PYTHON=${LFORTRAN_PYTHON}" "${LFORTRAN_SHELL}" "--norc" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
     if (NOT _BUILD0_EXIT EQUAL 0)
         message(FATAL_ERROR "Running build0.sh failed (see error above)")
     endif ()

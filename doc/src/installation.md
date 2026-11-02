@@ -659,14 +659,17 @@ Then prepare the environment:
 conda env create -f environment_linux.yml
 conda activate lf
 ```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
+Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`; run
+`PYTHON=python3 ./build0.sh` if your system only provides `python3`):
 ```bash
 ./build0.sh
 ```
 Configuring CMake with `-DLFORTRAN_BUILD_ALL=yes` (as `build1.sh` does) runs
 `build0.sh` itself, with the Prefix [`shell`](https://github.com/prefix-dev/shell)
 when it is installed and otherwise with Bash, so a build without Pixi needs
-only Bash. Pass `-DLFORTRAN_SHELL=/path/to/bash` to choose explicitly.
+only Bash. Pass `-DLFORTRAN_SHELL=/path/to/bash` to choose explicitly. CMake
+runs the generators with the first `python3` or `python` found on `PATH`;
+pass `-DLFORTRAN_PYTHON=/path/to/python` to choose explicitly.
 Now you can use our script `./build1.sh` to build in Debug mode:
 ```bash
 ./build1.sh
