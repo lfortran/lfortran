@@ -7409,8 +7409,9 @@ pass = "specialize_procedure_arguments"
 options = "--fast"
 
 # With --fast, the copy in the recursive host calls the internal procedure
-# directly: there are no thunks of it.
+# directly, so no thunk of it is needed.
 [[test]]
 filename = "../integration_tests/procedure_argument_specialization_02.f90"
-llvm = true
-options = "--fast --internal-procedure-thunks=2"
+fortran = true
+pass = "specialize_procedure_arguments"
+options = "--fast"
