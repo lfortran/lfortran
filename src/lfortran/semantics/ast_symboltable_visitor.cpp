@@ -636,6 +636,10 @@ public:
                 }
             }
             try {
+                // A program unit has no host, so it never starts from the
+                // implicit typing rules of an earlier one (F2018 8.7 p4),
+                // even if an aborted unit left its rules on the stack.
+                implicit_stack.clear();
                 if (compiler_options.interactive) {
                     implicit_dictionary = implicit_mapping[get_hash(tmp0)];
                 }
@@ -1120,6 +1124,9 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
+        }
         external_procedures = saved_external_procedures;
         current_module_sym = nullptr;
         add_generic_procedures();
@@ -1184,9 +1191,6 @@ public:
         forward_procedure_targets.clear();
         deferred_procedure_component_values.clear();
         in_module = false;
-        if (compiler_options.implicit_typing) {
-            implicit_stack.pop_back();
-        }
         if (undefined_forward_target && !compiler_options.continue_compilation) {
             throw SemanticAbort();
         }
