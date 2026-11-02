@@ -2722,11 +2722,53 @@ public:
         }
     };
 
+    // Removes the members of `frame` that `body` binds from `unbound`, in
+    // order, and reports a use of the frame while one is left. A BLOCK
+    // construct that the body enters is part of it.
+    void verify_frame_bound(ASR::symbol_t *frame, ASR::stmt_t **body,
+            size_t n_body, std::vector<std::string> &unbound) {
+        for (size_t i = 0; i < n_body && !unbound.empty(); i++) {
+            ASR::stmt_t *stmt = body[i];
+            if (ASR::is_a<ASR::BlockCall_t>(*stmt) && ASR::is_a<ASR::Block_t>(
+                    *ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                verify_frame_bound(frame, block->m_body, block->n_body, unbound);
+                continue;
+            }
+            if (ASR::is_a<ASR::BindReference_t>(*stmt)) {
+                ASR::expr_t *ref = ASR::down_cast<ASR::BindReference_t>(
+                    stmt)->m_reference;
+                if (ASR::is_a<ASR::StructInstanceMember_t>(*ref)) {
+                    ASR::StructInstanceMember_t *m =
+                        ASR::down_cast<ASR::StructInstanceMember_t>(ref);
+                    ASR::Variable_t *member =
+                        ASRUtils::get_reference_member(*m);
+                    if (member != nullptr && ASR::is_a<ASR::Var_t>(*m->m_v) &&
+                            ASR::down_cast<ASR::Var_t>(m->m_v)->m_v == frame) {
+                        unbound.erase(std::remove(unbound.begin(),
+                            unbound.end(), std::string(member->m_name)),
+                            unbound.end());
+                        continue;
+                    }
+                }
+            }
+            FrameUse use(frame);
+            use.visit_stmt(*stmt);
+            if (use.found) {
+                require_with_loc_id(false, "asr.verify.frame.member_unbound",
+                    "the frame '" + std::string(ASRUtils::symbol_name(frame)) +
+                    "' is used before its member '" + unbound.front() +
+                    "' is bound", stmt->base.loc);
+            }
+        }
+    }
+
     // The frame object of a host (see nested_vars) is a local object of a
     // frame type. Its host binds each of its reference members at the start
-    // of its body, before the frame is used: passed to a procedure, read
-    // through a member or pointed at by a frame slot. A member that is not
-    // bound refers to no variable.
+    // of its body, or of a BLOCK construct that its body enters, before the
+    // frame is used: passed to a procedure, read through a member or pointed
+    // at by a frame slot. A member that is not bound refers to no variable.
     void verify_frames_bound(SymbolTable *scope, ASR::stmt_t **body,
             size_t n_body) {
         for (auto &item: scope->get_scope()) {
@@ -2751,35 +2793,7 @@ public:
                     unbound.push_back(type->m_members[i]);
                 }
             }
-            for (size_t i = 0; i < n_body && !unbound.empty(); i++) {
-                ASR::stmt_t *stmt = body[i];
-                if (ASR::is_a<ASR::BindReference_t>(*stmt)) {
-                    ASR::expr_t *ref = ASR::down_cast<ASR::BindReference_t>(
-                        stmt)->m_reference;
-                    if (ASR::is_a<ASR::StructInstanceMember_t>(*ref)) {
-                        ASR::StructInstanceMember_t *m =
-                            ASR::down_cast<ASR::StructInstanceMember_t>(ref);
-                        ASR::Variable_t *member =
-                            ASRUtils::get_reference_member(*m);
-                        if (member != nullptr && ASR::is_a<ASR::Var_t>(*m->m_v) &&
-                                ASR::down_cast<ASR::Var_t>(m->m_v)->m_v ==
-                                    item.second) {
-                            unbound.erase(std::remove(unbound.begin(),
-                                unbound.end(), std::string(member->m_name)),
-                                unbound.end());
-                            continue;
-                        }
-                    }
-                }
-                FrameUse use(item.second);
-                use.visit_stmt(*stmt);
-                if (use.found) {
-                    require_with_loc_id(false, "asr.verify.frame.member_unbound",
-                        "the frame '" + std::string(v->m_name) + "' is used "
-                        "before its member '" + unbound.front() + "' is bound",
-                        stmt->base.loc);
-                }
-            }
+            verify_frame_bound(item.second, body, n_body, unbound);
         }
     }
 
