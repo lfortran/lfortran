@@ -2,8 +2,10 @@ FROM ubuntu:22.04 AS build
 
 USER root
 
+# Pixi's GCC brings its own assembler and linker, but CMake takes ar and ranlib
+# from the system (binutils), as on the CI runners and developer machines.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl git && \
+    apt-get install -y --no-install-recommends binutils ca-certificates curl git && \
     rm -rf /var/lib/apt/lists/*
 
 # Pixi provides every build and test dependency (see pixi.toml).
