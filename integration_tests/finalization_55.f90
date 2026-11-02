@@ -1,8 +1,9 @@
 ! Hosts whose internal procedure is an actual argument have a finalizable
-! local that the declaration of another entity inquires about: a local, an
-! interface body that imports it, and a dummy argument. Each host compiles
-! and its finalizable local is finalized once. GFortran evaluates such
-! inquiries about a local wrongly, so this test is not run with GFortran.
+! local that the declaration of another entity refers to: a local, an
+! interface body that imports it, a dummy argument, and a namelist group.
+! Each host compiles and its finalizable local is finalized once. GFortran
+! evaluates inquiries about a local in a specification wrongly, so this
+! test is not run with GFortran.
 module finalization_55_mod
 implicit none
 integer :: finalized = 0
@@ -10,10 +11,15 @@ type :: t
     integer :: v = 0
 contains
     final :: finalize
+    final :: finalize_scalar
 end type
 contains
 subroutine finalize(x)
     type(t), intent(inout) :: x(:)
+    finalized = finalized + 1
+end subroutine
+subroutine finalize_scalar(x)
+    type(t), intent(inout) :: x
     finalized = finalized + 1
 end subroutine
 subroutine apply(f, r)
@@ -70,6 +76,21 @@ contains
         get = sum(y)
     end function
 end subroutine
+subroutine host_namelist(n, r)
+    integer, intent(in) :: n
+    integer, intent(out) :: r
+    type(t) :: x
+    integer :: k
+    namelist /nl/ x, k
+    x%v = n
+    k = 3
+    write(*, nml=nl)
+    call apply(get, r)
+contains
+    integer function get()
+        get = x%v + k
+    end function
+end subroutine
 end module
 
 program finalization_55
@@ -89,4 +110,8 @@ call host_dummy(3, y, r)
 print *, r, finalized
 if (r /= 6) error stop
 if (finalized /= 3) error stop
+call host_namelist(3, r)
+print *, r, finalized
+if (r /= 6) error stop
+if (finalized /= 4) error stop
 end program

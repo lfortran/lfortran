@@ -2431,7 +2431,8 @@ public:
         }
         // A local whose declaration refers to a moved local, such as an
         // array whose bounds inquire about it, an interface body that
-        // imports it or a dummy argument would have to move too: the host
+        // imports it, a namelist group (which a BLOCK cannot have) or a
+        // dummy argument would have to move too: the host
         // is then not wrapped (a local that a final procedure reaches could
         // be freed before the final procedure runs)
         std::set<ASR::symbol_t*> moved_set;
@@ -2485,6 +2486,9 @@ public:
         } else if (ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
             ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(sym);
             uses.symbols.insert(g->m_procs, g->m_procs + g->n_procs);
+        } else if (ASR::is_a<ASR::Namelist_t>(*sym)) {
+            ASR::Namelist_t *n = ASR::down_cast<ASR::Namelist_t>(sym);
+            uses.symbols.insert(n->m_var_list, n->m_var_list + n->n_var_list);
         }
         for (ASR::symbol_t *used: uses.symbols) {
             if (symbols.count(used)) {
