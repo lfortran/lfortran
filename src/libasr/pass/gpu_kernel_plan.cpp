@@ -621,6 +621,11 @@ public:
     // nullptr when a part of it has no host counterpart -- which is
     // also how a launch is declined, so an accepted launch is one whose
     // every workspace the host can size.
+    //
+    // The parts need not share a kind: a literal the derivation introduced
+    // is a default integer, a section's bounds may be integer(8), and the
+    // host's inquiries return integer(4). Each operation is built in the
+    // wider kind of its operands, as the kernel's own expression is.
     static ASR::expr_t* build_host_extent(Allocator &al,
             const Location &loc, const ASR::Function_t *kernel,
             ASR::call_arg_t *args, size_t n_args, const GpuExtent &e) {
@@ -661,6 +666,7 @@ public:
             case GpuExtentKind::BinOp: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
                     e.binop, r, ASRUtils::expr_type(l), nullptr));
             }
@@ -673,6 +679,7 @@ public:
             case GpuExtentKind::Compare: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                     l, e.cmpop, r, ASRUtils::expr_type(e.expr), nullptr));
             }
@@ -680,14 +687,18 @@ public:
                 ASR::expr_t *t = child(0), *bdy = child(1),
                     *els = child(2);
                 if (!t || !bdy || !els) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, bdy, els);
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy,
                     els, ASRUtils::expr_type(bdy), nullptr));
             }
             case GpuExtentKind::Max: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
+                ASR::expr_t *first = child(0), *second = child(1);
+                ASRUtils::cast_to_wider_kind(al, first, second);
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
-                    b.Gt(l, r), child(0), child(1), ASRUtils::expr_type(l),
+                    b.Gt(l, r), first, second, ASRUtils::expr_type(l),
                     nullptr));
             }
             case GpuExtentKind::Product: {
@@ -695,6 +706,9 @@ public:
                 for (size_t i = 0; i < e.children.size(); i++) {
                     ASR::expr_t *one = child(i);
                     if (one == nullptr) return nullptr;
+                    if (out != nullptr) {
+                        ASRUtils::cast_to_wider_kind(al, out, one);
+                    }
                     out = out ? b.Mul(out, one) : one;
                 }
                 return out;
@@ -745,11 +759,25 @@ public:
                     if (arg.m_value == nullptr || i >= callee->n_args) {
                         return nullptr;
                     }
-                    // The host hands an array over as the function takes
-                    // it, which is not how the host stores it.
                     ASR::ttype_t *type = ASRUtils::expr_type(arg.m_value);
                     ASR::ttype_t *dummy = ASRUtils::expr_type(
                         callee->m_args[i]);
+                    // An integer built wider than the dummy (a section
+                    // bound of integer(8), say) is passed in the dummy's
+                    // kind, as the kernel passes it.
+                    if (ASRUtils::is_integer(*type)
+                            && !ASRUtils::is_array(type)
+                            && ASRUtils::is_integer(*dummy)
+                            && !ASRUtils::is_array(dummy)
+                            && ASRUtils::extract_kind_from_ttype_t(type) !=
+                                ASRUtils::extract_kind_from_ttype_t(dummy)) {
+                        arg.m_value = b.i2i_t(arg.m_value,
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                dummy));
+                        type = ASRUtils::expr_type(arg.m_value);
+                    }
+                    // The host hands an array over as the function takes
+                    // it, which is not how the host stores it.
                     if (ASRUtils::is_array(type) && ASRUtils::is_array(dummy)
                             && ASRUtils::extract_physical_type(type) !=
                                 ASRUtils::extract_physical_type(dummy)) {

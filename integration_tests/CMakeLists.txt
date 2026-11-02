@@ -7045,6 +7045,11 @@ RUN(NAME gpu_metal_402 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-
 RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_603 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
+RUN(NAME gpu_metal_604 FILE gpu_metal_405 LABELS llvm metal cuda
+    EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_605 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_606 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
 RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
