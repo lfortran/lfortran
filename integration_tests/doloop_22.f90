@@ -198,7 +198,7 @@ if (cnt8 /= 5_8) error stop 35
 if (k8 /= lo8 + 5_8) error stop 36
 cnt8 = 0
 do k8 = hi8 - 4_8, hi8
-    cnt8 = cnt8 + k8 - (hi8 - 5_8)
+    cnt8 = cnt8 + (k8 - (hi8 - 5_8))
 end do
 if (cnt8 /= 15_8) error stop 37
 if (k8 /= huge(k8)) error stop 38

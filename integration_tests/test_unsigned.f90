@@ -16,16 +16,13 @@ program unsigned_test
         if ( y < 0 )  error stop 
     end do
 
+    ! Unlike unsigned arithmetic, signed overflow is not allowed, so y stops
+    ! here.
     x = x * _lfortran_unsigned(2)
-    y = y * 2
     if ( x < _lfortran_unsigned(0) ) error stop 
-    if ( y > 0 )  error stop 
-
 
     x = x * _lfortran_unsigned(2)
-    y = y * 2
     if ( x /= _lfortran_unsigned(0) ) error stop 
-    if ( y /= 0 )  error stop 
 
     
 
