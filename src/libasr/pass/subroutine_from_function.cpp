@@ -114,6 +114,12 @@ public:
                     result_var->m_type_declaration);
             if (!finalizable_array && !ASRUtils::is_finalizable_function_result(
                     result_type, result_var->m_type_declaration)) {
+                // intent_out_deallocate has already run, so the new
+                // intent(out) dummy gets what it does on entry here.
+                if (ASRUtils::get_FunctionType(x)->m_deftype ==
+                        ASR::deftypeType::Implementation) {
+                    apply_intent_out_on_entry(al, x, x.n_args - 1);
+                }
                 return;
             }
             result_var->m_intent = ASR::intentType::InOut;

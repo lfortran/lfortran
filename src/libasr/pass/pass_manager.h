@@ -373,6 +373,13 @@ namespace LCompilers {
                 // Every pass that can create a startup initializer has run,
                 // so the calls that make them run can be put in now.
                 "global_init_wire",
+                // An intent(out) dummy is finalized, deallocated and
+                // default-initialized on entry only when it is present.  The
+                // pass guards that with `present()`, so it runs while an
+                // optional dummy is still optional; the pass after it turns
+                // the dummy into a required one and `present()` into its
+                // presence argument.
+                "intent_out_deallocate",
                 "transform_optional_argument_functions",
                 "select_case",
                 // With --fast, a call that passes an internal procedure to a
@@ -455,7 +462,6 @@ namespace LCompilers {
                 "string_length_arguments",
                 "unused_functions",
                 "unique_symbols",
-                "intent_out_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
