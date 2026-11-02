@@ -247,25 +247,24 @@ public:
         }
     }
 
-    // The C type of a Var of a variable of type `t`: the descriptor pointer
-    // of an array, the pointer to a derived type object, and otherwise the
-    // type of its value.
-    std::string designator_type(ASR::ttype_t* t, ASR::symbol_t* type_declaration,
-            const Location& loc) {
+    // The C type of a Var of the variable that the frame member `member`
+    // refers to: the descriptor pointer of an array, the pointer to a derived
+    // type object, and otherwise the type of its value.
+    std::string designator_type(const ASR::Variable_t &member) {
+        ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
         ASR::ttype_t* elem = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_allocatable_pointer(t));
+        if (ASR::is_a<ASR::FunctionType_t>(*elem) || ASR::is_a<ASR::UnionType_t>(*elem) ||
+                ASRUtils::is_character(*elem)) {
+            throw unsupported_reference_member(member);
+        }
         std::string elem_type, encoded_type_name;
         if (ASR::is_a<ASR::StructType_t>(*elem)) {
             std::string der_type_name = ASRUtils::symbol_name(
-                ASRUtils::symbol_get_past_external(type_declaration));
+                ASRUtils::symbol_get_past_external(member.m_type_declaration));
             elem_type = "struct " + der_type_name;
             encoded_type_name = "x" + der_type_name;
         } else if (ASRUtils::is_array(t) || !ASRUtils::is_pointer(t)) {
-            if (ASR::is_a<ASR::FunctionType_t>(*elem) || ASR::is_a<ASR::UnionType_t>(*elem)) {
-                throw CodeGenError("a host-associated variable of type '"
-                    + ASRUtils::type_to_str_python_symbol(t, type_declaration)
-                    + "' is not supported by the c backend yet", loc);
-            }
             elem_type = CUtils::get_c_type_from_ttype_t(elem);
             encoded_type_name = ASRUtils::get_type_code(elem);
         } else {
@@ -294,8 +293,7 @@ public:
         if (ASRUtils::is_reference(v.m_type)) {
             // A member of Reference type holds the address of the variable
             // that it designates (see visit_StructInstanceMember).
-            return designator_type(ASR::down_cast<ASR::Reference_t>(v.m_type)->m_type,
-                v.m_type_declaration, v.base.base.loc) + " *" + std::string(v.m_name);
+            return designator_type(v) + " *" + std::string(v.m_name);
         }
         bool pre_initialise_derived_type;
         bool use_ptr_for_derived_type;

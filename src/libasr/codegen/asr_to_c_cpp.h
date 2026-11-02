@@ -2214,6 +2214,45 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             + indent + target_desc + "->n_dims = " + std::to_string(target_rank) + ";\n";
     }
 
+    // The error for a member of a frame (see nested_vars), named after the
+    // host variable it refers to, whose variable the backend cannot designate
+    // yet. A member that refers to a frame passes it to an internal procedure
+    // of a more distant host.
+    CodeGenError unsupported_reference_member(const ASR::Variable_t &member) {
+        std::string backend = is_c ? "c" : "cpp";
+        const Location &loc = member.base.base.loc;
+        if (ASRUtils::is_frame_type(member.m_type_declaration)) {
+            return CodeGenError("calling an internal procedure of an outer host "
+                "from an internal procedure of an internal procedure is not "
+                "supported by the " + backend + " backend yet", loc);
+        }
+        ASR::ttype_t *t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        ASR::ttype_t *past_pointer = ASRUtils::type_get_past_allocatable_pointer(t);
+        if (ASR::is_a<ASR::FunctionType_t>(*past_pointer)) {
+            return CodeGenError("the host-associated procedure '"
+                + std::string(member.m_name) + "' is not supported by the "
+                + backend + " backend yet", loc);
+        }
+        ASR::ttype_t *elem = ASRUtils::type_get_past_array(past_pointer);
+        // A non-allocatable array or a character variable is reached through
+        // a pointer view, so only a pointer to a scalar of another type is
+        // known to be a pointer.
+        std::string what = ASRUtils::is_array(past_pointer) ? "array" : "variable";
+        if (ASRUtils::is_allocatable(t)) {
+            what = "allocatable " + what;
+        } else if (ASRUtils::is_pointer(t) && !ASRUtils::is_array(past_pointer) &&
+                !ASRUtils::is_character(*elem)) {
+            what = "pointer " + what;
+        }
+        // The length of a character variable is that of its view.
+        std::string type = ASRUtils::is_character(*elem) ? "character"
+            : ASRUtils::type_to_str_fortran_symbol(elem,
+                member.m_type_declaration, true);
+        return CodeGenError("the host-associated " + what + " '"
+            + std::string(member.m_name) + "' of type " + type
+            + " is not supported by the " + backend + " backend yet", loc);
+    }
+
     // Makes the member store the address of the variable, which it then
     // designates (see visit_StructInstanceMember).
     void visit_BindReference(const ASR::BindReference_t &x) {

@@ -234,39 +234,20 @@ public:
         return value;
     }
 
-    // The C++ type of a Var of a variable of type `t`: the descriptor
-    // pointer of an array, and otherwise the type of its value.
-    std::string designator_type(ASR::ttype_t* t, ASR::symbol_t* type_declaration,
-            const Location& loc) {
-        ASR::ttype_t* elem = ASRUtils::type_get_past_array(t);
-        if (ASRUtils::is_allocatable_or_pointer(t) || !(ASRUtils::is_integer(*elem) ||
-                ASRUtils::is_real(*elem) || ASRUtils::is_complex(*elem) ||
-                ASRUtils::is_logical(*elem) || ASRUtils::is_character(*elem)) ||
-                (ASRUtils::is_array(t) && (ASRUtils::is_logical(*elem) ||
-                    ASRUtils::is_character(*elem)))) {
-            throw CodeGenError("a host-associated variable of type '"
-                + ASRUtils::type_to_str_python_symbol(t, type_declaration)
-                + "' is not supported by the cpp backend yet", loc);
+    // The C++ type of a Var of the variable that the frame member `member`
+    // refers to: only scalars of intrinsic numeric or logical type are
+    // supported so far.
+    std::string designator_type(const ASR::Variable_t &member) {
+        ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        if (ASRUtils::is_allocatable_or_pointer(t) || ASRUtils::is_array(t) ||
+                !(ASRUtils::is_integer(*t) || ASRUtils::is_real(*t) ||
+                ASRUtils::is_complex(*t) || ASRUtils::is_logical(*t))) {
+            throw unsupported_reference_member(member);
         }
-        if (ASRUtils::is_logical(*elem)) {
+        if (ASRUtils::is_logical(*t)) {
             return "bool";
         }
-        if (ASRUtils::is_character(*elem)) {
-            return "std::string";
-        }
-        std::string type_name = CUtils::get_c_type_from_ttype_t(elem, false);
-        if (!ASRUtils::is_array(t)) {
-            return type_name;
-        }
-        ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
-        size_t size;
-        std::string dims = convert_dims(n_dims, m_dims, size);
-        // As convert_variable_decl encodes the element type.
-        std::string bits = std::to_string(ASRUtils::extract_kind_from_ttype_t(elem) * 8);
-        std::string encoded_type_name = (ASRUtils::is_integer(*elem) ? "i"
-            : ASRUtils::is_real(*elem) ? "f" : "c") + bits;
-        return get_array_type(type_name, encoded_type_name, dims, n_dims);
+        return CUtils::get_c_type_from_ttype_t(t, false);
     }
 
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
@@ -279,8 +260,7 @@ public:
         if (ASRUtils::is_reference(v.m_type)) {
             // A member of Reference type holds the address of the variable
             // that it designates (see visit_StructInstanceMember).
-            return designator_type(ASR::down_cast<ASR::Reference_t>(v.m_type)->m_type,
-                v.m_type_declaration, v.base.base.loc) + " *" + std::string(v.m_name);
+            return designator_type(v) + " *" + std::string(v.m_name);
         }
         if (ASR::is_a<ASR::StructType_t>(*v.m_type) &&
                 ASRUtils::is_frame_type(v.m_type_declaration)) {
