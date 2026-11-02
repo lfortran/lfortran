@@ -5344,6 +5344,15 @@ gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_41.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_42.f90"
+gpu_cuda_kernel = true
+options = "--gpu-chunk-limit=50"
+
+[[test]]
 filename = "../integration_tests/gpu_liveout_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
@@ -7134,6 +7143,21 @@ asr = true
 
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr"
+asr = true
+
+# A launch without chunk dimensions must have no fixed iterations.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_fixed_iterations.asr"
+asr = true
+
+# The bounds of a chunk dimension must be scalar integer kernel parameters.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_parameter_kind.asr"
+asr = true
+
+# A launch of a kernel with lanes must not run in chunks.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_lanes.asr"
 asr = true
 
 [[test]]

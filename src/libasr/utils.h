@@ -100,6 +100,10 @@ struct PassOptions {
     // The fewest iterations of a device loop that index-set splitting
     // splits at run time; 0 splits every one that has an interior.
     int64_t gpu_split_min_iterations = 131072;
+    // The most iterations one launch of a kernel runs. A launch of more runs
+    // its kernel once per chunk of at most this many (device_launch_expand).
+    // Lowered only by tests, to run many chunks over small loops.
+    int64_t gpu_chunk_limit = 2147483647;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     // Whether the target can lower descriptor-to-data views in retained entries.

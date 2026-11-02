@@ -10,8 +10,10 @@ Launches a GPU kernel.
 GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
     call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
     expr? stop_status, stmt* stop_replay, expr* overwritten,
-    expr* overwritten_if)
+    expr* overwritten_if, gpu_launch_dimension* chunk_dimensions,
+    int chunk_fixed_iterations)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
+gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 ```
 
 ### Arguments
@@ -28,6 +30,8 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
 | `overwritten` | array arguments the kernel may assign whole before it reads them (below). |
 | `overwritten_if` | for each of `overwritten`, the host condition under which it does. |
+| `chunk_dimensions` | the dimensions of the iteration space a launch of more iterations than the chunk limit splits into chunks, each run as a launch of the kernel, in the order the kernel numbers its iterations (below); empty when it always runs as one. |
+| `chunk_fixed_iterations` | the product of the constant extents of the dimensions every chunk covers whole: 1 when there are none, and 0 when `chunk_dimensions` is empty. |
 
 ### Return values
 
@@ -123,6 +127,35 @@ ordinary write so that the other argument can still read its previous
 contents. The kernel layout's `gpu_kernel_argument.noalias` is a separate
 shared-ASR proof; it is not inferred from `overwritten`.
 
+A launch with `chunk_dimensions` runs as several launches of its kernel when
+it has more iterations than the chunk limit (`huge(0)`, which the hidden,
+test-only option `--gpu-chunk-limit` lowers): one per chunk, a box of the
+iteration space of at most that many iterations. The iterations of a `do
+concurrent` may run in any order, so the chunks run one after another, and
+the kernel numbers the iterations of each chunk from the bounds of its box.
+A chunk covers every dimension not in `chunk_dimensions` whole; their
+extents are constants, which the kernel keeps, and their product is
+`chunk_fixed_iterations`, at most the limit. Each dimension in
+`chunk_dimensions` names the kernel parameters that hold its bounds,
+`start_parameter` and `end_parameter`, which each chunk sets to the bounds
+of its box, and the launch reads the bounds of the whole dimension from its
+arguments for them. They are listed fastest-varying first, and a chunk
+covers as many values of each as fit beside the dimensions covered whole
+and the ones before it in the list, and at least one. `gpu_offload` splits
+every dimension whose extent is not a constant, and those with constant
+extents beyond what fits the limit. It gives a launch no
+`chunk_dimensions` when its nest cannot have more iterations than the
+limit, as the kind of each loop index and its constant bounds bound its
+extent: a one-dimensional `do concurrent (i = 1:n)` with an `integer(4)`
+index has at most `huge(0)` iterations. `device_launch_expand` sets the
+buffers, scratch buffers and workspaces once, sized for the largest chunk,
+and then launches each chunk with its own scalar arguments and grid. A
+launch that may run in tiles runs flat when it would start more threads
+than the chunk limit, and a buffer handed over as
+`LFORTRAN_GPU_WRITE_DISCARD` is handed over again as written after each
+chunk, so the chunks after the first keep what it wrote. Only CUDA launches
+without a reduction have `chunk_dimensions`.
+
 Private array storage is placed after shared lowering by `gpu_kernel_storage`,
 before address-space specialization. Fixed-size arrays that fit the device's
 stack budget have `Thread` memory space. Larger arrays have `Global` memory
@@ -161,6 +194,8 @@ placement never turns an iteration-private value into a shared value.
   :stop_replay []
   :overwritten []
   :overwritten_if []
+  :chunk_dimensions []
+  :chunk_fixed_iterations 0
 )
 ```
 

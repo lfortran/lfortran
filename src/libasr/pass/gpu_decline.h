@@ -84,6 +84,12 @@ struct GpuDeviceCapabilities {
     int tile_width = 0;
     int sequential_loop_unroll_factor = 1;
 
+    // Whether a launch of more iterations than the chunk limit
+    // (PassOptions::gpu_chunk_limit) runs its kernel once per chunk of the
+    // iteration space (device_launch_expand.cpp). Where it does not, one
+    // launch runs every iteration.
+    bool chunked_launches = false;
+
     // How many bytes of stack a thread of a kernel has. Late kernel storage
     // placement spills private arrays that do not fit to per-thread slices
     // of global workspace buffers; it never changes their locality.

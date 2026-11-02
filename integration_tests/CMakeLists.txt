@@ -6929,6 +6929,20 @@ RUN(NAME gpu_metal_595_fast FILE gpu_metal_595 LABELS gfortran llvm metal cuda E
 RUN(NAME gpu_metal_596 LABELS gfortran llvm cuda)
 RUN(NAME gpu_log_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nested_block_calls_01 LABELS gfortran llvm metal cuda)
+# Launches that run their kernel in chunks of the iteration space
+# (lfortran/lfortran#16569), forced on small loops by a low chunk limit.
+RUN(NAME gpu_metal_609 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-chunk-limit=7) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_609_limit_1 FILE gpu_metal_609 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-chunk-limit=1)
+RUN(NAME gpu_metal_610 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_611 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_612 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1000)
+RUN(NAME gpu_metal_613 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=5)
+# Existing tests forced to run in chunks: an `error stop` (status buffer),
+# the device heap, a packed launch (more than 31 buffers) and a liveout.
+RUN(NAME gpu_metal_337_chunked FILE gpu_metal_337 FAIL LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=3)
+RUN(NAME gpu_metal_410_chunked FILE gpu_metal_410 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
+RUN(NAME gpu_metal_78_chunked FILE gpu_metal_78 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
+RUN(NAME gpu_liveout_01_chunked FILE gpu_liveout_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -7093,6 +7107,8 @@ RUN(NAME gpu_kernel_source_37 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-s
 RUN(NAME gpu_kernel_source_38 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_39 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_40 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_kernel_source_41 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_kernel_source_42 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=50)
 RUN(NAME gpu_liveout_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_03 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_01 LABELS gfortran llvm metal cuda)
