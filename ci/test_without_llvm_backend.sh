@@ -1,17 +1,26 @@
 #!/usr/bin/env shell
 # This is a cross-platform `shell` script.
+#
+# Build LFortran without LLVM and test it, as Quick's "Test without LLVM
+# Backend" job does:
+#
+#     pixi run -e nollvm shell ci/test_without_llvm_backend.sh
+#
+# Pixi sets LFORTRAN_BUILD_DIR; without it, this builds in the source tree.
 
 set -ex
 
-# TODO: this file has been ported from a xonsh file, hence
-# we need to re-check the below FIXME
-# FIXME: Using the below flag generates many warnings.
-# os.environ['CXXFLAGS'] = "-Werror"
+build_dir="${LFORTRAN_BUILD_DIR:-.}"
 
-./build0.sh
-cmake -DWITH_LSP=yes -DWITH_JSON=yes -DCMAKE_BUILD_TYPE=Debug .
-make -j16
+shell build1.sh "$build_dir" -DWITH_LLVM=no -DWITH_STACKTRACE=no \
+    -DWITH_RUNTIME_STACKTRACE=no -DWITH_LSP=yes -DWITH_JSON=yes
 
-ctest --output-on-failure
+ctest --test-dir "$build_dir" --output-on-failure
 
-./run_tests.py --no-llvm --skip-run-with-dbg
+if [ -n "${LFORTRAN_BUILD_DIR:-}" ]; then
+    python run_tests.py --no-llvm --skip-run-with-dbg \
+        --compiler-dir "$build_dir/src/bin" \
+        --build-dir "$build_dir/reference_tests"
+else
+    python run_tests.py --no-llvm --skip-run-with-dbg
+fi
