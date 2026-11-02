@@ -3313,8 +3313,13 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return !ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_array(ASRUtils::expr_type(expr));
     }
 
+    // `is_defined_by_callee`: the actual argument is associated with a dummy
+    // that the procedure may define, so a section without vector subscripts
+    // is bound to a pointer rather than copied into a temporary, whose new
+    // value would be lost.
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
-        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
+        const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target,
+        bool is_defined_by_callee=false) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
         ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
@@ -3324,7 +3329,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         bool is_read_in_place = target_operands_read_in_place.count(expr) > 0 ||
             target_operands_read_in_place.count(x_m_args_i) > 0;
         bool is_pointer_required = ASR::is_a<ASR::ArraySection_t>(*x_m_args_i) &&
-                    (is_read_in_place ||
+                    (is_read_in_place || is_defined_by_callee ||
                     !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, expr, dummies_sharing_actual)) &&
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
@@ -3604,7 +3609,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+                // E.g. the target `b(1:2)` of the elemental defined
+                // assignment `b(1:2) = b(2:3)`, which is passed to its
+                // `intent(inout)` dummy.
+                bool is_defined_by_callee = is_call && dummy &&
+                    (dummy->m_intent == ASRUtils::intent_out ||
+                     dummy->m_intent == ASRUtils::intent_inout);
+                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target,
+                    is_defined_by_callee);
                 replaced_call_arg = replaced_call_arg || is_call;
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
@@ -6080,6 +6092,50 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
+    // The value `x2` of the call of the defined assignment `x`, if it is still
+    // the value `value` of `x`.
+    ASR::expr_t** get_defined_assignment_value_arg(const ASR::Assignment_t& x,
+            ASR::expr_t* value) {
+        if( x.m_overloaded == nullptr ||
+            !ASR::is_a<ASR::SubroutineCall_t>(*x.m_overloaded) ) {
+            return nullptr;
+        }
+        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(
+            x.m_overloaded);
+        if( call->n_args != 2 || call->m_args[1].m_value == nullptr ||
+            ASRUtils::get_past_array_physical_cast(call->m_args[1].m_value) !=
+            ASRUtils::get_past_array_physical_cast(value) ) {
+            return nullptr;
+        }
+        return &call->m_args[1].m_value;
+    }
+
+    // F2018 10.2.1.4: the defined assignment `x1 = x2` is the call
+    // `s(x1, (x2))`, so its value is evaluated before any element of the
+    // target is defined, which matters because a target section is defined
+    // in place (see `call_create_and_allocate_temporary_variable`). The value
+    // of the assignment is evaluated into a temporary when it may refer to
+    // the target, e.g. `b(4:1:-1) = b`, `x%arr(4:1:-1) = x%arr` or
+    // `b(2:3) = b(2)`, and the call is given that temporary as `x2`. A value
+    // that the call prepared differently, e.g. a section bound to a pointer
+    // (see `traverse_call_args`), is left alone.
+    void pass_evaluated_value_to_defined_assignment(const ASR::Assignment_t& x,
+            ASR::expr_t* value_before_replacement) {
+        ASR::expr_t** value_arg_ptr = get_defined_assignment_value_arg(
+            x, value_before_replacement);
+        if( value_arg_ptr == nullptr ||
+            ASRUtils::is_pointer(ASRUtils::expr_type(x.m_value)) ) {
+            return;
+        }
+        ASR::expr_t* value_arg = *value_arg_ptr;
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(x.m_value);
+        if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*value_arg) ) {
+            value = rebuild_array_physical_cast(al,
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(value_arg), value);
+        }
+        *value_arg_ptr = value;
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
         ASR::expr_t* lhs_array_var = nullptr;
@@ -6147,6 +6203,13 @@ class ReplaceExprWithTemporaryVisitor:
              ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual);
 
+        ASR::expr_t* value_before_replacement = x.m_value;
+        // The value of a defined assignment is evaluated into a temporary
+        // also when it names an array pointer, e.g. `b(4:1:-1) = p`.
+        bool is_defined_assignment_value_aliasing_target =
+            get_defined_assignment_value_arg(x, x.m_value) != nullptr &&
+            lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            can_rhs_refer_to_lhs(al, lhs_array_var, x.m_value, dummies_sharing_actual);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         // A scalar value is assigned to each element of an array target.
         replacer.in_array_context = ASRUtils::is_array(
@@ -6172,9 +6235,13 @@ class ReplaceExprWithTemporaryVisitor:
             !ASRUtils::is_simd_array(x.m_value) &&
             !ASRUtils::is_allocatable(x.m_target) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual)) ||
-            is_self_ref_allocatable_array ) {
+            is_self_ref_allocatable_array ||
+            is_defined_assignment_value_aliasing_target ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
+        }
+        if( x.m_value != value_before_replacement ) {
+            pass_evaluated_value_to_defined_assignment(x, value_before_replacement);
         }
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
