@@ -45,11 +45,17 @@ llvmdev = "==7.0.1"
 clangdev = "==7.0.1"
 [feature.llvm7.target.win-64.dependencies]
 llvmdev = "==7.0.1"
+[feature.llvm7.target.linux-64.activation.env]
+# Clang 7 and 8 find no GCC installation for the C runtime startup files
+# (crtbegin.o), so LFortran links with the environment's GCC instead.
+LFORTRAN_LINKER = "gcc"
 [feature.llvm8]
 platforms = ["win-64", "linux-64"]
 [feature.llvm8.target.linux-64.dependencies]
 llvmdev = "==8.0.1"
 clangdev = "==8.0.1"
+[feature.llvm8.target.linux-64.activation.env]
+LFORTRAN_LINKER = "gcc"
 [feature.llvm8.target.win-64.dependencies]
 llvmdev = "==8.0.1"
 [feature.llvm9]
