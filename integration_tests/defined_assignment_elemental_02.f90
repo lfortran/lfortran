@@ -8,6 +8,9 @@ end type t
 interface assignment(=)
     module procedure copy
 end interface
+type :: ht
+    type(t) :: arr(4)
+end type ht
 contains
 elemental subroutine copy(to, from)
     type(t), intent(inout) :: to
@@ -36,6 +39,9 @@ contains
     procedure :: copy
     generic :: assignment(=) => copy
 end type s
+type :: hs
+    type(s) :: arr(4)
+end type hs
 contains
 elemental subroutine copy(to, from)
     class(s), intent(inout) :: to
@@ -49,6 +55,7 @@ use defined_assignment_elemental_02_m1
 implicit none
 integer, intent(in) :: n
 type(t) :: a(3), b(3), c(3, 3), d(4)
+type(ht) :: x
 integer :: i
 a%k = [1, 2, 3]
 b(1:3) = a
@@ -71,6 +78,12 @@ if (any(b%k /= [1, 11, 12])) error stop 8
 d%k = [1, 2, 3, 4]
 d(4:1:-1) = d
 if (any(d%k /= [14, 13, 12, 11])) error stop 9
+x%arr%k = [1, 2, 3, 4]
+x%arr(4:1:-1) = x%arr
+if (any(x%arr%k /= [14, 13, 12, 11])) error stop 31
+d%k = [1, 2, 3, 4]
+d(2:3) = d(2)
+if (any(d%k /= [1, 12, 12, 4])) error stop 32
 c%k = reshape([(i, i = 1, 9)], [3, 3])
 c(2, :) = a
 if (any(c(2, :)%k /= [11, 12, 13])) error stop 6
@@ -82,6 +95,7 @@ use defined_assignment_elemental_02_m2
 implicit none
 integer, intent(in) :: n
 type(s) :: a(3), b(3), c(3, 3), d(4)
+type(hs) :: x
 integer :: i
 a%k = [1, 2, 3]
 b(1:3) = a
@@ -104,6 +118,12 @@ if (any(b%k /= [1, 11, 12])) error stop 18
 d%k = [1, 2, 3, 4]
 d(4:1:-1) = d
 if (any(d%k /= [14, 13, 12, 11])) error stop 19
+x%arr%k = [1, 2, 3, 4]
+x%arr(4:1:-1) = x%arr
+if (any(x%arr%k /= [14, 13, 12, 11])) error stop 41
+d%k = [1, 2, 3, 4]
+d(2:3) = d(2)
+if (any(d%k /= [1, 12, 12, 4])) error stop 42
 c%k = reshape([(i, i = 1, 9)], [3, 3])
 c(2, :) = a
 if (any(c(2, :)%k /= [11, 12, 13])) error stop 16
