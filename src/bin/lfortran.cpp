@@ -43,7 +43,6 @@
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
 #include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_sign_from_value.h>
