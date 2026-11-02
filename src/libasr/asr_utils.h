@@ -2170,6 +2170,12 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
+// The extent (end - start)/step + 1 of a section triplet, in the type
+// `size_type`.
+ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
+    ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+    ASR::ttype_t* size_type);
+
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,

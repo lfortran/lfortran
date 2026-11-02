@@ -469,9 +469,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     if( d == nullptr ) {
                         continue;
                     }
-                    ASR::expr_t* dim_size = builder.Add(builder.Div(
-                        builder.Sub(end, start), d),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc));
+                    ASR::expr_t* dim_size = ASRUtils::get_triplet_extent(al,
+                        loc, start, end, d, int_type);
                     if( array_section_size == nullptr ) {
                         array_section_size = dim_size;
                     } else {

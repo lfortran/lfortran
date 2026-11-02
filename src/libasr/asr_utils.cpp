@@ -5308,6 +5308,33 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     return implied_doloop_size;
 }
 
+ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
+        ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+        ASR::ttype_t* size_type) {
+    // A bound of the triplet may be integer(8): the extent is computed in
+    // the widest kind of the triplet and only then converted.
+    ASRUtils::ASRBuilder builder(al, loc);
+    int kind = 4;
+    for( ASR::expr_t* e: {start, end, step} ) {
+        kind = std::max(kind, ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)));
+    }
+    ASR::ttype_t* triplet_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, kind));
+    auto in_kind = [&](ASR::expr_t* e) {
+        return ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)) == kind ? e
+            : builder.i2i_t(e, triplet_type);
+    };
+    ASR::expr_t* extent = builder.Add(builder.Div(
+        builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
+        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    if( kind != ASRUtils::extract_kind_from_ttype_t(size_type) ) {
+        extent = builder.i2i_t(extent, size_type);
+    }
+    return extent;
+}
+
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
     ASR::expr_t* array_size = nullptr;
@@ -5377,9 +5404,8 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
                 if( d == nullptr ) {
                     continue;
                 }
-                ASR::expr_t* dim_size = builder.Add(builder.Div(
-                    builder.Sub(end, start), d),
-                    make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc));
+                ASR::expr_t* dim_size = get_triplet_extent(al, loc, start,
+                    end, d, int_type);
                 if( array_section_size == nullptr ) {
                     array_section_size = dim_size;
                 } else {
