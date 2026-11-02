@@ -381,17 +381,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v3.2.1
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.10.0-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+          pixi-version: v0.83.0
+          environments: nollvm
+          cache: false
 
       - name: Test
-        shell: bash -e -l {0}
-        run: |
-          shell ci/test_without_llvm_backend.sh
+        shell: bash -e {0}
+        run: pixi run -e nollvm shell ci/test_without_llvm_backend.sh
 
   test_mlir:
     name: Compiler compatibility / Test MLIR backend
@@ -404,50 +402,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v3.2.1
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.10.0-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=3.10
-            mlir=19.1.6
-            llvm=19.1.6
-            llvm-openmp=19.1.6
-            libunwind=1.7.2
+          pixi-version: v0.83.0
+          environments: mlir
+          cache: false
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-ubuntu-latest
+          # The Pixi builds share no cache entries with the micromamba ones.
+          key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DWITH_MLIR=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
+        shell: bash -e {0}
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: sccache
+          CMAKE_CXX_COMPILER_LAUNCHER: sccache
+        run: pixi run -e mlir build -DWITH_MLIR=yes -DWITH_LSP=yes -DWITH_STACKTRACE=no
 
       - name: Test unit tests
-        shell: bash -e -l {0}
-        run: ctest --output-on-failure
+        shell: bash -e {0}
+        run: pixi run -e mlir ctest
 
       - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b mlir -j1
+        shell: bash -e {0}
+        run: pixi run -e mlir integration_tests -b mlir -j1
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM
