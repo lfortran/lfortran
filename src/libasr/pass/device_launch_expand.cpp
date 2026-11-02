@@ -1720,10 +1720,10 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!caps.device_selected()) {
         return;
     }
-    // A device without a 64-bit integer (Metal) cannot be given 64-bit
-    // offsets by the flag the message names, so it is not checked.
+    // A device that does not index in 64 bits (Metal) cannot be given
+    // 64-bit offsets by the flag the message names, so it is not checked.
     DeviceLaunchExpandVisitor v(al, unit,
-        caps.offset_kind == 4 && caps.max_integer_kind >= 8,
+        caps.offset_kind == 4 && caps.max_index_kind >= 8,
         pass_options.gpu_chunk_limit,
         pass_options.descriptor_index_64 ? 8 : 4);
     v.visit_TranslationUnit(unit);

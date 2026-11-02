@@ -16,6 +16,7 @@
 #include <libasr/pass/intrinsic_functions.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
+#include <limits>
 #include <sstream>
 #include <map>
 #include <set>
@@ -5332,7 +5333,13 @@ public:
                 // literal bounds) would be done, and overflow, in 32 bits,
                 // and an integer(1)/(2) one would not match its kind in an
                 // overloaded call. Give it the device type of its kind.
-                if (ASRUtils::extract_kind_from_ttype_t(c->m_type) != 4) {
+                if (c->m_n == std::numeric_limits<int64_t>::min()) {
+                    // The magnitude of the most negative integer(8) is no
+                    // signed literal, so it is spelled as an expression.
+                    src << "(-((" << gpu_type(c->m_type) << ")"
+                        << std::numeric_limits<int64_t>::max() << ") - 1)";
+                } else if (ASRUtils::extract_kind_from_ttype_t(c->m_type)
+                        != 4) {
                     src << "((" << gpu_type(c->m_type) << ")" << c->m_n << ")";
                 } else {
                     src << c->m_n;
