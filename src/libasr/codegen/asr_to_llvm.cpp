@@ -10168,7 +10168,10 @@ public:
                                     ASR::array_physical_typeType::DescriptorArray) {
                             ptr = arr_descr->create_descriptor_alloca(type_, v->m_name);
                         } else {
-                            ptr = llvm_utils->CreateAlloca(*builder, type_, array_size,
+                            // An automatic array (`array_size` is set) is
+                            // allocated as `array_size` elements of `type`.
+                            ptr = llvm_utils->CreateAlloca(*builder,
+                                array_size ? type : type_, array_size,
                                 v->m_name, is_llvm_ptr);
                         }
 #else
