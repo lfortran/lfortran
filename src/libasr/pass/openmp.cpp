@@ -2065,6 +2065,10 @@ class ParallelRegionVisitor :
                     type_decl = import_procedure_declaration(al, program_procedure_copies,
                         parent_scope,
                         var->m_type_declaration);
+                    if (failed()) {
+                        current_scope = current_scope_copy;
+                        return {"", nullptr};
+                    }
                 }
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local,
                     type_decl);
@@ -2826,6 +2830,7 @@ class ParallelRegionVisitor :
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module_omp(&c, x.base.base.loc);
+            if (failed()) return;
             std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(x.base.base.loc);
 
             // create external symbol for the thread data module
@@ -3437,6 +3442,7 @@ class ParallelRegionVisitor :
             collect_private_arrays(x, c);
             // Create thread data module for task
             std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct", false);
+            if (failed()) return;
             // Create required modules (iso_c_binding and omp_lib)
             std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(loc);
 
@@ -4105,6 +4111,7 @@ class ParallelRegionVisitor :
             // Create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = 
                 create_thread_data_module_omp(&c, x.base.base.loc, "teams_thread_data");
+            if (failed()) return;
             std::vector<ASR::symbol_t*> module_symbols = 
                 create_modules_for_lcompilers_function(x.base.base.loc);
             
