@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-procedure_argument_specialization_02-71a33f0",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/procedure_argument_specialization_02.f90",
+    "infile_hash": "be9a6cced83f81d95f192c8ee93b2edac66b1f856969b5ebdc1158a2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-procedure_argument_specialization_02-71a33f0.stdout",
+    "stdout_hash": "1b0042fc691118194de8fca3ab780d1f93c09771e339789114fd4d94",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

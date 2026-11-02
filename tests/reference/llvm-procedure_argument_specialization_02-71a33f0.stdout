@@ -1,0 +1,132 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+target datalayout = "..."
+target triple = "x86_64-unknown-linux-gnu"
+
+%procedure_argument_specialization_02_m.__lcompilers_frame_host.10 = type { i32* }
+
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@0 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+; Function Attrs: nounwind readonly
+define i32 @__module_procedure_argument_specialization_02_m_host(i32* noalias %depth) local_unnamed_addr #0 {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  store i32 1, i32* %call_arg_value, align 4
+  %0 = load i32, i32* %depth, align 1, !noalias !0
+  %1 = add i32 %0, 1
+  %2 = icmp sgt i32 %0, 1
+  br i1 %2, label %then, label %ifcont
+
+then:                                             ; preds = %.entry
+  %3 = add nsw i32 %0, -1
+  store i32 %3, i32* %call_arg_value, align 4
+  %4 = call i32 @__module_procedure_argument_specialization_02_m_host(i32* nonnull %call_arg_value)
+  %5 = add i32 %4, %1
+  br label %ifcont
+
+ifcont:                                           ; preds = %.entry, %then
+  %r.0 = phi i32 [ %5, %then ], [ %1, %.entry ]
+  %6 = add i32 %r.0, %0
+  ret i32 %6
+}
+
+; Function Attrs: norecurse nounwind readonly
+define i32 @host.__module_procedure_argument_specialization_02_m_add_depth(i32* noalias nocapture readonly %y, %procedure_argument_specialization_02_m.__lcompilers_frame_host.10* noalias nocapture readonly %__lcompilers_frame) local_unnamed_addr #1 {
+.entry:
+  %0 = getelementptr %procedure_argument_specialization_02_m.__lcompilers_frame_host.10, %procedure_argument_specialization_02_m.__lcompilers_frame_host.10* %__lcompilers_frame, i64 0, i32 0
+  %1 = load i32*, i32** %0, align 1, !tbaa !7
+  %2 = load i32, i32* %y, align 1
+  %3 = load i32, i32* %1, align 1
+  %4 = add i32 %3, %2
+  ret i32 %4
+}
+
+; Function Attrs: norecurse nounwind readonly
+define i32 @host.__module_procedure_argument_specialization_02_m_apply__add_depth(i32* noalias nocapture readonly %x, %procedure_argument_specialization_02_m.__lcompilers_frame_host.10* noalias nocapture readonly %__lcompilers_frame) local_unnamed_addr #1 {
+.entry:
+  %0 = getelementptr %procedure_argument_specialization_02_m.__lcompilers_frame_host.10, %procedure_argument_specialization_02_m.__lcompilers_frame_host.10* %__lcompilers_frame, i64 0, i32 0
+  %1 = load i32*, i32** %0, align 1, !tbaa !7, !alias.scope !10, !noalias !13
+  %2 = load i32, i32* %x, align 1, !alias.scope !13, !noalias !10
+  %3 = load i32, i32* %1, align 1, !noalias !15
+  %4 = add i32 %3, %2
+  ret i32 %4
+}
+
+define i32 @main(i32 %0, i8** %1) local_unnamed_addr #2 {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  tail call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %r = alloca i32, align 4
+  store i32 10, i32* %call_arg_value, align 4
+  %2 = call i32 @__module_procedure_argument_specialization_02_m_host(i32* nonnull %call_arg_value)
+  store i32 %2, i32* %r, align 4
+  %.not = icmp eq i32 %2, 120
+  br i1 %.not, label %ifcont, label %then
+
+then:                                             ; preds = %.entry
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @0, i64 0, i64 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i64 0, i64 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i64 0, i64 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont
+
+ifcont:                                           ; preds = %.entry, %then
+  %3 = alloca i64, align 8
+  %4 = tail call i8* @_lfortran_get_default_allocator()
+  %5 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %4, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i64 0, i64 0), i64* nonnull %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, i32* nonnull %r)
+  %6 = load i64, i64* %3, align 8
+  %7 = trunc i64 %6 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i64 0, i64 0), i8* %5, i32 %7, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i64 0, i64 0), i32 1)
+  %8 = icmp eq i8* %5, null
+  br i1 %8, label %FINALIZE_SYMTABLE_procedure_argument_specialization_02, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont
+  call void @_lfortran_free_alloc(i8* %4, i8* nonnull %5)
+  br label %FINALIZE_SYMTABLE_procedure_argument_specialization_02
+
+FINALIZE_SYMTABLE_procedure_argument_specialization_02: ; preds = %free_nonnull, %ifcont
+  call void @_lfortran_internal_alloc_finalize()
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**) local_unnamed_addr
+
+declare void @_lcompilers_print_error(i8*, ...) local_unnamed_addr
+
+declare void @_lfortran_internal_alloc_finalize() local_unnamed_addr
+
+declare void @exit(i32) local_unnamed_addr
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) local_unnamed_addr
+
+; Function Attrs: nounwind readnone willreturn
+declare i8* @_lfortran_get_default_allocator() local_unnamed_addr #3
+
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32) local_unnamed_addr
+
+declare void @_lfortran_free_alloc(i8*, i8*) local_unnamed_addr
+
+attributes #0 = { nounwind readonly "no-infs-fp-math"="true" "no-nans-fp-math"="true" "no-signed-zeros-fp-math"="true" "target-cpu"="generic" "target-features"="+64bit,+adx,+aes,+avx,+avx2,+avx512bf16,+avx512bitalg,+avx512bw,+avx512cd,+avx512dq,+avx512f,+avx512ifma,+avx512vbmi,+avx512vbmi2,+avx512vl,+avx512vnni,+avx512vp2intersect,+avx512vpopcntdq,+bmi,+bmi2,+clflushopt,+clwb,+clzero,+cmov,+cx16,+cx8,+f16c,+fma,+fsgsbase,+fxsr,+gfni,+invpcid,+lzcnt,+mmx,+movbe,+movdir64b,+movdiri,+mwaitx,+pclmul,+pku,+popcnt,+prfchw,+rdpid,+rdrnd,+rdseed,+sahf,+sha,+shstk,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+sse4a,+ssse3,+vaes,+vpclmulqdq,+wbnoinvd,+xsave,+xsavec,+xsaveopt,+xsaves,-amx-bf16,-amx-int8,-amx-tile,-avx512er,-avx512pf,-cldemote,-enqcmd,-fma4,-lwp,-pconfig,-prefetchwt1,-ptwrite,-rtm,-serialize,-sgx,-tbm,-tsxldtrk,-waitpkg,-xop" "unsafe-fp-math"="true" }
+attributes #1 = { norecurse nounwind readonly "no-infs-fp-math"="true" "no-nans-fp-math"="true" "no-signed-zeros-fp-math"="true" "target-cpu"="generic" "target-features"="+64bit,+adx,+aes,+avx,+avx2,+avx512bf16,+avx512bitalg,+avx512bw,+avx512cd,+avx512dq,+avx512f,+avx512ifma,+avx512vbmi,+avx512vbmi2,+avx512vl,+avx512vnni,+avx512vp2intersect,+avx512vpopcntdq,+bmi,+bmi2,+clflushopt,+clwb,+clzero,+cmov,+cx16,+cx8,+f16c,+fma,+fsgsbase,+fxsr,+gfni,+invpcid,+lzcnt,+mmx,+movbe,+movdir64b,+movdiri,+mwaitx,+pclmul,+pku,+popcnt,+prfchw,+rdpid,+rdrnd,+rdseed,+sahf,+sha,+shstk,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+sse4a,+ssse3,+vaes,+vpclmulqdq,+wbnoinvd,+xsave,+xsavec,+xsaveopt,+xsaves,-amx-bf16,-amx-int8,-amx-tile,-avx512er,-avx512pf,-cldemote,-enqcmd,-fma4,-lwp,-pconfig,-prefetchwt1,-ptwrite,-rtm,-serialize,-sgx,-tbm,-tsxldtrk,-waitpkg,-xop" "unsafe-fp-math"="true" }
+attributes #2 = { "no-infs-fp-math"="true" "no-nans-fp-math"="true" "no-signed-zeros-fp-math"="true" "target-cpu"="generic" "target-features"="+64bit,+adx,+aes,+avx,+avx2,+avx512bf16,+avx512bitalg,+avx512bw,+avx512cd,+avx512dq,+avx512f,+avx512ifma,+avx512vbmi,+avx512vbmi2,+avx512vl,+avx512vnni,+avx512vp2intersect,+avx512vpopcntdq,+bmi,+bmi2,+clflushopt,+clwb,+clzero,+cmov,+cx16,+cx8,+f16c,+fma,+fsgsbase,+fxsr,+gfni,+invpcid,+lzcnt,+mmx,+movbe,+movdir64b,+movdiri,+mwaitx,+pclmul,+pku,+popcnt,+prfchw,+rdpid,+rdrnd,+rdseed,+sahf,+sha,+shstk,+sse,+sse2,+sse3,+sse4.1,+sse4.2,+sse4a,+ssse3,+vaes,+vpclmulqdq,+wbnoinvd,+xsave,+xsavec,+xsaveopt,+xsaves,-amx-bf16,-amx-int8,-amx-tile,-avx512er,-avx512pf,-cldemote,-enqcmd,-fma4,-lwp,-pconfig,-prefetchwt1,-ptwrite,-rtm,-serialize,-sgx,-tbm,-tsxldtrk,-waitpkg,-xop" "unsafe-fp-math"="true" }
+attributes #3 = { nounwind readnone willreturn }
+
+!0 = !{!1, !3, !4, !6}
+!1 = distinct !{!1, !2, !"host.__module_procedure_argument_specialization_02_m_add_depth: %y"}
+!2 = distinct !{!2, !"host.__module_procedure_argument_specialization_02_m_add_depth"}
+!3 = distinct !{!3, !2, !"host.__module_procedure_argument_specialization_02_m_add_depth: %__lcompilers_frame"}
+!4 = distinct !{!4, !5, !"host.__module_procedure_argument_specialization_02_m_apply__add_depth: %x"}
+!5 = distinct !{!5, !"host.__module_procedure_argument_specialization_02_m_apply__add_depth"}
+!6 = distinct !{!6, !5, !"host.__module_procedure_argument_specialization_02_m_apply__add_depth: %__lcompilers_frame"}
+!7 = !{!8, !8, i64 0}
+!8 = !{!"descriptor", !9, i64 0}
+!9 = !{!"LFortran TBAA"}
+!10 = !{!11}
+!11 = distinct !{!11, !12, !"host.__module_procedure_argument_specialization_02_m_add_depth: %__lcompilers_frame"}
+!12 = distinct !{!12, !"host.__module_procedure_argument_specialization_02_m_add_depth"}
+!13 = !{!14}
+!14 = distinct !{!14, !12, !"host.__module_procedure_argument_specialization_02_m_add_depth: %y"}
+!15 = !{!14, !11}

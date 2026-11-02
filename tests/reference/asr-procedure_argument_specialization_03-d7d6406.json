@@ -1,0 +1,13 @@
+{
+    "basename": "asr-procedure_argument_specialization_03-d7d6406",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/procedure_argument_specialization_03.f90",
+    "infile_hash": "6de0d997dbf126aad2942e7454b1ef6d4a2eadb7f9b94f98c3f400c9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-procedure_argument_specialization_03-d7d6406.stdout",
+    "stdout_hash": "3ca9c561443143368f5c05ecef4a6273297831858b5140831bf7eaf6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

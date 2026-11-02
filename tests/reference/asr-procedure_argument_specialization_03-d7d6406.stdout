@@ -1,0 +1,1583 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            procedure_argument_specialization_03:
+                (Program
+                    (SymbolTable
+                        7
+                        {
+                            g:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            g:
+                                                (Variable
+                                                    8
+                                                    g
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    8
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    g
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 x)]
+                                    [(Assignment
+                                        (Var 8 g)
+                                        (IntrinsicElementalFunction
+                                            Exp
+                                            [(RealBinOp
+                                                (Var 7 k)
+                                                Mul
+                                                (Var 8 x)
+                                                (Real 8)
+                                                ()
+                                            )]
+                                            0
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 8 g)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            integrate:
+                                (ExternalSymbol
+                                    7
+                                    integrate
+                                    2 integrate
+                                    procedure_argument_specialization_03_m
+                                    []
+                                    integrate
+                                    Public
+                                ),
+                            k:
+                                (Variable
+                                    7
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            r:
+                                (Variable
+                                    7
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    procedure_argument_specialization_03
+                    [procedure_argument_specialization_03_m]
+                    [(Assignment
+                        (Var 7 k)
+                        (Cast
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                2.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 7 r)
+                        (FunctionCall
+                            7 integrate
+                            ()
+                            [((Var 7 g))
+                            ((RealConstant
+                                0.000000
+                                (Real 8)
+                            ))
+                            ((RealConstant
+                                1.000000
+                                (Real 8)
+                            ))]
+                            (Real 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 7 r)
+                                    Sub
+                                    (RealBinOp
+                                        (RealBinOp
+                                            (IntrinsicElementalFunction
+                                                Exp
+                                                [(RealConstant
+                                                    2.000000
+                                                    (Real 8)
+                                                )]
+                                                0
+                                                (Real 8)
+                                                (RealConstant
+                                                    7.389056
+                                                    (Real 8)
+                                                )
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 8)
+                                                )
+                                                ()
+                                            )
+                                            (Real 8)
+                                            (RealConstant
+                                                6.389056
+                                                (Real 8)
+                                            )
+                                        )
+                                        Div
+                                        (Cast
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 8)
+                                            (RealConstant
+                                                2.000000
+                                                (Real 8)
+                                            )
+                                            ()
+                                        )
+                                        (Real 8)
+                                        (RealConstant
+                                            3.194528
+                                            (Real 8)
+                                        )
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 7 k)
+                        (Cast
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 8)
+                            (RealConstant
+                                3.000000
+                                (Real 8)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 7 r)
+                        (FunctionCall
+                            7 integrate
+                            ()
+                            [((Var 7 g))
+                            ((RealConstant
+                                0.000000
+                                (Real 8)
+                            ))
+                            ((RealConstant
+                                1.000000
+                                (Real 8)
+                            ))]
+                            (Real 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 7 r)
+                                    Sub
+                                    (RealBinOp
+                                        (RealBinOp
+                                            (IntrinsicElementalFunction
+                                                Exp
+                                                [(RealConstant
+                                                    3.000000
+                                                    (Real 8)
+                                                )]
+                                                0
+                                                (Real 8)
+                                                (RealConstant
+                                                    20.085537
+                                                    (Real 8)
+                                                )
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 8)
+                                                )
+                                                ()
+                                            )
+                                            (Real 8)
+                                            (RealConstant
+                                                19.085537
+                                                (Real 8)
+                                            )
+                                        )
+                                        Div
+                                        (Cast
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 8)
+                                            (RealConstant
+                                                3.000000
+                                                (Real 8)
+                                            )
+                                            ()
+                                        )
+                                        (Real 8)
+                                        (RealConstant
+                                            6.361846
+                                            (Real 8)
+                                        )
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000000
+                                (Real 8)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 7 r)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                ),
+            procedure_argument_specialization_03_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            adapt:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            a:
+                                                (Variable
+                                                    5
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    5
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            depth:
+                                                (Variable
+                                                    5
+                                                    depth
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            f:
+                                                (Variable
+                                                    5
+                                                    f
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Real 8)]
+                                                        (Real 8)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    2 fn
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            left:
+                                                (Variable
+                                                    5
+                                                    left
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            m:
+                                                (Variable
+                                                    5
+                                                    m
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            right:
+                                                (Variable
+                                                    5
+                                                    right
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            s:
+                                                (Variable
+                                                    5
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            tol:
+                                                (Variable
+                                                    5
+                                                    tol
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            whole:
+                                                (Variable
+                                                    5
+                                                    whole
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    adapt
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Real 8)]
+                                            (Real 8)
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                        (Real 8)
+                                        (Real 8)
+                                        (Real 8)
+                                        (Real 8)
+                                        (Integer 4)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [simpson
+                                    adapt]
+                                    [(Var 5 f)
+                                    (Var 5 a)
+                                    (Var 5 b)
+                                    (Var 5 whole)
+                                    (Var 5 tol)
+                                    (Var 5 depth)]
+                                    [(Assignment
+                                        (Var 5 m)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (Var 5 a)
+                                                Add
+                                                (Var 5 b)
+                                                (Real 8)
+                                                ()
+                                            )
+                                            Div
+                                            (Cast
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 8)
+                                                (RealConstant
+                                                    2.000000
+                                                    (Real 8)
+                                                )
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 left)
+                                        (FunctionCall
+                                            2 simpson
+                                            ()
+                                            [((Var 5 f))
+                                            ((Var 5 a))
+                                            ((Var 5 m))]
+                                            (Real 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 right)
+                                        (FunctionCall
+                                            2 simpson
+                                            ()
+                                            [((Var 5 f))
+                                            ((Var 5 m))
+                                            ((Var 5 b))]
+                                            (Real 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (LogicalBinOp
+                                            (IntegerCompare
+                                                (Var 5 depth)
+                                                LtE
+                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            Or
+                                            (RealCompare
+                                                (IntrinsicElementalFunction
+                                                    Abs
+                                                    [(RealBinOp
+                                                        (RealBinOp
+                                                            (Var 5 left)
+                                                            Add
+                                                            (Var 5 right)
+                                                            (Real 8)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (Var 5 whole)
+                                                        (Real 8)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 8)
+                                                    ()
+                                                )
+                                                LtE
+                                                (RealBinOp
+                                                    (Cast
+                                                        (IntegerConstant 15 (Integer 4) Decimal)
+                                                        IntegerToReal
+                                                        (Real 8)
+                                                        (RealConstant
+                                                            15.000000
+                                                            (Real 8)
+                                                        )
+                                                        ()
+                                                    )
+                                                    Mul
+                                                    (Var 5 tol)
+                                                    (Real 8)
+                                                    ()
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Assignment
+                                            (Var 5 s)
+                                            (RealBinOp
+                                                (Var 5 left)
+                                                Add
+                                                (Var 5 right)
+                                                (Real 8)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        [(Assignment
+                                            (Var 5 s)
+                                            (RealBinOp
+                                                (FunctionCall
+                                                    2 adapt
+                                                    ()
+                                                    [((Var 5 f))
+                                                    ((Var 5 a))
+                                                    ((Var 5 m))
+                                                    ((Var 5 left))
+                                                    ((RealBinOp
+                                                        (Var 5 tol)
+                                                        Div
+                                                        (Cast
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            IntegerToReal
+                                                            (Real 8)
+                                                            (RealConstant
+                                                                2.000000
+                                                                (Real 8)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Real 8)
+                                                        ()
+                                                    ))
+                                                    ((IntegerBinOp
+                                                        (Var 5 depth)
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ))]
+                                                    (Real 8)
+                                                    ()
+                                                    ()
+                                                )
+                                                Add
+                                                (FunctionCall
+                                                    2 adapt
+                                                    ()
+                                                    [((Var 5 f))
+                                                    ((Var 5 m))
+                                                    ((Var 5 b))
+                                                    ((Var 5 right))
+                                                    ((RealBinOp
+                                                        (Var 5 tol)
+                                                        Div
+                                                        (Cast
+                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                            IntegerToReal
+                                                            (Real 8)
+                                                            (RealConstant
+                                                                2.000000
+                                                                (Real 8)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Real 8)
+                                                        ()
+                                                    ))
+                                                    ((IntegerBinOp
+                                                        (Var 5 depth)
+                                                        Sub
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ))]
+                                                    (Real 8)
+                                                    ()
+                                                    ()
+                                                )
+                                                (Real 8)
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                    )]
+                                    (Var 5 s)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            fn:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            fn:
+                                                (Variable
+                                                    3
+                                                    fn
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    fn
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    []
+                                    (Var 3 fn)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            integrate:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            a:
+                                                (Variable
+                                                    6
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    6
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            f:
+                                                (Variable
+                                                    6
+                                                    f
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Real 8)]
+                                                        (Real 8)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    2 fn
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            lfortran_tmp:
+                                                (Variable
+                                                    6
+                                                    lfortran_tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            s:
+                                                (Variable
+                                                    6
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    integrate
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Real 8)]
+                                            (Real 8)
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                        (Real 8)
+                                        (Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [simpson
+                                    adapt]
+                                    [(Var 6 f)
+                                    (Var 6 a)
+                                    (Var 6 b)]
+                                    [(Assignment
+                                        (Var 6 lfortran_tmp)
+                                        (FunctionCall
+                                            2 simpson
+                                            ()
+                                            [((Var 6 f))
+                                            ((Var 6 a))
+                                            ((Var 6 b))]
+                                            (Real 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 6 s)
+                                        (FunctionCall
+                                            2 adapt
+                                            ()
+                                            [((Var 6 f))
+                                            ((Var 6 a))
+                                            ((Var 6 b))
+                                            ((Var 6 lfortran_tmp))
+                                            ((RealConstant
+                                                0.000000
+                                                (Real 8)
+                                            ))
+                                            ((IntegerConstant 30 (Integer 4) Decimal))]
+                                            (Real 8)
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 6 s)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            simpson:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            f:
+                                                (Variable
+                                                    4
+                                                    f
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (FunctionType
+                                                        [(Real 8)]
+                                                        (Real 8)
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    2 fn
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            s:
+                                                (Variable
+                                                    4
+                                                    s
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    simpson
+                                    (FunctionType
+                                        [(FunctionType
+                                            [(Real 8)]
+                                            (Real 8)
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                        (Real 8)
+                                        (Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 f)
+                                    (Var 4 a)
+                                    (Var 4 b)]
+                                    [(Assignment
+                                        (Var 4 s)
+                                        (RealBinOp
+                                            (RealBinOp
+                                                (RealBinOp
+                                                    (Var 4 b)
+                                                    Sub
+                                                    (Var 4 a)
+                                                    (Real 8)
+                                                    ()
+                                                )
+                                                Div
+                                                (Cast
+                                                    (IntegerConstant 6 (Integer 4) Decimal)
+                                                    IntegerToReal
+                                                    (Real 8)
+                                                    (RealConstant
+                                                        6.000000
+                                                        (Real 8)
+                                                    )
+                                                    ()
+                                                )
+                                                (Real 8)
+                                                ()
+                                            )
+                                            Mul
+                                            (RealBinOp
+                                                (RealBinOp
+                                                    (FunctionCall
+                                                        4 f
+                                                        ()
+                                                        [((Var 4 a))]
+                                                        (Real 8)
+                                                        ()
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (RealBinOp
+                                                        (Cast
+                                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                                            IntegerToReal
+                                                            (Real 8)
+                                                            (RealConstant
+                                                                4.000000
+                                                                (Real 8)
+                                                            )
+                                                            ()
+                                                        )
+                                                        Mul
+                                                        (FunctionCall
+                                                            4 f
+                                                            ()
+                                                            [((RealBinOp
+                                                                (RealBinOp
+                                                                    (Var 4 a)
+                                                                    Add
+                                                                    (Var 4 b)
+                                                                    (Real 8)
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (Cast
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    IntegerToReal
+                                                                    (Real 8)
+                                                                    (RealConstant
+                                                                        2.000000
+                                                                        (Real 8)
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (Real 8)
+                                                                ()
+                                                            ))]
+                                                            (Real 8)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Real 8)
+                                                        ()
+                                                    )
+                                                    (Real 8)
+                                                    ()
+                                                )
+                                                Add
+                                                (FunctionCall
+                                                    4 f
+                                                    ()
+                                                    [((Var 4 b))]
+                                                    (Real 8)
+                                                    ()
+                                                    ()
+                                                )
+                                                (Real 8)
+                                                ()
+                                            )
+                                            (Real 8)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 4 s)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    procedure_argument_specialization_03_m
+                    ()
+                    [procedure_argument_specialization_03_m]
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)
