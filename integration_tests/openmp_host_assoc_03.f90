@@ -2,6 +2,8 @@
 ! instance passes the procedure value of its internal procedure `get` to
 ! the next one: the threads take and give back frame slots of the same
 ! thunk pool at the same time, and every value must reach its own instance.
+! Up to 4 threads times 4 instances hold a thunk at the same time, so
+! LFortran compiles it with --internal-procedure-thunks=16.
 module openmp_host_assoc_03_m
 implicit none
 abstract interface

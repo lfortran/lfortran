@@ -118,7 +118,7 @@ struct PassOptions {
     diag::Diagnostics *diagnostics = nullptr;
     // The number of activations of a host that can hold a procedure value of
     // one of its internal procedures at the same time (nested_vars)
-    int64_t internal_procedure_thunks = 64;
+    int64_t internal_procedure_thunks = 8;
 };
 
 struct CompilerOptions {
