@@ -2002,6 +2002,22 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_items[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
         is_Function = true;
         bool old_in_Subroutine = in_Subroutine;
         in_Subroutine = true;
@@ -2017,6 +2033,11 @@ public:
         }
         in_Subroutine = old_in_Subroutine;
         is_Function = false;
+        // The internal procedures start from this procedure's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2032,6 +2053,9 @@ public:
             }
             implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
@@ -2060,6 +2084,10 @@ public:
         func_type->m_deftype = ASR::deftypeType::Implementation;
         parent_scope->add_or_overwrite_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+        if (compiler_options.implicit_typing) {
+            implicit_mapping[get_hash(tmp)] = implicit_dictionary;
+            implicit_dictionary.clear();
+        }
     }
 
     // The part of `item`, in the specification part of a templated
