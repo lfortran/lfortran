@@ -172,6 +172,7 @@ build/
 build-wasm/
 # The unpacked source tarball that CI builds (ci/source_tarball.sh)
 /lfortran-src/
+/.wasm-tools/
 .jupyterlite.doit.db
 develop-eggs/
 dist/
