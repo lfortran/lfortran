@@ -6875,6 +6875,9 @@ RUN(NAME gpu_metal_580 LABELS gfortran llvm_omp cuda EXTRA_ARGS --openmp --gpu-o
 RUN(NAME gpu_metal_564 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
+RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their
 # hosts and modules.
 RUN(NAME gpu_metal_570 LABELS gfortran llvm metal cuda)
