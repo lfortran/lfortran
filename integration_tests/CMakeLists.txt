@@ -3161,6 +3161,7 @@ RUN(NAME derived_types_244 LABELS gfortran llvm) # TARGET component subscript al
 RUN(NAME derived_types_245 LABELS gfortran llvm) # result destination reached through a pointer component (#16191)
 RUN(NAME derived_types_246 LABELS gfortran llvm) # allocatable array component of its own type (#14189)
 RUN(NAME derived_types_247 LABELS llvm) # not gfortran: GFortran 15.3 copies recursive allocatable components shallowly (#14189)
+RUN(NAME derived_types_248 LABELS gfortran llvm EXTRAFILES derived_types_248_module1.f90 derived_types_248_module2.f90 EXTRA_ARGS --separate-compilation) # same-named types in two modules (#14189)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)

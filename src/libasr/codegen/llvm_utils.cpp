@@ -9904,6 +9904,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return gep;
     }
 
+    llvm::Function* LLVMStruct::get_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module)
+    {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        create_new_vtable_for_struct_type(struct_sym, module);
+        return newclass2copyfn.at(struct_sym);
+    }
+
     llvm::Value* LLVMUtils::get_type_identifier_for_polymorphic_type(
             ASR::expr_t* arg, llvm::Value* arg_val, ASR::symbol_t* struct_sym,
             llvm::Module* module, int class_type_id) {
@@ -10345,6 +10352,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         
         // create and add copy funciton
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
+        newclass2copyfn[struct_sym] = copy_function;
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
         llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
@@ -11039,13 +11047,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 return;
             }
 
-            llvm::Value* fn = nullptr;
-            {
-                llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
-                fn = llvm_utils->CreateLoad2(
-                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
-                fn = builder->CreateBitCast(fn, fnPtrTy);
-            }
+            // Call the owner-qualified copy function directly rather than
+            // through the type's vtable, whose symbol is not owner-qualified
+            // and can resolve to a same-named type of another module (#14543).
+            llvm::Function* copy_fn = get_struct_copy_function(&struct_sym->base, module);
 
             // Deep copy each struct element
             llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.head");
@@ -11071,8 +11076,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
             {
-                    // Elements are plain structs (declared as type(), not
-                    // class()), so they have no class wrapper.
+                    // Elements are struct values without a class wrapper.
                     ASR::ttype_t* elem_type = ASRUtils::extract_type(src_ty);
                     if (is_descriptor_array) {
                         allocate_struct_array_members(
@@ -11084,11 +11088,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         // the type definition and never terminates for a
                         // type with an allocatable array component of its
                         // own type.
-                        builder->CreateCall(fnTy, fn, {
+                        builder->CreateCall(fnTy, copy_fn, {
                             builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr),
                             builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr),
                             finalize_dest});
                     } else {
+                        // Mixed class/type copy: expand inline. This
+                        // terminates, because nested array components are
+                        // copied by calling a copy function (the branch
+                        // above, or through the vtable for class elements).
                         llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
                             elem_type, ASRUtils::extract_type(dest_ty), module,
                             false, finalize_dest);
