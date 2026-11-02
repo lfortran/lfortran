@@ -250,10 +250,10 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
     if (!d.code.empty()) out << " [" << d.code << "]";
     out << reset << bold << ": " << d.message << reset << std::endl;
 
+    int line_num_width = 1;
     if (d.labels.size() > 0 && d.labels[0].spans.size() > 0) {
         Label l = d.labels[0];
         Span s = l.spans[0];
-        int line_num_width = 1;
         if (s.last_line >= 10000) {
             line_num_width = 5;
         } else if (s.last_line >= 1000) {
@@ -375,6 +375,22 @@ std::string render_diagnostic_human(const Diagnostic &d, bool use_colors) {
                 out << " " << l.message << reset << std::endl;
             }
         } // Labels
+    }
+    // Children without labels, such as a help, follow as `= help: ...`,
+    // with the lines of a message of several lines aligned
+    for (auto &c : d.children) {
+        std::string child_type = std::get<0>(diag_level_to_str(c, use_colors));
+        std::string prefix = "= " + child_type + ": ";
+        out << std::string(line_num_width+1, ' ') << blue_bold << "=" << reset
+            << " " << bold << child_type << reset << ": ";
+        std::string message = c.message;
+        size_t pos;
+        while ((pos = message.find('\n')) != std::string::npos) {
+            out << message.substr(0, pos) << std::endl
+                << std::string(line_num_width+1+prefix.size(), ' ');
+            message = message.substr(pos+1);
+        }
+        out << message << std::endl;
     }
     return out.str();
 }

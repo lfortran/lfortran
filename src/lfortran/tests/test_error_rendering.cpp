@@ -336,3 +336,54 @@ semantic error: Error with label, two spans
 )""");
     CHECK(out == ref);
 }
+
+TEST_CASE("Error Render: help") {
+    std::string out, ref, input;
+    Location loc1;
+    LocationManager lm;
+    input = "One line text\n";
+    {
+        std::ofstream out("input.txt");
+        out << input;
+        LocationManager::FileLocations fl;
+        fl.in_filename = "input.txt";
+        lm.get_newlines(input, fl.in_newlines);
+        fl.out_start.push_back(0);
+        fl.in_start.push_back(0);
+        fl.in_start.push_back(LCompilers::LFortran::source_offset(input.size()));
+        fl.out_start.push_back(LCompilers::LFortran::source_offset(input.size()));
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
+    }
+    loc1.first = 4;
+    loc1.last = 7;
+
+    auto d = Diagnostic(
+            "Style with a help",
+            Level::Style, Stage::Semantic, {
+                Label("label message", {loc1})
+            }
+        );
+    d.children.push_back(Diagnostic("first line\nsecond line",
+        Level::Help, Stage::Semantic));
+    out = render_diagnostic_human(d, lm, false, false);
+    ref = S(R"""(
+style suggestion: Style with a help
+ --> input.txt:1:5
+  |
+1 | One line text
+  |     ^^^^ label message
+  = help: first line
+          second line
+)""");
+    CHECK(out == ref);
+
+    d = Diagnostic("Warning with a help", Level::Warning, Stage::Semantic);
+    d.children.push_back(Diagnostic("a help", Level::Help, Stage::Semantic));
+    out = render_diagnostic_human(d, false);
+    ref = S(R"""(
+warning: Warning with a help
+  = help: a help
+)""");
+    CHECK(out == ref);
+}
