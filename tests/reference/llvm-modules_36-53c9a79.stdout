@@ -183,7 +183,7 @@ declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
 
-define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_build_settings(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_modules_36_fpm_main_01_fpm_build_settings(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_build_settings.3*
   %4 = bitcast i8* %1 to %modules_36_fpm_main_01.fpm_build_settings.3*
@@ -203,7 +203,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings(i8** %0) {
+define internal void @_allocate_struct_modules_36_fpm_main_01_fpm_build_settings(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
@@ -239,7 +239,7 @@ entry:
 ; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
-define linkonce_odr void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_modules_36_fpm_main_01_fpm_run_settings(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = call i8* @_lfortran_get_default_allocator()
   %4 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_run_settings.4*
@@ -341,7 +341,7 @@ ifcont15:                                         ; preds = %else14, %then13
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings(i8** %0) {
+define internal void @_allocate_struct_modules_36_fpm_main_01_fpm_run_settings(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)

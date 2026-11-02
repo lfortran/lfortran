@@ -109,7 +109,7 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret void
 }
 
-define linkonce_odr void @_copy_class_circle2_circle(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_class_circle2_circle(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = bitcast i8* %0 to %class_circle2.circle.3*
   %4 = bitcast i8* %1 to %class_circle2.circle.3*
@@ -129,7 +129,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_class_circle2_circle(i8** %0) {
+define internal void @_allocate_struct_class_circle2_circle(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)

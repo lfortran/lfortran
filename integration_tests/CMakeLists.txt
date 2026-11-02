@@ -2498,7 +2498,7 @@ RUN(NAME forall_12 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran does 
 RUN(NAME forall_14 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
-RUN(NAME parsing_02 LABELS gfortran)
+RUN(NAME parsing_02 LABELS gfortran llvm)
 RUN(NAME parsing_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
 RUN(NAME interface_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3163,6 +3163,12 @@ RUN(NAME derived_types_242 LABELS llvm flang) # not gfortran: GFortran 16.2 misc
 RUN(NAME derived_types_243 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # same component of different variables with a reallocated target (#16215)
 RUN(NAME derived_types_244 LABELS gfortran llvm) # TARGET component subscript aliases the assignment target (#16215)
 RUN(NAME derived_types_245 LABELS gfortran llvm) # result destination reached through a pointer component (#16191)
+RUN(NAME derived_types_246 LABELS gfortran llvm) # allocatable array component of its own type (#14189)
+RUN(NAME derived_types_247 LABELS llvm) # not gfortran: GFortran 15.3 copies recursive allocatable components shallowly (#14189)
+RUN(NAME derived_types_248 LABELS gfortran llvm EXTRAFILES derived_types_248_module1.f90 derived_types_248_module2.f90 EXTRA_ARGS --separate-compilation) # same-named types in two modules (#14189)
+RUN(NAME derived_types_249 LABELS gfortran llvm) # recursive type passed to a class(t) dummy (#16523)
+RUN(NAME derived_types_250 LABELS gfortran llvm EXTRAFILES derived_types_250_module1.f90 derived_types_250_module2.f90 EXTRA_ARGS --separate-compilation) # same-named procedure-local and BLOCK types in two modules (#14189)
+RUN(NAME derived_types_251 LABELS gfortran llvm EXTRAFILES derived_types_251_module1.f90 derived_types_251_module2.f90 EXTRA_ARGS --separate-compilation) # module a with type b_node next to module a_b with type node (#14189)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
