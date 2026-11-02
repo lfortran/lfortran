@@ -21,3 +21,15 @@ semantic error: the procedure 'p' is referenced as a function, but it has no typ
    |
 43 |     y = p(1)  ! {Error} `p` has no implicit type
    |         ^^^^ help: declare the type of its result, e.g. with 'procedure(integer), pointer :: p'
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:54:5
+   |
+54 |     cp => cf3  ! {Error} the result of the target is character(len=3), not character(len=5)
+   |     ^^    ^^^ the result of the target is character(len=3), but the pointer is a function of type character(len=5)
+
+semantic error: the procedure 'p' is referenced as a function, but it has no type
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:67:9
+   |
+67 |     y = p(1)  ! {Error} `p` has no implicit type
+   |         ^^^^ help: declare the type of its result, e.g. with 'procedure(integer), pointer :: p'

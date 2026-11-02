@@ -1287,6 +1287,13 @@ public:
             require_own_symbol(x.m_return_var, func_name, "result variable");
             visit_expr(*x.m_return_var);
         }
+        // A function has a result variable, which code generators lower its
+        // result from, so that it agrees with its procedure type.
+        require(ASR::is_a<ASR::FunctionType_t>(*x.m_function_signature) && (
+                (ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature)
+                    ->m_return_var_type == nullptr) == (x.m_return_var == nullptr)),
+            "The function '" + func_name + "' must have a result variable "
+            "exactly when its type has a result type");
 
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
@@ -3297,11 +3304,37 @@ public:
         }
     }
 
+    // True if the call `x` is made through a procedure pointer component
+    // with an implicit interface: `m_dt` designates the component (e.g.
+    // `a(i)%f`) and `m_name` is a procedure variable of the call's scope
+    // that only gives the call its interface. The component is called
+    // without a passed object.
+    template <typename T>
+    static bool is_call_through_opaque_component(const T& x) {
+        if (x.m_dt == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+            return false;
+        }
+        ASR::symbol_t* name = ASRUtils::symbol_get_past_external(x.m_name);
+        ASR::symbol_t* component = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt)->m_m);
+        // Not resolved yet while a module file is loaded.
+        if (name == nullptr || component == nullptr) {
+            return false;
+        }
+        return ASR::is_a<ASR::Variable_t>(*name) &&
+            ASR::down_cast<ASR::Variable_t>(name)->m_pass_attr ==
+                ASR::pass_attrType::NotMethod &&
+            ASR::is_a<ASR::Variable_t>(*component) &&
+            ASRUtils::is_opaque_procedure_type(
+                ASR::down_cast<ASR::Variable_t>(component)->m_type);
+    }
+
     template <typename T>
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        bool is_method = (x.m_dt != nullptr);
+        bool through_opaque_component = is_call_through_opaque_component(x);
+        bool is_method = (x.m_dt != nullptr) && !through_opaque_component;
         bool nopass = false;
         if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);

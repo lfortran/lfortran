@@ -28795,6 +28795,9 @@ public:
 
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             llvm::Type* func_ptr_type = fntype->getPointerTo();
+            // The procedure pointer at `m_dt` is called with the interface
+            // of `m_name`, see visit_FunctionCall.
+            tmp = builder->CreateBitCast(tmp, func_ptr_type->getPointerTo());
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
             // Self argument has been inserted into args by the semantic
@@ -29432,8 +29435,13 @@ public:
             ptr_loads = ptr_loads_copy;
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
-            llvm::Value* callee = llvm_utils->CreateLoad2(
-                llvm_utils->get_function_type(*func, module.get())->getPointerTo(), tmp);
+            // The procedure pointer at `m_dt` is called with the interface
+            // of `m_name`, which for a component with an implicit interface
+            // is the interface of this call, not the component's own type.
+            llvm::Type* func_ptr_type = llvm_utils->get_function_type(
+                *func, module.get())->getPointerTo();
+            tmp = builder->CreateBitCast(tmp, func_ptr_type->getPointerTo());
+            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see

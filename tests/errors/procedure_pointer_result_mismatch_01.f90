@@ -47,3 +47,27 @@ contains
         f = x
     end function
 end subroutine
+
+subroutine character_length_mismatch()
+    implicit none
+    procedure(character(len=5)), pointer :: cp
+    cp => cf3  ! {Error} the result of the target is character(len=3), not character(len=5)
+contains
+    character(len=3) function cf3(x)
+        integer, intent(in) :: x
+        cf3 = "abc"
+    end function
+end subroutine
+
+program untyped_function_reference_in_program
+    implicit none
+    procedure(), pointer :: p
+    integer :: y
+    p => f
+    y = p(1)  ! {Error} `p` has no implicit type
+contains
+    integer function f(x)
+        integer, intent(in) :: x
+        f = x
+    end function
+end program

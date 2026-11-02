@@ -4149,16 +4149,45 @@ public:
         return ASR::pointer_bounds_formType::PointerBoundsSpec;
     }
 
+    // True if the scalar character type `t` has the constant length `len`.
+    static bool constant_character_length(ASR::ttype_t* t, int64_t& len) {
+        if (!ASRUtils::is_character(*t) || ASRUtils::is_array(t)) {
+            return false;
+        }
+        ASR::expr_t* t_len = ASRUtils::get_string_type(t)->m_len;
+        return t_len != nullptr && (ASRUtils::extract_value(t_len, len)
+            || ASRUtils::extract_value(ASRUtils::expr_value(t_len), len));
+    }
+
     // True if functions with the results `a` and `b` have the same type
-    // and kind. A character length is not compared: the result of a
-    // function with an implicit interface can have an assumed length.
+    // and type parameters. Character lengths are compared only when both
+    // are constants: the result of a function with an implicit interface
+    // can have an assumed length.
     static bool same_function_result_type(ASR::ttype_t* a, ASR::ttype_t* b) {
         if (ASRUtils::is_character(*a) && ASRUtils::is_character(*b)) {
-            return !ASRUtils::is_array(a) && !ASRUtils::is_array(b) &&
-                ASRUtils::extract_kind_from_ttype_t(a) ==
-                    ASRUtils::extract_kind_from_ttype_t(b);
+            if (ASRUtils::is_array(a) || ASRUtils::is_array(b) ||
+                    ASRUtils::extract_kind_from_ttype_t(a) !=
+                        ASRUtils::extract_kind_from_ttype_t(b)) {
+                return false;
+            }
+            int64_t len_a = 0, len_b = 0;
+            if (constant_character_length(a, len_a) &&
+                    constant_character_length(b, len_b)) {
+                return len_a == len_b;
+            }
+            return true;
         }
         return ASRUtils::types_equal(a, b, nullptr, nullptr);
+    }
+
+    // The type of a function result `t` in a diagnostic, with the constant
+    // length of a character result.
+    static std::string function_result_type_str(ASR::ttype_t* t) {
+        int64_t len = 0;
+        if (constant_character_length(t, len)) {
+            return "character(len=" + std::to_string(len) + ")";
+        }
+        return ASRUtils::type_to_str_with_kind(t, nullptr);
     }
 
     void visit_Associate(const AST::Associate_t& x) {
@@ -4321,13 +4350,13 @@ public:
                 if (target_result != nullptr && (value_is_known_subroutine ||
                         (value_result != nullptr &&
                             !same_function_result_type(target_result, value_result)))) {
-                    std::string target_result_str = ASRUtils::type_to_str_with_kind(
-                        target_result, nullptr);
+                    std::string target_result_str = function_result_type_str(
+                        target_result);
                     std::string label = value_is_known_subroutine
                         ? "the target is a subroutine, but the pointer is a "
                             "function of type " + target_result_str
                         : "the result of the target is "
-                            + ASRUtils::type_to_str_with_kind(value_result, nullptr)
+                            + function_result_type_str(value_result)
                             + ", but the pointer is a function of type "
                             + target_result_str;
                     diag.semantic_error_label(
@@ -9388,19 +9417,21 @@ public:
 
     // The target of the call `call obj%component(args)` through the procedure
     // pointer component `component` of `obj` with an implicit interface: the
-    // component cast to the interface built from the call's actuals. The
-    // call is not made through the object.
+    // variable that gives the call the interface built from its actuals (see
+    // component_call_interface). `obj` is replaced by the component's
+    // designator, through which the call is made.
     ASR::symbol_t* implicit_component_call_target(const Location &loc,
-            const std::string &name, ASR::symbol_t* component, ASR::expr_t* obj,
+            const std::string &name, ASR::symbol_t* component, ASR::expr_t*& obj,
             Vec<ASR::call_arg_t> &args) {
-        ASR::expr_t* source_expr = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+        ASR::expr_t* designator = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
             loc, obj, component, ASRUtils::import_procedure_type(al,
                 ASRUtils::symbol_type(component), current_scope), nullptr));
-        if (check_procedure_component_of_constant(source_expr, "called")) {
+        if (check_procedure_component_of_constant(designator, "called")) {
             // With --continue-compilation, drop the reported call.
             throw SemanticAbort();
         }
-        return implicit_call_target(loc, name, component, args, nullptr, source_expr);
+        obj = designator;
+        return implicit_call_target(loc, name, component, args, nullptr, true);
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
@@ -9894,22 +9925,16 @@ public:
                     }
                     f = ASR::down_cast<ASR::Function_t>(f4);
                 } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
-                    if (compiler_options.implicit_interface &&
+                    if (compiler_options.implicit_interface && v_expr != nullptr &&
                             ASRUtils::is_opaque_procedure_type(
                                 ASRUtils::symbol_type(final_sym))) {
-                        // A use-associated procedure variable or a procedure
-                        // pointer component with an implicit interface is
-                        // called through an interface built from this
-                        // call's actuals.
-                        if (v_expr != nullptr) {
-                            final_sym = implicit_component_call_target(
-                                x.base.base.loc, sub_name, original_sym, v_expr, args);
-                            original_sym = nullptr;
-                            v_expr = nullptr;
-                        } else {
-                            final_sym = implicit_call_target(x.base.base.loc,
-                                sub_name, original_sym, args, nullptr);
-                        }
+                        // A procedure pointer component of a type of another
+                        // module with an implicit interface is called through
+                        // an interface built from this call's actuals.
+                        final_sym = implicit_component_call_target(
+                            x.base.base.loc, sub_name, original_sym, v_expr, args);
+                        original_sym = nullptr;
+                        nopass = true;
                         break;
                     }
                     nopass = true;
@@ -9984,7 +10009,7 @@ public:
                         final_sym = implicit_component_call_target(x.base.base.loc,
                             sub_name, original_sym, v_expr, args);
                         original_sym = nullptr;
-                        v_expr = nullptr;
+                        nopass = true;
                         break;
                     }
                     final_sym = implicit_call_target(x.base.base.loc, sub_name,

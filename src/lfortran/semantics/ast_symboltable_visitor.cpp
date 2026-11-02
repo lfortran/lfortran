@@ -1419,6 +1419,8 @@ public:
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            // An internal procedure leaves its own implicit typing rules.
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
@@ -1428,6 +1430,7 @@ public:
                 // current.
                 current_scope = host_scope;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
         }
         assgn_proc_names_locations = program_assgn_proc_names_locations;
