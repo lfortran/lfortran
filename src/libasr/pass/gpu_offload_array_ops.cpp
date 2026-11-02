@@ -321,11 +321,14 @@ bool GpuOffloadVisitor::alias_temp_extents(ASR::expr_t *target,
     for (size_t i = 0; i < at->n_dims; i++) {
         // The whole target is assigned, so the temporary has its shape
         // exactly; an extent the type does not spell out is read off the
-        // target's bounds.
+        // target's bounds. The temporary's declaration takes its own copy
+        // of the extent: the target's declaration may be the host's,
+        // which remapping the temporary into the kernel must not reach.
         ASR::expr_t *extent = at->m_dims[i].m_length
             ? at->m_dims[i].m_length : whole_dim_extent(loc, target, i);
         extents.push_back(al, extent);
-        sizes.push_back(al, extent);
+        ASRUtils::ExprStmtDuplicator dup(al);
+        sizes.push_back(al, dup.duplicate_expr(extent));
     }
     return true;
 }
