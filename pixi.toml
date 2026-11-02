@@ -10,6 +10,9 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 ctest = {cmd = 'ctest --test-dir "$LFORTRAN_BUILD_DIR" --output-on-failure', default-environment = "llvm11"}
 tests = {cmd = 'python run_tests.py --require-llvm 11 --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin" --build-dir "$LFORTRAN_BUILD_DIR/reference_tests"', default-environment = "llvm11"}
 integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR/integration_tests" --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin"', cwd = "integration_tests", default-environment = "llvm11"}
+# Language server tests: build with -DWITH_LSP=yes. Their test packages are
+# imported from the source tree instead of being installed with pip.
+lsp_tests = {cmd = 'pytest tests/server', env = {PYTHONPATH = "$PIXI_PROJECT_ROOT/src/server/tests/src:$PIXI_PROJECT_ROOT/tests/server/src", LFORTRAN_PATH = "$LFORTRAN_BUILD_DIR/src/bin/lfortran"}, default-environment = "llvm11"}
 
 [feature.coarray-reference]
 platforms = ["osx-arm64", "linux-64"]
@@ -154,7 +157,7 @@ libunwind = "==1.7.2"
 platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [feature.build.dependencies]
-pytest = "==8.1.1"
+pytest = "==9.2.0"
 jupyter = "==1.0.0"
 xeus = "==6.0.6"
 xeus-zmq = "==4.0.2"
@@ -231,6 +234,12 @@ cmake = "==3.29.1"
 ninja = "==1.11.1"
 # The LSP tests install their test packages with pip.
 pip = "==26.2.2"
+# The LSP tests (lsp_tests task) and their test packages' dependencies.
+pytest-timeout = "==2.4.0"
+attrs = "==24.3.0"
+cattrs = "==24.1.2"
+lsprotocol = "==2023.0.1"
+psutil = "==7.0.0"
 
 # The direct WASM backend runs its integration tests with Node. No Node build
 # works with the older zlib that LLVM <= 10 and 12 require, so only the LLVM 11
@@ -247,6 +256,8 @@ make = "==4.4.1"
 
 [feature.test.target.osx.dependencies]
 gfortran = "==16.2.0"
+# GNU timeout, which the LSP test step runs.
+coreutils = "==9.12"
 make = "==4.4.1"
 
 [feature.build.target.unix.dependencies]
