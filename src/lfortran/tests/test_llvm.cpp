@@ -1417,6 +1417,39 @@ end module
     CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM signed integer arithmetic is nsw under --fast") {
+    std::string source = R"(module integer_nsw_m
+implicit none
+contains
+integer function combine(a, b, c) result(r)
+    integer, intent(in) :: a, b, c
+    r = a*b + c - a
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"combine", "_combine"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t ops = 0, nsw = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                        if (!op || !op->getType()->isIntegerTy(32)) continue;
+                        unsigned opcode = op->getOpcode();
+                        if (opcode != llvm::Instruction::Add &&
+                                opcode != llvm::Instruction::Sub &&
+                                opcode != llvm::Instruction::Mul) continue;
+                        ops++;
+                        if (op->hasNoSignedWrap()) nsw++;
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(ops == 3);
+                CHECK(nsw == (fast ? 3u : 0u));
+            });
+    }
+}
+
 TEST_CASE("LLVM loops are not runtime unrolled under --fast") {
     std::string source = R"(module runtime_unroll_m
 implicit none
