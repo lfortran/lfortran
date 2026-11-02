@@ -523,9 +523,11 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             duplicator.fixup_local_type_declarations(copy->m_symtab, block->m_symtab);
             duplicator.fixup_nested_block_bodies(copy->m_symtab, block->m_symtab);
             Vec<ASR::stmt_t*> body;
-            bool success = duplicator.reduplicate_body_in_scope(copy->m_symtab,
-                block->m_body, block->n_body, body);
-            LCOMPILERS_ASSERT(success);
+            if (!duplicator.reduplicate_body_in_scope(copy->m_symtab,
+                    block->m_body, block->n_body, body)) {
+                throw LCompilersException("could not duplicate block body "
+                    "while outlining an OpenMP region");
+            }
             copy->m_body = body.p;
             copy->n_body = body.n;
             copy->m_name = s2c(al, current_scope->get_unique_name(block->m_name, false));
