@@ -3176,6 +3176,10 @@ public:
                     }
                 }
             }
+            if (_type == AST::decl_stmtType::Read
+                    && AST::is_a<AST::Name_t>(*m_values[i])) {
+                do_variable_assigned(AST::down_cast<AST::Name_t>(m_values[i])->m_id);
+            }
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
@@ -8176,6 +8180,13 @@ public:
         }
         SetChar current_function_dependencies_copy = current_function_dependencies;
         SetChar current_module_dependencies_copy = current_module_dependencies;
+        // The loop of an assigned variable is forgotten while the target is
+        // visited, which is not a read, and kept while the value is, which
+        // may read it (`i = i + 1`)
+        const char *assigned_name = AST::is_a<AST::Name_t>(*x.m_target)
+            ? AST::down_cast<AST::Name_t>(x.m_target)->m_id : nullptr;
+        const ASR::DoLoop_t *assigned_loop = assigned_name
+            ? do_variable_assigned(assigned_name) : nullptr;
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
 
@@ -8274,6 +8285,7 @@ public:
         if (rhs_is_null_intrinsic) {
             current_variable_type_ = ASRUtils::expr_type(target);
         }
+        if (assigned_loop) ended_do_loops.push_back({assigned_loop, current_body});
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
@@ -8287,6 +8299,7 @@ public:
             throw e;
         }
         current_variable_type_ = temp_current_variable_type_;
+        if (assigned_loop) do_variable_assigned(assigned_name);
         if (tmp == nullptr) {
             current_function_dependencies = current_function_dependencies_copy;
             current_module_dependencies = current_module_dependencies_copy;
@@ -10739,6 +10752,7 @@ public:
         }
 
         if (var) {
+            do_variable_assigned(x.m_var);
             if (ASR::is_a<ASR::Var_t>(*var)) {
                 ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
                 ASR::symbol_t* loop_var_sym = loop_var->m_v;
@@ -10810,6 +10824,7 @@ public:
             head.loc = head.m_v->base.loc;
             tmp = ASRUtils::make_DoLoop_t_util(al, x.base.base.loc, x.m_stmt_name,
                 head, body.p, body.size(), nullptr, 0);
+            do_loop_ended(*ASR::down_cast2<ASR::DoLoop_t>(tmp));
             if (do_loop_variables.size() > 0) {
                 do_loop_variables.pop_back();
             }
@@ -11088,6 +11103,9 @@ public:
                 throw SemanticAbort();
             }
         }
+        for (size_t i = 0; i < x.n_control; i++) {
+            do_variable_assigned(((AST::ConcurrentControl_t*) x.m_control[i])->m_var);
+        }
 
         // Build the innermost assignment statement
         this->visit_decl_stmt(*x.m_assign);
@@ -11156,6 +11174,9 @@ public:
                     }));
                 throw SemanticAbort();
             }
+        }
+        for (size_t i = 0; i < x.n_control; i++) {
+            do_variable_assigned(((AST::ConcurrentControl_t*) x.m_control[i])->m_var);
         }
 
         Vec<ASR::do_loop_head_t> heads;
