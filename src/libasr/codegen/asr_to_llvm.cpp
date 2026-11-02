@@ -23799,7 +23799,7 @@ public:
         llvm::Value *opened_actual = nullptr;
         if (x.m_opened) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_opened));
             this->visit_expr_wrapper(x.m_opened, true);
             opened_actual = tmp;
             ptr_loads = ptr_loads_copy;
@@ -23807,25 +23807,14 @@ public:
         opened_val = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt1Ty(context));
 
-        llvm::Value *size_orig_ptr = nullptr;
-        int size_kind = 4;
         if (x.m_size) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_size));
             this->visit_expr_wrapper(x.m_size, false);
             ptr_loads = ptr_loads_copy;
-            size_kind = ASRUtils::extract_kind_from_ttype_t(
-                ASRUtils::expr_type(x.m_size));
-            if (size_kind == 4) {
-                size_val = tmp;
-            } else {
-                size_orig_ptr = tmp;
-                size_val = llvm_utils->CreateAlloca(*builder,
-                                llvm::Type::getInt32Ty(context));
-            }
+            size_val = tmp;
         } else {
-            size_val = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt32Ty(context));
+            size_val = llvm::Constant::getNullValue(llvm_utils->i64->getPointerTo());
         }
 
         llvm::Value *pos_orig_ptr = nullptr;
@@ -24300,7 +24289,7 @@ public:
                     llvm_utils->i1->getPointerTo(),
                     llvm_utils->i32,
                     llvm_utils->i1->getPointerTo(),
-                    llvm_utils->i32->getPointerTo(),
+                    llvm_utils->i64->getPointerTo(), // size
                     llvm_utils->i32->getPointerTo(),
                     character_type, llvm_utils->i64, // write_data, write_len
                     character_type, llvm_utils->i64, // read_data, read_len
@@ -24380,13 +24369,6 @@ public:
             int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_named));
             llvm::Value *converted = builder->CreateZExt(loaded, llvm_utils->getIntType(kind));
             builder->CreateStore(converted, named_actual);
-        }
-        if (size_orig_ptr) {
-            llvm::Value *loaded = builder->CreateLoad(
-                llvm::Type::getInt32Ty(context), size_val);
-            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
-                llvm_utils->getIntType(size_kind));
-            builder->CreateStore(converted, size_orig_ptr);
         }
         if (pos_orig_ptr) {
             llvm::Value *loaded = builder->CreateLoad(
