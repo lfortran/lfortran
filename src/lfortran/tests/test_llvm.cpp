@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -1191,6 +1192,42 @@ end module
                 INFO(name, ", fast=", fast);
                 CHECK(conditional_branches == (fast && name == "extent" ? 0 : 1));
             });
+    }
+}
+
+TEST_CASE("LLVM stack automatic arrays allocate their element type") {
+    std::string source = R"(module stack_alloca_m
+implicit none
+contains
+subroutine work(n, x)
+    integer, intent(in) :: n
+    real, intent(out) :: x
+    real :: w(n)
+    integer(8) :: k(n, 2)
+    w = 1
+    k = 2
+    x = sum(w) + real(sum(k))
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"work", "work"}},
+            [&](const std::string &, llvm::Function &fn) {
+                std::map<std::string, std::string> types;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *alloca = llvm::dyn_cast<llvm::AllocaInst>(&inst);
+                    if (!alloca) continue;
+                    std::string name = alloca->getName().str();
+                    if (name != "w" && name != "k") continue;
+                    std::string type;
+                    llvm::raw_string_ostream os(type);
+                    alloca->getAllocatedType()->print(os);
+                    types[name] = os.str();
+                }
+                CAPTURE(fast);
+                CHECK(types["w"] == "float");
+                CHECK(types["k"] == "i64");
+            }, true);
     }
 }
 
