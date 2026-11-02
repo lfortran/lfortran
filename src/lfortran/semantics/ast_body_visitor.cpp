@@ -4190,6 +4190,89 @@ public:
         return ASRUtils::type_to_str_with_kind(t, nullptr);
     }
 
+    // The reason a reference to the procedure `f` requires an explicit
+    // interface (F2018 15.4.2.2), or an empty string.
+    static std::string explicit_interface_reason(ASR::Function_t* f) {
+        if (ASRUtils::get_FunctionType(f)->m_abi == ASR::abiType::BindC) {
+            return "the target has the bind attribute";
+        }
+        for (size_t i = 0; i < f->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*f->m_args[i])) continue;
+            ASR::symbol_t* arg = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*arg)) continue;
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(arg);
+            std::string dummy = "the dummy argument '" + std::string(v->m_name)
+                + "' of the target ";
+            if (v->m_presence == ASR::presenceType::Optional) {
+                return dummy + "is optional";
+            }
+            if (ASRUtils::is_allocatable(v->m_type)) {
+                return dummy + "is allocatable";
+            }
+            if (ASRUtils::is_pointer(v->m_type)) {
+                return dummy + "is a pointer";
+            }
+            if (v->m_target_attr) {
+                return dummy + "has the target attribute";
+            }
+            if (v->m_value_attr) {
+                return dummy + "has the value attribute";
+            }
+            if (v->m_is_asynchronous) {
+                return dummy + "is asynchronous";
+            }
+            if (ASRUtils::is_assumed_rank_array(v->m_type)) {
+                return dummy + "is assumed-rank";
+            }
+            if (ASRUtils::is_array(v->m_type) && ASRUtils::extract_physical_type(
+                    v->m_type) == ASR::array_physical_typeType::DescriptorArray) {
+                return dummy + "is assumed-shape";
+            }
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(v->m_type))) {
+                return dummy + "is polymorphic";
+            }
+        }
+        if (f->m_return_var != nullptr) {
+            ASR::ttype_t* result = ASRUtils::expr_type(f->m_return_var);
+            if (ASRUtils::is_array(result)) {
+                return "the result of the target is an array";
+            }
+            if (ASRUtils::is_allocatable(result)) {
+                return "the result of the target is allocatable";
+            }
+            if (ASRUtils::is_pointer(result)) {
+                return "the result of the target is a pointer";
+            }
+        }
+        return "";
+    }
+
+    // The procedure with an explicit interface that the procedure
+    // designator `value` designates, or null.
+    static ASR::Function_t* designated_explicit_procedure(ASR::expr_t* value) {
+        ASR::symbol_t* sym = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*value)) {
+            sym = ASR::down_cast<ASR::Var_t>(value)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+            sym = ASR::down_cast<ASR::StructInstanceMember_t>(value)->m_m;
+        }
+        if (sym == nullptr || ASRUtils::is_intrinsic_symbol(
+                ASRUtils::symbol_get_past_external(sym))) {
+            return nullptr;
+        }
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Function_t>(*sym) && !(ASR::is_a<ASR::Variable_t>(*sym)
+                && ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration)) {
+            return nullptr;
+        }
+        ASR::Function_t* f = ASRUtils::get_function(sym);
+        if (f == nullptr || ASRUtils::is_opaque_procedure_type(
+                f->m_function_signature)) {
+            return nullptr;
+        }
+        return f;
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
         if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
             pointer_bounds_args =
@@ -4339,6 +4422,21 @@ public:
                 throw SemanticAbort();
             }            
             if (implicit_iface) {
+                // Every reference through a pointer with an implicit
+                // interface has an implicit interface, so it cannot be
+                // associated with a procedure that requires an explicit
+                // interface (F2018 15.4.2.2).
+                ASR::Function_t* value_proc = designated_explicit_procedure(value);
+                std::string reason = value_proc != nullptr
+                    ? explicit_interface_reason(value_proc) : "";
+                if (!reason.empty()) {
+                    diag.semantic_error_label(
+                        "interface mismatch in procedure pointer assignment",
+                        {target->base.loc, value->base.loc}, "the pointer has an "
+                        "implicit interface, but " + reason + ", which requires "
+                        "an explicit interface");
+                    throw SemanticAbort();
+                }
                 // A pointer with an implicit interface that is a function
                 // can only be associated with a function of the same type
                 // (F2018 10.2.2.4 p6). The pointer is untyped when it was

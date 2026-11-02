@@ -71,3 +71,19 @@ contains
         f = x
     end function
 end program
+
+subroutine explicit_interface_required()
+    implicit none
+    procedure(), pointer :: p
+    p => total  ! {Error} `x` of the target is assumed-shape
+    p => opt  ! {Error} `y` of the target is optional
+contains
+    subroutine total(x, s)
+        integer, intent(in) :: x(:)
+        integer, intent(out) :: s
+        s = sum(x)
+    end subroutine
+    subroutine opt(y)
+        integer, intent(in), optional :: y
+    end subroutine
+end subroutine

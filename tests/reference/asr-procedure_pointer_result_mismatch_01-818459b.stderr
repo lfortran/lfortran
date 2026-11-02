@@ -33,3 +33,15 @@ semantic error: the procedure 'p' is referenced as a function, but it has no typ
    |
 67 |     y = p(1)  ! {Error} `p` has no implicit type
    |         ^^^^ help: declare the type of its result, e.g. with 'procedure(integer), pointer :: p'
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:78:5
+   |
+78 |     p => total  ! {Error} `x` of the target is assumed-shape
+   |     ^    ^^^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is assumed-shape, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:79:5
+   |
+79 |     p => opt  ! {Error} `y` of the target is optional
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'y' of the target is optional, which requires an explicit interface
