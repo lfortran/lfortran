@@ -1946,6 +1946,17 @@ unlimited polymorphism is not included. This supports incremental migration
 where a trait message still uses an inheritance-based interface.
 `traits_runtime_class_argument_01` checks dispatch and mutation through both
 concrete and polymorphic actuals, with a standard inheritance oracle.
+A message that is not generic may also take arrays of derived types,
+polymorphic or not, of assumed or explicit shape, also allocatable ones, and
+allocatable scalar `class(DerivedType)` and runtime trait views, such as an
+`intent(out)` factory argument, with any INTENT. They keep the ordinary
+calling convention: arrays pass their descriptors and allocatable scalars
+their owners by reference. A reported module declared
+`class(AbsType), intent(inout) :: arr(:)` in one trait and
+`class(ITrait1), allocatable, intent(out) :: obj` in another;
+`traits_runtime_derived_array_01` dispatches both through runtime views, also
+with the `--fast` pass that promotes allocatable arrays, which keeps an actual
+associated with an allocatable dummy of a trait call allocatable.
 Array descriptors pass by reference, so strided, reversed and empty sections
 reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention

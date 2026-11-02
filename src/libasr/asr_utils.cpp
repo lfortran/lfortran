@@ -7113,6 +7113,9 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // arguments with intent(in) or intent(inout), passed by reference like the bare
 // view dummies of ordinary procedures. Scalar polymorphic derived-type dummies
 // with the same attributes keep their ordinary class calling convention.
+// Messages that are not generic also take arrays of derived types,
+// polymorphic or not, and allocatable scalar polymorphic derived types and
+// runtime trait views with any INTENT, in the ordinary calling convention.
 // Non-generic messages also retain ordinary optional-argument presence and
 // allocatable array descriptors. Their results may also be allocatable or
 // explicit-shape arrays of those types, and allocatable scalars, derived
@@ -7165,6 +7168,19 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     arg->n_codims) return false;
             continue;
         }
+        // An allocatable scalar trait object or polymorphic derived type is
+        // passed by reference, as its owner, with any INTENT.
+        if (ASR::is_a<ASR::Allocatable_t>(*arg->m_type)) {
+            auto *target = type_get_past_allocatable(arg->m_type);
+            if (ASR::is_a<ASR::TraitObjectType_t>(*target) ||
+                    (ASR::is_a<ASR::StructType_t>(*target) && is_class_type(target))) {
+                if (trait_method_template(method) || arg->m_value_attr ||
+                        arg->m_target_attr || arg->m_is_volatile || arg->n_codims) {
+                    return false;
+                }
+                continue;
+            }
+        }
         // A runtime trait array is passed on as its descriptor (TD-46).
         if (is_trait_array(arg->m_type)) {
             auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);
@@ -7202,10 +7218,14 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             bool explicit_shape = !trait_method_template(method) &&
                 array->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                 !is_dimension_empty(array->m_dims, array->n_dims);
-            if (!(assumed_shape || explicit_shape) ||
+            // A message that is not generic also takes arrays of derived
+            // types, polymorphic or not, in the ordinary calling convention.
+            bool derived = !trait_method_template(method) && element &&
+                ASR::is_a<ASR::StructType_t>(*element);
+            if (!(assumed_shape || explicit_shape) || (!derived && (
                     !element || !(ASR::is_a<ASR::Integer_t>(*element) ||
                         ASR::is_a<ASR::Real_t>(*element) || ASR::is_a<ASR::Complex_t>(*element) ||
-                        ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)) ||
+                        ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)))) ||
                     (trait_method_template(method) &&
                         (arg->m_intent != ASR::intentType::In ||
                          is_allocatable(arg->m_type) ||

@@ -59,7 +59,10 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
-        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        // An actual associated with an allocatable or pointer dummy keeps
+        // its attribute.
+        template <typename T>
+        void visit_call(const T& x) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
@@ -74,19 +77,20 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
+        void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            visit_call(x);
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-            ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
-            size_t n = std::min(x.n_args, func_type->n_arg_types);
-            for( size_t i = 0; i < n; i++ ) {
-                if( x.m_args[i].m_value &&
-                    (ASR::is_a<ASR::Allocatable_t>(*func_type->m_arg_types[i]) ||
-                    ASR::is_a<ASR::Pointer_t>(*func_type->m_arg_types[i])) ) {
-                    if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) ) {
-                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v;
-                        push_to_scopes_until_symbol_scope(sym);
-                    }
-                }
-            }
+            visit_call(x);
+        }
+
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t& x) {
+            visit_call(x);
+        }
+
+        void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+            visit_call(x);
         }
 
         void visit_ReAlloc(const ASR::ReAlloc_t& x) {

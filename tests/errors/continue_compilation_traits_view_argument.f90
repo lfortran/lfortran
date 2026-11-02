@@ -5,9 +5,9 @@
 ! read-only receiver cannot call a message with an intent(inout) receiver; a
 ! view of an unrelated trait or a type without a conformance cannot be
 ! borrowed for the argument. Mismatched implements update with a view of
-! another trait. Traits whose messages take allocatable, pointer, TARGET or
-! generic view arguments have no runtime views yet, so each variable whose
-! name ends with _argument is invalid.
+! another trait. Traits whose messages take pointer, TARGET or generic view
+! arguments have no runtime views yet, so each variable whose name ends with
+! _argument is invalid; those taking allocatable views (IOwning) have.
 module traits_view_argument_negative_m
     implicit none
     abstract interface :: IEstimates
@@ -81,7 +81,6 @@ module traits_view_argument_negative_m
         class(IEstimates), allocatable :: item
     end type
     type(Tally), parameter :: fixed = Tally(4)
-    class(IOwning), allocatable :: allocatable_argument
     class(IPointing), allocatable :: pointer_argument
     class(ITargeting), allocatable :: target_argument
     class(IFeeding), allocatable :: generic_argument
