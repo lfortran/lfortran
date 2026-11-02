@@ -98,7 +98,8 @@ struct GpuDeviceCapabilities {
     // The integer kind a kernel computes the offset of an element in an
     // array in. Like the host's array descriptors, the offsets are 64-bit
     // only with --descriptor-index-64, and only on a device with a 64-bit
-    // integer.
+    // integer; otherwise a launch on such a device stops before it hands a
+    // kernel an array of more than huge(0) elements.
     int offset_kind = 4;
 
     // Whether the device has a scalar type of the same in-memory width as
