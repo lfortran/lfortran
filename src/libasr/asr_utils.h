@@ -3545,8 +3545,10 @@ template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                                      std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, index_kind));
+    // Only the bound takes the index kind; `dim` stays a default integer,
+    // as in lbound(a, 1, kind=8).
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
-                                                                       dim, int_type));
+        dim, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4))));
     ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
     if( bound == "ubound" ) {
         bound_type = ASR::arrayboundType::UBound;

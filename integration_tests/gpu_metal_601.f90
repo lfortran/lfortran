@@ -1,3 +1,16 @@
+module gpu_metal_601_m
+    implicit none
+contains
+    pure real function f(a)
+        real, intent(in) :: a(:)
+        integer :: i
+        f = 0
+        do i = 1, size(a)
+            f = f + a(i)
+        end do
+    end function
+end module
+
 program gpu_metal_601
     ! Array sections and sum() inside offloaded loops over arrays whose
     ! lower bound, 3000000000, is beyond huge(0), compiled with
@@ -6,15 +19,19 @@ program gpu_metal_601
     ! expressions they lower inside a kernel in integer(4) from the lower
     ! bound, which reaches them truncated; the offset of each such
     ! subscript has to cancel the truncation (modulo 2**32, #16571).
-    ! The last part sums sections of arrays whose bounds cross huge(0) (or
+    ! A section with one bound omitted (z(lo8 + 3:, j), z(:lo8 + 3, j))
+    ! needs the omitted bound in integer(8): in integer(4) it is
+    ! truncated, while the explicit bound beside it is exact. The last
+    ! part sums sections of arrays whose bounds cross huge(0) (or
     ! huge(0) + 2**32): their loop's last index needs integer(8) even
     ! where the lower bound fits integer(4). A whole allocatable, sum(r),
     ! is still summed with an integer(4) counter, so it is not summed
     ! across huge(0) here (#16571). The arrays are small, so the test
-    ! runs on the device (cuda_cpu in CI).
+    ! runs on the device (cuda_cpu in CI) and on the host.
+    use gpu_metal_601_m, only: f
     implicit none
     real, allocatable :: z(:,:), v(:,:), w(:,:), r(:)
-    real :: tot(2), wt(2), rt(2)
+    real :: tot(2), wt(2), rt(2), t1(2), t2(2), t3(2)
     integer :: j, k
     integer(8) :: i8, lo8, n8, los(2)
     lo8 = 3000000000_8
@@ -54,6 +71,15 @@ program gpu_metal_601
     if (abs(tot(1) - 91) > 1e-4 .or. abs(tot(2) - 161) > 1e-4) error stop 4
     if (abs(rt(1) - 28) > 1e-4 .or. abs(rt(2) - 56) > 1e-4) error stop 7
     deallocate(r)
+    do concurrent (j = 1:2)
+        t1(j) = sum(z(lo8 + 3:, j))
+        t2(j) = sum(z(:lo8 + 3, j))
+        t3(j) = f(z(:lo8 + 1, j))
+    end do
+    print *, t1, t2, t3
+    if (abs(t1(1) - 58) > 1e-4 .or. abs(t1(2) - 98) > 1e-4) error stop 8
+    if (abs(t2(1) - 46) > 1e-4 .or. abs(t2(2) - 86) > 1e-4) error stop 9
+    if (abs(t3(1) - 21) > 1e-4 .or. abs(t3(2) - 41) > 1e-4) error stop 10
     los = [2147483645_8, 6442450941_8]
     do k = 1, 2
         lo8 = los(k)
@@ -65,9 +91,11 @@ program gpu_metal_601
         end do
         do concurrent (j = 1:2)
             wt(j) = sum(w(:, j))
+            t1(j) = sum(w(lo8 + 3:, j))
         end do
-        print *, wt
+        print *, wt, t1
         if (abs(wt(1) - 91) > 1e-4 .or. abs(wt(2) - 161) > 1e-4) error stop 5
+        if (abs(t1(1) - 58) > 1e-4 .or. abs(t1(2) - 98) > 1e-4) error stop 6
         deallocate(w)
     end do
 end program

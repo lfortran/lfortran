@@ -4628,6 +4628,7 @@ RUN(NAME array_section_39 LABELS gfortran llvm)
 RUN(NAME array_section_40 LABELS gfortran llvm)
 RUN(NAME array_section_41 LABELS gfortran llvm c)
 RUN(NAME array_section_42 LABELS gfortran llvm)
+RUN(NAME array_section_43 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64) # omitted section bounds beyond huge(0) (#15067)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -6935,7 +6936,7 @@ RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do
 RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
-RUN(NAME gpu_metal_601 LABELS gfortran cuda EXTRA_ARGS --descriptor-index-64) # no llvm: on the host, sections of an array with a lower bound beyond huge(0) are wrong (#15067)
+RUN(NAME gpu_metal_601 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_602 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: the GFortran in CI rejects reduce
 RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their

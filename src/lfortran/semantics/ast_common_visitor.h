@@ -16154,6 +16154,23 @@ public:
         }
     }
 
+    // The kind of the implicit bound of a section triplet with an omitted
+    // bound: the index kind (integer(8) with --descriptor-index-64), or the
+    // kind of an explicit integer bound or step beside it if that is wider.
+    // A bound queried in integer(4) and then cast to the kind of the triplet
+    // would truncate a bound beyond huge(0).
+    int omitted_section_bound_kind(ASR::expr_t* other, ASR::expr_t* step) {
+        int kind = compiler_options.descriptor_index_64 ? 8 : 4;
+        for (ASR::expr_t* e : {other, step}) {
+            if (e != nullptr && ASRUtils::is_integer(*ASRUtils::expr_type(e)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                kind = std::max(kind,
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(e)));
+            }
+        }
+        return kind;
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -16222,7 +16239,13 @@ public:
                 this->visit_expr(*(m_args[i].m_end));
                 m_end = ASRUtils::EXPR(tmp);
                 ai.loc = m_end->base.loc;
-            } else {
+            }
+            if (m_args[i].m_step != nullptr) {
+                this->visit_expr(*(m_args[i].m_step));
+                m_step = ASRUtils::EXPR(tmp);
+                ai.loc = m_step->base.loc;
+            }
+            if (m_end == nullptr) {
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable_pointer(root_v_type))) {
                     ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(ASRUtils::symbol_type(v)));
@@ -16238,13 +16261,9 @@ public:
                     }
                 } else {
                     // LCOMPILERS_ASSERT(ASRUtils::is_array(root_v_type))
-                    m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, static_cast<int>(i + 1), "ubound", al, diag);
+                    m_end = ASRUtils::get_bound<SemanticAbort>(v_Var, static_cast<int>(i + 1), "ubound", al, diag,
+                        omitted_section_bound_kind(m_start, m_step));
                 }
-            }
-            if (m_args[i].m_step != nullptr) {
-                this->visit_expr(*(m_args[i].m_step));
-                m_step = ASRUtils::EXPR(tmp);
-                ai.loc = m_step->base.loc;
             }
             if( m_start != nullptr &&
                 ASR::is_a<ASR::Var_t>(*m_start) &&
@@ -16887,7 +16906,8 @@ public:
             for( size_t i = 0; i < n_args; i++ ) {
                 if( args.p[i].m_step != nullptr &&
                     args.p[i].m_left == nullptr ) {
-                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, static_cast<int>(i + 1), "lbound", al, diag);
+                    args.p[i].m_left = ASRUtils::get_bound<SemanticAbort>(v_Var, static_cast<int>(i + 1), "lbound", al, diag,
+                        omitted_section_bound_kind(args.p[i].m_right, args.p[i].m_step));
                 }
                 if (args.p[i].m_step != nullptr
                     || (args.p[i].m_step == nullptr && args.p[i].m_right != nullptr
