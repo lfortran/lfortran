@@ -780,9 +780,9 @@ public:
         }
         if (implicit_stack.size() > 0 && !is_interface) {
             // A procedure contained in a module, submodule, program or
-            // procedure starts from its host's mapping; its own IMPLICIT statements, if any, override
-            // only the letters they name (F2018 8.7 p4). Interface bodies
-            // start from the default rules.
+            // procedure starts from its host's mapping; its own IMPLICIT
+            // statements, if any, override only the letters they name
+            // (F2018 8.7 p4). Interface bodies start from the default rules.
             implicit_dictionary = implicit_stack.back();
             if (n_implicit == 0) return;
         }
