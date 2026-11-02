@@ -13,6 +13,14 @@ namespace LCompilers {
     void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
 
+    // Put at the start of the body of `fn` what its intent(out) dummy
+    // argument `fn.m_args[i]` gets on entry: its finalization, the
+    // deallocation of it or of its allocatable components, and its default
+    // initialization. pass_intent_out_deallocate does this for every dummy
+    // argument; this is for a dummy argument that a later pass makes.
+    void apply_intent_out_on_entry(Allocator &al, ASR::Function_t &fn,
+                                   size_t i);
+
     // Give the dummy argument `result` of `fn`, which holds what used to be
     // the result of a function (see subroutine_from_function), the state a
     // function result starts out in: its default-initialized components are
