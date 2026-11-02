@@ -2428,7 +2428,7 @@ public:
     // Makes `body`, a statement list of `scope`, current and restores the
     // previous one even when the visit throws SemanticAbort, which would
     // otherwise leave `current_body` pointing to a destroyed list under
-    // --continue-compilation.
+    // --continue-compilation. Forgets the DO loops that ended in `body`.
     struct CurrentBodyScope {
         CommonVisitor &v;
         Vec<ASR::stmt_t*> *previous_body;
@@ -2440,6 +2440,10 @@ public:
             v.current_body_scope = scope;
         }
         ~CurrentBodyScope() {
+            while (!v.ended_do_loops.empty()
+                    && v.ended_do_loops.back().second == v.current_body) {
+                v.ended_do_loops.pop_back();
+            }
             v.current_body = previous_body;
             v.current_body_scope = previous_scope;
         }
@@ -2649,124 +2653,50 @@ public:
     // Using the variable of a DO loop after the loop is conforming, but its
     // value there is one step past the last iteration, or the value it had
     // at an EXIT, which is easy to get wrong. So with style suggestions on,
-    // a DO loop that ends is recorded here until its variable is assigned
-    // again or the statement list that holds the loop ends, and a reference
-    // to the value of the variable meanwhile gets a suggestion. The
-    // statements are visited in order, so this costs one lookup in a short
-    // list per name of a variable while a loop is recorded.
-    struct EndedDoLoop {
-        ASR::symbol_t *v;
-        const ASR::DoLoop_t *loop;
-        size_t depth;
-    };
-    // Sorted by `depth`, at most one loop per variable
-    std::vector<EndedDoLoop> ended_do_loops;
-    // The depth of the statement list being visited
-    size_t statement_list_depth = 0;
-    // Whether the name being visited is that of a variable being assigned
-    bool in_assigned_name = false;
-    // Added to the diagnostics after the body visitor, if it found no error
-    std::vector<diag::Diagnostic> do_variable_suggestions;
-
-    // Counts a statement list as visited and forgets the loops that end in
-    // it when it ends, even when the visit throws SemanticAbort.
-    struct StatementListScope {
-        CommonVisitor &v;
-        StatementListScope(CommonVisitor &v_) : v{v_} {
-            v.statement_list_depth++;
-        }
-        ~StatementListScope() {
-            while (!v.ended_do_loops.empty()
-                    && v.ended_do_loops.back().depth == v.statement_list_depth) {
-                v.ended_do_loops.pop_back();
-            }
-            v.statement_list_depth--;
-        }
-        StatementListScope(const StatementListScope &) = delete;
-        StatementListScope &operator=(const StatementListScope &) = delete;
-    };
-
-    // Marks the variable of `target`, if any, as assigned when the visit of
-    // the statement that assigns it ends, after its other expressions.
-    struct AssignedVariableScope {
-        CommonVisitor &v;
-        ASR::expr_t *target = nullptr;
-        AssignedVariableScope(CommonVisitor &v_) : v{v_} {}
-        ~AssignedVariableScope() {
-            v.do_variable_assigned(target);
-        }
-        AssignedVariableScope(const AssignedVariableScope &) = delete;
-        AssignedVariableScope &operator=(const AssignedVariableScope &) = delete;
-    };
-
-    // Visits `target`, which a statement assigns: if it is the name of a
-    // variable, that is not a reference to its value.
-    ASR::expr_t* visit_assigned_expr(AST::expr_t &target) {
-        bool previous = in_assigned_name;
-        in_assigned_name = AST::is_a<AST::Name_t>(target)
-            && AST::down_cast<AST::Name_t>(&target)->n_member == 0;
-        try {
-            this->visit_expr(target);
-        } catch (const SemanticAbort &) {
-            in_assigned_name = previous;
-            throw;
-        }
-        in_assigned_name = previous;
-        return ASRUtils::EXPR(tmp);
-    }
-
-    // The variable of `e`, if any, is assigned, so its value no longer
-    // comes from a loop.
-    void do_variable_assigned(ASR::expr_t *e) {
-        if (e && ASR::is_a<ASR::Var_t>(*e)) {
-            do_variable_assigned(ASR::down_cast<ASR::Var_t>(e)->m_v);
-        }
-    }
-
-    void do_variable_assigned(ASR::symbol_t *v) {
-        for (size_t i = 0; i < ended_do_loops.size(); i++) {
-            if (ended_do_loops[i].v == v) {
-                ended_do_loops.erase(ended_do_loops.begin() + i);
-                return;
-            }
-        }
-    }
+    // the DO loops that end are kept here, with the statement list that
+    // holds each, until their variable is assigned or read, or the list
+    // ends. A read gets a suggestion.
+    std::vector<std::pair<const ASR::DoLoop_t*, Vec<ASR::stmt_t*>*>> ended_do_loops;
 
     void do_loop_ended(const ASR::DoLoop_t &loop) {
-        if (!compiler_options.show_style_suggestions
-                || !ASR::is_a<ASR::Var_t>(*loop.m_head.m_v)) {
-            return;
+        if (compiler_options.show_style_suggestions
+                && ASR::is_a<ASR::Var_t>(*loop.m_head.m_v)) {
+            ended_do_loops.push_back({&loop, current_body});
         }
-        ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(loop.m_head.m_v)->m_v;
-        do_variable_assigned(v);
-        ended_do_loops.push_back({v, &loop, statement_list_depth});
     }
 
-    // `e` is a reference to the value of the variable `name`, unless an
-    // input/output implied do loop being visited has it as its variable
-    void do_variable_read(ASR::expr_t *e, const char *name_) {
-        if (ended_do_loops.empty() || in_assigned_name
-                || !ASR::is_a<ASR::Var_t>(*e)) {
-            return;
-        }
-        std::string name = to_lower(name_);
-        if (std::find(implied_do_variables.begin(), implied_do_variables.end(),
-                name) != implied_do_variables.end()) {
-            return;
-        }
-        ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(e)->m_v;
-        for (size_t i = 0; i < ended_do_loops.size(); i++) {
-            if (ended_do_loops[i].v == v) {
-                suggest_not_to_use_do_variable(*ended_do_loops[i].loop, name,
-                    e->base.loc);
-                ended_do_loops.erase(ended_do_loops.begin() + i);
-                return;
+    // Forgets the loop of the variable `v`, if any, and returns it
+    const ASR::DoLoop_t* forget_ended_do_loop(ASR::symbol_t *v) {
+        for (auto it = ended_do_loops.begin(); it != ended_do_loops.end(); ++it) {
+            const ASR::DoLoop_t *loop = it->first;
+            if (ASR::down_cast<ASR::Var_t>(loop->m_head.m_v)->m_v == v) {
+                ended_do_loops.erase(it);
+                return loop;
             }
+        }
+        return nullptr;
+    }
+
+    // The variable `name` is about to be assigned
+    void do_variable_assigned(const char *name) {
+        if (!ended_do_loops.empty()) {
+            forget_ended_do_loop(current_scope->resolve_symbol(to_lower(name)));
+        }
+    }
+
+    // `e` is a reference to the value of a variable. No suggestion is made
+    // after an error, where the loop may be invalid.
+    void do_variable_read(ASR::expr_t *e) {
+        if (ended_do_loops.empty() || !ASR::is_a<ASR::Var_t>(*e)) return;
+        const ASR::DoLoop_t *loop = forget_ended_do_loop(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (loop && !diag.has_error()) {
+            suggest_not_to_use_do_variable(*loop, e->base.loc);
         }
     }
 
     void suggest_not_to_use_do_variable(const ASR::DoLoop_t &loop,
-            const std::string &name, const Location &loc) {
+            const Location &loc) {
         // Whether the loop body leaves the loop with an EXIT: one without a
         // construct name that is not in a nested loop, or one that names
         // the loop.
@@ -2800,6 +2730,8 @@ public:
         };
         ExitsLoop exits(loop.m_name);
         for (size_t i = 0; i < loop.n_body; i++) exits.visit_stmt(*loop.m_body[i]);
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(loop.m_head.m_v)->m_v);
         std::string value;
         if (exits.found) {
             value = "'" + name + "' has the value it had at the exit, or one step "
@@ -2818,7 +2750,7 @@ public:
                     "last iteration";
             }
         }
-        do_variable_suggestions.push_back(diag::Diagnostic(
+        diag.add(diag::Diagnostic(
             "the do loop variable '" + name + "' is used after the loop",
             diag::Level::Style, diag::Stage::Semantic, {
                 diag::Label(value, {loc}),
@@ -24343,6 +24275,10 @@ public:
             own_sym = declare_implied_do_variable(idl_var_name_lower,
                 x.base.base.loc);
         }
+        if (!own_sym) {
+            // An input/output implied do loop assigns its variable
+            do_variable_assigned(x.m_var);
+        }
         {
             std::unique_ptr<ShadowedNameScope> shadowed_name;
             if (own_sym) {
@@ -24406,10 +24342,6 @@ public:
         }
         ASR::expr_t* a_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, a_sym));
         check_implied_do_loop_variable(a_var, to_lower(x.m_var), x.base.base.loc);
-        if (!own_sym) {
-            // An input/output implied do loop assigns its variable
-            do_variable_assigned(a_sym);
-        }
         if( !unique_type ) {
             type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, type_tuple.p, type_tuple.size()));
         }
@@ -28608,7 +28540,7 @@ public:
                         char* x_m_id, const Location& loc, size_t x_member_count) {
         if (x_n_member == 0) {
             ASR::expr_t* expr = ASRUtils::EXPR(resolve_variable(loc, to_lower(x_m_id)));
-            do_variable_read(expr, x_m_id);
+            do_variable_read(expr);
             if(x_m_member && x_m_member[0].m_args) {
                 expr = ASRUtils::EXPR(
                     create_ArrayRef(loc, x_m_member[0].m_args, x_m_member[0].n_args,
