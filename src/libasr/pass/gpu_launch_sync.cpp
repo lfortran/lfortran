@@ -61,7 +61,10 @@ struct State {
     bool reachable = true;
     // Any launch may be pending.
     bool any = false;
-    // What the pending launches may write, sorted.
+    // What the pending launches may write, sorted; `Path::pointee()` for a
+    // write through a pointer that may point to anything, and a path rooted
+    // at the pointer for one that the procedure never associates
+    // (`may_point_anywhere` holds for both).
     std::vector<Path> written;
     // The pending launches that may have recorded a stop, in launch order.
     std::vector<ASR::GpuKernelLaunch_t*> stops;
@@ -135,11 +138,99 @@ bool launches(ASR::stmt_t **body, size_t n_body) {
     return f.found;
 }
 
+// The variables a statement of a procedure may associate a pointer with:
+// whatever the value of a `=>` names (an associate name, and a pointer
+// component of a structure constructor, are bound that way too), the actual
+// arguments of a call, whose dummy may be a target or a pointer, the
+// arguments of an intrinsic subroutine or function (`move_alloc`), what
+// `c_loc` takes, and the selector of `select type`. Their subscripts are
+// counted too.
+class PointerReach : public ASR::BaseWalkVisitor<PointerReach> {
+public:
+    std::set<ASR::symbol_t*> &vars;
+    std::set<ASR::symbol_t*> blocks_seen;
+    // Inside one of the expressions above.
+    int inside = 0;
+    explicit PointerReach(std::set<ASR::symbol_t*> &vars_) : vars(vars_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (inside > 0) {
+            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    }
+    void reached(const ASR::expr_t *e) {
+        if (e == nullptr) return;
+        inside++;
+        visit_expr(*e);
+        inside--;
+    }
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_target);
+        reached(x.m_value);
+    }
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        reached(x.m_selector);
+        BaseWalkVisitor::visit_SelectType(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_SubroutineCall(x);
+        inside--;
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_FunctionCall(x);
+        inside--;
+    }
+    void visit_IntrinsicImpureSubroutine(
+            const ASR::IntrinsicImpureSubroutine_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_IntrinsicImpureSubroutine(x);
+        inside--;
+    }
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+        inside--;
+    }
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_StructConstructor(x);
+        inside--;
+    }
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {
+        reached(x.m_arg);
+    }
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        reached(x.m_arg);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks_seen.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks_seen.insert(b).second) return;
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
 class RoutineSync {
 public:
     RoutineSync(Allocator &al_, SymbolTable *routine_,
-            const PointerTargets &pointers_)
-        : al(al_), routine(routine_), pointers(pointers_) {}
+            const PointerTargets &pointers_,
+            const std::set<ASR::symbol_t*> &reached_)
+        : al(al_), routine(routine_), pointers(pointers_),
+          reached(reached_) {}
 
     // The new body of the routine.
     Vec<ASR::stmt_t*> run(ASR::stmt_t **body, size_t n_body,
@@ -176,6 +267,8 @@ private:
     Allocator &al;
     SymbolTable *routine;
     const PointerTargets &pointers;
+    // What the procedure may associate a pointer with (PointerReach).
+    const std::set<ASR::symbol_t*> &reached;
     // Which procedures may act outside the program.
     std::map<ASR::Function_t*, bool> outside;
     std::vector<SymbolTable*> blocks;
@@ -212,15 +305,41 @@ private:
         s.clear();
     }
 
+    // Whether `root` is a target local of a `block` (or `associate`) that
+    // no pointer can point into: nothing in the procedure associates a
+    // pointer with it or hands it to another procedure, and only the
+    // construct can name it.
+    bool out_of_reach(ASR::symbol_t *root) const {
+        if (root == nullptr || !ASR::is_a<ASR::Variable_t>(*root)) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        return v->m_target_attr && !is_pointer_variable(root)
+            && v->m_intent == ASR::intentType::Local
+            && v->m_storage != ASR::storage_typeType::Save
+            && v->m_parent_symtab != routine
+            && enclosing_routine(v->m_parent_symtab) == routine
+            && reached.count(root) == 0;
+    }
+
+    bool may_overlap(const Path &a, const Path &b) const {
+        if (a.root != b.root
+                && (out_of_reach(a.root) || out_of_reach(b.root))) {
+            return false;
+        }
+        return overlap(a, b);
+    }
+
     bool conflicts(const Accesses &acc, const State &s) {
         if (s.written.empty()) return false;
         if (acc.everything) return true;
         for (const Path &w : s.written) {
-            if (acc.globals && reachable_elsewhere(w.root, routine)) {
+            if (acc.globals && reachable_elsewhere(w.root, routine)
+                    && !out_of_reach(w.root)) {
                 return true;
             }
             for (const Path &a : acc.paths) {
-                if (overlap(a, w)) return true;
+                if (may_overlap(a, w)) return true;
             }
         }
         return false;
@@ -234,6 +353,21 @@ private:
         }
     }
 
+    // Whether `scope` has a local, not saved, that a pointer may point to.
+    bool has_target_locals(SymbolTable *scope) const {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if (v->m_target_attr
+                    && v->m_storage != ASR::storage_typeType::Save
+                    && !out_of_reach(item.second)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Tells the runtime to forget what pending launches write into the
     // locals of `scope`, which end here.
     void discard_locals(SymbolTable *scope, State &s, bool emit,
@@ -243,7 +377,14 @@ private:
         std::vector<Path> kept;
         bool must_sync = false;
         for (const Path &p : s.written) {
-            bool local = p.root != nullptr
+            if (may_point_anywhere(p.root) && has_target_locals(scope)) {
+                // What a pointer may point to: a target local of `scope`
+                // too.
+                must_sync = true;
+            }
+            // A write through a local pointer is not into the pointer's
+            // own storage.
+            bool local = !may_point_anywhere(p.root)
                 && ASR::is_a<ASR::Variable_t>(*p.root)
                 && ASR::down_cast<ASR::Variable_t>(p.root)->m_parent_symtab
                     == scope
@@ -396,6 +537,8 @@ private:
             if (v) c.visit_expr(*v);
         }
         std::vector<Path> writes;
+        // The launch writes a buffer this pass cannot follow.
+        bool opaque = false;
         for (size_t i = 0; i < layout.n_buffers; i++) {
             const ASR::gpu_kernel_argument_t &e = layout.m_buffers[i];
             ASR::expr_t *arg = x.m_args[e.m_argument_index].m_value;
@@ -404,7 +547,26 @@ private:
             Path p;
             std::vector<ASR::expr_t*> subscripts;
             if (!path_of(pointers, arg, p, &subscripts)) {
-                acc.everything = true;
+                if (!is_pointer_variable(designator_base(arg))) {
+                    // Not a designator this pass follows: the host may
+                    // access anything for it, and the kernel may write
+                    // anything there, so the launch is waited for at once.
+                    // Unreachable today: launch buffers are designators
+                    // that `path_of` follows.
+                    acc.everything = true;
+                    if (e.m_written) opaque = true;
+                    continue;
+                }
+                // Through a pointer that may point to anything. The host
+                // evaluates the subscripts, and accesses the data only when
+                // it copies it: a later launch handed the storage itself
+                // sees what this kernel writes there, as for a resolved
+                // path (lfortran_gpu_runtime.h).
+                for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
+                if (handling != GpuBufferHandling::Storage) {
+                    acc.everything = true;
+                }
+                if (e.m_written) writes.push_back(Path::pointee());
                 continue;
             }
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
@@ -449,6 +611,7 @@ private:
         s.any = true;
         for (const Path &p : writes) s.add_written(p);
         if (x.m_stop_status != nullptr) s.add_stop(&x);
+        if (opaque) sync(s, emit, out, loc);
     }
 
     // Deallocating storage a pending launch writes does not need the
@@ -759,7 +922,10 @@ void place_syncs(Allocator &al, SymbolTable *scope, ASR::stmt_t **&body,
     PointerTargets targets;
     PointerCollector collector(targets);
     for (size_t i = 0; i < n_body; i++) collector.visit_stmt(*body[i]);
-    RoutineSync sync(al, scope, targets);
+    std::set<ASR::symbol_t*> reached;
+    PointerReach reach(reached);
+    for (size_t i = 0; i < n_body; i++) reach.visit_stmt(*body[i]);
+    RoutineSync sync(al, scope, targets, reached);
     Vec<ASR::stmt_t*> result = sync.run(body, n_body, loc);
     body = result.p;
     n_body = result.n;
