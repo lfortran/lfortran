@@ -84,6 +84,12 @@ git checkout 0f9ca691cbe6782838266a9bb5005ae187f253a2
 export FC=lfortran
 export CC=clang
 export CXX=clang++
+if [[ "${LFORTRAN_LINKER:-}" == gcc ]] ; then
+  # LFortran links with GCC (the LLVM 7 and 8 environments), whose default
+  # PIE links reject the non-PIC objects that Clang 7 and 8 compile.
+  export CFLAGS="${CFLAGS:-} -fPIC"
+  export CXXFLAGS="${CXXFLAGS:-} -fPIC"
+fi
 
 echo "FC=${FC}"
 echo "CC=${CC}"
