@@ -536,18 +536,58 @@ dispatches through the slots of the instance its method is copied into. An inher
 generic consumer calling `object%sum(x)` on its `class(SimpleSum)` dummy,
 therefore reach the extension's overrides.
 
-Overriding a binding whose type parameters are not all closed type sets (open
-nominal or protocol constraints, or a character length wildcard), overriding
-in a type declared outside a module, and a dispatching call of a generic
-subroutine with deferred type arguments are diagnosed as not implemented.
-Fortran output prints a call through a member slot as the generic binding
-with explicit type arguments and omits the slots from type definitions.
+A binding whose type parameters are each constrained by one protocol trait
+with a dictionary, such as the open `INumeric` of "Open protocol runtime
+generic methods", has one *open slot* instead: a binding of the same type
+named like the generic binding followed by `{}`, which binds the procedure's
+provider-owned erased entry, the same `TraitErasure` a runtime witness of the
+procedure uses. A call through a polymorphic object whose declared type has
+the slot passes the conformance dictionary of each type argument after the
+message's arguments, as a runtime call does, and dispatches through the slot,
+so the override runs for any type argument that conforms, also one whose
+conformance is declared after the provider is compiled. A generic procedure
+that forwards its own type parameter passes its own dictionary, and an
+inherited generic method, also of a generic type's instance, calls the slot
+with the dictionary of its binder, erased or concrete. Inside a generic
+type's package the call is a `DeferredMethodCall`, which the instance's copy
+of the method turns into the call of the instance's open slot once its type
+arguments are concrete or erased. An override fills the slot with its own
+erased entry. A procedure whose local storage cannot be erased gets no open
+slot and is reached by static calls only; overriding it is diagnosed. A body
+that cannot be erased otherwise is found once all bodies of the translation
+unit exist: its slot is then removed, unless it is overridden or a call
+dispatches through it, which is diagnosed with the construct that the body
+cannot erase.
+
+```fortran
+type, extends(SimpleSum{V}) :: PairwiseSum{ISum :: V}
+contains
+    procedure :: sum    ! function sum{INumeric :: T}(self, x), INumeric a protocol
+end type
+```
+
+Overriding a binding whose type parameters are neither all closed type sets
+nor each constrained by one protocol trait (an open nominal constraint, a
+binder with several constraints, or a character length wildcard), overriding
+in a type declared outside a module, a sealed override of an open slot, whose
+dispatch adapter would need an erased result, and a dispatching call of a
+generic subroutine with deferred type arguments through a member slot are
+diagnosed as not implemented. Fortran output prints a call through a member
+slot as the generic binding with explicit type arguments, a call through an
+open slot as the generic binding, and omits the slots from type definitions.
 `traits_generic_override_01` (with its standard-Fortran oracle) covers
 concrete, inferred and explicit type arguments, inherited generic methods,
 generic consumers, sealed and nonsealed overrides, NOPASS bindings,
 subroutines and the extension's conformance; `traits_generic_override_02`
 overrides a separately compiled provider's bindings and specializes its
-generic consumers in the client.
+generic consumers in the client. `traits_generic_override_03` overrides open
+protocol bindings of a module type, through views and a forwarding generic
+procedure, and of a generic type's instance, whose override recurses through
+its own open slot; `traits_generic_override_04` overrides the open slots of a
+separately compiled provider, also in a late extension, and
+`traits_interop_ocp` runs the maintainer's interoperability variant of the
+paper's `ocp.f90`. `continue_compilation_traits_10` and `_11` check the
+diagnostics.
 
 The module-only paper examples `extends_parent.f90` and `abstract_new.f90`,
 unchanged except for their recorded TD-36 explicit receivers, are registered

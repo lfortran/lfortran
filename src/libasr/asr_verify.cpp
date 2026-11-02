@@ -1184,6 +1184,16 @@ public:
                 "A member slot must bind the member entry of its type's generic binding "
                 "for the member tuple its name designates");
         }
+        if (ASRUtils::open_slot_entry(x)) {
+            auto *generic = ASRUtils::open_slot_generic_binding(x);
+            require_id(generic && generic->m_is_nopass == x.m_is_nopass && !x.m_is_deferred &&
+                    (generic->m_self_argument == nullptr) == (x.m_self_argument == nullptr) &&
+                    (!x.m_self_argument ||
+                        std::string(generic->m_self_argument) == x.m_self_argument),
+                "asr.verify.struct_method.open_slot",
+                "An open slot must bind the erased entry of a generic binding of its type "
+                "whose type parameters are each constrained by one protocol trait");
+        }
         require_id(x.m_dispatch_proc ||
                 !ASRUtils::sealed_override_needs_adapter(x, x_m_proc),
             "asr.verify.struct_method.dispatch_required",
@@ -4400,15 +4410,18 @@ public:
             ASRUtils::get_struct_sym_from_struct_expr(x.m_dt));
         bool definition = declared && ASR::is_a<Struct_t>(*declared) &&
             ASRUtils::generic_type_definition_metadata(*ASR::down_cast<Struct_t>(declared));
+        auto *method = binding && ASR::is_a<StructMethodDeclaration_t>(*binding)
+            ? ASR::down_cast<StructMethodDeclaration_t>(binding) : nullptr;
+        bool open = method && ASRUtils::binding_member_tuples(*method).empty();
         require_id(generic && generic->n_args == x.n_type_arguments &&
-                !ASRUtils::binding_member_tuples(
-                    *ASR::down_cast<StructMethodDeclaration_t>(binding)).empty() &&
-                (definition || (deferred && ASRUtils::member_slot_binding(declared,
-                    ASR::down_cast<StructMethodDeclaration_t>(binding)->m_name, 0))),
+                (!open || ASRUtils::binding_open_slot_parameters(*method)) &&
+                (definition || (deferred && (open
+                    ? ASRUtils::open_slot_binding(declared, method->m_name) != nullptr
+                    : ASRUtils::member_slot_binding(declared, method->m_name, 0) != nullptr))),
             "asr.verify.deferred_method_call.binding",
-            "A deferred type-bound call names a generic binding with member slots, "
-            "through an object of a generic type's definition or with deferred type "
-            "arguments for its type parameters");
+            "A deferred type-bound call names a generic binding with member or open "
+            "slots, through an object of a generic type's definition or with deferred "
+            "type arguments for its type parameters");
     }
 
     void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
@@ -5479,7 +5492,7 @@ public:
         for (const auto &entry : x.m_symtab->get_scope()) {
             // A member slot binds a member entry of a copy, not a copy.
             if (!ASR::is_a<StructMethodDeclaration_t>(*entry.second) ||
-                    ASRUtils::member_slot_entry(
+                    ASRUtils::dispatch_slot(
                         *ASR::down_cast<StructMethodDeclaration_t>(entry.second))) continue;
             bindings++;
             ASR::symbol_t *original = definition->m_symtab->get_symbol(entry.first);
@@ -5524,25 +5537,41 @@ public:
         }
         for (const auto &entry : x.m_symtab->get_scope()) {
             if (!procedures || !ASR::is_a<StructMethodDeclaration_t>(*entry.second) ||
-                    ASRUtils::member_slot_entry(
+                    ASRUtils::dispatch_slot(
                         *ASR::down_cast<StructMethodDeclaration_t>(entry.second))) continue;
             procedures = ASRUtils::generic_instance_procedure(instance,
                 ASR::down_cast<StructMethodDeclaration_t>(entry.second)->m_proc);
         }
+        // A conformance binds an inherited procedure through the copy of
+        // the parent instance that owns it.
+        auto inherited_copy = [&](ASR::symbol_t *procedure) {
+            std::set<const Struct_t*> seen;
+            for (const Struct_t *type = &x; type && seen.insert(type).second;
+                    type = type->m_parent && ASR::is_a<Struct_t>(
+                        *ASRUtils::symbol_get_past_external(type->m_parent))
+                        ? ASR::down_cast<Struct_t>(
+                            ASRUtils::symbol_get_past_external(type->m_parent))
+                        : nullptr) {
+                auto *metadata = ASRUtils::generic_type_instance(*type);
+                if (metadata && ASRUtils::generic_instance_procedure(*metadata, procedure)) {
+                    return true;
+                }
+            }
+            return false;
+        };
         for (const auto &entry : owner_scope->get_scope()) {
             if (!procedures || !ASR::is_a<TraitImplementation_t>(*entry.second)) continue;
             auto *conformance = ASR::down_cast<TraitImplementation_t>(entry.second);
             if (!conformance->m_type_declaration || ASRUtils::symbol_get_past_external(
                     conformance->m_type_declaration) != &x.base) continue;
             for (size_t i = 0; procedures && i < conformance->n_bindings; i++) {
-                procedures = ASRUtils::generic_instance_procedure(instance,
-                    conformance->m_bindings[i].m_procedure);
+                procedures = inherited_copy(conformance->m_bindings[i].m_procedure);
             }
         }
         require_id(procedures, "asr.verify.generic_type.instance_procedures",
             "A completed generic type's instance must record one copy, owned by its "
             "module or program, of each procedure of the package, and its bindings and "
-            "conformances must use those copies");
+            "conformances must use those copies or those of its parent instances");
         for (const auto &entry : owner_scope->get_scope()) {
             if (entry.second == &x.base || !ASR::is_a<Struct_t>(*entry.second)) continue;
             auto *other = ASR::down_cast<Struct_t>(entry.second);

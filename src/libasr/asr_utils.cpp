@@ -9335,7 +9335,8 @@ bool program_generic_instance_method(const ASR::Template_t &generic, SymbolTable
                 if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*member.second)) continue;
                 auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(member.second);
                 if (binding_generic(*binding) == &generic &&
-                        member_slot_binding(entry.second, binding->m_name, 0)) {
+                        (member_slot_binding(entry.second, binding->m_name, 0) ||
+                            open_slot_binding(entry.second, binding->m_name))) {
                     return true;
                 }
             }
@@ -9765,6 +9766,77 @@ ASR::StructMethodDeclaration_t *member_slot_generic_binding(
     return nullptr;
 }
 
+static bool generic_open_slot_parameters(ASR::Template_t &generic)
+{
+    if (!generic.n_args || !trait_member_tuples(generic).empty()) return false;
+    for (size_t i = 0; i < generic.n_args; i++) {
+        if (!trait_parameter_dictionary(generic.m_symtab->get_symbol(generic.m_args[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool binding_open_slot_parameters(const ASR::StructMethodDeclaration_t &binding)
+{
+    auto *generic = binding_generic(binding);
+    return generic && generic_open_slot_parameters(*generic);
+}
+
+std::string open_slot_binding_name(const std::string &binding)
+{
+    return binding + "{}";
+}
+
+ASR::TraitErasure_t *open_slot_entry(const ASR::StructMethodDeclaration_t &binding)
+{
+    auto *procedure = symbol_get_past_external(binding.m_proc);
+    if (!procedure || !ASR::is_a<ASR::Function_t>(*procedure)) return nullptr;
+    auto *owner = ASR::down_cast<ASR::Function_t>(procedure)->m_symtab->parent->asr_owner;
+    if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !ASR::is_a<ASR::TraitErasure_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+        return nullptr;
+    }
+    auto *erasure = ASR::down_cast<ASR::TraitErasure_t>(ASR::down_cast<ASR::symbol_t>(owner));
+    return erasure->m_procedure == procedure && erasure->n_parameters &&
+        !erasure->m_parameters[0].m_member &&
+        std::string(binding.m_name).size() > 2 &&
+        std::string(binding.m_name).substr(std::string(binding.m_name).size() - 2) == "{}"
+        ? erasure : nullptr;
+}
+
+ASR::StructMethodDeclaration_t *open_slot_binding(ASR::symbol_t *declaration,
+    const std::string &binding)
+{
+    std::string name = open_slot_binding_name(binding);
+    std::set<ASR::symbol_t*> seen;
+    for (ASR::symbol_t *symbol = declaration ? symbol_get_past_external(declaration) : nullptr;
+            symbol && ASR::is_a<ASR::Struct_t>(*symbol) && seen.insert(symbol).second;
+            symbol = symbol_get_past_external(ASR::down_cast<ASR::Struct_t>(symbol)->m_parent)) {
+        auto *found = ASR::down_cast<ASR::Struct_t>(symbol)->m_symtab->get_symbol(name);
+        if (found && ASR::is_a<ASR::StructMethodDeclaration_t>(*found)) {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(found);
+        }
+    }
+    return nullptr;
+}
+
+ASR::StructMethodDeclaration_t *open_slot_generic_binding(
+    const ASR::StructMethodDeclaration_t &slot)
+{
+    if (!open_slot_entry(slot) || !slot.m_parent_symtab) return nullptr;
+    std::string name = slot.m_name;
+    auto *found = slot.m_parent_symtab->get_symbol(name.substr(0, name.size() - 2));
+    if (!found || !ASR::is_a<ASR::StructMethodDeclaration_t>(*found)) return nullptr;
+    auto *binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(found);
+    return binding_open_slot_parameters(*binding) ? binding : nullptr;
+}
+
+bool dispatch_slot(const ASR::StructMethodDeclaration_t &binding)
+{
+    return member_slot_entry(binding) || open_slot_entry(binding);
+}
+
 // Fortran 2018 7.5.7.3 for generic procedures: both bind every type
 // parameter with the same constraint in the same position, so that each
 // member slot of the overridden binding has a corresponding member entry.
@@ -9778,10 +9850,11 @@ static InterfaceMismatch generic_override_mismatch(const std::string &what,
         return {true, "generic_parameters", what + " must bind the same generic type "
             "parameters: " + correspondence};
     }
-    if (trait_member_tuples(*trait_method_template(base)).empty()) {
+    if (trait_member_tuples(*trait_method_template(base)).empty() &&
+            !generic_open_slot_parameters(*trait_method_template(base))) {
         return {true, "generic_procedure", what + " is not implemented yet for "
-            "generic procedures whose type parameters are not all constrained by "
-            "type sets"};
+            "generic procedures whose type parameters are neither all constrained by "
+            "type sets nor each by one protocol trait"};
     }
     if (bool(proc.m_return_var) != bool(base.m_return_var)) {
         return {true, "result_kind_matches", what + " must be a " +

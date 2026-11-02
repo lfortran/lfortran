@@ -30160,6 +30160,14 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name]));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
+        // An open slot's erased entry writes its result to storage the
+        // caller provides.
+        if (func->m_return_var &&
+                ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::expr_type(func->m_return_var))) {
+            tmp = call_with_trait_result(fnTy, fn, args, x.m_type, x.m_args, x.n_args,
+                *func, const_cast<ASR::expr_t*>(&x.base));
+            return;
+        }
         tmp = builder->CreateCall(fnTy, fn, args);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;

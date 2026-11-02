@@ -11806,6 +11806,30 @@ ASR::StructMethodDeclaration_t *member_slot_binding(ASR::symbol_t *declaration,
 ASR::StructMethodDeclaration_t *member_slot_generic_binding(
     const ASR::StructMethodDeclaration_t &slot);
 
+// Open slots of generic type-bound procedures. A binding of a generic
+// procedure whose type parameters are each constrained by one protocol trait
+// with a dictionary has one open slot: a binding of the same type named
+// open_slot_binding_name that binds the procedure's provider-owned erased
+// entry (TraitErasure), which takes each parameter's conformance dictionary
+// after the message's arguments. A call through a polymorphic object passes
+// the dictionaries of its type arguments and dispatches through it, and an
+// override fills it with its own erased entry.
+
+// Whether `binding` names a generic procedure that can have an open slot.
+bool binding_open_slot_parameters(const ASR::StructMethodDeclaration_t &binding);
+std::string open_slot_binding_name(const std::string &binding);
+// The erased entry that `binding` binds when it is an open slot, else nullptr.
+ASR::TraitErasure_t *open_slot_entry(const ASR::StructMethodDeclaration_t &binding);
+// The open slot of generic binding `binding` of the derived type
+// `declaration` or its nearest ancestor that has it, or nullptr.
+ASR::StructMethodDeclaration_t *open_slot_binding(ASR::symbol_t *declaration,
+    const std::string &binding);
+// The generic binding of the same type that the open slot `slot` belongs to.
+ASR::StructMethodDeclaration_t *open_slot_generic_binding(
+    const ASR::StructMethodDeclaration_t &slot);
+// Whether `binding` is a member slot or an open slot.
+bool dispatch_slot(const ASR::StructMethodDeclaration_t &binding);
+
 inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
         size_t n_body, bool procedure_values = false) {
     struct Collector : BlockBodyWalkVisitor<Collector> {

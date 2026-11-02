@@ -1241,6 +1241,12 @@ public:
             ? ASRUtils::member_slot_generic_binding(
                 *ASR::down_cast<ASR::StructMethodDeclaration_t>(binding))
             : nullptr;
+        if (!generic && ASR::is_a<ASR::StructMethodDeclaration_t>(*binding)) {
+            // A call through an open slot names its generic binding.
+            generic = ASRUtils::open_slot_generic_binding(
+                *ASR::down_cast<ASR::StructMethodDeclaration_t>(binding));
+            if (generic) return generic->m_name;
+        }
         if (!generic) return ASRUtils::symbol_name(binding);
         auto *erasure = ASRUtils::member_slot_entry(
             *ASR::down_cast<ASR::StructMethodDeclaration_t>(binding));
@@ -1749,8 +1755,8 @@ public:
     }
 
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
-        // A member slot is the binding table entry of a generic binding.
-        if (ASRUtils::member_slot_entry(x)) {
+        // A member or open slot is the binding table entry of a generic binding.
+        if (ASRUtils::dispatch_slot(x)) {
             src = "";
             return;
         }

@@ -3171,7 +3171,11 @@ public:
                 break;
             }
         }
-        bool deferred = !ASRUtils::member_slot_binding(declared, binding->m_name, 0);
+        // An open slot takes the dictionaries the call already passes.
+        auto *open_slot = ASRUtils::binding_member_tuples(*binding).empty()
+            ? ASRUtils::open_slot_binding(declared, binding->m_name) : nullptr;
+        bool deferred = !open_slot && !ASRUtils::member_slot_binding(declared,
+            binding->m_name, 0);
         for (size_t i = 0; i < call->n_type_arguments; i++) {
             deferred |= ASR::is_a<ASR::TypeParameter_t>(*call->m_type_arguments[i]);
         }
@@ -3190,6 +3194,15 @@ public:
                 ADD_ASR_DEPENDENCIES(new_scope, call->m_name, dependencies);
                 return &call->base.base;
             }
+        }
+        if (open_slot) {
+            auto *callee = ASRUtils::import_class_procedure(al, loc, &open_slot->base,
+                new_scope);
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*callee)) {
+                ADD_ASR_DEPENDENCIES(new_scope, callee, dependencies);
+            }
+            return ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr, call->m_args,
+                call->n_args, call->m_type, nullptr, call->m_dt);
         }
         size_t index = ASRUtils::binding_member_index(*binding, call->m_type_arguments,
             call->n_type_arguments);

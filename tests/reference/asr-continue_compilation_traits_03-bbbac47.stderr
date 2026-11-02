@@ -78,7 +78,7 @@ semantic error: Type bound procedure 'run' of 'special' overriding the binding o
 376 |         procedure, nopass :: run => special_run
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type bound procedure 'first' of 'other' overriding the binding of the same name in 'holder' is not implemented yet for generic procedures whose type parameters are not all constrained by type sets
+semantic error: Type bound procedure 'first' of 'other' overriding the binding of the same name in 'holder' is not implemented yet for generic procedures whose type parameters are neither all constrained by type sets nor each by one protocol trait
    --> tests/errors/continue_compilation_traits_03.f90:429:9
     |
 429 |         procedure, nopass :: first => other_first

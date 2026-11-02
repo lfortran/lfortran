@@ -172,6 +172,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-29 | How a generic observer declares the equality between its subject's associated observer type and its own type | **Explicit constraints first, with independently checked generic bodies**; infer additional requirements from generic bodies. Recursive specialization was discussed separately, not approved by choosing explicit equality. | TD-43 |
 | 2026-10-31 | The meaning of a type without a parameter list that extends a generic type (`PairwiseSum` extending `SimpleSum{ISum :: U}`) | **Implicit inheritance of the parent's parameters, with the bare name meaning the type itself in its own procedures** (rescinded the same day, see the next row); explicit spelling only | TD-45 |
 | 2026-10-31 | Revisiting TD-45 after a colleague of the maintainer corrected the `static.f90` variant against Swift, and which type arguments of a generic parent to support | **Explicit spelling only: `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}`, with the extending type's parameters and concrete types as arguments; the forms Swift also allows that need more machinery (a generic type applied to a parameter, a type that is not generic extending an instance) diagnosed as not implemented** | TD-45 |
+| 2026-11-02 | How a polymorphic call reaches an override of a generic binding whose type parameter has an open protocol constraint | **An open slot bound to the dictionary-passing erased entry, through which the call passes its type arguments' dictionaries**; allowing the override but diagnosing dispatching calls | TD-44 |
+| 2026-11-02 | The meaning of a runtime trait array dummy, `class(ISomeTrait) :: arr(:)` | **Homogeneous: Fortran CLASS semantics, one dynamic type and one witness for the whole array, which borrows a concrete array in place; dummies only**; heterogeneous arrays of boxed values with a witness per element, as Swift's `[any ISomeTrait]` | TD-46 |
 
 ### Instructions given without an option form
 
@@ -197,6 +199,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-31 | Supplied interoperability variants of the paper's `mixed.f90` and `static.f90`, in which a sealed extension overrides an inherited generic `sum` and, in the static one, extends the generic `SimpleSum`, and asked to implement what they need so that both compile. | TD-44, TD-45 |
 | 2026-10-31 | Relayed a colleague's correction: the `static.f90` variant was wrong, and Swift, to be consulted when in doubt, always requires a generic parent's type arguments. Asked to rescind implicit inheritance, to require `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}` with `V` from the extending type's parameter list, to diagnose a missing parameter list consistently with the rest of the proposal, and to keep accepting a redundant `implements` of an inherited conformance, as Java does. Supplied the colleague's Swift version and corrected Fortran version (`mixed.f90` needed no change). | TD-45 |
 | 2026-11-02 | Relayed the colleague's last interoperability case, `static_interop_concrete.f90` and its Swift version, in which a type that is not generic extends the instance `SimpleSum{BasicSum}` and overrides its generic `sum`, and asked to get it working. | TD-45 |
+| 2026-11-02 | Relayed `static_interop_ocp.f90`, the interoperability variant of the paper's `ocp.f90` whose generic `PairwiseSum{V}` overrides `sum{INumeric :: T}` with the open protocol `INumeric`, and a module whose trait message takes `class(ISomeTrait) :: arr(:)`. Chose, from the options offered, dispatch through an open slot that passes the type arguments' dictionaries, and homogeneous trait arrays with the Fortran CLASS semantics of one dynamic type, for dummies only. | TD-44, TD-46 |
 
 ## Entries
 
@@ -1698,7 +1701,8 @@ specification action, that is, what the paper should say.
 #### TD-44: Overriding generic type-bound procedures
 
 - **Status:** Implementation choice; requested by the maintainer without an
-  option form (2026-10-31).
+  option form (2026-10-31). Extended to open protocol constraints by the
+  maintainer's choice of option "open slot" (2026-11-02).
 - **What the paper says.** A type adopting a trait implements a generic
   message with a generic procedure (`sect:generic_methods`), and the
   interoperability section combines `implements` with `extends`
@@ -1728,14 +1732,29 @@ specification action, that is, what the paper should say.
   dispatch once the method is instantiated. A conformance that binds the type's
   own type-bound procedure dispatches through it too, so `obj%sum(x)` on a
   `class(Base)` object runs the extension's override.
+- **Open protocol constraints (2026-11-02).** Options offered: (a) an *open
+  slot* bound to the procedure's dictionary-passing erased entry, the
+  mechanism of runtime generic messages with protocol binders, through which
+  a polymorphic call passes its type arguments' dictionaries; (b) allow the
+  override but diagnose every dispatching call. The maintainer chose (a). A
+  binding whose type parameters are each constrained by one protocol trait
+  with a dictionary has one open slot, filled by an override with its own
+  erased entry. Calls through nonpolymorphic objects or sealed declared types
+  stay static specializations. A procedure whose storage cannot be erased has
+  no slot, and overriding it is diagnosed; a slot whose body turns out not to
+  be erasable once all bodies exist is removed, or diagnosed when it is
+  overridden or a call dispatches through it.
 - **Implementation status.** Implemented for module types and for instances of
   generic types (TD-45), also under separate compilation, with sealed overrides
   of a nonpolymorphic passed object reached through dispatch adapters.
-  Overriding a binding whose type parameters are not all closed type sets (an
-  open nominal or protocol trait, or a character length wildcard) remains
+  Open protocol constraints are implemented through open slots, also for
+  instances of generic types and under separate compilation. Overriding a
+  binding whose type parameters are neither all closed type sets nor each
+  constrained by one protocol trait (an open nominal trait, several
+  constraints of one binder, or a character length wildcard) remains
   diagnosed as not implemented, as do overrides in types declared outside a
-  module and a dispatching call of a generic subroutine with deferred type
-  arguments.
+  module, sealed overrides of an open slot and a dispatching call of a
+  generic subroutine with deferred type arguments through a member slot.
 - **Specification action.** Specify overriding of generic type-bound
   procedures and their dispatch, including open type parameters.
 
@@ -2173,7 +2192,10 @@ specification action, that is, what the paper should say.
   symbol table visitor completes an instance that a type which is not generic
   extends, so that the type inherits its bindings and conformances, and the
   body visitor instantiates the bodies of the instance's procedure copies
-  once the package bodies exist. A type argument that applies a generic type
+  once the package bodies exist. An instance's conformances bind an inherited
+  procedure through the copy the parent instance owns, so an extension that
+  only inherits a generic method, `PairwiseSum{V}` without its own `sum`,
+  calls and adopts the parent instance's copy. A type argument that applies a generic type
   to a parameter, extending a generic type outside a module, extending an
   instance outside a module (a main program's symbol does not exist while its
   declarations are visited) or with a type argument declared in the same

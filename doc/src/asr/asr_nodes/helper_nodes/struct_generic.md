@@ -56,7 +56,8 @@ parent's instance for the parent's arguments, in which the instance's own
 arguments replace the parameters. A derived type that is not generic, `type,
 extends(SimpleSum{BasicSum}) :: PairwiseSum`, has its unit's instance as its
 parent; the instance is completed when that type is declared, and the bodies
-of its procedure copies are instantiated by the body visitor.
+of its procedure copies are instantiated by the body visitor. An instance's
+conformance binds a procedure it inherits through the parent instance's copy.
 
 Substitution includes the types of component initializer expressions, not
 just component declarations. Each instance owns a specialized copy, preserving
@@ -68,8 +69,9 @@ definition with one concrete argument per parameter and the evidence of each
 universal-trait constraint, that it has the definition's components with the
 arguments substituted (procedure-typed components are compared by kind only),
 that a completed instance has the definition's obligations and bindings
-(besides member slots) and records one copy of each package procedure that its
-bindings and conformances use, that no two instances of one scope are equal,
+(besides member and open slots) and records one copy of each package
+procedure that its bindings use, and that its conformances use one of its
+copies or of its parent instances' copies, that no two instances of one scope are equal,
 and that a definition extends only the definition of a generic type, giving it
 one argument per parameter that is a parameter of the definition or a concrete
 type, an instance only that type's instance for those arguments with its own

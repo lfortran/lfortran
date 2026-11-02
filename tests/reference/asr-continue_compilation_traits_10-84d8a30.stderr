@@ -1,0 +1,24 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_10.f90:9:5 - 17:27
+   |
+ 9 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: dispatching the generic type-bound procedure 'total' of 'copied' requires erasing it with the dictionaries of its type parameters: erased generic storage other than read-only scalar or assumed-shape dummies, scalar locals and a scalar result is not implemented yet
+  --> tests/errors/continue_compilation_traits_10.f90:62:9
+   |
+62 |         procedure :: total => copied_total
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   |
+71 |         type(T) :: copy(size(x))
+   |                    ~~~~~~~~~~~~~ not supported in runtime generic messages
+
+semantic error: overriding the generic type-bound procedure 'count' is not implemented yet: the overridden binding has no member or open slots, either because its type is not declared in a module, because its module was compiled without them, or because its procedure cannot be erased with the dictionaries of its type parameters
+  --> tests/errors/continue_compilation_traits_10.f90:87:9
+   |
+87 |         procedure :: count => counted_count
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

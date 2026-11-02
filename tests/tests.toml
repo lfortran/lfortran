@@ -5984,6 +5984,14 @@ obj = true
 run = true
 
 [[test]]
+filename = "errors/continue_compilation_traits_11.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_traits_10.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_traits_09.f90"
 semantics_only_cc = true
 

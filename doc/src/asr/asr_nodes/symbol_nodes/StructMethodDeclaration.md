@@ -55,6 +55,16 @@ nominal receiver, signature and dummy attributes. Current result support is
 limited to scalar numeric/logical values; lifetime-bearing results require
 additional transparent result-slot lowering.
 
+A binding of a generic procedure has no procedure for the binding table; its
+type's member slots (`name{i}`, one per member tuple of closed type-set
+parameters) or open slot (`name{}`, for parameters each constrained by one
+protocol trait) are bindings of the same type that bind the procedure's
+provider-owned entries (`TraitErasure`), and a call through a polymorphic
+object dispatches through them. An open slot's entry takes the type
+arguments' dictionaries after the message's arguments, and its erased result
+is written to storage the caller provides. The verifier checks that a slot
+belongs to a generic binding of its type with the same passed object.
+
 ## Examples
 
 ```clojure

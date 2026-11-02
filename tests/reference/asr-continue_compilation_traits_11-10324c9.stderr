@@ -1,0 +1,18 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_11.f90:10:5 - 18:27
+   |
+10 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: dispatching the generic type-bound procedure 'first' of 'printer' requires erasing it with the dictionaries of its type parameters: this use of a value of protocol type parameter 't' as an array constructor is not implemented yet in runtime generic messages
+  --> tests/errors/continue_compilation_traits_11.f90:39:9
+   |
+39 |         procedure :: first
+   |         ^^^^^^^^^^^^^^^^^^^ 
+   |
+49 |         if (size([x(1), x(1)]) > 2) s = x(2)
+   |                  ~~~~~~~~~~~~ not supported in runtime generic messages
