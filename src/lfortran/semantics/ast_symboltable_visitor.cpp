@@ -778,6 +778,17 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
             //check if the implicit statement is of type "none"
             if (AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                // `implicit none (external)` alone keeps the implicit typing
+                // rules; only `implicit none` and `implicit none (type)` clear
+                // them and exclude other IMPLICIT statements (F2018 C894).
+                AST::ImplicitNone_t *none = AST::down_cast<AST::ImplicitNone_t>(x.m_items[i]);
+                bool none_type = none->n_specs == 0;
+                for (size_t si = 0; si < none->n_specs; si++) {
+                    if (AST::is_a<AST::ImplicitNoneType_t>(*none->m_specs[si])) {
+                        none_type = true;
+                    }
+                }
+                if (!none_type) continue;
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                 if (n_implicit != 1) {
                     diag.add(diag::Diagnostic(
