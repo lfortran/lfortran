@@ -15,6 +15,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // dim3 and uint3, from the emulation of the CUDA runtime API.
 #include "cuda_runtime.h"
@@ -59,6 +60,32 @@ static inline int atomicAdd(int *address, int value) {
     return __atomic_fetch_add(address, value, __ATOMIC_RELAXED);
 }
 #endif
+
+// A scalar TRANSFER between an integer and a real of one width reads the
+// bits of one as the other with these intrinsics.
+static inline float __int_as_float(int value) {
+    float result;
+    memcpy(&result, &value, sizeof(result));
+    return result;
+}
+
+static inline int __float_as_int(float value) {
+    int result;
+    memcpy(&result, &value, sizeof(result));
+    return result;
+}
+
+static inline double __longlong_as_double(long long value) {
+    double result;
+    memcpy(&result, &value, sizeof(result));
+    return result;
+}
+
+static inline long long __double_as_longlong(double value) {
+    long long result;
+    memcpy(&result, &value, sizeof(result));
+    return result;
+}
 
 // Execution space qualifiers have no meaning on the host.
 #define __global__

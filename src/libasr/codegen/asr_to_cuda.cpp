@@ -127,6 +127,19 @@ struct CudaDialect {
         return "unsigned int";
     }
 
+    // The bits of `value` read as a `type` of the same width: a real of
+    // kind `kind` when `to_real`, else an integer of that kind. The CPU
+    // emulation defines these intrinsics in cuda_cpu_device.h.
+    std::string bit_cast(const std::string & /*type*/, bool to_real,
+            int kind, const std::string &value) const {
+        if (kind == 8) {
+            return std::string(to_real ? "__longlong_as_double("
+                : "__double_as_longlong(") + value + ")";
+        }
+        return std::string(to_real ? "__int_as_float(" : "__float_as_int(")
+            + value + ")";
+    }
+
     // A relaxed atomic add to an `int` in device memory, giving the old
     // value. The CPU emulation defines atomicAdd in cuda_cpu_device.h.
     std::string atomic_fetch_add(const std::string &address,
