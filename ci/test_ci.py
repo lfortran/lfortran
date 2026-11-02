@@ -629,7 +629,7 @@ class WorkflowPolicyTests(unittest.TestCase):
             self.assertIn(f"name: Compiler compatibility / {name}\n", body)
             self.assertNotIn("\n    if:", body)
         wasm = quick.split("\n  test_llvm_wasm:\n", 1)[1].split("\n  test_without_llvm:", 1)[0]
-        self.assertIn("./run_tests.py -b ${{ matrix.backend }}\n", wasm)
+        self.assertIn("pixi run -e llvm19-wasm integration_tests -b ${{ matrix.backend }}\n", wasm)
         self.assertNotIn("--smoke", wasm)
 
     def test_llvm_wasm_backends_run_in_parallel_jobs(self):
@@ -654,7 +654,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         commands = "\n".join(l for l in build.splitlines() if not l.lstrip().startswith("#"))
         self.assertNotIn("NDEBUG", commands)
         # -O2 objects must not be mixed with the old -O0 cache.
-        self.assertIn("key: ${{ github.job }}-ubuntu-latest-19-o2\n", wasm)
+        self.assertIn("key: ${{ github.job }}-pixi-ubuntu-latest-19-o2\n", wasm)
 
     def test_full_platform_coverage_moves_to_exhaustive_without_changing_builds(self):
         workflows = ROOT / ".github/workflows"
