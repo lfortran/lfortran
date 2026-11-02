@@ -4,6 +4,7 @@ program do_variable_after_loop_01
     ! assigned again.
     implicit none
     integer :: i, j, k, m, n, s, a(3)
+    character(len=60) :: str = '5'
     n = 4
     s = 0
 
@@ -65,5 +66,39 @@ program do_variable_after_loop_01
         i = 3
         if (i /= 3) error stop
     end if
+
+    ! Suggested: read in the value assigned to the variable itself.
+    do i = 1, 2
+    end do
+    i = i + 1
+    if (i /= 4) error stop
+
+    ! Not suggested: assigned by a READ or by an input/output implied DO.
+    do i = 1, 2
+    end do
+    read (str, *) i
+    if (i /= 5) error stop
+    do j = 1, 2
+    end do
+    write (str, *) (a(j), j = 1, 3)
+    if (j /= 4) error stop
+
+    ! Not suggested: only the statements after the loop in its statement
+    ! list are checked, not those after the construct that holds it, nor
+    ! contained procedures.
+    if (s > 0) then
+        do k = 1, 2
+        end do
+    end if
+    if (k /= 3) error stop
+    do m = 1, 2
+    end do
+    call check_m()
     print *, s
+
+contains
+
+    subroutine check_m()
+        if (m /= 3) error stop
+    end subroutine
 end program

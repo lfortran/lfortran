@@ -740,6 +740,7 @@ public:
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
         CurrentBodyScope body_scope(*this, &body, current_scope);
+        StatementListScope statement_list(*this);
         for (size_t i=0; i<n_body; i++) {
             // A program unit hands us its whole `items` list, the declarations
             // in it were already handled by the symbol table visitor
@@ -3176,8 +3177,14 @@ public:
                     }
                 }
             }
-            this->visit_expr(*m_values[i]);
-            ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            ASR::expr_t* expr;
+            if (_type == AST::decl_stmtType::Read) {
+                expr = visit_assigned_expr(*m_values[i]);
+                do_variable_assigned(expr);
+            } else {
+                this->visit_expr(*m_values[i]);
+                expr = ASRUtils::EXPR(tmp);
+            }
             check_io_item_not_function(expr);
             if (_type == AST::decl_stmtType::Write) {
                 expr = cast_assumed_rank_io_item(expr, loc, "write");
@@ -8176,8 +8183,9 @@ public:
         }
         SetChar current_function_dependencies_copy = current_function_dependencies;
         SetChar current_module_dependencies_copy = current_module_dependencies;
-        this->visit_expr(*x.m_target);
-        ASR::expr_t *target = ASRUtils::EXPR(tmp);
+        AssignedVariableScope assigned(*this);
+        ASR::expr_t *target = visit_assigned_expr(*x.m_target);
+        assigned.target = target;
 
         // Handle character array section with substring on LHS:
         if (ASR::is_a<ASR::ArrayConstructor_t>(*target)) {
@@ -10739,6 +10747,7 @@ public:
         }
 
         if (var) {
+            do_variable_assigned(var);
             if (ASR::is_a<ASR::Var_t>(*var)) {
                 ASR::Var_t* loop_var = ASR::down_cast<ASR::Var_t>(var);
                 ASR::symbol_t* loop_var_sym = loop_var->m_v;
@@ -10810,6 +10819,7 @@ public:
             head.loc = head.m_v->base.loc;
             tmp = ASRUtils::make_DoLoop_t_util(al, x.base.base.loc, x.m_stmt_name,
                 head, body.p, body.size(), nullptr, 0);
+            do_loop_ended(*ASR::down_cast2<ASR::DoLoop_t>(tmp));
             if (do_loop_variables.size() > 0) {
                 do_loop_variables.pop_back();
             }
@@ -11059,6 +11069,16 @@ public:
         all_loops_blocks_nesting -= 1;
     }
 
+    // A FORALL index is visited as the variable of its name, which the
+    // FORALL assigns, so its value no longer comes from a DO loop.
+    void forall_indices_assigned(AST::concurrent_control_t **control, size_t n) {
+        if (ended_do_loops.empty()) return;
+        for (size_t i = 0; i < n; i++) {
+            AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) control[i];
+            do_variable_assigned(current_scope->resolve_symbol(to_lower(h.m_var)));
+        }
+    }
+
     void visit_ForAllSingle(const AST::ForAllSingle_t &x) {
         all_loops_blocks_nesting += 1;
         for (size_t i = 0; i < x.n_control; i++) {
@@ -11088,6 +11108,7 @@ public:
                 throw SemanticAbort();
             }
         }
+        forall_indices_assigned(x.m_control, x.n_control);
 
         // Build the innermost assignment statement
         this->visit_decl_stmt(*x.m_assign);
@@ -11157,6 +11178,7 @@ public:
                 throw SemanticAbort();
             }
         }
+        forall_indices_assigned(x.m_control, x.n_control);
 
         Vec<ASR::do_loop_head_t> heads;
         heads.reserve(al, x.n_control);
@@ -12676,6 +12698,10 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         };
         LocaliseImplicitInterfaces localise(al);
         localise.visit_TranslationUnit(*tu);
+    }
+
+    if (!diagnostics.has_error()) {
+        for (auto &d : b.do_variable_suggestions) diagnostics.add(d);
     }
 
     return tu;

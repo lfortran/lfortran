@@ -1,35 +1,44 @@
 style suggestion: the do loop variable 'i' is used after the loop
-  --> tests/../integration_tests/do_variable_after_loop_01.f90:14:9
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:15:9
    |
-14 |     if (i /= 11) error stop
+15 |     if (i /= 11) error stop
    |         ^ after the loop, 'i' is 11
    |
-11 |     do i = 1, 10
+12 |     do i = 1, 10
    |        ~ the loop sets 'i' here
 
 style suggestion: the do loop variable 'j' is used after the loop
-  --> tests/../integration_tests/do_variable_after_loop_01.f90:20:9
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:21:9
    |
-20 |     if (j /= 3) error stop
+21 |     if (j /= 3) error stop
    |         ^ 'j' has the value it had at the exit, or one step past the last iteration if the loop ends normally
    |
-17 |     do j = 1, n
+18 |     do j = 1, n
    |        ~ the loop sets 'j' here
 
 style suggestion: the do loop variable 'k' is used after the loop
-  --> tests/../integration_tests/do_variable_after_loop_01.f90:27:13
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:28:13
    |
-27 |         if (k /= 0) error stop
+28 |         if (k /= 0) error stop
    |             ^ after the loop, 'k' is one step past the last iteration
    |
-23 |     do k = n, 1, -1
+24 |     do k = n, 1, -1
    |        ~ the loop sets 'k' here
 
 style suggestion: the do loop variable 'i' is used after the loop
-  --> tests/../integration_tests/do_variable_after_loop_01.f90:33:9
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:34:9
    |
-33 |     if (i /= 5) error stop
+34 |     if (i /= 5) error stop
    |         ^ after the loop, 'i' is 5
    |
-31 |     do i = 5, 1
+32 |     do i = 5, 1
+   |        ~ the loop sets 'i' here
+
+style suggestion: the do loop variable 'i' is used after the loop
+  --> tests/../integration_tests/do_variable_after_loop_01.f90:73:9
+   |
+73 |     i = i + 1
+   |         ^ after the loop, 'i' is 3
+   |
+71 |     do i = 1, 2
    |        ~ the loop sets 'i' here
